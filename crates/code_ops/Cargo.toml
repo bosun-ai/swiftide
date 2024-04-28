@@ -1,0 +1,17 @@
+[package]
+name = "code_ops"
+version = "0.1.0"
+edition = "2021"
+rust-version.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tree-sitter = "0.22.5"
+tree-sitter-rust = "0.21.0"
+indoc = { workspace = true }
+anyhow = { workspace = true }
+infrastructure = { path = "../infrastructure/" }
+
+[build-dependencies]
+cc = "1.0.95"
