@@ -8,13 +8,13 @@ use infrastructure::SimplePrompt;
 use crate::{ingestion_node::IngestionNode, traits::Transformer};
 
 #[derive(Debug)]
-pub struct MetadataQACode {
+pub struct MetadataQAText {
     client: Arc<dyn SimplePrompt>,
     prompt: String,
     num_questions: usize,
 }
 
-impl MetadataQACode {
+impl MetadataQAText {
     pub fn new(client: Arc<dyn SimplePrompt>) -> Self {
         Self {
             client,
@@ -28,33 +28,31 @@ fn default_prompt() -> String {
     indoc! {r#"
 
             # Task
-            Your task is to generate questions and answers for the given code. 
+            Your task is to generate questions and answers for the given text. 
 
-            Given that somebody else might ask questions about the code, consider things like:
-            * What does this code do?
-            * What other internal parts does the code use?
-            * Does this code have any dependencies?
-            * What are some potential use cases for this code?
+            Given that somebody else might ask questions about the text, consider things like:
+            * What does this text do?
+            * What other internal parts does the text use?
+            * Does this text have any dependencies?
+            * What are some potential use cases for this text?
             * ... and so on
 
             # Constraints 
-            * Generate only {questions} questions and answers.
+            * Generate at most {questions} questions and answers.
             * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the code.
+            * Only respond with questions and answers that can be derived from the text.
 
             # Example
             Respond in the following example format and do not include anything else:
 
             ```
-            Q1: What does this code do?
-            A1: It transforms strings into integers.
-            Q2: What other internal parts does the code use?
-            A2: A hasher to hash the strings.
+            Q1: What is the capital of France?
+            A1: Paris.
             ```
 
-            # Code
+            # text
             ```
-            {code}
+            {text}
             ```
 
         "#}
@@ -62,12 +60,12 @@ fn default_prompt() -> String {
 }
 
 #[async_trait]
-impl Transformer for MetadataQACode {
+impl Transformer for MetadataQAText {
     async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
         let prompt = self
             .prompt
             .replace("{questions}", &self.num_questions.to_string())
-            .replace("{code}", &node.chunk);
+            .replace("{text}", &node.chunk);
 
         let response = self
             .client

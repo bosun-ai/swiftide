@@ -12,7 +12,6 @@ use qdrant_client::{
 
 #[derive(Debug, Default, Clone)]
 pub struct IngestionNode {
-    // TODO: Can we make the ie path + n node the id?
     pub id: Option<u64>,
     pub path: PathBuf,
     pub chunk: String,
@@ -32,12 +31,14 @@ impl IngestionNode {
 
         format!("{}\n{}", metadata, self.chunk)
     }
+
+    pub fn calculate_hash(&self) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
-// TODO: We could also use hashes as the node id instead of uuid?
-// That would remove the need for uuid and the extra delete before insert check in storage
-// Potential issue there is that if implementation on metadata changes, storage would not update
-// ... Or we add metadata to the hash as well?
 impl Hash for IngestionNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.path.hash(state);
@@ -49,9 +50,15 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
     type Error = anyhow::Error;
 
     fn try_into(mut self) -> Result<qdrant::PointStruct> {
+        let id = self.calculate_hash();
+
         self.metadata.extend([
             ("path".to_string(), self.path.to_string_lossy().to_string()),
             ("content".to_string(), self.chunk),
+            (
+                "last_updated_at".to_string(),
+                chrono::Utc::now().to_rfc3339(),
+            ),
         ]);
 
         // Damn who build this api
@@ -63,7 +70,7 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
             .into();
 
         Ok(qdrant::PointStruct::new(
-            uuid::Uuid::new_v4().to_string(),
+            id,
             self.vector.context("Vector is not set")?,
             payload,
         ))

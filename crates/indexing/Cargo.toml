@@ -9,7 +9,7 @@ ignore = "0.4.22"
 code_ops = { path = "../code_ops" }
 infrastructure = { path = "../infrastructure" }
 anyhow = { workspace = true }
-qdrant-client = "1.9.0"
+qdrant-client = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -22,3 +22,5 @@ tokio-stream = "0.1.15"
 uuid = { workspace = true }
 indoc = { workspace = true }
 redis = { workspace = true }
+text-splitter = { version = "0.13.1", features = ["markdown"] }
+chrono = { workspace = true }

@@ -16,10 +16,41 @@ impl FileLoader {
         }
     }
 
+    /// Add extensions to the loader
+    ///
+    /// # Arguments
+    /// * `extensions` - A list of extensions to add without the leading dot
     pub fn with_extensions(mut self, extensions: &[&str]) -> Self {
         self.extensions
             .extend(extensions.iter().map(ToString::to_string));
         self
+    }
+
+    /// Debug method
+    pub fn list_nodes(&self) -> Vec<IngestionNode> {
+        ignore::Walk::new(&self.path)
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
+            .filter(move |entry| {
+                let extensions = self.extensions.clone();
+
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| extensions.contains(&ext.to_string_lossy().to_string()))
+                    .unwrap_or(false)
+            })
+            .map(|entry| entry.into_path())
+            .map(|entry| {
+                tracing::debug!("Reading file: {:?}", entry);
+                let content = std::fs::read_to_string(&entry).unwrap();
+                IngestionNode {
+                    path: entry,
+                    chunk: content,
+                    ..Default::default()
+                }
+            })
+            .collect()
     }
 }
 
@@ -41,6 +72,7 @@ impl Loader for FileLoader {
             .map(|entry| entry.into_path())
             .map(|entry| {
                 let content = std::fs::read_to_string(&entry)?;
+                tracing::debug!("Reading file: {:?}", entry);
                 Ok(IngestionNode {
                     path: entry,
                     chunk: content,

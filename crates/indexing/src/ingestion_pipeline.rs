@@ -18,7 +18,6 @@ pub struct IngestionPipeline {
 
 // A lazy pipeline for ingesting files, adding metadata, chunking, transforming, embedding and then storing them.
 impl IngestionPipeline {
-    // TODO: fix lifetime
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
@@ -33,20 +32,24 @@ impl IngestionPipeline {
         self
     }
 
+    #[tracing::instrument(skip_all)]
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
             .stream
             .try_filter(move |node| {
                 let cache = Arc::clone(&cache);
-                // TODO: Maybe Cow or arc instead? Lots of nodes
+                // FIXME: Maybe Cow or arc instead? Lots of nodes
                 let node = node.clone();
                 tokio::spawn(async move {
                     if !cache.get(&node).await {
                         cache.set(&node).await;
 
+                        tracing::debug!("Node not in cache, passing through");
+
                         true
                     } else {
+                        tracing::debug!("Node in cache, skipping");
                         false
                     }
                 })
@@ -122,26 +125,31 @@ impl IngestionPipeline {
         self
     }
 
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, fields(total_nodes))]
     pub async fn run(mut self) -> Result<()> {
         let Some(ref storage) = self.storage else {
-            return Ok(());
+            anyhow::bail!("No storage configured for ingestion pipeline")
         };
 
         storage.setup().await?;
 
+        let mut total_nodes = 0;
         if let Some(batch_size) = storage.batch_size() {
             // Chunk both Ok and Err results, early return on any error
             let mut stream = self.stream.chunks(batch_size).boxed();
             while let Some(nodes) = stream.next().await {
                 let nodes = nodes.into_iter().collect::<Result<Vec<IngestionNode>>>()?;
+                total_nodes += nodes.len();
                 storage.batch_store(nodes).await?;
             }
         } else {
             while let Some(node) = self.stream.next().await {
+                total_nodes += 1;
                 storage.store(node?).await?;
             }
         }
+
+        tracing::Span::current().record("total_nodes", total_nodes);
 
         Ok(())
     }

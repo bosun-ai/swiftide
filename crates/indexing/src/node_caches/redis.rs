@@ -1,7 +1,4 @@
-use std::{
-    fmt::Debug,
-    hash::{Hash as _, Hasher},
-};
+use std::fmt::Debug;
 use tokio::sync::RwLock;
 
 use anyhow::{Context as _, Result};
@@ -42,13 +39,7 @@ impl Redis {
     }
 
     fn key_for_node(&self, node: &IngestionNode) -> String {
-        // We care about speed, not security or correctness
-        //
-        // Might be worth using faster algorithms
-        let mut s = std::hash::DefaultHasher::new();
-        node.hash(&mut s);
-
-        format!("{}:{}", self.key_prefix, s.finish())
+        format!("{}:{}", self.key_prefix, node.calculate_hash())
     }
 
     #[allow(dead_code)]
