@@ -1,18 +1,13 @@
 #![allow(dead_code)]
-use tree_sitter::{Language, Node, Parser, Tree};
+use tree_sitter::{Node, Parser, Tree};
 
 use anyhow::{Context as _, Result};
 use infrastructure::supported_languages::SupportedLanguages;
 
+use crate::supported_language_to_tree_sitter;
+
 pub struct CodeParser {
     parser: Parser,
-}
-
-fn try_map_language(language: &SupportedLanguages) -> Result<Language> {
-    match language {
-        SupportedLanguages::Rust => Ok(tree_sitter_rust::language()),
-        _ => anyhow::bail!("Language {language} not supported by code splitter"),
-    }
 }
 
 pub struct CodeNode {
@@ -44,7 +39,7 @@ impl CodeTree {
 impl CodeParser {
     pub fn try_new(language: SupportedLanguages) -> Result<Self> {
         let mut parser = Parser::new();
-        parser.set_language(&try_map_language(&language)?)?;
+        parser.set_language(&supported_language_to_tree_sitter(&language))?;
 
         Ok(Self { parser })
     }
