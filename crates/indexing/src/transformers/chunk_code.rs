@@ -4,7 +4,7 @@ use crate::{
 use async_trait::async_trait;
 use code_ops::{ChunkSize, CodeSplitter};
 use futures_util::{stream, StreamExt};
-use infrastructure::SupportedLanguages;
+use models::SupportedLanguages;
 
 #[derive(Debug)]
 pub struct ChunkCode {

@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 extern crate tree_sitter;
 
-use std::ops::Range;
-
 use anyhow::{Context as _, Result};
-use derive_builder::Builder;
-use infrastructure::supported_languages::SupportedLanguages;
+use models::SupportedLanguages;
+use std::ops::Range;
 use tree_sitter::{Node, Parser};
+
+use derive_builder::Builder;
 
 use crate::supported_language_to_tree_sitter;
 

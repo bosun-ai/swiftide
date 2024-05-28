@@ -23,4 +23,5 @@ uuid = { workspace = true }
 indoc = { workspace = true }
 redis = { workspace = true }
 text-splitter = { version = "0.13.1", features = ["markdown"] }
+models = { path = "../models" }
 chrono = { workspace = true }

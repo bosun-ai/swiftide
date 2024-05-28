@@ -2,7 +2,7 @@
 use tree_sitter::{Node, Parser, Tree};
 
 use anyhow::{Context as _, Result};
-use infrastructure::supported_languages::SupportedLanguages;
+use models::SupportedLanguages;
 
 use crate::supported_language_to_tree_sitter;
 
