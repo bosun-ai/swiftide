@@ -41,9 +41,11 @@ impl Qdrant {
 
     pub async fn create_index_if_not_exists(&self) -> Result<()> {
         if self.client.collection_exists(&self.collection_name).await? {
+            tracing::warn!("Collection {} exists", self.collection_name);
             return Ok(());
         }
 
+        tracing::warn!("Creating collection {}", self.collection_name);
         self.client
             .create_collection(&CreateCollection {
                 collection_name: self.collection_name.to_string(),
