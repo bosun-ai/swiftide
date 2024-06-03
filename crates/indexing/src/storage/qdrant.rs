@@ -67,12 +67,12 @@ impl Storage for Qdrant {
         self.batch_size
     }
 
-    #[tracing::instrument(skip(self), err)]
+    #[tracing::instrument(skip_all, err)]
     async fn setup(&self) -> Result<()> {
         self.create_index_if_not_exists().await
     }
 
-    #[tracing::instrument(skip(self), err)]
+    #[tracing::instrument(skip_all, err)]
     async fn store(&self, node: crate::ingestion_node::IngestionNode) -> Result<()> {
         self.client
             .upsert_points_blocking(
@@ -85,7 +85,7 @@ impl Storage for Qdrant {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self), err)]
+    #[tracing::instrument(skip_all, err)]
     async fn batch_store(&self, nodes: Vec<crate::ingestion_node::IngestionNode>) -> Result<()> {
         self.client
             .upsert_points_blocking(
