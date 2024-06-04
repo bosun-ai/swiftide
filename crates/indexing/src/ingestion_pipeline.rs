@@ -43,7 +43,6 @@ impl IngestionPipeline {
                 // Or we could get the key before the spawn
                 let node = node.clone();
                 tokio::spawn(async move {
-                    let node = Arc::new(&node);
                     if !cache.get(&node).await {
                         cache.set(&node).await;
 
