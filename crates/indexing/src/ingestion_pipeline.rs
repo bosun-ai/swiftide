@@ -40,8 +40,10 @@ impl IngestionPipeline {
             .try_filter(move |node| {
                 let cache = Arc::clone(&cache);
                 // FIXME: Maybe Cow or arc instead? Lots of nodes
+                // Or we could get the key before the spawn
                 let node = node.clone();
                 tokio::spawn(async move {
+                    let node = Arc::new(&node);
                     if !cache.get(&node).await {
                         cache.set(&node).await;
 
@@ -53,7 +55,10 @@ impl IngestionPipeline {
                         false
                     }
                 })
-                .unwrap_or_else(|_e| true)
+                .unwrap_or_else(|e| {
+                    tracing::error!("Error filtering cached node: {:?}", e);
+                    true
+                })
             })
             .boxed();
         self
