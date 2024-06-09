@@ -1,8 +1,7 @@
 #![allow(dead_code)]
-use tree_sitter::{Node, Parser, Tree};
-
+use crate::SupportedLanguages;
 use anyhow::{Context as _, Result};
-use models::SupportedLanguages;
+use tree_sitter::{Node, Parser, Tree};
 
 use crate::supported_language_to_tree_sitter;
 

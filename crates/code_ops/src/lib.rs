@@ -1,7 +1,8 @@
 mod code_parser;
 mod code_splitter;
+mod supported_languages;
 
-use models::SupportedLanguages;
+pub use supported_languages::SupportedLanguages;
 use tree_sitter::Language;
 pub use {code_parser::CodeParser, code_splitter::ChunkSize, code_splitter::CodeSplitter};
 

@@ -2,9 +2,8 @@ use crate::{
     ingestion_node::IngestionNode, ingestion_pipeline::IngestionStream, traits::ChunkerTransformer,
 };
 use async_trait::async_trait;
-use code_ops::{ChunkSize, CodeSplitter};
+use code_ops::{ChunkSize, CodeSplitter, SupportedLanguages};
 use futures_util::{stream, StreamExt};
-use models::SupportedLanguages;
 
 #[derive(Debug)]
 pub struct ChunkCode {
