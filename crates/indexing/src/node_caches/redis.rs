@@ -76,8 +76,9 @@ impl Debug for Redis {
 impl NodeCache for Redis {
     // false -> not cached, expect node to be processed
     // true -> cached, expect node to be skipped
+    #[tracing::instrument(skip_all, name = "node_cache.redis.get", fields(hit))]
     async fn get(&self, node: &IngestionNode) -> bool {
-        if let Some(mut cm) = self.lazy_connect().await {
+        let cache_result = if let Some(mut cm) = self.lazy_connect().await {
             let result = redis::cmd("EXISTS")
                 .arg(self.key_for_node(node))
                 .query_async(&mut cm)
@@ -97,9 +98,14 @@ impl NodeCache for Redis {
             }
         } else {
             false
-        }
+        };
+
+        tracing::Span::current().record("hit", cache_result);
+
+        cache_result
     }
 
+    #[tracing::instrument(skip_all, name = "node_cache.redis.get")]
     async fn set(&self, node: &IngestionNode) {
         if let Some(mut cm) = self.lazy_connect().await {
             let result: Result<(), redis::RedisError> = redis::cmd("SET")

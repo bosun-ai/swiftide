@@ -56,7 +56,6 @@ impl FileLoader {
 
 impl Loader for FileLoader {
     fn into_stream(self) -> IngestionStream {
-        // TODO: Support other extensions
         let file_paths = ignore::Walk::new(self.path)
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))

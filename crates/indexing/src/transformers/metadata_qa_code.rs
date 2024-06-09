@@ -63,6 +63,7 @@ fn default_prompt() -> String {
 
 #[async_trait]
 impl Transformer for MetadataQACode {
+    #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
         let prompt = self
             .prompt

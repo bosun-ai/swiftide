@@ -39,6 +39,7 @@ impl ChunkCode {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkCode {
+    #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
     async fn transform_node(&self, node: IngestionNode) -> IngestionStream {
         let split_result = self.chunker.split(&node.chunk);
 

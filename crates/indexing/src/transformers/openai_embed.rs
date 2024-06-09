@@ -31,6 +31,7 @@ impl OpenAIEmbed {
 
 #[async_trait]
 impl BatchableTransformer for OpenAIEmbed {
+    #[tracing::instrument(skip_all, name = "transformers.openai_embed")]
     async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
         let chunks_to_embed: Vec<String> = nodes.iter().map(|n| n.as_embeddable()).collect();

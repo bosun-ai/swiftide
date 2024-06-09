@@ -32,7 +32,6 @@ impl IngestionPipeline {
         self
     }
 
-    #[tracing::instrument(skip_all)]
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
@@ -42,7 +41,8 @@ impl IngestionPipeline {
                 // FIXME: Maybe Cow or arc instead? Lots of nodes
                 // Or we could get the key before the spawn
                 let node = node.clone();
-                tokio::spawn(async move {
+                let current_span = tracing::Span::current();
+                tokio::spawn(current_span.in_scope(|| async move {
                     if !cache.get(&node).await {
                         cache.set(&node).await;
 
@@ -53,7 +53,7 @@ impl IngestionPipeline {
                         tracing::debug!("Node in cache, skipping");
                         false
                     }
-                })
+                }))
                 .unwrap_or_else(|e| {
                     tracing::error!("Error filtering cached node: {:?}", e);
                     true
@@ -63,15 +63,17 @@ impl IngestionPipeline {
         self
     }
 
-    #[tracing::instrument(skip_all)]
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let transformer = Arc::new(transformer);
         self.stream = self
             .stream
             .map_ok(move |node| {
                 let transformer = Arc::clone(&transformer);
-                tokio::spawn(async move { transformer.transform_node(node).await })
-                    .map_err(anyhow::Error::from)
+                let current_span = tracing::Span::current();
+                tokio::spawn(
+                    current_span.in_scope(|| async move { transformer.transform_node(node).await }),
+                )
+                .map_err(anyhow::Error::from)
             })
             .try_buffer_unordered(self.concurrency)
             // Flatten the double result
@@ -81,7 +83,6 @@ impl IngestionPipeline {
         self
     }
 
-    #[tracing::instrument(skip_all)]
     pub fn then_in_batch(
         mut self,
         batch_size: usize,
@@ -93,8 +94,12 @@ impl IngestionPipeline {
             .try_chunks(batch_size)
             .map_ok(move |chunks| {
                 let transformer = Arc::clone(&transformer);
-                tokio::spawn(async move { transformer.batch_transform(chunks).await })
-                    .map_err(anyhow::Error::from)
+                let current_span = tracing::Span::current();
+                tokio::spawn(
+                    current_span
+                        .in_scope(|| async move { transformer.batch_transform(chunks).await }),
+                )
+                .map_err(anyhow::Error::from)
             })
             // We need to coerce both the stream error and tokio error to anyhow manually
             .err_into::<anyhow::Error>()
@@ -105,15 +110,17 @@ impl IngestionPipeline {
     }
 
     // Takes a single node, splits it into multiple, then flattens the stream
-    #[tracing::instrument(skip_all)]
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
         self.stream = self
             .stream
             .map_ok(move |node| {
                 let chunker = Arc::clone(&chunker);
-                tokio::spawn(async move { chunker.transform_node(node).await })
-                    .map_err(anyhow::Error::from)
+                let current_span = tracing::Span::current();
+                tokio::spawn(
+                    current_span.in_scope(|| async move { chunker.transform_node(node).await }),
+                )
+                .map_err(anyhow::Error::from)
             })
             // We need to coerce both the stream error and tokio error to anyhow manually
             .err_into::<anyhow::Error>()
@@ -129,7 +136,7 @@ impl IngestionPipeline {
         self
     }
 
-    #[tracing::instrument(skip_all, fields(total_nodes))]
+    #[tracing::instrument(skip_all, fields(total_nodes), name = "ingestion_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
         let Some(ref storage) = self.storage else {
             anyhow::bail!("No storage configured for ingestion pipeline")

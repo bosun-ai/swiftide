@@ -26,6 +26,7 @@ impl ChunkMarkdown {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkMarkdown {
+    #[tracing::instrument(skip_all, name = "transformers.chunk_markdown")]
     async fn transform_node(&self, node: IngestionNode) -> IngestionStream {
         let chunks = self
             .chunker
