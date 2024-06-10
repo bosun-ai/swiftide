@@ -34,25 +34,25 @@ octocrab = "0.38.0"
 strum = { version = "0.26.2", features = ["derive"] }
 strum_macros = "0.26.2"
 redis = { version = "0.25.4", features = [
-    "aio",
-    "tokio-comp",
-    "connection-manager",
-    "tokio-rustls-comp",
+  "aio",
+  "tokio-comp",
+  "connection-manager",
+  "tokio-rustls-comp",
 ] }
 derive_builder = "0.20.0"
 
 # Web
 axum = { version = "0.7.5", features = [
-    "multipart",
-    "tracing",
-    "ws",
-    "macros",
+  "multipart",
+  "tracing",
+  "ws",
+  "macros",
 ] }
 tower-http = { version = "0.5.2", features = ["trace", "limit"] }
 
 # Testing
 test-log = { version = "0.2.16", default-features = false, features = [
-    "trace",
+  "trace",
 ] }
 wiremock = { version = "0.6.0" }
 mockall = { version = "0.12.1" }
@@ -70,15 +70,15 @@ opentelemetry_sdk = { version = "0.23.0", features = ["rt-tokio"] }
 opentelemetry-stdout = { version = "0.4.0", features = ["trace"] }
 tracing-opentelemetry = "0.24.0"
 opentelemetry-otlp = { version = "0.16.0", features = [
-    "http-proto",
-    "reqwest-client",
-    "reqwest-rustls",
+  "http-proto",
+  "reqwest-client",
+  "reqwest-rustls",
 ] }
 tracing = { version = "0.1.40", features = ["log"] }
 tracing-subscriber = { version = "0.3.18", features = [
-    "env-filter",
-    "ansi",
-    "json",
+  "env-filter",
+  "ansi",
+  "json",
 ] }
 itertools = { version = "0.13.0" }
 qdrant-client = { version = "1.9.0" }
