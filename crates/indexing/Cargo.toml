@@ -13,7 +13,6 @@ qdrant-client = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-
 itertools = { workspace = true }
 tokio = { workspace = true }
 async-stream = "0.3.5"

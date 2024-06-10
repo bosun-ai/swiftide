@@ -10,24 +10,18 @@ dotenvy = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-reqwest = { workspace = true, features = ["json"] }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
-once_cell = { workspace = true }
 async-openai = { workspace = true }
 async-trait = { workspace = true }
-rand = { workspace = true }
 
 # tracing and otel
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 
-url.workspace = true
 base64 = "0.22.0"
 qdrant-client = { workspace = true }
 
 [dev-dependencies]
 
 [features]
-integration_testing = []
 default = []
