@@ -1,0 +1,73 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    open-pull-requests-limit: 0
+    schedule:
+      interval: "weekly"
+
+  # FLuyt
+  - package-ecosystem: "cargo" # See documentation for possible values
+    directory: "/fluyt" # Location of package manifests
+    open-pull-requests-limit: 0
+    schedule:
+      interval: "weekly"
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+  - package-ecosystem: "docker" # See documentation for possible values
+    open-pull-requests-limit: 0
+    directory: "/fluyt" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  # Databuoy
+  - package-ecosystem: "pip" # See documentation for possible values
+    open-pull-requests-limit: 0
+    directory: "/databuoy" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+      llama:
+        dependency-type: "production"
+        patterns:
+          - "llama*"
+  - package-ecosystem: "docker" # See documentation for possible values
+    open-pull-requests-limit: 0
+    directory: "/databuoy" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  # Terraform
+  - package-ecosystem: "terraform" # See documentation for possible values
+    open-pull-requests-limit: 0
+    directory: "/terraform" # Location of package manifests
+    schedule:
+      interval: "weekly"
+
+  # Bowser
+  - package-ecosystem: "npm" # See documentation for possible values
+    open-pull-requests-limit: 0
+    directory: "/bowser" # Location of package manifests
+    schedule:
+      interval: "weekly"
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+      nextjs:
+        dependency-type: "production"
+        patterns:
+          - "next*"
+          - "@next*"
+  - package-ecosystem: "docker" # See documentation for possible values
+    open-pull-requests-limit: 0
+    directory: "/bowser" # Location of package manifests
+    schedule:
+      interval: "weekly"

@@ -1,0 +1,34 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      RUST_LOG: DEBUG
+      RUST_BACKTRACE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --component clippy --component rustfmt --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            fluyt
+      - uses: r7kamura/rust-problem-matchers@v1
+      - name: "Clippy"
+        run: cargo clippy
+      - name: "Rustfmt"
+        run: cargo fmt --all --check
+      - name: "Test"
+        run: cargo test --verbose --workspace
