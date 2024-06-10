@@ -15,22 +15,11 @@ serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 anyhow = { version = "1.0.86", features = ["backtrace"] }
 tokio = { version = "1.38.0", features = ["full"] }
-tokio-util = { version = "0.7.11", features = ["full"] }
-async-openai = "0.21.0"
 async-trait = "0.1.80"
 indoc = "2.0.5"
-futures-util = "0.3.30"
-dotenvy = "0.15.7"
-strum = { version = "0.26.2", features = ["derive"] }
-strum_macros = "0.26.2"
-redis = { version = "0.25.4", features = [
-  "aio",
-  "tokio-comp",
-  "connection-manager",
-  "tokio-rustls-comp",
-] }
 derive_builder = "0.20.0"
 tracing = { version = "0.1.40", features = ["log"] }
 itertools = { version = "0.13.0" }
-qdrant-client = { version = "1.9.0" }
 chrono = { version = "0.4.38" }
+
+async-openai = "0.21.0" # TODO: should not be shared
