@@ -54,11 +54,6 @@ pub trait SimpleCompletion<T> {
 }
 
 #[async_trait]
-pub trait Embed: Debug + Send + Sync {
-    async fn embed(&self, input: Vec<String>, model: &str) -> Result<Embeddings>;
-}
-
-#[async_trait]
 #[allow(clippy::blocks_in_conditions)]
 impl SimplePrompt for async_openai::Client<async_openai::config::OpenAIConfig> {
     #[tracing::instrument(skip(self), err)]
@@ -142,8 +137,6 @@ impl SimpleCompletion<ChatCompletionRequestMessage>
             .clone())
     }
 }
-
-type Embeddings = Vec<Vec<f32>>;
 
 #[async_trait]
 impl Embed for async_openai::Client<async_openai::config::OpenAIConfig> {

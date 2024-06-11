@@ -50,3 +50,11 @@ pub trait NodeCache: Send + Sync + Debug {
     async fn get(&self, node: &IngestionNode) -> bool;
     async fn set(&self, node: &IngestionNode);
 }
+
+// TODO: Embed and embeddings need a better place
+type Embeddings = Vec<Vec<f32>>;
+
+#[async_trait]
+pub trait Embed: Debug + Send + Sync {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+}

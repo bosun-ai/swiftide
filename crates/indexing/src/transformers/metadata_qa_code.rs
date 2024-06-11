@@ -15,9 +15,9 @@ pub struct MetadataQACode {
 }
 
 impl MetadataQACode {
-    pub fn new(client: Arc<dyn SimplePrompt>) -> Self {
+    pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
-            client,
+            client: Arc::new(client),
             prompt: default_prompt(),
             num_questions: 5,
         }
