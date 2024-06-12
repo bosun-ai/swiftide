@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 
@@ -9,8 +9,14 @@ use super::OpenAI;
 #[async_trait]
 impl Embed for OpenAI {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+        let model = self
+            .default_options
+            .embed_model
+            .as_ref()
+            .context("Model not set")?;
+
         let request = CreateEmbeddingRequestArgs::default()
-            .model(&self.embed_model)
+            .model(model)
             .input(input)
             .build()?;
         tracing::debug!(

@@ -1,39 +1,33 @@
 mod ingestion_node;
 mod persist;
+
 use anyhow::Result;
+use derive_builder::Builder;
 use qdrant_client::client::QdrantClient;
 use qdrant_client::prelude::*;
 use qdrant_client::qdrant::vectors_config::Config;
 use qdrant_client::qdrant::{VectorParams, VectorsConfig};
 
+const DEFAULT_COLLECTION_NAME: &str = "swiftide";
+
+#[derive(Builder)]
+#[builder(pattern = "owned")]
 pub struct Qdrant {
     client: QdrantClient,
+    #[builder(default = "DEFAULT_COLLECTION_NAME.to_string()")]
     collection_name: String,
     vector_size: usize,
+    #[builder(default)]
     batch_size: Option<usize>,
 }
 
 impl Qdrant {
-    pub fn from_client(client: QdrantClient, collection_name: impl Into<String>) -> Self {
-        Qdrant {
-            client,
-            collection_name: collection_name.into(),
-            vector_size: 1536,
-            batch_size: None,
-        }
+    pub fn builder() -> QdrantBuilder {
+        QdrantBuilder::default()
     }
 
-    pub fn with_batch_size(mut self, batch_size: usize) -> Self {
-        self.batch_size = Some(batch_size);
-        self
-    }
-
-    /// The size (dimensions) of the embedding vectors being stored
-    ///
-    /// I.e. for small openai embeddings this is 1536
-    pub fn with_vector_size(mut self, vector_size: usize) -> Self {
-        self.vector_size = vector_size;
-        self
+    pub fn try_from_url(url: &str) -> Result<QdrantBuilder> {
+        Ok(QdrantBuilder::default().client(QdrantClient::from_url(url).build()?))
     }
 
     pub async fn create_index_if_not_exists(&self) -> Result<()> {

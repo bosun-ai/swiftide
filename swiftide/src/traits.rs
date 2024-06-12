@@ -49,13 +49,11 @@ pub trait NodeCache: Send + Sync + Debug {
     async fn set(&self, node: &IngestionNode);
 }
 
-#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait Embed: Debug + Send + Sync {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 
-#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait SimplePrompt: Debug + Send + Sync {
     // Takes a simple prompt, prompts the llm and returns the response

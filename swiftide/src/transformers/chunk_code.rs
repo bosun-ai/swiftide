@@ -14,12 +14,9 @@ pub struct ChunkCode {
 }
 
 impl ChunkCode {
-    pub fn for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
+    pub fn try_for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
         Ok(Self {
-            chunker: CodeSplitter::builder()
-                .try_language(lang)?
-                .build()
-                .expect("Failed to build code splitter"),
+            chunker: CodeSplitter::builder().try_language(lang)?.build()?,
         })
     }
 
