@@ -5,7 +5,3 @@ debug = 0
 [workspace]
 members = ["indexing"]
 resolver = "2"
-
-[workspace.package]
-# Minimum Rust version
-rust-version = "1.78"

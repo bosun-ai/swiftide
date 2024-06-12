@@ -2,7 +2,6 @@
 name = "indexing"
 version = "0.1.0"
 edition = "2021"
-rust-version.workspace = true
 
 [dependencies]
 anyhow = { version = "1.0.86", features = ["backtrace"] }
