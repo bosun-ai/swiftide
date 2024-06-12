@@ -1,4 +1,3 @@
-pub use anyhow::{Context as _, Result};
 // pub use std::str::FromStr as _;
 
 #[derive(Debug, PartialEq, Clone, Copy, strum_macros::EnumString, strum_macros::Display)]
@@ -28,9 +27,9 @@ impl SupportedLanguages {
     }
 }
 
-impl Into<tree_sitter::Language> for SupportedLanguages {
-    fn into(self) -> tree_sitter::Language {
-        match self {
+impl From<SupportedLanguages> for tree_sitter::Language {
+    fn from(val: SupportedLanguages) -> Self {
+        match val {
             SupportedLanguages::Rust => tree_sitter_rust::language(),
             SupportedLanguages::Python => tree_sitter_python::language(),
             SupportedLanguages::Typescript => tree_sitter_typescript::language_typescript(),
