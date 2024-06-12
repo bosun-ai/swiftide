@@ -51,10 +51,13 @@ pub trait NodeCache: Send + Sync + Debug {
     async fn set(&self, node: &IngestionNode);
 }
 
-// TODO: Embed and embeddings need a better place
-type Embeddings = Vec<Vec<f32>>;
-
 #[async_trait]
 pub trait Embed: Debug + Send + Sync {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+    async fn embed(&self, input: Vec<String>) -> Result<crate::embedders::Embeddings>;
+}
+
+#[async_trait]
+pub trait SimplePrompt: Debug + Send + Sync {
+    // Takes a simple prompt, prompts the llm and returns the response
+    async fn prompt(&self, prompt: &str) -> Result<String>;
 }

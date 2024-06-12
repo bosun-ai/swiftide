@@ -127,11 +127,8 @@ mod tests {
     use std::collections::HashMap;
     #[tokio::test]
     async fn test_redis_cache() {
-        let redis_url = infrastructure::config()
-            .redis_url
-            .as_deref()
-            .expect("Expected redis url");
-        let cache = Redis::try_from_url(redis_url, "test").expect("Could not build redis client");
+        let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL not set");
+        let cache = Redis::try_from_url(&redis_url, "test").expect("Could not build redis client");
         cache.reset_cache().await;
 
         let node = IngestionNode {

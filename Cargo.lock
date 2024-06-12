@@ -1060,6 +1060,7 @@ name = "indexing"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-openai",
  "async-stream",
  "async-trait",
  "chrono",
@@ -1109,7 +1110,6 @@ name = "infrastructure"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-openai",
  "async-trait",
  "dotenvy",
  "qdrant-client",

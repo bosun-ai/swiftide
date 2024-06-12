@@ -1,3 +1,4 @@
+pub mod embedders;
 pub mod loaders;
 pub mod node_caches;
 pub mod query;

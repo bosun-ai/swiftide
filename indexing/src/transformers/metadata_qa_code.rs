@@ -3,9 +3,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
-use infrastructure::SimplePrompt;
 
-use crate::{ingestion_node::IngestionNode, traits::Transformer};
+use crate::{
+    ingestion_node::IngestionNode,
+    traits::{SimplePrompt, Transformer},
+};
 
 #[derive(Debug)]
 pub struct MetadataQACode {
@@ -70,10 +72,7 @@ impl Transformer for MetadataQACode {
             .replace("{questions}", &self.num_questions.to_string())
             .replace("{code}", &node.chunk);
 
-        let response = self
-            .client
-            .prompt(&prompt, infrastructure::DEFAULT_OPENAI_MODEL)
-            .await?;
+        let response = self.client.prompt(&prompt).await?;
 
         node.metadata
             .insert("Questions and Answers".to_string(), response);

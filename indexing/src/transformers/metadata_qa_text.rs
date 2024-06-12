@@ -3,9 +3,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
-use infrastructure::SimplePrompt;
 
-use crate::{ingestion_node::IngestionNode, traits::Transformer};
+use crate::{
+    ingestion_node::IngestionNode,
+    traits::{SimplePrompt, Transformer},
+};
 
 #[derive(Debug)]
 pub struct MetadataQAText {
@@ -15,9 +17,9 @@ pub struct MetadataQAText {
 }
 
 impl MetadataQAText {
-    pub fn new(client: Arc<dyn SimplePrompt>) -> Self {
+    pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
-            client,
+            client: Arc::new(client),
             prompt: default_prompt(),
             num_questions: 5,
         }
@@ -68,10 +70,7 @@ impl Transformer for MetadataQAText {
             .replace("{questions}", &self.num_questions.to_string())
             .replace("{text}", &node.chunk);
 
-        let response = self
-            .client
-            .prompt(&prompt, infrastructure::DEFAULT_OPENAI_MODEL)
-            .await?;
+        let response = self.client.prompt(&prompt).await?;
 
         node.metadata
             .insert("Questions and Answers".to_string(), response);

@@ -3,11 +3,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
-use infrastructure::Embed;
 
 use crate::{
-    ingestion_node::IngestionNode, ingestion_pipeline::IngestionStream,
-    traits::BatchableTransformer,
+    ingestion_node::IngestionNode,
+    ingestion_pipeline::IngestionStream,
+    traits::{BatchableTransformer, Embed},
 };
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl BatchableTransformer for OpenAIEmbed {
 
         stream::iter(
             self.client
-                .embed(chunks_to_embed, &self.model.to_string())
+                .embed(chunks_to_embed)
                 .await
                 .map(|embeddings| {
                     nodes

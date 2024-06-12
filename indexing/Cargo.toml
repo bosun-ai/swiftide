@@ -10,6 +10,7 @@ code_ops = { path = "../code_ops" }
 infrastructure = { path = "../infrastructure" }
 qdrant-client = { version = "1.9.0" }
 async-stream = "0.3.5"
+async-openai = { workspace = true }
 futures-util = "0.3.30"
 # futures-util = { workspace = true }
 redis = { version = "0.25.4", features = [
