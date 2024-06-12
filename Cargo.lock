@@ -1031,37 +1031,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indexing"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-openai",
- "async-stream",
- "async-trait",
- "chrono",
- "derive_builder",
- "futures-util",
- "ignore",
- "indoc",
- "itertools 0.13.0",
- "qdrant-client",
- "redis",
- "serde",
- "serde_json",
- "strum",
- "strum_macros",
- "text-splitter",
- "tokio",
- "tracing",
- "tree-sitter",
- "tree-sitter-javascript",
- "tree-sitter-python",
- "tree-sitter-ruby",
- "tree-sitter-rust",
- "tree-sitter-typescript",
-]
-
-[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1842,6 +1811,37 @@ name = "subtle"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
+
+[[package]]
+name = "swiftide"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "async-stream",
+ "async-trait",
+ "chrono",
+ "derive_builder",
+ "futures-util",
+ "ignore",
+ "indoc",
+ "itertools 0.13.0",
+ "qdrant-client",
+ "redis",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "text-splitter",
+ "tokio",
+ "tracing",
+ "tree-sitter",
+ "tree-sitter-javascript",
+ "tree-sitter-python",
+ "tree-sitter-ruby",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+]
 
 [[package]]
 name = "syn"

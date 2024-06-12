@@ -3,5 +3,5 @@ incremental = true
 debug = 0
 
 [workspace]
-members = ["indexing"]
+members = ["swiftide"]
 resolver = "2"
