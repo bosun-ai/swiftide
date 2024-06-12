@@ -479,12 +479,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotenvy"
-version = "0.15.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
-
-[[package]]
 name = "either"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1068,7 +1062,6 @@ dependencies = [
  "futures-util",
  "ignore",
  "indoc",
- "infrastructure",
  "itertools 0.13.0",
  "qdrant-client",
  "redis",
@@ -1104,19 +1097,6 @@ name = "indoc"
 version = "2.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
-
-[[package]]
-name = "infrastructure"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "dotenvy",
- "qdrant-client",
- "serde",
- "serde_json",
- "tracing",
-]
 
 [[package]]
 name = "instant"

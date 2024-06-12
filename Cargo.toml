@@ -3,7 +3,7 @@ incremental = true
 debug = 0
 
 [workspace]
-members = ["indexing", "infrastructure", "code_ops"]
+members = ["indexing", "code_ops"]
 resolver = "2"
 
 [workspace.package]
