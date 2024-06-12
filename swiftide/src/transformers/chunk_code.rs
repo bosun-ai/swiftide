@@ -17,7 +17,7 @@ impl ChunkCode {
     pub fn for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
         Ok(Self {
             chunker: CodeSplitter::builder()
-                .language(lang)?
+                .try_language(lang)?
                 .build()
                 .expect("Failed to build code splitter"),
         })
@@ -29,7 +29,7 @@ impl ChunkCode {
     ) -> Result<Self> {
         Ok(Self {
             chunker: CodeSplitter::builder()
-                .language(lang)?
+                .try_language(lang)?
                 .chunk_size(chunk_size)
                 .build()
                 .expect("Failed to build code splitter"),
