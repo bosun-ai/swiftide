@@ -1,22 +1,16 @@
-use crate::traits::Embed;
 use anyhow::Result;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 
-use super::Embeddings;
+use crate::{Embed, Embeddings};
 
-#[derive(Debug)]
-pub struct OpenAI {
-    client: async_openai::Client<async_openai::config::OpenAIConfig>,
-    /// The model name
-    model: String,
-}
+use super::OpenAI;
 
 #[async_trait]
 impl Embed for OpenAI {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         let request = CreateEmbeddingRequestArgs::default()
-            .model(&self.model)
+            .model(&self.embed_model)
             .input(input)
             .build()?;
         tracing::debug!(

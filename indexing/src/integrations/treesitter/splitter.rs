@@ -1,14 +1,10 @@
-#![allow(dead_code)]
-extern crate tree_sitter;
-
-use crate::SupportedLanguages;
 use anyhow::{Context as _, Result};
 use std::ops::Range;
 use tree_sitter::{Node, Parser};
 
 use derive_builder::Builder;
 
-use crate::supported_language_to_tree_sitter;
+use super::supported_languages::SupportedLanguages;
 
 // TODO: Instead of counting bytes, count tokens with titktoken
 const DEFAULT_MAX_BYTES: usize = 1500;
@@ -21,7 +17,21 @@ pub struct CodeSplitter {
     /// Maximum size of a chunk in bytes or a range of bytes
     #[builder(default, setter(into))]
     chunk_size: ChunkSize,
+    #[builder(setter(custom))]
     language: SupportedLanguages,
+}
+
+impl CodeSplitterBuilder {
+    pub fn language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
+        self.language = Some(
+            // For some reason there's a trait conflict, wth
+            language
+                .try_into()
+                .ok()
+                .context("Treesitter language not supported")?,
+        );
+        Ok(self)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,7 +102,7 @@ impl CodeSplitter {
 
     pub fn split(&self, code: &str) -> Result<Vec<String>> {
         let mut parser = Parser::new();
-        parser.set_language(&supported_language_to_tree_sitter(&self.language))?;
+        parser.set_language(&self.language.into())?;
         let tree = parser.parse(code, None).context("No nodes found")?;
         let root_node = tree.root_node();
 
@@ -160,7 +170,7 @@ mod test {
     #[test]
     fn test_max_bytes_limit() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)
+            .language(SupportedLanguages::Rust)?
             .chunk_size(50)
             .build()
             .unwrap();
@@ -187,7 +197,7 @@ mod test {
     #[test]
     fn test_empty_text() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)
+            .language(SupportedLanguages::Rust)?
             .chunk_size(50)
             .build()
             .unwrap();
@@ -202,7 +212,7 @@ mod test {
     #[test]
     fn test_range_max() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)
+            .language(SupportedLanguages::Rust)?
             .chunk_size(0..50)
             .build()
             .unwrap();
@@ -227,7 +237,7 @@ mod test {
     #[test]
     fn test_range_min_and_max() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)
+            .language(SupportedLanguages::Rust)?
             .chunk_size(20..50)
             .build()
             .unwrap();

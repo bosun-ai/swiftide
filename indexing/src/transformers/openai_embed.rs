@@ -1,14 +1,9 @@
 use std::sync::Arc;
 
+use crate::{ingestion::IngestionNode, ingestion::IngestionStream, BatchableTransformer, Embed};
 use anyhow::Result;
 use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
-
-use crate::{
-    ingestion_node::IngestionNode,
-    ingestion_pipeline::IngestionStream,
-    traits::{BatchableTransformer, Embed},
-};
 
 #[derive(Debug)]
 // TODO: Would be nice if the embedding model encapsulates the token limit
@@ -17,14 +12,12 @@ pub struct EmbeddingModel(String);
 #[derive(Debug)]
 pub struct OpenAIEmbed {
     client: Arc<dyn Embed>,
-    model: EmbeddingModel,
 }
 
 impl OpenAIEmbed {
-    pub fn new(model: impl Into<EmbeddingModel>, client: Arc<dyn Embed>) -> Self {
+    pub fn new(client: impl Embed + 'static) -> Self {
         Self {
-            client,
-            model: model.into(),
+            client: Arc::new(client),
         }
     }
 }

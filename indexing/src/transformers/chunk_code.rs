@@ -1,9 +1,12 @@
-use crate::{
-    ingestion_node::IngestionNode, ingestion_pipeline::IngestionStream, traits::ChunkerTransformer,
-};
+use anyhow::Result;
 use async_trait::async_trait;
-use code_ops::{ChunkSize, CodeSplitter, SupportedLanguages};
 use futures_util::{stream, StreamExt};
+
+use crate::{
+    ingestion::{IngestionNode, IngestionStream},
+    integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages},
+    ChunkerTransformer,
+};
 
 #[derive(Debug)]
 pub struct ChunkCode {
@@ -11,28 +14,26 @@ pub struct ChunkCode {
 }
 
 impl ChunkCode {
-    pub fn for_language(lang: impl Into<SupportedLanguages>) -> Self {
-        let lang = lang.into();
-        Self {
+    pub fn for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
+        Ok(Self {
             chunker: CodeSplitter::builder()
-                .language(lang)
+                .language(lang)?
                 .build()
                 .expect("Failed to build code splitter"),
-        }
+        })
     }
 
     pub fn for_language_and_chunk_size(
         lang: impl Into<SupportedLanguages>,
         chunk_size: impl Into<ChunkSize>,
-    ) -> Self {
-        let lang = lang.into();
-        Self {
+    ) -> Result<Self> {
+        Ok(Self {
             chunker: CodeSplitter::builder()
-                .language(lang)
-                .chunk_size(chunk_size.into())
+                .language(lang)?
+                .chunk_size(chunk_size)
                 .build()
                 .expect("Failed to build code splitter"),
-        }
+        })
     }
 }
 

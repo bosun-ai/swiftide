@@ -1,7 +1,6 @@
+use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
 use futures_util::{stream, StreamExt};
 use std::path::PathBuf;
-
-use crate::{ingestion_node::IngestionNode, ingestion_pipeline::IngestionStream, traits::Loader};
 
 pub struct FileLoader {
     pub(crate) path: PathBuf,

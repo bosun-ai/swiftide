@@ -1,13 +1,9 @@
 use std::sync::Arc;
 
+use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
-
-use crate::{
-    ingestion_node::IngestionNode,
-    traits::{SimplePrompt, Transformer},
-};
 
 #[derive(Debug)]
 pub struct MetadataQAText {

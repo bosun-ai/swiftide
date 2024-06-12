@@ -1,6 +1,6 @@
-use anyhow::Result;
-use indoc::formatdoc;
-use qdrant_client::{client::QdrantClient, qdrant::SearchPoints};
+// use anyhow::Result;
+// use indoc::formatdoc;
+// use qdrant_client::{client::QdrantClient, qdrant::SearchPoints};
 //
 // /// Performs a naive search using qdrant and openai
 // ///

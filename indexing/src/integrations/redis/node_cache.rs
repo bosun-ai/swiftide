@@ -4,18 +4,17 @@ use tokio::sync::RwLock;
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
-use crate::{ingestion_node::IngestionNode, traits::NodeCache};
+use crate::{ingestion::IngestionNode, traits::NodeCache};
 
-pub struct Redis {
+pub struct RedisNodeCache {
     client: redis::Client,
     connection_manager: RwLock<Option<redis::aio::ConnectionManager>>,
     key_prefix: String,
 }
 
-impl Redis {
+impl RedisNodeCache {
     pub fn try_from_url(url: &str, prefix: &str) -> Result<Self> {
         let client = redis::Client::open(url).context("Failed to open redis client")?;
-        // TODO: Add namespace
         Ok(Self {
             client,
             connection_manager: RwLock::new(None),
@@ -64,7 +63,7 @@ impl Redis {
 }
 
 // Redis CM does not implement debug
-impl Debug for Redis {
+impl Debug for RedisNodeCache {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Redis")
             .field("client", &self.client)
@@ -73,7 +72,7 @@ impl Debug for Redis {
 }
 
 #[async_trait]
-impl NodeCache for Redis {
+impl NodeCache for RedisNodeCache {
     // false -> not cached, expect node to be processed
     // true -> cached, expect node to be skipped
     #[tracing::instrument(skip_all, name = "node_cache.redis.get", fields(hit))]
@@ -128,7 +127,8 @@ mod tests {
     #[tokio::test]
     async fn test_redis_cache() {
         let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL not set");
-        let cache = Redis::try_from_url(&redis_url, "test").expect("Could not build redis client");
+        let cache =
+            RedisNodeCache::try_from_url(&redis_url, "test").expect("Could not build redis client");
         cache.reset_cache().await;
 
         let node = IngestionNode {

@@ -1,6 +1,4 @@
-use crate::{
-    ingestion_node::IngestionNode, ingestion_pipeline::IngestionStream, traits::ChunkerTransformer,
-};
+use crate::{ingestion::IngestionNode, ingestion::IngestionStream, ChunkerTransformer};
 use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
 use text_splitter::{Characters, MarkdownSplitter};

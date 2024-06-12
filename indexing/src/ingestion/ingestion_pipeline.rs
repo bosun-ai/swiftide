@@ -1,14 +1,10 @@
-use crate::ingestion_node::IngestionNode;
-use crate::traits::{
-    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Storage, Transformer,
-};
+use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Storage, Transformer};
 use anyhow::Result;
-use futures_util::{Stream, StreamExt, TryFutureExt, TryStreamExt};
+use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 
-use std::pin::Pin;
 use std::sync::Arc;
 
-pub type IngestionStream = Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>>;
+use super::{IngestionNode, IngestionStream};
 
 pub struct IngestionPipeline {
     stream: IngestionStream,

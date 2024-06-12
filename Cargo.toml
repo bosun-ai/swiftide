@@ -3,23 +3,9 @@ incremental = true
 debug = 0
 
 [workspace]
-members = ["indexing", "code_ops"]
+members = ["indexing"]
 resolver = "2"
 
 [workspace.package]
 # Minimum Rust version
 rust-version = "1.78"
-
-[workspace.dependencies]
-serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.117"
-anyhow = { version = "1.0.86", features = ["backtrace"] }
-tokio = { version = "1.38.0", features = ["full"] }
-async-trait = "0.1.80"
-indoc = "2.0.5"
-derive_builder = "0.20.0"
-tracing = { version = "0.1.40", features = ["log"] }
-itertools = { version = "0.13.0" }
-chrono = { version = "0.4.38" }
-
-async-openai = "0.21.0" # TODO: should not be shared

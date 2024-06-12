@@ -1,13 +1,10 @@
-#![allow(clippy::blocks_in_conditions)]
-
+mod ingestion_node;
+mod persist;
 use anyhow::Result;
-use async_trait::async_trait;
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{vectors_config::Config, CreateCollection, Distance, VectorParams, VectorsConfig},
-};
-
-use crate::traits::Storage;
+use qdrant_client::client::QdrantClient;
+use qdrant_client::prelude::*;
+use qdrant_client::qdrant::vectors_config::Config;
+use qdrant_client::qdrant::{VectorParams, VectorsConfig};
 
 pub struct Qdrant {
     client: QdrantClient,
@@ -59,47 +56,6 @@ impl Qdrant {
                 }),
                 ..Default::default()
             })
-            .await?;
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl Storage for Qdrant {
-    fn batch_size(&self) -> Option<usize> {
-        self.batch_size
-    }
-
-    #[tracing::instrument(skip_all, err)]
-    async fn setup(&self) -> Result<()> {
-        self.create_index_if_not_exists().await
-    }
-
-    #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
-    async fn store(&self, node: crate::ingestion_node::IngestionNode) -> Result<()> {
-        self.client
-            .upsert_points_blocking(
-                self.collection_name.to_string(),
-                None,
-                vec![node.try_into()?],
-                None,
-            )
-            .await?;
-        Ok(())
-    }
-
-    #[tracing::instrument(skip_all, err, name = "storage.qdrant.batch_store")]
-    async fn batch_store(&self, nodes: Vec<crate::ingestion_node::IngestionNode>) -> Result<()> {
-        self.client
-            .upsert_points_blocking(
-                self.collection_name.to_string(),
-                None,
-                nodes
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<Result<Vec<_>>>()?,
-                None,
-            )
             .await?;
         Ok(())
     }
