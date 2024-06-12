@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
 
 #[derive(Debug)]
-// TODO: Would be nice if the embedding model encapsulates the token limit
+// TODO: Would be nice if the embedding model encapsulates the token limit / dimensions
 pub struct EmbeddingModel(String);
 
 #[derive(Debug)]
