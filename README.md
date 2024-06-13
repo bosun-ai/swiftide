@@ -145,7 +145,7 @@ All integrations are enabled by default, but can be disabled with feature flags.
 
 **note**: Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
 
-_For more examples, please refer to /examples and the [Documentation](https://example.com)_
+_For more examples, please refer to /examples and the [Documentation](https://docs.rs/swiftide/latest/swiftide/)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
