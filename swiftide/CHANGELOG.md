@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/bosun-ai/swiftide/compare/v0.1.0...v0.1.1) - 2024-06-13
+
+### Added
+- feat/readme improvements ([#11](https://github.com/bosun-ai/swiftide/pull/11))
+
+### Other
+- release v0.1.0 ([#8](https://github.com/bosun-ai/swiftide/pull/8))
+
 ## [0.1.0](https://github.com/bosun-ai/swiftide/releases/tag/v0.1.0) - 2024-06-13
 
 ### Added
