@@ -17,29 +17,6 @@
 //! The `IngestionNode` struct is used throughout the ingestion pipeline to represent and process
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
-//!
-//! # Example
-//!
-//! ```rust
-//! use std::collections::HashMap;
-//! use std::path::PathBuf;
-//! use ingestion_node::IngestionNode;
-//!
-//! let mut metadata = HashMap::new();
-//! metadata.insert("author".to_string(), "John Doe".to_string());
-//!
-//! let node = IngestionNode {
-//!     id: Some(1),
-//!     path: PathBuf::from("/path/to/file"),
-//!     chunk: "This is a data chunk".to_string(),
-//!     vector: None,
-//!     metadata,
-//! };
-//!
-//! let embeddable = node.as_embeddable();
-//! let hash = node.calculate_hash();
-//! ```
-
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
