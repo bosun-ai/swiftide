@@ -5,6 +5,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
 
+/// This module defines the `MetadataQAText` struct and its associated methods,
+/// which are used for generating metadata in the form of questions and answers
+/// from a given text. It interacts with a client (e.g., OpenAI) to generate
+/// these questions and answers based on the text chunk in an `IngestionNode`.
+
+/// `MetadataQAText` is responsible for generating questions and answers
+/// from a given text chunk. It uses a templated prompt to interact with a client
+/// that implements the `SimplePrompt` trait.
 #[derive(Debug)]
 pub struct MetadataQAText {
     client: Arc<dyn SimplePrompt>,
@@ -13,6 +21,15 @@ pub struct MetadataQAText {
 }
 
 impl MetadataQAText {
+    /// Creates a new instance of `MetadataQAText`.
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - An implementation of the `SimplePrompt` trait.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `MetadataQAText`.
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
@@ -22,6 +39,11 @@ impl MetadataQAText {
     }
 }
 
+/// Generates the default prompt template for generating questions and answers.
+///
+/// # Returns
+///
+/// A string containing the default prompt template.
 fn default_prompt() -> String {
     indoc! {r#"
 
@@ -59,6 +81,22 @@ fn default_prompt() -> String {
 
 #[async_trait]
 impl Transformer for MetadataQAText {
+    /// Transforms an `IngestionNode` by generating questions and answers
+    /// based on the text chunk within the node.
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// or an error if the transformation fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the client fails to generate
+    /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
     async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
         let prompt = self
