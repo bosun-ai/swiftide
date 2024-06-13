@@ -12,8 +12,7 @@ use futures_util::{stream, StreamExt};
 /// A transformer that uses the OpenAI API to generate embeddings for data.
 ///
 /// This file defines the `OpenAIEmbed` struct and its implementation of the `BatchableTransformer` trait.
-/// The primary purpose of this transformer is to embed data using the OpenAI API, which is crucial for
-/// processing steps that require vector representations of data.
+/// The primary purpose of this transformer is to embed data using the OpenAI API.
 #[derive(Debug)]
 pub struct OpenAIEmbed {
     client: Arc<OpenAI>,
