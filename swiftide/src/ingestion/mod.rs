@@ -17,14 +17,6 @@
 //! The components re-exported by this module are used throughout the Swiftide project to build and manage
 //! ingestion pipelines. These pipelines can be customized with different loaders, transformers, and storage
 //! backends to meet specific requirements.
-//!
-//! # Example
-//!
-//! ```rust
-//! use swiftide::ingestion::{IngestionNode, IngestionPipeline, IngestionStream};
-//! ```
-//!
-//! This example demonstrates how to import the primary ingestion components from this module.
 
 mod ingestion_node;
 mod ingestion_pipeline;
