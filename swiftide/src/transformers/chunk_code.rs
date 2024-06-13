@@ -8,18 +8,42 @@ use crate::{
     ChunkerTransformer,
 };
 
+/// The `ChunkCode` struct is responsible for chunking code into smaller pieces
+/// based on the specified language and chunk size. This is a crucial step in the
+/// ingestion pipeline for processing and embedding code efficiently.
 #[derive(Debug)]
 pub struct ChunkCode {
     chunker: CodeSplitter,
 }
 
 impl ChunkCode {
+    /// Tries to create a `ChunkCode` instance for a given programming language.
+    ///
+    /// # Parameters
+    /// - `lang`: The programming language to be used for chunking. It should implement `TryInto<SupportedLanguages>`.
+    ///
+    /// # Returns
+    /// - `Result<Self>`: Returns an instance of `ChunkCode` if successful, otherwise returns an error.
+    ///
+    /// # Errors
+    /// - Returns an error if the language is not supported or if the `CodeSplitter` fails to build.
     pub fn try_for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
         Ok(Self {
             chunker: CodeSplitter::builder().try_language(lang)?.build()?,
         })
     }
 
+    /// Tries to create a `ChunkCode` instance for a given programming language and chunk size.
+    ///
+    /// # Parameters
+    /// - `lang`: The programming language to be used for chunking. It should implement `TryInto<SupportedLanguages>`.
+    /// - `chunk_size`: The size of the chunks. It should implement `Into<ChunkSize>`.
+    ///
+    /// # Returns
+    /// - `Result<Self>`: Returns an instance of `ChunkCode` if successful, otherwise returns an error.
+    ///
+    /// # Errors
+    /// - Returns an error if the language is not supported, if the chunk size is invalid, or if the `CodeSplitter` fails to build.
     pub fn try_for_language_and_chunk_size(
         lang: impl TryInto<SupportedLanguages>,
         chunk_size: impl Into<ChunkSize>,
@@ -36,6 +60,16 @@ impl ChunkCode {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkCode {
+    /// Transforms an `IngestionNode` by splitting its code chunk into smaller pieces.
+    ///
+    /// # Parameters
+    /// - `node`: The `IngestionNode` containing the code chunk to be split.
+    ///
+    /// # Returns
+    /// - `IngestionStream`: A stream of `IngestionNode` instances, each containing a smaller chunk of code.
+    ///
+    /// # Errors
+    /// - If the code splitting fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
     async fn transform_node(&self, node: IngestionNode) -> IngestionStream {
         let split_result = self.chunker.split(&node.chunk);
