@@ -12,14 +12,23 @@ pub struct IngestionPipeline {
     concurrency: usize,
 }
 
+impl Default for IngestionPipeline {
+    fn default() -> Self {
+        Self {
+            stream: Box::pin(futures_util::stream::empty()),
+            storage: None,
+            concurrency: num_cpus::get(),
+        }
+    }
+}
+
 // A lazy pipeline for ingesting files, adding metadata, chunking, transforming, embedding and then storing them.
 impl IngestionPipeline {
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
             stream: stream.boxed(),
-            storage: None,
-            concurrency: 10,
+            ..Default::default()
         }
     }
 
