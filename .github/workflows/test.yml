@@ -15,6 +15,11 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
 
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.9.2
+        ports:
+          - 6334:6334
     env:
       RUST_LOG: DEBUG
       RUST_BACKTRACE: 1
