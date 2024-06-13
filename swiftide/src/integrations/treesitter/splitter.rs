@@ -23,6 +23,15 @@ pub struct CodeSplitter {
 }
 
 impl CodeSplitterBuilder {
+    /// Attempts to set the language for the `CodeSplitter`.
+    ///
+    /// # Arguments
+    ///
+    /// * `language` - A value that can be converted into `SupportedLanguages`.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Self>` - The builder instance with the language set, or an error if the language is not supported.
     pub fn try_language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
         self.language = Some(
             // For some reason there's a trait conflict, wth
@@ -36,30 +45,43 @@ impl CodeSplitterBuilder {
 }
 
 #[derive(Debug, Clone)]
+/// Represents the size of a chunk, either as a fixed number of bytes or a range of bytes.
 pub enum ChunkSize {
     Bytes(usize),
     Range(Range<usize>),
 }
 
 impl From<usize> for ChunkSize {
+    /// Converts a `usize` into a `ChunkSize::Bytes` variant.
     fn from(size: usize) -> Self {
         ChunkSize::Bytes(size)
     }
 }
 
 impl From<Range<usize>> for ChunkSize {
+    /// Converts a `Range<usize>` into a `ChunkSize::Range` variant.
     fn from(range: Range<usize>) -> Self {
         ChunkSize::Range(range)
     }
 }
 
 impl Default for ChunkSize {
+    /// Provides a default value for `ChunkSize`, which is `ChunkSize::Bytes(DEFAULT_MAX_BYTES)`.
     fn default() -> Self {
         ChunkSize::Bytes(DEFAULT_MAX_BYTES)
     }
 }
 
 impl CodeSplitter {
+    /// Creates a new `CodeSplitter` with the specified language and default chunk size.
+    ///
+    /// # Arguments
+    ///
+    /// * `language` - The programming language for which the code will be split.
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - A new instance of `CodeSplitter`.
     pub fn new(language: SupportedLanguages) -> Self {
         Self {
             chunk_size: Default::default(),
@@ -67,10 +89,26 @@ impl CodeSplitter {
         }
     }
 
+    /// Creates a new builder for `CodeSplitter`.
+    ///
+    /// # Returns
+    ///
+    /// * `CodeSplitterBuilder` - A new builder instance for `CodeSplitter`.
     pub fn builder() -> CodeSplitterBuilder {
         CodeSplitterBuilder::default()
     }
 
+    /// Recursively chunks a syntax node into smaller pieces based on the chunk size.
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - The syntax node to be chunked.
+    /// * `source` - The source code as a string.
+    /// * `last_end` - The end byte of the last chunk.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<String>` - A vector of code chunks as strings.
     fn chunk_node(&self, node: Node, source: &str, mut last_end: usize) -> Vec<String> {
         let mut new_chunks: Vec<String> = Vec::new();
         let mut current_chunk = String::new();
@@ -101,6 +139,15 @@ impl CodeSplitter {
         new_chunks
     }
 
+    /// Splits the given code into chunks based on the chunk size.
+    ///
+    /// # Arguments
+    ///
+    /// * `code` - The source code to be split.
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Vec<String>>` - A result containing a vector of code chunks as strings, or an error if the code could not be parsed.
     pub fn split(&self, code: &str) -> Result<Vec<String>> {
         let mut parser = Parser::new();
         parser.set_language(&self.language.into())?;
@@ -114,6 +161,11 @@ impl CodeSplitter {
         }
     }
 
+    /// Returns the maximum number of bytes allowed in a chunk.
+    ///
+    /// # Returns
+    ///
+    /// * `usize` - The maximum number of bytes in a chunk.
     fn max_bytes(&self) -> usize {
         match &self.chunk_size {
             ChunkSize::Bytes(size) => *size,
@@ -121,6 +173,11 @@ impl CodeSplitter {
         }
     }
 
+    /// Returns the minimum number of bytes allowed in a chunk.
+    ///
+    /// # Returns
+    ///
+    /// * `usize` - The minimum number of bytes in a chunk.
     fn min_bytes(&self) -> usize {
         if let ChunkSize::Range(range) = &self.chunk_size {
             range.start
