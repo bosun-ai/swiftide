@@ -2,12 +2,21 @@ use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
 use futures_util::{stream, StreamExt};
 use std::path::PathBuf;
 
+/// The `FileLoader` struct is responsible for loading files from a specified directory,
+/// filtering them based on their extensions, and creating a stream of these files for further processing.
 pub struct FileLoader {
     pub(crate) path: PathBuf,
     pub(crate) extensions: Vec<String>,
 }
 
 impl FileLoader {
+    /// Creates a new `FileLoader` with the specified path.
+    ///
+    /// # Arguments
+    /// * `path` - The path to the directory to load files from.
+    ///
+    /// # Returns
+    /// A new instance of `FileLoader`.
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self {
             path: path.into(),
@@ -15,17 +24,26 @@ impl FileLoader {
         }
     }
 
-    /// Add extensions to the loader
+    /// Adds extensions to the loader.
     ///
     /// # Arguments
-    /// * `extensions` - A list of extensions to add without the leading dot
+    /// * `extensions` - A list of extensions to add without the leading dot.
+    ///
+    /// # Returns
+    /// The `FileLoader` instance with the added extensions.
     pub fn with_extensions(mut self, extensions: &[&str]) -> Self {
         self.extensions
             .extend(extensions.iter().map(ToString::to_string));
         self
     }
 
-    /// Debug method
+    /// Lists the nodes (files) that match the specified extensions.
+    ///
+    /// # Returns
+    /// A vector of `IngestionNode` representing the matching files.
+    ///
+    /// # Panics
+    /// This method will panic if it fails to read a file's content.
     pub fn list_nodes(&self) -> Vec<IngestionNode> {
         ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
@@ -54,6 +72,13 @@ impl FileLoader {
 }
 
 impl Loader for FileLoader {
+    /// Converts the `FileLoader` into a stream of `IngestionNode`.
+    ///
+    /// # Returns
+    /// An `IngestionStream` representing the stream of files.
+    ///
+    /// # Errors
+    /// This method will return an error if it fails to read a file's content.
     fn into_stream(self) -> IngestionStream {
         let file_paths = ignore::Walk::new(self.path)
             .filter_map(|entry| entry.ok())
