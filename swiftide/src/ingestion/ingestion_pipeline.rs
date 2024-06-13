@@ -143,6 +143,10 @@ impl IngestionPipeline {
 
     #[tracing::instrument(skip_all, fields(total_nodes), name = "ingestion_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
+        tracing::info!(
+            "Starting ingestion pipeline with {} concurrency",
+            self.concurrency
+        );
         let Some(ref storage) = self.storage else {
             anyhow::bail!("No storage configured for ingestion pipeline")
         };

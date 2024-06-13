@@ -42,4 +42,28 @@ impl OpenAIBuilder {
         self.client = Some(Arc::new(client));
         self
     }
+
+    pub fn default_embed_model(&mut self, model: impl Into<String>) -> &mut Self {
+        if let Some(options) = self.default_options.as_mut() {
+            options.embed_model = Some(model.into());
+        } else {
+            self.default_options = Some(Options {
+                embed_model: Some(model.into()),
+                ..Default::default()
+            });
+        }
+        self
+    }
+
+    pub fn default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
+        if let Some(options) = self.default_options.as_mut() {
+            options.prompt_model = Some(model.into());
+        } else {
+            self.default_options = Some(Options {
+                prompt_model: Some(model.into()),
+                ..Default::default()
+            });
+        }
+        self
+    }
 }
