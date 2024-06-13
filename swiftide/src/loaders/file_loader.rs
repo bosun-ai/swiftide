@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 /// `FileLoader` is responsible for loading files from the filesystem based on specified extensions.
 /// It provides functionality to list and stream files for ingestion into the Swiftide pipeline.
-/// This struct is essential for enabling efficient file-based data processing within the Swiftide ecosystem.
 pub struct FileLoader {
     pub(crate) path: PathBuf,
     pub(crate) extensions: Vec<String>,
