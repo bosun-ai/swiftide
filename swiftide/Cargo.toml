@@ -51,3 +51,13 @@ tree-sitter = [
   "dep:tree-sitter-javascript",
 ]
 openai = ["dep:async-openai"]
+
+[dev-dependencies]
+test-log = "0.2.16"
+testcontainers = "0.17.0"
+mockall = "0.12.1"
+temp-dir = "0.1.13"
+wiremock = "0.6.0"
+
+[lints.clippy]
+blocks_in_conditions = "allow"
