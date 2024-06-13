@@ -204,7 +204,7 @@ mod tests {
 
         let host = redis.get_host().await.unwrap();
         let port = redis.get_host_port_ipv4(6379).await.unwrap();
-        let cache = RedisNodeCache::try_from_url(&format!("redis://{host}:{port}"), "test")
+        let cache = RedisNodeCache::try_from_url(format!("redis://{host}:{port}"), "test")
             .expect("Could not build redis client");
         cache.reset_cache().await;
 

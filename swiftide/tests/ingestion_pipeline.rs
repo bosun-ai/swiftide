@@ -2,7 +2,7 @@
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
-use serde_json::{json, Value};
+use serde_json::{json};
 use swiftide::{ingestion::IngestionPipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
 use testcontainers::runners::AsyncRunner;
