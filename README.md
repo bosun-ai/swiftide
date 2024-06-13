@@ -51,6 +51,8 @@
 
 While working with other Python based tooling, frustrations arose around performance, stability and ease-of-use. Thus Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
 
+Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Example
