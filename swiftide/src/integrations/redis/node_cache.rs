@@ -13,12 +13,12 @@ pub struct RedisNodeCache {
 }
 
 impl RedisNodeCache {
-    pub fn try_from_url(url: &str, prefix: &str) -> Result<Self> {
-        let client = redis::Client::open(url).context("Failed to open redis client")?;
+    pub fn try_from_url(url: impl AsRef<str>, prefix: impl AsRef<str>) -> Result<Self> {
+        let client = redis::Client::open(url.as_ref()).context("Failed to open redis client")?;
         Ok(Self {
             client,
             connection_manager: RwLock::new(None),
-            key_prefix: prefix.to_string(),
+            key_prefix: prefix.as_ref().to_string(),
         })
     }
 

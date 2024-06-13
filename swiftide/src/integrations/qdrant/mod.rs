@@ -17,7 +17,7 @@ pub struct Qdrant {
     #[builder(default = "DEFAULT_COLLECTION_NAME.to_string()")]
     collection_name: String,
     vector_size: usize,
-    #[builder(default)]
+    #[builder(default, setter(strip_option))]
     batch_size: Option<usize>,
 }
 
@@ -26,8 +26,8 @@ impl Qdrant {
         QdrantBuilder::default()
     }
 
-    pub fn try_from_url(url: &str) -> Result<QdrantBuilder> {
-        Ok(QdrantBuilder::default().client(QdrantClient::from_url(url).build()?))
+    pub fn try_from_url(url: impl AsRef<str>) -> Result<QdrantBuilder> {
+        Ok(QdrantBuilder::default().client(QdrantClient::from_url(url.as_ref()).build()?))
     }
 
     pub async fn create_index_if_not_exists(&self) -> Result<()> {

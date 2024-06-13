@@ -20,8 +20,8 @@ impl ChunkCode {
         })
     }
 
-    pub fn for_language_and_chunk_size(
-        lang: impl Into<SupportedLanguages>,
+    pub fn try_for_language_and_chunk_size(
+        lang: impl TryInto<SupportedLanguages>,
         chunk_size: impl Into<ChunkSize>,
     ) -> Result<Self> {
         Ok(Self {
