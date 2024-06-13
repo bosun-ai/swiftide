@@ -161,3 +161,71 @@ impl IngestionPipeline {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::traits::*;
+    use futures_util::stream;
+    use mockall::Sequence;
+
+    #[test_log::test(tokio::test)]
+    async fn test_simple_run() {
+        let mut loader = MockLoader::new();
+        let mut transformer = MockTransformer::new();
+        let mut batch_transformer = MockBatchableTransformer::new();
+        let mut chunker = MockChunkerTransformer::new();
+        let mut storage = MockStorage::new();
+
+        let mut seq = Sequence::new();
+
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| Box::pin(stream::iter(vec![Ok(IngestionNode::default())])));
+
+        transformer.expect_transform_node().returning(|mut node| {
+            node.chunk = "transformed".to_string();
+            Ok(node)
+        });
+
+        batch_transformer
+            .expect_batch_transform()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|nodes| Box::pin(stream::iter(nodes.into_iter().map(Ok))));
+
+        chunker
+            .expect_transform_node()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|node| {
+                let mut nodes = vec![];
+                for i in 0..3 {
+                    let mut node = node.clone();
+                    node.chunk = format!("transformed_chunk_{}", i);
+                    nodes.push(Ok(node));
+                }
+                Box::pin(stream::iter(nodes))
+            });
+
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+        storage
+            .expect_store()
+            .times(3)
+            .in_sequence(&mut seq)
+            .withf(|node| node.chunk.starts_with("transformed_chunk_"))
+            .returning(|_| Ok(()));
+
+        let pipeline = IngestionPipeline::from_loader(loader)
+            .then(transformer)
+            .then_in_batch(1, batch_transformer)
+            .then_chunk(chunker)
+            .store_with(storage);
+
+        pipeline.run().await.unwrap();
+    }
+}

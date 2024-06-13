@@ -124,11 +124,23 @@ impl NodeCache for RedisNodeCache {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    #[tokio::test]
+    use testcontainers::runners::AsyncRunner;
+
+    #[test_log::test(tokio::test)]
     async fn test_redis_cache() {
-        let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL not set");
-        let cache =
-            RedisNodeCache::try_from_url(&redis_url, "test").expect("Could not build redis client");
+        let redis = testcontainers::GenericImage::new("redis", "7.2.4")
+            .with_exposed_port(6379)
+            .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
+                "Ready to accept connections",
+            ))
+            .start()
+            .await
+            .expect("Redis started");
+
+        let host = redis.get_host().await.unwrap();
+        let port = redis.get_host_port_ipv4(6379).await.unwrap();
+        let cache = RedisNodeCache::try_from_url(&format!("redis://{host}:{port}"), "test")
+            .expect("Could not build redis client");
         cache.reset_cache().await;
 
         let node = IngestionNode {

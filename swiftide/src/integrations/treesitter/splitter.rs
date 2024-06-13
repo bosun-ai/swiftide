@@ -13,6 +13,7 @@ const DEFAULT_MAX_BYTES: usize = 1500;
 /// Splits code files into meaningful chunks
 ///
 /// Supports splitting code files into chunks based on a maximum size or a range of bytes.
+#[builder(setter(into), build_fn(error = "anyhow::Error"))]
 pub struct CodeSplitter {
     /// Maximum size of a chunk in bytes or a range of bytes
     #[builder(default, setter(into))]
@@ -22,7 +23,7 @@ pub struct CodeSplitter {
 }
 
 impl CodeSplitterBuilder {
-    pub fn language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
+    pub fn try_language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
         self.language = Some(
             // For some reason there's a trait conflict, wth
             language
@@ -170,7 +171,8 @@ mod test {
     #[test]
     fn test_max_bytes_limit() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)?
+            .try_language(SupportedLanguages::Rust)
+            .unwrap()
             .chunk_size(50)
             .build()
             .unwrap();
@@ -197,7 +199,8 @@ mod test {
     #[test]
     fn test_empty_text() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)?
+            .try_language(SupportedLanguages::Rust)
+            .unwrap()
             .chunk_size(50)
             .build()
             .unwrap();
@@ -212,7 +215,8 @@ mod test {
     #[test]
     fn test_range_max() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)?
+            .try_language(SupportedLanguages::Rust)
+            .unwrap()
             .chunk_size(0..50)
             .build()
             .unwrap();
@@ -237,7 +241,8 @@ mod test {
     #[test]
     fn test_range_min_and_max() {
         let splitter = CodeSplitter::builder()
-            .language(SupportedLanguages::Rust)?
+            .try_language(SupportedLanguages::Rust)
+            .unwrap()
             .chunk_size(20..50)
             .build()
             .unwrap();

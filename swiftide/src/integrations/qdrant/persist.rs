@@ -13,6 +13,7 @@ impl Storage for Qdrant {
 
     #[tracing::instrument(skip_all, err)]
     async fn setup(&self) -> Result<()> {
+        tracing::debug!("Setting up Qdrant storage");
         self.create_index_if_not_exists().await
     }
 

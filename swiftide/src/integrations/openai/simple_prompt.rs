@@ -9,8 +9,14 @@ use anyhow::{Context as _, Result};
 impl SimplePrompt for OpenAI {
     #[tracing::instrument(skip(self), err)]
     async fn prompt(&self, prompt: &str) -> Result<String> {
+        let model = self
+            .default_options
+            .prompt_model
+            .as_ref()
+            .context("Model not set")?;
+
         let request = CreateChatCompletionRequestArgs::default()
-            .model(&self.prompt_model)
+            .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt)
                 .build()?

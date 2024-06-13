@@ -1,6 +1,8 @@
-// pub use std::str::FromStr as _;
+#[allow(unused_imports)]
+pub use std::str::FromStr as _;
 
 #[derive(Debug, PartialEq, Clone, Copy, strum_macros::EnumString, strum_macros::Display)]
+#[strum(ascii_case_insensitive)]
 pub enum SupportedLanguages {
     Rust,
     Typescript,
@@ -42,7 +44,6 @@ impl From<SupportedLanguages> for tree_sitter::Language {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::str::FromStr;
 
     #[test]
     fn test_supported_languages_from_str() {
