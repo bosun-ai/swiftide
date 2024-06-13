@@ -22,7 +22,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/bosun-ai/swiftide">
-    <img src="images/logo.png" alt="Logo" width="250" height="250">
+    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/logo.png" alt="Logo" width="250" height="250">
   </a>
 
 <h3 align="center">Swiftide</h3>
