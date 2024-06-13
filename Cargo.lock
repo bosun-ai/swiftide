@@ -2328,6 +2328,7 @@ dependencies = [
  "indoc",
  "itertools 0.13.0",
  "mockall",
+ "num_cpus",
  "qdrant-client",
  "redis",
  "serde",
