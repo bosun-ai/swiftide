@@ -2,12 +2,22 @@ use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
 use futures_util::{stream, StreamExt};
 use std::path::PathBuf;
 
+/// `FileLoader` is responsible for loading files from the filesystem based on specified extensions.
+/// It provides functionality to list and stream files for ingestion into the Swiftide pipeline.
+/// This struct is essential for enabling efficient file-based data processing within the Swiftide ecosystem.
 pub struct FileLoader {
     pub(crate) path: PathBuf,
     pub(crate) extensions: Vec<String>,
 }
 
 impl FileLoader {
+    /// Creates a new `FileLoader` instance with the specified path.
+    ///
+    /// # Arguments
+    /// * `path` - The root directory path from which files will be loaded.
+    ///
+    /// # Returns
+    /// A new instance of `FileLoader`.
     pub fn new(path: impl Into<PathBuf>) -> Self {
         Self {
             path: path.into(),
@@ -15,17 +25,26 @@ impl FileLoader {
         }
     }
 
-    /// Add extensions to the loader
+    /// Adds file extensions to the loader.
     ///
     /// # Arguments
-    /// * `extensions` - A list of extensions to add without the leading dot
+    /// * `extensions` - A slice of extensions to add without the leading dot.
+    ///
+    /// # Returns
+    /// The `FileLoader` instance with the added extensions.
     pub fn with_extensions(mut self, extensions: &[&str]) -> Self {
         self.extensions
             .extend(extensions.iter().map(ToString::to_string));
         self
     }
 
-    /// Debug method
+    /// Lists the nodes (files) that match the specified extensions.
+    ///
+    /// # Returns
+    /// A vector of `IngestionNode` representing the files that match the specified extensions.
+    ///
+    /// # Panics
+    /// This method will panic if it fails to read the file contents.
     pub fn list_nodes(&self) -> Vec<IngestionNode> {
         ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
@@ -54,6 +73,13 @@ impl FileLoader {
 }
 
 impl Loader for FileLoader {
+    /// Converts the `FileLoader` into an `IngestionStream`.
+    ///
+    /// # Returns
+    /// An `IngestionStream` that streams `IngestionNode` instances representing the files that match the specified extensions.
+    ///
+    /// # Errors
+    /// This method will return an error if it fails to read the file contents.
     fn into_stream(self) -> IngestionStream {
         let file_paths = ignore::Walk::new(self.path)
             .filter_map(|entry| entry.ok())
