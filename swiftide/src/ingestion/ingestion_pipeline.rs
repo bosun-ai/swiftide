@@ -7,12 +7,12 @@ use std::sync::Arc;
 use super::{IngestionNode, IngestionStream};
 
 /// A pipeline for ingesting files, adding metadata, chunking, transforming, embedding, and then storing them.
-/// 
-/// The `IngestionPipeline` struct orchestrates the entire file ingestion process. It is designed to be flexible and 
+///
+/// The `IngestionPipeline` struct orchestrates the entire file ingestion process. It is designed to be flexible and
 /// performant, allowing for various stages of data transformation and storage to be configured and executed asynchronously.
-/// 
+///
 /// # Fields
-/// 
+///
 /// * `stream` - The stream of `IngestionNode` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
@@ -35,13 +35,13 @@ impl Default for IngestionPipeline {
 
 impl IngestionPipeline {
     /// Creates an `IngestionPipeline` from a given loader.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `loader` - A loader that implements the `Loader` trait.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` initialized with the provided loader.
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
         let stream = loader.into_stream();
@@ -52,13 +52,13 @@ impl IngestionPipeline {
     }
 
     /// Sets the concurrency level for the pipeline.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `concurrency` - The desired level of concurrency.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` with the updated concurrency level.
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
@@ -66,13 +66,13 @@ impl IngestionPipeline {
     }
 
     /// Filters out cached nodes using the provided cache.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `cache` - A cache that implements the `NodeCache` trait.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` with the updated stream that filters out cached nodes.
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
@@ -102,13 +102,13 @@ impl IngestionPipeline {
     }
 
     /// Adds a transformer to the pipeline.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `transformer` - A transformer that implements the `Transformer` trait.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` with the updated stream that applies the transformer to each node.
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let transformer = Arc::new(transformer);
@@ -130,14 +130,14 @@ impl IngestionPipeline {
     }
 
     /// Adds a batch transformer to the pipeline.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `batch_size` - The size of the batches to be processed.
     /// * `transformer` - A transformer that implements the `BatchableTransformer` trait.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` with the updated stream that applies the batch transformer to each batch of nodes.
     pub fn then_in_batch(
         mut self,
@@ -165,13 +165,13 @@ impl IngestionPipeline {
     }
 
     /// Adds a chunker transformer to the pipeline.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `chunker` - A transformer that implements the `ChunkerTransformer` trait.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` with the updated stream that applies the chunker transformer to each node.
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
@@ -194,13 +194,13 @@ impl IngestionPipeline {
     }
 
     /// Configures the pipeline to use the specified storage backend.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `storage` - A storage backend that implements the `Storage` trait.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An instance of `IngestionPipeline` with the configured storage backend.
     pub fn store_with(mut self, storage: impl Storage + 'static) -> Self {
         self.storage = Some(Box::new(storage));
@@ -208,15 +208,15 @@ impl IngestionPipeline {
     }
 
     /// Runs the ingestion pipeline.
-    /// 
+    ///
     /// This method processes the stream of nodes, applying all configured transformations and storing the results.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A `Result` indicating the success or failure of the pipeline execution.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if no storage backend is configured or if any stage of the pipeline fails.
     #[tracing::instrument(skip_all, fields(total_nodes), name = "ingestion_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
