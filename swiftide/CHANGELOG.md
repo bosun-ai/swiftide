@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.1.0...swiftide-v0.2.0) - 2024-06-13
+
+### Added
+- api improvements with example ([#10](https://github.com/bosun-ai/swiftide/pull/10))
+- feat/readme improvements ([#11](https://github.com/bosun-ai/swiftide/pull/11))
+
+### Other
+- *(swiftide)* documented file swiftide/src/integrations/qdrant/persist.rs ([#24](https://github.com/bosun-ai/swiftide/pull/24))
+- *(swiftide)* documented file swiftide/src/integrations/redis/node_cache.rs ([#29](https://github.com/bosun-ai/swiftide/pull/29))
+- *(swiftide)* documented file swiftide/src/integrations/treesitter/splitter.rs ([#30](https://github.com/bosun-ai/swiftide/pull/30))
+- *(swiftide)* documented file swiftide/src/integrations/openai/mod.rs ([#21](https://github.com/bosun-ai/swiftide/pull/21))
+- *(swiftide)* documented file swiftide/src/ingestion/ingestion_node.rs ([#15](https://github.com/bosun-ai/swiftide/pull/15))
+- *(swiftide)* documented file swiftide/src/ingestion/ingestion_stream.rs ([#16](https://github.com/bosun-ai/swiftide/pull/16))
+- *(swiftide)* documented file swiftide/src/ingestion/ingestion_pipeline.rs ([#14](https://github.com/bosun-ai/swiftide/pull/14))
+- release v0.1.0 ([#8](https://github.com/bosun-ai/swiftide/pull/8))
+
 ## [0.1.0](https://github.com/bosun-ai/swiftide/releases/tag/v0.1.0) - 2024-06-13
 
 ### Added
