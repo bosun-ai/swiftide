@@ -10,8 +10,8 @@ on:
       - master
 
 jobs:
-  release-plz:
-    name: Release-plz
+  release-swiftide:
+    name: Swiftide
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
