@@ -1,3 +1,7 @@
+//! This module contains tests for the ingestion pipeline in the Swiftide project.
+//! The tests validate the functionality of the pipeline, ensuring it processes data correctly
+//! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
+
 use serde_json::{json, Value};
 use swiftide::{ingestion::IngestionPipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
@@ -5,19 +9,32 @@ use testcontainers::runners::AsyncRunner;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-// Test an ingestion pipeline without any mocks
+/// Tests the ingestion pipeline without any mocks.
+///
+/// This test sets up a temporary directory and file, simulates API responses using mock servers,
+/// configures an OpenAI client, and runs the ingestion pipeline. It then validates that the data
+/// is correctly stored in the Qdrant vector database.
+///
+/// # Panics
+/// Panics if any of the setup steps fail, such as creating the temporary directory or file,
+/// starting the mock server, or configuring the OpenAI client.
+///
+/// # Errors
+/// If the ingestion pipeline encounters an error, the test will print the received requests
+/// for debugging purposes.
 #[test_log::test(tokio::test)]
 async fn test_ingestion_pipeline() {
+    // Setup temporary directory and file for testing
     let tempdir = TempDir::new().unwrap();
     let codefile = tempdir.child("main.rs");
     std::fs::write(&codefile, "fn main() { println!(\"Hello, World!\"); }").unwrap();
 
+    // Setup mock servers to simulate API responses
     let mock_server = MockServer::start().await;
 
     Mock::given(method("POST"))
         .and(path("/chat/completions"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-
             "id": "chatcmpl-123",
             "object": "chat.completion",
             "created": 1677652288,
@@ -37,7 +54,6 @@ async fn test_ingestion_pipeline() {
               "completion_tokens": 12,
               "total_tokens": 21
             }
-
         })))
         .mount(&mock_server)
         .await;
@@ -62,6 +78,7 @@ async fn test_ingestion_pipeline() {
         .mount(&mock_server)
         .await;
 
+    // Setup OpenAI client with the mock server
     let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
     let async_openai = async_openai::Client::with_config(config);
 
@@ -77,6 +94,7 @@ async fn test_ingestion_pipeline() {
         .build()
         .unwrap();
 
+    // Setup Redis container for caching in the test
     let redis = testcontainers::GenericImage::new("redis", "7.2.4")
         .with_exposed_port(6379)
         .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
