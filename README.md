@@ -30,7 +30,7 @@
   <p align="center">
     Blazing fast asynchronous, parallel file ingestion and processing for RAG.
     <br />
-    <a href="https://github.com/bosun-ai/swiftide"><strong>Explore the docs »</strong></a>
+    <a href="https://docs.rs/swiftide/latest/swiftide/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="https://github.com/bosun-ai/swiftide">View Demo</a>
@@ -41,59 +41,51 @@
   </p>
 </div>
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#example">Example</a></li>
-      </ul>
-      <ul>
-        <li><a href="#features">Features</a></li>
-      </ul>
-      <ul>
-        <li><a href="#vision">Vision</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
-
 <!-- ABOUT THE PROJECT -->
 
 ## About The Project
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a straightforward, easy-to-use, easy-to-extend asynchronous file ingestion and processing system. It is designed to be used in a RAG (Research Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous file ingestion and processing system. It is designed to be used in a RAG (Research Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
 
-While working with other Python based tooling, frustrations arose around performance, stability and ease-of-use. Ingestion performance went from tens of minutes to a few seconds.
+While working with other Python based tooling, frustrations arose around performance, stability and ease-of-use. Thus Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Example
 
-tbd
+```rust
+IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+        .filter_cached(RedisNodeCache::try_from_url(
+            redis_url,
+            "swiftide-examples",
+        )?)
+        .then(MetadataQACode::new(openai_client.clone()))
+        .then_chunk(ChunkCode::try_for_language_and_chunk_size(
+            "rust",
+            10..2048,
+        )?)
+        .then_in_batch(10, OpenAIEmbed::new(openai_client.clone()))
+        .store_with(
+            Qdrant::try_from_url(qdrant_url)?
+                .batch_size(50)
+                .vector_size(1536)
+                .collection_name("swiftide-examples".to_string())
+                .build()?,
+        )
+        .run()
+        .await?;
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Features
 
-tbd
+- Extremely fast streaming pipeline with parallel processing
+- Integrations with OpenAI, Redis, Qdrant and Treesitter
+- Bring your own transformers by extending straightforward traits.
+- `tracing` supported
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -130,7 +122,26 @@ Other integrations will need to be installed accordingly.
 
 ## Usage and concepts
 
-tbd
+Before building your stream, you need to configure any integrations required. See /examples for a full example.
+
+A stream starts with a Loader that emits IngestionNodes. For instance, with the Fileloader each file is a Node.
+
+You can then slice and dice, augment and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
+
+IngestionNodes have a path, chunk and metadata. Currently metadata is copied over when chunking and _always_ embedded when using the OpenAIEmbed transformer.
+
+- **from_loader** `(impl Loader)` starting point of the stream, creates and emits IngestionNodes
+- **filter_cached** `(impl NodeCache)` filters cached nodes
+- **then** `(impl Transformer)` transforms the node and puts it on the stream
+- **then_in_batch** `(impl BatchTransformer)` transforms multiple nodes and puts them on the stream
+- **then_chunk** `(impl ChunkerTransformer)` transforms a single node and emits multiple nodes
+- **store_with** `(impl Storage)` Finally stores the nodes, optionally in batches
+
+Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `Embed` to do their things.
+
+All integrations are enabled by default, but can be disabled with feature flags.
+
+**note**: Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
 
 _For more examples, please refer to /examples and the [Documentation](https://example.com)_
 
@@ -142,7 +153,7 @@ _For more examples, please refer to /examples and the [Documentation](https://ex
 
 - [ ] Python / Nodejs bindings
 - [ ] Multiple storage and sparse vector support
-  - [ ] Nested Feature
+- [ ] Query pipeline
 
 See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full list of proposed features (and known issues).
 
@@ -152,9 +163,9 @@ See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full li
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Swiftide is in an very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada:
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
 1. Fork the Project
@@ -170,26 +181,6 @@ Don't forget to give the project a star! Thanks again!
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- CONTACT -->
-
-## Contact
-
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
-
-Project Link: [https://github.com/bosun-ai/swiftide](https://github.com/bosun-ai/swiftide)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ACKNOWLEDGMENTS -->
-
-## Acknowledgments
-
-- []()
-- []()
-- []()
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
