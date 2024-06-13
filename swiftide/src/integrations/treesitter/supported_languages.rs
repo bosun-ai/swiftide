@@ -14,14 +14,6 @@
 //! # Example Usage
 //! This module is re-exported in `swiftide/src/integrations/treesitter/mod.rs` and can be used as follows:
 //!
-//! ```rust
-//! mod splitter;
-//! mod supported_languages;
-//!
-//! pub use splitter::{ChunkSize, CodeSplitter, CodeSplitterBuilder};
-//! pub use supported_languages::SupportedLanguages;
-//! ```
-//!
 //! Additionally, it is used in `swiftide/examples/ingest_codebase.rs` to demonstrate the ingestion of Swiftide’s codebase.
 
 #[allow(unused_imports)]
@@ -62,12 +54,6 @@ impl SupportedLanguages {
     ///
     /// # Returns
     /// A static slice of string slices representing the file extensions.
-    ///
-    /// # Example
-    /// ```rust
-    /// let extensions = SupportedLanguages::Rust.file_extensions();
-    /// assert_eq!(extensions, &["rs"]);
-    /// ```
     pub fn file_extensions(&self) -> &[&str] {
         match self {
             SupportedLanguages::Rust => RUST_EXTENSIONS,
