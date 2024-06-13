@@ -10,11 +10,6 @@
 //! - Python
 //! - Ruby
 //! - Javascript
-//!
-//! # Example Usage
-//! This module is re-exported in `swiftide/src/integrations/treesitter/mod.rs` and can be used as follows:
-//!
-//! Additionally, it is used in `swiftide/examples/ingest_codebase.rs` to demonstrate the ingestion of Swiftide’s codebase.
 
 #[allow(unused_imports)]
 pub use std::str::FromStr as _;
