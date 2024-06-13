@@ -3,6 +3,7 @@ name = "swiftide"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+readme = "../README.md"
 keywords = ["llm", "rag", "ingestiong", "ai", "async", "openai"]
 description = "Blazing fast document and code indexation"
 categories = ["asynchronous"]
