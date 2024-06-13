@@ -5,6 +5,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
 
+/// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
+/// This struct integrates with the ingestion pipeline to enhance the metadata of each code chunk
+/// by adding relevant questions and answers.
 #[derive(Debug)]
 pub struct MetadataQACode {
     client: Arc<dyn SimplePrompt>,
@@ -13,6 +16,15 @@ pub struct MetadataQACode {
 }
 
 impl MetadataQACode {
+    /// Creates a new instance of `MetadataQACode`.
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - An implementation of the `SimplePrompt` trait used to generate questions and answers.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `MetadataQACode` with a default prompt and a default number of questions.
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
@@ -22,6 +34,13 @@ impl MetadataQACode {
     }
 }
 
+/// Returns the default prompt template for generating questions and answers.
+///
+/// This template includes placeholders for the number of questions and the code chunk.
+///
+/// # Returns
+///
+/// A string representing the default prompt template.
 fn default_prompt() -> String {
     indoc! {r#"
 
@@ -61,6 +80,22 @@ fn default_prompt() -> String {
 
 #[async_trait]
 impl Transformer for MetadataQACode {
+    /// Asynchronously transforms an `IngestionNode` by generating questions and answers for its code chunk.
+    ///
+    /// This method uses the `SimplePrompt` client to generate questions and answers based on the code chunk
+    /// and adds this information to the node's metadata.
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - The `IngestionNode` to be transformed.
+    ///
+    /// # Returns
+    ///
+    /// A result containing the transformed `IngestionNode` or an error if the transformation fails.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
         let prompt = self
