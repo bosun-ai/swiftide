@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.2.1...swiftide-v0.3.0) - 2024-06-14
+
+### Added
+- *(ingestion_pipeline)* early return if any error encountered ([#49](https://github.com/bosun-ai/swiftide/pull/49))
+- configurable concurrency for transformers and chunkers ([#47](https://github.com/bosun-ai/swiftide/pull/47))
+- *(ingestion_pipeline)* concurrency improvements ([#48](https://github.com/bosun-ai/swiftide/pull/48))
+- *(ingestion_pipeline)* [**breaking**] support chained storage backends ([#46](https://github.com/bosun-ai/swiftide/pull/46))
+
+### Other
+- update linkedin link
+
 ## [0.2.1](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.2.0...swiftide-v0.2.1) - 2024-06-13
 
 ### Other
