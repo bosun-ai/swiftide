@@ -65,8 +65,8 @@ pub trait SimplePrompt: Debug + Send + Sync {
 /// Persists nodes
 pub trait Storage: Send + Sync {
     async fn setup(&self) -> Result<()>;
-    async fn store(&self, node: IngestionNode) -> Result<()>;
-    async fn batch_store(&self, nodes: Vec<IngestionNode>) -> Result<()>;
+    async fn store(&self, node: IngestionNode) -> Result<IngestionNode>;
+    async fn batch_store(&self, nodes: Vec<IngestionNode>) -> IngestionStream;
     fn batch_size(&self) -> Option<usize> {
         None
     }
