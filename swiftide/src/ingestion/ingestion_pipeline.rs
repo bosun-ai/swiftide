@@ -1,10 +1,10 @@
-use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Storage, Transformer};
+use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer};
 use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 
 use std::sync::Arc;
 
-use super::{IngestionNode, IngestionStream};
+use super::IngestionStream;
 
 /// A pipeline for ingesting files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
@@ -18,7 +18,7 @@ use super::{IngestionNode, IngestionStream};
 /// * `concurrency` - The level of concurrency for processing nodes.
 pub struct IngestionPipeline {
     stream: IngestionStream,
-    storage: Option<Box<dyn Storage>>,
+    storage: Vec<Arc<dyn Persist>>,
     concurrency: usize,
 }
 
@@ -27,7 +27,7 @@ impl Default for IngestionPipeline {
     fn default() -> Self {
         Self {
             stream: Box::pin(futures_util::stream::empty()),
-            storage: None,
+            storage: Default::default(),
             concurrency: num_cpus::get(),
         }
     }
@@ -193,7 +193,7 @@ impl IngestionPipeline {
         self
     }
 
-    /// Configures the pipeline to use the specified storage backend.
+    /// Persists ingestion nodes using the provided storage backend.
     ///
     /// # Arguments
     ///
@@ -202,8 +202,41 @@ impl IngestionPipeline {
     /// # Returns
     ///
     /// An instance of `IngestionPipeline` with the configured storage backend.
-    pub fn store_with(mut self, storage: impl Storage + 'static) -> Self {
-        self.storage = Some(Box::new(storage));
+    pub fn then_store_with(mut self, storage: impl Persist + 'static) -> Self {
+        let storage = Arc::new(storage);
+        self.storage.push(storage.clone());
+        // add storage to the stream instead of doing it at the end
+        if storage.batch_size().is_some() {
+            self.stream = self
+                .stream
+                .try_chunks(storage.batch_size().unwrap())
+                .map_ok(move |nodes| {
+                    let storage = Arc::clone(&storage);
+                    let current_span = tracing::Span::current();
+                    tokio::spawn(
+                        current_span.in_scope(|| async move { storage.batch_store(nodes).await }),
+                    )
+                    .map_err(anyhow::Error::from)
+                })
+                .err_into::<anyhow::Error>()
+                .try_buffer_unordered(self.concurrency)
+                .try_flatten()
+                .boxed();
+        } else {
+            self.stream = self
+                .stream
+                .map_ok(move |node| {
+                    let storage = Arc::clone(&storage);
+                    let current_span = tracing::Span::current();
+                    tokio::spawn(current_span.in_scope(|| async move { storage.store(node).await }))
+                        .map_err(anyhow::Error::from)
+                })
+                .err_into::<anyhow::Error>()
+                .try_buffer_unordered(self.concurrency)
+                .map(|x| x.and_then(|x| x))
+                .boxed();
+        }
+
         self
     }
 
@@ -224,27 +257,24 @@ impl IngestionPipeline {
             "Starting ingestion pipeline with {} concurrency",
             self.concurrency
         );
-        let Some(ref storage) = self.storage else {
-            anyhow::bail!("No storage configured for ingestion pipeline")
-        };
-
-        storage.setup().await?;
-
-        let mut total_nodes = 0;
-        if let Some(batch_size) = storage.batch_size() {
-            let mut stream = self.stream.chunks(batch_size).boxed();
-            while let Some(nodes) = stream.next().await {
-                let nodes = nodes.into_iter().collect::<Result<Vec<IngestionNode>>>()?;
-                total_nodes += nodes.len();
-                storage.batch_store(nodes).await?;
-            }
-        } else {
-            while let Some(node) = self.stream.next().await {
-                total_nodes += 1;
-                storage.store(node?).await?;
-            }
+        if self.storage.is_empty() {
+            anyhow::bail!("No storage configured for ingestion pipeline");
         }
 
+        // Ensure all storage backends are set up before processing nodes
+        let setup_futures = self
+            .storage
+            .into_iter()
+            .map(|storage| tokio::spawn(async move { storage.setup().await }))
+            .collect::<Vec<_>>();
+        futures_util::future::try_join_all(setup_futures).await?;
+
+        let mut total_nodes = 0;
+        while self.stream.next().await.is_some() {
+            total_nodes += 1;
+        }
+
+        tracing::warn!("Processed {} nodes", total_nodes);
         tracing::Span::current().record("total_nodes", total_nodes);
 
         Ok(())
@@ -255,6 +285,7 @@ impl IngestionPipeline {
 mod tests {
 
     use super::*;
+    use crate::ingestion::IngestionNode;
     use crate::traits::*;
     use futures_util::stream;
     use mockall::Sequence;
@@ -266,7 +297,7 @@ mod tests {
         let mut transformer = MockTransformer::new();
         let mut batch_transformer = MockBatchableTransformer::new();
         let mut chunker = MockChunkerTransformer::new();
-        let mut storage = MockStorage::new();
+        let mut storage = MockPersist::new();
 
         let mut seq = Sequence::new();
 
@@ -308,13 +339,13 @@ mod tests {
             .times(3)
             .in_sequence(&mut seq)
             .withf(|node| node.chunk.starts_with("transformed_chunk_"))
-            .returning(|_| Ok(()));
+            .returning(Ok);
 
         let pipeline = IngestionPipeline::from_loader(loader)
             .then(transformer)
             .then_in_batch(1, batch_transformer)
             .then_chunk(chunker)
-            .store_with(storage);
+            .then_store_with(storage);
 
         pipeline.run().await.unwrap();
     }
