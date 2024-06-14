@@ -193,7 +193,7 @@ impl IngestionPipeline {
         self
     }
 
-    /// Configures the pipeline to use the specified storage backend.
+    /// Persists ingestion nodes using the provided storage backend.
     ///
     /// # Arguments
     ///
