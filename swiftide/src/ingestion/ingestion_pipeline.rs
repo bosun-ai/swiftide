@@ -78,24 +78,20 @@ impl IngestionPipeline {
         let cache = Arc::new(cache);
         self.stream = self
             .stream
-            .try_filter(move |node| {
+            .try_filter_map(move |node| {
                 let cache = Arc::clone(&cache);
-                let node = node.clone();
                 let current_span = tracing::Span::current();
                 tokio::spawn(current_span.in_scope(|| async move {
                     if !cache.get(&node).await {
                         cache.set(&node).await;
                         tracing::debug!("Node not in cache, passing through");
-                        true
+                        Some(node)
                     } else {
                         tracing::debug!("Node in cache, skipping");
-                        false
+                        None
                     }
                 }))
-                .unwrap_or_else(|e| {
-                    tracing::error!("Error filtering cached node: {:?}", e);
-                    true
-                })
+                .map_err(anyhow::Error::from)
             })
             .boxed();
         self
@@ -161,7 +157,7 @@ impl IngestionPipeline {
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
-            .try_flatten()
+            .try_flatten_unordered(concurrency)
             .boxed();
         self
     }
@@ -188,9 +184,8 @@ impl IngestionPipeline {
                 )
                 .map_err(anyhow::Error::from)
             })
-            .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
-            .try_flatten()
+            .try_flatten_unordered(concurrency)
             .boxed();
 
         self
@@ -223,7 +218,7 @@ impl IngestionPipeline {
                 })
                 .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
-                .try_flatten()
+                .try_flatten_unordered(self.concurrency)
                 .boxed();
         } else {
             self.stream = self
