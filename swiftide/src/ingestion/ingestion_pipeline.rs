@@ -112,6 +112,7 @@ impl IngestionPipeline {
     /// An instance of `IngestionPipeline` with the updated stream that applies the transformer to each node.
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let transformer = Arc::new(transformer);
+        let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
         self.stream = self
             .stream
             .map_ok(move |node| {
@@ -122,7 +123,7 @@ impl IngestionPipeline {
                 )
                 .map_err(anyhow::Error::from)
             })
-            .try_buffer_unordered(self.concurrency)
+            .try_buffer_unordered(concurrency)
             .map(|x| x.and_then(|x| x))
             .boxed();
 
@@ -145,6 +146,7 @@ impl IngestionPipeline {
         transformer: impl BatchableTransformer + 'static,
     ) -> Self {
         let transformer = Arc::new(transformer);
+        let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
         self.stream = self
             .stream
             .try_chunks(batch_size)
@@ -158,7 +160,7 @@ impl IngestionPipeline {
                 .map_err(anyhow::Error::from)
             })
             .err_into::<anyhow::Error>()
-            .try_buffer_unordered(self.concurrency)
+            .try_buffer_unordered(concurrency)
             .try_flatten()
             .boxed();
         self
@@ -175,6 +177,7 @@ impl IngestionPipeline {
     /// An instance of `IngestionPipeline` with the updated stream that applies the chunker transformer to each node.
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
+        let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
         self.stream = self
             .stream
             .map_ok(move |node| {
@@ -186,7 +189,7 @@ impl IngestionPipeline {
                 .map_err(anyhow::Error::from)
             })
             .err_into::<anyhow::Error>()
-            .try_buffer_unordered(self.concurrency)
+            .try_buffer_unordered(concurrency)
             .try_flatten()
             .boxed();
 
@@ -280,12 +283,14 @@ mod tests {
             node.chunk = "transformed".to_string();
             Ok(node)
         });
+        transformer.expect_concurrency().returning(|| None);
 
         batch_transformer
             .expect_batch_transform()
             .times(1)
             .in_sequence(&mut seq)
             .returning(|nodes| Box::pin(stream::iter(nodes.into_iter().map(Ok))));
+        batch_transformer.expect_concurrency().returning(|| None);
 
         chunker
             .expect_transform_node()
@@ -300,6 +305,7 @@ mod tests {
                 }
                 Box::pin(stream::iter(nodes))
             });
+        chunker.expect_concurrency().returning(|| None);
 
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);

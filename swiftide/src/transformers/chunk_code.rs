@@ -14,6 +14,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ChunkCode {
     chunker: CodeSplitter,
+    concurrency: Option<usize>,
 }
 
 impl ChunkCode {
@@ -30,6 +31,7 @@ impl ChunkCode {
     pub fn try_for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
         Ok(Self {
             chunker: CodeSplitter::builder().try_language(lang)?.build()?,
+            concurrency: None,
         })
     }
 
@@ -54,7 +56,13 @@ impl ChunkCode {
                 .chunk_size(chunk_size)
                 .build()
                 .expect("Failed to build code splitter"),
+            concurrency: None,
         })
+    }
+
+    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+        self.concurrency = Some(concurrency);
+        self
     }
 }
 
@@ -86,5 +94,9 @@ impl ChunkerTransformer for ChunkCode {
             // Send the error downstream
             return stream::iter(vec![Err(split_result.unwrap_err())]).boxed();
         }
+    }
+
+    fn concurrency(&self) -> Option<usize> {
+        self.concurrency
     }
 }

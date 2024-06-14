@@ -1,24 +1,34 @@
 use crate::{ingestion::IngestionNode, ingestion::IngestionStream, ChunkerTransformer};
 use async_trait::async_trait;
+use derive_builder::Builder;
 use futures_util::{stream, StreamExt};
 use text_splitter::{Characters, MarkdownSplitter};
 
-#[derive(Debug)]
+#[derive(Debug, Builder)]
+#[builder(pattern = "owned")]
 pub struct ChunkMarkdown {
     chunker: MarkdownSplitter<Characters>,
+    #[builder(default)]
+    concurrency: Option<usize>,
 }
 
 impl ChunkMarkdown {
     pub fn with_max_characters(max_characters: usize) -> Self {
         Self {
             chunker: MarkdownSplitter::new(max_characters),
+            concurrency: None,
         }
     }
 
     pub fn with_chunk_range(range: std::ops::Range<usize>) -> Self {
         Self {
             chunker: MarkdownSplitter::new(range),
+            concurrency: None,
         }
+    }
+
+    pub fn builder() -> ChunkMarkdownBuilder {
+        ChunkMarkdownBuilder::default()
     }
 }
 
@@ -39,5 +49,9 @@ impl ChunkerTransformer for ChunkMarkdown {
             })
         }))
         .boxed()
+    }
+
+    fn concurrency(&self) -> Option<usize> {
+        self.concurrency
     }
 }

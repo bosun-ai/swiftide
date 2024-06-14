@@ -13,6 +13,7 @@ pub struct MetadataQACode {
     client: Arc<dyn SimplePrompt>,
     prompt: String,
     num_questions: usize,
+    concurrency: Option<usize>,
 }
 
 impl MetadataQACode {
@@ -30,7 +31,13 @@ impl MetadataQACode {
             client: Arc::new(client),
             prompt: default_prompt(),
             num_questions: 5,
+            concurrency: None,
         }
+    }
+
+    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+        self.concurrency = Some(concurrency);
+        self
     }
 }
 
@@ -109,5 +116,9 @@ impl Transformer for MetadataQACode {
             .insert("Questions and Answers".to_string(), response);
 
         Ok(node)
+    }
+
+    fn concurrency(&self) -> Option<usize> {
+        self.concurrency
     }
 }
