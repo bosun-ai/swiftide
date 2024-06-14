@@ -268,7 +268,7 @@ impl IngestionPipeline {
         futures_util::future::try_join_all(setup_futures).await?;
 
         let mut total_nodes = 0;
-        while self.stream.next().await.is_some() {
+        while self.stream.try_next().await?.is_some() {
             total_nodes += 1;
         }
 
