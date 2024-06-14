@@ -53,6 +53,8 @@ While working with other Python based tooling, frustrations arose around perform
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
+We <3 Feedback, project ideas, suggestions and complaints are very welcome. Feel free to open an issue.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Example
