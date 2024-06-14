@@ -8,13 +8,13 @@ use futures_util::{stream, StreamExt};
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
-    traits::Storage,
+    traits::Persist,
 };
 
 use super::Qdrant;
 
 #[async_trait]
-impl Storage for Qdrant {
+impl Persist for Qdrant {
     /// Returns the batch size for the Qdrant storage.
     ///
     /// # Returns

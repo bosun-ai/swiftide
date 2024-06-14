@@ -1,4 +1,4 @@
-use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Storage, Transformer};
+use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer};
 use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 
@@ -18,7 +18,7 @@ use super::IngestionStream;
 /// * `concurrency` - The level of concurrency for processing nodes.
 pub struct IngestionPipeline {
     stream: IngestionStream,
-    storage: Vec<Arc<dyn Storage>>,
+    storage: Vec<Arc<dyn Persist>>,
     concurrency: usize,
 }
 
@@ -202,7 +202,7 @@ impl IngestionPipeline {
     /// # Returns
     ///
     /// An instance of `IngestionPipeline` with the configured storage backend.
-    pub fn then_store_with(mut self, storage: impl Storage + 'static) -> Self {
+    pub fn then_store_with(mut self, storage: impl Persist + 'static) -> Self {
         let storage = Arc::new(storage);
         self.storage.push(storage.clone());
         // add storage to the stream instead of doing it at the end
@@ -297,7 +297,7 @@ mod tests {
         let mut transformer = MockTransformer::new();
         let mut batch_transformer = MockBatchableTransformer::new();
         let mut chunker = MockChunkerTransformer::new();
-        let mut storage = MockStorage::new();
+        let mut storage = MockPersist::new();
 
         let mut seq = Sequence::new();
 
