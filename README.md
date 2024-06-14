@@ -69,7 +69,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             10..2048,
         )?)
         .then_in_batch(10, OpenAIEmbed::new(openai_client.clone()))
-        .store_with(
+        .then_store_with(
             Qdrant::try_from_url(qdrant_url)?
                 .batch_size(50)
                 .vector_size(1536)
@@ -87,6 +87,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 - Extremely fast streaming pipeline with parallel processing
 - Integrations with OpenAI, Redis, Qdrant and Treesitter
 - Bring your own transformers by extending straightforward traits.
+- Store into multiple backends
 - `tracing` supported
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -137,7 +138,7 @@ IngestionNodes have a path, chunk and metadata. Currently metadata is copied ove
 - **then** `(impl Transformer)` transforms the node and puts it on the stream
 - **then_in_batch** `(impl BatchTransformer)` transforms multiple nodes and puts them on the stream
 - **then_chunk** `(impl ChunkerTransformer)` transforms a single node and emits multiple nodes
-- **store_with** `(impl Storage)` Finally stores the nodes, optionally in batches
+- **then_store_with** `(impl Storage)` stores the nodes in a storage backend, this can be chained
 
 Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `Embed` to do their things.
 

@@ -4,13 +4,17 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
+use futures_util::{stream, StreamExt};
 
-use crate::traits::Storage;
+use crate::{
+    ingestion::{IngestionNode, IngestionStream},
+    traits::Persist,
+};
 
 use super::Qdrant;
 
 #[async_trait]
-impl Storage for Qdrant {
+impl Persist for Qdrant {
     /// Returns the batch size for the Qdrant storage.
     ///
     /// # Returns
@@ -49,16 +53,12 @@ impl Storage for Qdrant {
     ///
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
-    async fn store(&self, node: crate::ingestion::IngestionNode) -> Result<()> {
+    async fn store(&self, node: crate::ingestion::IngestionNode) -> Result<IngestionNode> {
+        let point = node.clone().try_into()?;
         self.client
-            .upsert_points_blocking(
-                self.collection_name.to_string(),
-                None,
-                vec![node.try_into()?],
-                None,
-            )
+            .upsert_points_blocking(self.collection_name.to_string(), None, vec![point], None)
             .await?;
-        Ok(())
+        Ok(node)
     }
 
     /// Stores a batch of ingestion nodes in the Qdrant storage.
@@ -74,19 +74,28 @@ impl Storage for Qdrant {
     /// # Errors
     ///
     /// This function will return an error if any node conversion or storage operation fails.
-    #[tracing::instrument(skip_all, err, name = "storage.qdrant.batch_store")]
-    async fn batch_store(&self, nodes: Vec<crate::ingestion::IngestionNode>) -> Result<()> {
-        self.client
-            .upsert_points_blocking(
-                self.collection_name.to_string(),
-                None,
-                nodes
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<Result<Vec<_>>>()?,
-                None,
-            )
-            .await?;
-        Ok(())
+    #[tracing::instrument(skip_all, name = "storage.qdrant.batch_store")]
+    async fn batch_store(&self, nodes: Vec<crate::ingestion::IngestionNode>) -> IngestionStream {
+        let points = nodes
+            .iter()
+            .map(|node| node.clone().try_into())
+            .collect::<Result<Vec<_>>>();
+
+        if points.is_err() {
+            return stream::iter(vec![Err(points.unwrap_err())]).boxed();
+        }
+
+        let points = points.unwrap();
+
+        let result = self
+            .client
+            .upsert_points_blocking(self.collection_name.to_string(), None, points, None)
+            .await;
+
+        if result.is_ok() {
+            stream::iter(nodes.into_iter().map(Ok)).boxed()
+        } else {
+            stream::iter(vec![Err(result.unwrap_err())]).boxed()
+        }
     }
 }

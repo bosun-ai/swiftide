@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             10..2048,
         )?)
         .then_in_batch(10, OpenAIEmbed::new(openai_client.clone()))
-        .store_with(
+        .then_store_with(
             Qdrant::try_from_url(qdrant_url)?
                 .batch_size(50)
                 .vector_size(1536)
