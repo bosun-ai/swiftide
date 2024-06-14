@@ -126,9 +126,9 @@ async fn test_ingestion_pipeline() {
     // );
     let qdrant_url = "http://localhost:6334";
 
-    dbg!(&qdrant_url);
-    // dbg!(qdrant.stderr_to_vec().await.map(String::from_utf8).unwrap());
-    // dbg!(qdrant.stdout_to_vec().await.map(String::from_utf8).unwrap());
+    // Cleanup the collection before running the pipeline
+    let qdrant = QdrantClient::from_url(qdrant_url).build().unwrap();
+    let _ = qdrant.delete_collection("swiftide-test").await;
 
     let result =
         IngestionPipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))

@@ -16,6 +16,7 @@ use futures_util::{stream, StreamExt};
 #[derive(Debug)]
 pub struct OpenAIEmbed {
     client: Arc<OpenAI>,
+    concurrency: Option<usize>,
 }
 
 impl OpenAIEmbed {
@@ -31,7 +32,13 @@ impl OpenAIEmbed {
     pub fn new(client: OpenAI) -> Self {
         Self {
             client: Arc::new(client),
+            concurrency: None,
         }
+    }
+
+    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+        self.concurrency = Some(concurrency);
+        self
     }
 }
 
@@ -72,5 +79,9 @@ impl BatchableTransformer for OpenAIEmbed {
                 .unwrap_or_else(|e| vec![Err(e)]),
         )
         .boxed()
+    }
+
+    fn concurrency(&self) -> Option<usize> {
+        self.concurrency
     }
 }

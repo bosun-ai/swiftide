@@ -18,6 +18,7 @@ pub struct MetadataQAText {
     client: Arc<dyn SimplePrompt>,
     prompt: String,
     num_questions: usize,
+    concurrency: Option<usize>,
 }
 
 impl MetadataQAText {
@@ -35,7 +36,13 @@ impl MetadataQAText {
             client: Arc::new(client),
             prompt: default_prompt(),
             num_questions: 5,
+            concurrency: None,
         }
+    }
+
+    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+        self.concurrency = Some(concurrency);
+        self
     }
 }
 
@@ -110,5 +117,9 @@ impl Transformer for MetadataQAText {
             .insert("Questions and Answers".to_string(), response);
 
         Ok(node)
+    }
+
+    fn concurrency(&self) -> Option<usize> {
+        self.concurrency
     }
 }

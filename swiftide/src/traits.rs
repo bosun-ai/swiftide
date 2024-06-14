@@ -13,16 +13,29 @@ use mockall::{automock, predicate::*};
 /// Transforms single nodes into single nodes
 pub trait Transformer: Send + Sync + Debug {
     async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode>;
+
+    /// Overrides the default concurrency of the pipeline
+    fn concurrency(&self) -> Option<usize> {
+        None
+    }
 }
 
 #[cfg_attr(test, automock)]
 #[async_trait]
 /// Transforms batched single nodes into streams of nodes
 pub trait BatchableTransformer: Send + Sync + Debug {
+    /// Defines the batch size for the transformer
     fn batch_size(&self) -> Option<usize> {
         None
     }
+
+    /// Transforms a batch of nodes into a stream of nodes
     async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream;
+
+    /// Overrides the default concurrency of the pipeline
+    fn concurrency(&self) -> Option<usize> {
+        None
+    }
 }
 
 /// Starting point of a stream
@@ -36,6 +49,11 @@ pub trait Loader {
 /// Turns one node into many nodes
 pub trait ChunkerTransformer: Send + Sync + Debug {
     async fn transform_node(&self, node: IngestionNode) -> IngestionStream;
+
+    /// Overrides the default concurrency of the pipeline
+    fn concurrency(&self) -> Option<usize> {
+        None
+    }
 }
 
 #[cfg_attr(test, automock)]
