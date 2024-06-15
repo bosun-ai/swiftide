@@ -88,7 +88,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 - Extremely fast streaming pipeline with parallel processing
 - Integrations with OpenAI, Redis, Qdrant and Treesitter
-- Bring your transformers by extending straightforward traits.
+- Bring your own transformers by extending straightforward traits.
 - Store into multiple backends
 - `tracing` supported
 
