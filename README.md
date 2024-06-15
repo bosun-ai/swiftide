@@ -47,13 +47,13 @@
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous file ingestion and processing system. It is designed to be used in a RAG (Research Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous file ingestion and processing system. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
 
-While working with other Python based tooling, frustrations arose around performance, stability and ease-of-use. Thus Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
+While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
-We <3 Feedback, project ideas, suggestions and complaints are very welcome. Feel free to open an issue.
+We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -108,7 +108,7 @@ Our goal is to create an extremely fast, extendable platform for ingestion and q
 
 Make sure you have the rust toolchain installed. [rustup](https://rustup.rs) Is the recommended approach.
 
-To use OpenAI, a api key is required. Note that by default `async_openai` uses the `OPENAI_API_KEY` environment variables.
+To use OpenAI, an API key is required. Note that by default `async_openai` uses the `OPENAI_API_KEY` environment variables.
 
 Other integrations will need to be installed accordingly.
 
@@ -131,7 +131,7 @@ Before building your stream, you need to configure any integrations required. Se
 
 A stream starts with a Loader that emits IngestionNodes. For instance, with the Fileloader each file is a Node.
 
-You can then slice and dice, augment and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
+You can then slice and dice, augment, and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
 
 IngestionNodes have a path, chunk and metadata. Currently metadata is copied over when chunking and _always_ embedded when using the OpenAIEmbed transformer.
 
@@ -144,7 +144,7 @@ IngestionNodes have a path, chunk and metadata. Currently metadata is copied ove
 
 Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `Embed` to do their things.
 
-All integrations are enabled by default, but can be disabled with feature flags.
+All integrations are enabled by default but can be disabled with feature flags.
 
 **note**: Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
 
@@ -168,7 +168,7 @@ See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full li
 
 ## Contributing
 
-Swiftide is in an very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada:
+Swiftide is in a very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada:
 
 If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
