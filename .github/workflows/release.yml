@@ -11,7 +11,7 @@ on:
 
 jobs:
   release-swiftide:
-    name: Swiftide
+    name: Crates.io
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
