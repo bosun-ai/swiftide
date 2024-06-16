@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.2...swiftide-v0.3.3) - 2024-06-16
+
+### Added
+- *(transformers)* builder and clone for MetadataQAText
+- *(transformers)* builder and clone for MetadataQACode
+- *(transformers)* builder for chunk_markdown
+- *(transformers)* builder and clone for chunk_code
+- *(integrations)* clone and debug for integrations
+
 ## [0.3.2](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.1...swiftide-v0.3.2) - 2024-06-16
 
 ### Added
