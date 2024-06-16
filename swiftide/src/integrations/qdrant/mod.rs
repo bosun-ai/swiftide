@@ -19,17 +19,19 @@ const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 /// This struct is used to interact with the Qdrant vector database, providing methods to create and manage
 /// vector collections, store data, and ensure proper indexing for efficient searches.
 #[derive(Builder)]
-#[builder(pattern = "owned")]
+#[builder(pattern = "owned", setter(strip_option))]
 pub struct Qdrant {
     /// The Qdrant client used to interact with the Qdrant vector database.
+    #[builder(setter(into))]
     client: QdrantClient,
     /// The name of the collection to be used in Qdrant. Defaults to "swiftide".
     #[builder(default = "DEFAULT_COLLECTION_NAME.to_string()")]
+    #[builder(setter(into))]
     collection_name: String,
     /// The size of the vectors to be stored in the collection.
-    vector_size: usize,
+    vector_size: u64,
     /// The batch size for operations. Optional.
-    #[builder(default, setter(strip_option))]
+    #[builder(default)]
     batch_size: Option<usize>,
 }
 
@@ -73,7 +75,7 @@ impl Qdrant {
                 collection_name: self.collection_name.to_string(),
                 vectors_config: Some(VectorsConfig {
                     config: Some(Config::Params(VectorParams {
-                        size: self.vector_size as u64,
+                        size: self.vector_size,
                         distance: Distance::Cosine.into(),
                         ..Default::default()
                     })),
