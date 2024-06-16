@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
+use derive_builder::Builder;
 use indoc::indoc;
 
 /// This module defines the `MetadataQAText` struct and its associated methods,
@@ -13,15 +14,27 @@ use indoc::indoc;
 /// `MetadataQAText` is responsible for generating questions and answers
 /// from a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
-#[derive(Debug)]
+#[derive(Debug, Clone, Builder)]
+#[builder(setter(into, strip_option))]
 pub struct MetadataQAText {
+    #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
+    #[builder(default = "default_prompt()")]
     prompt: String,
+    #[builder(default = "5")]
     num_questions: usize,
+    #[builder(default)]
     concurrency: Option<usize>,
 }
 
 impl MetadataQAText {
+    pub fn builder() -> MetadataQATextBuilder {
+        MetadataQATextBuilder::default()
+    }
+
+    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataQATextBuilder {
+        MetadataQATextBuilder::default().client(client).to_owned()
+    }
     /// Creates a new instance of `MetadataQAText`.
     ///
     /// # Arguments
@@ -84,6 +97,13 @@ fn default_prompt() -> String {
 
         "#}
     .to_string()
+}
+
+impl MetadataQATextBuilder {
+    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
+        self.client = Some(Arc::new(client));
+        self
+    }
 }
 
 #[async_trait]
