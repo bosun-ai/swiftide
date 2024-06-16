@@ -11,6 +11,7 @@ mod simple_prompt;
 /// The `OpenAI` struct encapsulates an OpenAI client and default options for embedding and prompt models.
 /// It uses the `Builder` pattern for flexible and customizable instantiation.
 #[derive(Debug, Builder, Clone)]
+#[builder(setter(into, strip_option))]
 pub struct OpenAI {
     /// The OpenAI client, wrapped in an `Arc` for thread-safe reference counting.
     /// Defaults to a new instance of `async_openai::Client`.
