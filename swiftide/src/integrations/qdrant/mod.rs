@@ -86,3 +86,13 @@ impl Qdrant {
         Ok(())
     }
 }
+
+impl std::fmt::Debug for Qdrant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Qdrant")
+            .field("collection_name", &self.collection_name)
+            .field("vector_size", &self.vector_size)
+            .field("batch_size", &self.batch_size)
+            .finish()
+    }
+}

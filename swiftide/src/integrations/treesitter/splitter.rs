@@ -9,7 +9,7 @@ use super::supported_languages::SupportedLanguages;
 // TODO: Instead of counting bytes, count tokens with titktoken
 const DEFAULT_MAX_BYTES: usize = 1500;
 
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Clone)]
 /// Splits code files into meaningful chunks
 ///
 /// Supports splitting code files into chunks based on a maximum size or a range of bytes.
