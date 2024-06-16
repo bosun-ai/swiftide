@@ -1,3 +1,4 @@
+use derive_builder::Builder;
 use std::sync::Arc;
 
 use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
@@ -8,15 +9,27 @@ use indoc::indoc;
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
 /// This struct integrates with the ingestion pipeline to enhance the metadata of each code chunk
 /// by adding relevant questions and answers.
-#[derive(Debug)]
+#[derive(Debug, Clone, Builder)]
+#[builder(setter(into, strip_option))]
 pub struct MetadataQACode {
+    #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
+    #[builder(default = "default_prompt()")]
     prompt: String,
+    #[builder(default = "5")]
     num_questions: usize,
+    #[builder(default)]
     concurrency: Option<usize>,
 }
 
 impl MetadataQACode {
+    pub fn builder() -> MetadataQACodeBuilder {
+        MetadataQACodeBuilder::default()
+    }
+
+    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataQACodeBuilder {
+        MetadataQACodeBuilder::default().client(client).to_owned()
+    }
     /// Creates a new instance of `MetadataQACode`.
     ///
     /// # Arguments
@@ -83,6 +96,13 @@ fn default_prompt() -> String {
 
         "#}
     .to_string()
+}
+
+impl MetadataQACodeBuilder {
+    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
+        self.client = Some(Arc::new(client));
+        self
+    }
 }
 
 #[async_trait]
