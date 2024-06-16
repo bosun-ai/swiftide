@@ -115,6 +115,16 @@ impl Debug for RedisNodeCache {
     }
 }
 
+impl Clone for RedisNodeCache {
+    fn clone(&self) -> Self {
+        Self {
+            client: self.client.clone(),
+            connection_manager: RwLock::new(None),
+            key_prefix: self.key_prefix.clone(),
+        }
+    }
+}
+
 #[async_trait]
 impl NodeCache for RedisNodeCache {
     /// Checks if a node is present in the cache.
