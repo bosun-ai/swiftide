@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.1...swiftide-v0.3.2) - 2024-06-16
+
+### Added
+- *(integrations)* qdrant and openai builder should be consistent ([#52](https://github.com/bosun-ai/swiftide/pull/52))
+
 ## [0.3.1](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.0...swiftide-v0.3.1) - 2024-06-15
 
 ### Other
