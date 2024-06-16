@@ -5,7 +5,7 @@ use futures_util::{stream, StreamExt};
 use text_splitter::{Characters, MarkdownSplitter};
 
 #[derive(Debug, Builder)]
-#[builder(pattern = "owned")]
+#[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ChunkMarkdown {
     chunker: MarkdownSplitter<Characters>,
     #[builder(default)]
