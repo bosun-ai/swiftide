@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use derive_builder::Builder;
 use futures_util::{stream, StreamExt};
 
 use crate::{
@@ -11,13 +12,19 @@ use crate::{
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
 /// based on the specified language and chunk size. This is a crucial step in the
 /// ingestion pipeline for processing and embedding code efficiently.
-#[derive(Debug)]
+#[derive(Debug, Clone, Builder)]
+#[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ChunkCode {
     chunker: CodeSplitter,
+    #[builder(default)]
     concurrency: Option<usize>,
 }
 
 impl ChunkCode {
+    pub fn builder() -> ChunkCodeBuilder {
+        ChunkCodeBuilder::default()
+    }
+
     /// Tries to create a `ChunkCode` instance for a given programming language.
     ///
     /// # Parameters
