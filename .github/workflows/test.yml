@@ -39,4 +39,4 @@ jobs:
       - name: "Rustfmt"
         run: cargo fmt --all --check
       - name: "Test"
-        run: cargo test --verbose --workspace
+        run: cargo test --verbose --workspace --all-features
