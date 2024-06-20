@@ -1,17 +1,29 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
   test:
     name: coverage
     runs-on: ubuntu-latest
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.9.2
+        ports:
+          - 6334:6334
+    env:
+      RUST_LOG: DEBUG
+      RUST_BACKTRACE: 1
     container:
       image: xd009642/tarpaulin:develop-nightly
       options: --security-opt seccomp=unconfined
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Generate code coverage
         run: |
