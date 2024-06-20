@@ -124,10 +124,10 @@ async fn test_ingestion_pipeline() {
     //     host = qdrant.get_host().await.unwrap(),
     //     port = qdrant.get_host_port_ipv4(6334).await.unwrap()
     // );
-    let qdrant_url = "http://localhost:6334";
+    let qdrant_url = std::env::var("QDRANT_URL").unwrap_or("http://localhost:6334".to_string());
 
     // Cleanup the collection before running the pipeline
-    let qdrant = QdrantClient::from_url(qdrant_url).build().unwrap();
+    let qdrant = QdrantClient::from_url(&qdrant_url).build().unwrap();
     let _ = qdrant.delete_collection("swiftide-test").await;
 
     let result =
@@ -139,7 +139,7 @@ async fn test_ingestion_pipeline() {
             )
             .then_in_batch(1, transformers::OpenAIEmbed::new(openai_client.clone()))
             .then_store_with(
-                integrations::qdrant::Qdrant::try_from_url(qdrant_url)
+                integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
                     .unwrap()
                     .vector_size(1536)
                     .collection_name("swiftide-test".to_string())
@@ -174,7 +174,7 @@ async fn test_ingestion_pipeline() {
     };
 
     use qdrant_client::prelude::*;
-    let search_result = qdrant_client::client::QdrantClient::from_url(qdrant_url)
+    let search_result = qdrant_client::client::QdrantClient::from_url(&qdrant_url)
         .build()
         .unwrap()
         .search_points(&SearchPoints {

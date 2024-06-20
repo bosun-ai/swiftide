@@ -28,15 +28,15 @@ jobs:
       RUST_BACKTRACE: 1
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
       - run: rustup toolchain install stable --component clippy --component rustfmt --profile minimal
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            fluyt
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Clippy"
         run: cargo clippy
       - name: "Rustfmt"
         run: cargo fmt --all --check
       - name: "Test"
-        run: cargo test --verbose --workspace
+        run: cargo test --verbose --workspace --all-features
