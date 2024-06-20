@@ -18,6 +18,7 @@ jobs:
     env:
       RUST_LOG: DEBUG
       RUST_BACKTRACE: 1
+      QDRANT_URL: http://qdrant:6334
     container:
       image: xd009642/tarpaulin:develop-nightly
       options: --security-opt seccomp=unconfined
