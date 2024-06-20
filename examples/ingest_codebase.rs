@@ -23,7 +23,7 @@ use swiftide::{
     ingestion,
     integrations::{self, qdrant::Qdrant, redis::RedisNodeCache},
     loaders::FileLoader,
-    transformers::{ChunkCode, MetadataQACode, OpenAIEmbed},
+    transformers::{ChunkCode, Embed, MetadataQACode},
 };
 
 #[tokio::main]
@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "rust",
             10..2048,
         )?)
-        .then_in_batch(10, OpenAIEmbed::new(openai_client.clone()))
+        .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
             Qdrant::try_from_url(qdrant_url)?
                 .batch_size(50)

@@ -2,25 +2,31 @@ use std::sync::Arc;
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
-    integrations::openai::OpenAI,
-    BatchableTransformer, Embed,
+    BatchableTransformer, EmbeddingModel,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use futures_util::{stream, StreamExt};
 
-/// A transformer that uses the OpenAI API to generate embeddings for data.
+/// A transformer that can generate embeddings for an `IngestionNode`
 ///
-/// This file defines the `OpenAIEmbed` struct and its implementation of the `BatchableTransformer` trait.
+/// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
 /// The primary purpose of this transformer is to embed data using the OpenAI API.
-#[derive(Debug)]
-pub struct OpenAIEmbed {
-    client: Arc<OpenAI>,
+pub struct Embed {
+    embed_model: Arc<dyn EmbeddingModel>,
     concurrency: Option<usize>,
 }
 
-impl OpenAIEmbed {
-    /// Creates a new instance of `OpenAIEmbed`.
+impl std::fmt::Debug for Embed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Embed")
+            .field("concurrency", &self.concurrency)
+            .finish()
+    }
+}
+
+impl Embed {
+    /// Creates a new instance of `Embed`.
     ///
     /// # Parameters
     ///
@@ -28,10 +34,10 @@ impl OpenAIEmbed {
     ///
     /// # Returns
     ///
-    /// A new instance of `OpenAIEmbed`.
-    pub fn new(client: OpenAI) -> Self {
+    /// A new instance of `Embed`.
+    pub fn new(client: impl EmbeddingModel + 'static) -> Self {
         Self {
-            client: Arc::new(client),
+            embed_model: Arc::new(client),
             concurrency: None,
         }
     }
@@ -43,7 +49,7 @@ impl OpenAIEmbed {
 }
 
 #[async_trait]
-impl BatchableTransformer for OpenAIEmbed {
+impl BatchableTransformer for Embed {
     /// Transforms a batch of `IngestionNode` objects by generating embeddings for them.
     ///
     /// # Parameters
@@ -57,13 +63,13 @@ impl BatchableTransformer for OpenAIEmbed {
     /// # Errors
     ///
     /// If the embedding process fails, the function returns a stream with the error.
-    #[tracing::instrument(skip_all, name = "transformers.openai_embed")]
+    #[tracing::instrument(skip_all, name = "transformers.embed")]
     async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
         let chunks_to_embed: Vec<String> = nodes.iter().map(|n| n.as_embeddable()).collect();
 
         stream::iter(
-            self.client
+            self.embed_model
                 .embed(chunks_to_embed)
                 .await
                 .map(|embeddings| {

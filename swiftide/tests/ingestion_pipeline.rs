@@ -137,7 +137,7 @@ async fn test_ingestion_pipeline() {
             .filter_cached(
                 integrations::redis::RedisNodeCache::try_from_url(&redis_url, "prefix").unwrap(),
             )
-            .then_in_batch(1, transformers::OpenAIEmbed::new(openai_client.clone()))
+            .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
             .then_store_with(
                 integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
                     .unwrap()
