@@ -17,6 +17,7 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+[![Coverage Status](https://coveralls.io/repos/github/bosun-ai/swiftide/badge.svg)](https://coveralls.io/github/bosun-ai/swiftide)
 
 <!-- PROJECT LOGO -->
 <br />
