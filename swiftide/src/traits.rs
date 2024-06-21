@@ -68,7 +68,7 @@ pub trait NodeCache: Send + Sync + Debug {
 }
 
 #[async_trait]
-pub trait Embed: Debug + Send + Sync {
+pub trait EmbeddingModel: Send + Sync {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 

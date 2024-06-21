@@ -1,3 +1,5 @@
+#[cfg(feature = "fastembed")]
+pub mod fastembed;
 #[cfg(feature = "openai")]
 pub mod openai;
 #[cfg(feature = "qdrant")]

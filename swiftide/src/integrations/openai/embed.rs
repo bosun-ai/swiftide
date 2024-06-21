@@ -2,12 +2,12 @@ use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 
-use crate::{Embed, Embeddings};
+use crate::{EmbeddingModel, Embeddings};
 
 use super::OpenAI;
 
 #[async_trait]
-impl Embed for OpenAI {
+impl EmbeddingModel for OpenAI {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         let model = self
             .default_options

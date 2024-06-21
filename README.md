@@ -1,3 +1,18 @@
+<!--toc:start-->
+
+- [About The Project](#about-the-project)
+- [Example](#example)
+- [Features](#features)
+- [Vision](#vision)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Usage and concepts](#usage-and-concepts)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+<!--toc:end-->
+
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 
 <a name="readme-top"></a>
@@ -71,7 +86,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             "rust",
             10..2048,
         )?)
-        .then_in_batch(10, OpenAIEmbed::new(openai_client.clone()))
+        .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
             Qdrant::try_from_url(qdrant_url)?
                 .batch_size(50)
@@ -143,7 +158,7 @@ IngestionNodes have a path, chunk and metadata. Currently metadata is copied ove
 - **then_chunk** `(impl ChunkerTransformer)` transforms a single node and emits multiple nodes
 - **then_store_with** `(impl Storage)` stores the nodes in a storage backend, this can be chained
 
-Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `Embed` to do their things.
+Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `EmbedModel` to do their things.
 
 All integrations are enabled by default but can be disabled with feature flags.
 
