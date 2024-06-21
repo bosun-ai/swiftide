@@ -46,7 +46,7 @@ tree-sitter-javascript = { version = "0.21.3", optional = true }
 fastembed = { version = "3.6.1", optional = true }
 
 [features]
-default = ["all"]
+default = []
 all = ["qdrant", "redis", "tree-sitter", "openai", "fastembed"]
 qdrant = ["dep:qdrant-client"]
 redis = ["dep:redis"]

@@ -102,11 +102,12 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 ## Features
 
-- Extremely fast streaming pipeline with parallel processing
-- Integrations with OpenAI, Redis, Qdrant and Treesitter
-- Bring your own transformers by extending straightforward traits.
+- Extremely fast streaming ingestion pipeline with async, parallel processing
+- Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
+- A variety of loaders, transformers, and embedders and other common, generic tools
+- Bring your own transformers by extending straightforward traits
 - Store into multiple backends
-- `tracing` supported
+- `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -135,7 +136,8 @@ Other integrations will need to be installed accordingly.
    ```sh
    cargo add swiftide
    ```
-3. Write a pipeline (see our examples and documentation)
+3. Enable the features of integrations you would like to have or use 'all' in your `Cargo.toml`
+4. Write a pipeline (see our examples and documentation)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -143,7 +145,7 @@ Other integrations will need to be installed accordingly.
 
 ## Usage and concepts
 
-Before building your stream, you need to configure any integrations required. See /examples for a full example.
+Before building your stream, you need to enable and configure any integrations required. See /examples.
 
 A stream starts with a Loader that emits IngestionNodes. For instance, with the Fileloader each file is a Node.
 
@@ -160,9 +162,11 @@ IngestionNodes have a path, chunk and metadata. Currently metadata is copied ove
 
 Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `EmbedModel` to do their things.
 
-All integrations are enabled by default but can be disabled with feature flags.
+> [!NOTE]
+> No integrations are enabled by default as some are code heavy. Either cherry-pick the integrations you need or use the "all" feature flag.
 
-**note**: Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
+> [!WARNING]
+> Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
 
 _For more examples, please refer to /examples and the [Documentation](https://docs.rs/swiftide/latest/swiftide/)_
 
@@ -188,6 +192,8 @@ Swiftide is in a very early stage and we are aware that we do lack features for 
 
 If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
+
+If you just want to contribute (bless you!), see [our issues](https://github.com/bosun-ai/swiftide/issues).
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)

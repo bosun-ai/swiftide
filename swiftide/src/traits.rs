@@ -1,3 +1,8 @@
+//! Traits in Swiftide allow for easy extendability
+//!
+//! All steps defined in the ingestion pipeline and the generic transformers can also take a
+//! trait. To bring your own transformers, models and loaders, all you need to do is implement the
+//! trait and it should work out of the box.
 use std::fmt::Debug;
 
 use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Embeddings};
@@ -68,11 +73,14 @@ pub trait NodeCache: Send + Sync + Debug {
 }
 
 #[async_trait]
+/// Embeds a list of strings and returns its embeddings.
+/// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 
 #[async_trait]
+/// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync {
     // Takes a simple prompt, prompts the llm and returns the response
     async fn prompt(&self, prompt: &str) -> Result<String>;
