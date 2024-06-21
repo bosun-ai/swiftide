@@ -31,7 +31,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
-      - run: rustup toolchain install stable --component clippy --component rustfmt --profile minimal
       - uses: Swatinem/rust-cache@v2
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Clippy"
