@@ -20,3 +20,5 @@ tmp
 
 .env
 .env*.local
+
+**/.fastembed_cache

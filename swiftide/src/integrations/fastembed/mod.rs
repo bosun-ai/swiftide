@@ -1,23 +1,59 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use derive_builder::Builder;
 use fastembed::TextEmbedding;
 
 use crate::{EmbeddingModel, Embeddings};
 
-///! An integration for the embedding transformer for the FastEmbed library.
-///!
-///! Supports a variety of fast text embedding models.
-///!
-///! See the [FastEmbed documentation](https://docs.rs/fastembed) for more information on usage.
-///!
-///! Requires the `fastembed` feature to be enabled.
-///!
-///! Models can be added directly to the Embed transformer.
+/// A wrapper around the FastEmbed library for text embedding.
 ///
+/// Supports a variety of fast text embedding models. The default is the `Flag Embedding` model.
+///
+/// See the [FastEmbed documentation](https://docs.rs/fastembed) for more information on usage.
+///
+/// FastEmbed can be customized by setting the embedding model via the builder. The batch size can
+/// also be set and is recommended. Batch size should match the batch size in the ingestion
+/// pipeline.
+///
+/// Requires the `fastembed` feature to be enabled.
+#[derive(Builder)]
+#[builder(
+    pattern = "owned",
+    setter(into, strip_option),
+    build_fn(error = "anyhow::Error")
+)]
+pub struct FastEmbed {
+    #[builder(default = "TextEmbedding::try_new(Default::default())?")]
+    embedding_model: TextEmbedding,
+    #[builder(default)]
+    batch_size: Option<usize>,
+}
+
+impl FastEmbed {
+    pub fn try_default() -> Result<Self> {
+        Self::builder().build()
+    }
+
+    pub fn builder() -> FastEmbedBuilder {
+        FastEmbedBuilder::default()
+    }
+}
+
 #[async_trait]
-impl EmbeddingModel for TextEmbedding {
+impl EmbeddingModel for FastEmbed {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
-        // NOTE: Opportunity to batch here
-        self.embed(input, None)
+        self.embedding_model.embed(input, self.batch_size)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_fastembed() {
+        let fastembed = FastEmbed::try_default().unwrap();
+        let embeddings = fastembed.embed(vec!["hello".to_string()]).await.unwrap();
+        assert_eq!(embeddings.len(), 1);
     }
 }
