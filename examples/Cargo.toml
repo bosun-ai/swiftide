@@ -12,3 +12,7 @@ tracing-subscriber = "0.3"
 [[example]]
 name = "ingest-codebase"
 path = "ingest_codebase.rs"
+
+[[example]]
+name = "fastembed"
+path = "fastembed.rs"

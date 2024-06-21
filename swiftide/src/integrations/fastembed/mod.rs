@@ -7,7 +7,8 @@ use crate::{EmbeddingModel, Embeddings};
 
 /// A wrapper around the FastEmbed library for text embedding.
 ///
-/// Supports a variety of fast text embedding models. The default is the `Flag Embedding` model.
+/// Supports a variety of fast text embedding models. The default is the `Flag Embedding` model
+/// with a dimension size of 384.
 ///
 /// See the [FastEmbed documentation](https://docs.rs/fastembed) for more information on usage.
 ///
@@ -15,11 +16,13 @@ use crate::{EmbeddingModel, Embeddings};
 /// also be set and is recommended. Batch size should match the batch size in the ingestion
 /// pipeline.
 ///
+/// Node that the embedding vector dimensions need to match the dimensions of the vector database collection
+///
 /// Requires the `fastembed` feature to be enabled.
 #[derive(Builder)]
 #[builder(
     pattern = "owned",
-    setter(into, strip_option),
+    setter(strip_option),
     build_fn(error = "anyhow::Error")
 )]
 pub struct FastEmbed {
