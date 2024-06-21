@@ -10,25 +10,19 @@ jobs:
   test:
     name: coverage
     runs-on: ubuntu-latest
-    services:
-      qdrant:
-        image: qdrant/qdrant:v1.9.2
-        ports:
-          - 6334:6334
     env:
       RUST_LOG: DEBUG
       RUST_BACKTRACE: 1
-      QDRANT_URL: http://qdrant:6334
-    container:
-      image: xd009642/tarpaulin:develop-nightly
-      options: --security-opt seccomp=unconfined
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --out xml
+          cargo tarpaulin --verbose --features all --workspace --timeout 120 --out xml
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
