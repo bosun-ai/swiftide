@@ -5,6 +5,7 @@
 use serde_json::json;
 use swiftide::{ingestion::IngestionPipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
+use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -109,26 +110,26 @@ async fn test_ingestion_pipeline() {
         port = redis.get_host_port_ipv4(6379).await.unwrap()
     );
 
-    // For some reason qdrant fails to connect via testcontainers
-    // let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.9.5-unprivileged")
-    //     .with_exposed_port(6334)
-    //     .with_exposed_port(6333)
-    //     .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
-    //         "starting in Actix runtime",
-    //     ))
-    //     .start()
-    //     .await
-    //     .expect("Qdrant started");
-    // let qdrant_url = format!(
-    //     "http://{host}:{port}",
-    //     host = qdrant.get_host().await.unwrap(),
-    //     port = qdrant.get_host_port_ipv4(6334).await.unwrap()
-    // );
-    let qdrant_url = std::env::var("QDRANT_URL").unwrap_or("http://localhost:6334".to_string());
+    let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.9.2")
+        .with_exposed_port(6334.into())
+        .with_exposed_port(6333.into())
+        .with_wait_for(testcontainers::core::WaitFor::http(
+            HttpWaitStrategy::new("/readyz")
+                .with_port(6333.into())
+                .with_expected_status_code(200_u16),
+        ))
+        .start()
+        .await
+        .expect("Qdrant started");
+    let qdrant_url = format!(
+        "http://127.0.0.1:{port}",
+        port = qdrant.get_host_port_ipv4(6334).await.unwrap()
+    );
 
-    // Cleanup the collection before running the pipeline
-    let qdrant = QdrantClient::from_url(&qdrant_url).build().unwrap();
-    let _ = qdrant.delete_collection("swiftide-test").await;
+    // Coverage CI runs in container, just accept the double qdrant and use the service instead
+    let qdrant_url = std::env::var("QDRANT_URL").unwrap_or(qdrant_url);
+
+    println!("Qdrant URL: {}", qdrant_url);
 
     let result =
         IngestionPipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
@@ -173,10 +174,11 @@ async fn test_ingestion_pipeline() {
         println!("{}", received_requests);
     };
 
+    result.expect("Ingestion pipeline failed");
+
     use qdrant_client::prelude::*;
-    let search_result = qdrant_client::client::QdrantClient::from_url(&qdrant_url)
-        .build()
-        .unwrap()
+    let qdrant_client = QdrantClient::from_url(&qdrant_url).build().unwrap();
+    let search_result = qdrant_client
         .search_points(&SearchPoints {
             collection_name: "swiftide-test".to_string(),
             vector: vec![0_f32; 1536],
