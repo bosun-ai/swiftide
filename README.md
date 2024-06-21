@@ -1,3 +1,5 @@
+<details>
+  <summary>Table of Contents</summary>
 <!--toc:start-->
 
 - [About The Project](#about-the-project)
@@ -11,9 +13,8 @@
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
-<!--toc:end-->
-
-<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+    <!--toc:end-->
+  </details>
 
 <a name="readme-top"></a>
 
