@@ -96,7 +96,7 @@ async fn test_ingestion_pipeline() {
 
     // Setup Redis container for caching in the test
     let redis = testcontainers::GenericImage::new("redis", "7.2.4")
-        .with_exposed_port(6379)
+        .with_exposed_port(6379.into())
         .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
             "Ready to accept connections",
         ))
