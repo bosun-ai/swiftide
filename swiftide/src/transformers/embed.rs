@@ -11,7 +11,6 @@ use futures_util::{stream, StreamExt};
 /// A transformer that can generate embeddings for an `IngestionNode`
 ///
 /// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
-/// The primary purpose of this transformer is to embed data using the OpenAI API.
 pub struct Embed {
     embed_model: Arc<dyn EmbeddingModel>,
     concurrency: Option<usize>,
@@ -26,18 +25,18 @@ impl std::fmt::Debug for Embed {
 }
 
 impl Embed {
-    /// Creates a new instance of `Embed`.
+    /// Creates a new instance of the `Embed` transformer.
     ///
     /// # Parameters
     ///
-    /// * `client` - An instance of the OpenAI client.
+    /// * `model` - An embedding model that implements the `EmbeddingModel` trait.
     ///
     /// # Returns
     ///
     /// A new instance of `Embed`.
-    pub fn new(client: impl EmbeddingModel + 'static) -> Self {
+    pub fn new(model: impl EmbeddingModel + 'static) -> Self {
         Self {
-            embed_model: Arc::new(client),
+            embed_model: Arc::new(model),
             concurrency: None,
         }
     }

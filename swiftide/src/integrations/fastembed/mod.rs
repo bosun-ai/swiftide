@@ -44,6 +44,7 @@ impl FastEmbed {
 
 #[async_trait]
 impl EmbeddingModel for FastEmbed {
+    #[tracing::instrument(skip_all)]
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         self.embedding_model.embed(input, self.batch_size)
     }
