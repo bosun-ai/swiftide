@@ -1,7 +1,3 @@
-[profile.dev]
-incremental = true
-debug = 0
-
 [workspace]
 members = ["swiftide", "examples"]
 resolver = "2"
