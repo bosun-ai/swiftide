@@ -1,5 +1,8 @@
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
+#[cfg(not(tarpaulin_include))]
+#[cfg(feature = "huggingface-mistralrs")]
+pub mod huggingface_mistralrs;
 #[cfg(feature = "openai")]
 pub mod openai;
 #[cfg(feature = "qdrant")]
