@@ -6,7 +6,7 @@ edition = "2021"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-swiftide = { path = "../swiftide/" }
+swiftide = { path = "../swiftide/", features = ["all"] }
 tracing-subscriber = "0.3"
 
 [[example]]
