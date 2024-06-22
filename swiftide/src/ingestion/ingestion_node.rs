@@ -45,6 +45,16 @@ pub struct IngestionNode {
 }
 
 impl IngestionNode {
+    /// Creates a new instance of `IngestionNode` with the specified data chunk.
+    ///
+    /// The other fields are set to their default values.
+    pub fn new(chunk: impl Into<String>) -> IngestionNode {
+        IngestionNode {
+            chunk: chunk.into(),
+            ..Default::default()
+        }
+    }
+
     /// Converts the node into an embeddable string format.
     ///
     /// The embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
