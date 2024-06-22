@@ -79,6 +79,7 @@ pub trait EmbeddingModel: Send + Sync {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 /// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync {
