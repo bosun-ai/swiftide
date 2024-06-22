@@ -21,3 +21,7 @@ path = "fastembed.rs"
 [[example]]
 name = "ingest-redis"
 path = "ingest_into_redis.rs"
+
+[[example]]
+name = "ingest-markdown-metadata"
+path = "ingest_markdown_lots_of_metadata.rs"
