@@ -2932,6 +2932,7 @@ dependencies = [
  "testcontainers",
  "text-splitter",
  "tokio",
+ "tokio-stream",
  "tracing",
  "tree-sitter",
  "tree-sitter-javascript",
