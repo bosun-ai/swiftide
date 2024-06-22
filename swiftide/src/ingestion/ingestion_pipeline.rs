@@ -2,7 +2,7 @@ use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist
 use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use super::IngestionStream;
 
@@ -235,6 +235,14 @@ impl IngestionPipeline {
                 .boxed();
         }
 
+        self
+    }
+
+    /// Throttles the stream of nodes, limiting the rate to 1 per duration.
+    ///
+    /// Useful for rate limiting the ingestion pipeline. Uses tokio_stream::StreamExt::throttle internally which has a granualarity of 1ms.
+    pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
+        self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into()).boxed();
         self
     }
 

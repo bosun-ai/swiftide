@@ -23,6 +23,7 @@ serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 text-splitter = { version = "0.13.1", features = ["markdown"] }
 tokio = { version = "1.38.0", features = ["full"] }
+tokio-stream = "0.1.15"
 tracing = { version = "0.1.40", features = ["log"] }
 strum = "0.26.2"
 strum_macros = "0.26.4"
