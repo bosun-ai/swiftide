@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## `swiftide` - [0.4.0](https://github.com/me/my-proj/compare/swiftide-v0.3.3...swiftide-v0.4.0) - 2024-06-22
+
+### Added
+- *(ingestion_pipeline)* optional error filtering and logging ([#75](https://github.com/bosun-ai/swiftide/pull/75))
+- *(integrations)* [**breaking**] support fastembed ([#60](https://github.com/bosun-ai/swiftide/pull/60))
+
+### Fixed
+- *(ingestion_pipeline)* concurrency does not work when spawned ([#76](https://github.com/bosun-ai/swiftide/pull/76))
+
+### Other
+- hide the table of contents
+- documentation and feature flag cleanup ([#69](https://github.com/bosun-ai/swiftide/pull/69))
+- move changelog to root
+- *(ci)* code coverage reporting ([#58](https://github.com/bosun-ai/swiftide/pull/58))
+
 ## `swiftide` - [0.3.3](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.2...swiftide-v0.3.3) - 2024-06-16
 
 ### Added
