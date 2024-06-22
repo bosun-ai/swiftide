@@ -33,6 +33,19 @@
 #       - name: Generate code coverage
 #         run: |
 #           cargo tarpaulin --verbose --all-features -p swiftide --timeout 120 --out xml
+#     env:
+#       RUST_LOG: DEBUG
+#       RUST_BACKTRACE: 1
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#       - uses: dtolnay/rust-toolchain@stable
+#       - uses: taiki-e/install-action@v2
+#         with:
+#           tool: cargo-tarpaulin
+#       - name: Generate code coverage
+#         run: |
+#           cargo tarpaulin --verbose --features all --workspace --timeout 120 --out xml
 #
 #       - name: Coveralls
 #         uses: coverallsapp/github-action@v2
