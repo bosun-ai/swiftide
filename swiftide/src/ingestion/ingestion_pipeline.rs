@@ -238,6 +238,56 @@ impl IngestionPipeline {
         self
     }
 
+    // Silently filters out errors encountered by the pipeline.
+    //
+    // This method filters out errors encountered by the pipeline, preventing them from bubbling up and terminating the stream.
+    // Note that errors are not logged.
+    pub fn filter_errors(mut self) -> Self {
+        self.stream = self
+            .stream
+            .filter_map(|result| async {
+                match result {
+                    Ok(node) => Some(Ok(node)),
+                    Err(_e) => None,
+                }
+            })
+            .boxed();
+        self
+    }
+
+    /// Logs all results processed by the pipeline.
+    ///
+    /// This method logs all results processed by the pipeline at the `DEBUG` level.
+    pub fn log_all(mut self) -> Self {
+        self.stream = self
+            .stream
+            .inspect(|result| tracing::debug!("Processing result: {:?}", result))
+            .boxed();
+        self
+    }
+
+    /// Logs all errors encountered by the pipeline.
+    ///
+    /// This method logs all errors encountered by the pipeline at the `ERROR` level.
+    pub fn log_errors(mut self) -> Self {
+        self.stream = self
+            .stream
+            .inspect_err(|e| tracing::error!("Error processing node: {:?}", e))
+            .boxed();
+        self
+    }
+
+    /// Logs all nodes processed by the pipeline.
+    ///
+    /// This method logs all nodes processed by the pipeline at the `DEBUG` level.
+    pub fn log_nodes(mut self) -> Self {
+        self.stream = self
+            .stream
+            .inspect_ok(|node| tracing::debug!("Processed node: {:?}", node))
+            .boxed();
+        self
+    }
+
     /// Runs the ingestion pipeline.
     ///
     /// This method processes the stream of nodes, applying all configured transformations and storing the results.
@@ -348,6 +398,31 @@ mod tests {
             .then_chunk(chunker)
             .then_store_with(storage);
 
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_skipping_errors() {
+        let mut loader = MockLoader::new();
+        let mut transformer = MockTransformer::new();
+        let mut storage = MockPersist::new();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| Box::pin(stream::iter(vec![Ok(IngestionNode::default())])));
+        transformer
+            .expect_transform_node()
+            .returning(|_node| Err(anyhow::anyhow!("Error transforming node")));
+        transformer.expect_concurrency().returning(|| None);
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+        storage.expect_store().times(0).returning(Ok);
+        let pipeline = IngestionPipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage)
+            .filter_errors();
         pipeline.run().await.unwrap();
     }
 }
