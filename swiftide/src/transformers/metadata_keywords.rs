@@ -6,36 +6,34 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
 
-/// This module defines the `MetadataQAText` struct and its associated methods,
-/// which are used for generating metadata in the form of questions and answers
-/// from a given text. It interacts with a client (e.g., OpenAI) to generate
-/// these questions and answers based on the text chunk in an `IngestionNode`.
+/// This module defines the `MetadataKeywords` struct and its associated methods,
+/// which are used for generating metadata in the form of keywords
+/// for a given text. It interacts with a client (e.g., OpenAI) to generate
+/// the keywords based on the text chunk in an `IngestionNode`.
 
-/// `MetadataQAText` is responsible for generating questions and answers
-/// from a given text chunk. It uses a templated prompt to interact with a client
+/// `MetadataKeywords` is responsible for generating keywords
+/// for a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
-pub struct MetadataQAText {
+pub struct MetadataKeywords {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
     prompt: String,
-    #[builder(default = "5")]
-    num_questions: usize,
     #[builder(default)]
     concurrency: Option<usize>,
 }
 
-impl MetadataQAText {
-    pub fn builder() -> MetadataQATextBuilder {
-        MetadataQATextBuilder::default()
+impl MetadataKeywords {
+    pub fn builder() -> MetadataKeywordsBuilder {
+        MetadataKeywordsBuilder::default()
     }
 
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataQATextBuilder {
-        MetadataQATextBuilder::default().client(client).to_owned()
+    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataKeywordsBuilder {
+        MetadataKeywordsBuilder::default().client(client).to_owned()
     }
-    /// Creates a new instance of `MetadataQAText`.
+    /// Creates a new instance of `MetadataKeywords`.
     ///
     /// # Arguments
     ///
@@ -43,12 +41,11 @@ impl MetadataQAText {
     ///
     /// # Returns
     ///
-    /// A new instance of `MetadataQAText`.
+    /// A new instance of `MetadataKeywords`.
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
             prompt: default_prompt(),
-            num_questions: 5,
             concurrency: None,
         }
     }
@@ -59,7 +56,7 @@ impl MetadataQAText {
     }
 }
 
-/// Generates the default prompt template for generating questions and answers.
+/// Generates the default prompt template for extracting keywords.
 ///
 /// # Returns
 ///
@@ -68,29 +65,22 @@ fn default_prompt() -> String {
     indoc! {r#"
 
             # Task
-            Your task is to generate questions and answers for the given text. 
-
-            Given that somebody else might ask questions about the text, consider things like:
-            * What does this text do?
-            * What other internal parts does the text use?
-            * Does this text have any dependencies?
-            * What are some potential use cases for this text?
-            * ... and so on
+            Your task is to generate a descriptive, concise keywords for the given text
 
             # Constraints 
-            * Generate at most {questions} questions and answers.
             * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the text.
+            * Respond with a keywords that are representative of the text
+            * Only include keywords that are literally included in the text
+            * Respond with a comma-separated list of keywords
 
             # Example
             Respond in the following example format and do not include anything else:
 
             ```
-            Q1: What is the capital of France?
-            A1: Paris.
+            <keyword>,<other-keyword>
             ```
 
-            # text
+            # Text
             ```
             {text}
             ```
@@ -99,7 +89,7 @@ fn default_prompt() -> String {
     .to_string()
 }
 
-impl MetadataQATextBuilder {
+impl MetadataKeywordsBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
@@ -107,8 +97,8 @@ impl MetadataQATextBuilder {
 }
 
 #[async_trait]
-impl Transformer for MetadataQAText {
-    /// Transforms an `IngestionNode` by generating questions and answers
+impl Transformer for MetadataKeywords {
+    /// Transforms an `IngestionNode` by extracting a keywords
     /// based on the text chunk within the node.
     ///
     /// # Arguments
@@ -123,18 +113,14 @@ impl Transformer for MetadataQAText {
     /// # Errors
     ///
     /// This function will return an error if the client fails to generate
-    /// questions and answers from the provided prompt.
-    #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
+    /// a keywords from the provided prompt.
+    #[tracing::instrument(skip_all, name = "transformers.metadata_keywords")]
     async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
-        let prompt = self
-            .prompt
-            .replace("{questions}", &self.num_questions.to_string())
-            .replace("{text}", &node.chunk);
+        let prompt = self.prompt.replace("{text}", &node.chunk);
 
         let response = self.client.prompt(&prompt).await?;
 
-        node.metadata
-            .insert("Questions and Answers".to_string(), response);
+        node.metadata.insert("Keywords".to_string(), response);
 
         Ok(node)
     }
@@ -151,21 +137,21 @@ mod test {
     use super::*;
 
     #[tokio::test]
-    async fn test_metadata_qacode() {
+    async fn test_metadata_keywords() {
         let mut client = MockSimplePrompt::new();
 
         client
             .expect_prompt()
-            .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
+            .returning(|_| Ok("important,keywords".to_string()));
 
-        let transformer = MetadataQAText::builder().client(client).build().unwrap();
+        let transformer = MetadataKeywords::builder().client(client).build().unwrap();
         let node = IngestionNode::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 
         assert_eq!(
-            result.metadata.get("Questions and Answers").unwrap(),
-            "Q1: Hello\nA1: World"
+            result.metadata.get("Keywords").unwrap(),
+            "important,keywords"
         );
     }
 }

@@ -6,36 +6,34 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
 
-/// This module defines the `MetadataQAText` struct and its associated methods,
-/// which are used for generating metadata in the form of questions and answers
-/// from a given text. It interacts with a client (e.g., OpenAI) to generate
+/// This module defines the `MetadataTitle` struct and its associated methods,
+/// which are used for generating metadata in the form of a title
+/// for a given text. It interacts with a client (e.g., OpenAI) to generate
 /// these questions and answers based on the text chunk in an `IngestionNode`.
 
-/// `MetadataQAText` is responsible for generating questions and answers
-/// from a given text chunk. It uses a templated prompt to interact with a client
+/// `MetadataTitle` is responsible for generating a title
+/// for a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
-pub struct MetadataQAText {
+pub struct MetadataTitle {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
     prompt: String,
-    #[builder(default = "5")]
-    num_questions: usize,
     #[builder(default)]
     concurrency: Option<usize>,
 }
 
-impl MetadataQAText {
-    pub fn builder() -> MetadataQATextBuilder {
-        MetadataQATextBuilder::default()
+impl MetadataTitle {
+    pub fn builder() -> MetadataTitleBuilder {
+        MetadataTitleBuilder::default()
     }
 
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataQATextBuilder {
-        MetadataQATextBuilder::default().client(client).to_owned()
+    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataTitleBuilder {
+        MetadataTitleBuilder::default().client(client).to_owned()
     }
-    /// Creates a new instance of `MetadataQAText`.
+    /// Creates a new instance of `MetadataTitle`.
     ///
     /// # Arguments
     ///
@@ -43,12 +41,11 @@ impl MetadataQAText {
     ///
     /// # Returns
     ///
-    /// A new instance of `MetadataQAText`.
+    /// A new instance of `MetadataTitle`.
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
             prompt: default_prompt(),
-            num_questions: 5,
             concurrency: None,
         }
     }
@@ -68,29 +65,20 @@ fn default_prompt() -> String {
     indoc! {r#"
 
             # Task
-            Your task is to generate questions and answers for the given text. 
-
-            Given that somebody else might ask questions about the text, consider things like:
-            * What does this text do?
-            * What other internal parts does the text use?
-            * Does this text have any dependencies?
-            * What are some potential use cases for this text?
-            * ... and so on
+            Your task is to generate a descriptive, concise title for the given text
 
             # Constraints 
-            * Generate at most {questions} questions and answers.
             * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the text.
+            * Respond with a title that is accurate and descriptive without fluff
 
             # Example
             Respond in the following example format and do not include anything else:
 
             ```
-            Q1: What is the capital of France?
-            A1: Paris.
+            <title>
             ```
 
-            # text
+            # Text
             ```
             {text}
             ```
@@ -99,7 +87,7 @@ fn default_prompt() -> String {
     .to_string()
 }
 
-impl MetadataQATextBuilder {
+impl MetadataTitleBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
@@ -107,7 +95,7 @@ impl MetadataQATextBuilder {
 }
 
 #[async_trait]
-impl Transformer for MetadataQAText {
+impl Transformer for MetadataTitle {
     /// Transforms an `IngestionNode` by generating questions and answers
     /// based on the text chunk within the node.
     ///
@@ -124,17 +112,13 @@ impl Transformer for MetadataQAText {
     ///
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
-    #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
+    #[tracing::instrument(skip_all, name = "transformers.metadata_title")]
     async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
-        let prompt = self
-            .prompt
-            .replace("{questions}", &self.num_questions.to_string())
-            .replace("{text}", &node.chunk);
+        let prompt = self.prompt.replace("{text}", &node.chunk);
 
         let response = self.client.prompt(&prompt).await?;
 
-        node.metadata
-            .insert("Questions and Answers".to_string(), response);
+        node.metadata.insert("Title".to_string(), response);
 
         Ok(node)
     }
@@ -151,21 +135,18 @@ mod test {
     use super::*;
 
     #[tokio::test]
-    async fn test_metadata_qacode() {
+    async fn test_metadata_title() {
         let mut client = MockSimplePrompt::new();
 
         client
             .expect_prompt()
-            .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
+            .returning(|_| Ok("A Title".to_string()));
 
-        let transformer = MetadataQAText::builder().client(client).build().unwrap();
+        let transformer = MetadataTitle::builder().client(client).build().unwrap();
         let node = IngestionNode::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(
-            result.metadata.get("Questions and Answers").unwrap(),
-            "Q1: Hello\nA1: World"
-        );
+        assert_eq!(result.metadata.get("Title").unwrap(), "A Title");
     }
 }

@@ -19,6 +19,7 @@
 //! need to be processed together.
 use std::{
     collections::HashMap,
+    fmt::Debug,
     hash::{Hash, Hasher},
     path::PathBuf,
 };
@@ -30,7 +31,7 @@ use serde::{Deserialize, Serialize};
 /// `IngestionNode` encapsulates all necessary information for a single unit of data being processed
 /// in the ingestion pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IngestionNode {
     /// Optional identifier for the node.
     pub id: Option<u64>,
@@ -44,7 +45,36 @@ pub struct IngestionNode {
     pub metadata: HashMap<String, String>,
 }
 
+impl Debug for IngestionNode {
+    /// Formats the node for debugging purposes.
+    ///
+    /// This method is used to provide a human-readable representation of the node when debugging.
+    /// The vector field is displayed as the number of elements in the vector if present.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IngestionNode")
+            .field("id", &self.id)
+            .field("path", &self.path)
+            .field("chunk", &self.chunk)
+            .field("metadata", &self.metadata)
+            .field(
+                "vector",
+                &self.vector.as_ref().map(|v| format!("[{}]", v.len())),
+            )
+            .finish()
+    }
+}
+
 impl IngestionNode {
+    /// Creates a new instance of `IngestionNode` with the specified data chunk.
+    ///
+    /// The other fields are set to their default values.
+    pub fn new(chunk: impl Into<String>) -> IngestionNode {
+        IngestionNode {
+            chunk: chunk.into(),
+            ..Default::default()
+        }
+    }
+
     /// Converts the node into an embeddable string format.
     ///
     /// The embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
