@@ -48,6 +48,7 @@ impl Transformer for HtmlToMarkdownTransformer {
     /// Converts the HTML content in the `IngestionNode` to markdown.
     ///
     /// Will Err the node if the conversion fails.
+    #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]
     async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode> {
         let chunk = self.htmd.convert(&node.chunk);
         Ok(IngestionNode {
