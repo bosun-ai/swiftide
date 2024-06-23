@@ -1,0 +1,19 @@
+[package]
+name = "benchmarks"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
+swiftide = { path = "../swiftide/", features = ["all"] }
+tracing-subscriber = "0.3"
+serde_json = "1.0"
+criterion = { version = "0.5.1", features = ["html_reports"] }
+anyhow = "1.0"
+futures-util = "0.3"
+
+[[bench]]
+name = "fileloader"
+path = "fileloader.rs"
+harness = false

@@ -1,3 +1,3 @@
 [workspace]
-members = ["swiftide", "examples"]
+members = ["swiftide", "examples", "benchmarks"]
 resolver = "2"
