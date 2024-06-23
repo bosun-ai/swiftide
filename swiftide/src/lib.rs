@@ -16,6 +16,7 @@
 pub mod ingestion;
 pub mod integrations;
 pub mod loaders;
+pub mod persist;
 pub mod traits;
 pub mod transformers;
 pub mod type_aliases;

@@ -1103,6 +1103,7 @@ name = "examples"
 version = "0.0.0"
 dependencies = [
  "serde_json",
+ "spider",
  "swiftide",
  "tokio",
  "tracing-subscriber",
