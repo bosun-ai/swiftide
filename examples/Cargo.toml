@@ -6,9 +6,10 @@ edition = "2021"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-swiftide = { path = "../swiftide/", features = ["all"] }
+swiftide = { path = "../swiftide/", features = ["all", "scraping"] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
+spider = "1.98"
 
 [[example]]
 name = "ingest-codebase"
@@ -25,3 +26,7 @@ path = "ingest_into_redis.rs"
 [[example]]
 name = "ingest-markdown-metadata"
 path = "ingest_markdown_lots_of_metadata.rs"
+
+[[example]]
+name = "scraping-ingest"
+path = "scraping_ingest_to_markdown.rs"

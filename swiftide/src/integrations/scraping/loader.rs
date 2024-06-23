@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 use spider::website::Website;
-use tokio::sync::RwLock;
+use tokio::{runtime::Handle, sync::RwLock};
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
@@ -18,8 +18,12 @@ pub struct ScrapingLoader {
 }
 
 impl ScrapingLoader {
+    pub fn builder() -> ScrapingLoaderBuilder {
+        ScrapingLoaderBuilder::default()
+    }
+
     // Constructs a scrapingloader from a `spider::Website` configuration
-    #![allow(dead_code)]
+    #[allow(dead_code)]
     pub fn from_spider(spider_website: Website) -> Self {
         Self {
             spider_website: RwLock::new(spider_website),
@@ -35,13 +39,17 @@ impl ScrapingLoader {
 impl Loader for ScrapingLoader {
     fn into_stream(self) -> IngestionStream {
         let (tx, rx) = std::sync::mpsc::channel();
-        let mut spider_rx = self
-            .spider_website
-            .blocking_write()
-            .subscribe(0)
-            .expect("Failed to subscribe to spider");
+        let mut spider_rx = tokio::task::block_in_place(|| {
+            Handle::current().block_on(async {
+                self.spider_website
+                    .write()
+                    .await
+                    .subscribe(0)
+                    .expect("Failed to subscribe to spider")
+            })
+        });
 
-        let _recv_thread = std::thread::spawn(|| async move {
+        let _recv_thread = tokio::spawn(async move {
             while let Ok(res) = spider_rx.recv().await {
                 let node = IngestionNode {
                     chunk: res.get_html(),
@@ -56,7 +64,7 @@ impl Loader for ScrapingLoader {
             }
         });
 
-        let _scrape_thread = std::thread::spawn(|| async move {
+        let _scrape_thread = tokio::spawn(async move {
             let mut spider_website = self.spider_website.write().await;
             spider_website.scrape().await;
         });
