@@ -23,12 +23,14 @@ use std::{
     path::PathBuf,
 };
 
+use serde::{Deserialize, Serialize};
+
 /// Represents a unit of data in the ingestion process.
 ///
 /// `IngestionNode` encapsulates all necessary information for a single unit of data being processed
 /// in the ingestion pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IngestionNode {
     /// Optional identifier for the node.
     pub id: Option<u64>,
