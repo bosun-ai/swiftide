@@ -46,6 +46,7 @@ tree-sitter-ruby = { version = "0.21.0", optional = true }
 tree-sitter-typescript = { version = "0.21.1", optional = true }
 tree-sitter-javascript = { version = "0.21.3", optional = true }
 fastembed = { version = "3.6.1", optional = true }
+spider = { version = "1.98", optional = true }
 
 [features]
 default = []
@@ -62,6 +63,7 @@ tree-sitter = [
 ]
 openai = ["dep:async-openai"]
 fastembed = ["dep:fastembed"]
+scraping = ["dep:spider"]
 
 [dev-dependencies]
 test-log = "0.2.16"
