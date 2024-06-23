@@ -9,11 +9,16 @@ tokio = { version = "1.0", features = ["full"] }
 swiftide = { path = "../swiftide/", features = ["all"] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
-criterion = { version = "0.5.1", features = ["html_reports"] }
+criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
 anyhow = "1.0"
 futures-util = "0.3"
 
 [[bench]]
 name = "fileloader"
 path = "fileloader.rs"
+harness = false
+
+[[bench]]
+name = "local_pipeline"
+path = "local_pipeline.rs"
 harness = false
