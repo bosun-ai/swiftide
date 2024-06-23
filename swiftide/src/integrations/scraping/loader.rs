@@ -1,8 +1,4 @@
-use std::{borrow::BorrowMut, cell::RefCell};
-
-use anyhow::{Context as _, Result};
 use derive_builder::Builder;
-use futures_util::stream;
 use spider::website::Website;
 use tokio::sync::RwLock;
 
@@ -23,6 +19,7 @@ pub struct ScrapingLoader {
 
 impl ScrapingLoader {
     // Constructs a scrapingloader from a `spider::Website` configuration
+    #![allow(dead_code)]
     pub fn from_spider(spider_website: Website) -> Self {
         Self {
             spider_website: RwLock::new(spider_website),
