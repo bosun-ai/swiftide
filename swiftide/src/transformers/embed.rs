@@ -6,7 +6,6 @@ use crate::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use futures_util::{stream, StreamExt};
 
 /// A transformer that can generate embeddings for an `IngestionNode`
 ///
@@ -67,23 +66,21 @@ impl BatchableTransformer for Embed {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
         let chunks_to_embed: Vec<String> = nodes.iter().map(|n| n.as_embeddable()).collect();
 
-        stream::iter(
-            self.embed_model
-                .embed(chunks_to_embed)
-                .await
-                .map(|embeddings| {
-                    nodes
-                        .into_iter()
-                        .zip(embeddings)
-                        .map(|(mut n, v)| {
-                            n.vector = Some(v);
-                            Ok(n)
-                        })
-                        .collect::<Vec<Result<IngestionNode>>>()
-                })
-                .unwrap_or_else(|e| vec![Err(e)]),
-        )
-        .boxed()
+        self.embed_model
+            .embed(chunks_to_embed)
+            .await
+            .map(|embeddings| {
+                nodes
+                    .into_iter()
+                    .zip(embeddings)
+                    .map(|(mut n, v)| {
+                        n.vector = Some(v);
+                        Ok(n)
+                    })
+                    .collect::<Vec<Result<IngestionNode>>>()
+            })
+            .unwrap_or_else(|e| vec![Err(e)])
+            .into()
     }
 
     fn concurrency(&self) -> Option<usize> {

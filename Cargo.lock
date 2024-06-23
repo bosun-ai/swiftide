@@ -2922,6 +2922,7 @@ dependencies = [
  "itertools 0.13.0",
  "mockall",
  "num_cpus",
+ "pin-project-lite",
  "qdrant-client",
  "redis",
  "serde",

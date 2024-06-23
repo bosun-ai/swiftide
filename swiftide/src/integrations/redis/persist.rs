@@ -1,6 +1,5 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use futures_util::{stream, StreamExt};
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
@@ -58,7 +57,7 @@ impl Persist for Redis {
                 .collect::<Result<Vec<_>>>();
 
             if args.is_err() {
-                return stream::iter(vec![Err(args.unwrap_err())]).boxed();
+                return vec![Err(args.unwrap_err())].into();
             }
 
             let args = args.unwrap();
@@ -70,12 +69,12 @@ impl Persist for Redis {
                 .context("Error persisting to redis");
 
             if result.is_ok() {
-                stream::iter(nodes.into_iter().map(Ok)).boxed()
+                IngestionStream::iter(nodes.into_iter().map(Ok))
             } else {
-                stream::iter(vec![Err(result.unwrap_err())]).boxed()
+                IngestionStream::iter([Err(result.unwrap_err())])
             }
         } else {
-            stream::iter(vec![Err(anyhow::anyhow!("Failed to connect to Redis"))]).boxed()
+            IngestionStream::iter([Err(anyhow::anyhow!("Failed to connect to Redis"))])
         }
     }
 }

@@ -1,7 +1,6 @@
 use crate::{ingestion::IngestionNode, ingestion::IngestionStream, ChunkerTransformer};
 use async_trait::async_trait;
 use derive_builder::Builder;
-use futures_util::{stream, StreamExt};
 use text_splitter::{Characters, MarkdownSplitter};
 
 #[derive(Debug, Builder)]
@@ -42,13 +41,12 @@ impl ChunkerTransformer for ChunkMarkdown {
             .map(|chunk| chunk.to_string())
             .collect::<Vec<String>>();
 
-        stream::iter(chunks.into_iter().map(move |chunk| {
+        IngestionStream::iter(chunks.into_iter().map(move |chunk| {
             Ok(IngestionNode {
                 chunk,
                 ..node.clone()
             })
         }))
-        .boxed()
     }
 
     fn concurrency(&self) -> Option<usize> {
