@@ -15,7 +15,9 @@ spider = "1.98"
 tracing-subscriber = "0.3"
 serde_json = "1.0"
 anyhow = "1.0"
-mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git" }
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", features = [
+  "cuda",
+] }
 
 [[example]]
 name = "ingest-codebase"
