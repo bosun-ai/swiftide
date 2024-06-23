@@ -4,7 +4,6 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use futures_util::{stream, StreamExt};
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
@@ -82,7 +81,7 @@ impl Persist for Qdrant {
             .collect::<Result<Vec<_>>>();
 
         if points.is_err() {
-            return stream::iter(vec![Err(points.unwrap_err())]).boxed();
+            return vec![Err(points.unwrap_err())].into();
         }
 
         let points = points.unwrap();
@@ -93,9 +92,9 @@ impl Persist for Qdrant {
             .await;
 
         if result.is_ok() {
-            stream::iter(nodes.into_iter().map(Ok)).boxed()
+            IngestionStream::iter(nodes.into_iter().map(Ok))
         } else {
-            stream::iter(vec![Err(result.unwrap_err())]).boxed()
+            vec![Err(result.unwrap_err())].into()
         }
     }
 }

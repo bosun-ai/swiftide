@@ -27,7 +27,7 @@ impl Default for IngestionPipeline {
     /// Creates a default `IngestionPipeline` with an empty stream, no storage, and a concurrency level equal to the number of CPUs.
     fn default() -> Self {
         Self {
-            stream: Box::pin(futures_util::stream::empty()),
+            stream: IngestionStream::empty(),
             storage: Default::default(),
             concurrency: num_cpus::get(),
         }
@@ -47,7 +47,7 @@ impl IngestionPipeline {
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
-            stream: stream.boxed(),
+            stream,
             ..Default::default()
         }
     }
@@ -95,7 +95,8 @@ impl IngestionPipeline {
                 }
                 .instrument(span)
             })
-            .boxed();
+            .boxed()
+            .into();
         self
     }
 
@@ -120,7 +121,8 @@ impl IngestionPipeline {
                 async move { transformer.transform_node(node).await }.instrument(span)
             })
             .try_buffer_unordered(concurrency)
-            .boxed();
+            .boxed()
+            .into();
 
         self
     }
@@ -154,7 +156,7 @@ impl IngestionPipeline {
             })
             .try_buffer_unordered(concurrency) // First get the streams from each future
             .try_flatten_unordered(concurrency) // Then flatten all the streams back into one
-            .boxed();
+            .boxed().into();
         self
     }
 
@@ -180,7 +182,8 @@ impl IngestionPipeline {
             })
             .try_buffer_unordered(concurrency)
             .try_flatten_unordered(concurrency)
-            .boxed();
+            .boxed()
+            .into();
 
         self
     }
@@ -210,7 +213,7 @@ impl IngestionPipeline {
                 })
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(self.concurrency)
-                .boxed();
+                .boxed().into();
         } else {
             self.stream = self
                 .stream
@@ -222,7 +225,8 @@ impl IngestionPipeline {
                     async move { storage.store(node).await }.instrument(span)
                 })
                 .try_buffer_unordered(self.concurrency)
-                .boxed();
+                .boxed()
+                .into();
         }
 
         self
@@ -232,7 +236,9 @@ impl IngestionPipeline {
     ///
     /// Useful for rate limiting the ingestion pipeline. Uses tokio_stream::StreamExt::throttle internally which has a granualarity of 1ms.
     pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
-        self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into()).boxed();
+        self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
+            .boxed()
+            .into();
         self
     }
 
@@ -249,7 +255,8 @@ impl IngestionPipeline {
                     Err(_e) => None,
                 }
             })
-            .boxed();
+            .boxed()
+            .into();
         self
     }
 
@@ -260,7 +267,8 @@ impl IngestionPipeline {
         self.stream = self
             .stream
             .inspect(|result| tracing::debug!("Processing result: {:?}", result))
-            .boxed();
+            .boxed()
+            .into();
         self
     }
 
@@ -271,7 +279,8 @@ impl IngestionPipeline {
         self.stream = self
             .stream
             .inspect_err(|e| tracing::error!("Error processing node: {:?}", e))
-            .boxed();
+            .boxed()
+            .into();
         self
     }
 
@@ -282,7 +291,8 @@ impl IngestionPipeline {
         self.stream = self
             .stream
             .inspect_ok(|node| tracing::debug!("Processed node: {:?}", node))
-            .boxed();
+            .boxed()
+            .into();
         self
     }
 
@@ -333,7 +343,6 @@ mod tests {
     use super::*;
     use crate::ingestion::IngestionNode;
     use crate::traits::*;
-    use futures_util::stream;
     use mockall::Sequence;
 
     /// Tests a simple run of the ingestion pipeline.
@@ -351,7 +360,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| Box::pin(stream::iter(vec![Ok(IngestionNode::default())])));
+            .returning(|| vec![Ok(IngestionNode::default())].into());
 
         transformer.expect_transform_node().returning(|mut node| {
             node.chunk = "transformed".to_string();
@@ -363,7 +372,7 @@ mod tests {
             .expect_batch_transform()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|nodes| Box::pin(stream::iter(nodes.into_iter().map(Ok))));
+            .returning(|nodes| IngestionStream::iter(nodes.into_iter().map(Ok)));
         batch_transformer.expect_concurrency().returning(|| None);
 
         chunker
@@ -377,7 +386,7 @@ mod tests {
                     node.chunk = format!("transformed_chunk_{}", i);
                     nodes.push(Ok(node));
                 }
-                Box::pin(stream::iter(nodes))
+                nodes.into()
             });
         chunker.expect_concurrency().returning(|| None);
 
@@ -409,7 +418,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| Box::pin(stream::iter(vec![Ok(IngestionNode::default())])));
+            .returning(|| vec![Ok(IngestionNode::default())].into());
         transformer
             .expect_transform_node()
             .returning(|_node| Err(anyhow::anyhow!("Error transforming node")));
@@ -435,11 +444,12 @@ mod tests {
             .times(1)
             .in_sequence(&mut seq)
             .returning(|| {
-                Box::pin(stream::iter(vec![
+                vec![
                     Ok(IngestionNode::default()),
                     Ok(IngestionNode::default()),
                     Ok(IngestionNode::default()),
-                ]))
+                ]
+                .into()
             });
         transformer
             .expect_transform_node()

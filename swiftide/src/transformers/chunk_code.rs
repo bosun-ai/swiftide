@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use futures_util::{stream, StreamExt};
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
@@ -90,16 +89,15 @@ impl ChunkerTransformer for ChunkCode {
         let split_result = self.chunker.split(&node.chunk);
 
         if let Ok(split) = split_result {
-            return stream::iter(split.into_iter().map(move |chunk| {
+            IngestionStream::iter(split.into_iter().map(move |chunk| {
                 Ok(IngestionNode {
                     chunk,
                     ..node.clone()
                 })
             }))
-            .boxed();
         } else {
             // Send the error downstream
-            return stream::iter(vec![Err(split_result.unwrap_err())]).boxed();
+            IngestionStream::iter(vec![Err(split_result.unwrap_err())])
         }
     }
 

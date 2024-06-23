@@ -1,5 +1,4 @@
 use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
-use futures_util::{stream, StreamExt};
 use std::path::PathBuf;
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory,
@@ -103,7 +102,7 @@ impl Loader for FileLoader {
                 })
             });
 
-        stream::iter(file_paths).boxed()
+        IngestionStream::iter(file_paths)
     }
 }
 
