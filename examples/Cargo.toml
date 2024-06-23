@@ -8,6 +8,7 @@ edition = "2021"
 tokio = { version = "1.0", features = ["full"] }
 swiftide = { path = "../swiftide/", features = ["all"] }
 tracing-subscriber = "0.3"
+serde_json = "1.0"
 
 [[example]]
 name = "ingest-codebase"
@@ -16,3 +17,7 @@ path = "ingest_codebase.rs"
 [[example]]
 name = "fastembed"
 path = "fastembed.rs"
+
+[[example]]
+name = "ingest-redis"
+path = "ingest_into_redis.rs"

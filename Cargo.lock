@@ -784,6 +784,7 @@ dependencies = [
 name = "examples"
 version = "0.0.0"
 dependencies = [
+ "serde_json",
  "swiftide",
  "tokio",
  "tracing-subscriber",
