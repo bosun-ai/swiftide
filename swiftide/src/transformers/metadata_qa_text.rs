@@ -143,3 +143,29 @@ impl Transformer for MetadataQAText {
         self.concurrency
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::MockSimplePrompt;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_metadata_qacode() {
+        let mut client = MockSimplePrompt::new();
+
+        client
+            .expect_prompt()
+            .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
+
+        let transformer = MetadataQAText::builder().client(client).build().unwrap();
+        let node = IngestionNode::new("Some text");
+
+        let result = transformer.transform_node(node).await.unwrap();
+
+        assert_eq!(
+            result.metadata.get("Questions and Answers").unwrap(),
+            "Q1: Hello\nA1: World"
+        );
+    }
+}
