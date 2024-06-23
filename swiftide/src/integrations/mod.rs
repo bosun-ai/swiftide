@@ -6,5 +6,7 @@ pub mod openai;
 pub mod qdrant;
 #[cfg(feature = "redis")]
 pub mod redis;
+#[cfg(feature = "scraping")]
+pub mod scraping;
 #[cfg(feature = "tree-sitter")]
 pub mod treesitter;
