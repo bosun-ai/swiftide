@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -10,24 +10,24 @@ use crate::{
     Persist,
 };
 
-#[derive(Debug, Default, Builder)]
+#[derive(Debug, Default, Builder, Clone)]
 #[builder(pattern = "owned")]
 /// A simple in-memory storage implementation.
 ///
 /// Great for experimentation and testing.
 pub struct MemoryStorage {
-    data: RwLock<HashMap<String, IngestionNode>>,
+    data: Arc<RwLock<HashMap<String, IngestionNode>>>,
     #[builder(default)]
     batch_size: Option<usize>,
 }
 
 impl MemoryStorage {
     fn key(&self, node: &IngestionNode) -> String {
-        node.path.clone().to_string_lossy().to_string()
+        node.id.unwrap_or(1).to_string()
     }
 
     #[allow(dead_code)]
-    async fn get(&self, key: &str) -> Option<IngestionNode> {
+    pub async fn get(&self, key: &str) -> Option<IngestionNode> {
         self.data.read().await.get(key).cloned()
     }
 }
