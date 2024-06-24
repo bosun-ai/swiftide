@@ -116,7 +116,7 @@ impl IngestionPipeline {
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
-                let span = tracing::trace_span!("then", transformer = ?transformer, node = ?node );
+                let span = tracing::trace_span!("then", node = ?node );
 
                 async move { transformer.transform_node(node).await }.instrument(span)
             })
@@ -149,14 +149,14 @@ impl IngestionPipeline {
             .try_chunks(batch_size)
             .map_ok(move |nodes| {
                 let transformer = Arc::clone(&transformer);
-                let span =
-                    tracing::trace_span!("then_in_batch", batchable_transformer = ?transformer, nodes = ?nodes );
+                let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
 
                 async move { Ok(transformer.batch_transform(nodes).await) }.instrument(span)
             })
             .try_buffer_unordered(concurrency) // First get the streams from each future
             .try_flatten_unordered(concurrency) // Then flatten all the streams back into one
-            .boxed().into();
+            .boxed()
+            .into();
         self
     }
 
@@ -342,6 +342,7 @@ mod tests {
 
     use super::*;
     use crate::ingestion::IngestionNode;
+    use crate::persist::MemoryStorage;
     use crate::traits::*;
     use mockall::Sequence;
 
@@ -468,5 +469,59 @@ mod tests {
             .then(transformer)
             .then_store_with(storage);
         pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_arbitrary_closures_as_transformer() {
+        let mut loader = MockLoader::new();
+        let transformer = |node: IngestionNode| {
+            let mut node = node;
+            node.chunk = "transformed".to_string();
+            node.id = Some(1);
+            Ok(node)
+        };
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| vec![Ok(IngestionNode::default())].into());
+
+        let pipeline = IngestionPipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage.clone());
+        pipeline.run().await.unwrap();
+
+        dbg!(storage.clone());
+        let processed_node = storage.get("1").await.unwrap();
+        assert_eq!(processed_node.chunk, "transformed");
+    }
+
+    #[tokio::test]
+    async fn test_arbitrary_closures_as_batch_transformer() {
+        let mut loader = MockLoader::new();
+        let batch_transformer = |nodes: Vec<IngestionNode>| {
+            IngestionStream::iter(nodes.into_iter().map(|mut node| {
+                node.chunk = "transformed".to_string();
+                Ok(node)
+            }))
+        };
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| vec![Ok(IngestionNode::default())].into());
+
+        let pipeline = IngestionPipeline::from_loader(loader)
+            .then_in_batch(10, batch_transformer)
+            .then_store_with(storage.clone());
+        pipeline.run().await.unwrap();
+
+        dbg!(storage.clone());
+        let processed_node = storage.get("1").await.unwrap();
+        assert_eq!(processed_node.chunk, "transformed");
     }
 }

@@ -16,7 +16,7 @@ use mockall::{automock, predicate::*};
 #[cfg_attr(test, automock)]
 #[async_trait]
 /// Transforms single nodes into single nodes
-pub trait Transformer: Send + Sync + Debug {
+pub trait Transformer: Send + Sync {
     async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode>;
 
     /// Overrides the default concurrency of the pipeline
@@ -25,10 +25,21 @@ pub trait Transformer: Send + Sync + Debug {
     }
 }
 
+#[async_trait]
+/// Use a closure as a transformer
+impl<F> Transformer for F
+where
+    F: Fn(IngestionNode) -> Result<IngestionNode> + Send + Sync,
+{
+    async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode> {
+        self(node)
+    }
+}
+
 #[cfg_attr(test, automock)]
 #[async_trait]
 /// Transforms batched single nodes into streams of nodes
-pub trait BatchableTransformer: Send + Sync + Debug {
+pub trait BatchableTransformer: Send + Sync {
     /// Defines the batch size for the transformer
     fn batch_size(&self) -> Option<usize> {
         None
@@ -40,6 +51,17 @@ pub trait BatchableTransformer: Send + Sync + Debug {
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
         None
+    }
+}
+
+#[async_trait]
+/// Use a closure as a batchable transformer
+impl<F> BatchableTransformer for F
+where
+    F: Fn(Vec<IngestionNode>) -> IngestionStream + Send + Sync,
+{
+    async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
+        self(nodes)
     }
 }
 
