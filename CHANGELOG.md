@@ -5,43 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## `swiftide` - [0.4.1](https://github.com/me/my-proj/compare/swiftide-v0.4.0...swiftide-v0.4.1) - 2024-06-24
 
 ### Added
-- *(transformers)* allow for arbitrary closures as transformers and batchable transformers
-- *(memory_storage)* can be cloned safely preserving storage
+
+- _(transformers)_ allow for arbitrary closures as transformers and batchable transformers
+- _(memory_storage)_ can be cloned safely preserving storage
 
 ## `swiftide` - [0.4.0](https://github.com/me/my-proj/compare/swiftide-v0.3.3...swiftide-v0.4.0) - 2024-06-23
 
 ### Added
-- *(examples,scraping)* Add example scraping and ingesting a url
-- *(persist)* in memory storage for testing, experimentation and debugging
-- *(integrations,transformers)* add transformer for converting html to markdown
-- *(loaders)* add scraping using `spider`
-- *(loaders)* file loader performance improvements
-- *(ingestion_stream)* improved stream developer experience ([#81](https://github.com/bosun-ai/swiftide/pull/81))
-- *(ingestion_node)* improved human readable Debug
-- *(examples)* example for markdown with all metadata
-- *(transformers)* add transformers for title, summary and keywords
-- *(traits)* add automock for simpleprompt
-- *(ingestion_node)* add constructor with defaults
-- *(integrations)* [**breaking**] implement Persist for Redis ([#80](https://github.com/bosun-ai/swiftide/pull/80))
-- *(ingestion_pipeline)* implement throttling a pipeline ([#77](https://github.com/bosun-ai/swiftide/pull/77))
-- *(ingestion_pipeline)* optional error filtering and logging ([#75](https://github.com/bosun-ai/swiftide/pull/75))
-- *(integrations)* [**breaking**] support fastembed ([#60](https://github.com/bosun-ai/swiftide/pull/60))
+
+- _(examples,scraping)_ Add example scraping and ingesting a url
+- _(persist)_ in memory storage for testing, experimentation and debugging
+- _(integrations,transformers)_ add transformer for converting html to markdown
+- _(loaders)_ add scraping using `spider`
+- _(loaders)_ file loader performance improvements
+- _(ingestion_stream)_ improved stream developer experience ([#81](https://github.com/bosun-ai/swiftide/pull/81))
+- _(ingestion_node)_ improved human readable Debug
+- _(examples)_ example for markdown with all metadata
+- _(transformers)_ add transformers for title, summary and keywords
+- _(traits)_ add automock for simpleprompt
+- _(ingestion_node)_ add constructor with defaults
+- _(integrations)_ [**breaking**] implement Persist for Redis ([#80](https://github.com/bosun-ai/swiftide/pull/80))
+- _(ingestion_pipeline)_ implement throttling a pipeline ([#77](https://github.com/bosun-ai/swiftide/pull/77))
+- _(ingestion_pipeline)_ optional error filtering and logging ([#75](https://github.com/bosun-ai/swiftide/pull/75))
+- _(integrations)_ [**breaking**] support fastembed ([#60](https://github.com/bosun-ai/swiftide/pull/60))
 
 ### Fixed
-- *(ingestion_pipeline)* concurrency does not work when spawned ([#76](https://github.com/bosun-ai/swiftide/pull/76))
+
+- _(ingestion_pipeline)_ concurrency does not work when spawned ([#76](https://github.com/bosun-ai/swiftide/pull/76))
 
 ### Other
-- *(scraping)* exclude spider from test coverage
-- *(transformers)* improve test coverage
+
+- _(scraping)_ exclude spider from test coverage
+- _(transformers)_ improve test coverage
 - hide the table of contents
 - documentation and feature flag cleanup ([#69](https://github.com/bosun-ai/swiftide/pull/69))
 - move changelog to root
-- *(ci)* code coverage reporting ([#58](https://github.com/bosun-ai/swiftide/pull/58))
+- _(ci)_ code coverage reporting ([#58](https://github.com/bosun-ai/swiftide/pull/58))
 
 ## `swiftide` - [0.3.3](https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.2...swiftide-v0.3.3) - 2024-06-16
 
