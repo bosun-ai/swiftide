@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## `swiftide` - [0.4.2](https://github.com/me/my-proj/compare/swiftide-v0.4.1...swiftide-v0.4.2) - 2024-06-26
+
+### Added
+- *(ingestion_stream)* implement into for Result<Vec<IngestionNode>>
+
+### Fixed
+- *(embed)* panic if number of embeddings and node are equal
+
+### Other
+- *(ingestion_pipeline)* log_all combines other log helpers
+- readme updates
+
 ## `swiftide` - [0.4.1](https://github.com/me/my-proj/compare/swiftide-v0.4.0...swiftide-v0.4.1) - 2024-06-24
 
 ### Added
