@@ -42,6 +42,15 @@ impl Into<IngestionStream> for Vec<Result<IngestionNode>> {
     }
 }
 
+impl Into<IngestionStream> for Result<Vec<IngestionNode>> {
+    fn into(self) -> IngestionStream {
+        match self {
+            Ok(nodes) => IngestionStream::iter(nodes.into_iter().map(Ok)),
+            Err(err) => IngestionStream::iter(vec![Err(err)]),
+        }
+    }
+}
+
 impl Into<IngestionStream> for Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>> {
     fn into(self) -> IngestionStream {
         IngestionStream { inner: self }
