@@ -27,6 +27,8 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
+[![Crate Badge]][Crate]
+[![Docs Badge]][API Docs]
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -45,12 +47,13 @@
 <h3 align="center">Swiftide</h3>
 
   <p align="center">
-    Blazing fast asynchronous, parallel file ingestion and processing for RAG.
+Blazing fast data pipelines for Retrieval Augmented Generation written in Rust 
     <br />
-    <a href="https://docs.rs/swiftide/latest/swiftide/"><strong>Explore the docs »</strong></a>
+    <a href="https://swiftide.rs"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/bosun-ai/swiftide">View Demo</a>
+    <!-- <a href="https://github.com/bosun-ai/swiftide">View Demo</a> -->
+    <a href="https://docs.rs/swiftide/latest/swiftide/">API Docs</a>
     ·
     <a href="https://github.com/bosun-ai/swiftide/issues/new?labels=bug&template=bug_report.md">Report Bug</a>
     ·
@@ -64,7 +67,7 @@
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous file ingestion and processing system. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous data ingestion and processing library. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
 
 While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
 
@@ -78,7 +81,7 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ```rust
 IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
-        .filter_cached(RedisNodeCache::try_from_url(
+        .filter_cached(Redis::try_from_url(
             redis_url,
             "swiftide-examples",
         )?)
@@ -114,7 +117,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 ## Vision
 
-Our goal is to create an extremely fast, extendable platform for ingestion and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create an extremely fast, extendable platform for data ingestion and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -177,10 +180,6 @@ _For more examples, please refer to /examples and the [Documentation](https://do
 
 ## Roadmap
 
-- [ ] Python / Nodejs bindings
-- [ ] Multiple storage and sparse vector support
-- [ ] Query pipeline
-
 See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -215,16 +214,19 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/bosun-ai/swiftide.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/bosun-ai/swiftide.svg?style=flat-square
 [contributors-url]: https://github.com/bosun-ai/swiftide/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/bosun-ai/swiftide.svg?style=for-the-badge
+[forks-shield]: https://img.shields.io/github/forks/bosun-ai/swiftide.svg?style=flat-square
 [forks-url]: https://github.com/bosun-ai/swiftide/network/members
-[stars-shield]: https://img.shields.io/github/stars/bosun-ai/swiftide.svg?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/stars/bosun-ai/swiftide.svg?style=flat-square
 [stars-url]: https://github.com/bosun-ai/swiftide/stargazers
-[issues-shield]: https://img.shields.io/github/issues/bosun-ai/swiftide.svg?style=for-the-badge
+[issues-shield]: https://img.shields.io/github/issues/bosun-ai/swiftide.svg?style=flat-square
 [issues-url]: https://github.com/bosun-ai/swiftide/issues
-[license-shield]: https://img.shields.io/github/license/bosun-ai/swiftide.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/bosun-ai/swiftide.svg?style=flat-square
 [license-url]: https://github.com/bosun-ai/swiftide/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/company/bosun-ai
-[product-screenshot]: images/screenshot.png
+[Crate Badge]: https://img.shields.io/crates/v/swiftide?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
+[Crate]: https://crates.io/crates/swiftide
+[Docs Badge]: https://img.shields.io/docsrs/swiftide?logo=rust&style=flat-square&logoColor=E05D44
+[API Docs]: https://docs.rs/swiftide
