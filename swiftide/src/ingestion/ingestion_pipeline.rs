@@ -263,13 +263,8 @@ impl IngestionPipeline {
     /// Logs all results processed by the pipeline.
     ///
     /// This method logs all results processed by the pipeline at the `DEBUG` level.
-    pub fn log_all(mut self) -> Self {
-        self.stream = self
-            .stream
-            .inspect(|result| tracing::debug!("Processing result: {:?}", result))
-            .boxed()
-            .into();
-        self
+    pub fn log_all(self) -> Self {
+        self.log_errors().log_nodes()
     }
 
     /// Logs all errors encountered by the pipeline.
