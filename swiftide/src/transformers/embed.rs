@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use itertools::Itertools as _;
 
 /// A transformer that can generate embeddings for an `IngestionNode`
 ///
@@ -72,14 +73,14 @@ impl BatchableTransformer for Embed {
             .map(|embeddings| {
                 nodes
                     .into_iter()
-                    .zip(embeddings)
+                    // Will panic if the number of embeddings doesn't match the number of nodes
+                    .zip_eq(embeddings)
                     .map(|(mut n, v)| {
                         n.vector = Some(v);
-                        Ok(n)
+                        n
                     })
-                    .collect::<Vec<Result<IngestionNode>>>()
+                    .collect::<Vec<_>>()
             })
-            .unwrap_or_else(|e| vec![Err(e)])
             .into()
     }
 
