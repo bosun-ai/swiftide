@@ -7,6 +7,10 @@ use tokio::runtime::Handle;
 
 mod simple_prompt;
 
+// TODO:
+// - [ ] Implement the major available models, this is really just titan
+//
+
 #[derive(Debug, Builder)]
 #[builder(setter(strip_option))]
 pub struct AwsBedrock {
@@ -91,13 +95,13 @@ impl Default for ModelConfig {
         Self {
             temperature: 0.7,
             top_p: 0.9,
-            max_token_count: 1000,
-            stop_sequences: vec!["\n".to_string()],
+            max_token_count: 8192,
+            stop_sequences: vec![],
         }
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct BedrockRequest {
     input_text: String,
