@@ -1,3 +1,5 @@
+#[cfg(feature = "aws-bedrock")]
+pub mod aws_bedrock;
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
 #[cfg(feature = "openai")]

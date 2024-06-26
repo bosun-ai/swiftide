@@ -30,6 +30,10 @@ impl MemoryStorage {
     pub async fn get(&self, key: &str) -> Option<IngestionNode> {
         self.data.read().await.get(key).cloned()
     }
+
+    pub async fn get_all(&self) -> Vec<IngestionNode> {
+        self.data.read().await.values().cloned().collect()
+    }
 }
 
 #[async_trait]
