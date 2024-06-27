@@ -1,14 +1,18 @@
+#![allow(dead_code)]
 use anyhow::{Context as _, Result};
 use serde::{Deserialize, Serialize};
 
 use super::ModelConfig;
 
 #[derive(Clone, Debug)]
+/// The model family to use for bedrock
+///
+/// This enum is used to determine which model family to use when sending a request to bedrock.
+///
+/// A model id or arn and access is required to use the bedrock api.
 pub enum ModelFamily {
     Anthropic,
     Titan,
-    // MetaLlama,
-    // Mistral,
 }
 
 impl ModelFamily {
