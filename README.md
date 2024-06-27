@@ -27,15 +27,13 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 ![CI](https://img.shields.io/github/actions/workflow/status/bosun-ai/swiftide/test.yml?style=flat-square)
+![Coverage Status](https://img.shields.io/coverallsCoverage/github/bosun-ai/swiftide?style=flat-square)
 [![Crate Badge]][Crate]
 [![Docs Badge]][API Docs]
 [![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-[![Coverage Status](https://coveralls.io/repos/github/bosun-ai/swiftide/badge.svg)](https://coveralls.io/github/bosun-ai/swiftide)
 
 <!-- PROJECT LOGO -->
 <br />
