@@ -13,7 +13,7 @@ pub enum ModelFamily {
 
 impl ModelFamily {
     #[tracing::instrument(skip_all)]
-    pub fn build_request_to_bytes(
+    pub(crate) fn build_request_to_bytes(
         &self,
         input_text: impl AsRef<str>,
         model_config: &ModelConfig,
@@ -50,7 +50,7 @@ impl ModelFamily {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn output_message_from_bytes(&self, response_bytes: &[u8]) -> Result<String> {
+    pub(crate) fn output_message_from_bytes(&self, response_bytes: &[u8]) -> Result<String> {
         match self {
             ModelFamily::Anthropic => {
                 let response: AnthropicResponse =
