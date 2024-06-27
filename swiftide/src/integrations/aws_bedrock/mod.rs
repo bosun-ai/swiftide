@@ -5,6 +5,7 @@ use aws_sdk_bedrockruntime::Client;
 use derive_builder::Builder;
 use tokio::runtime::Handle;
 
+mod models;
 mod simple_prompt;
 
 // TODO:
@@ -22,6 +23,7 @@ pub struct AwsBedrock {
     client: Arc<Client>,
     #[builder(default)]
     model_config: ModelConfig,
+    model_family: ModelFamily,
 }
 
 impl Clone for AwsBedrock {
@@ -31,6 +33,7 @@ impl Clone for AwsBedrock {
             sdk_config: None,
             client: self.client.clone(),
             model_config: self.model_config.clone(),
+            model_family: self.model_family.clone(),
         }
     }
 }
@@ -39,8 +42,26 @@ impl AwsBedrock {
     pub fn builder() -> AwsBedrockBuilder {
         AwsBedrockBuilder::default()
     }
+
+    pub fn build_titan_family(model_id: impl Into<String>) -> AwsBedrockBuilder {
+        Self::builder().titan().model_id(model_id).to_owned()
+    }
+
+    pub fn build_anthropic_family(model_id: impl Into<String>) -> AwsBedrockBuilder {
+        Self::builder().anthropic().model_id(model_id).to_owned()
+    }
 }
 impl AwsBedrockBuilder {
+    pub fn anthropic(&mut self) -> &mut Self {
+        self.model_family = Some(ModelFamily::Anthropic);
+        self
+    }
+
+    pub fn titan(&mut self) -> &mut Self {
+        self.model_family = Some(ModelFamily::Titan);
+        self
+    }
+
     fn default_config(&self) -> aws_config::SdkConfig {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async { aws_config::from_env().load().await })
@@ -61,29 +82,16 @@ impl AwsBedrockBuilder {
 
 use serde::{Deserialize, Serialize};
 
+use self::models::ModelFamily;
+
 #[derive(Deserialize, Serialize)]
 struct Prompt {
     prompt: String,
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct BedrockResponse {
-    input_text_token_count: i32,
-    results: Vec<BedrockTextResult>,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct BedrockTextResult {
-    token_count: i32,
-    output_text: String,
-    completion_reason: String,
-}
-
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-struct ModelConfig {
+pub struct ModelConfig {
     temperature: f32,
     top_p: f32,
     max_token_count: i32,
@@ -93,26 +101,10 @@ struct ModelConfig {
 impl Default for ModelConfig {
     fn default() -> Self {
         Self {
-            temperature: 0.7,
+            temperature: 0.5,
             top_p: 0.9,
             max_token_count: 8192,
             stop_sequences: vec![],
-        }
-    }
-}
-
-#[derive(Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct BedrockRequest {
-    input_text: String,
-    text_generation_config: ModelConfig,
-}
-
-impl BedrockRequest {
-    fn new(prompt: impl Into<String>, config: ModelConfig) -> Self {
-        Self {
-            input_text: prompt.into(),
-            text_generation_config: config,
         }
     }
 }

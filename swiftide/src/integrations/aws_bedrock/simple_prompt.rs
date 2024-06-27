@@ -1,24 +1,18 @@
-use crate::{integrations::aws_bedrock::BedrockRequest, SimplePrompt};
-use anyhow::{Context as _, Result};
+use crate::SimplePrompt;
+use anyhow::Result;
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::primitives::Blob;
 
-use super::{AwsBedrock, BedrockResponse, BedrockTextResult};
+use super::AwsBedrock;
 
 #[async_trait]
 impl SimplePrompt for AwsBedrock {
     #[tracing::instrument(skip_all, err)]
     async fn prompt(&self, prompt: &str) -> Result<String> {
-        let request = BedrockRequest::new(prompt.to_string(), self.model_config.clone());
-        let Ok(prompt) = serde_json::to_vec(&request) else {
-            anyhow::bail!("Failed to serialize prompt");
-        };
-
-        tracing::debug!(
-            request = std::str::from_utf8(&prompt).unwrap(),
-            "Sending request to bedrock model"
-        );
-        let blob = Blob::new(prompt);
+        let blob = self
+            .model_family
+            .build_request_to_bytes(prompt, &self.model_config)
+            .map(Blob::new)?;
 
         let response = self
             .client
@@ -29,13 +23,13 @@ impl SimplePrompt for AwsBedrock {
             .await
             .map_err(|e| e.into_service_error())?;
 
-        let response: &[u8] = &response.body.into_inner();
-        let response = serde_json::from_slice::<BedrockResponse>(response)?;
+        let response_bytes: &[u8] = &response.body.into_inner();
 
-        let Some(BedrockTextResult { output_text, .. }) = response.results.first() else {
-            anyhow::bail!("Failed to get response");
-        };
+        tracing::debug!(
+            "Received response: {:?}",
+            std::str::from_utf8(response_bytes)?
+        );
 
-        Ok(output_text.clone())
+        self.model_family.output_message_from_bytes(response_bytes)
     }
 }
