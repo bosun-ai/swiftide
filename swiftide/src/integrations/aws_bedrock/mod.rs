@@ -1,9 +1,14 @@
 use std::sync::Arc;
 
-use aws_sdk_bedrockruntime::Client;
+use anyhow::Result;
+use async_trait::async_trait;
+use aws_sdk_bedrockruntime::{primitives::Blob, Client};
 use derive_builder::Builder;
 use serde::Serialize;
 use tokio::runtime::Handle;
+
+#[cfg(test)]
+use mockall::{automock, predicate::*};
 
 mod models;
 mod simple_prompt;
@@ -28,12 +33,33 @@ pub struct AwsBedrock {
     #[builder(default = "self.default_client()", setter(custom))]
 
     /// The bedrock runtime client
-    client: Arc<Client>,
+    client: Arc<dyn BedrockPrompt>,
     #[builder(default)]
     /// The model confiugration to use
     model_config: ModelConfig,
     /// The model family to use. In bedrock, families share their api.
     model_family: ModelFamily,
+}
+
+#[cfg_attr(test, automock)]
+#[async_trait]
+trait BedrockPrompt: std::fmt::Debug + Send + Sync {
+    async fn prompt_u8(&self, model_id: &str, blob: Blob) -> Result<Vec<u8>>;
+}
+
+#[async_trait]
+impl BedrockPrompt for Client {
+    async fn prompt_u8(&self, model_id: &str, blob: Blob) -> Result<Vec<u8>> {
+        let response = self
+            .invoke_model()
+            .body(blob)
+            .model_id(model_id)
+            .send()
+            .await
+            .map_err(|e| e.into_service_error())?;
+
+        Ok(response.body.into_inner())
+    }
 }
 
 impl Clone for AwsBedrock {
@@ -86,6 +112,12 @@ impl AwsBedrockBuilder {
 
     /// Set the aws bedrock runtime client
     pub fn client(&mut self, client: Client) -> &mut Self {
+        self.client = Some(Arc::new(client));
+        self
+    }
+
+    #[cfg(test)]
+    pub fn test_client(&mut self, client: impl BedrockPrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
     }

@@ -102,19 +102,19 @@ struct TitanRequest {
     text_generation_config: ModelConfig,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct TitanResponse {
-    input_text_token_count: i32,
-    results: Vec<TitanTextResult>,
+pub(crate) struct TitanResponse {
+    pub(crate) input_text_token_count: i32,
+    pub(crate) results: Vec<TitanTextResult>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct TitanTextResult {
-    token_count: i32,
-    output_text: String,
-    completion_reason: String,
+pub(crate) struct TitanTextResult {
+    pub(crate) token_count: i32,
+    pub(crate) output_text: String,
+    pub(crate) completion_reason: String,
 }
 
 #[derive(Serialize)]
@@ -150,7 +150,7 @@ struct AnthropicMessageContent {
 }
 
 #[derive(Deserialize)]
-struct AnthropicResponse {
+pub(crate) struct AnthropicResponse {
     id: String,
     model: String,
     #[serde(rename = "type")]
@@ -166,7 +166,7 @@ struct AnthropicResponse {
 }
 
 #[derive(Deserialize)]
-struct AnthropicUsage {
+pub(crate) struct AnthropicUsage {
     input_tokens: i32,
     output_tokens: i32,
 }
