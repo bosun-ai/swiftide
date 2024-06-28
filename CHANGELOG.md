@@ -8,23 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## `swiftide` - [0.4.3](https://github.com/me/my-proj/compare/swiftide-v0.4.2...swiftide-v0.4.3) - 2024-06-28
 
 ### Fixed
-- *(memory_storage)* fallback to incremental counter when missing id
+
+- _(memory_storage)_ fallback to incremental counter when missing id
 
 ### Other
+
 - clippy
-- *(readme)* clean up and consistent badge styles
-- *(readme)* add ci badge
+- _(readme)_ clean up and consistent badge styles
+- _(readme)_ add ci badge
 
 ## `swiftide` - [0.4.2](https://github.com/me/my-proj/compare/swiftide-v0.4.1...swiftide-v0.4.2) - 2024-06-26
 
 ### Added
-- *(ingestion_stream)* implement into for Result<Vec<IngestionNode>>
+
+- _(ingestion_stream)_ implement into for Result<Vec<IngestionNode>>
 
 ### Fixed
-- *(embed)* panic if number of embeddings and node are equal
+
+- _(embed)_ panic if number of embeddings and node are equal
 
 ### Other
-- *(ingestion_pipeline)* log_all combines other log helpers
+
+- _(ingestion_pipeline)_ log_all combines other log helpers
 - readme updates
 
 ## `swiftide` - [0.4.1](https://github.com/me/my-proj/compare/swiftide-v0.4.0...swiftide-v0.4.1) - 2024-06-24
