@@ -1,8 +1,13 @@
-#![allow(dead_code)]
 use anyhow::{Context as _, Result};
-use serde::{Deserialize, Serialize};
+use itertools::Itertools;
 
 use super::ModelConfig;
+
+pub mod anthropic;
+pub mod titan;
+
+pub(crate) use anthropic::*;
+pub(crate) use titan::*;
 
 #[derive(Clone, Debug)]
 /// The model family to use for bedrock
@@ -75,98 +80,15 @@ impl ModelFamily {
                 Ok(output_text)
             }
             ModelFamily::Titan => {
-                let response: TitanResponse =
+                let mut response: TitanResponse =
                     serde_json::from_slice(response_bytes).context("Failed to parse response")?;
-                let output_text = response
-                    .results
-                    .into_iter()
-                    .filter_map(|result| {
-                        if result.completion_reason == "stop" {
-                            Some(result.output_text)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n");
-                Ok(output_text)
+
+                if response.results.is_empty() {
+                    return Err(anyhow::anyhow!("No results returned"));
+                } else {
+                    Ok(response.results.swap_remove(0).output_text)
+                }
             }
         }
     }
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TitanRequest {
-    input_text: String,
-    text_generation_config: ModelConfig,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct TitanResponse {
-    pub(crate) input_text_token_count: i32,
-    pub(crate) results: Vec<TitanTextResult>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct TitanTextResult {
-    pub(crate) token_count: i32,
-    pub(crate) output_text: String,
-    pub(crate) completion_reason: String,
-}
-
-#[derive(Serialize)]
-struct AnthropicRequest {
-    anthropic_version: String, // always 'bedrock-2023-05-31'
-    max_tokens: i32,           // differs per model
-    messages: Vec<AnthropicMessage>,
-
-    // Optional fields
-    #[serde(skip_serializing_if = "Option::is_none")]
-    system_prompt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    stop_sequences: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    top_p: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    top_k: Option<i32>,
-}
-
-#[derive(Serialize)]
-struct AnthropicMessage {
-    role: String, // 'user' or 'assistant'
-    content: Vec<AnthropicMessageContent>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct AnthropicMessageContent {
-    #[serde(rename = "type")]
-    _type: String, // 'text' or 'image'
-    text: String,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct AnthropicResponse {
-    id: String,
-    model: String,
-    #[serde(rename = "type")]
-    _type: String,
-    role: String,
-    content: Vec<AnthropicMessageContent>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    stop_reason: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    stop_sequence: Option<String>,
-
-    usage: AnthropicUsage,
-}
-
-#[derive(Deserialize)]
-pub(crate) struct AnthropicUsage {
-    input_tokens: i32,
-    output_tokens: i32,
 }
