@@ -472,7 +472,6 @@ mod tests {
         let transformer = |node: IngestionNode| {
             let mut node = node;
             node.chunk = "transformed".to_string();
-            node.id = Some(1);
             Ok(node)
         };
         let storage = MemoryStorage::default();
@@ -489,7 +488,7 @@ mod tests {
         pipeline.run().await.unwrap();
 
         dbg!(storage.clone());
-        let processed_node = storage.get("1").await.unwrap();
+        let processed_node = storage.get("0").await.unwrap();
         assert_eq!(processed_node.chunk, "transformed");
     }
 
@@ -516,7 +515,7 @@ mod tests {
         pipeline.run().await.unwrap();
 
         dbg!(storage.clone());
-        let processed_node = storage.get("1").await.unwrap();
+        let processed_node = storage.get("0").await.unwrap();
         assert_eq!(processed_node.chunk, "transformed");
     }
 }
