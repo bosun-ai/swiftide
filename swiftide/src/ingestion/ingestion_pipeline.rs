@@ -263,13 +263,8 @@ impl IngestionPipeline {
     /// Logs all results processed by the pipeline.
     ///
     /// This method logs all results processed by the pipeline at the `DEBUG` level.
-    pub fn log_all(mut self) -> Self {
-        self.stream = self
-            .stream
-            .inspect(|result| tracing::debug!("Processing result: {:?}", result))
-            .boxed()
-            .into();
-        self
+    pub fn log_all(self) -> Self {
+        self.log_errors().log_nodes()
     }
 
     /// Logs all errors encountered by the pipeline.
@@ -477,7 +472,6 @@ mod tests {
         let transformer = |node: IngestionNode| {
             let mut node = node;
             node.chunk = "transformed".to_string();
-            node.id = Some(1);
             Ok(node)
         };
         let storage = MemoryStorage::default();
@@ -494,7 +488,7 @@ mod tests {
         pipeline.run().await.unwrap();
 
         dbg!(storage.clone());
-        let processed_node = storage.get("1").await.unwrap();
+        let processed_node = storage.get("0").await.unwrap();
         assert_eq!(processed_node.chunk, "transformed");
     }
 
@@ -521,7 +515,7 @@ mod tests {
         pipeline.run().await.unwrap();
 
         dbg!(storage.clone());
-        let processed_node = storage.get("1").await.unwrap();
+        let processed_node = storage.get("0").await.unwrap();
         assert_eq!(processed_node.chunk, "transformed");
     }
 }
