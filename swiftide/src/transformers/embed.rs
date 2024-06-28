@@ -4,7 +4,6 @@ use crate::{
     ingestion::{IngestionNode, IngestionStream},
     BatchableTransformer, EmbeddingModel,
 };
-use anyhow::Result;
 use async_trait::async_trait;
 use itertools::Itertools as _;
 
