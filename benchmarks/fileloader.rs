@@ -5,7 +5,7 @@ use swiftide::{ingestion::StreamExt, traits::Loader};
 
 async fn run_fileloader(num_files: usize) -> Result<usize> {
     let mut total_nodes = 0;
-    let mut stream = swiftide::loaders::FileLoader::new(".")
+    let mut stream = swiftide::loaders::FileLoader::new("./benchmarks/fileloader.rs")
         .with_extensions(&["rs"])
         .into_stream()
         .take(num_files);
