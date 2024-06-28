@@ -6,7 +6,11 @@ edition = "2021"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
-swiftide = { path = "../swiftide/", features = ["all", "scraping"] }
+swiftide = { path = "../swiftide/", features = [
+  "all",
+  "scraping",
+  "aws-bedrock",
+] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
 spider = "1.98"
@@ -30,3 +34,7 @@ path = "ingest_markdown_lots_of_metadata.rs"
 [[example]]
 name = "scraping-ingest"
 path = "scraping_ingest_to_markdown.rs"
+
+[[example]]
+name = "aws-bedrock"
+path = "aws_bedrock.rs"
