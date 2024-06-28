@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub(crate) struct AnthropicRequest {
-    pub(crate) anthropic_version: String, // always 'bedrock-2023-05-31'
-    pub(crate) max_tokens: i32,           // differs per model
+    pub(crate) anthropic_version: &'static str, // always 'bedrock-2023-05-31'
+    pub(crate) max_tokens: i32,                 // differs per model
     pub(crate) messages: Vec<AnthropicMessage>,
 
     // Optional fields
@@ -21,7 +21,7 @@ pub(crate) struct AnthropicRequest {
 
 #[derive(Serialize)]
 pub(crate) struct AnthropicMessage {
-    pub(crate) role: String, // 'user' or 'assistant'
+    pub(crate) role: &'static str, // 'user' or 'assistant'
     pub(crate) content: Vec<AnthropicMessageContent>,
 }
 

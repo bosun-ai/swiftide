@@ -1,5 +1,4 @@
 use anyhow::{Context as _, Result};
-use itertools::Itertools;
 
 use super::ModelConfig;
 
@@ -28,13 +27,12 @@ impl ModelFamily {
         model_config: &ModelConfig,
     ) -> Result<Vec<u8>> {
         match self {
-            // TODO: Clean up allocations
             ModelFamily::Anthropic => {
                 let request = AnthropicRequest {
-                    anthropic_version: "bedrock-2023-05-31".to_string(),
+                    anthropic_version: "bedrock-2023-05-31",
                     max_tokens: model_config.max_token_count,
                     messages: vec![AnthropicMessage {
-                        role: "user".to_string(),
+                        role: "user",
                         content: vec![AnthropicMessageContent {
                             _type: "text".to_string(),
                             text: input_text.as_ref().to_string(),
@@ -62,22 +60,14 @@ impl ModelFamily {
     pub(crate) fn output_message_from_bytes(&self, response_bytes: &[u8]) -> Result<String> {
         match self {
             ModelFamily::Anthropic => {
-                let response: AnthropicResponse =
+                let mut response: AnthropicResponse =
                     serde_json::from_slice(response_bytes).context("Failed to parse response")?;
-                let output_text = response
-                    .content
-                    .into_iter()
-                    .take(1)
-                    .filter_map(|content| {
-                        if content._type == "text" {
-                            Some(content.text)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n");
-                Ok(output_text)
+
+                if response.content.is_empty() {
+                    Err(anyhow::anyhow!("No results returned"))
+                } else {
+                    Ok(response.content.swap_remove(0).text)
+                }
             }
             ModelFamily::Titan => {
                 let mut response: TitanResponse =
