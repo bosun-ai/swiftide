@@ -6,33 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Details
-#### Changed
-- Configure Renovate
-- AWS bedrock support
-- Enable continous benchmarking and improve benchmarks
 
-#### Fixed
+### Changed
+
+- Configure Renovate (#94)
+- AWS bedrock support (#92)
+- Enable continous benchmarking and improve benchmarks (#98)
+- Update qdrant/qdrant docker tag to v1.9.7 (#95)
+
+### Fixed
+
 - Fix oversight in ingestion pipeline tests
 - Fix release-plz changelog parsing
 - Fix benchmarks in ci
+- Update rust crate spider to v1.98.3 (#100)
+- Update rust crate serde_json to v1.0.118 (#99)
+- Update rust crate htmd to v0.1.5 (#96)
+- Use git cliff manually for changelog generation
+- Fix naming of github actions
 
 ## [swiftide-v0.4.3] - 2024-06-28
-### Details
-#### Added
+
+### Added
+
 - Add ci badge
 
-#### Changed
+### Changed
+
 - Clean up and consistent badge styles
 - Clippy
 - Manual release-plz update
 
-#### Fixed
+### Fixed
+
 - Fallback to incremental counter when missing id
 
 ## [swiftide-v0.4.2] - 2024-06-26
-### Details
-#### Changed
+
+### Changed
+
 - Cleanup changelog
 - Create CONTRIBUTING.md
 - Readme updates
@@ -40,20 +52,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement into for Result<Vec<IngestionNode>>
 - Release
 
-#### Fixed
+### Fixed
+
 - Panic if number of embeddings and node are equal
 
 ## [swiftide-v0.4.1] - 2024-06-24
-### Details
-#### Changed
+
+### Changed
+
 - Can be cloned safely preserving storage
 - Allow for arbitrary closures as transformers and batchable transformers
 - Release
 
 ## [swiftide-v0.4.0] - 2024-06-23
-### Details
-#### Added
-- Support fastembed
+
+### Added
+
+- Support fastembed (#60)
 - Add constructor with defaults
 - Add automock for simpleprompt
 - Add transformers for title, summary and keywords
@@ -62,141 +77,156 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add scraping using `spider`
 - Add transformer for converting html to markdown
 
-#### Changed
-- Single changelog for all (future) crates in root
-- Code coverage reporting
+### Changed
+
+- Single changelog for all (future) crates in root (#57)
+- Code coverage reporting (#58)
 - Move changelog to root
 - Properly quote crate name in changelog
-- Documentation and feature flag cleanup
+- Documentation and feature flag cleanup (#69)
 - Hide the table of contents
-- Optional error filtering and logging
+- Optional error filtering and logging (#75)
 - Cargo update
-- Implement throttling a pipeline
-- Implement Persist for Redis
+- Implement throttling a pipeline (#77)
+- Implement Persist for Redis (#80)
 - Example for markdown with all metadata
 - Improved human readable Debug
 - Improve test coverage
-- Improved stream developer experience
+- Improved stream developer experience (#81)
 - File loader performance improvements
 - In memory storage for testing, experimentation and debugging
 - Add example scraping and ingesting a url
 - Exclude spider from test coverage
-- Release v0.4.0
+- Release v0.4.0 (#78)
 
-#### Fixed
-- Concurrency does not work when spawned
+### Fixed
+
+- Concurrency does not work when spawned (#76)
 
 ## [swiftide-v0.3.3] - 2024-06-16
-### Details
-#### Changed
-- Pretty names for pipelines
+
+### Changed
+
+- Pretty names for pipelines (#54)
 - Clone and debug for integrations
 - Builder and clone for chunk_code
 - Builder for chunk_markdown
 - Builder and clone for MetadataQACode
 - Builder and clone for MetadataQAText
-- Release v0.3.3
+- Release v0.3.3 (#56)
 
 ## [swiftide-v0.3.2] - 2024-06-16
-### Details
-#### Changed
-- Qdrant and openai builder should be consistent
-- Release v0.3.2
+
+### Changed
+
+- Qdrant and openai builder should be consistent (#52)
+- Release v0.3.2 (#53)
 
 ## [swiftide-v0.3.1] - 2024-06-15
-### Details
-#### Changed
+
+### Changed
+
 - We love feedback <3
-- Fixing some grammar typos on README.md
-- Release v0.3.1
+- Fixing some grammar typos on README.md (#51)
+- Release v0.3.1 (#50)
 
 ## [swiftide-v0.3.0] - 2024-06-14
-### Details
-#### Added
-- Support chained storage backends
 
-#### Changed
+### Added
+
+- Support chained storage backends (#46)
+
+### Changed
+
 - Update linkedin link
-- Concurrency improvements
-- Configurable concurrency for transformers and chunkers
-- Early return if any error encountered
-- Release v0.3.0
+- Concurrency improvements (#48)
+- Configurable concurrency for transformers and chunkers (#47)
+- Early return if any error encountered (#49)
+- Release v0.3.0 (#45)
 
 ## [swiftide-v0.2.1] - 2024-06-13
-### Details
-#### Changed
-- Add link to bosun
-- Release v0.2.1
 
-#### Fixed
+### Changed
+
+- Add link to bosun
+- Release v0.2.1 (#44)
+
+### Fixed
+
 - Fix documentation link
 
 ## [swiftide-v0.2.0] - 2024-06-13
-### Details
-#### Changed
-- Release v0.1.0
-- Api improvements with example
-- Documented file swiftide/src/ingestion/ingestion_pipeline.rs
-- Documented file swiftide/src/ingestion/ingestion_stream.rs
-- Documented file swiftide/src/ingestion/ingestion_node.rs
-- Documented file swiftide/src/integrations/openai/mod.rs
-- Documented file swiftide/src/integrations/treesitter/splitter.rs
-- Documented file swiftide/src/integrations/redis/node_cache.rs
-- Documented file swiftide/src/integrations/qdrant/persist.rs
-- Documented file swiftide/src/integrations/redis/mod.rs
-- Documented file swiftide/src/integrations/qdrant/mod.rs
-- Documented file swiftide/src/integrations/qdrant/ingestion_node.rs
-- Documented file swiftide/src/ingestion/mod.rs
-- Documented file swiftide/src/integrations/treesitter/supported_languages.rs
-- Documented file swiftide/tests/ingestion_pipeline.rs
-- Documented file swiftide/src/loaders/mod.rs
-- Documented file swiftide/src/transformers/chunk_code.rs
-- Documented file swiftide/src/transformers/metadata_qa_text.rs
-- Documented file swiftide/src/transformers/openai_embed.rs
-- Documented file swiftide/src/transformers/metadata_qa_code.rs
-- Documented file swiftide/src/integrations/openai/simple_prompt.rs
+
+### Changed
+
+- Release v0.1.0 (#8)
+- Api improvements with example (#10)
+- Documented file swiftide/src/ingestion/ingestion_pipeline.rs (#14)
+- Documented file swiftide/src/ingestion/ingestion_stream.rs (#16)
+- Documented file swiftide/src/ingestion/ingestion_node.rs (#15)
+- Documented file swiftide/src/integrations/openai/mod.rs (#21)
+- Documented file swiftide/src/integrations/treesitter/splitter.rs (#30)
+- Documented file swiftide/src/integrations/redis/node_cache.rs (#29)
+- Documented file swiftide/src/integrations/qdrant/persist.rs (#24)
+- Documented file swiftide/src/integrations/redis/mod.rs (#23)
+- Documented file swiftide/src/integrations/qdrant/mod.rs (#22)
+- Documented file swiftide/src/integrations/qdrant/ingestion_node.rs (#20)
+- Documented file swiftide/src/ingestion/mod.rs (#28)
+- Documented file swiftide/src/integrations/treesitter/supported_languages.rs (#26)
+- Documented file swiftide/tests/ingestion_pipeline.rs (#41)
+- Documented file swiftide/src/loaders/mod.rs (#40)
+- Documented file swiftide/src/transformers/chunk_code.rs (#39)
+- Documented file swiftide/src/transformers/metadata_qa_text.rs (#36)
+- Documented file swiftide/src/transformers/openai_embed.rs (#35)
+- Documented file swiftide/src/transformers/metadata_qa_code.rs (#34)
+- Documented file swiftide/src/integrations/openai/simple_prompt.rs (#19)
 - Update readme template links and fix template
 - Template links should be underscores
-- Release v0.2.0
+- Release v0.2.0 (#43)
 
-#### Fixed
+### Fixed
+
 - Clippy & fmt
 - Fmt
 
 ## [0.1.0] - 2024-06-13
-### Details
-#### Added
-- Add languages to chunker and range for chunk size
+
+### Added
+
+- Add languages to chunker and range for chunk size (#334)
 - Add debug info to qdrant setup
 - Add verbose log on checking if index exists
 - Add rust-toolchain on stable
 
-#### Changed
-- Replace databuoy with new ingestion pipeline
-- Models as first class citizens
-- Significant tracing improvements
+### Changed
+
+- Replace databuoy with new ingestion pipeline (#322)
+- Models as first class citizens (#318)
+- Significant tracing improvements (#368)
 - Make indexing extraction compile
 - Start cleaning up dependencies
 - Clean up more crates
 - Cargo update
 - Create LICENSE
-- Restructure repository and rename
+- Restructure repository and rename (#3)
 - Update issue templates
 - Cleanup
-- Tests, tests, tests
-- Set up basic test and release actions
-- Configure cargo toml
-- Default concurrency is the number of cpus
-- Setup basic readme
+- Tests, tests, tests (#4)
+- Set up basic test and release actions (#1)
+- Configure cargo toml (#7)
+- Default concurrency is the number of cpus (#6)
+- Setup basic readme (#5)
 - Cleanup Cargo keywords
 
-#### Fixed
+### Fixed
+
 - Ensure minimal tracing
 - Use rustls on redis and log errors
 - Properly connect to redis over tls
 - Fix build and add feature flags for all integrations
 
-#### Removed
+### Removed
+
 - Remove more unused dependencies
 - Remove more crates and update
 
