@@ -11,11 +11,11 @@ pub(crate) use titan::*;
 #[derive(Clone, Debug)]
 /// The model family to use for bedrock
 ///
-/// This enum is used to determine which model family to use when sending a request to bedrock.
-///
 /// A model id or arn and access is required to use the bedrock api.
 pub enum ModelFamily {
+    /// The anthropic model family, only the newer messaging API is supported
     Anthropic,
+    /// The titan model family
     Titan,
 }
 

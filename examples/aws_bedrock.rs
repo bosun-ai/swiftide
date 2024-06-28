@@ -1,14 +1,16 @@
 //! # [Swiftide] Aws Bedrock example
 //!
-//! This example demonstrates how to ingest the Swiftide codebase itself using FastEmbed.
+//! This example demonstrates how to use the `AwsBedrock` integration to interact with the Bedrock service.
 //!
-//! The pipeline will:
-//! - Load all `.rs` files from the current directory
-//! - Embed the chunks in batches of 10 using FastEmbed
-//! - Store the nodes in Qdrant
+//! To use bedrock you will need the following:
+//! - AWS cli or environment variables configured
+//! - An aws region configured
+//! - Access to the bedrock models you want to use
+//! - A model id or arn
 //!
 //! [Swiftide]: https://github.com/bosun-ai/swiftide
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
+//! [AWS Bedrock documentation]: https://docs.aws.amazon.com/bedrock/
 
 use swiftide::{
     ingestion, integrations, loaders::FileLoader, persist::MemoryStorage, transformers,
@@ -27,6 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     ingestion::IngestionPipeline::from_loader(FileLoader::new("./README.md"))
         .log_nodes()
+        .then_chunk(transformers::ChunkMarkdown::with_chunk_range(100..512))
         .then(transformers::MetadataSummary::new(aws_bedrock.clone()))
         .then_store_with(memory_storage.clone())
         .log_all()
@@ -37,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "{}",
         memory_storage
-            .get_all()
+            .get_all_values()
             .await
             .iter()
             .filter_map(|n| n.metadata.get("Summary"))

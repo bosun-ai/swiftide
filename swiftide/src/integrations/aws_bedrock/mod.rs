@@ -117,6 +117,7 @@ impl AwsBedrockBuilder {
     }
 
     #[cfg(test)]
+    #[allow(private_bounds)]
     pub fn test_client(&mut self, client: impl BedrockPrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
