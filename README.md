@@ -67,6 +67,12 @@ Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
 
 **Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous data ingestion and processing library. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
 
+<div align="center">
+  <a href="https://github.com/bosun-ai/swiftide">
+    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
+  </a>
+</div>
+
 While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
