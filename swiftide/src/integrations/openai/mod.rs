@@ -103,3 +103,40 @@ impl OpenAIBuilder {
         self
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    /// test default embed model
+    #[test]
+    fn test_default_embed_and_prompt_model() {
+        let openai = OpenAI::builder()
+            .default_embed_model("gpt-3")
+            .default_prompt_model("gpt-4")
+            .build()
+            .unwrap();
+        assert_eq!(
+            openai.default_options.embed_model,
+            Some("gpt-3".to_string())
+        );
+        assert_eq!(
+            openai.default_options.prompt_model,
+            Some("gpt-4".to_string())
+        );
+
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4")
+            .default_embed_model("gpt-3")
+            .build()
+            .unwrap();
+        assert_eq!(
+            openai.default_options.prompt_model,
+            Some("gpt-4".to_string())
+        );
+        assert_eq!(
+            openai.default_options.embed_model,
+            Some("gpt-3".to_string())
+        );
+    }
+}
