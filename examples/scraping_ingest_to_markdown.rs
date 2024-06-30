@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .to_owned(),
     ))
     .then(HtmlToMarkdownTransformer::default())
-    .then_chunk(ChunkMarkdown::with_chunk_range(20..2048))
+    .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
     .log_all()
     .then_store_with(MemoryStorage::default())
     .run()

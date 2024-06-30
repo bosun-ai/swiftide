@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         FileLoader::new("README.md").with_extensions(&["md"]),
     )
     .with_concurrency(1)
-    .then_chunk(ChunkMarkdown::with_chunk_range(20..2048))
+    .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
     .then(MetadataQAText::new(openai_client.clone()))
     .then(MetadataSummary::new(openai_client.clone()))
     .then(MetadataTitle::new(openai_client.clone()))

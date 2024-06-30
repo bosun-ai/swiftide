@@ -10,7 +10,7 @@ use swiftide::{
 
 async fn run_pipeline() -> Result<()> {
     IngestionPipeline::from_loader(FileLoader::new("README.md").with_extensions(&["md"]))
-        .then_chunk(ChunkMarkdown::with_chunk_range(20..256))
+        .then_chunk(ChunkMarkdown::from_chunk_range(20..256))
         .then_in_batch(10, Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(MemoryStorage::default())
         .run()
