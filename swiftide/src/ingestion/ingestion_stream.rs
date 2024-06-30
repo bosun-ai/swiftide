@@ -6,6 +6,7 @@ use anyhow::Result;
 use futures_util::stream::{self, Stream};
 use pin_project_lite::pin_project;
 use std::pin::Pin;
+use tokio::sync::mpsc::Receiver;
 
 use super::IngestionNode;
 
@@ -20,7 +21,7 @@ pin_project! {
     /// Streams, iterators and vectors of `Result<IngestionNode>` can be converted into an `IngestionStream`.
     pub struct IngestionStream {
         #[pin]
-        inner: Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>>,
+        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>>,
     }
 }
 
@@ -54,6 +55,14 @@ impl Into<IngestionStream> for Result<Vec<IngestionNode>> {
 impl Into<IngestionStream> for Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>> {
     fn into(self) -> IngestionStream {
         IngestionStream { inner: self }
+    }
+}
+
+impl Into<IngestionStream> for Receiver<Result<IngestionNode>> {
+    fn into(self) -> IngestionStream {
+        IngestionStream {
+            inner: tokio_stream::wrappers::ReceiverStream::new(self).boxed(),
+        }
     }
 }
 
