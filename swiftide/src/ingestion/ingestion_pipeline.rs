@@ -5,7 +5,7 @@ use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
 
-use super::IngestionStream;
+use super::{IngestionNode, IngestionStream};
 
 /// A pipeline for ingesting files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
@@ -254,6 +254,27 @@ impl IngestionPipeline {
                     Ok(node) => Some(Ok(node)),
                     Err(_e) => None,
                 }
+            })
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Provide a closure to selectively filter nodes or errors
+    ///
+    /// This allows you to skip specific errors or nodes, or do ad hoc inspection.
+    ///
+    /// If the closure returns true, the result is kept, otherwise it is skipped.
+    pub fn filter<F>(mut self, filter: F) -> Self
+    where
+        F: Fn(&Result<IngestionNode>) -> bool + Send + Sync + 'static,
+    {
+        self.stream = self
+            .stream
+            .filter(move |result| {
+                let will_retain = filter(result);
+
+                async move { will_retain }
             })
             .boxed()
             .into();
@@ -517,5 +538,36 @@ mod tests {
         dbg!(storage.clone());
         let processed_node = storage.get("0").await.unwrap();
         assert_eq!(processed_node.chunk, "transformed");
+    }
+
+    #[tokio::test]
+    async fn test_filter_closure() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| {
+                vec![
+                    Ok(IngestionNode::default()),
+                    Ok(IngestionNode {
+                        chunk: "skip".to_string(),
+                        ..IngestionNode::default()
+                    }),
+                    Ok(IngestionNode::default()),
+                ]
+                .into()
+            });
+        let pipeline = IngestionPipeline::from_loader(loader)
+            .filter(|result| {
+                let node = result.as_ref().unwrap();
+                node.chunk != "skip"
+            })
+            .then_store_with(storage.clone());
+        pipeline.run().await.unwrap();
+        let nodes = storage.get_all().await;
+        assert_eq!(nodes.len(), 2);
     }
 }
