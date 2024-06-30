@@ -43,6 +43,8 @@ pub struct IngestionNode {
     pub vector: Option<Vec<f32>>,
     /// Metadata associated with the node.
     pub metadata: HashMap<String, String>,
+    // TODO: document it
+    pub embed_mode: EmbedMode,
 }
 
 impl Debug for IngestionNode {
@@ -117,4 +119,13 @@ impl Hash for IngestionNode {
         self.path.hash(state);
         self.chunk.hash(state);
     }
+}
+
+// TODO: document it
+#[derive(Default, Copy, Clone, Serialize, Deserialize, PartialEq)]
+pub enum EmbedMode {
+    #[default]
+    SingleWithMetadata,
+    PerField,
+    Both,
 }

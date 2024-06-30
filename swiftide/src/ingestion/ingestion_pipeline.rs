@@ -6,7 +6,7 @@ use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
 
-use super::{IngestionNode, IngestionStream};
+use super::{EmbedMode, IngestionNode, IngestionStream};
 
 /// A pipeline for ingesting files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
@@ -80,6 +80,19 @@ impl IngestionPipeline {
     /// An instance of `IngestionPipeline` with the updated concurrency level.
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
+        self
+    }
+
+    // TODO: document it
+    pub fn with_embed_mode(mut self, embed_mode: EmbedMode) -> Self {
+        self.stream = self
+            .stream
+            .map_ok(move |mut node| {
+                node.embed_mode = embed_mode;
+                node
+            })
+            .boxed()
+            .into();
         self
     }
 
