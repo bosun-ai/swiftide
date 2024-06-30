@@ -255,6 +255,8 @@ impl IngestionPipeline {
     /// and send each item to the left or right stream based on the predicate.
     ///
     /// The other streams have a buffer, but should be started as soon as possible.
+    /// The channels of the resulting streams are bounded and the parent stream will panic
+    /// if sending fails.
     ///
     /// They can either be run concurrently, alternated between or merged back together.
     pub fn split_by<P>(self, predicate: P) -> (Self, Self)
@@ -277,10 +279,16 @@ impl IngestionPipeline {
                     async move {
                         if predicate(&item) {
                             tracing::debug!(?item, "Sending to left stream");
-                            left_tx.send(item).await.unwrap();
+                            left_tx
+                                .send(item)
+                                .await
+                                .expect("Failed to send to left stream")
                         } else {
                             tracing::debug!(?item, "Sending to right stream");
-                            right_tx.send(item).await.unwrap();
+                            right_tx
+                                .send(item)
+                                .await
+                                .expect("Failed to send to right stream")
                         }
                     }
                 })
