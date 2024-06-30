@@ -53,6 +53,22 @@ impl IngestionPipeline {
         }
     }
 
+    /// Creates an `IngestionPipeline` from a given stream.
+    ///
+    /// # Arguments
+    ///
+    /// * `stream` - An `IngestionStream` containing the nodes to be processed.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `IngestionPipeline` initialized with the provided stream.
+    pub fn from_stream(stream: impl Into<IngestionStream>) -> Self {
+        Self {
+            stream: stream.into(),
+            ..Default::default()
+        }
+    }
+
     /// Sets the concurrency level for the pipeline.
     ///
     /// # Arguments
