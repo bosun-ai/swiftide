@@ -1,3 +1,8 @@
+//! Various transformers for chunking, embedding and transforming data
+//!
+//! These transformers are generic over their implementation. In most cases you will also need
+//! to enable integrations.
+
 #[cfg(feature = "tree-sitter")]
 pub mod chunk_code;
 

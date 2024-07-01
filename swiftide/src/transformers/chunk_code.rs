@@ -1,3 +1,4 @@
+//! Chunk code using tree-sitter
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;

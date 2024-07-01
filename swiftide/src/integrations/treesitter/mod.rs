@@ -1,3 +1,4 @@
+//! Chunking code with tree-sitter
 mod splitter;
 mod supported_languages;
 

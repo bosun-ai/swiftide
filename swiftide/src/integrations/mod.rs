@@ -1,3 +1,5 @@
+//! Integrations with various platforms and external services.
+
 #[cfg(feature = "aws-bedrock")]
 pub mod aws_bedrock;
 #[cfg(feature = "fastembed")]

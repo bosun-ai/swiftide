@@ -1,3 +1,4 @@
+//! Scraping loader using and html to markdown transformer
 mod html_to_markdown_transformer;
 mod loader;
 

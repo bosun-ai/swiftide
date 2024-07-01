@@ -1,3 +1,4 @@
+//! Generate questions and answers based on code chunks and add them as metadata
 use derive_builder::Builder;
 use std::sync::Arc;
 

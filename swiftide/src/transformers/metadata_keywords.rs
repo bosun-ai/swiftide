@@ -1,3 +1,4 @@
+//! Extract keywords from a node and add them as metadata
 use std::sync::Arc;
 
 use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
