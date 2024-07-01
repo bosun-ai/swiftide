@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719786789638,
+  "lastUpdate": 1719822953578,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -209,6 +209,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "17a2be1de6c0f3bda137501db4b1703f9ed0b1c5",
+          "message": "fix(changelog): add scope",
+          "timestamp": "2024-07-01T10:31:44+02:00",
+          "tree_id": "5ce07b7c3e032e2c739f538802629e1a306cd877",
+          "url": "https://github.com/bosun-ai/swiftide/commit/17a2be1de6c0f3bda137501db4b1703f9ed0b1c5"
+        },
+        "date": 1719822953249,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 47",
             "unit": "ns/iter"
           }
         ]
