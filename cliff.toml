@@ -21,7 +21,11 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
     ### {{ group | upper_first }}
     {% for commit in commits %}
-        - {{ commit.message | upper_first }}\
+        {% if commit.scope -%} 
+          - ({{commit.scope}}): {{ commit.message | upper_first }}\
+        {% else -%}
+          - {{ commit.message | upper_first }}\
+        {% endif -%}
     {% endfor %}
 {% endfor %}\n
 """
