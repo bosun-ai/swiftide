@@ -39,11 +39,11 @@ pub struct IngestionNode {
     pub path: PathBuf,
     /// Data chunk contained in the node.
     pub chunk: String,
-    /// Optional vector representation of the data chunk.
-    pub vector: Option<Vec<f32>>,
+    /// Optional vector representation of embedded data.
+    pub vectors: Option<HashMap<EmbeddableType, Vec<f32>>>,
     /// Metadata associated with the node.
     pub metadata: HashMap<String, String>,
-    // TODO: document it
+    /// Mode of embedding data Chunk and Metadata
     pub embed_mode: EmbedMode,
 }
 
@@ -60,7 +60,7 @@ impl Debug for IngestionNode {
             .field("metadata", &self.metadata)
             .field(
                 "vector",
-                &self.vector.as_ref().map(|v| format!("[{}]", v.len())),
+                &self.vectors.as_ref().map(|v| format!("[{}]", v.len())),
             )
             .finish()
     }
@@ -77,6 +77,28 @@ impl IngestionNode {
         }
     }
 
+    /// Creates embeddable data depending on chosen `EmbedMode`.
+    /// 
+    /// # Returns
+    /// 
+    /// Embeddable data mapped to their `EmbeddableType`.
+    pub fn embeddables(&self) -> Vec<(EmbeddableType, String)> {
+        let mut embeddables = Vec::new();
+
+        if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
+            embeddables.push((EmbeddableType::Combined, self.combine_chunk_with_metadata()));
+        }
+
+        if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
+            embeddables.push((EmbeddableType::Chunk, self.chunk.clone()));
+            for (name, value) in self.metadata.iter() {
+                embeddables.push((EmbeddableType::Metadata(name.clone()), value.clone()));
+            }
+        }
+
+        embeddables
+    }
+
     /// Converts the node into an embeddable string format.
     ///
     /// The embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
@@ -85,7 +107,7 @@ impl IngestionNode {
     /// # Returns
     ///
     /// A string representing the embeddable format of the node.
-    pub fn as_embeddable(&self) -> String {
+    fn combine_chunk_with_metadata(&self) -> String {
         // Metadata formatted by newlines joined with the chunk
         let metadata = self
             .metadata
@@ -125,7 +147,22 @@ impl Hash for IngestionNode {
 #[derive(Default, Copy, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EmbedMode {
     #[default]
+    /// Embedding Chunk of data combined with Metadata.
     SingleWithMetadata,
+    /// Embedding Chunk of data and every Metadata separately.
     PerField,
+    /// Embedding Chunk of data and every Metadata separately and Chunk of data combined with Matadata.
     Both,
+}
+
+/// Type of Embeddable stored in model.
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum EmbeddableType {
+    /// Embeddable created from Chunk of data only.
+    Chunk,
+    /// Embeddable created from Chunk of data combined with Metadata.
+    Combined,
+    /// Embeddable created from Metadata.
+    /// It stores Metadata name.
+    Metadata(String)
 }

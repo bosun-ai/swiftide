@@ -83,7 +83,6 @@ impl Persist for Redis {
 mod tests {
     use super::*;
     use futures_util::TryStreamExt;
-    use std::collections::HashMap;
     use testcontainers::{runners::AsyncRunner, ContainerAsync, GenericImage};
 
     async fn start_redis() -> ContainerAsync<GenericImage> {
@@ -112,8 +111,7 @@ mod tests {
             id: Some(1),
             path: "test".into(),
             chunk: "chunk".into(),
-            vector: None,
-            metadata: HashMap::new(),
+            ..Default::default()
         };
 
         redis.store(node.clone()).await.unwrap();

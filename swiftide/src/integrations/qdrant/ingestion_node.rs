@@ -52,7 +52,8 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
         // Construct the `qdrant::PointStruct` and return it.
         Ok(qdrant::PointStruct::new(
             id,
-            self.vector.context("Vector is not set")?,
+            //TODO: set vector here (or a named vectors)
+            vec![],
             payload,
         ))
     }
