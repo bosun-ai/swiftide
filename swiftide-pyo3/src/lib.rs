@@ -1,14 +1,36 @@
+use ::swiftide::{
+    ingestion::{IngestionPipeline, IngestionStream},
+    Loader,
+};
 use pyo3::prelude::*;
 
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
+#[pyclass(name = "IngestionPipeline")]
+struct PythonIngestionPipeline {
+    inner: IngestionPipeline,
 }
 
-/// A Python module implemented in Rust.
+#[pyclass(name = "Loader")]
+struct PythonLoader(Box<dyn Loader + Send>);
+
+impl Loader for PythonLoader {
+    fn into_stream(self: Box<Self>) -> IngestionStream {
+        let loader = self.0;
+        loader.into_stream()
+    }
+}
+
+#[pymethods]
+impl PythonIngestionPipeline {
+    fn from_loader(loader: PythonLoader) -> Self {
+        Self {
+            inner: IngestionPipeline::from_loader(loader),
+        }
+    }
+}
+
 #[pymodule]
-fn swiftide_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+fn swiftide(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    // TODO: Setup logging here
+
     Ok(())
 }
