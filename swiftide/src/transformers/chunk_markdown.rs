@@ -1,3 +1,4 @@
+//! Chunk markdown content into smaller pieces
 use crate::{ingestion::IngestionNode, ingestion::IngestionStream, ChunkerTransformer};
 use async_trait::async_trait;
 use derive_builder::Builder;

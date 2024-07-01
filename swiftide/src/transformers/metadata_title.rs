@@ -1,3 +1,4 @@
+//! Generate a title and adds it as metadata
 use std::sync::Arc;
 
 use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};

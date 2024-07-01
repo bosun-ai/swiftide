@@ -1,3 +1,6 @@
+//! An integration with the AWS Bedrock service.
+//!
+//! Supports various model families for prompting.
 use std::sync::Arc;
 
 use anyhow::Result;

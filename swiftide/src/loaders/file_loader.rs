@@ -1,3 +1,4 @@
+//! Load files from a directory
 use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
 use anyhow::Context as _;
 use std::path::{Path, PathBuf};

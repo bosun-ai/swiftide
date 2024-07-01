@@ -4,8 +4,8 @@ version = "0.4.3"
 edition = "2021"
 license = "MIT"
 readme = "../README.md"
-keywords = ["llm", "rag", "ai", "async", "openai"]
-description = "Blazing fast document and code indexation"
+keywords = ["llm", "rag", "ai", "data", "openai"]
+description = "Blazing fast, streaming document and code indexation"
 categories = ["asynchronous"]
 licence-file = "../LICENSE"
 
@@ -61,8 +61,11 @@ aws-sdk-bedrockruntime = { version = "1.37.0", features = [
 [features]
 default = []
 all = ["qdrant", "redis", "tree-sitter", "openai", "fastembed"]
+# Qdrant for storage
 qdrant = ["dep:qdrant-client"]
+# Redis for caching and storage
 redis = ["dep:redis"]
+# Tree-sitter for code operations and chunking
 tree-sitter = [
   "dep:tree-sitter",
   "dep:tree-sitter-rust",
@@ -71,9 +74,13 @@ tree-sitter = [
   "dep:tree-sitter-typescript",
   "dep:tree-sitter-javascript",
 ]
+# OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
+# FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
+# Scraping via spider as loader and a html to markdown transformer
 scraping = ["dep:spider", "dep:htmd"]
+# AWS Bedrock for prompting
 aws-bedrock = [
   "dep:aws-config",
   "dep:aws-credential-types",
@@ -89,3 +96,6 @@ wiremock = "0.6.0"
 
 [lints.clippy]
 blocks_in_conditions = "allow"
+
+[package.metadata.docs.rs]
+all-features = true
