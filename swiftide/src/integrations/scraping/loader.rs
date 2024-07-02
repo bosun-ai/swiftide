@@ -38,7 +38,7 @@ impl ScrapingLoader {
 }
 
 impl Loader for ScrapingLoader {
-    fn into_stream(self) -> IngestionStream {
+    fn into_stream(self: Box<Self>) -> IngestionStream {
         let (tx, rx) = std::sync::mpsc::channel();
         let mut spider_rx = tokio::task::block_in_place(|| {
             Handle::current().block_on(async {

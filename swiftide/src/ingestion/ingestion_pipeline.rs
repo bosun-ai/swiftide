@@ -1,6 +1,7 @@
 use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer};
 use anyhow::Result;
 use futures_util::{StreamExt, TryStreamExt};
+use pyo3::{pyclass, pymethods};
 use tokio::sync::mpsc;
 use tracing::Instrument;
 
@@ -18,6 +19,7 @@ use super::{IngestionNode, IngestionStream};
 /// * `stream` - The stream of `IngestionNode` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
+#[cfg_attr(feature = "pyo3", pyclass)]
 pub struct IngestionPipeline {
     stream: IngestionStream,
     storage: Vec<Arc<dyn Persist>>,
@@ -46,7 +48,7 @@ impl IngestionPipeline {
     ///
     /// An instance of `IngestionPipeline` initialized with the provided loader.
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
-        let stream = loader.into_stream();
+        let stream = Box::new(loader).into_stream();
         Self {
             stream,
             ..Default::default()

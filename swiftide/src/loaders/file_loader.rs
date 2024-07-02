@@ -82,6 +82,10 @@ impl FileLoader {
             })
             .unwrap_or(true)
     }
+
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
 }
 
 impl Loader for FileLoader {
@@ -92,7 +96,7 @@ impl Loader for FileLoader {
     ///
     /// # Errors
     /// This method will return an error if it fails to read a file's content.
-    fn into_stream(self) -> IngestionStream {
+    fn into_stream(self: Box<Self>) -> IngestionStream {
         let files = ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))

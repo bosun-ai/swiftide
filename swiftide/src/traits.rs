@@ -68,7 +68,7 @@ where
 /// Starting point of a stream
 #[cfg_attr(test, automock)]
 pub trait Loader {
-    fn into_stream(self) -> IngestionStream;
+    fn into_stream(self: Box<Self>) -> IngestionStream;
 }
 
 #[cfg_attr(test, automock)]
