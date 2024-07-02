@@ -5,25 +5,34 @@
 mod ingestion_node;
 mod persist;
 
-use anyhow::Result;
+use std::sync::Arc;
+
+use anyhow::{Context as _, Result};
 use derive_builder::Builder;
-use qdrant_client::client::QdrantClient;
-use qdrant_client::prelude::*;
-use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::{VectorParams, VectorsConfig};
+use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuilder};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
+const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
 
 /// A struct representing a Qdrant client with configuration options.
 ///
 /// This struct is used to interact with the Qdrant vector database, providing methods to create and manage
 /// vector collections, store data, and ensure proper indexing for efficient searches.
-#[derive(Builder)]
-#[builder(pattern = "owned", setter(strip_option))]
+///
+/// Can be cloned with relative low cost as the client is shared.
+#[derive(Builder, Clone)]
+#[builder(
+    pattern = "owned",
+    setter(strip_option),
+    build_fn(error = "anyhow::Error")
+)]
 pub struct Qdrant {
     /// The Qdrant client used to interact with the Qdrant vector database.
-    #[builder(setter(into))]
-    client: QdrantClient,
+    ///
+    /// By default the client will be build from QDRANT_URL and option QDRANT_API_KEY.
+    /// It will fall back to `http://localhost:6334` if QDRANT_URL is not set.
+    #[builder(setter(into), default = "self.default_client()?")]
+    client: Arc<qdrant_client::Qdrant>,
     /// The name of the collection to be used in Qdrant. Defaults to "swiftide".
     #[builder(default = "DEFAULT_COLLECTION_NAME.to_string()")]
     #[builder(setter(into))]
@@ -41,7 +50,9 @@ impl Qdrant {
         QdrantBuilder::default()
     }
 
-    /// Tries to create a `QdrantBuilder` from a given URL.
+    /// Tries to create a `QdrantBuilder` from a given URL. Will use the api key in QDRANT_API_KEY if present.
+    ///
+    /// Returns
     ///
     /// # Arguments
     ///
@@ -51,7 +62,11 @@ impl Qdrant {
     ///
     /// A `Result` containing the `QdrantBuilder` if successful, or an error otherwise.
     pub fn try_from_url(url: impl AsRef<str>) -> Result<QdrantBuilder> {
-        Ok(QdrantBuilder::default().client(QdrantClient::from_url(url.as_ref()).build()?))
+        Ok(QdrantBuilder::default().client(
+            qdrant_client::Qdrant::from_url(url.as_ref())
+                .api_key(std::env::var("QDRANT_API_KEY"))
+                .build()?,
+        ))
     }
 
     /// Creates an index in the Qdrant collection if it does not already exist.
@@ -71,19 +86,25 @@ impl Qdrant {
 
         tracing::warn!("Creating collection {}", self.collection_name);
         self.client
-            .create_collection(&CreateCollection {
-                collection_name: self.collection_name.to_string(),
-                vectors_config: Some(VectorsConfig {
-                    config: Some(Config::Params(VectorParams {
-                        size: self.vector_size,
-                        distance: Distance::Cosine.into(),
-                        ..Default::default()
-                    })),
-                }),
-                ..Default::default()
-            })
+            .create_collection(
+                CreateCollectionBuilder::new(self.collection_name.clone())
+                    .vectors_config(VectorParamsBuilder::new(self.vector_size, Distance::Cosine)),
+            )
             .await?;
         Ok(())
+    }
+}
+
+impl QdrantBuilder {
+    fn default_client(&self) -> Result<Arc<qdrant_client::Qdrant>> {
+        let client = qdrant_client::Qdrant::from_url(
+            &std::env::var("QDRANT_URL").unwrap_or(DEFAULT_QDRANT_URL.to_string()),
+        )
+        .api_key(std::env::var("QDRANT_API_KEY"))
+        .build()
+        .context("Could not build default qdrant client")?;
+
+        Ok(Arc::new(client))
     }
 }
 

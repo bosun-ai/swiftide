@@ -4,6 +4,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
+use qdrant_client::qdrant::UpsertPointsBuilder;
 
 use crate::{
     ingestion::{IngestionNode, IngestionStream},
@@ -54,8 +55,14 @@ impl Persist for Qdrant {
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
     async fn store(&self, node: crate::ingestion::IngestionNode) -> Result<IngestionNode> {
         let point = node.clone().try_into()?;
+
+        tracing::debug!(?node, ?point, "Storing node");
+
         self.client
-            .upsert_points_blocking(self.collection_name.to_string(), None, vec![point], None)
+            .upsert_points(UpsertPointsBuilder::new(
+                self.collection_name.to_string(),
+                vec![point],
+            ))
             .await?;
         Ok(node)
     }
@@ -86,15 +93,20 @@ impl Persist for Qdrant {
 
         let points = points.unwrap();
 
+        tracing::debug!("Storing batch of {} nodes", points.len());
+
         let result = self
             .client
-            .upsert_points_blocking(self.collection_name.to_string(), None, points, None)
+            .upsert_points(UpsertPointsBuilder::new(
+                self.collection_name.to_string(),
+                points,
+            ))
             .await;
 
         if result.is_ok() {
             IngestionStream::iter(nodes.into_iter().map(Ok))
         } else {
-            vec![Err(result.unwrap_err())].into()
+            vec![Err(result.unwrap_err().into())].into()
         }
     }
 }
