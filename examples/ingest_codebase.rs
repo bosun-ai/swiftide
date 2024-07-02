@@ -40,11 +40,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("redis://localhost:6379")
         .to_owned();
 
-    let qdrant_url = std::env::var("QDRANT_URL")
-        .as_deref()
-        .unwrap_or("http://localhost:6334")
-        .to_owned();
-
     ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(Redis::try_from_url(redis_url, "swiftide-examples")?)
         .then(MetadataQACode::new(openai_client.clone()))
@@ -54,10 +49,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?)
         .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
-            Qdrant::try_from_url(qdrant_url)?
+            Qdrant::builder()
                 .batch_size(50)
                 .vector_size(1536)
-                .collection_name("swiftide-examples".to_string())
+                .collection_name("swiftide-examples")
                 .build()?,
         )
         .run()
