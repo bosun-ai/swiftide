@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719831176166,
+  "lastUpdate": 1719931598146,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -335,6 +335,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 4",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "353cd9ed36fcf6fb8f1db255d8b5f4a914ca8496",
+          "message": "fix(qdrant): upgrade and better defaults (#118)\n\n- **fix(deps): update rust crate qdrant-client to v1.10.1**\r\n- **fix(qdrant): upgrade to new qdrant with sensible defaults**\r\n- **feat(qdrant): safe to clone with internal arc**\r\n\r\n---------\r\n\r\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2024-07-02T16:42:42+02:00",
+          "tree_id": "13d47de24d4f2d8c6f4a61fe2a6ec3e100185e90",
+          "url": "https://github.com/bosun-ai/swiftide/commit/353cd9ed36fcf6fb8f1db255d8b5f4a914ca8496"
+        },
+        "date": 1719931597710,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 34",
             "unit": "ns/iter"
           }
         ]
