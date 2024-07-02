@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Configure Renovate (#94)
-- (ci): Enable continous benchmarking and improve benchmarks (#98)
+- (ci): Enable continuous benchmarking and improve benchmarks (#98)
 - (deps): Update qdrant/qdrant docker tag to v1.9.7 (#95)
 - (deps): Update rust crate testcontainers to 0.19.0 (#102)
 - Ensure feat is always in Added
