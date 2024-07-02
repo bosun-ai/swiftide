@@ -114,21 +114,32 @@ impl CodeSplitter {
         let mut current_chunk = String::new();
 
         for child in node.children(&mut node.walk()) {
-            if child.end_byte() - child.start_byte() > self.max_bytes() {
-                // Child is too big, recursively chunk the child
+            assert!(
+                current_chunk.len() <= self.max_bytes(),
+                "Chunk too big: {} > {}",
+                current_chunk.len(),
+                self.max_bytes()
+            );
+
+            // if the next child will make the chunk too big then there are two options:
+            // 1. if the next child is too big to fit in a whole chunk, then recursively chunk it one level down
+            // 2. if the next child is small enough to fit in a chunk, then add the current chunk to the list and start a new chunk
+
+            let next_child_size = child.end_byte() - child.start_byte();
+            if current_chunk.len() + next_child_size >= self.max_bytes() {
                 if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
                     new_chunks.push(current_chunk);
                 }
-                current_chunk = String::new();
-                new_chunks.extend(self.chunk_node(child, source, last_end));
-            } else if current_chunk.len() + child.end_byte() - child.start_byte() > self.max_bytes()
-            {
-                // Child would make the current chunk too big, so start a new chunk
-                new_chunks.push(current_chunk.trim().to_string());
-                current_chunk = source[last_end..child.end_byte()].to_string();
+                if next_child_size > self.max_bytes() {
+                    new_chunks.extend(self.chunk_node(child, source, last_end));
+                    current_chunk = String::new();
+                } else {
+                    current_chunk = source[child.start_byte()..child.end_byte()].to_string();
+                }
             } else {
-                current_chunk += &source[last_end..child.end_byte()];
+                current_chunk += &source[child.start_byte()..child.end_byte()];
             }
+
             last_end = child.end_byte();
         }
 
@@ -363,7 +374,8 @@ mod test {
             );
             assert!(
                 chunks.iter().all(|chunk| chunk.len() <= max),
-                "{:?}",
+                "max = {}, chunks = {:?}",
+                max,
                 chunks
                     .iter()
                     .filter(|chunk| chunk.len() > max)
