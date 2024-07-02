@@ -21,6 +21,7 @@ impl Loader for PythonLoader {
 
 #[pymethods]
 impl PythonIngestionPipeline {
+    #[staticmethod]
     fn from_loader(loader: PythonLoader) -> Self {
         Self {
             inner: IngestionPipeline::from_loader(loader),
