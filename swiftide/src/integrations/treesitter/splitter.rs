@@ -318,4 +318,59 @@ mod test {
             ]
         )
     }
+
+    #[test]
+    fn test_on_self() {
+        // read the current file
+        let code = include_str!("splitter.rs");
+        // try chunking with varying ranges of bytes, give me ten with different min and max
+        let ranges = vec![
+            10..200,
+            50..100,
+            100..150,
+            150..200,
+            200..250,
+            250..300,
+            300..350,
+            350..400,
+            400..450,
+            450..500,
+        ];
+
+        for range in ranges {
+            let min = range.start;
+            let max = range.end;
+            let splitter = CodeSplitter::builder()
+                .try_language("rust")
+                .unwrap()
+                .chunk_size(range)
+                .build()
+                .unwrap();
+
+            assert_eq!(splitter.min_bytes(), min);
+            assert_eq!(splitter.max_bytes(), max);
+
+            let chunks = splitter.split(code).unwrap();
+
+            // assert no chunks smaller than min
+            assert!(
+                chunks.iter().all(|chunk| chunk.len() >= min),
+                "{:?}",
+                chunks
+                    .iter()
+                    .filter(|chunk| chunk.len() < min)
+                    .collect::<Vec<_>>()
+            );
+            assert!(
+                chunks.iter().all(|chunk| chunk.len() <= max),
+                "{:?}",
+                chunks
+                    .iter()
+                    .filter(|chunk| chunk.len() > max)
+                    .collect::<Vec<_>>()
+            );
+        }
+
+        // assert there are no nodes smaller than 10
+    }
 }
