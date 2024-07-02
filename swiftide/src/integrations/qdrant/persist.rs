@@ -55,6 +55,9 @@ impl Persist for Qdrant {
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
     async fn store(&self, node: crate::ingestion::IngestionNode) -> Result<IngestionNode> {
         let point = node.clone().try_into()?;
+
+        tracing::debug!(?node, ?point, "Storing node");
+
         self.client
             .upsert_points(UpsertPointsBuilder::new(
                 self.collection_name.to_string(),
@@ -89,6 +92,8 @@ impl Persist for Qdrant {
         }
 
         let points = points.unwrap();
+
+        tracing::debug!("Storing batch of {} nodes", points.len());
 
         let result = self
             .client

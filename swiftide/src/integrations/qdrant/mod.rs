@@ -5,17 +5,22 @@
 mod ingestion_node;
 mod persist;
 
+use std::sync::Arc;
+
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, VectorParamsBuilder};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
+const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
 
 /// A struct representing a Qdrant client with configuration options.
 ///
 /// This struct is used to interact with the Qdrant vector database, providing methods to create and manage
 /// vector collections, store data, and ensure proper indexing for efficient searches.
-#[derive(Builder)]
+///
+/// Can be cloned with relative low cost as the client is shared.
+#[derive(Builder, Clone)]
 #[builder(
     pattern = "owned",
     setter(strip_option),
@@ -25,8 +30,9 @@ pub struct Qdrant {
     /// The Qdrant client used to interact with the Qdrant vector database.
     ///
     /// By default the client will be build from QDRANT_URL and option QDRANT_API_KEY.
+    /// It will fall back to `http://localhost:6334` if QDRANT_URL is not set.
     #[builder(setter(into), default = "self.default_client()?")]
-    client: qdrant_client::Qdrant,
+    client: Arc<qdrant_client::Qdrant>,
     /// The name of the collection to be used in Qdrant. Defaults to "swiftide".
     #[builder(default = "DEFAULT_COLLECTION_NAME.to_string()")]
     #[builder(setter(into))]
@@ -90,13 +96,15 @@ impl Qdrant {
 }
 
 impl QdrantBuilder {
-    fn default_client(&self) -> Result<qdrant_client::Qdrant> {
-        qdrant_client::Qdrant::from_url(
-            &std::env::var("QDRANT_URL").unwrap_or("http://localhost:6333".to_string()),
+    fn default_client(&self) -> Result<Arc<qdrant_client::Qdrant>> {
+        let client = qdrant_client::Qdrant::from_url(
+            &std::env::var("QDRANT_URL").unwrap_or(DEFAULT_QDRANT_URL.to_string()),
         )
         .api_key(std::env::var("QDRANT_API_KEY"))
         .build()
-        .context("Could not build default qdrant client")
+        .context("Could not build default qdrant client")?;
+
+        Ok(Arc::new(client))
     }
 }
 

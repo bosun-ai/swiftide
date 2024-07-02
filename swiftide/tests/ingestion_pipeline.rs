@@ -2,6 +2,7 @@
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
+use qdrant_client::qdrant::{SearchPointsBuilder, Value};
 use serde_json::json;
 use swiftide::{ingestion::IngestionPipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
@@ -66,7 +67,7 @@ async fn test_ingestion_pipeline() {
           "data": [
             {
               "object": "embedding",
-            "embedding": vec![0; 1536],
+              "embedding": vec![0; 1536],
               "index": 0
             }
           ],
@@ -174,20 +175,18 @@ async fn test_ingestion_pipeline() {
 
     result.expect("Ingestion pipeline failed");
 
-    use qdrant_client::prelude::*;
-    let qdrant_client = QdrantClient::from_url(&qdrant_url).build().unwrap();
-    let search_result = qdrant_client
-        .search_points(&SearchPoints {
-            collection_name: "swiftide-test".to_string(),
-            vector: vec![0_f32; 1536],
-            limit: 10,
-            with_payload: Some(true.into()),
-            ..Default::default()
-        })
-        .await
+    let qdrant_client = qdrant_client::Qdrant::from_url(&qdrant_url)
+        .build()
         .unwrap();
 
-    let first = search_result.result.first().unwrap();
+    let search_request =
+        SearchPointsBuilder::new("swiftide-test", vec![0_f32; 1536], 10).with_payload(true);
+
+    let search_response = qdrant_client.search_points(search_request).await.unwrap();
+
+    dbg!(&search_response);
+
+    let first = search_response.result.first().unwrap();
 
     assert!(first
         .payload
