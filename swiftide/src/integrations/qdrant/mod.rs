@@ -5,21 +5,14 @@
 mod ingestion_node;
 mod persist;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use std::sync::Arc;
 
 use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
-use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::{CreateCollectionBuilder, Distance};
-use qdrant_client::qdrant::{
-    SparseIndexConfig, SparseVectorConfig, SparseVectorParams, VectorParams, VectorParamsBuilder,
-    VectorParamsMap, VectorsConfig as QVectorsConfig,
-};
-use qdrant_client::{qdrant, Qdrant as QClient};
+use qdrant_client::qdrant;
 
-use crate::ingestion::{EmbedMode, EmbeddableType};
+use crate::ingestion::EmbeddableType;
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -118,82 +111,37 @@ impl Qdrant {
 
         tracing::warn!("Creating collection {}", self.collection_name);
         let vectors_config = self.create_vectors_config()?;
-        let create_collection_req = CreateCollectionBuilder::new(self.collection_name.clone())
+        let request = qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
             .vectors_config(vectors_config);
-        self.client
-            .create_collection(create_collection_req).await?;
 
-        // self.client
-        //     .create_collection(
-        //         CreateCollectionBuilder::new(self.collection_name.clone())
-        //             .vectors_config(VectorParamsBuilder::new(self.vector_size, Distance::Cosine)),
-        //     )
-            // .create_collection(&CreateCollection {
-            //     collection_name: self.collection_name.to_string(),
-            //     // vectors_config: Some(VectorsConfig {
-            //     //     config: Some(Config::Params(VectorParams {
-            //     //         size: self.vector_size,
-            //     //         distance: Distance::Cosine.into(),
-            //     //         ..Default::default()
-            //     //     })),
-            //     // }),
-            //     vectors_config: Some(VectorsConfig {
-            //         config: Some(Config::ParamsMap(VectorParamsMap {
-            //             map: [
-            //                 (
-            //                     "image".to_string(),
-            //                     VectorParams {
-            //                         size: 4,
-            //                         distance: Distance::Dot.into(),
-            //                         ..Default::default()
-            //                     },
-            //                 ),
-            //                 (
-            //                     "text".to_string(),
-            //                     VectorParams {
-            //                         size: 8,
-            //                         distance: Distance::Cosine.into(),
-            //                         ..Default::default()
-            //                     },
-            //                 ),
-            //             ]
-            //             .into(),
-            //         })),
-            //     }),
-            //     sparse_vectors_config: Some(SparseVectorConfig {
-            //         map: HashMap::from([(
-            //             "sparsed".into(),
-            //             SparseVectorParams {
-            //                 index: Some(SparseIndexConfig {
-            //                     ..Default::default()
-            //                 }),
-            //             },
-            //         )]),
-            //     }),
-            //     ..Default::default()
-            // })
-            // .await?;
+        self.client.create_collection(request).await?;
         Ok(())
     }
 
-    fn create_vectors_config(&self) -> Result<impl Into<qdrant_client::qdrant::VectorsConfig>>
-    {
+    fn create_vectors_config(&self) -> Result<qdrant_client::qdrant::vectors_config::Config> {
         if self.vectors.is_empty() {
             bail!("No configured vectors");
         } else if self.vectors.len() == 1 {
             let config = self.vectors.values().next().expect("Has one vector config");
-            return Ok(VectorParamsBuilder::new(self.vector_size, Distance::Cosine).build());
+            let vector_params = self.create_vector_params(config);
+            return Ok(qdrant::vectors_config::Config::Params(vector_params));
+        }
+        let mut map = HashMap::<String, qdrant::VectorParams>::default();
+        for (emebddable_type, config) in &self.vectors {
+            let vector_name = emebddable_type.to_string();
+            let vector_params = self.create_vector_params(config);
+            map.insert(vector_name, vector_params.clone());
         }
 
-        todo!()
+        Ok(qdrant::vectors_config::Config::ParamsMap(
+            qdrant::VectorParamsMap { map },
+        ))
     }
 
-    fn create_vector_config(
-        &self,
-        vector_config: &VectorConfig,
-    ) -> qdrant_client::qdrant::VectorsConfig {
-        let vector_size = vector_config.vector_size.unwrap_or(self.vector_size);
-        let distance = vector_config.distance;
+    fn create_vector_params(&self, config: &VectorConfig) -> qdrant::VectorParams {
+        let vector_size = config.vector_size.unwrap_or(self.vector_size);
+        let distance = config.distance;
+        qdrant::VectorParamsBuilder::new(vector_size, distance).build()
     }
 }
 

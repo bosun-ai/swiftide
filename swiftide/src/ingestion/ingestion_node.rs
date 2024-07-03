@@ -25,6 +25,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use strum::EnumString;
 
 /// Represents a unit of data in the ingestion process.
 ///
@@ -156,7 +157,7 @@ pub enum EmbedMode {
 }
 
 /// Type of Embeddable stored in model.
-#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash, strum_macros::Display)]
 pub enum EmbeddableType {
     #[default]
     /// Embeddable created from Chunk of data combined with Metadata.
@@ -165,5 +166,6 @@ pub enum EmbeddableType {
     Chunk,
     /// Embeddable created from Metadata.
     /// It stores Metadata name.
+    #[strum(to_string = "Metadata: {0}")]
     Metadata(String),
 }
