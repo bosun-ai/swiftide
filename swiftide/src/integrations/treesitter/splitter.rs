@@ -133,10 +133,6 @@ impl CodeSplitter {
 
             let next_child_size = child.end_byte() - last_end;
             if current_chunk.len() + next_child_size >= self.max_bytes() {
-                // if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
-                //     new_chunks.push(current_chunk);
-                // }
-
                 if next_child_size > self.max_bytes() {
                     let mut sub_chunks =
                         self.chunk_node(child, source, last_end, Some(current_chunk));
