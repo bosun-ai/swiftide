@@ -3,10 +3,10 @@
 //! for efficient vector similarity search. The module handles metadata augmentation and ensures
 //! data compatibility with Qdrant's required format.
 
-use anyhow::{Context as _, Result};
+use anyhow::{bail, Result};
 use std::collections::HashMap;
 
-use crate::ingestion::IngestionNode;
+use crate::ingestion::{EmbeddableType, IngestionNode};
 use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
@@ -49,12 +49,32 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
             .collect::<HashMap<&str, Value>>()
             .into();
 
+        let Some(vectors) = self.vectors else {
+            bail!("IngestionNode without vectors")
+        };
+        let vectors = try_into_vectors(vectors)?;
+
         // Construct the `qdrant::PointStruct` and return it.
         Ok(qdrant::PointStruct::new(
-            id,
-            // TODO: set vector here (or a named vectors)
-            vec![],
-            payload,
+            id, // TODO: set vector here (or a named vectors)
+            vectors, payload,
         ))
     }
+}
+
+fn try_into_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdrant::Vectors> {
+    if vectors.is_empty() {
+        bail!("IngestionNode with empty vectors")
+    } else if vectors.len() == 1 {
+        let vector = vectors
+            .into_values()
+            .next()
+            .expect("IngestionNode has vector entry");
+        return Ok(vector.into());
+    }
+    let vectors = vectors
+        .into_iter()
+        .map(|(vector_type, vector)| (vector_type.to_string(), vector))
+        .collect::<HashMap<String, Vec<f32>>>();
+    Ok(vectors.into())
 }

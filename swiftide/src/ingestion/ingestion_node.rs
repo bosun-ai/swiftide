@@ -25,7 +25,6 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use strum::EnumString;
 
 /// Represents a unit of data in the ingestion process.
 ///
@@ -61,6 +60,7 @@ impl Debug for IngestionNode {
             .field("metadata", &self.metadata)
             .field(
                 "vector",
+                //TODO: format me
                 &self.vectors.as_ref().map(|v| format!("[{}]", v.len())),
             )
             .finish()

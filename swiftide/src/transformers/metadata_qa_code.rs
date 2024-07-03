@@ -7,6 +7,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
 
+pub const NAME: &str = "Questions and Answers (code)";
+
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
 /// This struct integrates with the ingestion pipeline to enhance the metadata of each code chunk
 /// by adding relevant questions and answers.
@@ -134,7 +136,7 @@ impl Transformer for MetadataQACode {
         let response = self.client.prompt(&prompt).await?;
 
         node.metadata
-            .insert("Questions and Answers".to_string(), response);
+            .insert(super::metadata_qa_text::NAME.into(), response);
 
         Ok(node)
     }
@@ -164,7 +166,7 @@ mod test {
         let result = transformer.transform_node(node).await.unwrap();
 
         assert_eq!(
-            result.metadata.get("Questions and Answers").unwrap(),
+            result.metadata.get("Questions and Answers (code)").unwrap(),
             "Q1: Hello\nA1: World"
         );
     }

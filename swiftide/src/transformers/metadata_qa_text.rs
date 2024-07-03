@@ -7,6 +7,8 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
 
+pub const NAME: &str = "Questions and Answers (text)";
+
 /// This module defines the `MetadataQAText` struct and its associated methods,
 /// which are used for generating metadata in the form of questions and answers
 /// from a given text. It interacts with a client (e.g., OpenAI) to generate
@@ -135,7 +137,7 @@ impl Transformer for MetadataQAText {
         let response = self.client.prompt(&prompt).await?;
 
         node.metadata
-            .insert("Questions and Answers".to_string(), response);
+            .insert(NAME.into(), response);
 
         Ok(node)
     }
@@ -165,7 +167,7 @@ mod test {
         let result = transformer.transform_node(node).await.unwrap();
 
         assert_eq!(
-            result.metadata.get("Questions and Answers").unwrap(),
+            result.metadata.get("Questions and Answers (text)").unwrap(),
             "Q1: Hello\nA1: World"
         );
     }

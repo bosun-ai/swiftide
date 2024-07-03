@@ -119,6 +119,19 @@ impl Qdrant {
     }
 
     fn create_vectors_config(&self) -> Result<qdrant_client::qdrant::vectors_config::Config> {
+
+        // //
+        // if let Some(config) = self.vectors.get(&EmbeddableType::Chunk) {
+        //     let mut map = HashMap::<String, qdrant::VectorParams>::default();
+        //     let vector_name = EmbeddableType::Chunk.to_string();
+        //     let vector_params = self.create_vector_params(config);
+        //     map.insert(vector_name, vector_params.clone());
+        //     return Ok(qdrant::vectors_config::Config::ParamsMap(
+        //         qdrant::VectorParamsMap { map },
+        //     ));
+        // }
+        // //
+
         if self.vectors.is_empty() {
             bail!("No configured vectors");
         } else if self.vectors.len() == 1 {
@@ -140,8 +153,7 @@ impl Qdrant {
 
     fn create_vector_params(&self, config: &VectorConfig) -> qdrant::VectorParams {
         let vector_size = config.vector_size.unwrap_or(self.vector_size);
-        let distance = config.distance;
-        qdrant::VectorParamsBuilder::new(vector_size, distance).build()
+        qdrant::VectorParamsBuilder::new(vector_size, qdrant::Distance::Cosine).build()
     }
 }
 
@@ -173,6 +185,6 @@ pub struct VectorConfig {
     #[builder(setter(into, strip_option), default)]
     vector_size: Option<u64>,
     // TODO: do not export qdrant type
-    #[builder(default = "qdrant_client::qdrant::Distance::Cosine")]
-    distance: qdrant::Distance,
+    // #[builder(default = "qdrant_client::qdrant::Distance::Cosine")]
+    // distance: qdrant::Distance,
 }

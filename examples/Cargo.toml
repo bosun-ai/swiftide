@@ -38,3 +38,7 @@ path = "scraping_ingest_to_markdown.rs"
 [[example]]
 name = "aws-bedrock"
 path = "aws_bedrock.rs"
+
+[[example]]
+name = "store-multiple-vectors"
+path = "store_multiple_vectors.rs"

@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
 use crate::{
-    ingestion::{EmbedMode, IngestionNode, IngestionStream},
+    ingestion::{IngestionNode, IngestionStream},
     Persist,
 };
 

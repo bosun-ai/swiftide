@@ -5,7 +5,10 @@
 //! trait and it should work out of the box.
 use std::fmt::Debug;
 
-use crate::{ingestion::{EmbedMode, IngestionNode, IngestionStream}, Embeddings};
+use crate::{
+    ingestion::{IngestionNode, IngestionStream},
+    Embeddings,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 

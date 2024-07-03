@@ -68,11 +68,14 @@ impl BatchableTransformer for Embed {
     #[tracing::instrument(skip_all, name = "transformers.embed")]
     async fn batch_transform(&self, mut nodes: Vec<IngestionNode>) -> IngestionStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
+
+        // EmbeddableTypes grouped by node stored in order of processed nodes.
         let mut embeddings_keys_groups = VecDeque::with_capacity(nodes.len());
+        // Embeddable data of every node stored in order of processed nodes.
         let embeddables_data =
             nodes
                 .iter_mut()
-                .fold(Vec::new(), |mut embeddables_data, mut node| {
+                .fold(Vec::new(), |mut embeddables_data, node| {
                     let embeddables = node.embeddables();
                     let mut embeddables_keys = Vec::with_capacity(embeddables.len());
                     for (embeddable_key, embeddable_data) in embeddables.into_iter() {
@@ -83,6 +86,7 @@ impl BatchableTransformer for Embed {
                     embeddables_data
                 });
 
+        // Embeddings vectors of every node stored in order of processed nodes.
         let mut embeddings = match self.embed_model.embed(embeddables_data).await {
             Ok(embeddngs) => VecDeque::from(embeddngs),
             Err(err) => return IngestionStream::iter(Err(err)),
