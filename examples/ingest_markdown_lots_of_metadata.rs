@@ -34,8 +34,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     ingestion::IngestionPipeline::from_loader(
-        FileLoader::new("README.md").with_extensions(&["md"]),
+        //TODO: revert this path
+        FileLoader::new("/home/przemek/Code/swiftide_utils/README.md").with_extensions(&["md"]),
     )
+    .with_embed_mode(ingestion::EmbedMode::PerField)
     .with_concurrency(1)
     .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
     .then(MetadataQAText::new(openai_client.clone()))

@@ -78,9 +78,9 @@ impl IngestionNode {
     }
 
     /// Creates embeddable data depending on chosen `EmbedMode`.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Embeddable data mapped to their `EmbeddableType`.
     pub fn embeddables(&self) -> Vec<(EmbeddableType, String)> {
         let mut embeddables = Vec::new();
@@ -144,7 +144,7 @@ impl Hash for IngestionNode {
 }
 
 // TODO: document it
-#[derive(Default, Copy, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Copy, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EmbedMode {
     #[default]
     /// Embedding Chunk of data combined with Metadata.
@@ -156,13 +156,14 @@ pub enum EmbedMode {
 }
 
 /// Type of Embeddable stored in model.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum EmbeddableType {
-    /// Embeddable created from Chunk of data only.
-    Chunk,
+    #[default]
     /// Embeddable created from Chunk of data combined with Metadata.
     Combined,
+    /// Embeddable created from Chunk of data only.
+    Chunk,
     /// Embeddable created from Metadata.
     /// It stores Metadata name.
-    Metadata(String)
+    Metadata(String),
 }

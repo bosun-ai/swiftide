@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use qdrant_client::qdrant::UpsertPointsBuilder;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    ingestion::{EmbedMode, IngestionNode, IngestionStream},
     traits::Persist,
 };
 

@@ -52,7 +52,7 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
         // Construct the `qdrant::PointStruct` and return it.
         Ok(qdrant::PointStruct::new(
             id,
-            //TODO: set vector here (or a named vectors)
+            // TODO: set vector here (or a named vectors)
             vec![],
             payload,
         ))

@@ -4,22 +4,22 @@
 
 mod ingestion_node;
 mod persist;
-
 use std::collections::HashMap;
-
-use std::collections::HashMap;
+use std::rc::Rc;
 
 use std::sync::Arc;
 
-use anyhow::{Context as _, Result};
+use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
-use qdrant_client::client::QdrantClient;
-use qdrant_client::prelude::*;
 use qdrant_client::qdrant::vectors_config::Config;
+use qdrant_client::qdrant::{CreateCollectionBuilder, Distance};
 use qdrant_client::qdrant::{
-    SparseIndexConfig, SparseVectorConfig, SparseVectorParams, VectorParams,
-    VectorParamsMap, VectorsConfig,
+    SparseIndexConfig, SparseVectorConfig, SparseVectorParams, VectorParams, VectorParamsBuilder,
+    VectorParamsMap, VectorsConfig as QVectorsConfig,
 };
+use qdrant_client::{qdrant, Qdrant as QClient};
+
+use crate::ingestion::{EmbedMode, EmbeddableType};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -52,10 +52,29 @@ pub struct Qdrant {
     /// The batch size for operations. Optional.
     #[builder(default)]
     batch_size: Option<usize>,
+    #[builder(private, default = "Self::default_vectors()")]
+    vectors: HashMap<EmbeddableType, VectorConfig>,
 }
 
-//TODO: vector config type
-// pub struct VectorConfig
+impl QdrantBuilder {
+    pub fn with_vector(
+        mut self,
+        embeddable_type: EmbeddableType,
+        vector: VectorConfig,
+    ) -> QdrantBuilder {
+        if self.vectors.is_none() {
+            self = self.vectors(Default::default());
+        }
+        if let Some(vectors) = self.vectors.as_mut() {
+            vectors.insert(embeddable_type, vector);
+        }
+        self
+    }
+
+    fn default_vectors() -> HashMap<EmbeddableType, VectorConfig> {
+        HashMap::from([(Default::default(), Default::default())])
+    }
+}
 
 impl Qdrant {
     /// Returns a new `QdrantBuilder` for constructing a `Qdrant` instance.
@@ -98,57 +117,83 @@ impl Qdrant {
         }
 
         tracing::warn!("Creating collection {}", self.collection_name);
+        let vectors_config = self.create_vectors_config()?;
+        let create_collection_req = CreateCollectionBuilder::new(self.collection_name.clone())
+            .vectors_config(vectors_config);
         self.client
-            .create_collection(&CreateCollection {
-                collection_name: self.collection_name.to_string(),
-                // vectors_config: Some(VectorsConfig {
-                //     config: Some(Config::Params(VectorParams {
-                //         size: self.vector_size,
-                //         distance: Distance::Cosine.into(),
-                //         ..Default::default()
-                //     })),
-                // }),
-                vectors_config: Some(VectorsConfig {
-                    config: Some(Config::ParamsMap(VectorParamsMap {
-                        map: [
-                            (
-                                "image".to_string(),
-                                VectorParams {
-                                    size: 4,
-                                    distance: Distance::Dot.into(),
-                                    ..Default::default()
-                                },
-                            ),
-                            (
-                                "text".to_string(),
-                                VectorParams {
-                                    size: 8,
-                                    distance: Distance::Cosine.into(),
-                                    ..Default::default()
-                                },
-                            ),
-                        ]
-                        .into(),
-                    })),
-                }),
-                sparse_vectors_config: Some(SparseVectorConfig {
-                    map: HashMap::from([(
-                        "sparsed".into(),
-                        SparseVectorParams {
-                            index: Some(SparseIndexConfig {
-                                ..Default::default()
-                            }),
-                        },
-                    )]),
-                }),
-                ..Default::default()
-            })
-            .create_collection(
-                CreateCollectionBuilder::new(self.collection_name.clone())
-                    .vectors_config(VectorParamsBuilder::new(self.vector_size, Distance::Cosine)),
-            )
-            .await?;
+            .create_collection(create_collection_req).await?;
+
+        // self.client
+        //     .create_collection(
+        //         CreateCollectionBuilder::new(self.collection_name.clone())
+        //             .vectors_config(VectorParamsBuilder::new(self.vector_size, Distance::Cosine)),
+        //     )
+            // .create_collection(&CreateCollection {
+            //     collection_name: self.collection_name.to_string(),
+            //     // vectors_config: Some(VectorsConfig {
+            //     //     config: Some(Config::Params(VectorParams {
+            //     //         size: self.vector_size,
+            //     //         distance: Distance::Cosine.into(),
+            //     //         ..Default::default()
+            //     //     })),
+            //     // }),
+            //     vectors_config: Some(VectorsConfig {
+            //         config: Some(Config::ParamsMap(VectorParamsMap {
+            //             map: [
+            //                 (
+            //                     "image".to_string(),
+            //                     VectorParams {
+            //                         size: 4,
+            //                         distance: Distance::Dot.into(),
+            //                         ..Default::default()
+            //                     },
+            //                 ),
+            //                 (
+            //                     "text".to_string(),
+            //                     VectorParams {
+            //                         size: 8,
+            //                         distance: Distance::Cosine.into(),
+            //                         ..Default::default()
+            //                     },
+            //                 ),
+            //             ]
+            //             .into(),
+            //         })),
+            //     }),
+            //     sparse_vectors_config: Some(SparseVectorConfig {
+            //         map: HashMap::from([(
+            //             "sparsed".into(),
+            //             SparseVectorParams {
+            //                 index: Some(SparseIndexConfig {
+            //                     ..Default::default()
+            //                 }),
+            //             },
+            //         )]),
+            //     }),
+            //     ..Default::default()
+            // })
+            // .await?;
         Ok(())
+    }
+
+    fn create_vectors_config(&self) -> Result<impl Into<qdrant_client::qdrant::VectorsConfig>>
+    {
+        if self.vectors.is_empty() {
+            bail!("No configured vectors");
+        } else if self.vectors.len() == 1 {
+            let config = self.vectors.values().next().expect("Has one vector config");
+            return Ok(VectorParamsBuilder::new(self.vector_size, Distance::Cosine).build());
+        }
+
+        todo!()
+    }
+
+    fn create_vector_config(
+        &self,
+        vector_config: &VectorConfig,
+    ) -> qdrant_client::qdrant::VectorsConfig {
+        let vector_size = vector_config.vector_size.unwrap_or(self.vector_size);
+        let distance = vector_config.distance;
     }
 }
 
@@ -173,4 +218,13 @@ impl std::fmt::Debug for Qdrant {
             .field("batch_size", &self.batch_size)
             .finish()
     }
+}
+
+#[derive(Clone, Builder, Default)]
+pub struct VectorConfig {
+    #[builder(setter(into, strip_option), default)]
+    vector_size: Option<u64>,
+    // TODO: do not export qdrant type
+    #[builder(default = "qdrant_client::qdrant::Distance::Cosine")]
+    distance: qdrant::Distance,
 }
