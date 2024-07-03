@@ -109,9 +109,15 @@ impl CodeSplitter {
     /// # Returns
     ///
     /// * `Vec<String>` - A vector of code chunks as strings.
-    fn chunk_node(&self, node: Node, source: &str, mut last_end: usize) -> Vec<String> {
+    fn chunk_node(
+        &self,
+        node: Node,
+        source: &str,
+        mut last_end: usize,
+        current_chunk: Option<String>,
+    ) -> Vec<String> {
         let mut new_chunks: Vec<String> = Vec::new();
-        let mut current_chunk = String::new();
+        let mut current_chunk = current_chunk.unwrap_or(String::new());
 
         for child in node.children(&mut node.walk()) {
             assert!(
@@ -125,19 +131,26 @@ impl CodeSplitter {
             // 1. if the next child is too big to fit in a whole chunk, then recursively chunk it one level down
             // 2. if the next child is small enough to fit in a chunk, then add the current chunk to the list and start a new chunk
 
-            let next_child_size = child.end_byte() - child.start_byte();
+            let next_child_size = child.end_byte() - last_end;
             if current_chunk.len() + next_child_size >= self.max_bytes() {
-                if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
-                    new_chunks.push(current_chunk);
-                }
+                // if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
+                //     new_chunks.push(current_chunk);
+                // }
+
                 if next_child_size > self.max_bytes() {
-                    new_chunks.extend(self.chunk_node(child, source, last_end));
-                    current_chunk = String::new();
+                    let mut sub_chunks =
+                        self.chunk_node(child, source, last_end, Some(current_chunk));
+                    current_chunk = sub_chunks.pop().unwrap_or(String::new());
+                    new_chunks.extend(sub_chunks);
                 } else {
-                    current_chunk = source[child.start_byte()..child.end_byte()].to_string();
+                    // NOTE: if the current chunk was smaller than then the min_bytes, then it is discarded here
+                    if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
+                        new_chunks.push(current_chunk);
+                    }
+                    current_chunk = source[last_end..child.end_byte()].to_string();
                 }
             } else {
-                current_chunk += &source[child.start_byte()..child.end_byte()];
+                current_chunk += &source[last_end..child.end_byte()];
             }
 
             last_end = child.end_byte();
@@ -168,7 +181,7 @@ impl CodeSplitter {
         if root_node.has_error() {
             anyhow::bail!("Root node has invalid syntax");
         } else {
-            Ok(self.chunk_node(root_node, code, 0))
+            Ok(self.chunk_node(root_node, code, 0, None))
         }
     }
 
@@ -302,8 +315,7 @@ mod test {
         assert_eq!(
             chunks,
             vec![
-                "fn main()",
-                "{\n    println!(\"Hello, World!\");",
+                "fn main() {\n    println!(\"Hello, World!\");",
                 "\n    println!(\"Goodbye, World!\");\n}",
             ]
         )
@@ -328,14 +340,14 @@ mod test {
         assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
         assert!(chunks
             .windows(2)
-            .all(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() <= 50));
+            .all(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() > 50));
         assert!(chunks.iter().all(|chunk| chunk.len() >= 20));
 
         assert_eq!(
             chunks,
             vec![
-                "{\n    println!(\"Hello, World!\");",
-                "\n    println!(\"Goodbye, World!\");\n}",
+                "fn main() {\n    println!(\"Hello, World!\");",
+                "\n    println!(\"Goodbye, World!\");\n}"
             ]
         )
     }
@@ -374,11 +386,27 @@ mod test {
             let chunks = splitter.split(code).unwrap();
 
             assert!(chunks.iter().all(|chunk| chunk.len() <= max));
-            assert!(chunks.windows(2).all(|pair| pair
-                .iter()
-                .map(|chunk| chunk.len())
-                .sum::<usize>()
-                >= max));
+            let chunk_pairs_that_are_smaller_than_max = chunks
+                .windows(2)
+                .filter(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() < max);
+            assert!(
+                chunk_pairs_that_are_smaller_than_max.clone().count() == 0,
+                "max: {}, {} + {}, {:?}",
+                max,
+                chunk_pairs_that_are_smaller_than_max
+                    .clone()
+                    .next()
+                    .unwrap()[0]
+                    .len(),
+                chunk_pairs_that_are_smaller_than_max
+                    .clone()
+                    .next()
+                    .unwrap()[1]
+                    .len(),
+                chunk_pairs_that_are_smaller_than_max
+                    .collect::<Vec<_>>()
+                    .first()
+            );
             assert!(chunks.iter().all(|chunk| chunk.len() >= min));
 
             assert!(
