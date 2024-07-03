@@ -202,7 +202,7 @@ async fn test_ingestion_pipeline() {
     assert_eq!(
         first
             .payload
-            .get("Questions and Answers")
+            .get("Questions and Answers (code)")
             .unwrap()
             .as_str()
             .unwrap(),
