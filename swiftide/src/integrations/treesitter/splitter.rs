@@ -253,12 +253,15 @@ mod test {
         "#};
         let chunks = splitter.split(text).unwrap();
 
-        dbg!(&chunks);
+        assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
+        assert!(chunks
+            .windows(2)
+            .all(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() >= 50));
+
         assert_eq!(
             chunks,
             vec![
-                "fn main()",
-                "{\n    println!(\"Hello, World!\");",
+                "fn main() {\n    println!(\"Hello, World!\");",
                 "\n    println!(\"Goodbye, World!\");\n}",
             ]
         )
@@ -321,6 +324,13 @@ mod test {
             }
         "#};
         let chunks = splitter.split(text).unwrap();
+
+        assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
+        assert!(chunks
+            .windows(2)
+            .all(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() <= 50));
+        assert!(chunks.iter().all(|chunk| chunk.len() >= 20));
+
         assert_eq!(
             chunks,
             vec![
@@ -363,7 +373,14 @@ mod test {
 
             let chunks = splitter.split(code).unwrap();
 
-            // assert no chunks smaller than min
+            assert!(chunks.iter().all(|chunk| chunk.len() <= max));
+            assert!(chunks.windows(2).all(|pair| pair
+                .iter()
+                .map(|chunk| chunk.len())
+                .sum::<usize>()
+                >= max));
+            assert!(chunks.iter().all(|chunk| chunk.len() >= min));
+
             assert!(
                 chunks.iter().all(|chunk| chunk.len() >= min),
                 "{:?}",
