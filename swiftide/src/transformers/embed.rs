@@ -72,19 +72,18 @@ impl BatchableTransformer for Embed {
         // EmbeddableTypes grouped by node stored in order of processed nodes.
         let mut embeddings_keys_groups = VecDeque::with_capacity(nodes.len());
         // Embeddable data of every node stored in order of processed nodes.
-        let embeddables_data =
-            nodes
-                .iter_mut()
-                .fold(Vec::new(), |mut embeddables_data, node| {
-                    let embeddables = node.embeddables();
-                    let mut embeddables_keys = Vec::with_capacity(embeddables.len());
-                    for (embeddable_key, embeddable_data) in embeddables.into_iter() {
-                        embeddables_keys.push(embeddable_key);
-                        embeddables_data.push(embeddable_data);
-                    }
-                    embeddings_keys_groups.push_back(embeddables_keys);
-                    embeddables_data
-                });
+        let embeddables_data = nodes
+            .iter_mut()
+            .fold(Vec::new(), |mut embeddables_data, node| {
+                let embeddables = node.embeddables();
+                let mut embeddables_keys = Vec::with_capacity(embeddables.len());
+                for (embeddable_key, embeddable_data) in embeddables.into_iter() {
+                    embeddables_keys.push(embeddable_key);
+                    embeddables_data.push(embeddable_data);
+                }
+                embeddings_keys_groups.push_back(embeddables_keys);
+                embeddables_data
+            });
 
         // Embeddings vectors of every node stored in order of processed nodes.
         let mut embeddings = match self.embed_model.embed(embeddables_data).await {

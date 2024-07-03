@@ -136,8 +136,7 @@ impl Transformer for MetadataQAText {
 
         let response = self.client.prompt(&prompt).await?;
 
-        node.metadata
-            .insert(NAME.into(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }

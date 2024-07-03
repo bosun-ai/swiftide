@@ -119,7 +119,6 @@ impl Qdrant {
     }
 
     fn create_vectors_config(&self) -> Result<qdrant_client::qdrant::vectors_config::Config> {
-
         // //
         // if let Some(config) = self.vectors.get(&EmbeddableType::Chunk) {
         //     let mut map = HashMap::<String, qdrant::VectorParams>::default();
