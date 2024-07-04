@@ -29,7 +29,7 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
     /// If the conversion fails, it returns an `anyhow::Error`.
     fn try_into(mut self) -> Result<qdrant::PointStruct> {
         // Calculate a unique identifier for the node.
-        let id = self.calculate_hash();
+        let id: u64 = self.calculate_hash();
 
         // Extend the metadata with additional information.
         self.metadata.extend([
@@ -52,17 +52,14 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
         let Some(vectors) = self.vectors else {
             bail!("IngestionNode without vectors")
         };
-        let vectors = try_into_vectors(vectors)?;
+        let vectors = try_create_vectors(vectors)?;
 
         // Construct the `qdrant::PointStruct` and return it.
-        Ok(qdrant::PointStruct::new(
-            id, // TODO: set vector here (or a named vectors)
-            vectors, payload,
-        ))
+        Ok(qdrant::PointStruct::new(id, vectors, payload))
     }
 }
 
-fn try_into_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdrant::Vectors> {
+fn try_create_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdrant::Vectors> {
     if vectors.is_empty() {
         bail!("IngestionNode with empty vectors")
     } else if vectors.len() == 1 {
@@ -77,4 +74,95 @@ fn try_into_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdrant
         .map(|(vector_type, vector)| (vector_type.to_string(), vector))
         .collect::<HashMap<String, Vec<f32>>>();
     Ok(vectors.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use qdrant_client::qdrant::{
+        vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
+    };
+    use test_case::test_case;
+
+    use crate::ingestion::{EmbeddableType, IngestionNode};
+
+    #[test_case(
+        IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
+            vectors: Some(HashMap::from([(EmbeddableType::Chunk, vec![1.0])])),
+            metadata: HashMap::from([("m1".into(), "mv1".into())]),
+            embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
+        },
+        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+            ("content".into(), Value::from("data")),
+            ("path".into(), Value::from("/path")),
+            ("m1".into(), Value::from("mv1"))]), 
+            vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vector(Vector { data: vec![1.0], ..Default::default()} )) })
+        };
+        "Node with single vector creates struct with unnamed vector"
+    )]
+    #[test_case(
+        IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
+            vectors: Some(HashMap::from([
+                (EmbeddableType::Chunk, vec![1.0]),
+                (EmbeddableType::Metadata("m1".into()), vec![2.0])
+            ])),
+            metadata: HashMap::from([("m1".into(), "mv1".into())]),
+            embed_mode: crate::ingestion::EmbedMode::PerField
+        },
+        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+            ("content".into(), Value::from("data")),
+            ("path".into(), Value::from("/path")),
+            ("m1".into(), Value::from("mv1"))]), 
+            vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vectors(NamedVectors { vectors: HashMap::from([
+                ("Chunk".into(), qdrant_client::qdrant::Vector {
+                    data: vec![1.0], ..Default::default()
+                }),
+                ("Metadata: m1".into(), qdrant_client::qdrant::Vector {
+                    data: vec![2.0], ..Default::default()
+                })
+            ]) })) })
+        };
+        "Node with multiple vectors creates struct with named vectors"
+    )]
+    #[test_case(
+        IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
+            vectors: Some(HashMap::from([
+                // missing chunk and non existing Metadata vector
+                (EmbeddableType::Metadata("m2".into()), vec![1.0]),
+                (EmbeddableType::Metadata("m3".into()), vec![2.0])
+            ])),
+            metadata: HashMap::from([("m1".into(), "mv1".into())]),
+            embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
+        },
+        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+            ("content".into(), Value::from("data")),
+            ("path".into(), Value::from("/path")),
+            ("m1".into(), Value::from("mv1"))]), 
+            vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vectors(NamedVectors { vectors: HashMap::from([
+                ("Metadata: m2".into(), qdrant_client::qdrant::Vector {
+                    data: vec![1.0], ..Default::default()
+                }),
+                ("Metadata: m3".into(), qdrant_client::qdrant::Vector {
+                    data: vec![2.0], ..Default::default()
+                })
+            ]) })) })
+        };
+        "Property `embed_mode` and `metadata` are ignored. Any map of vectors will be converted into named vectors."
+    )]
+    fn try_into_point_struct_test(node: IngestionNode, mut expected_point: PointStruct) {
+        let point: PointStruct = node.try_into().expect("Can create PointStruct");
+
+        // patch last_update_at field
+        let last_updated_at_key = "last_updated_at";
+        let last_updated_at = point
+            .payload
+            .get(last_updated_at_key)
+            .expect("Has autogenerated `last_updated_at` field.");
+        expected_point
+            .payload
+            .insert(last_updated_at_key.into(), last_updated_at.clone());
+
+        assert_eq!(point, expected_point);
+    }
 }
