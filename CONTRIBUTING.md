@@ -1,10 +1,17 @@
 # Contribution guidelines
 
-Swiftide is in a very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada:
+Swiftide is in a very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada: 
 
 ## Feature requests and feedback
 
 We love them, please let us know what you would like. Use one of the templates provided.
+
+## Code design
+
+* Simple, thin wrappers with sane defaults
+* Provide a builder (derive_builder) for easy customization
+* Keep Rust complexity (Arc/Box/Lifetimes/Pinning ...) encapsulated and away from library users
+* Adhere to [Rust api naming](https://rust-lang.github.io/api-guidelines/naming.html) as much as possible
 
 ## Bug reports
 
