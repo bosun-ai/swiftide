@@ -24,6 +24,7 @@ use std::{
     path::PathBuf,
 };
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 /// Represents a unit of data in the ingestion process.
@@ -59,10 +60,16 @@ impl Debug for IngestionNode {
             .field("chunk", &self.chunk)
             .field("metadata", &self.metadata)
             .field(
-                "vector",
-                //TODO: format me
-                &self.vectors.as_ref().map(|v| format!("[{}]", v.len())),
+                "vectors",
+                &self
+                    .vectors
+                    .iter()
+                    .map(HashMap::iter)
+                    .flatten()
+                    .map(|(embed_type, vec)| format!("'{embed_type}': {}", vec.len()))
+                    .join(","),
             )
+            .field("embed_mode", &self.embed_mode)
             .finish()
     }
 }
@@ -145,7 +152,7 @@ impl Hash for IngestionNode {
 }
 
 // TODO: document it
-#[derive(Copy, Default, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Copy, Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EmbedMode {
     #[default]
     /// Embedding Chunk of data combined with Metadata.
