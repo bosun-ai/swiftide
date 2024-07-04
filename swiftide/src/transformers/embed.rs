@@ -75,7 +75,7 @@ impl BatchableTransformer for Embed {
         let embeddables_data = nodes
             .iter_mut()
             .fold(Vec::new(), |mut embeddables_data, node| {
-                let embeddables = node.embeddables();
+                let embeddables = node.as_embeddables();
                 let mut embeddables_keys = Vec::with_capacity(embeddables.len());
                 for (embeddable_key, embeddable_data) in embeddables.into_iter() {
                     embeddables_keys.push(embeddable_key);

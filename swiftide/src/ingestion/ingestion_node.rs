@@ -83,7 +83,7 @@ impl IngestionNode {
     /// # Returns
     ///
     /// Embeddable data mapped to their `EmbeddableType`.
-    pub fn embeddables(&self) -> Vec<(EmbeddableType, String)> {
+    pub fn as_embeddables(&self) -> Vec<(EmbeddableType, String)> {
         let mut embeddables = Vec::new();
 
         if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
@@ -165,7 +165,7 @@ pub enum EmbeddableType {
     /// Embeddable created from Chunk of data only.
     Chunk,
     /// Embeddable created from Metadata.
-    /// It stores Metadata name.
+    /// String stores Metadata name.
     #[strum(to_string = "Metadata: {0}")]
     Metadata(String),
 }

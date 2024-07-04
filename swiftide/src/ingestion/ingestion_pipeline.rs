@@ -243,7 +243,8 @@ impl IngestionPipeline {
                 })
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(self.concurrency)
-                .boxed().into();
+                .boxed()
+                .into();
         } else {
             self.stream = self
                 .stream
