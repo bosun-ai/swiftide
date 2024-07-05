@@ -1,8 +1,10 @@
 use anyhow::{Context as _, Result};
+use indexmap::IndexMap;
 use std::fmt::{Debug, Formatter};
 
 use async_trait::async_trait;
 use derive_builder::Builder;
+use either::Either;
 use mistralrs::{Constraint, NormalRequest, Request, RequestMessage, Response, SamplingParams};
 use tokio::sync::mpsc::{channel, Sender};
 
@@ -41,15 +43,15 @@ impl Debug for MistralPrompt {
 
 #[async_trait]
 impl SimplePrompt for MistralPrompt {
+    #[tracing::instrument(skip_all)]
     async fn prompt(&self, prompt: &str) -> Result<String> {
         let (tx, mut rx) = channel(10_000);
 
         let request = Request::Normal(NormalRequest {
-            messages: RequestMessage::Completion {
-                text: prompt.to_string(),
-                echo_prompt: false,
-                best_of: 1,
-            },
+            messages: RequestMessage::Chat(vec![IndexMap::from([
+                ("role".to_string(), Either::Left("user".to_string())),
+                ("content".to_string(), Either::Left(prompt.to_string())),
+            ])]),
             sampling_params: SamplingParams::default(),
             response: tx,
             return_logprobs: false,
@@ -60,9 +62,11 @@ impl SimplePrompt for MistralPrompt {
             adapters: None,
         });
 
+        tracing::info!("Sending request to mistral prompt");
         self.sender.send(request).await?;
 
         use Response::*;
+        tracing::info!("Waiting for response");
         match rx.recv().await.context("No response for MistralPrompt")? {
             Done(response) => Ok(response.choices[0].message.content.clone()),
             InternalError(err) | ValidationError(err) => {

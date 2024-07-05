@@ -20,11 +20,10 @@ use swiftide::{
     integrations::{fastembed::FastEmbed, huggingface_mistralrs::MistralPrompt},
     loaders::FileLoader,
     persist::MemoryStorage,
-    transformers::{Embed, MetadataQACode},
+    transformers::{Embed, MetadataSummary},
 };
 
 fn setup() -> anyhow::Result<Arc<MistralRs>> {
-    // Select a Mistral model
     let loader = NormalLoaderBuilder::new(
         NormalSpecificConfig {
             use_flash_attn: false,
@@ -32,9 +31,9 @@ fn setup() -> anyhow::Result<Arc<MistralRs>> {
         },
         None,
         None,
-        Some("mistralai/Mistral-7B-Instruct-v0.1".to_string()),
+        Some("google/gemma-2-9b-it".to_string()),
     )
-    .build(NormalLoaderType::Mistral);
+    .build(NormalLoaderType::Gemma2);
     // Load, into a Pipeline
     let pipeline = loader.load_model_from_hf(
         None,
@@ -53,17 +52,36 @@ fn setup() -> anyhow::Result<Arc<MistralRs>> {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    tracing::info!("Setting up mistralrs");
     let mistralrs = setup()?;
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
-        .then(MetadataQACode::new(
-            MistralPrompt::from_mistral_sender(mistralrs.get_sender()?).build()?,
+    tracing::info!("Getting mistralrs sender");
+    let mistral_sender = mistralrs.get_sender()?;
+
+    let storage = MemoryStorage::default();
+
+    ingestion::IngestionPipeline::from_loader(FileLoader::new("README.md"))
+        .then(MetadataSummary::new(
+            MistralPrompt::from_mistral_sender(mistral_sender).build()?,
         ))
         .log_all()
         .then_in_batch(10, Embed::new(FastEmbed::try_default()?))
-        .then_store_with(MemoryStorage::default())
+        .then_store_with(storage.clone())
         .log_nodes()
         .run()
         .await?;
+
+    println!("Summaries:");
+    println!(
+        "{}",
+        storage
+            .get_all_values()
+            .await
+            .iter()
+            .filter_map(|n| n.metadata.get("Summary"))
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n---\n")
+    );
     Ok(())
 }

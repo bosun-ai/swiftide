@@ -58,6 +58,8 @@ aws-sdk-bedrockruntime = { version = "1.37.0", features = [
   "behavior-version-latest",
 ], optional = true }
 mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", optional = true }
+indexmap = { version = "2.2.6", optional = true }
+either = { version = "1.13.0", optional = true }
 
 [features]
 default = []
@@ -89,7 +91,7 @@ aws-bedrock = [
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
 ]
-huggingface-mistralrs = ["dep:mistralrs"]
+huggingface-mistralrs = ["dep:mistralrs", "dep:indexmap", "dep:either"]
 
 [package.metadata.docs.rs]
 all-features = true

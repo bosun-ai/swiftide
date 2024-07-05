@@ -804,17 +804,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bindgen_cuda"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f8489af5b7d17a81bffe37e0f4d6e1e4de87c87329d05447f22c35d95a1227d"
-dependencies = [
- "glob",
- "num_cpus",
- "rayon",
-]
-
-[[package]]
 name = "bit_field"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1031,8 +1020,6 @@ version = "0.6.0"
 source = "git+https://github.com/EricLBuehler/candle.git?rev=b7a3e344#b7a3e3449a7928332ce5db8eb84b28b9133da4d2"
 dependencies = [
  "byteorder",
- "candle-kernels",
- "cudarc",
  "gemm",
  "half",
  "memmap2",
@@ -1045,14 +1032,6 @@ dependencies = [
  "thiserror",
  "yoke",
  "zip 1.1.4",
-]
-
-[[package]]
-name = "candle-kernels"
-version = "0.6.0"
-source = "git+https://github.com/EricLBuehler/candle.git?rev=b7a3e344#b7a3e3449a7928332ce5db8eb84b28b9133da4d2"
-dependencies = [
- "bindgen_cuda",
 ]
 
 [[package]]
@@ -1501,16 +1480,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cudarc"
-version = "0.11.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56ee2a3fbbd981e1c7ea73cc2af136e754eb22d17436de37155227ee4dbe0cf4"
-dependencies = [
- "half",
- "libloading",
-]
-
-[[package]]
 name = "darling"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1932,6 +1901,7 @@ dependencies = [
  "spider",
  "swiftide",
  "tokio",
+ "tracing",
  "tracing-subscriber",
 ]
 
@@ -2354,12 +2324,6 @@ name = "gimli"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40ecd4077b5ae9fd2e9e169b102c6c330d0605168eb0e8bf79952b256dbefffd"
-
-[[package]]
-name = "glob"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "globset"
@@ -3120,16 +3084,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
-name = "libloading"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e310b3a6b5907f99202fcdb4960ff45b93735d7c7d96b760fcff8db2dc0e103d"
-dependencies = [
- "cfg-if",
- "windows-targets 0.52.6",
-]
-
-[[package]]
 name = "libm"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3393,7 +3347,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "base64 0.22.1",
- "bindgen_cuda",
  "buildstructor",
  "bytemuck",
  "bytemuck_derive",
@@ -5299,10 +5252,12 @@ dependencies = [
  "aws-sdk-bedrockruntime",
  "chrono",
  "derive_builder",
+ "either",
  "fastembed",
  "futures-util",
  "htmd",
  "ignore",
+ "indexmap 2.2.6",
  "indoc",
  "itertools 0.13.0",
  "mistralrs",
