@@ -8,12 +8,15 @@ edition = "2021"
 tokio = { version = "1.0", features = ["full"] }
 swiftide = { path = "../swiftide/", features = [
   "all",
-  "scraping",
   "aws-bedrock",
+  "huggingface-mistralrs",
+  "scraping",
 ] }
+spider = "1.98"
 tracing-subscriber = "0.3"
 serde_json = "1.0"
-spider = "1.98"
+anyhow = "1.0"
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git" }
 
 [[example]]
 name = "ingest-codebase"
@@ -38,3 +41,7 @@ path = "scraping_ingest_to_markdown.rs"
 [[example]]
 name = "aws-bedrock"
 path = "aws_bedrock.rs"
+
+[[example]]
+name = "mistralrs"
+path = "mistralrs.rs"

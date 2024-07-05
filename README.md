@@ -115,6 +115,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 - Extremely fast streaming ingestion pipeline with async, parallel processing
 - Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
+- Use popular Huggingface models via mistral.rs
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
 - Store into multiple backends

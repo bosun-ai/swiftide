@@ -57,10 +57,13 @@ aws-credential-types = { version = "1.2.0", features = [
 aws-sdk-bedrockruntime = { version = "1.37.0", features = [
   "behavior-version-latest",
 ], optional = true }
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", optional = true }
 
 [features]
 default = []
+# Be carefull with all, it includes *a  lot*
 all = ["qdrant", "redis", "tree-sitter", "openai", "fastembed"]
+
 # Qdrant for storage
 qdrant = ["dep:qdrant-client"]
 # Redis for caching and storage
@@ -86,6 +89,10 @@ aws-bedrock = [
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
 ]
+huggingface-mistralrs = ["dep:mistralrs"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dev-dependencies]
 test-log = "0.2.16"
@@ -96,6 +103,3 @@ wiremock = "0.6.0"
 
 [lints.clippy]
 blocks_in_conditions = "allow"
-
-[package.metadata.docs.rs]
-all-features = true
