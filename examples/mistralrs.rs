@@ -17,8 +17,9 @@ use mistralrs::{
 };
 use swiftide::{
     ingestion,
-    integrations::{self, huggingface_mistralrs::MistralPrompt, qdrant::Qdrant},
+    integrations::{fastembed::FastEmbed, huggingface_mistralrs::MistralPrompt},
     loaders::FileLoader,
+    persist::MemoryStorage,
     transformers::{Embed, MetadataQACode},
 };
 
@@ -52,30 +53,16 @@ fn setup() -> anyhow::Result<Arc<MistralRs>> {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let openai_client = integrations::openai::OpenAI::builder()
-        .default_embed_model("text-embedding-3-small")
-        .default_prompt_model("gpt-3.5-turbo")
-        .build()?;
-
-    let qdrant_url = std::env::var("QDRANT_URL")
-        .as_deref()
-        .unwrap_or("http://localhost:6334")
-        .to_owned();
-
     let mistralrs = setup()?;
 
     ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .then(MetadataQACode::new(
             MistralPrompt::from_mistral_sender(mistralrs.get_sender()?).build()?,
         ))
-        .then_in_batch(10, Embed::new(openai_client.clone()))
-        .then_store_with(
-            Qdrant::try_from_url(qdrant_url)?
-                .batch_size(50)
-                .vector_size(1536)
-                .collection_name("swiftide-examples-mistralrs".to_string())
-                .build()?,
-        )
+        .log_all()
+        .then_in_batch(10, Embed::new(FastEmbed::try_default()?))
+        .then_store_with(MemoryStorage::default())
+        .log_nodes()
         .run()
         .await?;
     Ok(())
