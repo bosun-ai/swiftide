@@ -78,7 +78,7 @@ fn try_create_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdra
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     use qdrant_client::qdrant::{
         vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
@@ -90,7 +90,7 @@ mod tests {
     #[test_case(
         IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddableType::Chunk, vec![1.0])])),
-            metadata: HashMap::from([("m1".into(), "mv1".into())]),
+            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
         },
         PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
@@ -107,7 +107,7 @@ mod tests {
                 (EmbeddableType::Chunk, vec![1.0]),
                 (EmbeddableType::Metadata("m1".into()), vec![2.0])
             ])),
-            metadata: HashMap::from([("m1".into(), "mv1".into())]),
+            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::PerField
         },
         PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
@@ -132,7 +132,7 @@ mod tests {
                 (EmbeddableType::Metadata("m2".into()), vec![1.0]),
                 (EmbeddableType::Metadata("m3".into()), vec![2.0])
             ])),
-            metadata: HashMap::from([("m1".into(), "mv1".into())]),
+            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
         },
         PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([

@@ -153,8 +153,8 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::PerField,
             chunk: "chunk_1",
-            metadata: HashMap::from([("meta_1", "prompt_1")]),
-            expected_embedables: vec!["chunk_1", "prompt_1"],
+            metadata: HashMap::from([("meta_1", "prompt 1")]),
+            expected_embedables: vec!["chunk_1", "prompt 1"],
             expected_vectors: vec![
                 (EmbeddableType::Chunk, vec![10f32]),
                 (EmbeddableType::Metadata("meta_1".into()), vec![11f32])
@@ -163,20 +163,20 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::PerField,
             chunk: "chunk_2",
-            metadata: HashMap::from([("meta_2", "prompt_2")]),
-            expected_embedables: vec!["chunk_2", "prompt_2"],
+            metadata: HashMap::from([("meta_2", "prompt 2")]),
+            expected_embedables: vec!["chunk_2", "prompt 2"],
             expected_vectors: vec![
                 (EmbeddableType::Chunk, vec![20f32]),
                 (EmbeddableType::Metadata("meta_2".into()), vec![21f32])
             ]
         }
-    ]; "Multiple nodes EmbedMode::PerField with metadata. Metadata name skipped from Embeddable.")]
+    ]; "Multiple nodes EmbedMode::PerField with metadata.")]
     #[test_case(vec![
         TestData {
             embed_mode: EmbedMode::Both,
             chunk: "chunk_1",
-            metadata: HashMap::from([("meta_1", "prompt_1")]),
-            expected_embedables: vec!["meta_1: prompt_1\nchunk_1", "chunk_1", "prompt_1"],
+            metadata: HashMap::from([("meta_1", "prompt 1")]),
+            expected_embedables: vec!["meta_1: prompt 1\nchunk_1", "chunk_1", "prompt 1"],
             expected_vectors: vec![
                 (EmbeddableType::Combined, vec![10f32]),
                 (EmbeddableType::Chunk, vec![11f32]),
@@ -186,16 +186,44 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::Both,
             chunk: "chunk_2",
-            metadata: HashMap::from([("meta_2", "prompt_2")]),
-            expected_embedables: vec!["meta_2: prompt_2\nchunk_2", "chunk_2", "prompt_2"],
+            metadata: HashMap::from([("meta_2", "prompt 2")]),
+            expected_embedables: vec!["meta_2: prompt 2\nchunk_2", "chunk_2", "prompt 2"],
             expected_vectors: vec![
                 (EmbeddableType::Combined, vec![20f32]),
                 (EmbeddableType::Chunk, vec![21f32]),
                 (EmbeddableType::Metadata("meta_2".into()), vec![22f32])
             ]
         }
-    ]; "Multiple nodes EmbedMode::Both with metadata. Metadata name skipped from Embeddable.")]
-    #[test_case(vec![]; "No nodes")]
+    ]; "Multiple nodes EmbedMode::Both with metadata.")]
+    #[test_case(vec![
+        TestData {
+            embed_mode: EmbedMode::Both,
+            chunk: "chunk_1",
+            metadata: HashMap::from([("meta_10", "prompt 10"), ("meta_11", "prompt 11"), ("meta_12", "prompt 12")]),
+            expected_embedables: vec!["meta_10: prompt 10\nmeta_11: prompt 11\nmeta_12: prompt 12\nchunk_1", "chunk_1", "prompt 10", "prompt 11", "prompt 12"],
+            expected_vectors: vec![
+                (EmbeddableType::Combined, vec![10f32]),
+                (EmbeddableType::Chunk, vec![11f32]),
+                (EmbeddableType::Metadata("meta_10".into()), vec![12f32]),
+                (EmbeddableType::Metadata("meta_11".into()), vec![13f32]),
+                (EmbeddableType::Metadata("meta_12".into()), vec![14f32]),
+            ]
+        },
+        TestData {
+            embed_mode: EmbedMode::Both,
+            chunk: "chunk_2",
+            metadata: HashMap::from([("meta_20", "prompt 20"), ("meta_21", "prompt 21"), ("meta_22", "prompt 22")]),
+            expected_embedables: vec!["meta_20: prompt 20\nmeta_21: prompt 21\nmeta_22: prompt 22\nchunk_2", "chunk_2", "prompt 20", "prompt 21", "prompt 22"],
+            expected_vectors: vec![
+                (EmbeddableType::Combined, vec![20f32]),
+                (EmbeddableType::Chunk, vec![21f32]),
+                (EmbeddableType::Metadata("meta_20".into()), vec![22f32]),
+                (EmbeddableType::Metadata("meta_21".into()), vec![23f32]),
+                (EmbeddableType::Metadata("meta_22".into()), vec![24f32])
+            ]
+        }
+    ]; "Multiple nodes EmbedMode::Both with multiple metadata.")]
+    #[test_case(vec![]; "No ingestion nodes")]
     #[tokio::test]
     async fn batch_transform<'a>(test_data: Vec<TestData<'a>>) {
         let test_nodes: Vec<IngestionNode> = test_data

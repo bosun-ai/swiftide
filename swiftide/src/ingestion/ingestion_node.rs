@@ -18,7 +18,7 @@
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt::Debug,
     hash::{Hash, Hasher},
     path::PathBuf,
@@ -43,7 +43,7 @@ pub struct IngestionNode {
     /// Optional vector representation of embedded data.
     pub vectors: Option<HashMap<EmbeddableType, Vec<f32>>>,
     /// Metadata associated with the node.
-    pub metadata: HashMap<String, String>,
+    pub metadata: BTreeMap<String, String>,
     /// Mode of embedding data Chunk and Metadata
     pub embed_mode: EmbedMode,
 }
