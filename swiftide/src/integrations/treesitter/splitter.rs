@@ -120,7 +120,7 @@ impl CodeSplitter {
         let mut current_chunk = current_chunk.unwrap_or(String::new());
 
         for child in node.children(&mut node.walk()) {
-            assert!(
+            debug_assert!(
                 current_chunk.len() <= self.max_bytes(),
                 "Chunk too big: {} > {}",
                 current_chunk.len(),
