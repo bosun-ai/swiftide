@@ -54,25 +54,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .batch_size(50)
                 .vector_size(1536)
                 .collection_name("swiftide-multi-vectors")
-                .with_vector(EmbeddableType::Chunk, Default::default())
+                .with_vector(EmbeddableType::Chunk)
+                .with_vector(EmbeddableType::Metadata(metadata_qa_text::NAME.into()))
+                .with_vector(EmbeddableType::Metadata(metadata_summary::NAME.into()))
                 .with_vector(
-                    EmbeddableType::Metadata(metadata_qa_text::NAME.into()),
-                    Default::default(),
-                )
-                .with_vector(
-                    EmbeddableType::Metadata(metadata_summary::NAME.into()),
-                    Default::default(),
-                )
-                .with_vector(
-                    EmbeddableType::Metadata(metadata_title::NAME.into()),
                     VectorConfigBuilder::default()
+                        .embeddable_type(EmbeddableType::Metadata(metadata_title::NAME.into()))
                         .vector_size(1536u64)
                         .build()?,
                 )
-                .with_vector(
-                    EmbeddableType::Metadata(metadata_keywords::NAME.into()),
-                    Default::default(),
-                )
+                .with_vector(EmbeddableType::Metadata(metadata_keywords::NAME.into()))
                 .build()?,
         )
         .run()

@@ -52,14 +52,14 @@ pub struct Qdrant {
 impl QdrantBuilder {
     pub fn with_vector(
         mut self,
-        embeddable_type: EmbeddableType,
-        vector: VectorConfig,
+        vector: impl Into<VectorConfig>,
     ) -> QdrantBuilder {
         if self.vectors.is_none() {
             self = self.vectors(Default::default());
         }
+        let vector = vector.into();
         if let Some(vectors) = self.vectors.as_mut() {
-            vectors.insert(embeddable_type, vector);
+            vectors.insert(vector.embeddable_type.clone(), vector);
         }
         self
     }
@@ -181,9 +181,20 @@ impl std::fmt::Debug for Qdrant {
 
 #[derive(Clone, Builder, Default)]
 pub struct VectorConfig {
+    #[builder(default)]
+    pub(super) embeddable_type: EmbeddableType,
     #[builder(setter(into, strip_option), default)]
     vector_size: Option<u64>,
     // TODO: do not export qdrant type
     // #[builder(default = "qdrant_client::qdrant::Distance::Cosine")]
     // distance: qdrant::Distance,
+}
+
+impl Into<VectorConfig> for EmbeddableType {
+    fn into(self) -> VectorConfig {
+        VectorConfig {
+            embeddable_type: self,
+            ..Default::default()
+        }
+    }
 }
