@@ -1,16 +1,17 @@
-//! # [Swiftide] Ingesting the Swiftide README with lots of metadata
+//! # [Swiftide] Ingesting file with multiple metadata stored as named vectors
 //!
-//! This example demonstrates how to ingest the Swiftide README with lots of metadata.
+//! This example demonstrates how to ingest a LICENSE file, generate multiple metadata, and store it all in Qdrant with individual named vectors
 //!
 //! The pipeline will:
-//! - Load the README.md file from the current directory
+//! - Load the LICENSE file from the current directory
 //! - Chunk the file into pieces of 20 to 1024 bytes
 //! - Generate questions and answers for each chunk
 //! - Generate a summary for each chunk
 //! - Generate a title for each chunk
 //! - Generate keywords for each chunk
 //! - Embed each chunk
-//! - Store the nodes in Qdrant
+//! - Embed each metadata
+//! - Store the nodes in Qdrant with chunk and metadata embeds as named vectors
 //!
 //! [Swiftide]: https://github.com/bosun-ai/swiftide
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
