@@ -50,10 +50,7 @@ pub struct Qdrant {
 }
 
 impl QdrantBuilder {
-    pub fn with_vector(
-        mut self,
-        vector: impl Into<VectorConfig>,
-    ) -> QdrantBuilder {
+    pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {
             self = self.vectors(Default::default());
         }
