@@ -18,10 +18,10 @@
 //! ingestion pipelines. These pipelines can be customized with different loaders, transformers, and storage
 //! backends to meet specific requirements.
 
-mod ingestion_node;
-mod ingestion_pipeline;
-mod ingestion_stream;
+mod indexing_stream;
+mod node;
+mod pipeline;
 
-pub use ingestion_node::*;
-pub use ingestion_pipeline::*;
-pub use ingestion_stream::*;
+pub use indexing_stream::*;
+pub use node::*;
+pub use pipeline::*;

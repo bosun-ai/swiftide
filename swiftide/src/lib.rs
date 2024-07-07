@@ -13,7 +13,7 @@
 //! Either use the 'all' feature flag (not recommended), or enable the integrations that you need.
 //! Each integration has a similarly named feature flag.
 
-pub mod ingestion;
+pub mod indexing;
 pub mod integrations;
 pub mod loaders;
 pub mod persist;
@@ -23,3 +23,16 @@ pub mod type_aliases;
 
 pub use traits::*;
 pub use type_aliases::*;
+
+/// Deprecated re-export of `indexing`, use that instead.
+#[deprecated(
+    since = "0.6.0",
+    note = "Renamed references of Ingestion to Indexing for more appropriate naming. Will be removed in a future release."
+)]
+pub mod ingestion {
+    pub use crate::indexing::*;
+
+    pub use crate::indexing::IndexingStream as IngestionStream;
+    pub use crate::indexing::Node as IngestionNode;
+    pub use crate::indexing::Pipeline as IngestionPipeline;
+}
