@@ -3970,9 +3970,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "1.98.6"
+version = "1.98.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "575c8d4900d519945d8ea75b3f3ec932426cc6cad5302986d4e2c1da2dc0f5fa"
+checksum = "f87040a2bfc458ac5412be04cf99a642300293123fec2733f6006cad77508a89"
 dependencies = [
  "ahash",
  "bytes",
