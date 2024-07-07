@@ -5,13 +5,13 @@ use std::{
 };
 
 use crate::{
-    ingestion::{EmbeddableType, IngestionNode, IngestionStream},
+    indexing::{EmbeddableType, IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
 use anyhow::bail;
 use async_trait::async_trait;
 
-/// A transformer that can generate embeddings for an `IngestionNode`
+/// A transformer that can generate embeddings for an `Node`
 ///
 /// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
 pub struct Embed {
@@ -44,6 +44,7 @@ impl Embed {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -52,21 +53,21 @@ impl Embed {
 
 #[async_trait]
 impl BatchableTransformer for Embed {
-    /// Transforms a batch of `IngestionNode` objects by generating embeddings for them.
+    /// Transforms a batch of `Node` objects by generating embeddings for them.
     ///
     /// # Parameters
     ///
-    /// * `nodes` - A vector of `IngestionNode` objects to be transformed.
+    /// * `nodes` - A vector of `Node` objects to be transformed.
     ///
     /// # Returns
     ///
-    /// An `IngestionStream` containing the transformed `IngestionNode` objects with their embeddings.
+    /// An `IndexingStream` containing the transformed `Node` objects with their embeddings.
     ///
     /// # Errors
     ///
     /// If the embedding process fails, the function returns a stream with the error.
     #[tracing::instrument(skip_all, name = "transformers.embed")]
-    async fn batch_transform(&self, mut nodes: Vec<IngestionNode>) -> IngestionStream {
+    async fn batch_transform(&self, mut nodes: Vec<Node>) -> IndexingStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
 
         // EmbeddableTypes grouped by node stored in order of processed nodes.
@@ -88,10 +89,10 @@ impl BatchableTransformer for Embed {
         // Embeddings vectors of every node stored in order of processed nodes.
         let mut embeddings = match self.embed_model.embed(embeddables_data).await {
             Ok(embeddngs) => VecDeque::from(embeddngs),
-            Err(err) => return IngestionStream::iter(Err(err)),
+            Err(err) => return IndexingStream::iter(Err(err)),
         };
 
-        IngestionStream::iter(nodes.into_iter().map(move |mut node| {
+        IndexingStream::iter(nodes.into_iter().map(move |mut node| {
             let Some(embedding_keys) = embeddings_keys_groups.pop_front() else {
                 bail!("Missing embedding data");
             };
@@ -113,7 +114,7 @@ impl BatchableTransformer for Embed {
 
 #[cfg(test)]
 mod tests {
-    use crate::ingestion::{EmbedMode, EmbeddableType, IngestionNode};
+    use crate::ingestion::{EmbedMode, EmbeddableType, Node};
     use crate::{BatchableTransformer, MockEmbeddingModel};
 
     use super::Embed;
@@ -226,9 +227,9 @@ mod tests {
     #[test_case(vec![]; "No ingestion nodes")]
     #[tokio::test]
     async fn batch_transform<'a>(test_data: Vec<TestData<'a>>) {
-        let test_nodes: Vec<IngestionNode> = test_data
+        let test_nodes: Vec<Node> = test_data
             .iter()
-            .map(|data| IngestionNode {
+            .map(|data| Node {
                 chunk: data.chunk.into(),
                 metadata: data
                     .metadata
@@ -240,7 +241,7 @@ mod tests {
             })
             .collect();
 
-        let expected_nodes: Vec<IngestionNode> = test_nodes
+        let expected_nodes: Vec<Node> = test_nodes
             .clone()
             .into_iter()
             .zip(test_data.iter())

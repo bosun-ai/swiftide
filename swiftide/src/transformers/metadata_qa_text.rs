@@ -1,7 +1,7 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -11,8 +11,8 @@ pub const NAME: &str = "Questions and Answers (text)";
 
 /// This module defines the `MetadataQAText` struct and its associated methods,
 /// which are used for generating metadata in the form of questions and answers
-/// from a given text. It interacts with a client (e.g., OpenAI) to generate
-/// these questions and answers based on the text chunk in an `IngestionNode`.
+/// from a given text. It interacts with a client (e.g., `OpenAI`) to generate
+/// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataQAText` is responsible for generating questions and answers
 /// from a given text chunk. It uses a templated prompt to interact with a client
@@ -56,6 +56,7 @@ impl MetadataQAText {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -68,7 +69,7 @@ impl MetadataQAText {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate questions and answers for the given text. 
@@ -98,7 +99,7 @@ fn default_prompt() -> String {
             {text}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 
@@ -111,16 +112,16 @@ impl MetadataQATextBuilder {
 
 #[async_trait]
 impl Transformer for MetadataQAText {
-    /// Transforms an `IngestionNode` by generating questions and answers
+    /// Transforms an `Node` by generating questions and answers
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors
@@ -128,7 +129,7 @@ impl Transformer for MetadataQAText {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
             .prompt
             .replace("{questions}", &self.num_questions.to_string())
@@ -161,7 +162,7 @@ mod test {
             .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
 
         let transformer = MetadataQAText::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

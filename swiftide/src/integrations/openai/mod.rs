@@ -1,4 +1,4 @@
-//! This module provides integration with OpenAI's API, enabling the use of language models and embeddings within the Swiftide project.
+//! This module provides integration with `OpenAI`'s API, enabling the use of language models and embeddings within the Swiftide project.
 //! It includes the `OpenAI` struct for managing API clients and default options for embedding and prompt models.
 //! The module is conditionally compiled based on the "openai" feature flag.
 
@@ -8,12 +8,12 @@ use std::sync::Arc;
 mod embed;
 mod simple_prompt;
 
-/// The `OpenAI` struct encapsulates an OpenAI client and default options for embedding and prompt models.
+/// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt models.
 /// It uses the `Builder` pattern for flexible and customizable instantiation.
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct OpenAI {
-    /// The OpenAI client, wrapped in an `Arc` for thread-safe reference counting.
+    /// The `OpenAI` client, wrapped in an `Arc` for thread-safe reference counting.
     /// Defaults to a new instance of `async_openai::Client`.
     #[builder(default = "Arc::new(async_openai::Client::new())", setter(custom))]
     client: Arc<async_openai::Client<async_openai::config::OpenAIConfig>>,
@@ -50,10 +50,10 @@ impl OpenAI {
 }
 
 impl OpenAIBuilder {
-    /// Sets the OpenAI client for the `OpenAI` instance.
+    /// Sets the `OpenAI` client for the `OpenAI` instance.
     ///
     /// # Parameters
-    /// - `client`: The OpenAI client to set.
+    /// - `client`: The `OpenAI` client to set.
     ///
     /// # Returns
     /// A mutable reference to the `OpenAIBuilder`.

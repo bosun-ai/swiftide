@@ -1,4 +1,4 @@
-//! This module provides functionality to convert an `IngestionNode` into a `qdrant::PointStruct`.
+//! This module provides functionality to convert an `Node` into a `qdrant::PointStruct`.
 //! The conversion is essential for storing data in the Qdrant vector database, which is used
 //! for efficient vector similarity search. The module handles metadata augmentation and ensures
 //! data compatibility with Qdrant's required format.
@@ -6,22 +6,22 @@
 use anyhow::{bail, Result};
 use std::collections::HashMap;
 
-use crate::ingestion::{EmbeddableType, IngestionNode};
+use crate::ingestion::{EmbeddableType, Node};
 use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
 };
 
-/// Implements the `TryInto` trait to convert an `IngestionNode` into a `qdrant::PointStruct`.
+/// Implements the `TryInto` trait to convert an `Node` into a `qdrant::PointStruct`.
 /// This conversion is necessary for storing the node in the Qdrant vector database.
-impl TryInto<qdrant::PointStruct> for IngestionNode {
+impl TryInto<qdrant::PointStruct> for Node {
     type Error = anyhow::Error;
 
-    /// Converts the `IngestionNode` into a `qdrant::PointStruct`.
+    /// Converts the `Node` into a `qdrant::PointStruct`.
     ///
     /// # Errors
     ///
-    /// Returns an error if the vector is not set in the `IngestionNode`.
+    /// Returns an error if the vector is not set in the `Node`.
     ///
     /// # Returns
     ///
@@ -50,7 +50,7 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
             .into();
 
         let Some(vectors) = self.vectors else {
-            bail!("IngestionNode without vectors")
+            bail!("Node without vectors")
         };
         let vectors = try_create_vectors(vectors)?;
 
@@ -61,12 +61,9 @@ impl TryInto<qdrant::PointStruct> for IngestionNode {
 
 fn try_create_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdrant::Vectors> {
     if vectors.is_empty() {
-        bail!("IngestionNode with empty vectors")
+        bail!("Node with empty vectors")
     } else if vectors.len() == 1 {
-        let vector = vectors
-            .into_values()
-            .next()
-            .expect("IngestionNode has vector entry");
+        let vector = vectors.into_values().next().expect("Node has vector entry");
         return Ok(vector.into());
     }
     let vectors = vectors
@@ -85,10 +82,10 @@ mod tests {
     };
     use test_case::test_case;
 
-    use crate::ingestion::{EmbeddableType, IngestionNode};
+    use crate::ingestion::{EmbeddableType, Node};
 
     #[test_case(
-        IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
+        Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddableType::Chunk, vec![1.0])])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
@@ -102,7 +99,7 @@ mod tests {
         "Node with single vector creates struct with unnamed vector"
     )]
     #[test_case(
-        IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
+        Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([
                 (EmbeddableType::Chunk, vec![1.0]),
                 (EmbeddableType::Metadata("m1".into()), vec![2.0])
@@ -126,7 +123,7 @@ mod tests {
         "Node with multiple vectors creates struct with named vectors"
     )]
     #[test_case(
-        IngestionNode { id: Some(1), path: "/path".into(), chunk: "data".into(),
+        Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([
                 // missing chunk and non existing Metadata vector
                 (EmbeddableType::Metadata("m2".into()), vec![1.0]),
@@ -150,7 +147,7 @@ mod tests {
         };
         "Property `embed_mode` and `metadata` are ignored. Any map of vectors will be converted into named vectors."
     )]
-    fn try_into_point_struct_test(node: IngestionNode, mut expected_point: PointStruct) {
+    fn try_into_point_struct_test(node: Node, mut expected_point: PointStruct) {
         let point: PointStruct = node.try_into().expect("Can create PointStruct");
 
         // patch last_update_at field

@@ -1,20 +1,20 @@
-//! This module contains tests for the ingestion pipeline in the Swiftide project.
+//! This module contains tests for the indexing pipeline in the Swiftide project.
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
 use qdrant_client::qdrant::{SearchPointsBuilder, Value};
 use serde_json::json;
-use swiftide::{ingestion::IngestionPipeline, loaders::FileLoader, *};
+use swiftide::{indexing::Pipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
 use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-/// Tests the ingestion pipeline without any mocks.
+/// Tests the indexing pipeline without any mocks.
 ///
 /// This test sets up a temporary directory and file, simulates API responses using mock servers,
-/// configures an OpenAI client, and runs the ingestion pipeline. It then validates that the data
+/// configures an OpenAI client, and runs the indexing pipeline. It then validates that the data
 /// is correctly stored in the Qdrant vector database.
 ///
 /// # Panics
@@ -22,10 +22,10 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 /// starting the mock server, or configuring the OpenAI client.
 ///
 /// # Errors
-/// If the ingestion pipeline encounters an error, the test will print the received requests
+/// If the indexing pipeline encounters an error, the test will print the received requests
 /// for debugging purposes.
 #[test_log::test(tokio::test)]
-async fn test_ingestion_pipeline() {
+async fn test_indexing_pipeline() {
     // Setup temporary directory and file for testing
     let tempdir = TempDir::new().unwrap();
     let codefile = tempdir.child("main.rs");
@@ -39,7 +39,7 @@ async fn test_ingestion_pipeline() {
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "id": "chatcmpl-123",
             "object": "chat.completion",
-            "created": 1677652288,
+            "created": 1_677_652_288,
             "model": "gpt-3.5-turbo-0125",
             "system_fingerprint": "fp_44709d6fcb",
             "choices": [{
@@ -130,24 +130,23 @@ async fn test_ingestion_pipeline() {
     // Coverage CI runs in container, just accept the double qdrant and use the service instead
     let qdrant_url = std::env::var("QDRANT_URL").unwrap_or(qdrant_url);
 
-    println!("Qdrant URL: {}", qdrant_url);
+    println!("Qdrant URL: {qdrant_url}");
 
-    let result =
-        IngestionPipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
-            .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-            .then(transformers::MetadataQACode::new(openai_client.clone()))
-            .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
-            .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
-            .then_store_with(
-                integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
-                    .unwrap()
-                    .vector_size(1536)
-                    .collection_name("swiftide-test".to_string())
-                    .build()
-                    .unwrap(),
-            )
-            .run()
-            .await;
+    let result = Pipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
+        .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
+        .then(transformers::MetadataQACode::new(openai_client.clone()))
+        .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
+        .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
+        .then_store_with(
+            integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
+                .unwrap()
+                .vector_size(1536)
+                .collection_name("swiftide-test".to_string())
+                .build()
+                .unwrap(),
+        )
+        .run()
+        .await;
 
     if result.is_err() {
         println!("\n Received the following requests: \n");
@@ -170,10 +169,10 @@ async fn test_ingestion_pipeline() {
             })
             .collect::<Vec<String>>()
             .join("\n---\n");
-        println!("{}", received_requests);
+        println!("{received_requests}");
     };
 
-    result.expect("Ingestion pipeline failed");
+    result.expect("Indexing pipeline failed");
 
     let qdrant_client = qdrant_client::Qdrant::from_url(&qdrant_url)
         .build()

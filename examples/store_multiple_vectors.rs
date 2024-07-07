@@ -17,7 +17,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    ingestion::{self, EmbeddableType},
+    indexing::{self, EmbedMode, EmbeddableType},
     integrations::{
         self,
         qdrant::{Distance, Qdrant, VectorConfig},
@@ -38,9 +38,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default_prompt_model("gpt-4o")
         .build()?;
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new("LICENSE"))
+    indexing::Pipeline::from_loader(FileLoader::new("LICENSE"))
         .with_concurrency(1)
-        .with_embed_mode(ingestion::EmbedMode::PerField)
+        .with_embed_mode(EmbedMode::PerField)
         .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
         .then(MetadataQAText::new(openai_client.clone()))
         .then(MetadataSummary::new(openai_client.clone()))

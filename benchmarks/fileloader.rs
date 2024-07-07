@@ -1,7 +1,7 @@
 use anyhow::Result;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use futures_util::stream::TryStreamExt;
-use swiftide::{ingestion::StreamExt, traits::Loader};
+use swiftide::{indexing::StreamExt, traits::Loader};
 
 async fn run_fileloader(num_files: usize) -> Result<usize> {
     let mut total_nodes = 0;

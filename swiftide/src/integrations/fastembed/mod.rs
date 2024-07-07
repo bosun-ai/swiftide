@@ -1,4 +1,4 @@
-//! FastEmbed integration for text embedding.
+//! `FastEmbed` integration for text embedding.
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -7,15 +7,15 @@ use fastembed::TextEmbedding;
 
 use crate::{EmbeddingModel, Embeddings};
 
-/// A wrapper around the FastEmbed library for text embedding.
+/// A wrapper around the `FastEmbed` library for text embedding.
 ///
 /// Supports a variety of fast text embedding models. The default is the `Flag Embedding` model
 /// with a dimension size of 384.
 ///
 /// See the [FastEmbed documentation](https://docs.rs/fastembed) for more information on usage.
 ///
-/// FastEmbed can be customized by setting the embedding model via the builder. The batch size can
-/// also be set and is recommended. Batch size should match the batch size in the ingestion
+/// `FastEmbed` can be customized by setting the embedding model via the builder. The batch size can
+/// also be set and is recommended. Batch size should match the batch size in the indexing
 /// pipeline.
 ///
 /// Node that the embedding vector dimensions need to match the dimensions of the vector database collection
@@ -35,6 +35,11 @@ pub struct FastEmbed {
 }
 
 impl FastEmbed {
+    /// Tries to build a default `FastEmbed` with `Flag Embedding`.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the build fails
     pub fn try_default() -> Result<Self> {
         Self::builder().build()
     }

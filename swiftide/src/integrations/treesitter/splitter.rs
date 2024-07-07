@@ -32,9 +32,12 @@ impl CodeSplitterBuilder {
     /// # Returns
     ///
     /// * `Result<Self>` - The builder instance with the language set, or an error if the language is not supported.
+    ///
+    /// # Errors
+    ///
+    /// Errors if language is not supported
     pub fn try_language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
         self.language = Some(
-            // For some reason there's a trait conflict, wth
             language
                 .try_into()
                 .ok()
@@ -84,7 +87,7 @@ impl CodeSplitter {
     /// * `Self` - A new instance of `CodeSplitter`.
     pub fn new(language: SupportedLanguages) -> Self {
         Self {
-            chunk_size: Default::default(),
+            chunk_size: ChunkSize::default(),
             language,
         }
     }
@@ -117,7 +120,7 @@ impl CodeSplitter {
         current_chunk: Option<String>,
     ) -> Vec<String> {
         let mut new_chunks: Vec<String> = Vec::new();
-        let mut current_chunk = current_chunk.unwrap_or(String::new());
+        let mut current_chunk = current_chunk.unwrap_or_default();
 
         for child in node.children(&mut node.walk()) {
             debug_assert!(
@@ -136,7 +139,7 @@ impl CodeSplitter {
                 if next_child_size > self.max_bytes() {
                     let mut sub_chunks =
                         self.chunk_node(child, source, last_end, Some(current_chunk));
-                    current_chunk = sub_chunks.pop().unwrap_or(String::new());
+                    current_chunk = sub_chunks.pop().unwrap_or_default();
                     new_chunks.extend(sub_chunks);
                 } else {
                     // NOTE: if the current chunk was smaller than then the min_bytes, then it is discarded here
@@ -153,7 +156,7 @@ impl CodeSplitter {
         }
 
         if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
-            new_chunks.push(current_chunk)
+            new_chunks.push(current_chunk);
         }
 
         new_chunks
@@ -168,6 +171,10 @@ impl CodeSplitter {
     /// # Returns
     ///
     /// * `Result<Vec<String>>` - A result containing a vector of code chunks as strings, or an error if the code could not be parsed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the node cannot be found or fails to parse
     pub fn split(&self, code: &str) -> Result<Vec<String>> {
         let mut parser = Parser::new();
         parser.set_language(&self.language.into())?;
@@ -176,9 +183,9 @@ impl CodeSplitter {
 
         if root_node.has_error() {
             anyhow::bail!("Root node has invalid syntax");
-        } else {
-            Ok(self.chunk_node(root_node, code, 0, None))
         }
+
+        Ok(self.chunk_node(root_node, code, 0, None))
     }
 
     /// Returns the maximum number of bytes allowed in a chunk.
@@ -265,7 +272,7 @@ mod test {
         assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
         assert!(chunks
             .windows(2)
-            .all(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() >= 50));
+            .all(|pair| pair.iter().map(String::len).sum::<usize>() >= 50));
 
         assert_eq!(
             chunks,
@@ -273,7 +280,7 @@ mod test {
                 "fn main() {\n    println!(\"Hello, World!\");",
                 "\n    println!(\"Goodbye, World!\");\n}",
             ]
-        )
+        );
     }
 
     #[test]
@@ -314,7 +321,7 @@ mod test {
                 "fn main() {\n    println!(\"Hello, World!\");",
                 "\n    println!(\"Goodbye, World!\");\n}",
             ]
-        )
+        );
     }
 
     #[test]
@@ -336,7 +343,7 @@ mod test {
         assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
         assert!(chunks
             .windows(2)
-            .all(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() > 50));
+            .all(|pair| pair.iter().map(String::len).sum::<usize>() > 50));
         assert!(chunks.iter().all(|chunk| chunk.len() >= 20));
 
         assert_eq!(
@@ -345,7 +352,7 @@ mod test {
                 "fn main() {\n    println!(\"Hello, World!\");",
                 "\n    println!(\"Goodbye, World!\");\n}"
             ]
-        )
+        );
     }
 
     #[test]
@@ -384,7 +391,7 @@ mod test {
             assert!(chunks.iter().all(|chunk| chunk.len() <= max));
             let chunk_pairs_that_are_smaller_than_max = chunks
                 .windows(2)
-                .filter(|pair| pair.iter().map(|chunk| chunk.len()).sum::<usize>() < max);
+                .filter(|pair| pair.iter().map(String::len).sum::<usize>() < max);
             assert!(
                 chunk_pairs_that_are_smaller_than_max.clone().count() == 0,
                 "max: {}, {} + {}, {:?}",

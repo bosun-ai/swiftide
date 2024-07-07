@@ -2,7 +2,7 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
@@ -10,7 +10,7 @@ use indoc::indoc;
 pub const NAME: &str = "Questions and Answers (code)";
 
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
-/// This struct integrates with the ingestion pipeline to enhance the metadata of each code chunk
+/// This struct integrates with the indexing pipeline to enhance the metadata of each code chunk
 /// by adding relevant questions and answers.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
@@ -51,6 +51,7 @@ impl MetadataQACode {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -65,7 +66,7 @@ impl MetadataQACode {
 ///
 /// A string representing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate questions and answers for the given code. 
@@ -97,7 +98,7 @@ fn default_prompt() -> String {
             {code}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 
@@ -110,24 +111,24 @@ impl MetadataQACodeBuilder {
 
 #[async_trait]
 impl Transformer for MetadataQACode {
-    /// Asynchronously transforms an `IngestionNode` by generating questions and answers for its code chunk.
+    /// Asynchronously transforms an `Node` by generating questions and answers for its code chunk.
     ///
     /// This method uses the `SimplePrompt` client to generate questions and answers based on the code chunk
     /// and adds this information to the node's metadata.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` to be transformed.
+    /// * `node` - The `Node` to be transformed.
     ///
     /// # Returns
     ///
-    /// A result containing the transformed `IngestionNode` or an error if the transformation fails.
+    /// A result containing the transformed `Node` or an error if the transformation fails.
     ///
     /// # Errors
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
             .prompt
             .replace("{questions}", &self.num_questions.to_string())
@@ -160,7 +161,7 @@ mod test {
             .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
 
         let transformer = MetadataQACode::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

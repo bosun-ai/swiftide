@@ -6,37 +6,37 @@ use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
 
-use super::{EmbedMode, IngestionNode, IngestionStream};
+use super::{EmbedMode, IndexingStream, Node};
 
-/// A pipeline for ingesting files, adding metadata, chunking, transforming, embedding, and then storing them.
+/// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
-/// The `IngestionPipeline` struct orchestrates the entire file ingestion process. It is designed to be flexible and
+/// The `Pipeline` struct orchestrates the entire file indexing process. It is designed to be flexible and
 /// performant, allowing for various stages of data transformation and storage to be configured and executed asynchronously.
 ///
 /// # Fields
 ///
-/// * `stream` - The stream of `IngestionNode` items to be processed.
+/// * `stream` - The stream of `Node` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
-pub struct IngestionPipeline {
-    stream: IngestionStream,
+pub struct Pipeline {
+    stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
     concurrency: usize,
 }
 
-impl Default for IngestionPipeline {
-    /// Creates a default `IngestionPipeline` with an empty stream, no storage, and a concurrency level equal to the number of CPUs.
+impl Default for Pipeline {
+    /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal to the number of CPUs.
     fn default() -> Self {
         Self {
-            stream: IngestionStream::empty(),
-            storage: Default::default(),
+            stream: IndexingStream::empty(),
+            storage: Vec::default(),
             concurrency: num_cpus::get(),
         }
     }
 }
 
-impl IngestionPipeline {
-    /// Creates an `IngestionPipeline` from a given loader.
+impl Pipeline {
+    /// Creates an `Pipeline` from a given loader.
     ///
     /// # Arguments
     ///
@@ -44,7 +44,7 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` initialized with the provided loader.
+    /// An instance of `Pipeline` initialized with the provided loader.
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
@@ -53,16 +53,16 @@ impl IngestionPipeline {
         }
     }
 
-    /// Creates an `IngestionPipeline` from a given stream.
+    /// Creates an `Pipeline` from a given stream.
     ///
     /// # Arguments
     ///
-    /// * `stream` - An `IngestionStream` containing the nodes to be processed.
+    /// * `stream` - An `IndexingStream` containing the nodes to be processed.
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` initialized with the provided stream.
-    pub fn from_stream(stream: impl Into<IngestionStream>) -> Self {
+    /// An instance of `Pipeline` initialized with the provided stream.
+    pub fn from_stream(stream: impl Into<IndexingStream>) -> Self {
         Self {
             stream: stream.into(),
             ..Default::default()
@@ -77,13 +77,13 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated concurrency level.
+    /// An instance of `Pipeline` with the updated concurrency level.
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
         self
     }
 
-    // TODO: document it
     pub fn with_embed_mode(mut self, embed_mode: EmbedMode) -> Self {
         self.stream = self
             .stream
@@ -104,7 +104,8 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that filters out cached nodes.
+    /// An instance of `Pipeline` with the updated stream that filters out cached nodes.
+    #[must_use]
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
@@ -114,13 +115,13 @@ impl IngestionPipeline {
                 let span =
                     tracing::trace_span!("filter_cached", node_cache = ?cache, node = ?node );
                 async move {
-                    if !cache.get(&node).await {
+                    if cache.get(&node).await {
+                        tracing::debug!("Node in cache, skipping");
+                        Ok(None)
+                    } else {
                         cache.set(&node).await;
                         tracing::debug!("Node not in cache, passing through");
                         Ok(Some(node))
-                    } else {
-                        tracing::debug!("Node in cache, skipping");
-                        Ok(None)
                     }
                 }
                 .instrument(span)
@@ -138,7 +139,8 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that applies the transformer to each node.
+    /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
+    #[must_use]
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
         let transformer = Arc::new(transformer);
@@ -166,7 +168,8 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that applies the batch transformer to each batch of nodes.
+    /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each batch of nodes.
+    #[must_use]
     pub fn then_in_batch(
         mut self,
         batch_size: usize,
@@ -198,7 +201,8 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that applies the chunker transformer to each node.
+    /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to each node.
+    #[must_use]
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
         let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
@@ -218,7 +222,7 @@ impl IngestionPipeline {
         self
     }
 
-    /// Persists ingestion nodes using the provided storage backend.
+    /// Persists indexing nodes using the provided storage backend.
     ///
     /// # Arguments
     ///
@@ -226,7 +230,13 @@ impl IngestionPipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the configured storage backend.
+    /// An instance of `Pipeline` with the configured storage backend.
+    ///
+    /// # Panics
+    ///
+    /// Panics if batch size turns out to be not set and batch storage is still invoked.
+    /// Pipeline only invokes batch storing if the batch size is set, so should be alright.
+    #[must_use]
     pub fn then_store_with(mut self, storage: impl Persist + 'static) -> Self {
         let storage = Arc::new(storage);
         self.storage.push(storage.clone());
@@ -243,8 +253,7 @@ impl IngestionPipeline {
                 })
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(self.concurrency)
-                .boxed()
-                .into();
+                .boxed().into();
         } else {
             self.stream = self
                 .stream
@@ -273,9 +282,14 @@ impl IngestionPipeline {
     /// if sending fails.
     ///
     /// They can either be run concurrently, alternated between or merged back together.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the receiving pipelines buffers are full or unavailable.
+    #[must_use]
     pub fn split_by<P>(self, predicate: P) -> (Self, Self)
     where
-        P: Fn(&Result<IngestionNode>) -> bool + Send + Sync + 'static,
+        P: Fn(&Result<Node>) -> bool + Send + Sync + 'static,
     {
         let predicate = Arc::new(predicate);
 
@@ -296,13 +310,13 @@ impl IngestionPipeline {
                             left_tx
                                 .send(item)
                                 .await
-                                .expect("Failed to send to left stream")
+                                .expect("Failed to send to left stream");
                         } else {
                             tracing::debug!(?item, "Sending to right stream");
                             right_tx
                                 .send(item)
                                 .await
-                                .expect("Failed to send to right stream")
+                                .expect("Failed to send to right stream");
                         }
                     }
                 })
@@ -330,6 +344,7 @@ impl IngestionPipeline {
     /// This is useful for merging two streams that have been split using the `split_by` method.
     ///
     /// The full stream can then be processed using the `run` method.
+    #[must_use]
     pub fn merge(self, other: Self) -> Self {
         let stream = tokio_stream::StreamExt::merge(self.stream, other.stream);
 
@@ -341,7 +356,8 @@ impl IngestionPipeline {
 
     /// Throttles the stream of nodes, limiting the rate to 1 per duration.
     ///
-    /// Useful for rate limiting the ingestion pipeline. Uses tokio_stream::StreamExt::throttle internally which has a granualarity of 1ms.
+    /// Useful for rate limiting the indexing pipeline. Uses `tokio_stream::StreamExt::throttle` internally which has a granualarity of 1ms.
+    #[must_use]
     pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
         self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
             .boxed()
@@ -353,6 +369,7 @@ impl IngestionPipeline {
     //
     // This method filters out errors encountered by the pipeline, preventing them from bubbling up and terminating the stream.
     // Note that errors are not logged.
+    #[must_use]
     pub fn filter_errors(mut self) -> Self {
         self.stream = self
             .stream
@@ -372,9 +389,10 @@ impl IngestionPipeline {
     /// This allows you to skip specific errors or nodes, or do ad hoc inspection.
     ///
     /// If the closure returns true, the result is kept, otherwise it is skipped.
+    #[must_use]
     pub fn filter<F>(mut self, filter: F) -> Self
     where
-        F: Fn(&Result<IngestionNode>) -> bool + Send + Sync + 'static,
+        F: Fn(&Result<Node>) -> bool + Send + Sync + 'static,
     {
         self.stream = self
             .stream
@@ -391,6 +409,7 @@ impl IngestionPipeline {
     /// Logs all results processed by the pipeline.
     ///
     /// This method logs all results processed by the pipeline at the `DEBUG` level.
+    #[must_use]
     pub fn log_all(self) -> Self {
         self.log_errors().log_nodes()
     }
@@ -398,6 +417,7 @@ impl IngestionPipeline {
     /// Logs all errors encountered by the pipeline.
     ///
     /// This method logs all errors encountered by the pipeline at the `ERROR` level.
+    #[must_use]
     pub fn log_errors(mut self) -> Self {
         self.stream = self
             .stream
@@ -410,6 +430,7 @@ impl IngestionPipeline {
     /// Logs all nodes processed by the pipeline.
     ///
     /// This method logs all nodes processed by the pipeline at the `DEBUG` level.
+    #[must_use]
     pub fn log_nodes(mut self) -> Self {
         self.stream = self
             .stream
@@ -419,7 +440,7 @@ impl IngestionPipeline {
         self
     }
 
-    /// Runs the ingestion pipeline.
+    /// Runs the indexing pipeline.
     ///
     /// This method processes the stream of nodes, applying all configured transformations and storing the results.
     ///
@@ -430,14 +451,14 @@ impl IngestionPipeline {
     /// # Errors
     ///
     /// Returns an error if no storage backend is configured or if any stage of the pipeline fails.
-    #[tracing::instrument(skip_all, fields(total_nodes), name = "ingestion_pipeline.run")]
+    #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
         tracing::info!(
-            "Starting ingestion pipeline with {} concurrency",
+            "Starting indexing pipeline with {} concurrency",
             self.concurrency
         );
         if self.storage.is_empty() {
-            anyhow::bail!("No storage configured for ingestion pipeline");
+            anyhow::bail!("No storage configured for indexing pipeline");
         }
 
         // Ensure all storage backends are set up before processing nodes
@@ -464,12 +485,12 @@ impl IngestionPipeline {
 mod tests {
 
     use super::*;
-    use crate::ingestion::IngestionNode;
+    use crate::indexing::Node;
     use crate::persist::MemoryStorage;
     use crate::traits::*;
     use mockall::Sequence;
 
-    /// Tests a simple run of the ingestion pipeline.
+    /// Tests a simple run of the indexing pipeline.
     #[test_log::test(tokio::test)]
     async fn test_simple_run() {
         let mut loader = MockLoader::new();
@@ -484,7 +505,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(IngestionNode::default())].into());
+            .returning(|| vec![Ok(Node::default())].into());
 
         transformer.expect_transform_node().returning(|mut node| {
             node.chunk = "transformed".to_string();
@@ -496,7 +517,7 @@ mod tests {
             .expect_batch_transform()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|nodes| IngestionStream::iter(nodes.into_iter().map(Ok)));
+            .returning(|nodes| IndexingStream::iter(nodes.into_iter().map(Ok)));
         batch_transformer.expect_concurrency().returning(|| None);
 
         chunker
@@ -507,7 +528,7 @@ mod tests {
                 let mut nodes = vec![];
                 for i in 0..3 {
                     let mut node = node.clone();
-                    node.chunk = format!("transformed_chunk_{}", i);
+                    node.chunk = format!("transformed_chunk_{i}");
                     nodes.push(Ok(node));
                 }
                 nodes.into()
@@ -523,7 +544,7 @@ mod tests {
             .withf(|node| node.chunk.starts_with("transformed_chunk_"))
             .returning(Ok);
 
-        let pipeline = IngestionPipeline::from_loader(loader)
+        let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
             .then_in_batch(1, batch_transformer)
             .then_chunk(chunker)
@@ -542,7 +563,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(IngestionNode::default())].into());
+            .returning(|| vec![Ok(Node::default())].into());
         transformer
             .expect_transform_node()
             .returning(|_node| Err(anyhow::anyhow!("Error transforming node")));
@@ -550,7 +571,7 @@ mod tests {
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
         storage.expect_store().times(0).returning(Ok);
-        let pipeline = IngestionPipeline::from_loader(loader)
+        let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
             .then_store_with(storage)
             .filter_errors();
@@ -569,9 +590,9 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(IngestionNode::default()),
-                    Ok(IngestionNode::default()),
-                    Ok(IngestionNode::default()),
+                    Ok(Node::default()),
+                    Ok(Node::default()),
+                    Ok(Node::default()),
                 ]
                 .into()
             });
@@ -588,7 +609,7 @@ mod tests {
         storage.expect_batch_size().returning(|| None);
         storage.expect_store().times(3).returning(Ok);
 
-        let pipeline = IngestionPipeline::from_loader(loader)
+        let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
             .then_store_with(storage);
         pipeline.run().await.unwrap();
@@ -597,7 +618,7 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_transformer() {
         let mut loader = MockLoader::new();
-        let transformer = |node: IngestionNode| {
+        let transformer = |node: Node| {
             let mut node = node;
             node.chunk = "transformed".to_string();
             Ok(node)
@@ -608,9 +629,9 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(IngestionNode::default())].into());
+            .returning(|| vec![Ok(Node::default())].into());
 
-        let pipeline = IngestionPipeline::from_loader(loader)
+        let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
             .then_store_with(storage.clone());
         pipeline.run().await.unwrap();
@@ -623,8 +644,8 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_batch_transformer() {
         let mut loader = MockLoader::new();
-        let batch_transformer = |nodes: Vec<IngestionNode>| {
-            IngestionStream::iter(nodes.into_iter().map(|mut node| {
+        let batch_transformer = |nodes: Vec<Node>| {
+            IndexingStream::iter(nodes.into_iter().map(|mut node| {
                 node.chunk = "transformed".to_string();
                 Ok(node)
             }))
@@ -635,9 +656,9 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(IngestionNode::default())].into());
+            .returning(|| vec![Ok(Node::default())].into());
 
-        let pipeline = IngestionPipeline::from_loader(loader)
+        let pipeline = Pipeline::from_loader(loader)
             .then_in_batch(10, batch_transformer)
             .then_store_with(storage.clone());
         pipeline.run().await.unwrap();
@@ -658,16 +679,16 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(IngestionNode::default()),
-                    Ok(IngestionNode {
+                    Ok(Node::default()),
+                    Ok(Node {
                         chunk: "skip".to_string(),
-                        ..IngestionNode::default()
+                        ..Node::default()
                     }),
-                    Ok(IngestionNode::default()),
+                    Ok(Node::default()),
                 ]
                 .into()
             });
-        let pipeline = IngestionPipeline::from_loader(loader)
+        let pipeline = Pipeline::from_loader(loader)
             .filter(|result| {
                 let node = result.as_ref().unwrap();
                 node.chunk != "skip"
@@ -689,17 +710,17 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(IngestionNode::default()),
-                    Ok(IngestionNode {
+                    Ok(Node::default()),
+                    Ok(Node {
                         chunk: "will go left".to_string(),
-                        ..IngestionNode::default()
+                        ..Node::default()
                     }),
-                    Ok(IngestionNode::default()),
+                    Ok(Node::default()),
                 ]
                 .into()
             });
 
-        let pipeline = IngestionPipeline::from_loader(loader);
+        let pipeline = Pipeline::from_loader(loader);
         let (mut left, mut right) = pipeline.split_by(|node| {
             if let Ok(node) = node {
                 node.chunk.starts_with("will go left")
@@ -710,14 +731,14 @@ mod tests {
 
         // change the chunk to 'left'
         left = left
-            .then(move |mut node: IngestionNode| {
+            .then(move |mut node: Node| {
                 node.chunk = "left".to_string();
 
                 Ok(node)
             })
             .log_all();
 
-        right = right.then(move |mut node: IngestionNode| {
+        right = right.then(move |mut node: Node| {
             node.chunk = "right".to_string();
             Ok(node)
         });

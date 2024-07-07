@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    indexing::{IndexingStream, Node},
     Persist,
 };
 
@@ -23,7 +23,7 @@ impl Persist for Redis {
     /// By default nodes are stored with the path and hash as key and the node serialized as JSON as value.
     ///
     /// You can customize the key and value used for storing nodes by setting the `persist_key_fn` and `persist_value_fn` fields.
-    async fn store(&self, node: IngestionNode) -> Result<IngestionNode> {
+    async fn store(&self, node: Node) -> Result<Node> {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("SET")
                 .arg(self.persist_key_for_node(&node)?)
@@ -43,7 +43,7 @@ impl Persist for Redis {
     /// By default nodes are stored with the path and hash as key and the node serialized as JSON as value.
     ///
     /// You can customize the key and value used for storing nodes by setting the `persist_key_fn` and `persist_value_fn` fields.
-    async fn batch_store(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
+    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
         // use mset for batch store
         if let Some(mut cm) = self.lazy_connect().await {
             let args = nodes
@@ -69,12 +69,12 @@ impl Persist for Redis {
                 .context("Error persisting to redis");
 
             if result.is_ok() {
-                IngestionStream::iter(nodes.into_iter().map(Ok))
+                IndexingStream::iter(nodes.into_iter().map(Ok))
             } else {
-                IngestionStream::iter([Err(result.unwrap_err())])
+                IndexingStream::iter([Err(result.unwrap_err())])
             }
         } else {
-            IngestionStream::iter([Err(anyhow::anyhow!("Failed to connect to Redis"))])
+            IndexingStream::iter([Err(anyhow::anyhow!("Failed to connect to Redis"))])
         }
     }
 }
@@ -107,7 +107,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = IngestionNode {
+        let node = Node {
             id: Some(1),
             path: "test".into(),
             chunk: "chunk".into(),
@@ -132,12 +132,12 @@ mod tests {
             .build()
             .unwrap();
         let nodes = vec![
-            IngestionNode {
+            Node {
                 id: Some(1),
                 path: "test".into(),
                 ..Default::default()
             },
-            IngestionNode {
+            Node {
                 id: Some(2),
                 path: "other".into(),
                 ..Default::default()
@@ -145,13 +145,13 @@ mod tests {
         ];
 
         let stream = redis.batch_store(nodes).await;
-        let streamed_nodes: Vec<IngestionNode> = stream.try_collect().await.unwrap();
+        let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
 
         assert_eq!(streamed_nodes.len(), 2);
 
         for node in streamed_nodes {
             let stored_node = serde_json::from_str(&redis.get_node(&node).await.unwrap().unwrap());
-            assert_eq!(node, stored_node.unwrap())
+            assert_eq!(node, stored_node.unwrap());
         }
     }
 
@@ -166,7 +166,7 @@ mod tests {
             .persist_value_fn(|_node| Ok("hello world".to_string()))
             .build()
             .unwrap();
-        let node = IngestionNode {
+        let node = Node {
             id: Some(1),
             ..Default::default()
         };
@@ -178,6 +178,6 @@ mod tests {
         assert_eq!(
             redis.persist_key_for_node(&node).unwrap(),
             "test".to_string()
-        )
+        );
     }
 }

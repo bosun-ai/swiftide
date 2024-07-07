@@ -1,7 +1,7 @@
 //! Extract keywords from a node and add them as metadata
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -11,8 +11,8 @@ pub const NAME: &str = "Keywords";
 
 /// This module defines the `MetadataKeywords` struct and its associated methods,
 /// which are used for generating metadata in the form of keywords
-/// for a given text. It interacts with a client (e.g., OpenAI) to generate
-/// the keywords based on the text chunk in an `IngestionNode`.
+/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
+/// the keywords based on the text chunk in a `Node`.
 
 /// `MetadataKeywords` is responsible for generating keywords
 /// for a given text chunk. It uses a templated prompt to interact with a client
@@ -53,6 +53,7 @@ impl MetadataKeywords {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -65,7 +66,7 @@ impl MetadataKeywords {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate a descriptive, concise keywords for the given text
@@ -88,7 +89,7 @@ fn default_prompt() -> String {
             {text}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 
@@ -101,16 +102,16 @@ impl MetadataKeywordsBuilder {
 
 #[async_trait]
 impl Transformer for MetadataKeywords {
-    /// Transforms an `IngestionNode` by extracting a keywords
+    /// Transforms an `Node` by extracting a keywords
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors
@@ -118,7 +119,7 @@ impl Transformer for MetadataKeywords {
     /// This function will return an error if the client fails to generate
     /// a keywords from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_keywords")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt.replace("{text}", &node.chunk);
 
         let response = self.client.prompt(&prompt).await?;
@@ -148,7 +149,7 @@ mod test {
             .returning(|_| Ok("important,keywords".to_string()));
 
         let transformer = MetadataKeywords::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 
