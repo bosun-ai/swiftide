@@ -1,5 +1,5 @@
 //! Generate a summary or overview of a file that easily fits into LLM contexts by using an LLM to generate the summary.
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
@@ -62,6 +62,13 @@ impl Transformer for FileToContextLLM {
     /// Uses an LLM to generate a summary of the file that fits into an LLM context.
     #[tracing::instrument(skip_all, name = "transformer.file_to_context_llm")]
     async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode> {
+        let file_name = node
+            .path
+            .file_name()
+            .context("No filename set")?
+            .to_str()
+            .context("Invalid filename")?;
+
         let whole_file = node.chunk;
         let mut summary = String::new();
         let mut start = 0;
@@ -81,7 +88,6 @@ impl Transformer for FileToContextLLM {
             current_chunk = &whole_file[start..end];
 
             if start == 0 {
-                let file_name = node.path.file_name().unwrap().to_str().unwrap();
                 let prompt = self
                     .initial_prompt
                     .replace("{file_name}", file_name)
@@ -209,4 +215,34 @@ fn default_subsequent_prompt() -> String {
             {current_chunk}
             ```
         "#}
+}
+
+#[cfg(test)]
+mod test {
+    use crate::MockSimplePrompt;
+
+    use super::*;
+
+    use std::path::PathBuf;
+
+    #[tokio::test]
+    async fn test_file_to_context_llm() {
+        let mut client = MockSimplePrompt::new();
+
+        client
+            .expect_prompt()
+            .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
+
+        let transformer = FileToContextLLM::builder()
+            .client(client)
+            .chunk_size(10usize)
+            .build()
+            .unwrap();
+        let mut node = IngestionNode::new("12345678901234567890");
+        node.path = PathBuf::from("example.py");
+
+        let result = transformer.transform_node(node).await.unwrap();
+
+        assert_eq!(result.chunk, "Q1: Hello\nA1: World");
+    }
 }
