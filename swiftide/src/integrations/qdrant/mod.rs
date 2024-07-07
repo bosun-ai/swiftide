@@ -187,10 +187,10 @@ pub struct VectorConfig {
     // distance: qdrant::Distance,
 }
 
-impl Into<VectorConfig> for EmbeddableType {
-    fn into(self) -> VectorConfig {
-        VectorConfig {
-            embeddable_type: self,
+impl From<EmbeddableType> for VectorConfig {
+    fn from(value: EmbeddableType) -> Self {
+        Self {
+            embeddable_type: value,
             ..Default::default()
         }
     }
