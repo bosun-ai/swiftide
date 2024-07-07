@@ -66,7 +66,7 @@ impl BatchableTransformer for Embed {
     #[tracing::instrument(skip_all, name = "transformers.embed")]
     async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
-        let chunks_to_embed: Vec<String> = nodes.iter().map(IngestionNode::as_embeddable).collect();
+        let chunks_to_embed: Vec<String> = nodes.iter().map(Node::as_embeddable).collect();
 
         self.embed_model
             .embed(chunks_to_embed)
