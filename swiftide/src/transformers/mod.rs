@@ -8,6 +8,7 @@ pub mod chunk_code;
 
 pub mod chunk_markdown;
 pub mod embed;
+pub mod file_to_context_llm;
 pub mod metadata_keywords;
 pub mod metadata_qa_code;
 pub mod metadata_qa_text;
