@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
   ---------
     ````
 
+- [b498074](https://github.com/bosun-ai/swiftide/commit/b4980746b55073ce870bc897aef6721d10883acd) *(uncategorized)* Clippy
+
 ### Documentation
 
 - [8405c9e](https://github.com/bosun-ai/swiftide/commit/8405c9efedef944156c2904eb709ba79aa4d82de) *(contributing)* Add guidelines on code design by @timonv in [#113](https://github.com/bosun-ai/swiftide/pull/113)
@@ -38,6 +40,25 @@ All notable changes to this project will be documented in this file.
 - [de3d362](https://github.com/bosun-ai/swiftide/commit/de3d3629fead3937efdcbb1483a1fd8f459d59b9) *(ci)* Add sanity checks for pull requests
 
 - [bd72c6a](https://github.com/bosun-ai/swiftide/commit/bd72c6a62228deed722bbc22bdcd389843cde453) *(ci)* Coverage using llvm-cov
+
+- [51c114c](https://github.com/bosun-ai/swiftide/commit/51c114ceb06db840c4952d3d0f694bfbf266681c) *(uncategorized)* Various tooling & community improvements by @timonv in [#131](https://github.com/bosun-ai/swiftide/pull/131)
+
+    ````text
+    - **fix(ci): ensure clippy runs with all features**
+  - **chore(ci): coverage using llvm-cov**
+  - **chore: drastically improve changelog generation**
+  - **chore(ci): add sanity checks for pull requests**
+  - **chore(ci): split jobs and add typos**
+    ````
+
+- [84dd65d](https://github.com/bosun-ai/swiftide/commit/84dd65dc6c0ff4595f27ed061a4f4c0a2dae7202) *(uncategorized)* Rename all mentions of ingest to index by @timonv in [#130](https://github.com/bosun-ai/swiftide/pull/130) [**breaking**]
+
+    ````text
+    Swiftide is not an ingestion pipeline (loading data), but an indexing
+  pipeline (prepping for search).
+
+  There is now a temporary, deprecated re-export to match the previous api.
+    ````
 
 - [d7d318e](https://github.com/bosun-ai/swiftide/commit/d7d318e60d42a1fce58c08e296c0aeac2674b32b) *(uncategorized)* Enable clippy pedantic
 
