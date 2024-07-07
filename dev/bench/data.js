@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720261898800,
+  "lastUpdate": 1720367419149,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -461,6 +461,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 31",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "84dd65dc6c0ff4595f27ed061a4f4c0a2dae7202",
+          "message": "chore!: rename all mentions of ingest to index (#130)\n\nSwiftide is not an ingestion pipeline (loading data), but an indexing\r\npipeline (prepping for search).\r\n\r\nThere is now a temporary, deprecated re-export to match the previous api.",
+          "timestamp": "2024-07-07T17:46:37+02:00",
+          "tree_id": "2486b8352ec4e10d276cb4acde662faec1d8bcb8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/84dd65dc6c0ff4595f27ed061a4f4c0a2dae7202"
+        },
+        "date": 1720367418849,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 20",
             "unit": "ns/iter"
           }
         ]
