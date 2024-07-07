@@ -20,7 +20,7 @@ use swiftide::{
     ingestion::{self, EmbeddableType},
     integrations::{
         self,
-        qdrant::{Qdrant, VectorConfigBuilder},
+        qdrant::{Qdrant, VectorConfig},
     },
     loaders::FileLoader,
     transformers::{
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_vector(EmbeddableType::Metadata(metadata_qa_text::NAME.into()))
                 .with_vector(EmbeddableType::Metadata(metadata_summary::NAME.into()))
                 .with_vector(
-                    VectorConfigBuilder::default()
+                    VectorConfig::builder()
                         .embeddable_type(EmbeddableType::Metadata(metadata_title::NAME.into()))
                         .vector_size(1536u64)
                         .build()?,

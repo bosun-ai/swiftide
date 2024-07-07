@@ -49,23 +49,6 @@ pub struct Qdrant {
     vectors: HashMap<EmbeddableType, VectorConfig>,
 }
 
-impl QdrantBuilder {
-    pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
-        if self.vectors.is_none() {
-            self = self.vectors(Default::default());
-        }
-        let vector = vector.into();
-        if let Some(vectors) = self.vectors.as_mut() {
-            vectors.insert(vector.embeddable_type.clone(), vector);
-        }
-        self
-    }
-
-    fn default_vectors() -> HashMap<EmbeddableType, VectorConfig> {
-        HashMap::from([(Default::default(), Default::default())])
-    }
-}
-
 impl Qdrant {
     /// Returns a new `QdrantBuilder` for constructing a `Qdrant` instance.
     pub fn builder() -> QdrantBuilder {
@@ -116,22 +99,10 @@ impl Qdrant {
     }
 
     fn create_vectors_config(&self) -> Result<qdrant_client::qdrant::vectors_config::Config> {
-        // //
-        // if let Some(config) = self.vectors.get(&EmbeddableType::Chunk) {
-        //     let mut map = HashMap::<String, qdrant::VectorParams>::default();
-        //     let vector_name = EmbeddableType::Chunk.to_string();
-        //     let vector_params = self.create_vector_params(config);
-        //     map.insert(vector_name, vector_params.clone());
-        //     return Ok(qdrant::vectors_config::Config::ParamsMap(
-        //         qdrant::VectorParamsMap { map },
-        //     ));
-        // }
-        // //
-
         if self.vectors.is_empty() {
             bail!("No configured vectors");
         } else if self.vectors.len() == 1 {
-            let config = self.vectors.values().next().expect("Has one vector config");
+            let config = self.vectors.values().next().context("Has one vector config")?;
             let vector_params = self.create_vector_params(config);
             return Ok(qdrant::vectors_config::Config::Params(vector_params));
         }
@@ -164,6 +135,21 @@ impl QdrantBuilder {
 
         Ok(Arc::new(client))
     }
+
+    pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
+        if self.vectors.is_none() {
+            self = self.vectors(Default::default());
+        }
+        let vector = vector.into();
+        if let Some(vectors) = self.vectors.as_mut() {
+            vectors.insert(vector.embeddable_type.clone(), vector);
+        }
+        self
+    }
+
+    fn default_vectors() -> HashMap<EmbeddableType, VectorConfig> {
+        HashMap::from([(Default::default(), Default::default())])
+    }
 }
 
 impl std::fmt::Debug for Qdrant {
@@ -185,6 +171,12 @@ pub struct VectorConfig {
     // TODO: do not export qdrant type
     // #[builder(default = "qdrant_client::qdrant::Distance::Cosine")]
     // distance: qdrant::Distance,
+}
+
+impl VectorConfig {
+    pub fn builder() -> VectorConfigBuilder {
+        VectorConfigBuilder::default()
+    }
 }
 
 impl From<EmbeddableType> for VectorConfig {
