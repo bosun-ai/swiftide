@@ -172,7 +172,7 @@ async fn test_indexing_pipeline() {
         println!("{}", received_requests);
     };
 
-    result.expect("Ingestion pipeline failed");
+    result.expect("Indexing pipeline failed");
 
     let qdrant_client = qdrant_client::Qdrant::from_url(&qdrant_url)
         .build()

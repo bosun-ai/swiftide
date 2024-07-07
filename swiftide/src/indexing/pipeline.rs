@@ -10,12 +10,12 @@ use super::{IndexingStream, Node};
 
 /// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
-/// The `IngestionPipeline` struct orchestrates the entire file indexing process. It is designed to be flexible and
+/// The `Pipeline` struct orchestrates the entire file indexing process. It is designed to be flexible and
 /// performant, allowing for various stages of data transformation and storage to be configured and executed asynchronously.
 ///
 /// # Fields
 ///
-/// * `stream` - The stream of `IngestionNode` items to be processed.
+/// * `stream` - The stream of `Node` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
 pub struct Pipeline {
@@ -25,7 +25,7 @@ pub struct Pipeline {
 }
 
 impl Default for Pipeline {
-    /// Creates a default `IngestionPipeline` with an empty stream, no storage, and a concurrency level equal to the number of CPUs.
+    /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal to the number of CPUs.
     fn default() -> Self {
         Self {
             stream: IndexingStream::empty(),
@@ -36,7 +36,7 @@ impl Default for Pipeline {
 }
 
 impl Pipeline {
-    /// Creates an `IngestionPipeline` from a given loader.
+    /// Creates an `Pipeline` from a given loader.
     ///
     /// # Arguments
     ///
@@ -44,7 +44,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` initialized with the provided loader.
+    /// An instance of `Pipeline` initialized with the provided loader.
     pub fn from_loader(loader: impl Loader + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
@@ -53,15 +53,15 @@ impl Pipeline {
         }
     }
 
-    /// Creates an `IngestionPipeline` from a given stream.
+    /// Creates an `Pipeline` from a given stream.
     ///
     /// # Arguments
     ///
-    /// * `stream` - An `IngestionStream` containing the nodes to be processed.
+    /// * `stream` - An `IndexingStream` containing the nodes to be processed.
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` initialized with the provided stream.
+    /// An instance of `Pipeline` initialized with the provided stream.
     pub fn from_stream(stream: impl Into<IndexingStream>) -> Self {
         Self {
             stream: stream.into(),
@@ -77,7 +77,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated concurrency level.
+    /// An instance of `Pipeline` with the updated concurrency level.
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
         self
@@ -91,7 +91,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that filters out cached nodes.
+    /// An instance of `Pipeline` with the updated stream that filters out cached nodes.
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
@@ -125,7 +125,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that applies the transformer to each node.
+    /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
         let transformer = Arc::new(transformer);
@@ -153,7 +153,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that applies the batch transformer to each batch of nodes.
+    /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each batch of nodes.
     pub fn then_in_batch(
         mut self,
         batch_size: usize,
@@ -185,7 +185,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the updated stream that applies the chunker transformer to each node.
+    /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to each node.
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
         let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
@@ -213,7 +213,7 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `IngestionPipeline` with the configured storage backend.
+    /// An instance of `Pipeline` with the configured storage backend.
     pub fn then_store_with(mut self, storage: impl Persist + 'static) -> Self {
         let storage = Arc::new(storage);
         self.storage.push(storage.clone());

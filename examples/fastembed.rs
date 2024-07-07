@@ -1,4 +1,4 @@
-//! # [Swiftide] Ingesting the Swiftide itself example
+//! # [Swiftide] Indexing the Swiftide itself example
 //!
 //! This example demonstrates how to index the Swiftide codebase itself using FastEmbed.
 //!

@@ -5,11 +5,11 @@
 //! The indexing system in Swiftide is designed to handle the asynchronous processing of large volumes
 //! of data, including loading, transforming, and storing data chunks. The primary components include:
 //!
-//! - `IngestionNode`: Represents a unit of data in the indexing process, encapsulating metadata, data chunks,
+//! - `Node`: Represents a unit of data in the indexing process, encapsulating metadata, data chunks,
 //!   and optional vector representations.
-//! - `IngestionPipeline`: Orchestrates the entire file indexing process, allowing for various stages of data
+//! - `Pipeline`: Orchestrates the entire file indexing process, allowing for various stages of data
 //!   transformation and storage to be configured and executed asynchronously.
-//! - `IngestionStream`: A type alias for a pinned, boxed, dynamically-dispatched stream of `IngestionNode` items,
+//! - `IndexingStream`: A type alias for a pinned, boxed, dynamically-dispatched stream of `Node` items,
 //!   facilitating efficient and scalable indexing workflows.
 //!
 //! # Usage

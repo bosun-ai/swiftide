@@ -1,4 +1,4 @@
-//! # [Swiftide] Ingesting the Swiftide itself example
+//! # [Swiftide] Indexing the Swiftide itself example
 //!
 //! This example demonstrates how to index the Swiftide codebase itself.
 //! Note that for it to work correctly you need to have OPENAI_API_KEY set, redis and qdrant

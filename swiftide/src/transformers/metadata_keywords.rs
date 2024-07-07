@@ -10,7 +10,7 @@ use indoc::indoc;
 /// This module defines the `MetadataKeywords` struct and its associated methods,
 /// which are used for generating metadata in the form of keywords
 /// for a given text. It interacts with a client (e.g., OpenAI) to generate
-/// the keywords based on the text chunk in an `IngestionNode`.
+/// the keywords based on the text chunk in an `Node`.
 
 /// `MetadataKeywords` is responsible for generating keywords
 /// for a given text chunk. It uses a templated prompt to interact with a client
@@ -99,16 +99,16 @@ impl MetadataKeywordsBuilder {
 
 #[async_trait]
 impl Transformer for MetadataKeywords {
-    /// Transforms an `IngestionNode` by extracting a keywords
+    /// Transforms an `Node` by extracting a keywords
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors

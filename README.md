@@ -76,7 +76,7 @@ Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
   </a>
 </div>
 
-While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Ingestion performance went from multiple tens of minutes to a few seconds.
+While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Indexing performance went from multiple tens of minutes to a few seconds.
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
@@ -87,7 +87,7 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 ## Example
 
 ```rust
-IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(Redis::try_from_url(
             redis_url,
             "swiftide-examples",
@@ -160,13 +160,13 @@ Other integrations will need to be installed accordingly.
 
 Before building your stream, you need to enable and configure any integrations required. See /examples.
 
-A stream starts with a Loader that emits IngestionNodes. For instance, with the Fileloader each file is a Node.
+A stream starts with a Loader that emits Nodes. For instance, with the Fileloader each file is a Node.
 
 You can then slice and dice, augment, and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
 
-IngestionNodes have a path, chunk and metadata. Currently metadata is copied over when chunking and _always_ embedded when using the OpenAIEmbed transformer.
+Nodes have a path, chunk and metadata. Currently metadata is copied over when chunking and _always_ embedded when using the OpenAIEmbed transformer.
 
-- **from_loader** `(impl Loader)` starting point of the stream, creates and emits IngestionNodes
+- **from_loader** `(impl Loader)` starting point of the stream, creates and emits Nodes
 - **filter_cached** `(impl NodeCache)` filters cached nodes
 - **then** `(impl Transformer)` transforms the node and puts it on the stream
 - **then_in_batch** `(impl BatchTransformer)` transforms multiple nodes and puts them on the stream

@@ -46,7 +46,7 @@ impl FileLoader {
     /// Lists the nodes (files) that match the specified extensions.
     ///
     /// # Returns
-    /// A vector of `IngestionNode` representing the matching files.
+    /// A vector of `Node` representing the matching files.
     ///
     /// # Panics
     /// This method will panic if it fails to read a file's content.
@@ -85,10 +85,10 @@ impl FileLoader {
 }
 
 impl Loader for FileLoader {
-    /// Converts the `FileLoader` into a stream of `IngestionNode`.
+    /// Converts the `FileLoader` into a stream of `Node`.
     ///
     /// # Returns
-    /// An `IngestionStream` representing the stream of files.
+    /// An `IndexingStream` representing the stream of files.
     ///
     /// # Errors
     /// This method will return an error if it fails to read a file's content.

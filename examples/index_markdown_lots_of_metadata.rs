@@ -1,4 +1,4 @@
-//! # [Swiftide] Ingesting the Swiftide README with lots of metadata
+//! # [Swiftide] Indexing the Swiftide README with lots of metadata
 //!
 //! This example demonstrates how to index the Swiftide README with lots of metadata.
 //!

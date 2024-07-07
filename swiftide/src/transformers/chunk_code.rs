@@ -75,13 +75,13 @@ impl ChunkCode {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkCode {
-    /// Transforms an `IngestionNode` by splitting its code chunk into smaller pieces.
+    /// Transforms an `Node` by splitting its code chunk into smaller pieces.
     ///
     /// # Parameters
-    /// - `node`: The `IngestionNode` containing the code chunk to be split.
+    /// - `node`: The `Node` containing the code chunk to be split.
     ///
     /// # Returns
-    /// - `IngestionStream`: A stream of `IngestionNode` instances, each containing a smaller chunk of code.
+    /// - `IndexingStream`: A stream of `Node` instances, each containing a smaller chunk of code.
     ///
     /// # Errors
     /// - If the code splitting fails, an error is sent downstream.

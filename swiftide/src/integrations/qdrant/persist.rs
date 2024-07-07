@@ -43,7 +43,7 @@ impl Persist for Qdrant {
     ///
     /// # Parameters
     ///
-    /// - `node`: The `IngestionNode` to be stored.
+    /// - `node`: The `Node` to be stored.
     ///
     /// # Returns
     ///
@@ -71,7 +71,7 @@ impl Persist for Qdrant {
     ///
     /// # Parameters
     ///
-    /// - `nodes`: A vector of `IngestionNode` to be stored.
+    /// - `nodes`: A vector of `Node` to be stored.
     ///
     /// # Returns
     ///

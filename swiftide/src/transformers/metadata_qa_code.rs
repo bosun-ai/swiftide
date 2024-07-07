@@ -108,18 +108,18 @@ impl MetadataQACodeBuilder {
 
 #[async_trait]
 impl Transformer for MetadataQACode {
-    /// Asynchronously transforms an `IngestionNode` by generating questions and answers for its code chunk.
+    /// Asynchronously transforms an `Node` by generating questions and answers for its code chunk.
     ///
     /// This method uses the `SimplePrompt` client to generate questions and answers based on the code chunk
     /// and adds this information to the node's metadata.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` to be transformed.
+    /// * `node` - The `Node` to be transformed.
     ///
     /// # Returns
     ///
-    /// A result containing the transformed `IngestionNode` or an error if the transformation fails.
+    /// A result containing the transformed `Node` or an error if the transformation fails.
     ///
     /// # Errors
     ///

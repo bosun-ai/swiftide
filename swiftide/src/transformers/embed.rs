@@ -8,7 +8,7 @@ use crate::{
 use async_trait::async_trait;
 use itertools::Itertools as _;
 
-/// A transformer that can generate embeddings for an `IngestionNode`
+/// A transformer that can generate embeddings for an `Node`
 ///
 /// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
 pub struct Embed {
@@ -49,15 +49,15 @@ impl Embed {
 
 #[async_trait]
 impl BatchableTransformer for Embed {
-    /// Transforms a batch of `IngestionNode` objects by generating embeddings for them.
+    /// Transforms a batch of `Node` objects by generating embeddings for them.
     ///
     /// # Parameters
     ///
-    /// * `nodes` - A vector of `IngestionNode` objects to be transformed.
+    /// * `nodes` - A vector of `Node` objects to be transformed.
     ///
     /// # Returns
     ///
-    /// An `IngestionStream` containing the transformed `IngestionNode` objects with their embeddings.
+    /// An `IndexingStream` containing the transformed `Node` objects with their embeddings.
     ///
     /// # Errors
     ///

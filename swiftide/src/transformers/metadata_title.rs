@@ -10,7 +10,7 @@ use indoc::indoc;
 /// This module defines the `MetadataTitle` struct and its associated methods,
 /// which are used for generating metadata in the form of a title
 /// for a given text. It interacts with a client (e.g., OpenAI) to generate
-/// these questions and answers based on the text chunk in an `IngestionNode`.
+/// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataTitle` is responsible for generating a title
 /// for a given text chunk. It uses a templated prompt to interact with a client
@@ -97,16 +97,16 @@ impl MetadataTitleBuilder {
 
 #[async_trait]
 impl Transformer for MetadataTitle {
-    /// Transforms an `IngestionNode` by generating questions and answers
+    /// Transforms an `Node` by generating questions and answers
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors

@@ -45,7 +45,7 @@ impl std::fmt::Debug for HtmlToMarkdownTransformer {
 
 #[async_trait]
 impl Transformer for HtmlToMarkdownTransformer {
-    /// Converts the HTML content in the `IngestionNode` to markdown.
+    /// Converts the HTML content in the `Node` to markdown.
     ///
     /// Will Err the node if the conversion fails.
     #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]

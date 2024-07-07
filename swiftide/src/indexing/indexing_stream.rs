@@ -1,6 +1,6 @@
 #![allow(clippy::from_over_into)]
 #![cfg(not(tarpaulin_include))]
-//! This module defines the `IngestionStream` type, which is used for handling asynchronous streams of `IngestionNode` items in the indexing pipeline.
+//! This module defines the `IndexingStream` type, which is used for handling asynchronous streams of `Node` items in the indexing pipeline.
 
 use anyhow::Result;
 use futures_util::stream::{self, Stream};
@@ -14,11 +14,11 @@ pub use futures_util::{StreamExt, TryStreamExt};
 
 // We need to inform the compiler that `inner` is pinned as well
 pin_project! {
-    /// An asynchronous stream of `IngestionNode` items.
+    /// An asynchronous stream of `Node` items.
     ///
-    /// Wraps an internal stream of `Result<IngestionNode>` items.
+    /// Wraps an internal stream of `Result<Node>` items.
     ///
-    /// Streams, iterators and vectors of `Result<IngestionNode>` can be converted into an `IngestionStream`.
+    /// Streams, iterators and vectors of `Result<Node>` can be converted into an `IndexingStream`.
     pub struct IndexingStream {
         #[pin]
         pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Node>> + Send>>,
