@@ -2,13 +2,13 @@
 use std::sync::Arc;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    indexing::{IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
 use async_trait::async_trait;
 use itertools::Itertools as _;
 
-/// A transformer that can generate embeddings for an `IngestionNode`
+/// A transformer that can generate embeddings for an `Node`
 ///
 /// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
 pub struct Embed {
@@ -49,21 +49,21 @@ impl Embed {
 
 #[async_trait]
 impl BatchableTransformer for Embed {
-    /// Transforms a batch of `IngestionNode` objects by generating embeddings for them.
+    /// Transforms a batch of `Node` objects by generating embeddings for them.
     ///
     /// # Parameters
     ///
-    /// * `nodes` - A vector of `IngestionNode` objects to be transformed.
+    /// * `nodes` - A vector of `Node` objects to be transformed.
     ///
     /// # Returns
     ///
-    /// An `IngestionStream` containing the transformed `IngestionNode` objects with their embeddings.
+    /// An `IndexingStream` containing the transformed `Node` objects with their embeddings.
     ///
     /// # Errors
     ///
     /// If the embedding process fails, the function returns a stream with the error.
     #[tracing::instrument(skip_all, name = "transformers.embed")]
-    async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
+    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
         let chunks_to_embed: Vec<String> = nodes.iter().map(|n| n.as_embeddable()).collect();
 

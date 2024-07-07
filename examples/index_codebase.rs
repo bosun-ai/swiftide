@@ -1,6 +1,6 @@
-//! # [Swiftide] Ingesting the Swiftide itself example
+//! # [Swiftide] Indexing the Swiftide itself example
 //!
-//! This example demonstrates how to ingest the Swiftide codebase itself.
+//! This example demonstrates how to index the Swiftide codebase itself.
 //! Note that for it to work correctly you need to have OPENAI_API_KEY set, redis and qdrant
 //! running.
 //!
@@ -20,29 +20,39 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    ingestion, integrations::redis::Redis, loaders::FileLoader, transformers::ChunkCode,
+    indexing,
+    integrations::{self, qdrant::Qdrant, redis::Redis},
+    loaders::FileLoader,
+    transformers::{ChunkCode, Embed, MetadataQACode},
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    let openai_client = integrations::openai::OpenAI::builder()
+        .default_embed_model("text-embedding-3-small")
+        .default_prompt_model("gpt-3.5-turbo")
+        .build()?;
+
     let redis_url = std::env::var("REDIS_URL")
         .as_deref()
         .unwrap_or("redis://localhost:6379")
         .to_owned();
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+    indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+        .filter_cached(Redis::try_from_url(redis_url, "swiftide-examples")?)
+        .then(MetadataQACode::new(openai_client.clone()))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
             10..2048,
         )?)
+        .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
-            // By default the value is the full node serialized to JSON.
-            // We can customize this by providing a custom function.
-            Redis::try_build_from_url(&redis_url)?
-                .persist_value_fn(|node| Ok(serde_json::to_string(&node.metadata)?))
+            Qdrant::builder()
                 .batch_size(50)
+                .vector_size(1536)
+                .collection_name("swiftide-examples")
                 .build()?,
         )
         .run()

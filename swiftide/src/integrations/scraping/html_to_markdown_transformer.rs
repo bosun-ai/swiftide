@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use htmd::HtmlToMarkdown;
 
-use crate::{ingestion::IngestionNode, Transformer};
+use crate::{indexing::Node, Transformer};
 
 #[derive(Builder)]
 #[builder(pattern = "owned")]
@@ -45,13 +45,13 @@ impl std::fmt::Debug for HtmlToMarkdownTransformer {
 
 #[async_trait]
 impl Transformer for HtmlToMarkdownTransformer {
-    /// Converts the HTML content in the `IngestionNode` to markdown.
+    /// Converts the HTML content in the `Node` to markdown.
     ///
     /// Will Err the node if the conversion fails.
     #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]
-    async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
         let chunk = self.htmd.convert(&node.chunk);
-        Ok(IngestionNode {
+        Ok(Node {
             chunk: chunk?,
             ..node
         })
@@ -68,7 +68,7 @@ mod test {
 
     #[tokio::test]
     async fn test_html_to_markdown() {
-        let node = IngestionNode::new("<h1>Hello, World!</h1>");
+        let node = Node::new("<h1>Hello, World!</h1>");
         let transformer = HtmlToMarkdownTransformer::default();
         let transformed = transformer.transform_node(node).await.unwrap();
         assert_eq!(transformed.chunk, "# Hello, World!");
