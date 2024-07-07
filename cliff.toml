@@ -27,21 +27,21 @@ body = """
 
 {% macro commit(commit) -%}
 - [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/bosun-ai/swiftide/commit/" ~ commit.id }}) \
-  *({{commit.scope | default(value = "uncategorized") | lower }})* {{ commit.message | upper_first | trim }}\
-  {% if commit.github.username %} by @{{ commit.github.username }}{%- endif -%}\
-  {% if commit.github.pr_number %} in [#{{ commit.github.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.github.pr_number }}){%- endif %}\
+*({{commit.scope | default(value = "uncategorized") | lower }})* {{ commit.message | upper_first | trim }}\
+{% if commit.github.username %} by @{{ commit.github.username }}{%- endif -%}\
+{% if commit.github.pr_number %} in [#{{ commit.github.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.github.pr_number }}){%- endif %}\
 {%- if (commit.github.username and commit.github.username is not containing("[bot]")) %}
-  {%- if commit.breaking %} [**breaking**]{% endif %}
-  {%- if commit.body %}
+{%- if commit.breaking %} [**breaking**]{% endif %}
+{%- if commit.body %}
 
-    ````text {#- 4 backticks escape any backticks in body #}
-    {{commit.body | indent(prefix="  ") }}
-    ````
-  {%- endif %}
-  {%- for footer in commit.footers %}
-  {%- if footer.token != "Signed-off-by" and footer.token != "Co-authored-by" %}
-    {{ footer.token | indent(prefix="  ") }}{{ footer.separator }}{{ footer.value }}
-  {%- endif %}
+````text {#- 4 backticks escape any backticks in body #}
+{{commit.body | indent(prefix="  ") }}
+````
+{%- endif %}
+{%- for footer in commit.footers %}
+{%- if footer.token != "Signed-off-by" and footer.token != "Co-authored-by" %}
+{{ footer.token | indent(prefix="  ") }}{{ footer.separator }}{{ footer.value }}
+{%- endif %}
 {%- endfor %}
 {%- endif %}
 {% endmacro -%}
@@ -58,7 +58,8 @@ body = """
 {%- endfor -%}
 {%- endfor %}
 
-{% if github.contributors and github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
+{%- if github.contributors -%}
+{% if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
 ### New Contributors
 {%- endif %}\
 {% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
@@ -67,6 +68,7 @@ body = """
 [#{{ contributor.pr_number }}]({{ self::remote_url() }}/pull/{{ contributor.pr_number }}) \
 {%- endif %}
 {%- endfor -%}
+{% endif -%}
 
 {% if version %}
 {% if previous.version %}
