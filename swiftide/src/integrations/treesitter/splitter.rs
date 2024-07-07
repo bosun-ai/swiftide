@@ -116,7 +116,7 @@ impl CodeSplitter {
         current_chunk: Option<String>,
     ) -> Vec<String> {
         let mut new_chunks: Vec<String> = Vec::new();
-        let mut current_chunk = current_chunk.unwrap_or(String::new());
+        let mut current_chunk = current_chunk.unwrap_or_default();
 
         for child in node.children(&mut node.walk()) {
             debug_assert!(
@@ -135,7 +135,7 @@ impl CodeSplitter {
                 if next_child_size > self.max_bytes() {
                     let mut sub_chunks =
                         self.chunk_node(child, source, last_end, Some(current_chunk));
-                    current_chunk = sub_chunks.pop().unwrap_or(String::new());
+                    current_chunk = sub_chunks.pop().unwrap_or_default();
                     new_chunks.extend(sub_chunks);
                 } else {
                     // NOTE: if the current chunk was smaller than then the min_bytes, then it is discarded here
