@@ -5,7 +5,9 @@ publish = false
 edition = "2021"
 
 [dev-dependencies]
-mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git" }
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", features = [
+  "cuda",
+] }
 tokio = { version = "1.0", features = ["full"] }
 swiftide = { path = "../swiftide/", features = [
   "all",

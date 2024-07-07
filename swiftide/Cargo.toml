@@ -57,7 +57,9 @@ aws-credential-types = { version = "1.2.0", features = [
 aws-sdk-bedrockruntime = { version = "1.37.0", features = [
   "behavior-version-latest",
 ], optional = true }
-mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", optional = true }
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", features = [
+  "cuda",
+], optional = true }
 indexmap = { version = "2.2.6", optional = true }
 either = { version = "1.13.0", optional = true }
 
