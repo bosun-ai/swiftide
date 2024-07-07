@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720367419149,
+  "lastUpdate": 1720369661365,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -503,6 +503,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 20",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "51c114ceb06db840c4952d3d0f694bfbf266681c",
+          "message": "chore: various tooling & community improvements (#131)\n\n- **fix(ci): ensure clippy runs with all features**\r\n- **chore(ci): coverage using llvm-cov**\r\n- **chore: drastically improve changelog generation**\r\n- **chore(ci): add sanity checks for pull requests**\r\n- **chore(ci): split jobs and add typos**",
+          "timestamp": "2024-07-07T18:23:49+02:00",
+          "tree_id": "f97d5b03f685216c0f7f7a886ca32513935a5648",
+          "url": "https://github.com/bosun-ai/swiftide/commit/51c114ceb06db840c4952d3d0f694bfbf266681c"
+        },
+        "date": 1720369660994,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 26",
             "unit": "ns/iter"
           }
         ]
