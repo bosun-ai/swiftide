@@ -1,4 +1,4 @@
-name: Test
+name: CI
 
 on:
   pull_request:
@@ -13,12 +13,43 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
 
 jobs:
-  lint-and-test:
-    name: Lint & Test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
 
+    env:
+      RUST_LOG: DEBUG
+      RUST_BACKTRACE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: r7kamura/rust-problem-matchers@v1
+      - name: Check typos
+        uses: crate-ci/typos@master
+      - name: "Rustfmt"
+        run: cargo fmt --all --check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      RUST_LOG: DEBUG
+      RUST_BACKTRACE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: r7kamura/rust-problem-matchers@v1
+      - name: "Test"
+        run: cargo test --verbose --workspace --all-features
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
     env:
       RUST_LOG: DEBUG
       RUST_BACKTRACE: 1
@@ -29,8 +60,4 @@ jobs:
           components: clippy,rustfmt
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Clippy"
-        run: cargo clippy
-      - name: "Rustfmt"
-        run: cargo fmt --all --check
-      - name: "Test"
-        run: cargo test --verbose --workspace --all-features
+        run: cargo clippy --all-targets --all-features
