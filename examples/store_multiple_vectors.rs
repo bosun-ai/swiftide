@@ -20,7 +20,7 @@ use swiftide::{
     ingestion::{self, EmbeddableType},
     integrations::{
         self,
-        qdrant::{Qdrant, VectorConfig},
+        qdrant::{Distance, Qdrant, VectorConfig},
     },
     loaders::FileLoader,
     transformers::{
@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_vector(
                     VectorConfig::builder()
                         .embeddable_type(EmbeddableType::Metadata(metadata_title::NAME.into()))
-                        .vector_size(1536u64)
+                        .distance(Distance::Manhattan)
                         .build()?,
                 )
                 .with_vector(EmbeddableType::Metadata(metadata_keywords::NAME.into()))

@@ -42,6 +42,9 @@ pub struct Qdrant {
     collection_name: String,
     /// The default size of the vectors to be stored in the collection.
     vector_size: u64,
+    #[builder(default = "Distance::Cosine")]
+    /// The default distance of the vectors to be stored in the collection
+    vector_distance: Distance,
     /// The batch size for operations. Optional.
     #[builder(default)]
     batch_size: Option<usize>,
@@ -102,7 +105,11 @@ impl Qdrant {
         if self.vectors.is_empty() {
             bail!("No configured vectors");
         } else if self.vectors.len() == 1 {
-            let config = self.vectors.values().next().context("Has one vector config")?;
+            let config = self
+                .vectors
+                .values()
+                .next()
+                .context("Has one vector config")?;
             let vector_params = self.create_vector_params(config);
             return Ok(qdrant::vectors_config::Config::Params(vector_params));
         }
@@ -119,8 +126,9 @@ impl Qdrant {
     }
 
     fn create_vector_params(&self, config: &VectorConfig) -> qdrant::VectorParams {
-        let vector_size = config.vector_size.unwrap_or(self.vector_size);
-        qdrant::VectorParamsBuilder::new(vector_size, qdrant::Distance::Cosine).build()
+        let size = config.vector_size.unwrap_or(self.vector_size);
+        let distance = config.distance.unwrap_or(self.vector_distance);
+        qdrant::VectorParamsBuilder::new(size, distance).build()
     }
 }
 
@@ -168,9 +176,8 @@ pub struct VectorConfig {
     pub(super) embeddable_type: EmbeddableType,
     #[builder(setter(into, strip_option), default)]
     vector_size: Option<u64>,
-    // TODO: do not export qdrant type
-    // #[builder(default = "qdrant_client::qdrant::Distance::Cosine")]
-    // distance: qdrant::Distance,
+    #[builder(setter(into, strip_option), default)]
+    distance: Option<qdrant::Distance>,
 }
 
 impl VectorConfig {
@@ -187,3 +194,5 @@ impl From<EmbeddableType> for VectorConfig {
         }
     }
 }
+
+pub type Distance = qdrant::Distance;
