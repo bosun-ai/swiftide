@@ -1,4 +1,3 @@
-#![cfg(not(tarpaulin_include))]
 use derive_builder::Builder;
 use spider::website::Website;
 use tokio::{runtime::Handle, sync::RwLock};
