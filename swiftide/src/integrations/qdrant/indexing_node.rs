@@ -1,4 +1,4 @@
-//! This module provides functionality to convert an `IngestionNode` into a `qdrant::PointStruct`.
+//! This module provides functionality to convert an `Node` into a `qdrant::PointStruct`.
 //! The conversion is essential for storing data in the Qdrant vector database, which is used
 //! for efficient vector similarity search. The module handles metadata augmentation and ensures
 //! data compatibility with Qdrant's required format.
@@ -6,22 +6,22 @@
 use anyhow::{Context as _, Result};
 use std::collections::HashMap;
 
-use crate::ingestion::IngestionNode;
+use crate::indexing::Node;
 use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
 };
 
-/// Implements the `TryInto` trait to convert an `IngestionNode` into a `qdrant::PointStruct`.
+/// Implements the `TryInto` trait to convert an `Node` into a `qdrant::PointStruct`.
 /// This conversion is necessary for storing the node in the Qdrant vector database.
-impl TryInto<qdrant::PointStruct> for IngestionNode {
+impl TryInto<qdrant::PointStruct> for Node {
     type Error = anyhow::Error;
 
-    /// Converts the `IngestionNode` into a `qdrant::PointStruct`.
+    /// Converts the `Node` into a `qdrant::PointStruct`.
     ///
     /// # Errors
     ///
-    /// Returns an error if the vector is not set in the `IngestionNode`.
+    /// Returns an error if the vector is not set in the `Node`.
     ///
     /// # Returns
     ///

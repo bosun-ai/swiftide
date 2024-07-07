@@ -1,5 +1,5 @@
 //! Load files from a directory
-use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
+use crate::{indexing::IndexingStream, indexing::Node, Loader};
 use anyhow::Context as _;
 use std::path::{Path, PathBuf};
 
@@ -46,11 +46,11 @@ impl FileLoader {
     /// Lists the nodes (files) that match the specified extensions.
     ///
     /// # Returns
-    /// A vector of `IngestionNode` representing the matching files.
+    /// A vector of `Node` representing the matching files.
     ///
     /// # Panics
     /// This method will panic if it fails to read a file's content.
-    pub fn list_nodes(&self) -> Vec<IngestionNode> {
+    pub fn list_nodes(&self) -> Vec<Node> {
         ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
@@ -59,7 +59,7 @@ impl FileLoader {
             .map(|entry| {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content = std::fs::read_to_string(&entry).unwrap();
-                IngestionNode {
+                Node {
                     path: entry,
                     chunk: content,
                     ..Default::default()
@@ -85,14 +85,14 @@ impl FileLoader {
 }
 
 impl Loader for FileLoader {
-    /// Converts the `FileLoader` into a stream of `IngestionNode`.
+    /// Converts the `FileLoader` into a stream of `Node`.
     ///
     /// # Returns
-    /// An `IngestionStream` representing the stream of files.
+    /// An `IndexingStream` representing the stream of files.
     ///
     /// # Errors
     /// This method will return an error if it fails to read a file's content.
-    fn into_stream(self) -> IngestionStream {
+    fn into_stream(self) -> IndexingStream {
         let files = ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
@@ -101,14 +101,14 @@ impl Loader for FileLoader {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content =
                     std::fs::read_to_string(entry.path()).context("Failed to read file")?;
-                Ok(IngestionNode {
+                Ok(Node {
                     path: entry.path().into(),
                     chunk: content,
                     ..Default::default()
                 })
             });
 
-        IngestionStream::iter(files)
+        IndexingStream::iter(files)
     }
 }
 

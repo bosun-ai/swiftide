@@ -2,7 +2,7 @@
 //! It includes functionalities to interact with Qdrant, such as creating and managing vector collections,
 //! storing data, and ensuring proper indexing for efficient searches.
 
-mod ingestion_node;
+mod indexing_node;
 mod persist;
 
 use std::sync::Arc;

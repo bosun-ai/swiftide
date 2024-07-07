@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - AWS bedrock support ([#92](https://github.com/bosun-ai/swiftide/pull/92))
 - (readme): Add diagram to the readme ([#107](https://github.com/bosun-ai/swiftide/pull/107))
-- (ingestion_pipeline): Implement filter ([#109](https://github.com/bosun-ai/swiftide/pull/109))
-- (ingestion_pipeline): Splitting and merging streams
-- (ingestion_pipeline): Build a pipeline from a stream
+- (indexing_pipeline): Implement filter ([#109](https://github.com/bosun-ai/swiftide/pull/109))
+- (indexing_pipeline): Splitting and merging streams
+- (indexing_pipeline): Build a pipeline from a stream
 - (openai): Add tests for builder
 
 ### Changed
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix oversight in ingestion pipeline tests
+- Fix oversight in indexing pipeline tests
 - (deps): Update rust crate text-splitter to 0.14.0 ([#105](https://github.com/bosun-ai/swiftide/pull/105))
 - Replace unwrap with expect and add comment on panic
 - (transformers): Fix too small chunks being retained and api
@@ -40,9 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (ci): Add support for merge queues
 - (ci): Add concurrency configuration
 - (readme): Add diagram to the readme (#107)
-- (ingestion_pipeline): Implement filter (#109)
-- (ingestion_pipeline): Splitting and merging streams
-- (ingestion_pipeline): Build a pipeline from a stream
+- (indexing_pipeline): Implement filter (#109)
+- (indexing_pipeline): Splitting and merging streams
+- (indexing_pipeline): Build a pipeline from a stream
 - (openai): Add tests for builder
 
 ### Changed
@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix oversight in ingestion pipeline tests
+- Fix oversight in indexing pipeline tests
 - (ci): Fix release-plz changelog parsing
 - (ci): Fix benchmarks in ci
 - (deps): Update rust crate spider to v1.98.3 (#100)
@@ -92,14 +92,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- (ingestion_stream): Implement into for Result<Vec<IngestionNode>>
+- (indexing_stream): Implement into for Result<Vec<Node>>
 
 ### Changed
 
 - Cleanup changelog
 - Create CONTRIBUTING.md
 - Readme updates
-- (ingestion_pipeline): Log_all combines other log helpers
+- (indexing_pipeline): Log_all combines other log helpers
 - Release
 
 ### Fixed
@@ -123,22 +123,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - (ci): Single changelog for all (future) crates in root (#57)
 - (integrations): Support fastembed (#60)
-- (ingestion_pipeline): Optional error filtering and logging (#75)
-- (ingestion_pipeline): Implement throttling a pipeline (#77)
+- (indexing_pipeline): Optional error filtering and logging (#75)
+- (indexing_pipeline): Implement throttling a pipeline (#77)
 - (integrations): Implement Persist for Redis (#80)
-- (ingestion_node): Add constructor with defaults
+- (indexing_node): Add constructor with defaults
 - (traits): Add automock for simpleprompt
 - (transformers): Add transformers for title, summary and keywords
 - (examples): Example for markdown with all metadata
-- (ingestion_node): Improved human readable Debug
-- (ingestion_stream): Improved stream developer experience (#81)
+- (indexing_node): Improved human readable Debug
+- (indexing_stream): Improved stream developer experience (#81)
 - (loaders): File loader performance improvements
 - (benchmarks): Add benchmark for the file loader
 - (benchmarks): Add benchmark for simple local pipeline
 - (loaders): Add scraping using `spider`
 - (integrations,transformers): Add transformer for converting html to markdown
 - (persist): In memory storage for testing, experimentation and debugging
-- (examples,scraping): Add example scraping and ingesting a url
+- (examples,scraping): Add example scraping and indexing a url
 
 ### Changed
 
@@ -154,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- (ingestion_pipeline): Concurrency does not work when spawned (#76)
+- (indexing_pipeline): Concurrency does not work when spawned (#76)
 
 ## [swiftide-v0.3.3] - 2024-06-16
 
@@ -193,10 +193,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- (ingestion_pipeline): Support chained storage backends (#46)
-- (ingestion_pipeline): Concurrency improvements (#48)
+- (indexing_pipeline): Support chained storage backends (#46)
+- (indexing_pipeline): Concurrency improvements (#48)
 - Configurable concurrency for transformers and chunkers (#47)
-- (ingestion_pipeline): Early return if any error encountered (#49)
+- (indexing_pipeline): Early return if any error encountered (#49)
 
 ### Changed
 
@@ -223,19 +223,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Release v0.1.0 (#8)
-- (swiftide): Documented file swiftide/src/ingestion/ingestion_pipeline.rs (#14)
-- (swiftide): Documented file swiftide/src/ingestion/ingestion_stream.rs (#16)
-- (swiftide): Documented file swiftide/src/ingestion/ingestion_node.rs (#15)
+- (swiftide): Documented file swiftide/src/indexing/indexing_pipeline.rs (#14)
+- (swiftide): Documented file swiftide/src/indexing/indexing_stream.rs (#16)
+- (swiftide): Documented file swiftide/src/indexing/indexing_node.rs (#15)
 - (swiftide): Documented file swiftide/src/integrations/openai/mod.rs (#21)
 - (swiftide): Documented file swiftide/src/integrations/treesitter/splitter.rs (#30)
 - (swiftide): Documented file swiftide/src/integrations/redis/node_cache.rs (#29)
 - (swiftide): Documented file swiftide/src/integrations/qdrant/persist.rs (#24)
 - (swiftide): Documented file swiftide/src/integrations/redis/mod.rs (#23)
 - (swiftide): Documented file swiftide/src/integrations/qdrant/mod.rs (#22)
-- (swiftide): Documented file swiftide/src/integrations/qdrant/ingestion_node.rs (#20)
-- (swiftide): Documented file swiftide/src/ingestion/mod.rs (#28)
+- (swiftide): Documented file swiftide/src/integrations/qdrant/indexing_node.rs (#20)
+- (swiftide): Documented file swiftide/src/indexing/mod.rs (#28)
 - (swiftide): Documented file swiftide/src/integrations/treesitter/supported_languages.rs (#26)
-- (swiftide): Documented file swiftide/tests/ingestion_pipeline.rs (#41)
+- (swiftide): Documented file swiftide/tests/indexing_pipeline.rs (#41)
 - (swiftide): Documented file swiftide/src/loaders/mod.rs (#40)
 - (swiftide): Documented file swiftide/src/transformers/chunk_code.rs (#39)
 - (swiftide): Documented file swiftide/src/transformers/metadata_qa_text.rs (#36)
@@ -255,7 +255,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Replace databuoy with new ingestion pipeline (#322)
+- Replace databuoy with new indexing pipeline (#322)
 - (fluyt/code_ops): Add languages to chunker and range for chunk size (#334)
 - Add debug info to qdrant setup
 - (fluyt): Add verbose log on checking if index exists
@@ -263,7 +263,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add rust-toolchain on stable
 - Fix build and add feature flags for all integrations
 - (ci): Set up basic test and release actions (#1)
-- (ingestion_pipeline): Default concurrency is the number of cpus (#6)
+- (indexing_pipeline): Default concurrency is the number of cpus (#6)
 - (doc): Setup basic readme (#5)
 
 ### Changed
