@@ -75,7 +75,7 @@ impl ModelFamily {
 
                 if response.results.is_empty() {
                     return Err(anyhow::anyhow!("No results returned"));
-                } 
+                }
 
                 Ok(response.results.swap_remove(0).output_text)
             }
