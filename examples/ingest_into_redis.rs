@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("redis://localhost:6379")
         .to_owned();
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+    ingestion::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
             10..2048,

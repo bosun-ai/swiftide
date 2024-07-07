@@ -1,5 +1,5 @@
 //! Load files from a directory
-use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Loader};
+use crate::{ingestion::IndexingStream, ingestion::Node, Loader};
 use anyhow::Context as _;
 use std::path::{Path, PathBuf};
 
@@ -50,7 +50,7 @@ impl FileLoader {
     ///
     /// # Panics
     /// This method will panic if it fails to read a file's content.
-    pub fn list_nodes(&self) -> Vec<IngestionNode> {
+    pub fn list_nodes(&self) -> Vec<Node> {
         ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
@@ -59,7 +59,7 @@ impl FileLoader {
             .map(|entry| {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content = std::fs::read_to_string(&entry).unwrap();
-                IngestionNode {
+                Node {
                     path: entry,
                     chunk: content,
                     ..Default::default()
@@ -92,7 +92,7 @@ impl Loader for FileLoader {
     ///
     /// # Errors
     /// This method will return an error if it fails to read a file's content.
-    fn into_stream(self) -> IngestionStream {
+    fn into_stream(self) -> IndexingStream {
         let files = ignore::Walk::new(&self.path)
             .filter_map(|entry| entry.ok())
             .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
@@ -101,14 +101,14 @@ impl Loader for FileLoader {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content =
                     std::fs::read_to_string(entry.path()).context("Failed to read file")?;
-                Ok(IngestionNode {
+                Ok(Node {
                     path: entry.path().into(),
                     chunk: content,
                     ..Default::default()
                 })
             });
 
-        IngestionStream::iter(files)
+        IndexingStream::iter(files)
     }
 }
 

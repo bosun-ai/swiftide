@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 /// in the ingestion pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
-pub struct IngestionNode {
+pub struct Node {
     /// Optional identifier for the node.
     pub id: Option<u64>,
     /// File path associated with the node.
@@ -45,7 +45,7 @@ pub struct IngestionNode {
     pub metadata: HashMap<String, String>,
 }
 
-impl Debug for IngestionNode {
+impl Debug for Node {
     /// Formats the node for debugging purposes.
     ///
     /// This method is used to provide a human-readable representation of the node when debugging.
@@ -64,12 +64,12 @@ impl Debug for IngestionNode {
     }
 }
 
-impl IngestionNode {
+impl Node {
     /// Creates a new instance of `IngestionNode` with the specified data chunk.
     ///
     /// The other fields are set to their default values.
-    pub fn new(chunk: impl Into<String>) -> IngestionNode {
-        IngestionNode {
+    pub fn new(chunk: impl Into<String>) -> Node {
+        Node {
             chunk: chunk.into(),
             ..Default::default()
         }
@@ -109,7 +109,7 @@ impl IngestionNode {
     }
 }
 
-impl Hash for IngestionNode {
+impl Hash for Node {
     /// Hashes the node based on its path and chunk.
     ///
     /// This method is used by the `calculate_hash` method to generate a hash value for the node.

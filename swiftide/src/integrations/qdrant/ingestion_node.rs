@@ -6,7 +6,7 @@
 use anyhow::{Context as _, Result};
 use std::collections::HashMap;
 
-use crate::ingestion::IngestionNode;
+use crate::ingestion::Node;
 use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
@@ -14,7 +14,7 @@ use qdrant_client::{
 
 /// Implements the `TryInto` trait to convert an `IngestionNode` into a `qdrant::PointStruct`.
 /// This conversion is necessary for storing the node in the Qdrant vector database.
-impl TryInto<qdrant::PointStruct> for IngestionNode {
+impl TryInto<qdrant::PointStruct> for Node {
     type Error = anyhow::Error;
 
     /// Converts the `IngestionNode` into a `qdrant::PointStruct`.

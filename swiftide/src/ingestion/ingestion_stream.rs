@@ -8,7 +8,7 @@ use pin_project_lite::pin_project;
 use std::pin::Pin;
 use tokio::sync::mpsc::Receiver;
 
-use super::IngestionNode;
+use super::Node;
 
 pub use futures_util::{StreamExt, TryStreamExt};
 
@@ -19,14 +19,14 @@ pin_project! {
     /// Wraps an internal stream of `Result<IngestionNode>` items.
     ///
     /// Streams, iterators and vectors of `Result<IngestionNode>` can be converted into an `IngestionStream`.
-    pub struct IngestionStream {
+    pub struct IndexingStream {
         #[pin]
-        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>>,
+        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Node>> + Send>>,
     }
 }
 
-impl Stream for IngestionStream {
-    type Item = Result<IngestionNode>;
+impl Stream for IndexingStream {
+    type Item = Result<Node>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -37,38 +37,38 @@ impl Stream for IngestionStream {
     }
 }
 
-impl Into<IngestionStream> for Vec<Result<IngestionNode>> {
-    fn into(self) -> IngestionStream {
-        IngestionStream::iter(self)
+impl Into<IndexingStream> for Vec<Result<Node>> {
+    fn into(self) -> IndexingStream {
+        IndexingStream::iter(self)
     }
 }
 
-impl Into<IngestionStream> for Result<Vec<IngestionNode>> {
-    fn into(self) -> IngestionStream {
+impl Into<IndexingStream> for Result<Vec<Node>> {
+    fn into(self) -> IndexingStream {
         match self {
-            Ok(nodes) => IngestionStream::iter(nodes.into_iter().map(Ok)),
-            Err(err) => IngestionStream::iter(vec![Err(err)]),
+            Ok(nodes) => IndexingStream::iter(nodes.into_iter().map(Ok)),
+            Err(err) => IndexingStream::iter(vec![Err(err)]),
         }
     }
 }
 
-impl Into<IngestionStream> for Pin<Box<dyn Stream<Item = Result<IngestionNode>> + Send>> {
-    fn into(self) -> IngestionStream {
-        IngestionStream { inner: self }
+impl Into<IndexingStream> for Pin<Box<dyn Stream<Item = Result<Node>> + Send>> {
+    fn into(self) -> IndexingStream {
+        IndexingStream { inner: self }
     }
 }
 
-impl Into<IngestionStream> for Receiver<Result<IngestionNode>> {
-    fn into(self) -> IngestionStream {
-        IngestionStream {
+impl Into<IndexingStream> for Receiver<Result<Node>> {
+    fn into(self) -> IndexingStream {
+        IndexingStream {
             inner: tokio_stream::wrappers::ReceiverStream::new(self).boxed(),
         }
     }
 }
 
-impl IngestionStream {
+impl IndexingStream {
     pub fn empty() -> Self {
-        IngestionStream {
+        IndexingStream {
             inner: stream::empty().boxed(),
         }
     }
@@ -76,10 +76,10 @@ impl IngestionStream {
     // NOTE: Can we really guarantee that the iterator will outlive the stream?
     pub fn iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = Result<IngestionNode>> + Send + 'static,
+        I: IntoIterator<Item = Result<Node>> + Send + 'static,
         <I as IntoIterator>::IntoIter: Send,
     {
-        IngestionStream {
+        IndexingStream {
             inner: stream::iter(iter).boxed(),
         }
     }

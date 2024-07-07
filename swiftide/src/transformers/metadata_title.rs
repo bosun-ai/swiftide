@@ -1,7 +1,7 @@
 //! Generate a title and adds it as metadata
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{ingestion::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -114,7 +114,7 @@ impl Transformer for MetadataTitle {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_title")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt.replace("{text}", &node.chunk);
 
         let response = self.client.prompt(&prompt).await?;
@@ -144,7 +144,7 @@ mod test {
             .returning(|_| Ok("A Title".to_string()));
 
         let transformer = MetadataTitle::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

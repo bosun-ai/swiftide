@@ -4,7 +4,7 @@
 
 use qdrant_client::qdrant::{SearchPointsBuilder, Value};
 use serde_json::json;
-use swiftide::{ingestion::IngestionPipeline, loaders::FileLoader, *};
+use swiftide::{ingestion::Pipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
 use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
@@ -132,22 +132,21 @@ async fn test_ingestion_pipeline() {
 
     println!("Qdrant URL: {}", qdrant_url);
 
-    let result =
-        IngestionPipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
-            .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-            .then(transformers::MetadataQACode::new(openai_client.clone()))
-            .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
-            .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
-            .then_store_with(
-                integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
-                    .unwrap()
-                    .vector_size(1536)
-                    .collection_name("swiftide-test".to_string())
-                    .build()
-                    .unwrap(),
-            )
-            .run()
-            .await;
+    let result = Pipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
+        .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
+        .then(transformers::MetadataQACode::new(openai_client.clone()))
+        .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
+        .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
+        .then_store_with(
+            integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
+                .unwrap()
+                .vector_size(1536)
+                .collection_name("swiftide-test".to_string())
+                .build()
+                .unwrap(),
+        )
+        .run()
+        .await;
 
     if result.is_err() {
         println!("\n Received the following requests: \n");

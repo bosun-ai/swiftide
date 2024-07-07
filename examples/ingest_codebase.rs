@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("redis://localhost:6379")
         .to_owned();
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+    ingestion::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(Redis::try_from_url(redis_url, "swiftide-examples")?)
         .then(MetadataQACode::new(openai_client.clone()))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(

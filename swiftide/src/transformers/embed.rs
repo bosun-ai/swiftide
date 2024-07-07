@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    ingestion::{IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
 use async_trait::async_trait;
@@ -63,7 +63,7 @@ impl BatchableTransformer for Embed {
     ///
     /// If the embedding process fails, the function returns a stream with the error.
     #[tracing::instrument(skip_all, name = "transformers.embed")]
-    async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
+    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
         let chunks_to_embed: Vec<String> = nodes.iter().map(|n| n.as_embeddable()).collect();
 

@@ -18,7 +18,7 @@ use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use tokio::sync::RwLock;
 
-use crate::ingestion::IngestionNode;
+use crate::ingestion::Node;
 
 mod node_cache;
 mod persist;
@@ -44,10 +44,10 @@ pub struct Redis {
     batch_size: usize,
     #[builder(default)]
     /// Customize the key used for persisting nodes
-    persist_key_fn: Option<fn(&IngestionNode) -> Result<String>>,
+    persist_key_fn: Option<fn(&Node) -> Result<String>>,
     #[builder(default)]
     /// Customize the value used for persisting nodes
-    persist_value_fn: Option<fn(&IngestionNode) -> Result<String>>,
+    persist_value_fn: Option<fn(&Node) -> Result<String>>,
 }
 
 impl Redis {
@@ -119,12 +119,12 @@ impl Redis {
     /// # Returns
     ///
     /// A `String` representing the Redis key for the node.
-    fn cache_key_for_node(&self, node: &IngestionNode) -> String {
+    fn cache_key_for_node(&self, node: &Node) -> String {
         format!("{}:{}", self.cache_key_prefix, node.calculate_hash())
     }
 
     /// Generates a key for a given node to be persisted in Redis.
-    fn persist_key_for_node(&self, node: &IngestionNode) -> Result<String> {
+    fn persist_key_for_node(&self, node: &Node) -> Result<String> {
         if let Some(key_fn) = self.persist_key_fn {
             key_fn(node)
         } else {
@@ -137,7 +137,7 @@ impl Redis {
     /// By default, the node is serialized as JSON.
     /// If a custom function is provided, it is used to generate the value.
     /// Otherwise, the node is serialized as JSON.
-    fn persist_value_for_node(&self, node: &IngestionNode) -> Result<String> {
+    fn persist_value_for_node(&self, node: &Node) -> Result<String> {
         if let Some(value_fn) = self.persist_value_fn {
             value_fn(node)
         } else {
@@ -173,7 +173,7 @@ impl Redis {
     /// Gets a node persisted in Redis using the GET command
     /// Takes a node and returns a Result<Option<String>>
     #[allow(dead_code)]
-    async fn get_node(&self, node: &IngestionNode) -> Result<Option<String>> {
+    async fn get_node(&self, node: &Node) -> Result<Option<String>> {
         if let Some(mut cm) = self.lazy_connect().await {
             let key = self.persist_key_for_node(node)?;
             let result: Option<String> = redis::cmd("GET")

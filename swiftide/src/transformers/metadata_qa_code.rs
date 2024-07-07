@@ -2,7 +2,7 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{ingestion::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
@@ -125,7 +125,7 @@ impl Transformer for MetadataQACode {
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
             .prompt
             .replace("{questions}", &self.num_questions.to_string())
@@ -159,7 +159,7 @@ mod test {
             .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
 
         let transformer = MetadataQACode::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

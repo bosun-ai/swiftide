@@ -1,7 +1,7 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{ingestion::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -126,7 +126,7 @@ impl Transformer for MetadataQAText {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
             .prompt
             .replace("{questions}", &self.num_questions.to_string())
@@ -160,7 +160,7 @@ mod test {
             .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
 
         let transformer = MetadataQAText::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

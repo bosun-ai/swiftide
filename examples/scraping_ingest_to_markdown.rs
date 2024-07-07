@@ -22,7 +22,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    ingestion::IngestionPipeline::from_loader(ScrapingLoader::from_spider(
+    ingestion::Pipeline::from_loader(ScrapingLoader::from_spider(
         Website::new("https://www.bosun.ai/")
             .with_limit(1)
             .to_owned(),

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    ingestion::{IndexingStream, Node},
     integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages},
     ChunkerTransformer,
 };
@@ -86,19 +86,19 @@ impl ChunkerTransformer for ChunkCode {
     /// # Errors
     /// - If the code splitting fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
-    async fn transform_node(&self, node: IngestionNode) -> IngestionStream {
+    async fn transform_node(&self, node: Node) -> IndexingStream {
         let split_result = self.chunker.split(&node.chunk);
 
         if let Ok(split) = split_result {
-            IngestionStream::iter(split.into_iter().map(move |chunk| {
-                Ok(IngestionNode {
+            IndexingStream::iter(split.into_iter().map(move |chunk| {
+                Ok(Node {
                     chunk,
                     ..node.clone()
                 })
             }))
         } else {
             // Send the error downstream
-            IngestionStream::iter(vec![Err(split_result.unwrap_err())])
+            IndexingStream::iter(vec![Err(split_result.unwrap_err())])
         }
     }
 

@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("http://localhost:6334")
         .to_owned();
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+    ingestion::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .then_in_batch(10, Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(
             Qdrant::try_from_url(qdrant_url)?

@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let memory_storage = MemoryStorage::default();
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new("./README.md"))
+    ingestion::Pipeline::from_loader(FileLoader::new("./README.md"))
         .log_nodes()
         .then_chunk(transformers::ChunkMarkdown::from_chunk_range(100..512))
         .then(transformers::MetadataSummary::new(aws_bedrock.clone()))

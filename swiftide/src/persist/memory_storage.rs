@@ -6,7 +6,7 @@ use derive_builder::Builder;
 use tokio::sync::RwLock;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    ingestion::{IndexingStream, Node},
     Persist,
 };
 
@@ -19,7 +19,7 @@ use crate::{
 /// By default the storage will use a zero indexed, incremental counter as the key for each node if the node id
 /// is not set.
 pub struct MemoryStorage {
-    data: Arc<RwLock<HashMap<String, IngestionNode>>>,
+    data: Arc<RwLock<HashMap<String, Node>>>,
     #[builder(default)]
     batch_size: Option<usize>,
     #[builder(default = "Arc::new(RwLock::new(0))")]
@@ -27,7 +27,7 @@ pub struct MemoryStorage {
 }
 
 impl MemoryStorage {
-    async fn key(&self, node: &IngestionNode) -> String {
+    async fn key(&self, node: &Node) -> String {
         match node.id {
             Some(id) => id.to_string(),
             None => (*self.node_count.read().await as u64).to_string(),
@@ -35,17 +35,17 @@ impl MemoryStorage {
     }
 
     /// Retrieve a node by its key
-    pub async fn get(&self, key: impl AsRef<str>) -> Option<IngestionNode> {
+    pub async fn get(&self, key: impl AsRef<str>) -> Option<Node> {
         self.data.read().await.get(key.as_ref()).cloned()
     }
 
     /// Retrieve all nodes in the storage
-    pub async fn get_all_values(&self) -> Vec<IngestionNode> {
+    pub async fn get_all_values(&self) -> Vec<Node> {
         self.data.read().await.values().cloned().collect()
     }
 
     /// Retrieve all nodes in the storage with their keys
-    pub async fn get_all(&self) -> Vec<(String, IngestionNode)> {
+    pub async fn get_all(&self) -> Vec<(String, Node)> {
         self.data
             .read()
             .await
@@ -64,7 +64,7 @@ impl Persist for MemoryStorage {
     /// Store a node by its id
     ///
     /// If the node does not have an id, a simple counter is used as the key.
-    async fn store(&self, node: IngestionNode) -> Result<IngestionNode> {
+    async fn store(&self, node: Node) -> Result<Node> {
         let key = self.key(&node).await;
         self.data.write().await.insert(key, node.clone());
 
@@ -77,7 +77,7 @@ impl Persist for MemoryStorage {
     /// Store multiple nodes at once
     ///
     /// If a node does not have an id, a simple counter is used as the key.
-    async fn batch_store(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
+    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
         let mut lock = self.data.write().await;
         let mut last_key = *self.node_count.read().await;
 
@@ -86,7 +86,7 @@ impl Persist for MemoryStorage {
             last_key += 1;
         }
 
-        IngestionStream::iter(nodes.into_iter().map(Ok))
+        IndexingStream::iter(nodes.into_iter().map(Ok))
     }
 
     fn batch_size(&self) -> Option<usize> {
@@ -97,13 +97,13 @@ impl Persist for MemoryStorage {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ingestion::IngestionNode;
+    use crate::ingestion::Node;
     use futures_util::TryStreamExt;
 
     #[tokio::test]
     async fn test_memory_storage() {
         let storage = MemoryStorage::default();
-        let node = IngestionNode::default();
+        let node = Node::default();
         let node = storage.store(node.clone()).await.unwrap();
         assert_eq!(storage.get("0").await, Some(node));
     }
@@ -111,8 +111,8 @@ mod test {
     #[tokio::test]
     async fn test_inserting_multiple_nodes() {
         let storage = MemoryStorage::default();
-        let node1 = IngestionNode::default();
-        let node2 = IngestionNode::default();
+        let node1 = Node::default();
+        let node2 = Node::default();
 
         storage.store(node1.clone()).await.unwrap();
         storage.store(node2.clone()).await.unwrap();
@@ -125,14 +125,14 @@ mod test {
     #[tokio::test]
     async fn test_batch_store() {
         let storage = MemoryStorage::default();
-        let node1 = IngestionNode::default();
-        let node2 = IngestionNode::default();
+        let node1 = Node::default();
+        let node2 = Node::default();
 
         let stream = storage
             .batch_store(vec![node1.clone(), node2.clone()])
             .await;
 
-        let nodes: Vec<IngestionNode> = stream.try_collect().await.unwrap();
+        let nodes: Vec<Node> = stream.try_collect().await.unwrap();
 
         assert_eq!(nodes.len(), 2);
         assert_eq!(nodes[0], node1);

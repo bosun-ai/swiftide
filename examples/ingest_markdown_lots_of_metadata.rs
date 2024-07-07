@@ -33,26 +33,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default_prompt_model("gpt-4o")
         .build()?;
 
-    ingestion::IngestionPipeline::from_loader(
-        FileLoader::new("README.md").with_extensions(&["md"]),
-    )
-    .with_concurrency(1)
-    .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
-    .then(MetadataQAText::new(openai_client.clone()))
-    .then(MetadataSummary::new(openai_client.clone()))
-    .then(MetadataTitle::new(openai_client.clone()))
-    .then(MetadataKeywords::new(openai_client.clone()))
-    .then_in_batch(10, Embed::new(openai_client.clone()))
-    .log_all()
-    .filter_errors()
-    .then_store_with(
-        Qdrant::builder()
-            .batch_size(50)
-            .vector_size(1536)
-            .collection_name("swiftide-examples")
-            .build()?,
-    )
-    .run()
-    .await?;
+    ingestion::Pipeline::from_loader(FileLoader::new("README.md").with_extensions(&["md"]))
+        .with_concurrency(1)
+        .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
+        .then(MetadataQAText::new(openai_client.clone()))
+        .then(MetadataSummary::new(openai_client.clone()))
+        .then(MetadataTitle::new(openai_client.clone()))
+        .then(MetadataKeywords::new(openai_client.clone()))
+        .then_in_batch(10, Embed::new(openai_client.clone()))
+        .log_all()
+        .filter_errors()
+        .then_store_with(
+            Qdrant::builder()
+                .batch_size(50)
+                .vector_size(1536)
+                .collection_name("swiftide-examples")
+                .build()?,
+        )
+        .run()
+        .await?;
     Ok(())
 }
