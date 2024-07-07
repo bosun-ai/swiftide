@@ -174,7 +174,7 @@ impl CodeSplitter {
     ///
     /// # Errors
     ///
-    /// Returns an eror if the node cannot be found or fails to parse
+    /// Returns an error if the node cannot be found or fails to parse
     pub fn split(&self, code: &str) -> Result<Vec<String>> {
         let mut parser = Parser::new();
         parser.set_language(&self.language.into())?;
