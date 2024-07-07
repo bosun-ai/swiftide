@@ -2,13 +2,13 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{ingestion::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
 
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
-/// This struct integrates with the ingestion pipeline to enhance the metadata of each code chunk
+/// This struct integrates with the indexing pipeline to enhance the metadata of each code chunk
 /// by adding relevant questions and answers.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]

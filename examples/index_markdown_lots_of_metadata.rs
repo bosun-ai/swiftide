@@ -1,6 +1,6 @@
 //! # [Swiftide] Ingesting the Swiftide README with lots of metadata
 //!
-//! This example demonstrates how to ingest the Swiftide README with lots of metadata.
+//! This example demonstrates how to index the Swiftide README with lots of metadata.
 //!
 //! The pipeline will:
 //! - Load the README.md file from the current directory
@@ -16,7 +16,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    ingestion,
+    indexing,
     integrations::{self, qdrant::Qdrant},
     loaders::FileLoader,
     transformers::{
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default_prompt_model("gpt-4o")
         .build()?;
 
-    ingestion::Pipeline::from_loader(FileLoader::new("README.md").with_extensions(&["md"]))
+    indexing::Pipeline::from_loader(FileLoader::new("README.md").with_extensions(&["md"]))
         .with_concurrency(1)
         .then_chunk(ChunkMarkdown::from_chunk_range(20..2048))
         .then(MetadataQAText::new(openai_client.clone()))

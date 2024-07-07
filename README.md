@@ -68,7 +68,7 @@ Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous data ingestion and processing library. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous data indexing and processing library. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
 
 <div align="center">
   <a href="https://github.com/bosun-ai/swiftide">
@@ -113,7 +113,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 ## Features
 
-- Extremely fast streaming ingestion pipeline with async, parallel processing
+- Extremely fast streaming indexing pipeline with async, parallel processing
 - Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
@@ -124,7 +124,7 @@ IngestionPipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 ## Vision
 
-Our goal is to create an extremely fast, extendable platform for data ingestion and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create an extremely fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

@@ -8,9 +8,9 @@ use std::{sync::Arc, time::Duration};
 
 use super::{IndexingStream, Node};
 
-/// A pipeline for ingesting files, adding metadata, chunking, transforming, embedding, and then storing them.
+/// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
-/// The `IngestionPipeline` struct orchestrates the entire file ingestion process. It is designed to be flexible and
+/// The `IngestionPipeline` struct orchestrates the entire file indexing process. It is designed to be flexible and
 /// performant, allowing for various stages of data transformation and storage to be configured and executed asynchronously.
 ///
 /// # Fields
@@ -205,7 +205,7 @@ impl Pipeline {
         self
     }
 
-    /// Persists ingestion nodes using the provided storage backend.
+    /// Persists indexing nodes using the provided storage backend.
     ///
     /// # Arguments
     ///
@@ -327,7 +327,7 @@ impl Pipeline {
 
     /// Throttles the stream of nodes, limiting the rate to 1 per duration.
     ///
-    /// Useful for rate limiting the ingestion pipeline. Uses tokio_stream::StreamExt::throttle internally which has a granualarity of 1ms.
+    /// Useful for rate limiting the indexing pipeline. Uses tokio_stream::StreamExt::throttle internally which has a granualarity of 1ms.
     pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
         self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
             .boxed()
@@ -405,7 +405,7 @@ impl Pipeline {
         self
     }
 
-    /// Runs the ingestion pipeline.
+    /// Runs the indexing pipeline.
     ///
     /// This method processes the stream of nodes, applying all configured transformations and storing the results.
     ///
@@ -416,14 +416,14 @@ impl Pipeline {
     /// # Errors
     ///
     /// Returns an error if no storage backend is configured or if any stage of the pipeline fails.
-    #[tracing::instrument(skip_all, fields(total_nodes), name = "ingestion_pipeline.run")]
+    #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
         tracing::info!(
-            "Starting ingestion pipeline with {} concurrency",
+            "Starting indexing pipeline with {} concurrency",
             self.concurrency
         );
         if self.storage.is_empty() {
-            anyhow::bail!("No storage configured for ingestion pipeline");
+            anyhow::bail!("No storage configured for indexing pipeline");
         }
 
         // Ensure all storage backends are set up before processing nodes
@@ -450,12 +450,12 @@ impl Pipeline {
 mod tests {
 
     use super::*;
-    use crate::ingestion::Node;
+    use crate::indexing::Node;
     use crate::persist::MemoryStorage;
     use crate::traits::*;
     use mockall::Sequence;
 
-    /// Tests a simple run of the ingestion pipeline.
+    /// Tests a simple run of the indexing pipeline.
     #[test_log::test(tokio::test)]
     async fn test_simple_run() {
         let mut loader = MockLoader::new();

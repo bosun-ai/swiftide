@@ -1,6 +1,6 @@
 //! # [Swiftide] Ingesting the Swiftide itself example
 //!
-//! This example demonstrates how to ingest the Swiftide codebase itself using FastEmbed.
+//! This example demonstrates how to index the Swiftide codebase itself using FastEmbed.
 //!
 //! The pipeline will:
 //! - Load all `.rs` files from the current directory
@@ -11,7 +11,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    ingestion,
+    indexing,
     integrations::{fastembed::FastEmbed, qdrant::Qdrant},
     loaders::FileLoader,
     transformers::Embed,
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("http://localhost:6334")
         .to_owned();
 
-    ingestion::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+    indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .then_in_batch(10, Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(
             Qdrant::try_from_url(qdrant_url)?

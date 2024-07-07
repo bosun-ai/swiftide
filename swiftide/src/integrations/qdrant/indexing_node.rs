@@ -6,7 +6,7 @@
 use anyhow::{Context as _, Result};
 use std::collections::HashMap;
 
-use crate::ingestion::Node;
+use crate::indexing::Node;
 use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},

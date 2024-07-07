@@ -1,6 +1,6 @@
 //! Traits in Swiftide allow for easy extendability
 //!
-//! All steps defined in the ingestion pipeline and the generic transformers can also take a
+//! All steps defined in the indexing pipeline and the generic transformers can also take a
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
 use std::fmt::Debug;

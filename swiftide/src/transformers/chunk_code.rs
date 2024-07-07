@@ -4,14 +4,14 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 
 use crate::{
-    ingestion::{IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages},
     ChunkerTransformer,
 };
 
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
 /// based on the specified language and chunk size. This is a crucial step in the
-/// ingestion pipeline for processing and embedding code efficiently.
+/// indexing pipeline for processing and embedding code efficiently.
 #[derive(Debug, Clone, Builder)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ChunkCode {

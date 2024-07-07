@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use htmd::HtmlToMarkdown;
 
-use crate::{ingestion::Node, Transformer};
+use crate::{indexing::Node, Transformer};
 
 #[derive(Builder)]
 #[builder(pattern = "owned")]

@@ -1,6 +1,6 @@
 //! # [Swiftide] Ingesting the Swiftide README with lots of metadata
 //!
-//! This example demonstrates how to ingest the Swiftide README with lots of metadata.
+//! This example demonstrates how to index the Swiftide README with lots of metadata.
 //!
 //! The pipeline will:
 //! - Scrape the Bosun website
@@ -12,7 +12,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 use spider::website::Website;
 use swiftide::{
-    ingestion,
+    indexing,
     integrations::scraping::{HtmlToMarkdownTransformer, ScrapingLoader},
     persist::MemoryStorage,
     transformers::ChunkMarkdown,
@@ -22,7 +22,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    ingestion::Pipeline::from_loader(ScrapingLoader::from_spider(
+    indexing::Pipeline::from_loader(ScrapingLoader::from_spider(
         Website::new("https://www.bosun.ai/")
             .with_limit(1)
             .to_owned(),

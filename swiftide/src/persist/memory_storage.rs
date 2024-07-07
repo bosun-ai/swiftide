@@ -6,7 +6,7 @@ use derive_builder::Builder;
 use tokio::sync::RwLock;
 
 use crate::{
-    ingestion::{IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     Persist,
 };
 
@@ -97,7 +97,7 @@ impl Persist for MemoryStorage {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ingestion::Node;
+    use crate::indexing::Node;
     use futures_util::TryStreamExt;
 
     #[tokio::test]

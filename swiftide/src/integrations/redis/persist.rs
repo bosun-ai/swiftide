@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
 use crate::{
-    ingestion::{IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     Persist,
 };
 

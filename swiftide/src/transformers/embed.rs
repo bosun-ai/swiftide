@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use crate::{
-    ingestion::{IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
 use async_trait::async_trait;

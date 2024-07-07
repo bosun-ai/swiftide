@@ -1,7 +1,7 @@
 //! Generate a summary and adds it as metadata
 use std::sync::Arc;
 
-use crate::{ingestion::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;

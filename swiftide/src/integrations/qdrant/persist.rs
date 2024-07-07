@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use qdrant_client::qdrant::UpsertPointsBuilder;
 
 use crate::{
-    ingestion::{IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     traits::Persist,
 };
 
@@ -39,7 +39,7 @@ impl Persist for Qdrant {
         self.create_index_if_not_exists().await
     }
 
-    /// Stores a single ingestion node in the Qdrant storage.
+    /// Stores a single indexing node in the Qdrant storage.
     ///
     /// # Parameters
     ///
@@ -53,7 +53,7 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
-    async fn store(&self, node: crate::ingestion::Node) -> Result<Node> {
+    async fn store(&self, node: crate::indexing::Node) -> Result<Node> {
         let point = node.clone().try_into()?;
 
         tracing::debug!(?node, ?point, "Storing node");
@@ -67,7 +67,7 @@ impl Persist for Qdrant {
         Ok(node)
     }
 
-    /// Stores a batch of ingestion nodes in the Qdrant storage.
+    /// Stores a batch of indexing nodes in the Qdrant storage.
     ///
     /// # Parameters
     ///
@@ -81,7 +81,7 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if any node conversion or storage operation fails.
     #[tracing::instrument(skip_all, name = "storage.qdrant.batch_store")]
-    async fn batch_store(&self, nodes: Vec<crate::ingestion::Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<crate::indexing::Node>) -> IndexingStream {
         let points = nodes
             .iter()
             .map(|node| node.clone().try_into())

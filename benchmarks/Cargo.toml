@@ -19,6 +19,6 @@ path = "fileloader.rs"
 harness = false
 
 [[bench]]
-name = "ingest-readme-local"
+name = "index-readme-local"
 path = "local_pipeline.rs"
 harness = false

@@ -1,12 +1,12 @@
 //! This module defines the `IngestionNode` struct and its associated methods.
 //!
-//! `IngestionNode` represents a unit of data in the ingestion process, containing metadata,
+//! `IngestionNode` represents a unit of data in the indexing process, containing metadata,
 //! the data chunk itself, and an optional vector representation.
 //!
 //! # Overview
 //!
 //! The `IngestionNode` struct is designed to encapsulate all necessary information for a single
-//! unit of data being processed in the ingestion pipeline. It includes fields for an identifier,
+//! unit of data being processed in the indexing pipeline. It includes fields for an identifier,
 //! file path, data chunk, optional vector representation, and metadata.
 //!
 //! The struct provides methods to convert the node into an embeddable string format and to
@@ -14,7 +14,7 @@
 //!
 //! # Usage
 //!
-//! The `IngestionNode` struct is used throughout the ingestion pipeline to represent and process
+//! The `IngestionNode` struct is used throughout the indexing pipeline to represent and process
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
 use std::{
@@ -26,10 +26,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-/// Represents a unit of data in the ingestion process.
+/// Represents a unit of data in the indexing process.
 ///
 /// `IngestionNode` encapsulates all necessary information for a single unit of data being processed
-/// in the ingestion pipeline. It includes fields for an identifier, file path, data chunk, optional
+/// in the indexing pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Node {

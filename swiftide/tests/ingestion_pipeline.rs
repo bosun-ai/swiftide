@@ -1,20 +1,20 @@
-//! This module contains tests for the ingestion pipeline in the Swiftide project.
+//! This module contains tests for the indexing pipeline in the Swiftide project.
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
 use qdrant_client::qdrant::{SearchPointsBuilder, Value};
 use serde_json::json;
-use swiftide::{ingestion::Pipeline, loaders::FileLoader, *};
+use swiftide::{indexing::Pipeline, loaders::FileLoader, *};
 use temp_dir::TempDir;
 use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-/// Tests the ingestion pipeline without any mocks.
+/// Tests the indexing pipeline without any mocks.
 ///
 /// This test sets up a temporary directory and file, simulates API responses using mock servers,
-/// configures an OpenAI client, and runs the ingestion pipeline. It then validates that the data
+/// configures an OpenAI client, and runs the indexing pipeline. It then validates that the data
 /// is correctly stored in the Qdrant vector database.
 ///
 /// # Panics
@@ -22,10 +22,10 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 /// starting the mock server, or configuring the OpenAI client.
 ///
 /// # Errors
-/// If the ingestion pipeline encounters an error, the test will print the received requests
+/// If the indexing pipeline encounters an error, the test will print the received requests
 /// for debugging purposes.
 #[test_log::test(tokio::test)]
-async fn test_ingestion_pipeline() {
+async fn test_indexing_pipeline() {
     // Setup temporary directory and file for testing
     let tempdir = TempDir::new().unwrap();
     let codefile = tempdir.child("main.rs");

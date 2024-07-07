@@ -1,21 +1,21 @@
-//! This module serves as the main entry point for the ingestion components in the Swiftide project.
-//! It re-exports the essential structs and types from the `ingestion_node`, `ingestion_pipeline`,
-//! and `ingestion_stream` modules, providing a unified interface for the ingestion functionality.
+//! This module serves as the main entry point for the indexing components in the Swiftide project.
+//! It re-exports the essential structs and types from the `indexing_node`, `indexing_pipeline`,
+//! and `indexing_stream` modules, providing a unified interface for the indexing functionality.
 //!
-//! The ingestion system in Swiftide is designed to handle the asynchronous processing of large volumes
+//! The indexing system in Swiftide is designed to handle the asynchronous processing of large volumes
 //! of data, including loading, transforming, and storing data chunks. The primary components include:
 //!
-//! - `IngestionNode`: Represents a unit of data in the ingestion process, encapsulating metadata, data chunks,
+//! - `IngestionNode`: Represents a unit of data in the indexing process, encapsulating metadata, data chunks,
 //!   and optional vector representations.
-//! - `IngestionPipeline`: Orchestrates the entire file ingestion process, allowing for various stages of data
+//! - `IngestionPipeline`: Orchestrates the entire file indexing process, allowing for various stages of data
 //!   transformation and storage to be configured and executed asynchronously.
 //! - `IngestionStream`: A type alias for a pinned, boxed, dynamically-dispatched stream of `IngestionNode` items,
-//!   facilitating efficient and scalable ingestion workflows.
+//!   facilitating efficient and scalable indexing workflows.
 //!
 //! # Usage
 //!
 //! The components re-exported by this module are used throughout the Swiftide project to build and manage
-//! ingestion pipelines. These pipelines can be customized with different loaders, transformers, and storage
+//! indexing pipelines. These pipelines can be customized with different loaders, transformers, and storage
 //! backends to meet specific requirements.
 
 mod indexing_stream;

@@ -1,5 +1,5 @@
 //! Load files from a directory
-use crate::{ingestion::IndexingStream, ingestion::Node, Loader};
+use crate::{indexing::IndexingStream, indexing::Node, Loader};
 use anyhow::Context as _;
 use std::path::{Path, PathBuf};
 

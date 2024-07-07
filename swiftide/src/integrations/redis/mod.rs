@@ -2,7 +2,7 @@
 //!
 //! The primary component of this module is the `Redis`, which is re-exported for use
 //! in other parts of the system. The `Redis` struct is responsible for managing and
-//! caching nodes during the ingestion process, leveraging Redis for efficient storage and retrieval.
+//! caching nodes during the indexing process, leveraging Redis for efficient storage and retrieval.
 //!
 //! # Overview
 //!
@@ -18,13 +18,13 @@ use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use tokio::sync::RwLock;
 
-use crate::ingestion::Node;
+use crate::indexing::Node;
 
 mod node_cache;
 mod persist;
 
 /// `Redis` provides a caching mechanism for nodes using Redis.
-/// It helps in optimizing the ingestion process by skipping nodes that have already been processed.
+/// It helps in optimizing the indexing process by skipping nodes that have already been processed.
 ///
 /// # Fields
 ///

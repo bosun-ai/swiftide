@@ -4,7 +4,7 @@ use spider::website::Website;
 use tokio::{runtime::Handle, sync::RwLock};
 
 use crate::{
-    ingestion::{IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     Loader,
 };
 

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::{ingestion::Node, traits::NodeCache};
+use crate::{indexing::Node, traits::NodeCache};
 
 use super::Redis;
 

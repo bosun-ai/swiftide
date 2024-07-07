@@ -1,7 +1,7 @@
 use anyhow::Result;
 use criterion::{criterion_group, criterion_main, Criterion};
 use swiftide::{
-    ingestion::Pipeline,
+    indexing::Pipeline,
     integrations::fastembed::FastEmbed,
     loaders::FileLoader,
     persist::MemoryStorage,
