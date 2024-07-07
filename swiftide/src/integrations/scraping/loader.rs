@@ -3,7 +3,7 @@ use spider::website::Website;
 use tokio::{runtime::Handle, sync::RwLock};
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    indexing::{IndexingStream, Node},
     Loader,
 };
 
@@ -37,7 +37,7 @@ impl ScrapingLoader {
 }
 
 impl Loader for ScrapingLoader {
-    fn into_stream(self) -> IngestionStream {
+    fn into_stream(self) -> IndexingStream {
         let (tx, rx) = std::sync::mpsc::channel();
         let mut spider_rx = tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
@@ -51,7 +51,7 @@ impl Loader for ScrapingLoader {
 
         let _recv_thread = tokio::spawn(async move {
             while let Ok(res) = spider_rx.recv().await {
-                let node = IngestionNode {
+                let node = Node {
                     chunk: res.get_html(),
                     // TODO: Probably not the best way to represent this
                     // and will fail. Can we add more metadata too?
@@ -71,6 +71,6 @@ impl Loader for ScrapingLoader {
 
         // NOTE: Handles should stay alive because of rx, but feels a bit fishy
 
-        IngestionStream::iter(rx)
+        IndexingStream::iter(rx)
     }
 }

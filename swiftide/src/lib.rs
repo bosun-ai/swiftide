@@ -1,6 +1,6 @@
 //! Swiftide - Document and code indexation for retrieval augmented generation
 //!
-//! Swiftide is a straightforward, easy-to-use, easy-to-extend asynchronous file ingestion and processing system. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+//! Swiftide is a straightforward, easy-to-use, easy-to-extend asynchronous file indexing and processing system. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
 //!
 //! Part of the bosun.ai project. An upcoming platform for autonomous code improvement.
 //!
@@ -13,7 +13,7 @@
 //! Either use the 'all' feature flag (not recommended), or enable the integrations that you need.
 //! Each integration has a similarly named feature flag.
 
-pub mod ingestion;
+pub mod indexing;
 pub mod integrations;
 pub mod loaders;
 pub mod persist;
@@ -23,3 +23,16 @@ pub mod type_aliases;
 
 pub use traits::*;
 pub use type_aliases::*;
+
+/// Deprecated re-export of `indexing`, use that instead.
+#[deprecated(
+    since = "0.6.0",
+    note = "Renamed references of Indexing to Indexing for more appropriate naming. Will be removed in a future release."
+)]
+pub mod ingestion {
+    pub use crate::indexing::*;
+
+    pub use crate::indexing::IndexingStream;
+    pub use crate::indexing::Node;
+    pub use crate::indexing::Pipeline;
+}

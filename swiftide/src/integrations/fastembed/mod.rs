@@ -15,7 +15,7 @@ use crate::{EmbeddingModel, Embeddings};
 /// See the [FastEmbed documentation](https://docs.rs/fastembed) for more information on usage.
 ///
 /// `FastEmbed` can be customized by setting the embedding model via the builder. The batch size can
-/// also be set and is recommended. Batch size should match the batch size in the ingestion
+/// also be set and is recommended. Batch size should match the batch size in the indexing
 /// pipeline.
 ///
 /// Node that the embedding vector dimensions need to match the dimensions of the vector database collection

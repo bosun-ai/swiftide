@@ -38,7 +38,7 @@ pub struct AwsBedrock {
     /// The bedrock runtime client
     client: Arc<dyn BedrockPrompt>,
     #[builder(default)]
-    /// The model confiugration to use
+    /// The model configuration to use
     model_config: ModelConfig,
     /// The model family to use. In bedrock, families share their api.
     model_family: ModelFamily,

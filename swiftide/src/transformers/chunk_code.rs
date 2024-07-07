@@ -4,14 +4,14 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    indexing::{IndexingStream, Node},
     integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages},
     ChunkerTransformer,
 };
 
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
 /// based on the specified language and chunk size. This is a crucial step in the
-/// ingestion pipeline for processing and embedding code efficiently.
+/// indexing pipeline for processing and embedding code efficiently.
 #[derive(Debug, Clone, Builder)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ChunkCode {
@@ -75,30 +75,30 @@ impl ChunkCode {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkCode {
-    /// Transforms an `IngestionNode` by splitting its code chunk into smaller pieces.
+    /// Transforms an `Node` by splitting its code chunk into smaller pieces.
     ///
     /// # Parameters
-    /// - `node`: The `IngestionNode` containing the code chunk to be split.
+    /// - `node`: The `Node` containing the code chunk to be split.
     ///
     /// # Returns
-    /// - `IngestionStream`: A stream of `IngestionNode` instances, each containing a smaller chunk of code.
+    /// - `IndexingStream`: A stream of `Node` instances, each containing a smaller chunk of code.
     ///
     /// # Errors
     /// - If the code splitting fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
-    async fn transform_node(&self, node: IngestionNode) -> IngestionStream {
+    async fn transform_node(&self, node: Node) -> IndexingStream {
         let split_result = self.chunker.split(&node.chunk);
 
         if let Ok(split) = split_result {
-            IngestionStream::iter(split.into_iter().map(move |chunk| {
-                Ok(IngestionNode {
+            IndexingStream::iter(split.into_iter().map(move |chunk| {
+                Ok(Node {
                     chunk,
                     ..node.clone()
                 })
             }))
         } else {
             // Send the error downstream
-            IngestionStream::iter(vec![Err(split_result.unwrap_err())])
+            IndexingStream::iter(vec![Err(split_result.unwrap_err())])
         }
     }
 

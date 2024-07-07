@@ -1,12 +1,12 @@
-//! This module defines the `IngestionNode` struct and its associated methods.
+//! This module defines the `Node` struct and its associated methods.
 //!
-//! `IngestionNode` represents a unit of data in the ingestion process, containing metadata,
+//! `Node` represents a unit of data in the indexing process, containing metadata,
 //! the data chunk itself, and an optional vector representation.
 //!
 //! # Overview
 //!
-//! The `IngestionNode` struct is designed to encapsulate all necessary information for a single
-//! unit of data being processed in the ingestion pipeline. It includes fields for an identifier,
+//! The `Node` struct is designed to encapsulate all necessary information for a single
+//! unit of data being processed in the indexing pipeline. It includes fields for an identifier,
 //! file path, data chunk, optional vector representation, and metadata.
 //!
 //! The struct provides methods to convert the node into an embeddable string format and to
@@ -14,7 +14,7 @@
 //!
 //! # Usage
 //!
-//! The `IngestionNode` struct is used throughout the ingestion pipeline to represent and process
+//! The `Node` struct is used throughout the indexing pipeline to represent and process
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
 use std::{
@@ -26,13 +26,13 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-/// Represents a unit of data in the ingestion process.
+/// Represents a unit of data in the indexing process.
 ///
-/// `IngestionNode` encapsulates all necessary information for a single unit of data being processed
-/// in the ingestion pipeline. It includes fields for an identifier, file path, data chunk, optional
+/// `Node` encapsulates all necessary information for a single unit of data being processed
+/// in the indexing pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
-pub struct IngestionNode {
+pub struct Node {
     /// Optional identifier for the node.
     pub id: Option<u64>,
     /// File path associated with the node.
@@ -45,13 +45,13 @@ pub struct IngestionNode {
     pub metadata: HashMap<String, String>,
 }
 
-impl Debug for IngestionNode {
+impl Debug for Node {
     /// Formats the node for debugging purposes.
     ///
     /// This method is used to provide a human-readable representation of the node when debugging.
     /// The vector field is displayed as the number of elements in the vector if present.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("IngestionNode")
+        f.debug_struct("Node")
             .field("id", &self.id)
             .field("path", &self.path)
             .field("chunk", &self.chunk)
@@ -64,12 +64,12 @@ impl Debug for IngestionNode {
     }
 }
 
-impl IngestionNode {
-    /// Creates a new instance of `IngestionNode` with the specified data chunk.
+impl Node {
+    /// Creates a new instance of `Node` with the specified data chunk.
     ///
     /// The other fields are set to their default values.
-    pub fn new(chunk: impl Into<String>) -> IngestionNode {
-        IngestionNode {
+    pub fn new(chunk: impl Into<String>) -> Node {
+        Node {
             chunk: chunk.into(),
             ..Default::default()
         }
@@ -109,7 +109,7 @@ impl IngestionNode {
     }
 }
 
-impl Hash for IngestionNode {
+impl Hash for Node {
     /// Hashes the node based on its path and chunk.
     ///
     /// This method is used by the `calculate_hash` method to generate a hash value for the node.

@@ -1,7 +1,7 @@
 //! Generate a summary and adds it as metadata
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -10,7 +10,7 @@ use indoc::indoc;
 /// This module defines the `MetadataSummary` struct and its associated methods,
 /// which are used for generating metadata in the form of a summary
 /// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
-/// the summary based on the text chunk in an `IngestionNode`.
+/// the summary based on the text chunk in an `Node`.
 
 /// `MetadataSummary` is responsible for generating a summary
 /// for a given text chunk. It uses a templated prompt to interact with a client
@@ -99,16 +99,16 @@ impl MetadataSummaryBuilder {
 
 #[async_trait]
 impl Transformer for MetadataSummary {
-    /// Transforms an `IngestionNode` by extracting a summary
+    /// Transforms an `Node` by extracting a summary
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors
@@ -116,7 +116,7 @@ impl Transformer for MetadataSummary {
     /// This function will return an error if the client fails to generate
     /// a summary from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_summary")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt.replace("{text}", &node.chunk);
 
         let response = self.client.prompt(&prompt).await?;
@@ -146,7 +146,7 @@ mod test {
             .returning(|_| Ok("A Summary".to_string()));
 
         let transformer = MetadataSummary::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

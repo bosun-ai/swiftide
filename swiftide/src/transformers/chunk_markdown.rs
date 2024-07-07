@@ -1,5 +1,5 @@
 //! Chunk markdown content into smaller pieces
-use crate::{ingestion::IngestionNode, ingestion::IngestionStream, ChunkerTransformer};
+use crate::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
 use async_trait::async_trait;
 use derive_builder::Builder;
 use text_splitter::{Characters, MarkdownSplitter};
@@ -67,7 +67,7 @@ impl ChunkMarkdown {
 #[async_trait]
 impl ChunkerTransformer for ChunkMarkdown {
     #[tracing::instrument(skip_all, name = "transformers.chunk_markdown")]
-    async fn transform_node(&self, node: IngestionNode) -> IngestionStream {
+    async fn transform_node(&self, node: Node) -> IndexingStream {
         let chunks = self
             .chunker
             .chunks(&node.chunk)
@@ -81,8 +81,8 @@ impl ChunkerTransformer for ChunkMarkdown {
             })
             .collect::<Vec<String>>();
 
-        IngestionStream::iter(chunks.into_iter().map(move |chunk| {
-            Ok(IngestionNode {
+        IndexingStream::iter(chunks.into_iter().map(move |chunk| {
+            Ok(Node {
                 chunk,
                 ..node.clone()
             })
@@ -117,12 +117,12 @@ mod test {
     async fn test_transforming_with_max_characters_and_trimming() {
         let chunker = ChunkMarkdown::from_max_characters(40);
 
-        let node = IngestionNode {
+        let node = Node {
             chunk: MARKDOWN.to_string(),
-            ..IngestionNode::default()
+            ..Node::default()
         };
 
-        let nodes: Vec<IngestionNode> = chunker
+        let nodes: Vec<Node> = chunker
             .transform_node(node)
             .await
             .try_collect()
@@ -141,11 +141,11 @@ mod test {
         let ranges = vec![(10..15), (20..25), (30..35), (40..45), (50..55)];
         for range in ranges {
             let chunker = ChunkMarkdown::from_chunk_range(range.clone());
-            let node = IngestionNode {
+            let node = Node {
                 chunk: MARKDOWN.to_string(),
-                ..IngestionNode::default()
+                ..Node::default()
             };
-            let nodes: Vec<IngestionNode> = chunker
+            let nodes: Vec<Node> = chunker
                 .transform_node(node)
                 .await
                 .try_collect()
