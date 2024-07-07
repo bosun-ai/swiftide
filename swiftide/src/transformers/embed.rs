@@ -99,7 +99,6 @@ impl BatchableTransformer for Embed {
             let remaining_embeddings = embeddings.split_off(embedding_keys.len());
             let embedding_values = embeddings.clone();
             embeddings = remaining_embeddings;
-            // TODO: handle different lengths
             let vectors: HashMap<EmbeddableType, Vec<f32>> =
                 embedding_keys.into_iter().zip(embedding_values).collect();
             node.vectors = Some(vectors);

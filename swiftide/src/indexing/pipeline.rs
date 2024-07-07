@@ -84,6 +84,17 @@ impl Pipeline {
         self
     }
 
+    /// Sets the embed mode for the pipeline.
+    ///
+    /// See also [super::node::EmbedMode].
+    ///
+    /// # Arguments
+    ///
+    /// * `embed_mode` - The deisred embed mode.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated embed mode.
     pub fn with_embed_mode(mut self, embed_mode: EmbedMode) -> Self {
         self.stream = self
             .stream
