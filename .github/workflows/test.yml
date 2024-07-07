@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy,rustfmt
+          components: rustfmt
       - uses: r7kamura/rust-problem-matchers@v1
       - name: Check typos
         uses: crate-ci/typos@master
@@ -37,7 +37,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-
     env:
       RUST_LOG: DEBUG
       RUST_BACKTRACE: 1
@@ -51,7 +50,6 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-
     env:
       RUST_LOG: DEBUG
       RUST_BACKTRACE: 1
