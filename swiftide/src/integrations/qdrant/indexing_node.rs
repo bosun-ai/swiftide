@@ -29,7 +29,7 @@ impl TryInto<qdrant::PointStruct> for Node {
     /// If the conversion fails, it returns an `anyhow::Error`.
     fn try_into(mut self) -> Result<qdrant::PointStruct> {
         // Calculate a unique identifier for the node.
-        let id: u64 = self.calculate_hash();
+        let id = self.calculate_hash();
 
         // Extend the metadata with additional information.
         self.metadata.extend([

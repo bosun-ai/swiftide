@@ -154,6 +154,11 @@ impl QdrantBuilder {
         Ok(Arc::new(client))
     }
 
+    /// Adds new [VectorConfig]
+    ///
+    /// When not configured Pipeline by default configures vector only for [EmbeddableType::Combined]
+    /// Default config is enough when [crate::indexing::Pipeline::with_embed_mode] is not set
+    /// or when the value is set to [crate::indexing::EmbedMode::SingleWithMetadata].
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {
             self = self.vectors(Default::default());
@@ -181,12 +186,22 @@ impl std::fmt::Debug for Qdrant {
     }
 }
 
+/// Vector config
+///
+/// See also [QdrantBuilder::with_vector]
 #[derive(Clone, Builder, Default)]
 pub struct VectorConfig {
+    /// A type of the embeddable of the stored vector.
     #[builder(default)]
     pub(super) embeddable_type: EmbeddableType,
+    /// A size of the vector to be stored in the collection.
+    ///
+    /// Overrides default set in [QdrantBuilder::vector_size]
     #[builder(setter(into, strip_option), default)]
     vector_size: Option<u64>,
+    /// A distance of the vector to be stored in the collection.
+    ///
+    /// Overrides default set in [QdrantBuilder::vector_distance]
     #[builder(setter(into, strip_option), default)]
     distance: Option<qdrant::Distance>,
 }

@@ -90,7 +90,7 @@ impl Pipeline {
     ///
     /// # Arguments
     ///
-    /// * `embed_mode` - The deisred embed mode.
+    /// * `embed_mode` - The desired embed mode.
     ///
     /// # Returns
     ///
