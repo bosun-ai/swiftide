@@ -107,9 +107,9 @@ impl Node {
         embeddables
     }
 
-    /// Converts the node into an embeddable string format.
+    /// Converts the node into an [self::EmbeddableType::Combined] type of embeddable.
     ///
-    /// The embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
+    /// This embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
     /// followed by the data chunk.
     ///
     /// # Returns
