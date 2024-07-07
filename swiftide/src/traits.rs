@@ -9,7 +9,7 @@ use crate::{ingestion::IngestionNode, ingestion::IngestionStream, Embeddings};
 use anyhow::Result;
 use async_trait::async_trait;
 
-/// All traits are easilly mockable under tests
+/// All traits are easily mockable under tests
 #[cfg(test)]
 use mockall::{automock, predicate::*};
 
