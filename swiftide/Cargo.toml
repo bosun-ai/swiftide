@@ -89,7 +89,7 @@ aws-bedrock = [
 
 [dev-dependencies]
 test-log = "0.2.16"
-testcontainers = "0.19.0"
+testcontainers = "0.20.0"
 mockall = "0.12.1"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
