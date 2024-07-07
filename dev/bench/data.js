@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720377956622,
+  "lastUpdate": 1720378839511,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -629,6 +629,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 12",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "4c40e27e5c6735305c70696ddf71dd5f95d03bbb",
+          "message": "docs(README): add back coverage badge",
+          "timestamp": "2024-07-07T20:56:24+02:00",
+          "tree_id": "e91173259e3ad8eab230f5aaa04f7bc3a2773d20",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4c40e27e5c6735305c70696ddf71dd5f95d03bbb"
+        },
+        "date": 1720378838558,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 91",
             "unit": "ns/iter"
           }
         ]
