@@ -161,7 +161,7 @@ pub enum EmbedMode {
     SingleWithMetadata,
     /// Embedding Chunk of data and every Metadata separately.
     PerField,
-    /// Embedding Chunk of data and every Metadata separately and Chunk of data combined with Matadata.
+    /// Embedding Chunk of data and every Metadata separately and Chunk of data combined with Metadata.
     Both,
 }
 
