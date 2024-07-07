@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720382198860,
+  "lastUpdate": 1720385785607,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -712,6 +712,48 @@ window.BENCHMARK_DATA = {
           {
             "name": "run_local_pipeline",
             "value": 837,
+            "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "adc4bf789f679079fcc9fac38f4a7b8f98816844",
+          "message": "fix(deps): update aws-sdk-rust monorepo (#125)",
+          "timestamp": "2024-07-07T22:52:17+02:00",
+          "tree_id": "9523d1af560855bc3725bd774f7f2869fd897ae5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/adc4bf789f679079fcc9fac38f4a7b8f98816844"
+        },
+        "date": 1720385785073,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
             "range": "± 2",
             "unit": "ns/iter"
           }
