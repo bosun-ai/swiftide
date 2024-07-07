@@ -45,10 +45,10 @@
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/logo.png" alt="Logo" width="250" height="250">
   </a>
 
-<h3 align="center">Swiftide</h3>
+  <h3 align="center">Swiftide</h3>
 
   <p align="center">
-Blazing fast data pipelines for Retrieval Augmented Generation written in Rust 
+Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
     <br />
     <a href="https://swiftide.rs"><strong>Explore the docs »</strong></a>
     <br />
@@ -144,9 +144,11 @@ Other integrations will need to be installed accordingly.
 
 1. Set up a new Rust project
 2. Add swiftide
+
    ```sh
    cargo add swiftide
    ```
+
 3. Enable the features of integrations you would like to have or use 'all' in your `Cargo.toml`
 4. Write a pipeline (see our examples and documentation)
 
@@ -225,12 +227,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 [contributors-shield]: https://img.shields.io/github/contributors/bosun-ai/swiftide.svg?style=flat-square
 [contributors-url]: https://github.com/bosun-ai/swiftide/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/bosun-ai/swiftide.svg?style=flat-square
-[forks-url]: https://github.com/bosun-ai/swiftide/network/members
 [stars-shield]: https://img.shields.io/github/stars/bosun-ai/swiftide.svg?style=flat-square
 [stars-url]: https://github.com/bosun-ai/swiftide/stargazers
-[issues-shield]: https://img.shields.io/github/issues/bosun-ai/swiftide.svg?style=flat-square
-[issues-url]: https://github.com/bosun-ai/swiftide/issues
 [license-shield]: https://img.shields.io/github/license/bosun-ai/swiftide.svg?style=flat-square
 [license-url]: https://github.com/bosun-ai/swiftide/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
