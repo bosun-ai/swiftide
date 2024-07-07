@@ -31,6 +31,8 @@ jobs:
           tool: cargo-llvm-cov
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          key: "coverage"
       - name: Generate code coverage
         run: |
           cargo llvm-cov --lcov --output-path target/lcov.info --all-features
