@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720372972837,
+  "lastUpdate": 1720377956622,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -587,6 +587,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 838,
             "range": "± 15",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "eb8364e08a9202476cca6b60fbdfbb31fe0e1c3d",
+          "message": "fix(ci): try overriding the github repo for git cliff",
+          "timestamp": "2024-07-07T20:40:56+02:00",
+          "tree_id": "60e8de2cbb10addde93009dc8af7da2116f04e84",
+          "url": "https://github.com/bosun-ai/swiftide/commit/eb8364e08a9202476cca6b60fbdfbb31fe0e1c3d"
+        },
+        "date": 1720377956245,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 12",
             "unit": "ns/iter"
           }
         ]
