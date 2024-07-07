@@ -12,9 +12,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 //! [AWS Bedrock documentation]: https://docs.aws.amazon.com/bedrock/
 
-use swiftide::{
-    indexing, integrations, loaders::FileLoader, persist::MemoryStorage, transformers,
-};
+use swiftide::{indexing, integrations, loaders::FileLoader, persist::MemoryStorage, transformers};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -29,10 +29,10 @@ pub use type_aliases::*;
     since = "0.6.0",
     note = "Renamed references of Indexing to Indexing for more appropriate naming. Will be removed in a future release."
 )]
-pub mod ingestion  {
+pub mod ingestion {
     pub use crate::indexing::*;
 
-    pub use crate::indexing::IndexingStream as IndexingStream;
-    pub use crate::indexing::Node as Node;
-    pub use crate::indexing::Pipeline as Pipeline;
+    pub use crate::indexing::IndexingStream;
+    pub use crate::indexing::Node;
+    pub use crate::indexing::Pipeline;
 }
