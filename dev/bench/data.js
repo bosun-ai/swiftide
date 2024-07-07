@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720369661365,
+  "lastUpdate": 1720372972837,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -545,6 +545,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 26",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d2a9ea1e7afa6f192bf9c32bbb54d9bb6e46472e",
+          "message": "chore: enable clippy pedantic (#132)",
+          "timestamp": "2024-07-07T19:19:08+02:00",
+          "tree_id": "fbba3b353bacebf26f073d104d558ff68b87d5a8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d2a9ea1e7afa6f192bf9c32bbb54d9bb6e46472e"
+        },
+        "date": 1720372972443,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 838,
+            "range": "± 15",
             "unit": "ns/iter"
           }
         ]
