@@ -41,6 +41,7 @@ impl Embed {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -65,7 +66,7 @@ impl BatchableTransformer for Embed {
     #[tracing::instrument(skip_all, name = "transformers.embed")]
     async fn batch_transform(&self, nodes: Vec<IngestionNode>) -> IngestionStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
-        let chunks_to_embed: Vec<String> = nodes.iter().map(|n| n.as_embeddable()).collect();
+        let chunks_to_embed: Vec<String> = nodes.iter().map(IngestionNode::as_embeddable).collect();
 
         self.embed_model
             .embed(chunks_to_embed)

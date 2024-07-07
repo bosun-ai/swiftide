@@ -61,12 +61,12 @@ impl ChunkCode {
             chunker: CodeSplitter::builder()
                 .try_language(lang)?
                 .chunk_size(chunk_size)
-                .build()
-                .expect("Failed to build code splitter"),
+                .build()?,
             concurrency: None,
         })
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self

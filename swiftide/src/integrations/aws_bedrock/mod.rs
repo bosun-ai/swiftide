@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_sdk_bedrockruntime::{primitives::Blob, Client};
+use aws_sdk_bedrockruntime::{error::SdkError, primitives::Blob, Client};
 use derive_builder::Builder;
 use serde::Serialize;
 use tokio::runtime::Handle;
@@ -18,7 +18,7 @@ mod simple_prompt;
 
 /// An integration with the AWS Bedrock service.
 ///
-/// Can be used as SimplePrompt.
+/// Can be used as `SimplePrompt`.
 ///
 /// To use Bedrock, you need to have a model id and access to the service.
 /// By default, the aws sdk will be configured from the environment.
@@ -59,7 +59,7 @@ impl BedrockPrompt for Client {
             .model_id(model_id)
             .send()
             .await
-            .map_err(|e| e.into_service_error())?;
+            .map_err(SdkError::into_service_error)?;
 
         Ok(response.body.into_inner())
     }
@@ -81,12 +81,12 @@ impl AwsBedrock {
         AwsBedrockBuilder::default()
     }
 
-    /// Build a new AwsBedrock instance with the Titan model family
+    /// Build a new `AwsBedrock` instance with the Titan model family
     pub fn build_titan_family(model_id: impl Into<String>) -> AwsBedrockBuilder {
         Self::builder().titan().model_id(model_id).to_owned()
     }
 
-    /// Build a new AwsBedrock instance with the Anthropic model family
+    /// Build a new `AwsBedrock` instance with the Anthropic model family
     pub fn build_anthropic_family(model_id: impl Into<String>) -> AwsBedrockBuilder {
         Self::builder().anthropic().model_id(model_id).to_owned()
     }
@@ -104,6 +104,7 @@ impl AwsBedrockBuilder {
         self
     }
 
+    #[allow(clippy::unused_self)]
     fn default_config(&self) -> aws_config::SdkConfig {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async { aws_config::from_env().load().await })

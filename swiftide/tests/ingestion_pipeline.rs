@@ -39,7 +39,7 @@ async fn test_ingestion_pipeline() {
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "id": "chatcmpl-123",
             "object": "chat.completion",
-            "created": 1677652288,
+            "created": 1_677_652_288,
             "model": "gpt-3.5-turbo-0125",
             "system_fingerprint": "fp_44709d6fcb",
             "choices": [{
@@ -130,7 +130,7 @@ async fn test_ingestion_pipeline() {
     // Coverage CI runs in container, just accept the double qdrant and use the service instead
     let qdrant_url = std::env::var("QDRANT_URL").unwrap_or(qdrant_url);
 
-    println!("Qdrant URL: {}", qdrant_url);
+    println!("Qdrant URL: {qdrant_url}");
 
     let result =
         IngestionPipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
@@ -170,7 +170,7 @@ async fn test_ingestion_pipeline() {
             })
             .collect::<Vec<String>>()
             .join("\n---\n");
-        println!("{}", received_requests);
+        println!("{received_requests}");
     };
 
     result.expect("Ingestion pipeline failed");

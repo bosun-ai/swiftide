@@ -77,6 +77,9 @@ impl Redis {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if the Redis client cannot be opened
     pub fn try_build_from_url(url: impl AsRef<str>) -> Result<RedisBuilder> {
         Ok(RedisBuilder::default()
             .client(redis::Client::open(url.as_ref()).context("Failed to open redis client")?))
@@ -189,6 +192,7 @@ impl Redis {
 }
 
 // Redis CM does not implement debug
+#[allow(clippy::missing_fields_in_debug)]
 impl std::fmt::Debug for Redis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Redis")

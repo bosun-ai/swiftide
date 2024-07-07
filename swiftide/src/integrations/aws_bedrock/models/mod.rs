@@ -75,9 +75,9 @@ impl ModelFamily {
 
                 if response.results.is_empty() {
                     return Err(anyhow::anyhow!("No results returned"));
-                } else {
-                    Ok(response.results.swap_remove(0).output_text)
-                }
+                } 
+
+                Ok(response.results.swap_remove(0).output_text)
             }
         }
     }

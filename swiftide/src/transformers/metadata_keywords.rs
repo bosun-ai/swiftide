@@ -9,7 +9,7 @@ use indoc::indoc;
 
 /// This module defines the `MetadataKeywords` struct and its associated methods,
 /// which are used for generating metadata in the form of keywords
-/// for a given text. It interacts with a client (e.g., OpenAI) to generate
+/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
 /// the keywords based on the text chunk in an `IngestionNode`.
 
 /// `MetadataKeywords` is responsible for generating keywords
@@ -51,6 +51,7 @@ impl MetadataKeywords {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -63,7 +64,7 @@ impl MetadataKeywords {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate a descriptive, concise keywords for the given text
@@ -86,7 +87,7 @@ fn default_prompt() -> String {
             {text}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 
