@@ -13,6 +13,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   lint-and-test:
@@ -29,7 +30,7 @@ jobs:
           components: clippy,rustfmt
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Clippy"
-        run: cargo clippy
+        run: cargo clippy --all-targets --all-features
       - name: "Rustfmt"
         run: cargo fmt --all --check
       - name: "Test"
