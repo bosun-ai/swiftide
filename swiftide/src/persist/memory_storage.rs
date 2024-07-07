@@ -30,7 +30,7 @@ impl MemoryStorage {
     async fn key(&self, node: &Node) -> String {
         match node.id {
             Some(id) => id.to_string(),
-            None => (*self.node_count.read().await as u64).to_string(),
+            None => (*self.node_count.read().await).to_string(),
         }
     }
 
