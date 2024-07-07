@@ -3155,7 +3155,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
  "anyhow",
- "itertools 0.11.0",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.67",
@@ -4288,9 +4288,9 @@ dependencies = [
 
 [[package]]
 name = "testcontainers"
-version = "0.19.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81abdf87437235a275fd0fecaa6ca2c6af28240506e695e9abe84597b3431b35"
+checksum = "cb74bff469141dfded423ce9b8aa47430bfd9058e8d8ddac4a7c0966da0025bb"
 dependencies = [
  "async-trait",
  "bollard",
@@ -4303,6 +4303,7 @@ dependencies = [
  "log",
  "memchr",
  "parse-display",
+ "pin-project-lite",
  "reqwest",
  "serde",
  "serde_json",
