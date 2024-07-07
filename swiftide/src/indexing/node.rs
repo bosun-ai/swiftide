@@ -88,7 +88,7 @@ impl Node {
         let metadata = self
             .metadata
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
+            .map(|(k, v)| format!("{k}: {v}"))
             .collect::<Vec<String>>()
             .join("\n");
 

@@ -9,7 +9,7 @@ use indoc::indoc;
 
 /// This module defines the `MetadataSummary` struct and its associated methods,
 /// which are used for generating metadata in the form of a summary
-/// for a given text. It interacts with a client (e.g., OpenAI) to generate
+/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
 /// the summary based on the text chunk in an `Node`.
 
 /// `MetadataSummary` is responsible for generating a summary
@@ -51,6 +51,7 @@ impl MetadataSummary {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -63,7 +64,7 @@ impl MetadataSummary {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate a descriptive, concise summary for the given text
@@ -85,7 +86,7 @@ fn default_prompt() -> String {
             {text}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 

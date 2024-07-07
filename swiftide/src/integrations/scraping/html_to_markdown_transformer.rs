@@ -70,7 +70,7 @@ mod test {
     async fn test_html_to_markdown() {
         let node = Node::new("<h1>Hello, World!</h1>");
         let transformer = HtmlToMarkdownTransformer::default();
-        let transformed = transformer.transform_node(node).await.unwrap();
-        assert_eq!(transformed.chunk, "# Hello, World!");
+        let transformed_node = transformer.transform_node(node).await.unwrap();
+        assert_eq!(transformed_node.chunk, "# Hello, World!");
     }
 }

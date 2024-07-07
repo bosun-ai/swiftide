@@ -58,6 +58,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
       - uses: r7kamura/rust-problem-matchers@v1
-      - name: "Clippy"
-        run: cargo clippy --all-targets --all-features

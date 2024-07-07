@@ -132,10 +132,10 @@ mod test {
             .batch_store(vec![node1.clone(), node2.clone()])
             .await;
 
-        let nodes: Vec<Node> = stream.try_collect().await.unwrap();
+        let result: Vec<Node> = stream.try_collect().await.unwrap();
 
-        assert_eq!(nodes.len(), 2);
-        assert_eq!(nodes[0], node1);
-        assert_eq!(nodes[1], node2);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], node1);
+        assert_eq!(result[1], node2);
     }
 }

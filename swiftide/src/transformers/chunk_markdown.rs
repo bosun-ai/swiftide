@@ -53,13 +53,14 @@ impl ChunkMarkdown {
     }
 
     /// Set the number of concurrent chunks to process.
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
     }
 
     fn min_size(&self) -> usize {
-        self.range.as_ref().map(|r| r.start).unwrap_or(0)
+        self.range.as_ref().map_or(0, |r| r.start)
     }
 }
 
@@ -98,7 +99,7 @@ mod test {
     use super::*;
     use futures_util::stream::TryStreamExt;
 
-    const MARKDOWN: &str = r#"
+    const MARKDOWN: &str = r"
         # Hello, world!
 
         This is a test markdown document.
@@ -110,7 +111,7 @@ mod test {
         ## Section 2
 
         This is another paragraph.
-        "#;
+        ";
 
     #[tokio::test]
     async fn test_transforming_with_max_characters_and_trimming() {

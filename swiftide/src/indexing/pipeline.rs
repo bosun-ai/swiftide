@@ -29,7 +29,7 @@ impl Default for Pipeline {
     fn default() -> Self {
         Self {
             stream: IndexingStream::empty(),
-            storage: Default::default(),
+            storage: Vec::default(),
             concurrency: num_cpus::get(),
         }
     }
@@ -78,6 +78,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the updated concurrency level.
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
         self
@@ -92,6 +93,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the updated stream that filters out cached nodes.
+    #[must_use]
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
@@ -101,13 +103,13 @@ impl Pipeline {
                 let span =
                     tracing::trace_span!("filter_cached", node_cache = ?cache, node = ?node );
                 async move {
-                    if !cache.get(&node).await {
+                    if cache.get(&node).await {
+                        tracing::debug!("Node in cache, skipping");
+                        Ok(None)
+                    } else {
                         cache.set(&node).await;
                         tracing::debug!("Node not in cache, passing through");
                         Ok(Some(node))
-                    } else {
-                        tracing::debug!("Node in cache, skipping");
-                        Ok(None)
                     }
                 }
                 .instrument(span)
@@ -126,6 +128,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
+    #[must_use]
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
         let transformer = Arc::new(transformer);
@@ -154,6 +157,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each batch of nodes.
+    #[must_use]
     pub fn then_in_batch(
         mut self,
         batch_size: usize,
@@ -186,6 +190,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to each node.
+    #[must_use]
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
         let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
@@ -214,6 +219,12 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the configured storage backend.
+    ///
+    /// # Panics
+    ///
+    /// Panics if batch size turns out to be not set and batch storage is still invoked.
+    /// Pipeline only invokes batch storing if the batch size is set, so should be alright.
+    #[must_use]
     pub fn then_store_with(mut self, storage: impl Persist + 'static) -> Self {
         let storage = Arc::new(storage);
         self.storage.push(storage.clone());
@@ -259,6 +270,11 @@ impl Pipeline {
     /// if sending fails.
     ///
     /// They can either be run concurrently, alternated between or merged back together.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the receiving pipelines buffers are full or unavailable.
+    #[must_use]
     pub fn split_by<P>(self, predicate: P) -> (Self, Self)
     where
         P: Fn(&Result<Node>) -> bool + Send + Sync + 'static,
@@ -282,13 +298,13 @@ impl Pipeline {
                             left_tx
                                 .send(item)
                                 .await
-                                .expect("Failed to send to left stream")
+                                .expect("Failed to send to left stream");
                         } else {
                             tracing::debug!(?item, "Sending to right stream");
                             right_tx
                                 .send(item)
                                 .await
-                                .expect("Failed to send to right stream")
+                                .expect("Failed to send to right stream");
                         }
                     }
                 })
@@ -316,6 +332,7 @@ impl Pipeline {
     /// This is useful for merging two streams that have been split using the `split_by` method.
     ///
     /// The full stream can then be processed using the `run` method.
+    #[must_use]
     pub fn merge(self, other: Self) -> Self {
         let stream = tokio_stream::StreamExt::merge(self.stream, other.stream);
 
@@ -327,7 +344,8 @@ impl Pipeline {
 
     /// Throttles the stream of nodes, limiting the rate to 1 per duration.
     ///
-    /// Useful for rate limiting the indexing pipeline. Uses tokio_stream::StreamExt::throttle internally which has a granualarity of 1ms.
+    /// Useful for rate limiting the indexing pipeline. Uses `tokio_stream::StreamExt::throttle` internally which has a granualarity of 1ms.
+    #[must_use]
     pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
         self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
             .boxed()
@@ -339,6 +357,7 @@ impl Pipeline {
     //
     // This method filters out errors encountered by the pipeline, preventing them from bubbling up and terminating the stream.
     // Note that errors are not logged.
+    #[must_use]
     pub fn filter_errors(mut self) -> Self {
         self.stream = self
             .stream
@@ -358,6 +377,7 @@ impl Pipeline {
     /// This allows you to skip specific errors or nodes, or do ad hoc inspection.
     ///
     /// If the closure returns true, the result is kept, otherwise it is skipped.
+    #[must_use]
     pub fn filter<F>(mut self, filter: F) -> Self
     where
         F: Fn(&Result<Node>) -> bool + Send + Sync + 'static,
@@ -377,6 +397,7 @@ impl Pipeline {
     /// Logs all results processed by the pipeline.
     ///
     /// This method logs all results processed by the pipeline at the `DEBUG` level.
+    #[must_use]
     pub fn log_all(self) -> Self {
         self.log_errors().log_nodes()
     }
@@ -384,6 +405,7 @@ impl Pipeline {
     /// Logs all errors encountered by the pipeline.
     ///
     /// This method logs all errors encountered by the pipeline at the `ERROR` level.
+    #[must_use]
     pub fn log_errors(mut self) -> Self {
         self.stream = self
             .stream
@@ -396,6 +418,7 @@ impl Pipeline {
     /// Logs all nodes processed by the pipeline.
     ///
     /// This method logs all nodes processed by the pipeline at the `DEBUG` level.
+    #[must_use]
     pub fn log_nodes(mut self) -> Self {
         self.stream = self
             .stream
@@ -493,7 +516,7 @@ mod tests {
                 let mut nodes = vec![];
                 for i in 0..3 {
                     let mut node = node.clone();
-                    node.chunk = format!("transformed_chunk_{}", i);
+                    node.chunk = format!("transformed_chunk_{i}");
                     nodes.push(Ok(node));
                 }
                 nodes.into()

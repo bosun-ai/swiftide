@@ -9,7 +9,7 @@ use indoc::indoc;
 
 /// This module defines the `MetadataQAText` struct and its associated methods,
 /// which are used for generating metadata in the form of questions and answers
-/// from a given text. It interacts with a client (e.g., OpenAI) to generate
+/// from a given text. It interacts with a client (e.g., `OpenAI`) to generate
 /// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataQAText` is responsible for generating questions and answers
@@ -54,6 +54,7 @@ impl MetadataQAText {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -66,7 +67,7 @@ impl MetadataQAText {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate questions and answers for the given text. 
@@ -96,7 +97,7 @@ fn default_prompt() -> String {
             {text}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 

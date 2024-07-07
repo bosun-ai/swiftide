@@ -49,6 +49,7 @@ impl MetadataQACode {
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -63,7 +64,7 @@ impl MetadataQACode {
 ///
 /// A string representing the default prompt template.
 fn default_prompt() -> String {
-    indoc! {r#"
+    indoc! {r"
 
             # Task
             Your task is to generate questions and answers for the given code. 
@@ -95,7 +96,7 @@ fn default_prompt() -> String {
             {code}
             ```
 
-        "#}
+        "}
     .to_string()
 }
 

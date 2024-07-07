@@ -153,7 +153,7 @@ mod tests {
 
         for node in streamed_nodes {
             let stored_node = serde_json::from_str(&redis.get_node(&node).await.unwrap().unwrap());
-            assert_eq!(node, stored_node.unwrap())
+            assert_eq!(node, stored_node.unwrap());
         }
     }
 
@@ -180,6 +180,6 @@ mod tests {
         assert_eq!(
             redis.persist_key_for_node(&node).unwrap(),
             "test".to_string()
-        )
+        );
     }
 }

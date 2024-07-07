@@ -29,9 +29,10 @@ const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
 pub struct Qdrant {
     /// The Qdrant client used to interact with the Qdrant vector database.
     ///
-    /// By default the client will be build from QDRANT_URL and option QDRANT_API_KEY.
-    /// It will fall back to `http://localhost:6334` if QDRANT_URL is not set.
+    /// By default the client will be build from `QDRANT_URL` and option `QDRANT_API_KEY`.
+    /// It will fall back to `http://localhost:6334` if `QDRANT_URL` is not set.
     #[builder(setter(into), default = "self.default_client()?")]
+    #[allow(clippy::missing_fields_in_debug)]
     client: Arc<qdrant_client::Qdrant>,
     /// The name of the collection to be used in Qdrant. Defaults to "swiftide".
     #[builder(default = "DEFAULT_COLLECTION_NAME.to_string()")]
@@ -50,7 +51,7 @@ impl Qdrant {
         QdrantBuilder::default()
     }
 
-    /// Tries to create a `QdrantBuilder` from a given URL. Will use the api key in QDRANT_API_KEY if present.
+    /// Tries to create a `QdrantBuilder` from a given URL. Will use the api key in `QDRANT_API_KEY` if present.
     ///
     /// Returns
     ///
@@ -61,6 +62,10 @@ impl Qdrant {
     /// # Returns
     ///
     /// A `Result` containing the `QdrantBuilder` if successful, or an error otherwise.
+    ///
+    /// # Errors
+    ///
+    /// Errors if client fails build
     pub fn try_from_url(url: impl AsRef<str>) -> Result<QdrantBuilder> {
         Ok(QdrantBuilder::default().client(
             qdrant_client::Qdrant::from_url(url.as_ref())
@@ -77,6 +82,10 @@ impl Qdrant {
     /// # Returns
     ///
     /// A `Result` indicating success or failure.
+    ///
+    /// # Errors
+    ///
+    /// Errors if client fails build
     pub async fn create_index_if_not_exists(&self) -> Result<()> {
         tracing::info!("Checking if collection {} exists", self.collection_name);
         if self.client.collection_exists(&self.collection_name).await? {
@@ -96,6 +105,7 @@ impl Qdrant {
 }
 
 impl QdrantBuilder {
+    #[allow(clippy::unused_self)]
     fn default_client(&self) -> Result<Arc<qdrant_client::Qdrant>> {
         let client = qdrant_client::Qdrant::from_url(
             &std::env::var("QDRANT_URL").unwrap_or(DEFAULT_QDRANT_URL.to_string()),
@@ -108,6 +118,7 @@ impl QdrantBuilder {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl std::fmt::Debug for Qdrant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Qdrant")
