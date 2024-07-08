@@ -1,11 +1,8 @@
 //! Generic embedding transformer
-use std::{
-    collections::{HashMap, VecDeque},
-    sync::Arc,
-};
+use std::{collections::VecDeque, sync::Arc};
 
 use crate::{
-    indexing::{EmbeddedField, IndexingStream, Node},
+    indexing::{IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
 use anyhow::bail;
@@ -92,18 +89,23 @@ impl BatchableTransformer for Embed {
             Err(err) => return IndexingStream::iter(Err(err)),
         };
 
-        IndexingStream::iter(nodes.into_iter().map(move |mut node| {
+        // Iterator of nodes with embeddings vectors map.
+        let nodes_iter = nodes.into_iter().map(move |mut node| {
             let Some(embedding_keys) = embeddings_keys_groups.pop_front() else {
                 bail!("Missing embedding data");
             };
-            let remaining_embeddings = embeddings.split_off(embedding_keys.len());
-            let embedding_values = embeddings.clone();
-            embeddings = remaining_embeddings;
-            let vectors: HashMap<EmbeddedField, Vec<f32>> =
-                embedding_keys.into_iter().zip(embedding_values).collect();
-            node.vectors = Some(vectors);
+            node.vectors = embedding_keys
+                .into_iter()
+                .map(|embedded_field| {
+                    embeddings
+                        .pop_front()
+                        .map(|embedding| (embedded_field, embedding))
+                })
+                .collect();
             Ok(node)
-        }))
+        });
+
+        IndexingStream::iter(nodes_iter)
     }
 
     fn concurrency(&self) -> Option<usize> {
