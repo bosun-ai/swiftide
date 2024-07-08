@@ -6,7 +6,7 @@
 use anyhow::{bail, Result};
 use std::collections::HashMap;
 
-use crate::ingestion::{EmbeddableType, Node};
+use crate::ingestion::{EmbeddedField, Node};
 use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
@@ -59,7 +59,7 @@ impl TryInto<qdrant::PointStruct> for Node {
     }
 }
 
-fn try_create_vectors(vectors: HashMap<EmbeddableType, Vec<f32>>) -> Result<qdrant::Vectors> {
+fn try_create_vectors(vectors: HashMap<EmbeddedField, Vec<f32>>) -> Result<qdrant::Vectors> {
     if vectors.is_empty() {
         bail!("Node with empty vectors")
     } else if vectors.len() == 1 {
@@ -82,11 +82,11 @@ mod tests {
     };
     use test_case::test_case;
 
-    use crate::ingestion::{EmbeddableType, Node};
+    use crate::ingestion::{EmbeddedField, Node};
 
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
-            vectors: Some(HashMap::from([(EmbeddableType::Chunk, vec![1.0])])),
+            vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
         },
@@ -101,8 +101,8 @@ mod tests {
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([
-                (EmbeddableType::Chunk, vec![1.0]),
-                (EmbeddableType::Metadata("m1".into()), vec![2.0])
+                (EmbeddedField::Chunk, vec![1.0]),
+                (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::PerField
@@ -126,8 +126,8 @@ mod tests {
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([
                 // missing chunk and non existing Metadata vector
-                (EmbeddableType::Metadata("m2".into()), vec![1.0]),
-                (EmbeddableType::Metadata("m3".into()), vec![2.0])
+                (EmbeddedField::Metadata("m2".into()), vec![1.0]),
+                (EmbeddedField::Metadata("m3".into()), vec![2.0])
             ])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata

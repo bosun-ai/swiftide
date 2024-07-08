@@ -2,7 +2,7 @@
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
-use indexing::EmbeddableType;
+use indexing::EmbeddedField;
 use integrations::openai::OpenAI;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::{SearchPointsBuilder, Value};
@@ -167,8 +167,8 @@ async fn test_named_vectors() {
                 .unwrap()
                 .vector_size(1536)
                 .collection_name("named-vectors-test".to_string())
-                .with_vector(EmbeddableType::Chunk)
-                .with_vector(EmbeddableType::Metadata(metadata_qa_code::NAME.into()))
+                .with_vector(EmbeddedField::Chunk)
+                .with_vector(EmbeddedField::Metadata(metadata_qa_code::NAME.into()))
                 .build()
                 .unwrap(),
         )
@@ -182,7 +182,7 @@ async fn test_named_vectors() {
         .unwrap();
 
     let search_request = SearchPointsBuilder::new("named-vectors-test", vec![0_f32; 1536], 10)
-        .vector_name(EmbeddableType::Metadata(metadata_qa_code::NAME.into()).to_string())
+        .vector_name(EmbeddedField::Metadata(metadata_qa_code::NAME.into()).to_string())
         .with_payload(true)
         .with_vectors(true);
 
@@ -221,9 +221,9 @@ async fn test_named_vectors() {
     let vectors = named_vectors.vectors;
 
     assert_eq!(vectors.len(), 2);
-    assert!(vectors.contains_key(&EmbeddableType::Chunk.to_string()));
+    assert!(vectors.contains_key(&EmbeddedField::Chunk.to_string()));
     assert!(
-        vectors.contains_key(&EmbeddableType::Metadata(metadata_qa_code::NAME.into()).to_string())
+        vectors.contains_key(&EmbeddedField::Metadata(metadata_qa_code::NAME.into()).to_string())
     );
 }
 

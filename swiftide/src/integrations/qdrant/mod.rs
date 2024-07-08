@@ -12,7 +12,7 @@ use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant;
 
-use crate::ingestion::EmbeddableType;
+use crate::ingestion::EmbeddedField;
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -50,7 +50,7 @@ pub struct Qdrant {
     #[builder(default)]
     batch_size: Option<usize>,
     #[builder(private, default = "Self::default_vectors()")]
-    vectors: HashMap<EmbeddableType, VectorConfig>,
+    vectors: HashMap<EmbeddedField, VectorConfig>,
 }
 
 impl Qdrant {
@@ -156,7 +156,7 @@ impl QdrantBuilder {
 
     /// Adds new [VectorConfig]
     ///
-    /// When not configured Pipeline by default configures vector only for [EmbeddableType::Combined]
+    /// When not configured Pipeline by default configures vector only for [EmbeddedField::Combined]
     /// Default config is enough when [crate::indexing::Pipeline::with_embed_mode] is not set
     /// or when the value is set to [crate::indexing::EmbedMode::SingleWithMetadata].
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
@@ -170,7 +170,7 @@ impl QdrantBuilder {
         self
     }
 
-    fn default_vectors() -> HashMap<EmbeddableType, VectorConfig> {
+    fn default_vectors() -> HashMap<EmbeddedField, VectorConfig> {
         HashMap::from([(Default::default(), Default::default())])
     }
 }
@@ -193,7 +193,7 @@ impl std::fmt::Debug for Qdrant {
 pub struct VectorConfig {
     /// A type of the embeddable of the stored vector.
     #[builder(default)]
-    pub(super) embeddable_type: EmbeddableType,
+    pub(super) embeddable_type: EmbeddedField,
     /// A size of the vector to be stored in the collection.
     ///
     /// Overrides default set in [QdrantBuilder::vector_size]
@@ -212,8 +212,8 @@ impl VectorConfig {
     }
 }
 
-impl From<EmbeddableType> for VectorConfig {
-    fn from(value: EmbeddableType) -> Self {
+impl From<EmbeddedField> for VectorConfig {
+    fn from(value: EmbeddedField) -> Self {
         Self {
             embeddable_type: value,
             ..Default::default()

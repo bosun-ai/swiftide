@@ -17,7 +17,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    indexing::{self, EmbedMode, EmbeddableType},
+    indexing::{self, EmbedMode, EmbeddedField},
     integrations::{
         self,
         qdrant::{Distance, Qdrant, VectorConfig},
@@ -54,16 +54,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .batch_size(50)
                 .vector_size(1536)
                 .collection_name("swiftide-multi-vectors")
-                .with_vector(EmbeddableType::Chunk)
-                .with_vector(EmbeddableType::Metadata(metadata_qa_text::NAME.into()))
-                .with_vector(EmbeddableType::Metadata(metadata_summary::NAME.into()))
+                .with_vector(EmbeddedField::Chunk)
+                .with_vector(EmbeddedField::Metadata(metadata_qa_text::NAME.into()))
+                .with_vector(EmbeddedField::Metadata(metadata_summary::NAME.into()))
                 .with_vector(
                     VectorConfig::builder()
-                        .embeddable_type(EmbeddableType::Metadata(metadata_title::NAME.into()))
+                        .embeddable_type(EmbeddedField::Metadata(metadata_title::NAME.into()))
                         .distance(Distance::Manhattan)
                         .build()?,
                 )
-                .with_vector(EmbeddableType::Metadata(metadata_keywords::NAME.into()))
+                .with_vector(EmbeddedField::Metadata(metadata_keywords::NAME.into()))
                 .build()?,
         )
         .run()

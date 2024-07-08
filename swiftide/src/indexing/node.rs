@@ -41,7 +41,7 @@ pub struct Node {
     /// Data chunk contained in the node.
     pub chunk: String,
     /// Optional vector representation of embedded data.
-    pub vectors: Option<HashMap<EmbeddableType, Vec<f32>>>,
+    pub vectors: Option<HashMap<EmbeddedField, Vec<f32>>>,
     /// Metadata associated with the node.
     pub metadata: BTreeMap<String, String>,
     /// Mode of embedding data Chunk and Metadata
@@ -89,25 +89,25 @@ impl Node {
     ///
     /// # Returns
     ///
-    /// Embeddable data mapped to their `EmbeddableType`.
-    pub fn as_embeddables(&self) -> Vec<(EmbeddableType, String)> {
+    /// Embeddable data mapped to their `EmbeddedField`.
+    pub fn as_embeddables(&self) -> Vec<(EmbeddedField, String)> {
         let mut embeddables = Vec::new();
 
         if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
-            embeddables.push((EmbeddableType::Combined, self.combine_chunk_with_metadata()));
+            embeddables.push((EmbeddedField::Combined, self.combine_chunk_with_metadata()));
         }
 
         if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
-            embeddables.push((EmbeddableType::Chunk, self.chunk.clone()));
+            embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
             for (name, value) in self.metadata.iter() {
-                embeddables.push((EmbeddableType::Metadata(name.clone()), value.clone()));
+                embeddables.push((EmbeddedField::Metadata(name.clone()), value.clone()));
             }
         }
 
         embeddables
     }
 
-    /// Converts the node into an [self::EmbeddableType::Combined] type of embeddable.
+    /// Converts the node into an [self::EmbeddedField::Combined] type of embeddable.
     ///
     /// This embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
     /// followed by the data chunk.
@@ -167,7 +167,7 @@ pub enum EmbedMode {
 
 /// Type of Embeddable stored in model.
 #[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash, strum_macros::Display)]
-pub enum EmbeddableType {
+pub enum EmbeddedField {
     #[default]
     /// Embeddable created from Chunk of data combined with Metadata.
     Combined,

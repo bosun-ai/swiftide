@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    indexing::{EmbeddableType, IndexingStream, Node},
+    indexing::{EmbeddedField, IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
 use anyhow::bail;
@@ -70,7 +70,7 @@ impl BatchableTransformer for Embed {
     async fn batch_transform(&self, mut nodes: Vec<Node>) -> IndexingStream {
         // TODO: We should drop chunks that go over the token limit of the EmbedModel
 
-        // EmbeddableTypes grouped by node stored in order of processed nodes.
+        // EmbeddedFields grouped by node stored in order of processed nodes.
         let mut embeddings_keys_groups = VecDeque::with_capacity(nodes.len());
         // Embeddable data of every node stored in order of processed nodes.
         let embeddables_data = nodes
@@ -99,7 +99,7 @@ impl BatchableTransformer for Embed {
             let remaining_embeddings = embeddings.split_off(embedding_keys.len());
             let embedding_values = embeddings.clone();
             embeddings = remaining_embeddings;
-            let vectors: HashMap<EmbeddableType, Vec<f32>> =
+            let vectors: HashMap<EmbeddedField, Vec<f32>> =
                 embedding_keys.into_iter().zip(embedding_values).collect();
             node.vectors = Some(vectors);
             Ok(node)
@@ -113,7 +113,7 @@ impl BatchableTransformer for Embed {
 
 #[cfg(test)]
 mod tests {
-    use crate::ingestion::{EmbedMode, EmbeddableType, Node};
+    use crate::ingestion::{EmbedMode, EmbeddedField, Node};
     use crate::{BatchableTransformer, MockEmbeddingModel};
 
     use super::Embed;
@@ -130,7 +130,7 @@ mod tests {
         pub chunk: &'a str,
         pub metadata: HashMap<&'a str, &'a str>,
         pub expected_embedables: Vec<&'a str>,
-        pub expected_vectors: Vec<(EmbeddableType, Vec<f32>)>,
+        pub expected_vectors: Vec<(EmbeddedField, Vec<f32>)>,
     }
 
     #[test_case(vec![
@@ -139,14 +139,14 @@ mod tests {
             chunk: "chunk_1",
             metadata: HashMap::from([("meta_1", "prompt_1")]),
             expected_embedables: vec!["meta_1: prompt_1\nchunk_1"],
-            expected_vectors: vec![(EmbeddableType::Combined, vec![1f32])]
+            expected_vectors: vec![(EmbeddedField::Combined, vec![1f32])]
         },
         TestData {
             embed_mode: EmbedMode::SingleWithMetadata,
             chunk: "chunk_2",
             metadata: HashMap::from([("meta_2", "prompt_2")]),
             expected_embedables: vec!["meta_2: prompt_2\nchunk_2"],
-            expected_vectors: vec![(EmbeddableType::Combined, vec![2f32])]
+            expected_vectors: vec![(EmbeddedField::Combined, vec![2f32])]
         }
     ]; "Multiple nodes EmbedMode::SingleWithMetadata with metadata.")]
     #[test_case(vec![
@@ -156,8 +156,8 @@ mod tests {
             metadata: HashMap::from([("meta_1", "prompt 1")]),
             expected_embedables: vec!["chunk_1", "prompt 1"],
             expected_vectors: vec![
-                (EmbeddableType::Chunk, vec![10f32]),
-                (EmbeddableType::Metadata("meta_1".into()), vec![11f32])
+                (EmbeddedField::Chunk, vec![10f32]),
+                (EmbeddedField::Metadata("meta_1".into()), vec![11f32])
             ]
         },
         TestData {
@@ -166,8 +166,8 @@ mod tests {
             metadata: HashMap::from([("meta_2", "prompt 2")]),
             expected_embedables: vec!["chunk_2", "prompt 2"],
             expected_vectors: vec![
-                (EmbeddableType::Chunk, vec![20f32]),
-                (EmbeddableType::Metadata("meta_2".into()), vec![21f32])
+                (EmbeddedField::Chunk, vec![20f32]),
+                (EmbeddedField::Metadata("meta_2".into()), vec![21f32])
             ]
         }
     ]; "Multiple nodes EmbedMode::PerField with metadata.")]
@@ -178,9 +178,9 @@ mod tests {
             metadata: HashMap::from([("meta_1", "prompt 1")]),
             expected_embedables: vec!["meta_1: prompt 1\nchunk_1", "chunk_1", "prompt 1"],
             expected_vectors: vec![
-                (EmbeddableType::Combined, vec![10f32]),
-                (EmbeddableType::Chunk, vec![11f32]),
-                (EmbeddableType::Metadata("meta_1".into()), vec![12f32])
+                (EmbeddedField::Combined, vec![10f32]),
+                (EmbeddedField::Chunk, vec![11f32]),
+                (EmbeddedField::Metadata("meta_1".into()), vec![12f32])
             ]
         },
         TestData {
@@ -189,9 +189,9 @@ mod tests {
             metadata: HashMap::from([("meta_2", "prompt 2")]),
             expected_embedables: vec!["meta_2: prompt 2\nchunk_2", "chunk_2", "prompt 2"],
             expected_vectors: vec![
-                (EmbeddableType::Combined, vec![20f32]),
-                (EmbeddableType::Chunk, vec![21f32]),
-                (EmbeddableType::Metadata("meta_2".into()), vec![22f32])
+                (EmbeddedField::Combined, vec![20f32]),
+                (EmbeddedField::Chunk, vec![21f32]),
+                (EmbeddedField::Metadata("meta_2".into()), vec![22f32])
             ]
         }
     ]; "Multiple nodes EmbedMode::Both with metadata.")]
@@ -202,11 +202,11 @@ mod tests {
             metadata: HashMap::from([("meta_10", "prompt 10"), ("meta_11", "prompt 11"), ("meta_12", "prompt 12")]),
             expected_embedables: vec!["meta_10: prompt 10\nmeta_11: prompt 11\nmeta_12: prompt 12\nchunk_1", "chunk_1", "prompt 10", "prompt 11", "prompt 12"],
             expected_vectors: vec![
-                (EmbeddableType::Combined, vec![10f32]),
-                (EmbeddableType::Chunk, vec![11f32]),
-                (EmbeddableType::Metadata("meta_10".into()), vec![12f32]),
-                (EmbeddableType::Metadata("meta_11".into()), vec![13f32]),
-                (EmbeddableType::Metadata("meta_12".into()), vec![14f32]),
+                (EmbeddedField::Combined, vec![10f32]),
+                (EmbeddedField::Chunk, vec![11f32]),
+                (EmbeddedField::Metadata("meta_10".into()), vec![12f32]),
+                (EmbeddedField::Metadata("meta_11".into()), vec![13f32]),
+                (EmbeddedField::Metadata("meta_12".into()), vec![14f32]),
             ]
         },
         TestData {
@@ -215,11 +215,11 @@ mod tests {
             metadata: HashMap::from([("meta_20", "prompt 20"), ("meta_21", "prompt 21"), ("meta_22", "prompt 22")]),
             expected_embedables: vec!["meta_20: prompt 20\nmeta_21: prompt 21\nmeta_22: prompt 22\nchunk_2", "chunk_2", "prompt 20", "prompt 21", "prompt 22"],
             expected_vectors: vec![
-                (EmbeddableType::Combined, vec![20f32]),
-                (EmbeddableType::Chunk, vec![21f32]),
-                (EmbeddableType::Metadata("meta_20".into()), vec![22f32]),
-                (EmbeddableType::Metadata("meta_21".into()), vec![23f32]),
-                (EmbeddableType::Metadata("meta_22".into()), vec![24f32])
+                (EmbeddedField::Combined, vec![20f32]),
+                (EmbeddedField::Chunk, vec![21f32]),
+                (EmbeddedField::Metadata("meta_20".into()), vec![22f32]),
+                (EmbeddedField::Metadata("meta_21".into()), vec![23f32]),
+                (EmbeddedField::Metadata("meta_22".into()), vec![24f32])
             ]
         }
     ]; "Multiple nodes EmbedMode::Both with multiple metadata.")]
