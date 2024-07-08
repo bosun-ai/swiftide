@@ -63,7 +63,9 @@ fn try_create_vectors(vectors: HashMap<EmbeddedField, Vec<f32>>) -> Result<qdran
     if vectors.is_empty() {
         bail!("Node with empty vectors")
     } else if vectors.len() == 1 {
-        let vector = vectors.into_values().next().expect("Node has vector entry");
+        let Some(vector) = vectors.into_values().next() else {
+            bail!("Node has no vector entry")
+        };
         return Ok(vector.into());
     }
     let vectors = vectors
