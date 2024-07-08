@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720385785607,
+  "lastUpdate": 1720462940495,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -755,6 +755,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2b1352322e574b62cb30268b35c6b510122f0584",
+          "message": "fix(deps): update rust crate fastembed to v3.7.1 (#135)",
+          "timestamp": "2024-07-08T20:18:19+02:00",
+          "tree_id": "228e233b994117fcd3ac94bba7810f52f049c68c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2b1352322e574b62cb30268b35c6b510122f0584"
+        },
+        "date": 1720462940142,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
