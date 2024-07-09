@@ -80,6 +80,9 @@ Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for auton
 
 We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue.
 
+> [!CAUTION]
+> Swiftide is under heavy development and can have breaking changes while we work towards 1.0. Documentation here might fall short of all features, and despite our efforts be slightly outdated. Expect bugs. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you in an issue.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Example
