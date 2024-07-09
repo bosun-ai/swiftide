@@ -18,12 +18,13 @@
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt::Debug,
     hash::{Hash, Hasher},
     path::PathBuf,
 };
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 /// Represents a unit of data in the indexing process.
@@ -39,10 +40,12 @@ pub struct Node {
     pub path: PathBuf,
     /// Data chunk contained in the node.
     pub chunk: String,
-    /// Optional vector representation of the data chunk.
-    pub vector: Option<Vec<f32>>,
+    /// Optional vector representation of embedded data.
+    pub vectors: Option<HashMap<EmbeddedField, Vec<f32>>>,
     /// Metadata associated with the node.
-    pub metadata: HashMap<String, String>,
+    pub metadata: BTreeMap<String, String>,
+    /// Mode of embedding data Chunk and Metadata
+    pub embed_mode: EmbedMode,
 }
 
 impl Debug for Node {
@@ -57,9 +60,16 @@ impl Debug for Node {
             .field("chunk", &self.chunk)
             .field("metadata", &self.metadata)
             .field(
-                "vector",
-                &self.vector.as_ref().map(|v| format!("[{}]", v.len())),
+                "vectors",
+                &self
+                    .vectors
+                    .iter()
+                    .map(HashMap::iter)
+                    .flatten()
+                    .map(|(embed_type, vec)| format!("'{embed_type}': {}", vec.len()))
+                    .join(","),
             )
+            .field("embed_mode", &self.embed_mode)
             .finish()
     }
 }
@@ -75,15 +85,37 @@ impl Node {
         }
     }
 
-    /// Converts the node into an embeddable string format.
+    /// Creates embeddable data depending on chosen `EmbedMode`.
     ///
-    /// The embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
+    /// # Returns
+    ///
+    /// Embeddable data mapped to their `EmbeddedField`.
+    pub fn as_embeddables(&self) -> Vec<(EmbeddedField, String)> {
+        let mut embeddables = Vec::new();
+
+        if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
+            embeddables.push((EmbeddedField::Combined, self.combine_chunk_with_metadata()));
+        }
+
+        if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
+            embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
+            for (name, value) in self.metadata.iter() {
+                embeddables.push((EmbeddedField::Metadata(name.clone()), value.clone()));
+            }
+        }
+
+        embeddables
+    }
+
+    /// Converts the node into an [self::EmbeddedField::Combined] type of embeddable.
+    ///
+    /// This embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
     /// followed by the data chunk.
     ///
     /// # Returns
     ///
     /// A string representing the embeddable format of the node.
-    pub fn as_embeddable(&self) -> String {
+    fn combine_chunk_with_metadata(&self) -> String {
         // Metadata formatted by newlines joined with the chunk
         let metadata = self
             .metadata
@@ -117,4 +149,32 @@ impl Hash for Node {
         self.path.hash(state);
         self.chunk.hash(state);
     }
+}
+
+/// Embed mode of the pipeline.
+///
+/// See also [super::pipeline::Pipeline::with_embed_mode].
+#[derive(Copy, Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
+pub enum EmbedMode {
+    #[default]
+    /// Embedding Chunk of data combined with Metadata.
+    SingleWithMetadata,
+    /// Embedding Chunk of data and every Metadata separately.
+    PerField,
+    /// Embedding Chunk of data and every Metadata separately and Chunk of data combined with Metadata.
+    Both,
+}
+
+/// Type of Embeddable stored in model.
+#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash, strum_macros::Display)]
+pub enum EmbeddedField {
+    #[default]
+    /// Embeddable created from Chunk of data combined with Metadata.
+    Combined,
+    /// Embeddable created from Chunk of data only.
+    Chunk,
+    /// Embeddable created from Metadata.
+    /// String stores Metadata name.
+    #[strum(to_string = "Metadata: {0}")]
+    Metadata(String),
 }

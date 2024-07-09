@@ -7,6 +7,8 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
 
+pub const NAME: &str = "Title";
+
 /// This module defines the `MetadataTitle` struct and its associated methods,
 /// which are used for generating metadata in the form of a title
 /// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
@@ -120,7 +122,7 @@ impl Transformer for MetadataTitle {
 
         let response = self.client.prompt(&prompt).await?;
 
-        node.metadata.insert("Title".to_string(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }

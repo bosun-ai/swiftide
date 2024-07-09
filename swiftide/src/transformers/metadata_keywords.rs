@@ -7,6 +7,8 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
 
+pub const NAME: &str = "Keywords";
+
 /// This module defines the `MetadataKeywords` struct and its associated methods,
 /// which are used for generating metadata in the form of keywords
 /// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
@@ -122,7 +124,7 @@ impl Transformer for MetadataKeywords {
 
         let response = self.client.prompt(&prompt).await?;
 
-        node.metadata.insert("Keywords".to_string(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }

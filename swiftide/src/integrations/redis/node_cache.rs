@@ -77,7 +77,7 @@ impl NodeCache for Redis {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+
     use testcontainers::runners::AsyncRunner;
 
     /// Tests the `RedisNodeCache` implementation.
@@ -102,8 +102,7 @@ mod tests {
             id: Some(1),
             path: "test".into(),
             chunk: "chunk".into(),
-            vector: None,
-            metadata: HashMap::new(),
+            ..Default::default()
         };
 
         let before_cache = cache.get(&node).await;

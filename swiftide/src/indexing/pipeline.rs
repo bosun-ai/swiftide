@@ -6,7 +6,7 @@ use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
 
-use super::{IndexingStream, Node};
+use super::{EmbedMode, IndexingStream, Node};
 
 /// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
@@ -81,6 +81,29 @@ impl Pipeline {
     #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = concurrency;
+        self
+    }
+
+    /// Sets the embed mode for the pipeline.
+    ///
+    /// See also [super::node::EmbedMode].
+    ///
+    /// # Arguments
+    ///
+    /// * `embed_mode` - The desired embed mode.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated embed mode.
+    pub fn with_embed_mode(mut self, embed_mode: EmbedMode) -> Self {
+        self.stream = self
+            .stream
+            .map_ok(move |mut node| {
+                node.embed_mode = embed_mode;
+                node
+            })
+            .boxed()
+            .into();
         self
     }
 

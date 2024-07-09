@@ -94,6 +94,7 @@ pub trait NodeCache: Send + Sync + Debug {
     async fn set(&self, node: &Node);
 }
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.

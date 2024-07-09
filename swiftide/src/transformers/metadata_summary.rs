@@ -7,6 +7,8 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use indoc::indoc;
 
+pub const NAME: &str = "Summary";
+
 /// This module defines the `MetadataSummary` struct and its associated methods,
 /// which are used for generating metadata in the form of a summary
 /// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
@@ -121,7 +123,7 @@ impl Transformer for MetadataSummary {
 
         let response = self.client.prompt(&prompt).await?;
 
-        node.metadata.insert("Summary".to_string(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }
