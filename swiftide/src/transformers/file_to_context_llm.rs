@@ -231,18 +231,24 @@ mod test {
 
         client
             .expect_prompt()
-            .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
+            .withf(|s| s.contains("example.py") && s.contains("1234567890"))
+            .returning(|_| Ok("INITIAL_SUMMARY".to_string()));
+
+        client
+            .expect_prompt()
+            .withf(|s| s.contains("INITIAL_SUMMARY") && s.contains("ABCDEF"))
+            .returning(|_| Ok("SUBSEQUENT_SUMMARY".to_string()));
 
         let transformer = FileToContextLLM::builder()
             .client(client)
             .chunk_size(10usize)
             .build()
             .unwrap();
-        let mut node = IngestionNode::new("12345678901234567890");
+        let mut node = IngestionNode::new("1234567890ABCDEFGHIJ");
         node.path = PathBuf::from("example.py");
 
         let result = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(result.chunk, "Q1: Hello\nA1: World");
+        assert_eq!(result.chunk, "INITIAL_SUMMARYSUBSEQUENT_SUMMARY");
     }
 }
