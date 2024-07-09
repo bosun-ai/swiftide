@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720462940495,
+  "lastUpdate": 1720534371619,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -797,6 +797,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "4924911+pwalski@users.noreply.github.com",
+            "name": "pwalski",
+            "username": "pwalski"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "699cfe44fb0e3baddba695ad09836caec7cb30a6",
+          "message": "feat: Embed modes and named vectors (#123)\n\nAdded named vector support to qdrant. A pipeline can now have its embed\r\nmode configured, either per field, chunk and metadata combined (default)\r\nor both. Vectors need to be configured on the qdrant client side.\r\n\r\nSee `examples/store_multiple_vectors.rs` for an example.\r\n\r\nShoutout to @pwalski for the contribution. Closes #62.\r\n\r\n---------\r\n\r\nCo-authored-by: Przemyslaw Walski <pwalski@users.noreply.github.com>",
+          "timestamp": "2024-07-09T16:09:06+02:00",
+          "tree_id": "2c78b94b7edaf2ff7acce7aeae88324f8c023a1e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/699cfe44fb0e3baddba695ad09836caec7cb30a6"
+        },
+        "date": 1720534371238,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 12",
             "unit": "ns/iter"
           }
         ]
