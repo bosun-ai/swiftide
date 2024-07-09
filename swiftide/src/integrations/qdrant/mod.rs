@@ -165,7 +165,12 @@ impl QdrantBuilder {
         }
         let vector = vector.into();
         if let Some(vectors) = self.vectors.as_mut() {
-            vectors.insert(vector.embeddable_type.clone(), vector);
+            if let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector) {
+                tracing::warn!(
+                    "Overriding named vector config: {}",
+                    overridden_vector.embedded_field
+                );
+            }
         }
         self
     }
@@ -193,7 +198,7 @@ impl std::fmt::Debug for Qdrant {
 pub struct VectorConfig {
     /// A type of the embeddable of the stored vector.
     #[builder(default)]
-    pub(super) embeddable_type: EmbeddedField,
+    pub(super) embedded_field: EmbeddedField,
     /// A size of the vector to be stored in the collection.
     ///
     /// Overrides default set in [QdrantBuilder::vector_size]
@@ -215,7 +220,7 @@ impl VectorConfig {
 impl From<EmbeddedField> for VectorConfig {
     fn from(value: EmbeddedField) -> Self {
         Self {
-            embeddable_type: value,
+            embedded_field: value,
             ..Default::default()
         }
     }

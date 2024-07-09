@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_vector(EmbeddedField::Metadata(metadata_summary::NAME.into()))
                 .with_vector(
                     VectorConfig::builder()
-                        .embeddable_type(EmbeddedField::Metadata(metadata_title::NAME.into()))
+                        .embedded_field(EmbeddedField::Metadata(metadata_title::NAME.into()))
                         .distance(Distance::Manhattan)
                         .build()?,
                 )
