@@ -88,12 +88,9 @@ impl CodeSummarizer {
     fn is_unneeded_node(&self, node: Node) -> bool {
         // We can use self.language to determine if a node is needed
         match node.kind() {
-            "line_comment" => true,
-            "comment" => true,
-            _ => {
-                println!("Node kind: {}", node.kind());
-                false
-            }
+            "line_comment" => false,
+            "block" => true,
+            _ => false,
         }
     }
 
@@ -157,6 +154,9 @@ fn main(a: usize, b: usize) -> usize {
 }"#;
         let summarizer = CodeSummarizer::new(SupportedLanguages::Rust);
         let summary = summarizer.summarize(code).unwrap();
-        assert_eq!(summary, "fn main() {\n    println!(\"Hello, world!\");\n}");
+        assert_eq!(
+            summary,
+            "// This is a comment\nfn main(a: usize, b: usize) -> usize "
+        );
     }
 }

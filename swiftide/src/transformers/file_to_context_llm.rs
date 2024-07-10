@@ -7,6 +7,8 @@ use std::sync::Arc;
 
 use crate::{indexing::Node, SimplePrompt, Transformer};
 
+pub const NAME: &str = "Context (code)";
+
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FileToContextLLM {
@@ -61,7 +63,7 @@ impl FileToContextLLMBuilder {
 impl Transformer for FileToContextLLM {
     /// Uses an LLM to generate a summary of the file that fits into an LLM context.
     #[tracing::instrument(skip_all, name = "transformer.file_to_context_llm")]
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let file_name = node
             .path
             .file_name()
@@ -69,7 +71,7 @@ impl Transformer for FileToContextLLM {
             .to_str()
             .context("Invalid filename")?;
 
-        let whole_file = node.chunk;
+        let whole_file = &node.chunk;
         let mut summary = String::new();
         let mut start = 0;
         let mut end = 0;
@@ -108,10 +110,9 @@ impl Transformer for FileToContextLLM {
             start = end;
         }
 
-        Ok(Node {
-            chunk: summary,
-            ..node
-        })
+        node.metadata.insert(NAME.into(), summary);
+
+        Ok(node)
     }
 
     fn concurrency(&self) -> Option<usize> {
@@ -249,6 +250,9 @@ mod test {
 
         let result = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(result.chunk, "INITIAL_SUMMARYSUBSEQUENT_SUMMARY");
+        assert_eq!(
+            result.metadata.get(NAME).unwrap(),
+            "INITIAL_SUMMARYSUBSEQUENT_SUMMARY"
+        );
     }
 }
