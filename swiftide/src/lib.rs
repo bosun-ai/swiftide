@@ -17,6 +17,7 @@ pub mod indexing;
 pub mod integrations;
 pub mod loaders;
 pub mod persist;
+pub mod prompt;
 pub mod traits;
 pub mod transformers;
 pub mod type_aliases;
