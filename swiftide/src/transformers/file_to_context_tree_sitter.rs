@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 
 use crate::{
-    ingestion::IngestionNode,
+    indexing::Node,
     integrations::treesitter::{CodeSummarizer, SupportedLanguages},
     Transformer,
 };
@@ -47,22 +47,22 @@ impl FileToContextTreeSitter {
 
 #[async_trait]
 impl Transformer for FileToContextTreeSitter {
-    /// Transforms an `IngestionNode` by splitting its code chunk into smaller pieces.
+    /// Transforms an `Node` by splitting its code chunk into smaller pieces.
     ///
     /// # Parameters
-    /// - `node`: The `IngestionNode` containing the code chunk to be split.
+    /// - `node`: The `Node` containing the code chunk to be split.
     ///
     /// # Returns
-    /// - `IngestionStream`: A stream of `IngestionNode` instances, each containing a smaller chunk of code.
+    /// - `IngestionStream`: A stream of `Node` instances, each containing a smaller chunk of code.
     ///
     /// # Errors
     /// - If the code splitting fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
-    async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
         let summary_result = self.summarizer.summarize(&node.chunk);
 
         if let Ok(summary) = summary_result {
-            Ok(IngestionNode {
+            Ok(Node {
                 chunk: summary,
                 ..node
             })

@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use indoc::indoc;
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, SimplePrompt, Transformer};
 
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
@@ -61,7 +61,7 @@ impl FileToContextLLMBuilder {
 impl Transformer for FileToContextLLM {
     /// Uses an LLM to generate a summary of the file that fits into an LLM context.
     #[tracing::instrument(skip_all, name = "transformer.file_to_context_llm")]
-    async fn transform_node(&self, node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
         let file_name = node
             .path
             .file_name()
@@ -108,7 +108,7 @@ impl Transformer for FileToContextLLM {
             start = end;
         }
 
-        Ok(IngestionNode {
+        Ok(Node {
             chunk: summary,
             ..node
         })
@@ -244,7 +244,7 @@ mod test {
             .chunk_size(10usize)
             .build()
             .unwrap();
-        let mut node = IngestionNode::new("1234567890ABCDEFGHIJ");
+        let mut node = Node::new("1234567890ABCDEFGHIJ");
         node.path = PathBuf::from("example.py");
 
         let result = transformer.transform_node(node).await.unwrap();
