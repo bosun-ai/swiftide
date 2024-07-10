@@ -2,16 +2,19 @@
 //! It includes methods for setting up the storage, storing a single node, and storing a batch of nodes.
 //! This integration allows the Swiftide project to use Qdrant as a storage backend.
 
+use std::collections::HashSet;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use qdrant_client::qdrant::UpsertPointsBuilder;
 
 use crate::{
     indexing::{IndexingStream, Node},
+    ingestion::EmbeddedField,
     traits::Persist,
 };
 
-use super::Qdrant;
+use super::{NodeWithVectors, Qdrant};
 
 #[async_trait]
 impl Persist for Qdrant {
@@ -54,7 +57,8 @@ impl Persist for Qdrant {
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
     async fn store(&self, node: crate::indexing::Node) -> Result<Node> {
-        let point = node.clone().try_into()?;
+        let node_with_vectors = NodeWithVectors::new(node.clone(), self.vector_fields());
+        let point = node_with_vectors.try_into()?;
 
         tracing::debug!(?node, ?point, "Storing node");
 
@@ -84,7 +88,8 @@ impl Persist for Qdrant {
     async fn batch_store(&self, nodes: Vec<crate::indexing::Node>) -> IndexingStream {
         let points = nodes
             .iter()
-            .map(|node| node.clone().try_into())
+            .map(|node| NodeWithVectors::new(node.clone(), self.vector_fields()))
+            .map(NodeWithVectors::try_into)
             .collect::<Result<Vec<_>>>();
 
         if points.is_err() {
@@ -108,5 +113,11 @@ impl Persist for Qdrant {
         } else {
             vec![Err(result.unwrap_err().into())].into()
         }
+    }
+}
+
+impl Qdrant {
+    fn vector_fields(&self) -> HashSet<EmbeddedField> {
+        self.vectors.keys().cloned().collect()
     }
 }
