@@ -79,8 +79,8 @@ impl CodeSummarizer {
         } else {
             let mut cursor = root_node.walk();
             let mut summary = String::with_capacity(code.len());
-            let last_end = 0;
-            self.summarize_node(&mut cursor, code, &mut summary, last_end);
+            let mut last_end = 0;
+            self.summarize_node(&mut cursor, code, &mut summary, &mut last_end);
             Ok(summary)
         }
     }
@@ -113,30 +113,34 @@ impl CodeSummarizer {
         cursor: &mut TreeCursor,
         source: &str,
         summary: &mut String,
-        mut last_end: usize,
+        last_end: &mut usize,
     ) {
         let node = cursor.node();
         // If the node is not needed in the summary, skip it and go to the next sibling
         if self.is_unneeded_node(node) {
-            last_end = node.end_byte();
+            summary.push_str(&source[*last_end..node.start_byte()]);
+            *last_end = node.end_byte();
             if cursor.goto_next_sibling() {
                 self.summarize_node(cursor, source, summary, last_end)
             }
             return;
         }
 
-        println!("not skipped {}", node.kind());
+        let mut next_cursor = cursor.clone();
 
         // If the node is a non-leaf, recursively summarize its children
-        if cursor.goto_first_child() {
-            self.summarize_node(cursor, source, summary, last_end)
+        if next_cursor.goto_first_child() {
+            self.summarize_node(&mut next_cursor, source, summary, last_end)
         // If the node is a leaf, add the text to the summary
         } else {
-            summary.push_str(&source[last_end..node.end_byte()]);
-            last_end = node.end_byte();
+            summary.push_str(&source[*last_end..node.end_byte()]);
+            *last_end = node.end_byte();
         }
+
         if cursor.goto_next_sibling() {
             self.summarize_node(cursor, source, summary, last_end)
+        } else {
+            // Done with this node
         }
     }
 }
