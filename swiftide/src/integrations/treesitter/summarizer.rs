@@ -27,7 +27,6 @@ impl CodeSummarizerBuilder {
     /// * `Result<Self>` - The builder instance with the language set, or an error if the language is not supported.
     pub fn try_language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
         self.language = Some(
-            // For some reason there's a trait conflict, wth
             language
                 .try_into()
                 .ok()
