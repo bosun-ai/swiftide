@@ -1,7 +1,7 @@
 //! Generate a summary and adds it as metadata
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -23,7 +23,7 @@ pub struct MetadataSummary {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
 }
@@ -48,7 +48,7 @@ impl MetadataSummary {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             concurrency: None,
         }
     }
@@ -65,7 +65,7 @@ impl MetadataSummary {
 /// # Returns
 ///
 /// A string containing the default prompt template.
-fn default_prompt() -> String {
+fn default_prompt() -> PromptTemplate {
     indoc! {r"
 
             # Task
@@ -85,11 +85,12 @@ fn default_prompt() -> String {
 
             # Text
             ```
-            {text}
+            {{node.chunk}}
             ```
 
         "}
-    .to_string()
+    .try_into()
+    .expect("Failed to build default prompt")
 }
 
 impl MetadataSummaryBuilder {
@@ -119,7 +120,7 @@ impl Transformer for MetadataSummary {
     /// a summary from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_summary")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let prompt = self.prompt.replace("{text}", &node.chunk);
+        let prompt = self.prompt_template.to_prompt().with_node(&node);
 
         let response = self.client.prompt(&prompt).await?;
 

@@ -1,7 +1,7 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -23,7 +23,7 @@ pub struct MetadataQAText {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
     #[builder(default)]
@@ -50,7 +50,7 @@ impl MetadataQAText {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             num_questions: 5,
             concurrency: None,
         }
@@ -68,7 +68,7 @@ impl MetadataQAText {
 /// # Returns
 ///
 /// A string containing the default prompt template.
-fn default_prompt() -> String {
+fn default_prompt() -> PromptTemplate {
     indoc! {r"
 
             # Task
@@ -100,7 +100,8 @@ fn default_prompt() -> String {
             ```
 
         "}
-    .to_string()
+    .try_into()
+    .expect("Failed to build default prompt")
 }
 
 impl MetadataQATextBuilder {
@@ -131,9 +132,10 @@ impl Transformer for MetadataQAText {
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
-            .prompt
-            .replace("{questions}", &self.num_questions.to_string())
-            .replace("{text}", &node.chunk);
+            .prompt_template
+            .to_prompt()
+            .with_node(&node)
+            .with_context_value("questions", self.num_questions);
 
         let response = self.client.prompt(&prompt).await?;
 

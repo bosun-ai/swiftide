@@ -1,7 +1,7 @@
 //! Extract keywords from a node and add them as metadata
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::Prompt, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -23,7 +23,7 @@ pub struct MetadataKeywords {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt: Prompt,
     #[builder(default)]
     concurrency: Option<usize>,
 }
@@ -65,7 +65,7 @@ impl MetadataKeywords {
 /// # Returns
 ///
 /// A string containing the default prompt template.
-fn default_prompt() -> String {
+fn default_prompt() -> Prompt {
     indoc! {r"
 
             # Task
@@ -86,11 +86,11 @@ fn default_prompt() -> String {
 
             # Text
             ```
-            {text}
+            {{ node.chunk }}
             ```
 
         "}
-    .to_string()
+    .into()
 }
 
 impl MetadataKeywordsBuilder {
@@ -120,9 +120,7 @@ impl Transformer for MetadataKeywords {
     /// a keywords from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_keywords")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let prompt = self.prompt.replace("{text}", &node.chunk);
-
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(&self.prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 

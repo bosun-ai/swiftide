@@ -1,4 +1,4 @@
-use crate::SimplePrompt;
+use crate::{prompt::Prompt, SimplePrompt};
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::primitives::Blob;
@@ -8,10 +8,10 @@ use super::AwsBedrock;
 #[async_trait]
 impl SimplePrompt for AwsBedrock {
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: &str) -> Result<String> {
+    async fn prompt(&self, prompt: &Prompt) -> Result<String> {
         let blob = self
             .model_family
-            .build_request_to_bytes(prompt, &self.model_config)
+            .build_request_to_bytes(prompt.render().await?, &self.model_config)
             .map(Blob::new)?;
 
         let response_bytes = self.client.prompt_u8(&self.model_id, blob).await?;
@@ -53,7 +53,7 @@ mod test {
             .build()
             .unwrap();
 
-        let response = bedrock.prompt("Hello").await.unwrap();
+        let response = bedrock.prompt(&"Hello".into()).await.unwrap();
 
         assert_eq!(response, "Hello, world!");
     }
@@ -84,7 +84,7 @@ mod test {
             .test_client(bedrock_mock)
             .build()
             .unwrap();
-        let response = bedrock.prompt("Hello").await.unwrap();
+        let response = bedrock.prompt(&"Hello".into()).await.unwrap();
         assert_eq!(response, "Hello, world!");
     }
 }

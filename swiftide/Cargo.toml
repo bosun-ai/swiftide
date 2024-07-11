@@ -30,6 +30,8 @@ strum_macros = "0.26.4"
 num_cpus = "1.16.0"
 pin-project-lite = "0.2"
 tera = { version = "1", default-features = false }
+lazy_static = { version = "1.5.0" }
+uuid = { version = "1.10", features = ["v4"] }
 
 # Integrations
 async-openai = { version = "0.23.2", optional = true }

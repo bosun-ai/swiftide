@@ -2,7 +2,7 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use indoc::indoc;
@@ -17,8 +17,8 @@ pub const NAME: &str = "Questions and Answers (code)";
 pub struct MetadataQACode {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
-    #[builder(default = "default_prompt()")]
-    prompt: String,
+    #[builder(default = "default_prompt().await")]
+    prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
     #[builder(default)]
@@ -45,7 +45,7 @@ impl MetadataQACode {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             num_questions: 5,
             concurrency: None,
         }
@@ -65,8 +65,8 @@ impl MetadataQACode {
 /// # Returns
 ///
 /// A string representing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r"
+async fn default_prompt() -> PromptTemplate {
+    PromptTemplate::try_from_str(indoc! {r"
 
             # Task
             Your task is to generate questions and answers for the given code. 
@@ -79,7 +79,7 @@ fn default_prompt() -> String {
             * ... and so on
 
             # Constraints 
-            * Generate only {questions} questions and answers.
+            * Generate only {{questions}} questions and answers.
             * Only respond in the example format
             * Only respond with questions and answers that can be derived from the code.
 
@@ -95,11 +95,12 @@ fn default_prompt() -> String {
 
             # Code
             ```
-            {code}
+            {{ node.chunk }}
             ```
 
-        "}
-    .to_string()
+        "})
+    .await
+    .expect("Failed to build default prompt")
 }
 
 impl MetadataQACodeBuilder {
@@ -130,9 +131,9 @@ impl Transformer for MetadataQACode {
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
-            .prompt
-            .replace("{questions}", &self.num_questions.to_string())
-            .replace("{code}", &node.chunk);
+            .prompt_template
+            .to_prompt()
+            .with_context_value("questions", self.num_questions);
 
         let response = self.client.prompt(&prompt).await?;
 

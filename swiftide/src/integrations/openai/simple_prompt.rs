@@ -1,7 +1,7 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `OpenAI` struct.
 //! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt processing
 //! and generating responses as part of the Swiftide system.
-use crate::SimplePrompt;
+use crate::{prompt::Prompt, SimplePrompt};
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
 
@@ -25,7 +25,7 @@ impl SimplePrompt for OpenAI {
     /// - Returns an error if the request to the OpenAI API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: &str) -> Result<String> {
+    async fn prompt(&self, prompt: &Prompt) -> Result<String> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
@@ -37,7 +37,7 @@ impl SimplePrompt for OpenAI {
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt)
+                .content(prompt.render().await?)
                 .build()?
                 .into()])
             .build()?;
