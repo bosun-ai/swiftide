@@ -101,9 +101,7 @@ impl CodeSummarizer {
             SupportedLanguages::Python => match node.kind() {
                 "line_comment" => false,
                 "block" => {
-                    // Check if the node is a function signature
-                    let parent = node.parent().unwrap();
-                    println!("Parent kind: {}", parent.kind());
+                    let parent = node.parent().expect("Python block node has no parent");
                     parent.kind() == "function_definition"
                 }
                 _ => false,
@@ -111,16 +109,12 @@ impl CodeSummarizer {
             SupportedLanguages::Ruby => match node.kind() {
                 "line_comment" => false,
                 "body_statement" => {
-                    // Check if the node is a function signature
-                    let parent = node.parent().unwrap();
-                    println!("Parent kind: {}", parent.kind());
+                    let parent = node
+                        .parent()
+                        .expect("Ruby body_statement node has no parent");
                     parent.kind() == "def"
                 }
-                _ => {
-                    println!("Node kind: {}", node.kind());
-                    // Default to false
-                    false
-                }
+                _ => false,
             },
             SupportedLanguages::Javascript => match node.kind() {
                 "line_comment" => false,
