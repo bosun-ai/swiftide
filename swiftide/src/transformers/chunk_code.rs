@@ -90,11 +90,18 @@ impl ChunkerTransformer for ChunkCode {
         let split_result = self.chunker.split(&node.chunk);
 
         if let Ok(split) = split_result {
+            let mut offset = 0;
+
             IndexingStream::iter(split.into_iter().map(move |chunk| {
-                Ok(Node {
+                let chunk_size = chunk.len();
+                let mut node = Node {
                     chunk,
                     ..node.clone()
-                })
+                };
+                node.metadata
+                    .insert("Chunk Offset".to_string(), offset.to_string());
+                offset += chunk_size;
+                Ok(node)
             }))
         } else {
             // Send the error downstream

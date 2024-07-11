@@ -60,11 +60,16 @@ impl FileLoader {
             .map(|entry| {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content = std::fs::read_to_string(&entry).unwrap();
-                Node {
+                let file_size = content.len();
+                let mut node = Node {
                     path: entry,
                     chunk: content,
                     ..Default::default()
-                }
+                };
+
+                node.metadata
+                    .insert("File Size".to_string(), file_size.to_string());
+                node
             })
             .collect()
     }

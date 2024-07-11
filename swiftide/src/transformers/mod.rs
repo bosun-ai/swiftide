@@ -10,6 +10,7 @@ pub mod chunk_code;
 pub mod file_to_context_tree_sitter;
 
 pub mod chunk_markdown;
+pub mod contextualize_code_chunk;
 pub mod embed;
 pub mod file_to_context_llm;
 pub mod metadata_keywords;
@@ -25,6 +26,7 @@ pub use chunk_code::ChunkCode;
 pub use file_to_context_tree_sitter::FileToContextTreeSitter;
 
 pub use chunk_markdown::ChunkMarkdown;
+pub use contextualize_code_chunk::ContextualizeCodeChunk;
 pub use embed::Embed;
 pub use file_to_context_llm::FileToContextLLM;
 pub use metadata_keywords::MetadataKeywords;
