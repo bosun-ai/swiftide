@@ -87,14 +87,50 @@ impl CodeSummarizer {
 
     fn is_unneeded_node(&self, node: Node) -> bool {
         // We can use self.language to determine if a node is needed
-        match node.kind() {
-            "line_comment" => false,
-            "block" => true,
-            _ => false,
+        match self.language {
+            SupportedLanguages::Rust => match node.kind() {
+                "line_comment" => false,
+                "block" => true,
+                _ => false,
+            },
+            SupportedLanguages::Typescript => match node.kind() {
+                "line_comment" => false,
+                "statement_block" => true,
+                _ => false,
+            },
+            SupportedLanguages::Python => match node.kind() {
+                "line_comment" => false,
+                "block" => {
+                    // Check if the node is a function signature
+                    let parent = node.parent().unwrap();
+                    println!("Parent kind: {}", parent.kind());
+                    parent.kind() == "function_definition"
+                }
+                _ => false,
+            },
+            SupportedLanguages::Ruby => match node.kind() {
+                "line_comment" => false,
+                "body_statement" => {
+                    // Check if the node is a function signature
+                    let parent = node.parent().unwrap();
+                    println!("Parent kind: {}", parent.kind());
+                    parent.kind() == "def"
+                }
+                _ => {
+                    println!("Node kind: {}", node.kind());
+                    // Default to false
+                    false
+                }
+            },
+            SupportedLanguages::Javascript => match node.kind() {
+                "line_comment" => false,
+                "statement_block" => true,
+                _ => false,
+            },
         }
     }
 
-    /// Summarices a syntax node
+    /// Summarizes a syntax node
     ///
     /// # Arguments
     ///
@@ -146,17 +182,129 @@ impl CodeSummarizer {
 mod tests {
     use super::*;
 
+    // Test every supported language.
+    // We should strip away all code blocks and leave only imports, comments, function signatures,
+    // class, interface and structure definitions and definitions of constants, variables and other members.
     #[test]
-    fn test_summarize() {
-        let code = r#"// This is a comment
+    fn test_summarize_rust() {
+        let code = r#"
+use anyhow::{Context as _, Result};
+// This is a comment
 fn main(a: usize, b: usize) -> usize {
     println!("Hello, world!");
+}
+
+pub struct Bla {
+    a: usize
+}
+
+impl Bla {
+    fn ok(&mut self) {
+        self.a = 1;
+    }
 }"#;
         let summarizer = CodeSummarizer::new(SupportedLanguages::Rust);
         let summary = summarizer.summarize(code).unwrap();
         assert_eq!(
             summary,
-            "// This is a comment\nfn main(a: usize, b: usize) -> usize "
+            "\nuse anyhow::{Context as _, Result};\n// This is a comment\nfn main(a: usize, b: usize) -> usize \n\npub struct Bla {\n    a: usize\n}\n\nimpl Bla {\n    fn ok(&mut self) \n}"
+        );
+    }
+
+    #[test]
+    fn test_summarize_typescript() {
+        let code = r#"
+import { Context as _, Result } from 'anyhow';
+// This is a comment
+function main(a: number, b: number): number {
+    console.log("Hello, world!");
+}
+
+export class Bla {
+    a: number;
+}
+
+export interface Bla {
+    ok(): void;
+}"#;
+        let summarizer = CodeSummarizer::new(SupportedLanguages::Typescript);
+        let summary = summarizer.summarize(code).unwrap();
+        assert_eq!(
+            summary,
+            "\nimport { Context as _, Result } from 'anyhow';\n// This is a comment\nfunction main(a: number, b: number): number \n\nexport class Bla {\n    a: number;\n}\n\nexport interface Bla {\n    ok(): void;\n}"
+        );
+    }
+
+    #[test]
+    fn test_summarize_python() {
+        let code = r#"
+import sys
+# This is a comment
+def main(a: int, b: int) -> int:
+    print("Hello, world!")
+
+class Bla:
+    def __init__(self):
+        self.a = 1
+
+    def ok(self):
+        self.a = 1
+"#;
+        let summarizer = CodeSummarizer::new(SupportedLanguages::Python);
+        let summary = summarizer.summarize(code).unwrap();
+        assert_eq!(
+            summary,
+            "\nimport sys\n# This is a comment\ndef main(a: int, b: int) -> int:\n    \n\nclass Bla:\n    def __init__(self):\n        \n\n    def ok(self):\n        "
+        );
+    }
+
+    #[test]
+    fn test_summarize_ruby() {
+        let code = r#"
+require 'anyhow'
+# This is a comment
+def main(a, b)
+    puts "Hello, world!"
+end
+
+class Bla
+    def ok
+        @a = 1
+    end
+end
+"#;
+        let summarizer = CodeSummarizer::new(SupportedLanguages::Ruby);
+        let summary = summarizer.summarize(code).unwrap();
+        assert_eq!(
+            summary,
+            "\nrequire 'anyhow'\n# This is a comment\ndef main(a, b)\n    puts \"Hello, world!\"\nend\n\nclass Bla\n    def ok\n        @a = 1\n    end\nend"
+        );
+    }
+
+    #[test]
+    fn test_summarize_javascript() {
+        let code = r#"
+import { Context as _, Result } from 'anyhow';
+// This is a comment
+function main(a, b) {
+    console.log("Hello, world!");
+}
+
+class Bla {
+    constructor() {
+        this.a = 1;
+    }
+
+    ok() {
+        this.a = 1;
+    }
+}
+"#;
+        let summarizer = CodeSummarizer::new(SupportedLanguages::Javascript);
+        let summary = summarizer.summarize(code).unwrap();
+        assert_eq!(
+            summary,
+            "\nimport { Context as _, Result } from 'anyhow';\n// This is a comment\nfunction main(a, b) \n\nclass Bla {\n    constructor() \n\n    ok() \n}"
         );
     }
 }
