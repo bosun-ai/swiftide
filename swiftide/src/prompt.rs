@@ -43,10 +43,11 @@ lazy_static! {
 /// ```
 /// #[tokio::main]
 /// # async fn main() {
+/// # use swiftide::prompt::PromptTemplate;
 /// let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
 /// let prompt = template.to_prompt().with_context_value("world", "swiftide");
 ///
-/// assert_eq!(prompt.render().unwrap(), "hello swiftide");
+/// assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
 /// # }
 /// ```
 
