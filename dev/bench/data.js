@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720789615696,
+  "lastUpdate": 1720803562385,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -923,6 +923,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 8",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "7686c2d449b5df0fddc08b111174357d47459f86",
+          "message": "docs: templated prompts are now a major feature",
+          "timestamp": "2024-07-12T18:54:51+02:00",
+          "tree_id": "e9d91d5df6e53eda999e117e29f75c19341966d3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7686c2d449b5df0fddc08b111174357d47459f86"
+        },
+        "date": 1720803561793,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 12",
             "unit": "ns/iter"
           }
         ]
