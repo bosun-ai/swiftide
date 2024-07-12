@@ -154,19 +154,20 @@ mod test {
 
         client
             .expect_prompt()
-            .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
+            .returning(|_| Ok("RelevantContext".to_string()));
 
         let transformer = ContextualizeCodeChunk::builder()
             .client(client)
             .build()
             .unwrap();
-        let node = Node::new("Some text");
+        let mut node = Node::new("Some text");
+        node.metadata
+            .insert("File Size".to_string(), "100".to_string());
+        node.metadata
+            .insert("Context (code)".to_string(), "Some context".to_string());
 
         let result = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(
-            result.metadata.get("Questions and Answers (code)").unwrap(),
-            "Q1: Hello\nA1: World"
-        );
+        assert_eq!(result.chunk, "RelevantContext\n\nSome text");
     }
 }
