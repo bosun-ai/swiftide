@@ -86,7 +86,7 @@ impl Pipeline {
 
     /// Sets the embed mode for the pipeline.
     ///
-    /// See also [super::node::EmbedMode].
+    /// See also [`super::node::EmbedMode`].
     ///
     /// # Arguments
     ///

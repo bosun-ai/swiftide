@@ -5,7 +5,6 @@ use std::sync::Arc;
 use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
-use indoc::indoc;
 
 pub const NAME: &str = "Questions and Answers (code)";
 

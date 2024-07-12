@@ -75,7 +75,7 @@ impl BatchableTransformer for Embed {
             .fold(Vec::new(), |mut embeddables_data, node| {
                 let embeddables = node.as_embeddables();
                 let mut embeddables_keys = Vec::with_capacity(embeddables.len());
-                for (embeddable_key, embeddable_data) in embeddables.into_iter() {
+                for (embeddable_key, embeddable_data) in embeddables {
                     embeddables_keys.push(embeddable_key);
                     embeddables_data.push(embeddable_data);
                 }
@@ -235,7 +235,7 @@ mod tests {
                 metadata: data
                     .metadata
                     .iter()
-                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
                     .collect(),
                 embed_mode: data.embed_mode,
                 ..Default::default()
@@ -255,15 +255,13 @@ mod tests {
         let expected_embeddables_batch = test_data
             .clone()
             .iter()
-            .map(|d| &d.expected_embedables)
-            .flatten()
+            .flat_map(|d| &d.expected_embedables)
             .map(ToString::to_string)
             .collect::<Vec<String>>();
         let expected_vectors_batch: Vec<Vec<f32>> = test_data
             .clone()
             .iter()
-            .map(|d| d.expected_vectors.iter().map(|(_, v)| v).cloned())
-            .flatten()
+            .flat_map(|d| d.expected_vectors.iter().map(|(_, v)| v).cloned())
             .collect();
 
         let mut model_mock = MockEmbeddingModel::new();

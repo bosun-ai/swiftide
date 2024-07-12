@@ -3,13 +3,13 @@
 //! Prompts are first class citizens in Swiftide and use [tera] under the hood. tera
 //! uses jinja style templates which allows for a lot of flexibility.
 //!
-//! Conceptually, a [Prompt] is something you send to i.e. [Simpleprompt]. A prompt can have
+//! Conceptually, a [Prompt] is something you send to i.e. [`crate::traits::Simpleprompt`]. A prompt can have
 //! added context for substitution and other templating features.
 //!
 //! Transformers in Swiftide come with default prompts, and they can be customized or replaced as
 //! needed.
 //!
-//! `PromptTemplates` can be added with `PromptTemplate::try_compiled_from_str`. Prompts can also be
+//! `PromptTemplates` can be added with [`PromptTemplate::try_compiled_from_str`]. Prompts can also be
 //! created on the fly from anything that implements [Into<String>]. Compiled prompts are stored in
 //! an internal repository.
 //!
