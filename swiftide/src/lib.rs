@@ -11,21 +11,28 @@
 //! ## Features
 //!
 //! - Extremely fast streaming indexing pipeline with async, parallel processing
-//! - Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
+//! - Integrations with `OpenAI`, `Redis`, `Qdrant`, `FastEmbed`, `Treesitter` and more
 //! - A variety of loaders, transformers, and embedders and other common, generic tools
 //! - Bring your own transformers by extending straightforward traits
+//! - Splitting and merging pipelines
 //! - Store into multiple backends
 //! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 //!
 //! ## Example
 //!
 //! ```no_run
-//! # use swiftide::loaders::FileLoader;
-//! # use swiftide::transformers::*;
-//! # use swiftide::integrations::qdrant::Qdrant;
-//! # use swiftide::indexation::Pipeline;
+//! use swiftide::loaders::FileLoader;
+//! use swiftide::transformers::{ChunkMarkdown, Embed, MetadataQAText};
+//! use swiftide::integrations::qdrant::Qdrant;
+//! use swiftide::indexing::Pipeline;
+//! # use anyhow::Result;
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<()> {
+//! # let qdrant_url = "url";
+//! # let openai_client = swiftide::integrations::openai::OpenAI::builder().build()?;
 //!  Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
-//!          .then_chunk(ChunkMarkdown::with_chunk_range(10..512))
+//!          .then_chunk(ChunkMarkdown::from_chunk_range(10..512))
 //!          .then(MetadataQAText::new(openai_client.clone()))
 //!          .then_in_batch(10, Embed::new(openai_client.clone()))
 //!          .then_store_with(
@@ -36,7 +43,8 @@
 //!                  .build()?,
 //!          )
 //!          .run()
-//!          .await?;
+//!          .await
+//! # }
 //! ```
 //!
 //! ## Feature flags
