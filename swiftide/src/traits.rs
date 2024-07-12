@@ -111,7 +111,7 @@ pub trait EmbeddingModel: Send + Sync {
 /// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync {
     // Takes a simple prompt, prompts the llm and returns the response
-    async fn prompt(&self, prompt: &Prompt) -> Result<String>;
+    async fn prompt(&self, prompt: Prompt) -> Result<String>;
 }
 
 #[cfg_attr(test, automock)]

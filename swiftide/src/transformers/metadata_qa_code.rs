@@ -17,7 +17,7 @@ pub const NAME: &str = "Questions and Answers (code)";
 pub struct MetadataQACode {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
-    #[builder(default = "default_prompt().await")]
+    #[builder(default = "default_prompt()")]
     prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
@@ -65,42 +65,10 @@ impl MetadataQACode {
 /// # Returns
 ///
 /// A string representing the default prompt template.
-async fn default_prompt() -> PromptTemplate {
-    PromptTemplate::try_from_str(indoc! {r"
-
-            # Task
-            Your task is to generate questions and answers for the given code. 
-
-            Given that somebody else might ask questions about the code, consider things like:
-            * What does this code do?
-            * What other internal parts does the code use?
-            * Does this code have any dependencies?
-            * What are some potential use cases for this code?
-            * ... and so on
-
-            # Constraints 
-            * Generate only {{questions}} questions and answers.
-            * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the code.
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            Q1: What does this code do?
-            A1: It transforms strings into integers.
-            Q2: What other internal parts does the code use?
-            A2: A hasher to hash the strings.
-            ```
-
-            # Code
-            ```
-            {{ node.chunk }}
-            ```
-
-        "})
-    .await
-    .expect("Failed to build default prompt")
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name(
+        "src/transformers/prompts/metadata_qa_code.prompt.md",
+    )
 }
 
 impl MetadataQACodeBuilder {
@@ -133,9 +101,10 @@ impl Transformer for MetadataQACode {
         let prompt = self
             .prompt_template
             .to_prompt()
+            .with_node(&node)
             .with_context_value("questions", self.num_questions);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 

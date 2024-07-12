@@ -8,7 +8,7 @@ use super::AwsBedrock;
 #[async_trait]
 impl SimplePrompt for AwsBedrock {
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: &Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
         let blob = self
             .model_family
             .build_request_to_bytes(prompt.render().await?, &self.model_config)
@@ -53,7 +53,7 @@ mod test {
             .build()
             .unwrap();
 
-        let response = bedrock.prompt(&"Hello".into()).await.unwrap();
+        let response = bedrock.prompt("Hello".into()).await.unwrap();
 
         assert_eq!(response, "Hello, world!");
     }
@@ -84,7 +84,7 @@ mod test {
             .test_client(bedrock_mock)
             .build()
             .unwrap();
-        let response = bedrock.prompt(&"Hello".into()).await.unwrap();
+        let response = bedrock.prompt("Hello".into()).await.unwrap();
         assert_eq!(response, "Hello, world!");
     }
 }

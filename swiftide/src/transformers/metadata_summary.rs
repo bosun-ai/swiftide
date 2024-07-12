@@ -66,31 +66,9 @@ impl MetadataSummary {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> PromptTemplate {
-    indoc! {r"
-
-            # Task
-            Your task is to generate a descriptive, concise summary for the given text
-
-            # Constraints 
-            * Only respond in the example format
-            * Respond with a summary that is accurate and descriptive without fluff
-            * Only include information that is included in the text
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            <summary>
-            ```
-
-            # Text
-            ```
-            {{node.chunk}}
-            ```
-
-        "}
-    .try_into()
-    .expect("Failed to build default prompt")
+    PromptTemplate::from_compiled_template_name(
+        "src/transformers/prompts/metadata_qa_summary.prompt.md",
+    )
 }
 
 impl MetadataSummaryBuilder {
@@ -122,7 +100,7 @@ impl Transformer for MetadataSummary {
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt_template.to_prompt().with_node(&node);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 

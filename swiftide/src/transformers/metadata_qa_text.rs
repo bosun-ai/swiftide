@@ -69,39 +69,9 @@ impl MetadataQAText {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> PromptTemplate {
-    indoc! {r"
-
-            # Task
-            Your task is to generate questions and answers for the given text. 
-
-            Given that somebody else might ask questions about the text, consider things like:
-            * What does this text do?
-            * What other internal parts does the text use?
-            * Does this text have any dependencies?
-            * What are some potential use cases for this text?
-            * ... and so on
-
-            # Constraints 
-            * Generate at most {questions} questions and answers.
-            * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the text.
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            Q1: What is the capital of France?
-            A1: Paris.
-            ```
-
-            # text
-            ```
-            {text}
-            ```
-
-        "}
-    .try_into()
-    .expect("Failed to build default prompt")
+    PromptTemplate::from_compiled_template_name(
+        "src/transformers/prompts/metadata_qa_text.prompt.md",
+    )
 }
 
 impl MetadataQATextBuilder {
@@ -137,7 +107,7 @@ impl Transformer for MetadataQAText {
             .with_node(&node)
             .with_context_value("questions", self.num_questions);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 

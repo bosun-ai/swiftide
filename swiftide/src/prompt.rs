@@ -8,7 +8,7 @@ use crate::ingestion::Node;
 
 lazy_static! {
     pub static ref TEMPLATES: RwLock<Tera> = {
-        match Tera::new("examples/basic/templates/**/*") {
+        match Tera::new("**/*.prompt.md") {
             Ok(t) => RwLock::new(t),
             Err(e) => {
                 tracing::error!("Parsing error(s): {e}");
@@ -27,13 +27,18 @@ pub struct Prompt {
 #[derive(Clone, Debug)]
 pub enum PromptTemplate {
     CompiledTemplate(String),
-    OneOff(String),
     String(String),
     Static(&'static str),
 }
 
 impl<'tmpl> PromptTemplate {
-    pub async fn try_from_str(template: impl AsRef<str>) -> Result<PromptTemplate> {
+    pub fn from_compiled_template_name(name: impl Into<String>) -> PromptTemplate {
+        PromptTemplate::CompiledTemplate(name.into())
+    }
+
+    pub async fn try_compiled_from_str(
+        template: impl AsRef<str> + Send + 'static,
+    ) -> Result<PromptTemplate> {
         let id = Uuid::new_v4().to_string();
         let mut lock = TEMPLATES.write().await;
         lock.add_raw_template(&id, template.as_ref())
@@ -43,26 +48,32 @@ impl<'tmpl> PromptTemplate {
     }
 
     pub async fn render(&self, context: &Option<tera::Context>) -> Result<String> {
-        let lock = TEMPLATES.read().await;
+        use PromptTemplate::{CompiledTemplate, Static, String};
+
+        let context = match &context {
+            Some(context) => context,
+            None => &tera::Context::default(),
+        };
+
         let template = match self {
-            PromptTemplate::CompiledTemplate(id) => {
-                let context = match &context {
-                    Some(context) => context,
-                    None => &tera::Context::default(),
-                };
-                lock.render(id, context)
-                    .context("Failed to render template")?
+            CompiledTemplate(id) => {
+                let lock = TEMPLATES.read().await;
+                let available = lock.get_template_names().collect::<Vec<_>>().join(", ");
+                tracing::debug!(id, available, "Rendering template ...");
+                let result = lock.render(id, context);
+
+                if result.is_err() {
+                    tracing::error!(
+                        error = result.as_ref().unwrap_err().to_string(),
+                        "Error rendering template {id}"
+                    );
+                }
+                result.with_context(|| format!("Failed to render template '{id}'"))?
             }
-            PromptTemplate::OneOff(template) => {
-                let context = match &context {
-                    Some(context) => context,
-                    None => &tera::Context::default(),
-                };
-                Tera::one_off(template, context, false)
-                    .context("Failed to render one-off template")?
-            }
-            PromptTemplate::String(template) => template.clone(),
-            PromptTemplate::Static(template) => template.to_string(),
+            String(template) => Tera::one_off(template, context, false)
+                .context("Failed to render one-off template")?,
+            Static(template) => Tera::one_off(template, context, false)
+                .context("Failed to render one-off template")?,
         };
         Ok(template)
     }

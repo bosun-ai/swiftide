@@ -66,30 +66,7 @@ impl MetadataTitle {
 ///
 /// A string containing the default prompt template.
 fn default_prompt() -> PromptTemplate {
-    indoc! {r"
-
-            # Task
-            Your task is to generate a descriptive, concise title for the given text
-
-            # Constraints 
-            * Only respond in the example format
-            * Respond with a title that is accurate and descriptive without fluff
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            <title>
-            ```
-
-            # Text
-            ```
-            {{node.chunk}}
-            ```
-
-        "}
-    .try_into()
-    .expect("Failed to build default prompt")
+    PromptTemplate::from_compiled_template_name("src/transformers/prompts/metadata_tile.prompt.md")
 }
 
 impl MetadataTitleBuilder {
@@ -121,7 +98,7 @@ impl Transformer for MetadataTitle {
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt_template.to_prompt().with_node(&node);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 

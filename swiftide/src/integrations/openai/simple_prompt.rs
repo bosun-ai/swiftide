@@ -25,7 +25,7 @@ impl SimplePrompt for OpenAI {
     /// - Returns an error if the request to the OpenAI API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: &Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
