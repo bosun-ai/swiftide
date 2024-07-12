@@ -64,12 +64,12 @@ fn default_prompt() -> String {
     indoc! {r"
 
             # Task
-            Your task is to tailor a given context to the code chunk provided. The goal is
-            to provide a context that is most useful for understanding the code in the chunk whilst
+            Your task is to filter the given file context to the code chunk provided. The goal is
+            to provide a context that is still contains the lines needed for understanding the code in the chunk whilst
             leaving out any irrelevant information.
 
             # Constraints
-            * Only use the provided context, do not add any additional information
+            * Only use lines from the provided context, do not add any additional information
             * Ensure that the selection you make is the most appropriate for the code chunk
             * You do not need to repeat the code chunk in your response, it will be appended directly
               after your response.
@@ -113,21 +113,24 @@ impl Transformer for ContextualizeCodeChunk {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let needs_context = match node.metadata.get("File Size") {
-            Some(file_size) => file_size.parse::<usize>().unwrap() > node.chunk.len(),
+        let needs_context = match node.metadata.get("Original Size") {
+            Some(size) => size.parse::<usize>().unwrap() > node.chunk.len(),
             None => false,
         };
 
-        let maybe_context = node.metadata.get("Context (code)");
-        if !needs_context || maybe_context.is_none() {
+        let metadata = &mut node.metadata;
+        let maybe_context = metadata.get("Context (code)");
+        let has_context = maybe_context.is_some();
+        let context;
+        if !needs_context || !has_context {
             return Ok(node);
+        } else {
+            context = maybe_context.unwrap().clone();
         }
-
-        let context = maybe_context.unwrap();
 
         let prompt = self
             .prompt
-            .replace("{context}", context)
+            .replace("{context}", context.as_str())
             .replace("{code}", &node.chunk);
 
         let response = self.client.prompt(&prompt).await?;
@@ -162,7 +165,7 @@ mod test {
             .unwrap();
         let mut node = Node::new("Some text");
         node.metadata
-            .insert("File Size".to_string(), "100".to_string());
+            .insert("Original Size".to_string(), "100".to_string());
         node.metadata
             .insert("Context (code)".to_string(), "Some context".to_string());
 
