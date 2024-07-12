@@ -111,7 +111,7 @@ impl Transformer for ContextualizeCodeChunk {
     /// # Errors
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
-    #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
+    #[tracing::instrument(skip_all, name = "transformers.contextualize_code_chunk")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let needs_context = match node.metadata.get("Original Size") {
             Some(size) => size.parse::<usize>().unwrap() > node.chunk.len(),

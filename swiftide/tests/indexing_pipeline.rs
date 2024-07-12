@@ -227,7 +227,7 @@ async fn test_named_vectors() {
     );
 }
 
-/// Setup OpenAI client with the mock server
+/// Setup `OpenAI` client with the mock server
 fn openai_client(mock_server_uri: &str, embed_model: &str, prompt_model: &str) -> OpenAI {
     let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server_uri);
     let async_openai = async_openai::Client::with_config(config);
@@ -245,7 +245,7 @@ fn openai_client(mock_server_uri: &str, embed_model: &str, prompt_model: &str) -
 }
 
 /// Setup Qdrant container.
-/// Returns container server and server_url.
+/// Returns container server and `server_url`.
 async fn start_qdrant() -> (ContainerAsync<GenericImage>, String) {
     let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.9.2")
         .with_exposed_port(6334.into())
@@ -266,7 +266,7 @@ async fn start_qdrant() -> (ContainerAsync<GenericImage>, String) {
 }
 
 /// Setup Redis container for caching in the test.
-/// Returns container server and server_url.
+/// Returns container server and `server_url`.
 async fn start_redis() -> (ContainerAsync<GenericImage>, String) {
     let redis = testcontainers::GenericImage::new("redis", "7.2.4")
         .with_exposed_port(6379.into())
@@ -288,7 +288,6 @@ async fn start_redis() -> (ContainerAsync<GenericImage>, String) {
 /// `embeddings_count` controls number of returned embedding vectors.
 async fn mock_embeddings(mock_server: &MockServer, embeddings_count: u8) {
     let data = (0..embeddings_count)
-        .into_iter()
         .map(|i| {
             json!( {
               "object": "embedding",
@@ -337,6 +336,6 @@ async fn mock_chat_completions(mock_server: &MockServer) {
               "total_tokens": 21
             }
         })))
-        .mount(&mock_server)
+        .mount(mock_server)
         .await;
 }

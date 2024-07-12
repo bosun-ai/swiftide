@@ -64,8 +64,7 @@ impl Debug for Node {
                 &self
                     .vectors
                     .iter()
-                    .map(HashMap::iter)
-                    .flatten()
+                    .flat_map(HashMap::iter)
                     .map(|(embed_type, vec)| format!("'{embed_type}': {}", vec.len()))
                     .join(","),
             )
@@ -99,7 +98,7 @@ impl Node {
 
         if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
             embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
-            for (name, value) in self.metadata.iter() {
+            for (name, value) in &self.metadata {
                 embeddables.push((EmbeddedField::Metadata(name.clone()), value.clone()));
             }
         }
@@ -107,7 +106,7 @@ impl Node {
         embeddables
     }
 
-    /// Converts the node into an [self::EmbeddedField::Combined] type of embeddable.
+    /// Converts the node into an [`self::EmbeddedField::Combined`] type of embeddable.
     ///
     /// This embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
     /// followed by the data chunk.
@@ -153,7 +152,7 @@ impl Hash for Node {
 
 /// Embed mode of the pipeline.
 ///
-/// See also [super::pipeline::Pipeline::with_embed_mode].
+/// See also [`super::pipeline::Pipeline::with_embed_mode`].
 #[derive(Copy, Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EmbedMode {
     #[default]

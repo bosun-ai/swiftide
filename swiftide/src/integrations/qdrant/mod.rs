@@ -4,7 +4,7 @@
 
 mod indexing_node;
 mod persist;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant;
 
-use crate::ingestion::EmbeddedField;
+use crate::ingestion::{EmbeddedField, Node};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -154,14 +154,15 @@ impl QdrantBuilder {
         Ok(Arc::new(client))
     }
 
-    /// Adds new [VectorConfig]
+    /// Adds new [`VectorConfig`]
     ///
-    /// When not configured Pipeline by default configures vector only for [EmbeddedField::Combined]
-    /// Default config is enough when [crate::indexing::Pipeline::with_embed_mode] is not set
-    /// or when the value is set to [crate::indexing::EmbedMode::SingleWithMetadata].
+    /// When not configured Pipeline by default configures vector only for [`EmbeddedField::Combined`]
+    /// Default config is enough when [`crate::indexing::Pipeline::with_embed_mode`] is not set
+    /// or when the value is set to [`crate::indexing::EmbedMode::SingleWithMetadata`].
+    #[must_use]
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {
-            self = self.vectors(Default::default());
+            self = self.vectors(HashMap::default());
         }
         let vector = vector.into();
         if let Some(vectors) = self.vectors.as_mut() {
@@ -176,7 +177,7 @@ impl QdrantBuilder {
     }
 
     fn default_vectors() -> HashMap<EmbeddedField, VectorConfig> {
-        HashMap::from([(Default::default(), Default::default())])
+        HashMap::from([(EmbeddedField::default(), VectorConfig::default())])
     }
 }
 
@@ -193,7 +194,7 @@ impl std::fmt::Debug for Qdrant {
 
 /// Vector config
 ///
-/// See also [QdrantBuilder::with_vector]
+/// See also [`QdrantBuilder::with_vector`]
 #[derive(Clone, Builder, Default)]
 pub struct VectorConfig {
     /// A type of the embeddable of the stored vector.
@@ -201,12 +202,12 @@ pub struct VectorConfig {
     pub(super) embedded_field: EmbeddedField,
     /// A size of the vector to be stored in the collection.
     ///
-    /// Overrides default set in [QdrantBuilder::vector_size]
+    /// Overrides default set in [`QdrantBuilder::vector_size`]
     #[builder(setter(into, strip_option), default)]
     vector_size: Option<u64>,
     /// A distance of the vector to be stored in the collection.
     ///
-    /// Overrides default set in [QdrantBuilder::vector_distance]
+    /// Overrides default set in [`QdrantBuilder::vector_distance`]
     #[builder(setter(into, strip_option), default)]
     distance: Option<qdrant::Distance>,
 }
@@ -227,3 +228,18 @@ impl From<EmbeddedField> for VectorConfig {
 }
 
 pub type Distance = qdrant::Distance;
+
+/// Utility struct combining `Node` with `EmbeddedField`s of configured _Qdrant_ vectors.
+struct NodeWithVectors {
+    vector_fields: HashSet<EmbeddedField>,
+    node: Node,
+}
+
+impl NodeWithVectors {
+    pub fn new(node: Node, vector_fields: HashSet<EmbeddedField>) -> Self {
+        Self {
+            vector_fields,
+            node,
+        }
+    }
+}

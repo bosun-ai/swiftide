@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy,rustfmt
+          components: llvm-tools
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:

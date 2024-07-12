@@ -1,11 +1,10 @@
 //! Extract keywords from a node and add them as metadata
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use indoc::indoc;
 
 pub const NAME: &str = "Keywords";
 
@@ -23,7 +22,7 @@ pub struct MetadataKeywords {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
 }
@@ -48,7 +47,7 @@ impl MetadataKeywords {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             concurrency: None,
         }
     }
@@ -61,36 +60,10 @@ impl MetadataKeywords {
 }
 
 /// Generates the default prompt template for extracting keywords.
-///
-/// # Returns
-///
-/// A string containing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r"
-
-            # Task
-            Your task is to generate a descriptive, concise keywords for the given text
-
-            # Constraints 
-            * Only respond in the example format
-            * Respond with a keywords that are representative of the text
-            * Only include keywords that are literally included in the text
-            * Respond with a comma-separated list of keywords
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            <keyword>,<other-keyword>
-            ```
-
-            # Text
-            ```
-            {text}
-            ```
-
-        "}
-    .to_string()
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name(
+        "src/transformers/prompts/metadata_keywords.prompt.md",
+    )
 }
 
 impl MetadataKeywordsBuilder {
@@ -120,9 +93,8 @@ impl Transformer for MetadataKeywords {
     /// a keywords from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_keywords")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let prompt = self.prompt.replace("{text}", &node.chunk);
-
-        let response = self.client.prompt(&prompt).await?;
+        let prompt = self.prompt_template.to_prompt().with_node(&node);
+        let response = self.client.prompt(prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 
@@ -139,6 +111,14 @@ mod test {
     use crate::MockSimplePrompt;
 
     use super::*;
+
+    #[tokio::test]
+    async fn test_template() {
+        let template = default_prompt();
+
+        let prompt = template.to_prompt().with_node(&Node::new("test"));
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
 
     #[tokio::test]
     async fn test_metadata_keywords() {
