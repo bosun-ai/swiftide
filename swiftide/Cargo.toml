@@ -37,7 +37,9 @@ uuid = { version = "1.10", features = ["v4"] }
 
 # Integrations
 async-openai = { version = "0.23", optional = true }
-qdrant-client = { version = "1.9", optional = true }
+qdrant-client = { version = "1.10", optional = true, default-features = false, features = [
+  "serde",
+] }
 redis = { version = "0.25", features = [
   "aio",
   "tokio-comp",

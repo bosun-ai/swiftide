@@ -3262,10 +3262,8 @@ checksum = "eb7527de5e2ea7a239d3bc1da8b2d6db5652322daa1cbf4b3a55ad670f3891ed"
 dependencies = [
  "anyhow",
  "derive_builder",
- "futures-util",
  "prost",
  "prost-types",
- "reqwest",
  "serde",
  "serde_json",
  "thiserror",
