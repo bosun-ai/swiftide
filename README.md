@@ -117,6 +117,7 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
 - Splitting and merging pipelines
+- Jinja-like templating for prompts
 - Store into multiple backends
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
