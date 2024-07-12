@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720809397769,
+  "lastUpdate": 1720812443454,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1091,6 +1091,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 43",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "085709fd767bab7153b2222907fc500ad4412570",
+          "message": "docs(docsrs): Disable unstable and rustdoc scraping",
+          "timestamp": "2024-07-12T21:23:06+02:00",
+          "tree_id": "958343ec123242f32f4c3d7c7ad1945c858f46ba",
+          "url": "https://github.com/bosun-ai/swiftide/commit/085709fd767bab7153b2222907fc500ad4412570"
+        },
+        "date": 1720812442499,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 838,
+            "range": "± 26",
             "unit": "ns/iter"
           }
         ]
