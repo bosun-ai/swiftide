@@ -114,6 +114,14 @@ mod test {
     use super::*;
 
     #[tokio::test]
+    async fn test_template() {
+        let template = default_prompt();
+
+        let prompt = template.to_prompt().with_node(&Node::new("test"));
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
+
+    #[tokio::test]
     async fn test_metadata_summary() {
         let mut client = MockSimplePrompt::new();
 

@@ -97,6 +97,7 @@ mockall = "0.12.1"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
+insta = { version = "1.39.0", features = ["yaml"] }
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -113,3 +114,7 @@ multiple_crate_versions = "allow"
 
 [package.metadata.docs.rs]
 all-features = true
+
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3
