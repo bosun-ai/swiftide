@@ -2,65 +2,82 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.6.0](https://github.com/bosun-ai/swiftide/releases/tag/0.6.0) - 2024-07-12
+
+## [unreleased]
 
 ### Features
 
-- [70ea268](https://github.com/bosun-ai/swiftide/commit/70ea268b19e564af83bb834f56d406a05e02e9cd) *(prompts)* Add prompts as first class citizens ([#145](https://github.com/bosun-ai/swiftide/pull/145))
+- [70ea268](https://github.com/bosun-ai/swiftide/commit/70ea268b19e564af83bb834f56d406a05e02e9cd) *(prompts)* Add prompts as first class citizens by @timonv in [#145](https://github.com/bosun-ai/swiftide/pull/145)
 
-- [699cfe4](https://github.com/bosun-ai/swiftide/commit/699cfe44fb0e3baddba695ad09836caec7cb30a6) *(uncategorized)* Embed modes and named vectors ([#123](https://github.com/bosun-ai/swiftide/pull/123))
+````text
+Adds Prompts as first class citizens. This is a breaking change as
+  SimplePrompt with just a a `&str` is no longer allowed.
 
-### Bug Fixes
+  This introduces `Prompt` and `PromptTemplate`. A template uses jinja
+  style templating build on tera. Templates can be converted into prompts,
+  and have context added. A prompt is then send to something that prompts,
+  i.e. openai or bedrock.
 
-- [9334934](https://github.com/bosun-ai/swiftide/commit/9334934e4af92b35dbc61e1f92aa90abac29ca12) *(chunkcode)* Use correct chunksizes ([#122](https://github.com/bosun-ai/swiftide/pull/122))
+  Additional prompts can be added either compiled or as one-offs.
+  Additionally, it's perfectly fine to prompt with just a string as well,
+  just provide an `.into()`.
 
-- [7357fea](https://github.com/bosun-ai/swiftide/commit/7357fea0a8cd826904b0545e80d4d1a1659df064) *(deps)* Update rust crate spider to v1.98.6 ([#119](https://github.com/bosun-ai/swiftide/pull/119))
+  For future development, some LLMs really benefit from system prompts,
+  which this would enable. For the query pipeline we can also take a much
+  more structured approach with composed templates and conditionals.
+````
 
-- [353cd9e](https://github.com/bosun-ai/swiftide/commit/353cd9ed36fcf6fb8f1db255d8b5f4a914ca8496) *(qdrant)* Upgrade and better defaults ([#118](https://github.com/bosun-ai/swiftide/pull/118))
+- [699cfe4](https://github.com/bosun-ai/swiftide/commit/699cfe44fb0e3baddba695ad09836caec7cb30a6) *(uncategorized)* Embed modes and named vectors by @pwalski in [#123](https://github.com/bosun-ai/swiftide/pull/123)
 
-- [b53636c](https://github.com/bosun-ai/swiftide/commit/b53636cbd8f179f248cc6672aaf658863982c603) *(uncategorized)* Inability to store only some of `EmbeddedField`s ([#139](https://github.com/bosun-ai/swiftide/pull/139))
+````text
+Added named vector support to qdrant. A pipeline can now have its embed
+  mode configured, either per field, chunk and metadata combined (default)
+  or both. Vectors need to be configured on the qdrant client side.
 
-### Documentation
+  See `examples/store_multiple_vectors.rs` for an example.
 
-- [5691ac9](https://github.com/bosun-ai/swiftide/commit/5691ac930fd6547c3f0166b64ead0ae647c38883) *(readme)* Add preproduction warning
+  Shoutout to @pwalski for the contribution. Closes #62.
 
-- [4c40e27](https://github.com/bosun-ai/swiftide/commit/4c40e27e5c6735305c70696ddf71dd5f95d03bbb) *(readme)* Add back coverage badge
-
-- [3e447fe](https://github.com/bosun-ai/swiftide/commit/3e447feab83a4bf8d7d9d8220fe1b92dede9af79) *(readme)* Link to CONTRIBUTING ([#114](https://github.com/bosun-ai/swiftide/pull/114))
-
-- [37af322](https://github.com/bosun-ai/swiftide/commit/37af3225b4c3464aa4ed67f8f456c26f3d445507) *(rustdocs)* Rewrite the initial landing page ([#149](https://github.com/bosun-ai/swiftide/pull/149))
-
-- [7686c2d](https://github.com/bosun-ai/swiftide/commit/7686c2d449b5df0fddc08b111174357d47459f86) *(uncategorized)* Templated prompts are now a major feature
-
-### Performance
-
-- [ea8f823](https://github.com/bosun-ai/swiftide/commit/ea8f8236cdd9c588e55ef78f9eac27db1f13b2d9) *(uncategorized)* Improve local build performance and crate cleanup ([#148](https://github.com/bosun-ai/swiftide/pull/148))
-
-### Miscellaneous Tasks
-
-- [364e13d](https://github.com/bosun-ai/swiftide/commit/364e13d83285317a1fb99889f6d74ad32b58c482) *(swiftide)* Loosen up dependencies ([#140](https://github.com/bosun-ai/swiftide/pull/140))
-
-- [d2a9ea1](https://github.com/bosun-ai/swiftide/commit/d2a9ea1e7afa6f192bf9c32bbb54d9bb6e46472e) *(uncategorized)* Enable clippy pedantic ([#132](https://github.com/bosun-ai/swiftide/pull/132))
-
-- [51c114c](https://github.com/bosun-ai/swiftide/commit/51c114ceb06db840c4952d3d0f694bfbf266681c) *(uncategorized)* Various tooling & community improvements ([#131](https://github.com/bosun-ai/swiftide/pull/131))
-
-- [84dd65d](https://github.com/bosun-ai/swiftide/commit/84dd65dc6c0ff4595f27ed061a4f4c0a2dae7202) *(uncategorized)* Rename all mentions of ingest to index ([#130](https://github.com/bosun-ai/swiftide/pull/130))
-
-
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.1.0...0.6.0
-
-
-<!-- generated by git-cliff -->
-
-
-
-## [unreleased]
+  ---------
+````
 
 ### Bug Fixes
 
 - [9334934](https://github.com/bosun-ai/swiftide/commit/9334934e4af92b35dbc61e1f92aa90abac29ca12) *(chunkcode)* Use correct chunksizes by @timonv in [#122](https://github.com/bosun-ai/swiftide/pull/122)
 
-- [dba29a0](https://github.com/bosun-ai/swiftide/commit/dba29a07fa68589151536b5ba197a69ff339ad01) *(ci)* Ensure clippy runs with all features
+- [c5bf796](https://github.com/bosun-ai/swiftide/commit/c5bf7960ca6bec498cdc987fe7676acfef702e5b) *(ci)* Add clippy back to ci by @timonv in [#147](https://github.com/bosun-ai/swiftide/pull/147)
+
+- [4c9ed77](https://github.com/bosun-ai/swiftide/commit/4c9ed77c85b7dd0e8722388b930d169cd2e5a5c7) *(ci)* Properly check if contributors are present by @timonv
+
+- [5de6af4](https://github.com/bosun-ai/swiftide/commit/5de6af42b9a1e95b0fbd54659c0d590db1d76222) *(ci)* Only add contributors if present by @timonv
+
+- [eb8364e](https://github.com/bosun-ai/swiftide/commit/eb8364e08a9202476cca6b60fbdfbb31fe0e1c3d) *(ci)* Try overriding the github repo for git cliff by @timonv
+
+- [c3aee48](https://github.com/bosun-ai/swiftide/commit/c3aee48647915af04f4c2cef76b40ad0ef92e6bb) *(deps)* Update rust crate spider to v1.98.9 by @renovate[bot] in [#146](https://github.com/bosun-ai/swiftide/pull/146)
+
+- [6d75f14](https://github.com/bosun-ai/swiftide/commit/6d75f145da7f9a26dc11dff64a161cb1e686dc96) *(deps)* Update rust crate htmd to v0.1.6 by @renovate[bot] in [#144](https://github.com/bosun-ai/swiftide/pull/144)
+
+- [a691d61](https://github.com/bosun-ai/swiftide/commit/a691d614d46d3bcff2811f354cd805f9d229d4e0) *(deps)* Update rust crate async-openai to v0.23.4 by @renovate[bot] in [#136](https://github.com/bosun-ai/swiftide/pull/136)
+
+- [8e22937](https://github.com/bosun-ai/swiftide/commit/8e22937427b928524dacf2b446feeff726b6a5e1) *(deps)* Update rust crate aws-sdk-bedrockruntime to v1.39.0 by @renovate[bot] in [#143](https://github.com/bosun-ai/swiftide/pull/143)
+
+- [bf3b677](https://github.com/bosun-ai/swiftide/commit/bf3b6778103e33abcdb4979196fef458b09c7dc0) *(deps)* Update rust crate fastembed to v3.9.0 by @renovate[bot] in [#141](https://github.com/bosun-ai/swiftide/pull/141)
+
+- [2b13523](https://github.com/bosun-ai/swiftide/commit/2b1352322e574b62cb30268b35c6b510122f0584) *(deps)* Update rust crate fastembed to v3.7.1 by @renovate[bot] in [#135](https://github.com/bosun-ai/swiftide/pull/135)
+
+- [dd32ef3](https://github.com/bosun-ai/swiftide/commit/dd32ef3b1be7cd6888d2961053d0b3c1a882e1a4) *(deps)* Update rust crate async-trait to v0.1.81 by @renovate[bot] in [#134](https://github.com/bosun-ai/swiftide/pull/134)
+
+- [adc4bf7](https://github.com/bosun-ai/swiftide/commit/adc4bf789f679079fcc9fac38f4a7b8f98816844) *(deps)* Update aws-sdk-rust monorepo by @renovate[bot] in [#125](https://github.com/bosun-ai/swiftide/pull/125)
+
+- [7af97b5](https://github.com/bosun-ai/swiftide/commit/7af97b589ca45f2b966ea2f61ebef341c881f1f9) *(deps)* Update rust crate spider to v1.98.7 by @renovate[bot] in [#124](https://github.com/bosun-ai/swiftide/pull/124)
+
+- [ff92abd](https://github.com/bosun-ai/swiftide/commit/ff92abd95908365c72d96abff37e0284df8fed32) *(deps)* Update rust crate tree-sitter-javascript to v0.21.4 by @renovate[bot] in [#126](https://github.com/bosun-ai/swiftide/pull/126)
+
+- [9c261b8](https://github.com/bosun-ai/swiftide/commit/9c261b87dde2e0caaff0e496d15681466844daf4) *(deps)* Update rust crate text-splitter to v0.14.1 by @renovate[bot] in [#127](https://github.com/bosun-ai/swiftide/pull/127)
+
+- [28f5b04](https://github.com/bosun-ai/swiftide/commit/28f5b048f5acd977915ae20463f8fbb473dfab9a) *(deps)* Update rust crate tree-sitter-typescript to v0.21.2 by @renovate[bot] in [#128](https://github.com/bosun-ai/swiftide/pull/128)
+
+- [dfc76dd](https://github.com/bosun-ai/swiftide/commit/dfc76ddfc23d9314fe88c8362bf53d7865a03302) *(deps)* Update rust crate serde to v1.0.204 by @renovate[bot] in [#129](https://github.com/bosun-ai/swiftide/pull/129)
 
 - [3b98334](https://github.com/bosun-ai/swiftide/commit/3b98334b2bf78cfe9c957bfa1dd3cd7c939b6c39) *(deps)* Update rust crate serde_json to v1.0.120 by @renovate[bot] in [#115](https://github.com/bosun-ai/swiftide/pull/115)
 
@@ -68,55 +85,81 @@ All notable changes to this project will be documented in this file.
 
 - [353cd9e](https://github.com/bosun-ai/swiftide/commit/353cd9ed36fcf6fb8f1db255d8b5f4a914ca8496) *(qdrant)* Upgrade and better defaults by @timonv in [#118](https://github.com/bosun-ai/swiftide/pull/118)
 
-    ````text
-    - **fix(deps): update rust crate qdrant-client to v1.10.1**
+````text
+- **fix(deps): update rust crate qdrant-client to v1.10.1**
   - **fix(qdrant): upgrade to new qdrant with sensible defaults**
   - **feat(qdrant): safe to clone with internal arc**
 
   ---------
-    ````
+````
 
-- [b498074](https://github.com/bosun-ai/swiftide/commit/b4980746b55073ce870bc897aef6721d10883acd) *(uncategorized)* Clippy
+- [b53636c](https://github.com/bosun-ai/swiftide/commit/b53636cbd8f179f248cc6672aaf658863982c603) *(uncategorized)* Inability to store only some of `EmbeddedField`s by @pwalski in [#139](https://github.com/bosun-ai/swiftide/pull/139)
+Fixes:#138
+
+---------
 
 ### Documentation
 
 - [8405c9e](https://github.com/bosun-ai/swiftide/commit/8405c9efedef944156c2904eb709ba79aa4d82de) *(contributing)* Add guidelines on code design by @timonv in [#113](https://github.com/bosun-ai/swiftide/pull/113)
 
+- [5691ac9](https://github.com/bosun-ai/swiftide/commit/5691ac930fd6547c3f0166b64ead0ae647c38883) *(readme)* Add preproduction warning by @timonv
+
+- [4c40e27](https://github.com/bosun-ai/swiftide/commit/4c40e27e5c6735305c70696ddf71dd5f95d03bbb) *(readme)* Add back coverage badge by @timonv
+
 - [3e447fe](https://github.com/bosun-ai/swiftide/commit/3e447feab83a4bf8d7d9d8220fe1b92dede9af79) *(readme)* Link to CONTRIBUTING by @timonv in [#114](https://github.com/bosun-ai/swiftide/pull/114)
+
+- [37af322](https://github.com/bosun-ai/swiftide/commit/37af3225b4c3464aa4ed67f8f456c26f3d445507) *(rustdocs)* Rewrite the initial landing page by @timonv in [#149](https://github.com/bosun-ai/swiftide/pull/149)
+
+````text
+- **Add homepage and badges to cargo toml**
+  - **documentation landing page improvements**
+````
+
+- [7686c2d](https://github.com/bosun-ai/swiftide/commit/7686c2d449b5df0fddc08b111174357d47459f86) *(uncategorized)* Templated prompts are now a major feature by @timonv
+
+### Performance
+
+- [ea8f823](https://github.com/bosun-ai/swiftide/commit/ea8f8236cdd9c588e55ef78f9eac27db1f13b2d9) *(uncategorized)* Improve local build performance and crate cleanup by @timonv in [#148](https://github.com/bosun-ai/swiftide/pull/148)
+
+````text
+- **tune cargo for faster builds**
+  - **perf(swiftide): increase local build performance**
+````
 
 ### Miscellaneous Tasks
 
-- [0f4a430](https://github.com/bosun-ai/swiftide/commit/0f4a430e7a8f509582bda514d6afc5d4cbd091d5) *(ci)* Split jobs and add typos
+- [364e13d](https://github.com/bosun-ai/swiftide/commit/364e13d83285317a1fb99889f6d74ad32b58c482) *(swiftide)* Loosen up dependencies by @timonv in [#140](https://github.com/bosun-ai/swiftide/pull/140)
 
-- [de3d362](https://github.com/bosun-ai/swiftide/commit/de3d3629fead3937efdcbb1483a1fd8f459d59b9) *(ci)* Add sanity checks for pull requests
+````text
+Loosen up dependencies so swiftide is a bit more flexible to add to
+  existing projects
+````
 
-- [bd72c6a](https://github.com/bosun-ai/swiftide/commit/bd72c6a62228deed722bbc22bdcd389843cde453) *(ci)* Coverage using llvm-cov
+- [3d235dd](https://github.com/bosun-ai/swiftide/commit/3d235ddba9bda8cd925da8007dac229dcb1c485b) *(uncategorized)* Release
+
+- [d2a9ea1](https://github.com/bosun-ai/swiftide/commit/d2a9ea1e7afa6f192bf9c32bbb54d9bb6e46472e) *(uncategorized)* Enable clippy pedantic by @timonv in [#132](https://github.com/bosun-ai/swiftide/pull/132)
 
 - [51c114c](https://github.com/bosun-ai/swiftide/commit/51c114ceb06db840c4952d3d0f694bfbf266681c) *(uncategorized)* Various tooling & community improvements by @timonv in [#131](https://github.com/bosun-ai/swiftide/pull/131)
 
-    ````text
-    - **fix(ci): ensure clippy runs with all features**
+````text
+- **fix(ci): ensure clippy runs with all features**
   - **chore(ci): coverage using llvm-cov**
   - **chore: drastically improve changelog generation**
   - **chore(ci): add sanity checks for pull requests**
   - **chore(ci): split jobs and add typos**
-    ````
+````
 
 - [84dd65d](https://github.com/bosun-ai/swiftide/commit/84dd65dc6c0ff4595f27ed061a4f4c0a2dae7202) *(uncategorized)* Rename all mentions of ingest to index by @timonv in [#130](https://github.com/bosun-ai/swiftide/pull/130) [**breaking**]
 
-    ````text
-    Swiftide is not an ingestion pipeline (loading data), but an indexing
+````text
+Swiftide is not an ingestion pipeline (loading data), but an indexing
   pipeline (prepping for search).
 
   There is now a temporary, deprecated re-export to match the previous api.
-    ````
+````
 
-- [d7d318e](https://github.com/bosun-ai/swiftide/commit/d7d318e60d42a1fce58c08e296c0aeac2674b32b) *(uncategorized)* Enable clippy pedantic
-
-- [88429f9](https://github.com/bosun-ai/swiftide/commit/88429f9730c43e44d5707c3d1615f8509a3f2a24) *(uncategorized)* Drastically improve changelog generation
-
-
-
+### New Contributors
+* @pwalski made their first contribution in [#139](https://github.com/bosun-ai/swiftide/pull/139)
 
 
 ## [swiftide-v0.5.0](https://github.com/bosun-ai/swiftide/releases/tag/swiftide-v0.5.0) - 2024-07-01
@@ -131,11 +174,11 @@ All notable changes to this project will be documented in this file.
 
 - [6101bed](https://github.com/bosun-ai/swiftide/commit/6101bed812c5167eb87a4093d66005140517598d) *(uncategorized)* AWS bedrock support by @timonv in [#92](https://github.com/bosun-ai/swiftide/pull/92)
 
-    ````text
-    Adds an integration with AWS Bedrock, implementing SimplePrompt for
+````text
+Adds an integration with AWS Bedrock, implementing SimplePrompt for
   Anthropic and Titan models. More can be added if there is a need. Same
   for the embedding models.
-    ````
+````
 
 ### Bug Fixes
 
@@ -198,8 +241,6 @@ All notable changes to this project will be documented in this file.
 - [b953638](https://github.com/bosun-ai/swiftide/commit/b953638e613978cc3763b6b765e2c9ff21a1074d) *(uncategorized)* Configure Renovate by @renovate[bot] in [#94](https://github.com/bosun-ai/swiftide/pull/94)
 
 
-
-
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.4.3...swiftide-v0.5.0
 
 
@@ -220,8 +261,6 @@ All notable changes to this project will be documented in this file.
 - [1ebbc2f](https://github.com/bosun-ai/swiftide/commit/1ebbc2fe01d6647abbc77850bc35ec93328891dd) *(uncategorized)* Manual release-plz update by @timonv
 
 - [bdebc24](https://github.com/bosun-ai/swiftide/commit/bdebc241507e9f55998e96ca4aece530363716af) *(uncategorized)* Clippy by @timonv
-
-
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.4.2...swiftide-v0.4.3
@@ -254,8 +293,6 @@ All notable changes to this project will be documented in this file.
 - [5ed08bb](https://github.com/bosun-ai/swiftide/commit/5ed08bb259b7544d3e4f2acdeef56231aa32e17c) *(uncategorized)* Cleanup changelog by @timonv
 
 
-
-
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.4.1...swiftide-v0.4.2
 
 
@@ -270,8 +307,6 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - [d1192e8](https://github.com/bosun-ai/swiftide/commit/d1192e80367f8dae17ec3761f6b4c7bc15ab56ef) *(uncategorized)* Release by @github-actions[bot] in [#85](https://github.com/bosun-ai/swiftide/pull/85)
-
-
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.4.0...swiftide-v0.4.1
@@ -298,30 +333,30 @@ All notable changes to this project will be documented in this file.
 - [062107b](https://github.com/bosun-ai/swiftide/commit/062107b46474766640c38266f6fd6c27a95d4b57) *(ingestion_pipeline)* Implement throttling a pipeline by @timonv in [#77](https://github.com/bosun-ai/swiftide/pull/77)
 
 - [a5051b7](https://github.com/bosun-ai/swiftide/commit/a5051b79b2ce62d41dd93f7b34a1a065d9878732) *(ingestion_pipeline)* Optional error filtering and logging by @timonv in [#75](https://github.com/bosun-ai/swiftide/pull/75)
-    Closes #73 and closes #64
+Closes #73 and closes #64
 
 Introduces various methods for stream inspection and skipping errors at
 a desired stage in the stream.
 
 - [a2ffc78](https://github.com/bosun-ai/swiftide/commit/a2ffc78f6d25769b9b7894f1f0703d51242023d4) *(ingestion_stream)* Improved stream developer experience by @timonv in [#81](https://github.com/bosun-ai/swiftide/pull/81)
 
-    ````text
-    Improves stream ergonomics by providing convenient helpers and `Into`
+````text
+Improves stream ergonomics by providing convenient helpers and `Into`
   for streams, vectors and iterators that match the internal type.
 
   This means that in many cases, trait implementers can simply call
   `.into()` instead of manually constructing a stream. In the case it's an
   iterator, they can now use `IngestionStream::iter(<IntoIterator>)`
   instead.
-    ````
+````
 
 - [9004323](https://github.com/bosun-ai/swiftide/commit/9004323dc5b11a3556a47e11fb8912ffc49f1e9e) *(integrations)* Implement Persist for Redis by @timonv in [#80](https://github.com/bosun-ai/swiftide/pull/80) [**breaking**]
 
 - [d260674](https://github.com/bosun-ai/swiftide/commit/d2606745de8b22dcdf02e244d1b044efe12c6ac7) *(integrations)* Support fastembed by @timonv in [#60](https://github.com/bosun-ai/swiftide/pull/60) [**breaking**]
 
-    ````text
-    Adds support for FastEmbed with various models. Includes a breaking change, renaming the Embed trait to EmbeddingModel.
-    ````
+````text
+Adds support for FastEmbed with various models. Includes a breaking change, renaming the Embed trait to EmbeddingModel.
+````
 
 - [eb84dd2](https://github.com/bosun-ai/swiftide/commit/eb84dd27c61a1b3a4a52a53cc0404203eac729e8) *(integrations,transformers)* Add transformer for converting html to markdown by @timonv
 
@@ -339,12 +374,12 @@ a desired stage in the stream.
 
 - [7cbfc4e](https://github.com/bosun-ai/swiftide/commit/7cbfc4e13745ee5a6776a97fc6db06608fae8e81) *(ingestion_pipeline)* Concurrency does not work when spawned by @timonv in [#76](https://github.com/bosun-ai/swiftide/pull/76)
 
-    ````text
-    Currency does did not work as expected. When spawning via `Tokio::spawn`
+````text
+Currency does did not work as expected. When spawning via `Tokio::spawn`
   the future would be polled directly, and any concurrency setting would
   not be respected. Because it had to be removed, improved tracing for
   each step as well.
-    ````
+````
 
 ### Documentation
 
@@ -354,11 +389,11 @@ a desired stage in the stream.
 
 - [7dde8a0](https://github.com/bosun-ai/swiftide/commit/7dde8a0811c7504b807b3ef9f508ce4be24967b8) *(ci)* Code coverage reporting by @timonv in [#58](https://github.com/bosun-ai/swiftide/pull/58)
 
-    ````text
-    Post test coverage to Coveralls
+````text
+Post test coverage to Coveralls
 
   Also enabled --all-features when running tests in ci, just to be sure
-    ````
+````
 
 - [cb7a2cd](https://github.com/bosun-ai/swiftide/commit/cb7a2cd3a72f306a0b46556caee0a25c7ba2c0e0) *(scraping)* Exclude spider from test coverage by @timonv in [#83](https://github.com/bosun-ai/swiftide/pull/83)
 
@@ -370,17 +405,15 @@ a desired stage in the stream.
 
 - [f251895](https://github.com/bosun-ai/swiftide/commit/f2518950427ef758fd57e6e6189ce600adf19940) *(uncategorized)* Documentation and feature flag cleanup by @timonv in [#69](https://github.com/bosun-ai/swiftide/pull/69)
 
-    ````text
-    With fastembed added our dependencies become rather heavy. By default
+````text
+With fastembed added our dependencies become rather heavy. By default
   now disable all integrations and either provide 'all' or cherry pick
   integrations.
-    ````
+````
 
 - [d6d0215](https://github.com/bosun-ai/swiftide/commit/d6d021560a05508add07a72f4f438d3ea3f1cb2c) *(uncategorized)* Properly quote crate name in changelog by @timonv
 
 - [3b7c0db](https://github.com/bosun-ai/swiftide/commit/3b7c0dbc2f020ce84a5da5691ee6eb415df2d466) *(uncategorized)* Move changelog to root by @timonv
-
-
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.3...swiftide-v0.4.0
@@ -407,8 +440,6 @@ a desired stage in the stream.
 - [f5b674d](https://github.com/bosun-ai/swiftide/commit/f5b674de04c0d6e15a3f76bc5d3612ae345a9090) *(uncategorized)* Release v0.3.3 by @github-actions[bot] in [#56](https://github.com/bosun-ai/swiftide/pull/56)
 
 
-
-
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.2...swiftide-v0.3.3
 
 
@@ -421,8 +452,6 @@ a desired stage in the stream.
 ### Miscellaneous Tasks
 
 - [ba6d71c](https://github.com/bosun-ai/swiftide/commit/ba6d71cc6930b74fee5e01380f4f8526914333e1) *(uncategorized)* Release v0.3.2 by @github-actions[bot] in [#53](https://github.com/bosun-ai/swiftide/pull/53)
-
-
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.3.1...swiftide-v0.3.2
@@ -440,8 +469,6 @@ a desired stage in the stream.
 
 - [1f6a0f9](https://github.com/bosun-ai/swiftide/commit/1f6a0f961fb7855fbeb2493e9e70d2963c6ee018) *(uncategorized)* Release v0.3.1 by @github-actions[bot] in [#50](https://github.com/bosun-ai/swiftide/pull/50)
 
-
-
 ### New Contributors
 * @hectorip made their first contribution in [#51](https://github.com/bosun-ai/swiftide/pull/51)
 
@@ -458,9 +485,9 @@ a desired stage in the stream.
 
 - [745b8ed](https://github.com/bosun-ai/swiftide/commit/745b8ed7e58f76e415501e6219ecec65551d1897) *(ingestion_pipeline)* Support chained storage backends by @timonv in [#46](https://github.com/bosun-ai/swiftide/pull/46) [**breaking**]
 
-    ````text
-    Pipeline now supports multiple storage backends. This makes the order of adding storage important. Changed the name of the method to reflect that.
-    ````
+````text
+Pipeline now supports multiple storage backends. This makes the order of adding storage important. Changed the name of the method to reflect that.
+````
 
 - [fa74939](https://github.com/bosun-ai/swiftide/commit/fa74939b30bd31301e3f80c407f153b5d96aa007) *(uncategorized)* Configurable concurrency for transformers and chunkers by @timonv in [#47](https://github.com/bosun-ai/swiftide/pull/47)
 
@@ -471,8 +498,6 @@ a desired stage in the stream.
 ### Miscellaneous Tasks
 
 - [f51e668](https://github.com/bosun-ai/swiftide/commit/f51e668508b23ee0cb17790b77b94a3aad9daaa5) *(uncategorized)* Release v0.3.0 by @github-actions[bot] in [#45](https://github.com/bosun-ai/swiftide/pull/45)
-
-
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.2.1...swiftide-v0.3.0
@@ -489,8 +514,6 @@ a desired stage in the stream.
 ### Miscellaneous Tasks
 
 - [ac81e33](https://github.com/bosun-ai/swiftide/commit/ac81e33a494b58af435c324e69fe2158c9ab8f4b) *(uncategorized)* Release v0.2.1 by @github-actions[bot] in [#44](https://github.com/bosun-ai/swiftide/pull/44)
-
-
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.2.0...swiftide-v0.2.1
@@ -558,8 +581,6 @@ a desired stage in the stream.
 
 - [ef88b89](https://github.com/bosun-ai/swiftide/commit/ef88b89f1e3cff1821603677892f5c20dcba9a51) *(uncategorized)* Release v0.1.0 by @github-actions[bot] in [#8](https://github.com/bosun-ai/swiftide/pull/8)
 
-
-
 ### New Contributors
 * @bosun-ai[bot] made their first contribution in [#19](https://github.com/bosun-ai/swiftide/pull/19)
 
@@ -576,8 +597,8 @@ a desired stage in the stream.
 
 - [b8f9166](https://github.com/bosun-ai/swiftide/commit/b8f9166e1d5419cf0d2cc6b6f0b2378241850574) *(fluyt)* Significant tracing improvements by @timonv
 
-    ````text
-    * fix(fluyt): remove unnecessary cloning and unwraps
+````text
+* fix(fluyt): remove unnecessary cloning and unwraps
 
   * fix(fluyt): also set target correctly on manual spans
 
@@ -592,12 +613,12 @@ a desired stage in the stream.
   * fix(fluyt): fix dangling spans in ingestion pipeline
 
   * fix(fluyt): do not log codebase in rag utils
-    ````
+````
 
 - [0986136](https://github.com/bosun-ai/swiftide/commit/098613622a7018318f2fffe0d51cd17822bf2313) *(fluyt/code_ops)* Add languages to chunker and range for chunk size by @timonv
 
-    ````text
-    * feat(fluyt/code_ops): add more treesitter languages
+````text
+* feat(fluyt/code_ops): add more treesitter languages
 
   * fix: clippy + fmt
 
@@ -606,7 +627,7 @@ a desired stage in the stream.
   * feat(fluyt/code_ops): implement range limits for code chunking
 
   * feat(fluyt/indexing): code chunking supports size
-    ````
+````
 
 - [f10bc30](https://github.com/bosun-ai/swiftide/commit/f10bc304b0b2e28281c90e57b6613c274dc20727) *(ingestion_pipeline)* Default concurrency is the number of cpus by @timonv in [#6](https://github.com/bosun-ai/swiftide/pull/6)
 
@@ -628,8 +649,8 @@ a desired stage in the stream.
 
 - [0d342ea](https://github.com/bosun-ai/swiftide/commit/0d342eab747bc5f44adaa5b6131c30c09b1172a2) *(uncategorized)* Models as first class citizens by @timonv
 
-    ````text
-    * refactor: refactor common datastructures to /models
+````text
+* refactor: refactor common datastructures to /models
 
   * refactor: promote to first class citizens
 
@@ -644,7 +665,7 @@ a desired stage in the stream.
   * feat: update for latest change
 
   * fix(fluyt/models): doctest
-    ````
+````
 
 ### Miscellaneous Tasks
 
@@ -662,8 +683,8 @@ a desired stage in the stream.
 
 - [44524fb](https://github.com/bosun-ai/swiftide/commit/44524fb51523291b9137fbdcaff9133a9a80c58a) *(uncategorized)* Restructure repository and rename by @timonv in [#3](https://github.com/bosun-ai/swiftide/pull/3)
 
-    ````text
-    * chore: move traits around
+````text
+* chore: move traits around
 
   * chore: move crates to root folder
 
@@ -682,7 +703,7 @@ a desired stage in the stream.
   * chore: remove code_ops
 
   * chore: settle on swiftide
-    ````
+````
 
 - [730d879](https://github.com/bosun-ai/swiftide/commit/730d879e76c867c2097aef83bbbfa1211a053bdc) *(uncategorized)* Create LICENSE by @timonv
 
@@ -699,8 +720,6 @@ a desired stage in the stream.
 - [f595f3d](https://github.com/bosun-ai/swiftide/commit/f595f3dae88bb4da5f4bbf6c5fe4f04abb4b7db3) *(uncategorized)* Add rust-toolchain on stable by @timonv
 
 - [6967b0d](https://github.com/bosun-ai/swiftide/commit/6967b0d5b6221f7620161969865fb31959fc93b8) *(uncategorized)* Make indexing extraction compile by @tinco
-
-
 
 ### New Contributors
 * @tinco made their first contribution
