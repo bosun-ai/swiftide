@@ -55,7 +55,7 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
         let Some(vectors) = node.vectors else {
             bail!("Node without vectors")
         };
-        let vectors = try_create_vectors(self.vector_fields, vectors)?;
+        let vectors = try_create_vectors(&self.vector_fields, vectors)?;
 
         // Construct the `qdrant::PointStruct` and return it.
         Ok(qdrant::PointStruct::new(id, vectors, payload))
@@ -63,7 +63,7 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
 }
 
 fn try_create_vectors(
-    vector_fields: HashSet<EmbeddedField>,
+    vector_fields: &HashSet<EmbeddedField>,
     vectors: HashMap<EmbeddedField, Vec<f32>>,
 ) -> Result<qdrant::Vectors> {
     if vectors.is_empty() {
