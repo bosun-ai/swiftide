@@ -8,10 +8,12 @@ keywords = ["llm", "rag", "ai", "data", "openai"]
 description = "Blazing fast, streaming document and code indexation"
 categories = ["asynchronous"]
 repository = "https://github.com/bosun-ai/swiftide-rs"
+homepage = "https://swiftide.rs"
+
+[badges]
 
 [dependencies]
-anyhow = { version = "1.0", features = ["backtrace"] }
-async-stream = "0.3"
+anyhow = { version = "1.0" }
 async-trait = "0.1"
 chrono = { version = "0.4" }
 derive_builder = "0.20"
@@ -29,6 +31,9 @@ strum = "0.26"
 strum_macros = "0.26"
 num_cpus = "1.16"
 pin-project-lite = "0.2"
+tera = { version = "1", default-features = false }
+lazy_static = { version = "1.5.0" }
+uuid = { version = "1.10", features = ["v4"] }
 
 # Integrations
 async-openai = { version = "0.23", optional = true }
@@ -94,6 +99,7 @@ mockall = "0.12.1"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
+insta = { version = "1.39.0", features = ["yaml"] }
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -110,3 +116,4 @@ multiple_crate_versions = "allow"
 
 [package.metadata.docs.rs]
 all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
