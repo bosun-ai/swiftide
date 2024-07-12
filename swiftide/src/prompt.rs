@@ -18,12 +18,46 @@ lazy_static! {
     };
 }
 
+/// Prompts templating and management
+///
+/// Prompts are first class citizens in Swiftide and use [tera] under the hood. tera
+/// uses jinja style templates which allows for a lot of flexibility.
+///
+/// Conceptually, a [Prompt] is something you send to i.e. [Simpleprompt]. A prompt can have
+/// added context for substitution and other templating features.
+///
+/// Transformers in Swiftide come with default prompts, and they can be customized or replaced as
+/// needed.
+///
+/// `PromptTemplates` can be added with `PromptTemplate::try_compiled_from_str`. Prompts can also be
+/// created on the fly from anything that implements [Into<String>]. Compiled prompts are stored in
+/// an internal repository.
+///
+/// Additionally, `PromptTemplate::String` and `PromptTemplate::Static` can be used to create
+/// templates on the fly as well.
+///
+/// It's recommended to precompile your templates.
+///
+/// # Example
+///
+/// ```
+/// #[tokio::main]
+/// # async fn main() {
+/// let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
+/// let prompt = template.to_prompt().with_context_value("world", "swiftide");
+///
+/// assert_eq!(prompt.render().unwrap(), "hello swiftide");
+/// # }
+/// ```
+
+/// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
 pub struct Prompt {
     template: PromptTemplate,
     context: Option<tera::Context>,
 }
 
+/// A `PromptTemplate` defines a template for a prompt
 #[derive(Clone, Debug)]
 pub enum PromptTemplate {
     CompiledTemplate(String),
@@ -32,10 +66,17 @@ pub enum PromptTemplate {
 }
 
 impl<'tmpl> PromptTemplate {
+    /// Creates a reference to a template stored in the repository
     pub fn from_compiled_template_name(name: impl Into<String>) -> PromptTemplate {
         PromptTemplate::CompiledTemplate(name.into())
     }
 
+    /// Compiles a template from a string and returns a `PromptTemplate` with a reference to the
+    /// string.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the template fails to compile
     pub async fn try_compiled_from_str(
         template: impl AsRef<str> + Send + 'static,
     ) -> Result<PromptTemplate> {
@@ -47,6 +88,13 @@ impl<'tmpl> PromptTemplate {
         Ok(PromptTemplate::CompiledTemplate(id))
     }
 
+    /// Renders a template with an optional `tera::Context`
+    ///
+    /// # Errors
+    ///
+    /// - Template cannot be found
+    /// - One-off template has errors
+    /// - Context is missing that is required by the template
     pub async fn render(&self, context: &Option<tera::Context>) -> Result<String> {
         use PromptTemplate::{CompiledTemplate, Static, String};
 
@@ -78,6 +126,7 @@ impl<'tmpl> PromptTemplate {
         Ok(template)
     }
 
+    /// Builds a Prompt from a template with an empty context
     pub fn to_prompt(&self) -> Prompt {
         Prompt {
             template: self.clone(),
@@ -87,12 +136,16 @@ impl<'tmpl> PromptTemplate {
 }
 
 impl Prompt {
+    /// Adds an `ingestion::Node` to the context of the Prompt
+    #[must_use]
     pub fn with_node(mut self, node: &Node) -> Self {
         let context = self.context.get_or_insert_with(tera::Context::default);
         context.insert("node", &node);
         self
     }
 
+    /// Adds anything that implements [Into<tera::Context>], like `Serialize` to the Prompt
+    #[must_use]
     pub fn with_context(mut self, new_context: impl Into<tera::Context>) -> Self {
         let context = self.context.get_or_insert_with(tera::Context::default);
         context.extend(new_context.into());
@@ -100,12 +153,19 @@ impl Prompt {
         self
     }
 
+    /// Adds a key-value pair to the context of the Prompt
+    #[must_use]
     pub fn with_context_value(mut self, key: &str, value: impl Into<tera::Value>) -> Self {
         let context = self.context.get_or_insert_with(tera::Context::default);
         context.insert(key, &value.into());
         self
     }
 
+    /// Renders a prompt
+    ///
+    /// # Errors
+    ///
+    /// See `PromptTemplate::render`
     pub async fn render(&self) -> Result<String> {
         self.template.render(&self.context).await
     }

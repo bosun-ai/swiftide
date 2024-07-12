@@ -61,10 +61,6 @@ impl MetadataQACode {
 /// Returns the default prompt template for generating questions and answers.
 ///
 /// This template includes placeholders for the number of questions and the code chunk.
-///
-/// # Returns
-///
-/// A string representing the default prompt template.
 fn default_prompt() -> PromptTemplate {
     PromptTemplate::from_compiled_template_name(
         "src/transformers/prompts/metadata_qa_code.prompt.md",
