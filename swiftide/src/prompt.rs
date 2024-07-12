@@ -99,13 +99,13 @@ impl<'tmpl> PromptTemplate {
     pub async fn render(&self, context: &Option<tera::Context>) -> Result<String> {
         use PromptTemplate::{CompiledTemplate, Static, String};
 
-        let context = match &context {
-            Some(context) => context,
-            None => &tera::Context::default(),
-        };
-
         let template = match self {
             CompiledTemplate(id) => {
+                let context = match &context {
+                    Some(context) => context,
+                    None => &tera::Context::default(),
+                };
+
                 let lock = TEMPLATE_REPOSITORY.read().await;
                 let available = lock.get_template_names().collect::<Vec<_>>().join(", ");
                 tracing::debug!(id, available, "Rendering template ...");
@@ -119,10 +119,22 @@ impl<'tmpl> PromptTemplate {
                 }
                 result.with_context(|| format!("Failed to render template '{id}'"))?
             }
-            String(template) => Tera::one_off(template, context, false)
-                .context("Failed to render one-off template")?,
-            Static(template) => Tera::one_off(template, context, false)
-                .context("Failed to render one-off template")?,
+            String(template) => {
+                if let Some(context) = context {
+                    Tera::one_off(template, context, false)
+                        .context("Failed to render one-off template")?
+                } else {
+                    template.to_string()
+                }
+            }
+            Static(template) => {
+                if let Some(context) = context {
+                    Tera::one_off(template, context, false)
+                        .context("Failed to render one-off template")?
+                } else {
+                    (*template).to_string()
+                }
+            }
         };
         Ok(template)
     }
@@ -187,5 +199,37 @@ impl From<String> for Prompt {
             template: PromptTemplate::String(prompt),
             context: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_prompt() {
+        let template = PromptTemplate::try_compiled_from_str("hello {{world}}")
+            .await
+            .unwrap();
+        let prompt = template.to_prompt().with_context_value("world", "swiftide");
+        assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+    }
+
+    #[tokio::test]
+    async fn test_prompt_with_node() {
+        let template = PromptTemplate::try_compiled_from_str("hello {{node.chunk}}")
+            .await
+            .unwrap();
+        let node = Node::new("test");
+        let prompt = template.to_prompt().with_node(&node);
+        assert_eq!(prompt.render().await.unwrap(), "hello test");
+    }
+
+    #[tokio::test]
+    async fn test_one_off_from_string() {
+        let mut prompt: Prompt = "hello {{world}}".into();
+        prompt = prompt.with_context_value("world", "swiftide");
+
+        assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
     }
 }
