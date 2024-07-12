@@ -4,7 +4,7 @@
 
 mod indexing_node;
 mod persist;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant;
 
-use crate::ingestion::EmbeddedField;
+use crate::ingestion::{EmbeddedField, Node};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -228,3 +228,18 @@ impl From<EmbeddedField> for VectorConfig {
 }
 
 pub type Distance = qdrant::Distance;
+
+/// Utility struct combining `Node` with `EmbeddedField`s of configured _Qdrant_ vectors.
+struct NodeWithVectors {
+    vector_fields: HashSet<EmbeddedField>,
+    node: Node,
+}
+
+impl NodeWithVectors {
+    pub fn new(node: Node, vector_fields: HashSet<EmbeddedField>) -> Self {
+        Self {
+            vector_fields,
+            node,
+        }
+    }
+}
