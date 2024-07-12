@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720536123247,
+  "lastUpdate": 1720789615696,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -881,6 +881,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 9",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "364e13d83285317a1fb99889f6d74ad32b58c482",
+          "message": "chore(swiftide): loosen up dependencies (#140)\n\nLoosen up dependencies so swiftide is a bit more flexible to add to\r\nexisting projects",
+          "timestamp": "2024-07-12T15:03:02+02:00",
+          "tree_id": "ee40434fb2995a10a26608a93fb251bbe966b3f1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/364e13d83285317a1fb99889f6d74ad32b58c482"
+        },
+        "date": 1720789615379,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 8",
             "unit": "ns/iter"
           }
         ]
