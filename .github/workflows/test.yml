@@ -61,3 +61,5 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
       - uses: r7kamura/rust-problem-matchers@v1
+      - name: clippy
+        run: cargo clippy --workspace --all-features
