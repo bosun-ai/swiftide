@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720812718347,
+  "lastUpdate": 1720813879108,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1175,6 +1175,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 16",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "2b682b28fd146fac2c61f1ee430534a04b9fa7ce",
+          "message": "chore(deps): limit feature flags on qdrant to fix docsrs",
+          "timestamp": "2024-07-12T21:47:24+02:00",
+          "tree_id": "ef696e64fdf101b13b0b48359d41b4ab11bdde98",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2b682b28fd146fac2c61f1ee430534a04b9fa7ce"
+        },
+        "date": 1720813877920,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 18",
             "unit": "ns/iter"
           }
         ]
