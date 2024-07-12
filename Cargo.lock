@@ -4204,7 +4204,7 @@ checksum = "0d0208408ba0c3df17ed26eb06992cb1a1268d41b2c0e12e65203fbe3972cee5"
 
 [[package]]
 name = "swiftide"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-openai",
