@@ -8,6 +8,9 @@ keywords = ["llm", "rag", "ai", "data", "openai"]
 description = "Blazing fast, streaming document and code indexation"
 categories = ["asynchronous"]
 repository = "https://github.com/bosun-ai/swiftide-rs"
+homepage = "https://swiftide.rs"
+
+[badges]
 
 [dependencies]
 anyhow = { version = "1.0", features = ["backtrace"] }
