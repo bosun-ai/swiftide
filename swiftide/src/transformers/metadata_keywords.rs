@@ -117,7 +117,7 @@ mod test {
         let template = default_prompt();
 
         let prompt = template.to_prompt().with_node(&Node::new("test"));
-        insta::assert_snapshot!(prompt.render().await.unwrap())
+        insta::assert_snapshot!(prompt.render().await.unwrap());
     }
 
     #[tokio::test]
