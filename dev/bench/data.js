@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720803959032,
+  "lastUpdate": 1720808452524,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1007,6 +1007,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "4924911+pwalski@users.noreply.github.com",
+            "name": "pwalski",
+            "username": "pwalski"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b53636cbd8f179f248cc6672aaf658863982c603",
+          "message": "fix: Inability to store only some of `EmbeddedField`s (#139)\n\nFixes: #138\r\n\r\n---------\r\n\r\nCo-authored-by: Przemyslaw Walski <pwalski@users.noreply.github.com>\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2024-07-12T20:16:55+02:00",
+          "tree_id": "3d0fc29d3e58f32198c00c900fdc923f7d81be16",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b53636cbd8f179f248cc6672aaf658863982c603"
+        },
+        "date": 1720808451895,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 23",
             "unit": "ns/iter"
           }
         ]
