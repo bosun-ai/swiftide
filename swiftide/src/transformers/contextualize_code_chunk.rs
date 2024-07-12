@@ -2,10 +2,9 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
-use indoc::indoc;
 
 /// `ContextualizeCodeChunk` adds context to code chunks by making use of file-level metadata.
 #[derive(Debug, Clone, Builder)]
@@ -14,7 +13,7 @@ pub struct ContextualizeCodeChunk {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
 }
@@ -41,7 +40,7 @@ impl ContextualizeCodeChunk {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             concurrency: None,
         }
     }
@@ -60,31 +59,10 @@ impl ContextualizeCodeChunk {
 /// # Returns
 ///
 /// A string representing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r"
-
-            # Task
-            Your task is to filter the given file context to the code chunk provided. The goal is
-            to provide a context that is still contains the lines needed for understanding the code in the chunk whilst
-            leaving out any irrelevant information.
-
-            # Constraints
-            * Only use lines from the provided context, do not add any additional information
-            * Ensure that the selection you make is the most appropriate for the code chunk
-            * You do not need to repeat the code chunk in your response, it will be appended directly
-              after your response.
-
-            # Code
-            ```
-            {code}
-            ```
-
-            # Context
-            ```
-            {context}
-            ```
-        "}
-    .to_string()
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name(
+        "src/transformers/prompts/contextualize_code_chunk.prompt.md",
+    )
 }
 
 impl ContextualizeCodeChunkBuilder {
@@ -129,11 +107,12 @@ impl Transformer for ContextualizeCodeChunk {
         }
 
         let prompt = self
-            .prompt
-            .replace("{context}", context.as_str())
-            .replace("{code}", &node.chunk);
+            .prompt_template
+            .to_prompt()
+            .with_context_value("context", context.as_str())
+            .with_context_value("code", node.chunk.clone());
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
         node.chunk = response + "\n\n" + &node.chunk;
 
