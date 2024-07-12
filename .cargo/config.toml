@@ -1,2 +1,0 @@
-[build]
-rustflags = ["-Clink-arg=-fuse-ld=lld"]
