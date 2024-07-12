@@ -1,3 +1,35 @@
+//! Prompts templating and management
+//!
+//! Prompts are first class citizens in Swiftide and use [tera] under the hood. tera
+//! uses jinja style templates which allows for a lot of flexibility.
+//!
+//! Conceptually, a [Prompt] is something you send to i.e. [Simpleprompt]. A prompt can have
+//! added context for substitution and other templating features.
+//!
+//! Transformers in Swiftide come with default prompts, and they can be customized or replaced as
+//! needed.
+//!
+//! `PromptTemplates` can be added with `PromptTemplate::try_compiled_from_str`. Prompts can also be
+//! created on the fly from anything that implements [Into<String>]. Compiled prompts are stored in
+//! an internal repository.
+//!
+//! Additionally, `PromptTemplate::String` and `PromptTemplate::Static` can be used to create
+//! templates on the fly as well.
+//!
+//! It's recommended to precompile your templates.
+//!
+//! # Example
+//!
+//! ```
+//! #[tokio::main]
+//! # async fn main() {
+//! # use swiftide::prompt::PromptTemplate;
+//! let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
+//! let prompt = template.to_prompt().with_context_value("world", "swiftide");
+//!
+//! assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+//! # }
+//! ```
 use anyhow::{Context as _, Result};
 use lazy_static::lazy_static;
 use tera::Tera;
@@ -7,7 +39,8 @@ use uuid::Uuid;
 use crate::ingestion::Node;
 
 lazy_static! {
-    pub static ref TEMPLATES: RwLock<Tera> = {
+    /// Tera repository for templates
+    pub static ref TEMPLATE_REPOSITORY: RwLock<Tera> = {
         match Tera::new("**/*.prompt.md") {
             Ok(t) => RwLock::new(t),
             Err(e) => {
@@ -17,39 +50,6 @@ lazy_static! {
         }
     };
 }
-
-/// Prompts templating and management
-///
-/// Prompts are first class citizens in Swiftide and use [tera] under the hood. tera
-/// uses jinja style templates which allows for a lot of flexibility.
-///
-/// Conceptually, a [Prompt] is something you send to i.e. [Simpleprompt]. A prompt can have
-/// added context for substitution and other templating features.
-///
-/// Transformers in Swiftide come with default prompts, and they can be customized or replaced as
-/// needed.
-///
-/// `PromptTemplates` can be added with `PromptTemplate::try_compiled_from_str`. Prompts can also be
-/// created on the fly from anything that implements [Into<String>]. Compiled prompts are stored in
-/// an internal repository.
-///
-/// Additionally, `PromptTemplate::String` and `PromptTemplate::Static` can be used to create
-/// templates on the fly as well.
-///
-/// It's recommended to precompile your templates.
-///
-/// # Example
-///
-/// ```
-/// #[tokio::main]
-/// # async fn main() {
-/// # use swiftide::prompt::PromptTemplate;
-/// let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
-/// let prompt = template.to_prompt().with_context_value("world", "swiftide");
-///
-/// assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
-/// # }
-/// ```
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
@@ -82,7 +82,7 @@ impl<'tmpl> PromptTemplate {
         template: impl AsRef<str> + Send + 'static,
     ) -> Result<PromptTemplate> {
         let id = Uuid::new_v4().to_string();
-        let mut lock = TEMPLATES.write().await;
+        let mut lock = TEMPLATE_REPOSITORY.write().await;
         lock.add_raw_template(&id, template.as_ref())
             .context("Failed to add raw template")?;
 
@@ -106,7 +106,7 @@ impl<'tmpl> PromptTemplate {
 
         let template = match self {
             CompiledTemplate(id) => {
-                let lock = TEMPLATES.read().await;
+                let lock = TEMPLATE_REPOSITORY.read().await;
                 let available = lock.get_template_names().collect::<Vec<_>>().join(", ");
                 tracing::debug!(id, available, "Rendering template ...");
                 let result = lock.render(id, context);
