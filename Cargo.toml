@@ -1,6 +1,3 @@
 [workspace]
 members = ["swiftide", "examples", "benchmarks"]
 resolver = "2"
-
-[profile.dev]
-debug = 0
