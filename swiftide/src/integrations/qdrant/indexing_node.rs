@@ -92,7 +92,7 @@ mod tests {
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
         },
-        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]), 
@@ -109,7 +109,7 @@ mod tests {
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::PerField
         },
-        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]), 
@@ -134,7 +134,7 @@ mod tests {
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
         },
-        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]), 

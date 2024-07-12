@@ -2,10 +2,9 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{indexing::Node, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
-use indoc::indoc;
 
 pub const NAME: &str = "Questions and Answers (code)";
 
@@ -18,7 +17,7 @@ pub struct MetadataQACode {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
     #[builder(default)]
@@ -45,7 +44,7 @@ impl MetadataQACode {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             num_questions: 5,
             concurrency: None,
         }
@@ -61,45 +60,10 @@ impl MetadataQACode {
 /// Returns the default prompt template for generating questions and answers.
 ///
 /// This template includes placeholders for the number of questions and the code chunk.
-///
-/// # Returns
-///
-/// A string representing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r"
-
-            # Task
-            Your task is to generate questions and answers for the given code. 
-
-            Given that somebody else might ask questions about the code, consider things like:
-            * What does this code do?
-            * What other internal parts does the code use?
-            * Does this code have any dependencies?
-            * What are some potential use cases for this code?
-            * ... and so on
-
-            # Constraints 
-            * Generate only {questions} questions and answers.
-            * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the code.
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            Q1: What does this code do?
-            A1: It transforms strings into integers.
-            Q2: What other internal parts does the code use?
-            A2: A hasher to hash the strings.
-            ```
-
-            # Code
-            ```
-            {code}
-            ```
-
-        "}
-    .to_string()
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name(
+        "src/transformers/prompts/metadata_qa_code.prompt.md",
+    )
 }
 
 impl MetadataQACodeBuilder {
@@ -130,11 +94,12 @@ impl Transformer for MetadataQACode {
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
-            .prompt
-            .replace("{questions}", &self.num_questions.to_string())
-            .replace("{code}", &node.chunk);
+            .prompt_template
+            .to_prompt()
+            .with_node(&node)
+            .with_context_value("questions", self.num_questions);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
         node.metadata.insert(NAME.into(), response);
 
@@ -151,6 +116,17 @@ mod test {
     use crate::MockSimplePrompt;
 
     use super::*;
+
+    #[tokio::test]
+    async fn test_template() {
+        let template = default_prompt();
+
+        let prompt = template
+            .to_prompt()
+            .with_node(&Node::new("test"))
+            .with_context_value("questions", 5);
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
 
     #[tokio::test]
     async fn test_metadata_qacode() {
