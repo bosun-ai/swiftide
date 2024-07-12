@@ -116,4 +116,3 @@ multiple_crate_versions = "allow"
 
 [package.metadata.docs.rs]
 all-features = true
-cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
