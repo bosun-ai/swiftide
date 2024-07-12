@@ -230,16 +230,13 @@ impl From<EmbeddedField> for VectorConfig {
 pub type Distance = qdrant::Distance;
 
 /// Utility struct combining `Node` with `EmbeddedField`s of configured _Qdrant_ vectors.
-pub(self) struct NodeWithVectors {
+ struct NodeWithVectors {
     vector_fields: HashSet<EmbeddedField>,
     node: Node,
 }
 
 impl NodeWithVectors {
     pub fn new(node: Node, vector_fields: HashSet<EmbeddedField>) -> Self {
-        Self {
-            node,
-            vector_fields,
-        }
+        Self { vector_fields, node }
     }
 }

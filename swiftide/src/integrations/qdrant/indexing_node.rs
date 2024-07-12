@@ -103,7 +103,7 @@ mod tests {
             embed_mode: crate::ingestion::EmbedMode::SingleWithMetadata
         },
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]), 
@@ -121,7 +121,7 @@ mod tests {
             embed_mode: crate::ingestion::EmbedMode::PerField
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
-        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]), 
@@ -148,7 +148,7 @@ mod tests {
             embed_mode: crate::ingestion::EmbedMode::Both
         },
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(6516159902038153111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1")), 
