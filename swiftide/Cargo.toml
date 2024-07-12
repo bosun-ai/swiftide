@@ -114,7 +114,3 @@ multiple_crate_versions = "allow"
 
 [package.metadata.docs.rs]
 all-features = true
-
-[profile.dev.package]
-insta.opt-level = 3
-similar.opt-level = 3
