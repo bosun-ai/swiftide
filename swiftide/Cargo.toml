@@ -10,8 +10,7 @@ categories = ["asynchronous"]
 repository = "https://github.com/bosun-ai/swiftide-rs"
 
 [dependencies]
-anyhow = { version = "1.0", features = ["backtrace"] }
-async-stream = "0.3"
+anyhow = { version = "1.0" }
 async-trait = "0.1"
 chrono = { version = "0.4" }
 derive_builder = "0.20"
