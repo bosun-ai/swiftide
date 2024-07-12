@@ -1,12 +1,46 @@
-//! Swiftide - Document and code indexation for retrieval augmented generation
+//! # Swiftide
 //!
-//! Swiftide is a straightforward, easy-to-use, easy-to-extend asynchronous file indexing and processing system. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+//! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 //!
-//! Part of the bosun.ai project. An upcoming platform for autonomous code improvement.
+//! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 //!
 //! We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue.
 //!
-//! # Feature flags
+//! Read more about the project on the [swiftide website](https://swiftide.rs)
+//!
+//! ## Features
+//!
+//! - Extremely fast streaming indexing pipeline with async, parallel processing
+//! - Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
+//! - A variety of loaders, transformers, and embedders and other common, generic tools
+//! - Bring your own transformers by extending straightforward traits
+//! - Store into multiple backends
+//! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
+//!
+//! ## Example
+//!
+//! ```no_run
+//! # use swiftide::loaders::FileLoader;
+//! # use swiftide::transformers::*;
+//! # use swiftide::integrations::qdrant::Qdrant;
+//! # use swiftide::indexation::Pipeline;
+//!  Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
+//!          .then_chunk(ChunkMarkdown::with_chunk_range(10..512))
+//!          .then(MetadataQAText::new(openai_client.clone()))
+//!          .then_in_batch(10, Embed::new(openai_client.clone()))
+//!          .then_store_with(
+//!              Qdrant::try_from_url(qdrant_url)?
+//!                  .batch_size(50)
+//!                  .vector_size(1536)
+//!                  .collection_name("swiftide-examples".to_string())
+//!                  .build()?,
+//!          )
+//!          .run()
+//!          .await?;
+//! ```
+//!
+//! ## Feature flags
+//!
 //! Swiftide has little features enabled by default as there are some dependency heavy
 //! integrations.
 //!
