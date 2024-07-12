@@ -95,6 +95,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` with the updated embed mode.
+    #[must_use]
     pub fn with_embed_mode(mut self, embed_mode: EmbedMode) -> Self {
         self.stream = self
             .stream

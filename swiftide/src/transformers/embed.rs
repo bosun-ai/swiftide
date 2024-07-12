@@ -227,7 +227,7 @@ mod tests {
     ]; "Multiple nodes EmbedMode::Both with multiple metadata.")]
     #[test_case(vec![]; "No ingestion nodes")]
     #[tokio::test]
-    async fn batch_transform<'a>(test_data: Vec<TestData<'a>>) {
+    async fn batch_transform(test_data: Vec<TestData<'_>>) {
         let test_nodes: Vec<Node> = test_data
             .iter()
             .map(|data| Node {

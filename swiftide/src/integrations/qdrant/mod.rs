@@ -159,9 +159,10 @@ impl QdrantBuilder {
     /// When not configured Pipeline by default configures vector only for [`EmbeddedField::Combined`]
     /// Default config is enough when [`crate::indexing::Pipeline::with_embed_mode`] is not set
     /// or when the value is set to [`crate::indexing::EmbedMode::SingleWithMetadata`].
+    #[must_use]
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {
-            self = self.vectors(Default::default());
+            self = self.vectors(HashMap::default());
         }
         let vector = vector.into();
         if let Some(vectors) = self.vectors.as_mut() {
@@ -176,7 +177,7 @@ impl QdrantBuilder {
     }
 
     fn default_vectors() -> HashMap<EmbeddedField, VectorConfig> {
-        HashMap::from([(Default::default(), Default::default())])
+        HashMap::from([(EmbeddedField::default(), VectorConfig::default())])
     }
 }
 
