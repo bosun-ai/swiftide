@@ -62,7 +62,7 @@ impl MetadataSummary {
 /// Generates the default prompt template for extracting a summary.
 fn default_prompt() -> PromptTemplate {
     PromptTemplate::from_compiled_template_name(
-        "src/transformers/prompts/metadata_qa_summary.prompt.md",
+        "src/transformers/prompts/metadata_summary.prompt.md",
     )
 }
 
