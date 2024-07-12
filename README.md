@@ -66,15 +66,13 @@ Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-**Swiftide** is a straightforward, easy-to-use, easy-to-extend asynchronous data indexing and processing library. It is designed to be used in a RAG (Retrieval Augmented Generation) system. It is built to be fast and efficient, with a focus on parallel processing and asynchronous operations.
+Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 
 <div align="center">
-  <a href="https://github.com/bosun-ai/swiftide">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
-  </a>
 </div>
 
-While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Indexing performance went from multiple tens of minutes to a few seconds.
+While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Indexing performance went from tens of minutes to a few seconds.
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
@@ -114,10 +112,11 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 ## Features
 
-- Extremely fast streaming indexing pipeline with async, parallel processing
+- Fast streaming indexing pipeline with async, parallel processing
 - Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
+- Splitting and merging pipelines
 - Store into multiple backends
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
@@ -125,7 +124,7 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 
 ## Vision
 
-Our goal is to create an extremely fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create afast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -198,7 +197,7 @@ See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full li
 
 ## Contributing
 
-Swiftide is in a very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada:
+Swiftide is in a very early stage and we are aware that we lack features for the wider community. Contributions are very welcome. :tada:
 
 If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
