@@ -60,9 +60,7 @@ impl ContextualizeCodeChunk {
 ///
 /// A string representing the default prompt template.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name(
-        "src/transformers/prompts/contextualize_code_chunk.prompt.md",
-    )
+    PromptTemplate::from_compiled_template_name("contextualize_code_chunk.prompt.md")
 }
 
 impl ContextualizeCodeChunkBuilder {
@@ -91,8 +89,13 @@ impl Transformer for ContextualizeCodeChunk {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.contextualize_code_chunk")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let needs_context = match node.metadata.get("Original Size") {
-            Some(size) => size.parse::<usize>().unwrap() > node.chunk.len(),
+        let maybe_original_size = node
+            .metadata
+            .get("Original Size")
+            .map(|size| size.parse::<usize>().unwrap());
+
+        let needs_context = match maybe_original_size {
+            Some(size) => size > node.chunk.len(),
             None => false,
         };
 
@@ -105,16 +108,28 @@ impl Transformer for ContextualizeCodeChunk {
         } else {
             context = maybe_context.unwrap().clone();
         }
+        let original_size =
+            maybe_original_size.expect("Original Size not set in contextualize_code_chunk");
+
+        let offset = metadata
+            .get("Chunk Offset")
+            .map(|offset| offset.parse::<usize>().unwrap())
+            .expect("Chunk Offset not set in contextualize_code_chunk");
 
         let prompt = self
             .prompt_template
             .to_prompt()
+            .with_context_value("original_size", original_size)
+            .with_context_value("offset", offset)
             .with_context_value("context", context.as_str())
             .with_context_value("code", node.chunk.clone());
 
         let response = self.client.prompt(prompt).await?;
 
-        node.chunk = response + "\n\n" + &node.chunk;
+        node.chunk = format!(
+            "Shape of file ({} bytes):\n{}\n\nChunk (starting at byte {}):\n{}",
+            original_size, response, node.chunk, offset
+        );
 
         Ok(node)
     }
