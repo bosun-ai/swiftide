@@ -1,16 +1,17 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use indoc::indoc;
+
+pub const NAME: &str = "Questions and Answers (text)";
 
 /// This module defines the `MetadataQAText` struct and its associated methods,
 /// which are used for generating metadata in the form of questions and answers
-/// from a given text. It interacts with a client (e.g., OpenAI) to generate
-/// these questions and answers based on the text chunk in an `IngestionNode`.
+/// from a given text. It interacts with a client (e.g., `OpenAI`) to generate
+/// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataQAText` is responsible for generating questions and answers
 /// from a given text chunk. It uses a templated prompt to interact with a client
@@ -21,7 +22,7 @@ pub struct MetadataQAText {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
     #[builder(default)]
@@ -48,12 +49,13 @@ impl MetadataQAText {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             num_questions: 5,
             concurrency: None,
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -61,43 +63,8 @@ impl MetadataQAText {
 }
 
 /// Generates the default prompt template for generating questions and answers.
-///
-/// # Returns
-///
-/// A string containing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r#"
-
-            # Task
-            Your task is to generate questions and answers for the given text. 
-
-            Given that somebody else might ask questions about the text, consider things like:
-            * What does this text do?
-            * What other internal parts does the text use?
-            * Does this text have any dependencies?
-            * What are some potential use cases for this text?
-            * ... and so on
-
-            # Constraints 
-            * Generate at most {questions} questions and answers.
-            * Only respond in the example format
-            * Only respond with questions and answers that can be derived from the text.
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            Q1: What is the capital of France?
-            A1: Paris.
-            ```
-
-            # text
-            ```
-            {text}
-            ```
-
-        "#}
-    .to_string()
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name("metadata_qa_text.prompt.md")
 }
 
 impl MetadataQATextBuilder {
@@ -109,16 +76,16 @@ impl MetadataQATextBuilder {
 
 #[async_trait]
 impl Transformer for MetadataQAText {
-    /// Transforms an `IngestionNode` by generating questions and answers
+    /// Transforms an `Node` by generating questions and answers
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors
@@ -126,16 +93,16 @@ impl Transformer for MetadataQAText {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
-            .prompt
-            .replace("{questions}", &self.num_questions.to_string())
-            .replace("{text}", &node.chunk);
+            .prompt_template
+            .to_prompt()
+            .with_node(&node)
+            .with_context_value("questions", self.num_questions);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
-        node.metadata
-            .insert("Questions and Answers".to_string(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }
@@ -152,6 +119,17 @@ mod test {
     use super::*;
 
     #[tokio::test]
+    async fn test_template() {
+        let template = default_prompt();
+
+        let prompt = template
+            .to_prompt()
+            .with_node(&Node::new("test"))
+            .with_context_value("questions", 5);
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
+
+    #[tokio::test]
     async fn test_metadata_qacode() {
         let mut client = MockSimplePrompt::new();
 
@@ -160,12 +138,12 @@ mod test {
             .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
 
         let transformer = MetadataQAText::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 
         assert_eq!(
-            result.metadata.get("Questions and Answers").unwrap(),
+            result.metadata.get("Questions and Answers (text)").unwrap(),
             "Q1: Hello\nA1: World"
         );
     }

@@ -12,9 +12,7 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 //! [AWS Bedrock documentation]: https://docs.aws.amazon.com/bedrock/
 
-use swiftide::{
-    ingestion, integrations, loaders::FileLoader, persist::MemoryStorage, transformers,
-};
+use swiftide::{indexing, integrations, loaders::FileLoader, persist::MemoryStorage, transformers};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let memory_storage = MemoryStorage::default();
 
-    ingestion::IngestionPipeline::from_loader(FileLoader::new("./README.md"))
+    indexing::Pipeline::from_loader(FileLoader::new("./README.md"))
         .log_nodes()
         .then_chunk(transformers::ChunkMarkdown::from_chunk_range(100..512))
         .then(transformers::MetadataSummary::new(aws_bedrock.clone()))

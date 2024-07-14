@@ -1,5 +1,4 @@
 #![allow(clippy::from_over_into)]
-#![cfg(not(tarpaulin_include))]
 //! This module defines the `IngestionStream` type, which is used for handling asynchronous streams of `IngestionNode` items in the ingestion pipeline.
 
 use anyhow::Result;

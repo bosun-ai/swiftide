@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::{ingestion::IngestionNode, traits::NodeCache};
+use crate::{indexing::Node, traits::NodeCache};
 
 use super::Redis;
 
@@ -21,7 +21,7 @@ impl NodeCache for Redis {
     ///
     /// Logs an error and returns `false` if the cache check fails.
     #[tracing::instrument(skip_all, name = "node_cache.redis.get", fields(hit))]
-    async fn get(&self, node: &IngestionNode) -> bool {
+    async fn get(&self, node: &Node) -> bool {
         let cache_result = if let Some(mut cm) = self.lazy_connect().await {
             let result = redis::cmd("EXISTS")
                 .arg(self.cache_key_for_node(node))
@@ -59,7 +59,7 @@ impl NodeCache for Redis {
     ///
     /// Logs an error if the node cannot be set in the cache.
     #[tracing::instrument(skip_all, name = "node_cache.redis.get")]
-    async fn set(&self, node: &IngestionNode) {
+    async fn set(&self, node: &Node) {
         if let Some(mut cm) = self.lazy_connect().await {
             let result: Result<(), redis::RedisError> = redis::cmd("SET")
                 .arg(self.cache_key_for_node(node))
@@ -77,7 +77,7 @@ impl NodeCache for Redis {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+
     use testcontainers::runners::AsyncRunner;
 
     /// Tests the `RedisNodeCache` implementation.
@@ -98,12 +98,11 @@ mod tests {
             .expect("Could not build redis client");
         cache.reset_cache().await;
 
-        let node = IngestionNode {
+        let node = Node {
             id: Some(1),
             path: "test".into(),
             chunk: "chunk".into(),
-            vector: None,
-            metadata: HashMap::new(),
+            ..Default::default()
         };
 
         let before_cache = cache.get(&node).await;

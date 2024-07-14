@@ -2,16 +2,19 @@
 //! It includes methods for setting up the storage, storing a single node, and storing a batch of nodes.
 //! This integration allows the Swiftide project to use Qdrant as a storage backend.
 
+use std::collections::HashSet;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use qdrant_client::qdrant::UpsertPointsBuilder;
 
 use crate::{
-    ingestion::{IngestionNode, IngestionStream},
+    indexing::{IndexingStream, Node},
+    ingestion::EmbeddedField,
     traits::Persist,
 };
 
-use super::Qdrant;
+use super::{NodeWithVectors, Qdrant};
 
 #[async_trait]
 impl Persist for Qdrant {
@@ -39,11 +42,11 @@ impl Persist for Qdrant {
         self.create_index_if_not_exists().await
     }
 
-    /// Stores a single ingestion node in the Qdrant storage.
+    /// Stores a single indexing node in the Qdrant storage.
     ///
     /// # Parameters
     ///
-    /// - `node`: The `IngestionNode` to be stored.
+    /// - `node`: The `Node` to be stored.
     ///
     /// # Returns
     ///
@@ -53,8 +56,9 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
-    async fn store(&self, node: crate::ingestion::IngestionNode) -> Result<IngestionNode> {
-        let point = node.clone().try_into()?;
+    async fn store(&self, node: crate::indexing::Node) -> Result<Node> {
+        let node_with_vectors = NodeWithVectors::new(node.clone(), self.vector_fields());
+        let point = node_with_vectors.try_into()?;
 
         tracing::debug!(?node, ?point, "Storing node");
 
@@ -67,11 +71,11 @@ impl Persist for Qdrant {
         Ok(node)
     }
 
-    /// Stores a batch of ingestion nodes in the Qdrant storage.
+    /// Stores a batch of indexing nodes in the Qdrant storage.
     ///
     /// # Parameters
     ///
-    /// - `nodes`: A vector of `IngestionNode` to be stored.
+    /// - `nodes`: A vector of `Node` to be stored.
     ///
     /// # Returns
     ///
@@ -81,10 +85,11 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if any node conversion or storage operation fails.
     #[tracing::instrument(skip_all, name = "storage.qdrant.batch_store")]
-    async fn batch_store(&self, nodes: Vec<crate::ingestion::IngestionNode>) -> IngestionStream {
+    async fn batch_store(&self, nodes: Vec<crate::indexing::Node>) -> IndexingStream {
         let points = nodes
             .iter()
-            .map(|node| node.clone().try_into())
+            .map(|node| NodeWithVectors::new(node.clone(), self.vector_fields()))
+            .map(NodeWithVectors::try_into)
             .collect::<Result<Vec<_>>>();
 
         if points.is_err() {
@@ -104,9 +109,15 @@ impl Persist for Qdrant {
             .await;
 
         if result.is_ok() {
-            IngestionStream::iter(nodes.into_iter().map(Ok))
+            IndexingStream::iter(nodes.into_iter().map(Ok))
         } else {
             vec![Err(result.unwrap_err().into())].into()
         }
+    }
+}
+
+impl Qdrant {
+    fn vector_fields(&self) -> HashSet<EmbeddedField> {
+        self.vectors.keys().cloned().collect()
     }
 }

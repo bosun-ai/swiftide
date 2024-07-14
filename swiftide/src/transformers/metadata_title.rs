@@ -1,16 +1,17 @@
 //! Generate a title and adds it as metadata
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use indoc::indoc;
+
+pub const NAME: &str = "Title";
 
 /// This module defines the `MetadataTitle` struct and its associated methods,
 /// which are used for generating metadata in the form of a title
-/// for a given text. It interacts with a client (e.g., OpenAI) to generate
-/// these questions and answers based on the text chunk in an `IngestionNode`.
+/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
+/// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataTitle` is responsible for generating a title
 /// for a given text chunk. It uses a templated prompt to interact with a client
@@ -21,7 +22,7 @@ pub struct MetadataTitle {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
 }
@@ -46,11 +47,12 @@ impl MetadataTitle {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             concurrency: None,
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -58,34 +60,8 @@ impl MetadataTitle {
 }
 
 /// Generates the default prompt template for generating questions and answers.
-///
-/// # Returns
-///
-/// A string containing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r#"
-
-            # Task
-            Your task is to generate a descriptive, concise title for the given text
-
-            # Constraints 
-            * Only respond in the example format
-            * Respond with a title that is accurate and descriptive without fluff
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            <title>
-            ```
-
-            # Text
-            ```
-            {text}
-            ```
-
-        "#}
-    .to_string()
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name("metadata_title.prompt.md")
 }
 
 impl MetadataTitleBuilder {
@@ -97,16 +73,16 @@ impl MetadataTitleBuilder {
 
 #[async_trait]
 impl Transformer for MetadataTitle {
-    /// Transforms an `IngestionNode` by generating questions and answers
+    /// Transforms an `Node` by generating questions and answers
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors
@@ -114,12 +90,12 @@ impl Transformer for MetadataTitle {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_title")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
-        let prompt = self.prompt.replace("{text}", &node.chunk);
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+        let prompt = self.prompt_template.to_prompt().with_node(&node);
 
-        let response = self.client.prompt(&prompt).await?;
+        let response = self.client.prompt(prompt).await?;
 
-        node.metadata.insert("Title".to_string(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }
@@ -135,6 +111,14 @@ mod test {
 
     use super::*;
 
+    #[test_log::test(tokio::test)]
+    async fn test_template() {
+        let template = default_prompt();
+
+        let prompt = template.to_prompt().with_node(&Node::new("test"));
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
+
     #[tokio::test]
     async fn test_metadata_title() {
         let mut client = MockSimplePrompt::new();
@@ -144,7 +128,7 @@ mod test {
             .returning(|_| Ok("A Title".to_string()));
 
         let transformer = MetadataTitle::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

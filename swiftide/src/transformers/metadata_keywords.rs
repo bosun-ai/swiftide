@@ -1,16 +1,17 @@
 //! Extract keywords from a node and add them as metadata
 use std::sync::Arc;
 
-use crate::{ingestion::IngestionNode, SimplePrompt, Transformer};
+use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use indoc::indoc;
+
+pub const NAME: &str = "Keywords";
 
 /// This module defines the `MetadataKeywords` struct and its associated methods,
 /// which are used for generating metadata in the form of keywords
-/// for a given text. It interacts with a client (e.g., OpenAI) to generate
-/// the keywords based on the text chunk in an `IngestionNode`.
+/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
+/// the keywords based on the text chunk in a `Node`.
 
 /// `MetadataKeywords` is responsible for generating keywords
 /// for a given text chunk. It uses a templated prompt to interact with a client
@@ -21,7 +22,7 @@ pub struct MetadataKeywords {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt: String,
+    prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
 }
@@ -46,11 +47,12 @@ impl MetadataKeywords {
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
-            prompt: default_prompt(),
+            prompt_template: default_prompt(),
             concurrency: None,
         }
     }
 
+    #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
         self
@@ -58,36 +60,8 @@ impl MetadataKeywords {
 }
 
 /// Generates the default prompt template for extracting keywords.
-///
-/// # Returns
-///
-/// A string containing the default prompt template.
-fn default_prompt() -> String {
-    indoc! {r#"
-
-            # Task
-            Your task is to generate a descriptive, concise keywords for the given text
-
-            # Constraints 
-            * Only respond in the example format
-            * Respond with a keywords that are representative of the text
-            * Only include keywords that are literally included in the text
-            * Respond with a comma-separated list of keywords
-
-            # Example
-            Respond in the following example format and do not include anything else:
-
-            ```
-            <keyword>,<other-keyword>
-            ```
-
-            # Text
-            ```
-            {text}
-            ```
-
-        "#}
-    .to_string()
+fn default_prompt() -> PromptTemplate {
+    PromptTemplate::from_compiled_template_name("metadata_keywords.prompt.md")
 }
 
 impl MetadataKeywordsBuilder {
@@ -99,16 +73,16 @@ impl MetadataKeywordsBuilder {
 
 #[async_trait]
 impl Transformer for MetadataKeywords {
-    /// Transforms an `IngestionNode` by extracting a keywords
+    /// Transforms an `Node` by extracting a keywords
     /// based on the text chunk within the node.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `IngestionNode` containing the text chunk to process.
+    /// * `node` - The `Node` containing the text chunk to process.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the transformed `IngestionNode` with added metadata,
+    /// A `Result` containing the transformed `Node` with added metadata,
     /// or an error if the transformation fails.
     ///
     /// # Errors
@@ -116,12 +90,11 @@ impl Transformer for MetadataKeywords {
     /// This function will return an error if the client fails to generate
     /// a keywords from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_keywords")]
-    async fn transform_node(&self, mut node: IngestionNode) -> Result<IngestionNode> {
-        let prompt = self.prompt.replace("{text}", &node.chunk);
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+        let prompt = self.prompt_template.to_prompt().with_node(&node);
+        let response = self.client.prompt(prompt).await?;
 
-        let response = self.client.prompt(&prompt).await?;
-
-        node.metadata.insert("Keywords".to_string(), response);
+        node.metadata.insert(NAME.into(), response);
 
         Ok(node)
     }
@@ -137,6 +110,14 @@ mod test {
 
     use super::*;
 
+    #[test_log::test(tokio::test)]
+    async fn test_template() {
+        let template = default_prompt();
+
+        let prompt = template.to_prompt().with_node(&Node::new("test"));
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
+
     #[tokio::test]
     async fn test_metadata_keywords() {
         let mut client = MockSimplePrompt::new();
@@ -146,7 +127,7 @@ mod test {
             .returning(|_| Ok("important,keywords".to_string()));
 
         let transformer = MetadataKeywords::builder().client(client).build().unwrap();
-        let node = IngestionNode::new("Some text");
+        let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 
