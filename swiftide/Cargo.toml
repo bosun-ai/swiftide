@@ -64,6 +64,7 @@ aws-credential-types = { version = "1.2", features = [
 aws-sdk-bedrockruntime = { version = "1.37", features = [
   "behavior-version-latest",
 ], optional = true }
+regex = "1.10.5"
 
 [features]
 default = []

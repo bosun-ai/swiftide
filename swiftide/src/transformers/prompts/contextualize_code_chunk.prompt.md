@@ -4,14 +4,15 @@ Your task is to filter the given file context to the code chunk provided. The go
 ## Constraints
   * Only use lines from the provided context, do not add any additional information
   * Ensure that the selection you make is the most appropriate for the code chunk
+  * Make sure you include any definitions or imports that are used in the code chunk
   * You do not need to repeat the code chunk in your response, it will be appended directly after your response.
 
 ## Code
 ```
-{code}
+{{ code }}
 ```
 
 ## Context
 ```
-{context}
+{{ context }}
 ```

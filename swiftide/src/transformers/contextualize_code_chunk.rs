@@ -18,6 +18,14 @@ pub struct ContextualizeCodeChunk {
     concurrency: Option<usize>,
 }
 
+fn extract_markdown_codeblock(text: String) -> String {
+    let re = regex::Regex::new(r"(?sm)```\w*\n(.*?)```").unwrap();
+    let captures = re.captures(text.as_str());
+    captures
+        .map(|c| c.get(1).unwrap().as_str().to_string())
+        .unwrap_or(text)
+}
+
 impl ContextualizeCodeChunk {
     pub fn builder() -> ContextualizeCodeChunkBuilder {
         ContextualizeCodeChunkBuilder::default()
@@ -119,17 +127,15 @@ impl Transformer for ContextualizeCodeChunk {
         let prompt = self
             .prompt_template
             .to_prompt()
+            // TODO: Context should have line numbers so it is easier to associate the chunk with the context
             .with_context_value("original_size", original_size)
             .with_context_value("offset", offset)
             .with_context_value("context", context.as_str())
             .with_context_value("code", node.chunk.clone());
 
-        let response = self.client.prompt(prompt).await?;
+        let response = extract_markdown_codeblock(self.client.prompt(prompt).await?);
 
-        node.chunk = format!(
-            "Shape of file ({} bytes):\n{}\n\nChunk (starting at byte {}):\n{}",
-            original_size, response, node.chunk, offset
-        );
+        node.metadata.insert("Context (code)".to_string(), response);
 
         Ok(node)
     }

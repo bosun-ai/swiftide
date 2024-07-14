@@ -91,11 +91,15 @@ impl Transformer for MetadataQACode {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let prompt = self
+        let mut prompt = self
             .prompt_template
             .to_prompt()
             .with_node(&node)
             .with_context_value("questions", self.num_questions);
+
+        if let Some(context) = node.metadata.get("Context (code)") {
+            prompt = prompt.with_context_value("context", context.clone());
+        }
 
         let response = self.client.prompt(prompt).await?;
 
