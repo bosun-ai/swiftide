@@ -110,12 +110,11 @@ impl Transformer for ContextualizeCodeChunk {
         let metadata = &mut node.metadata;
         let maybe_context = metadata.get("Context (code)");
         let has_context = maybe_context.is_some();
-        let context;
-        if !needs_context || !has_context {
+        let context = if !needs_context || !has_context {
             return Ok(node);
         } else {
-            context = maybe_context.unwrap().clone();
-        }
+            maybe_context.unwrap()
+        };
         let original_size =
             maybe_original_size.expect("Original Size not set in contextualize_code_chunk");
 
