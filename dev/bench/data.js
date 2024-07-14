@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720814227294,
+  "lastUpdate": 1720951796451,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1259,6 +1259,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "47418b5d729aef1e2ff77dabd7e29b5131512b01",
+          "message": "fix(prompts): Fix breaking issue with prompts not found\n\nCloses #172",
+          "timestamp": "2024-07-14T12:05:09+02:00",
+          "tree_id": "417d2e7450cd0280300589010216848fcdc23e56",
+          "url": "https://github.com/bosun-ai/swiftide/commit/47418b5d729aef1e2ff77dabd7e29b5131512b01"
+        },
+        "date": 1720951796068,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 13",
             "unit": "ns/iter"
           }
         ]
