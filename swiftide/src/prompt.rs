@@ -41,7 +41,12 @@ use crate::ingestion::Node;
 lazy_static! {
     /// Tera repository for templates
     pub static ref TEMPLATE_REPOSITORY: RwLock<Tera> = {
-        match Tera::new("**/*.prompt.md") {
+        let path = "./src/transformers/prompts/**/*.prompt.md";
+
+        match Tera::new(path).and_then(|mut t| {
+            t.extend(&Tera::new("swiftide/src/transformers/prompts/*.prompt.md")?)?;
+            Ok(t)
+        }) {
             Ok(t) => RwLock::new(t),
             Err(e) => {
                 tracing::error!("Parsing error(s): {e}");
@@ -114,6 +119,7 @@ impl<'tmpl> PromptTemplate {
                 if result.is_err() {
                     tracing::error!(
                         error = result.as_ref().unwrap_err().to_string(),
+                        available,
                         "Error rendering template {id}"
                     );
                 }

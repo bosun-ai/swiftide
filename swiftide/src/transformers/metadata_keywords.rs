@@ -61,9 +61,7 @@ impl MetadataKeywords {
 
 /// Generates the default prompt template for extracting keywords.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name(
-        "src/transformers/prompts/metadata_keywords.prompt.md",
-    )
+    PromptTemplate::from_compiled_template_name("metadata_keywords.prompt.md")
 }
 
 impl MetadataKeywordsBuilder {
@@ -112,7 +110,7 @@ mod test {
 
     use super::*;
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_template() {
         let template = default_prompt();
 
