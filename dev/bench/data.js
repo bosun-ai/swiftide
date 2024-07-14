@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720971728080,
+  "lastUpdate": 1720973486028,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1427,6 +1427,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 11",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "3c297bbb85fd3ae9b411a691024f622702da3617",
+          "message": "fix(swiftide): remove include from Cargo.toml",
+          "timestamp": "2024-07-14T18:07:18+02:00",
+          "tree_id": "ad543db94b07a05b632b368153a1b8302469643a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3c297bbb85fd3ae9b411a691024f622702da3617"
+        },
+        "date": 1720973485709,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 29",
             "unit": "ns/iter"
           }
         ]
