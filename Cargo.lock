@@ -3262,10 +3262,8 @@ checksum = "eb7527de5e2ea7a239d3bc1da8b2d6db5652322daa1cbf4b3a55ad670f3891ed"
 dependencies = [
  "anyhow",
  "derive_builder",
- "futures-util",
  "prost",
  "prost-types",
- "reqwest",
  "serde",
  "serde_json",
  "thiserror",
@@ -4195,7 +4193,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "async-openai",

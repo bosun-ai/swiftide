@@ -61,7 +61,7 @@ impl MetadataTitle {
 
 /// Generates the default prompt template for generating questions and answers.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("src/transformers/prompts/metadata_title.prompt.md")
+    PromptTemplate::from_compiled_template_name("metadata_title.prompt.md")
 }
 
 impl MetadataTitleBuilder {
@@ -111,7 +111,7 @@ mod test {
 
     use super::*;
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_template() {
         let template = default_prompt();
 

@@ -64,9 +64,7 @@ impl MetadataQAText {
 
 /// Generates the default prompt template for generating questions and answers.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name(
-        "src/transformers/prompts/metadata_qa_text.prompt.md",
-    )
+    PromptTemplate::from_compiled_template_name("metadata_qa_text.prompt.md")
 }
 
 impl MetadataQATextBuilder {
