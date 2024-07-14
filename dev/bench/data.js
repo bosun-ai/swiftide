@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720951796451,
+  "lastUpdate": 1720952484053,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1301,6 +1301,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 13",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dbca9c8a0cb413bc47b38f95297c9c46ecd2ae99",
+          "message": "chore: release v0.6.3 (#173)",
+          "timestamp": "2024-07-14T12:17:31+02:00",
+          "tree_id": "f2d28ec15fc09b838900c9307e0be04c3f840f7c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dbca9c8a0cb413bc47b38f95297c9c46ecd2ae99"
+        },
+        "date": 1720952483734,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 8",
             "unit": "ns/iter"
           }
         ]
