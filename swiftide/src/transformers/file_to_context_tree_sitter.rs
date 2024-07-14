@@ -15,8 +15,6 @@ pub const NAME: &str = "Context (code)";
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct FileToContextTreeSitter {
     summarizer: CodeSummarizer,
-    #[builder(default)]
-    concurrency: Option<usize>,
 }
 
 impl FileToContextTreeSitter {
@@ -37,13 +35,7 @@ impl FileToContextTreeSitter {
     pub fn try_for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
         Ok(Self {
             summarizer: CodeSummarizer::builder().try_language(lang)?.build()?,
-            concurrency: None,
         })
-    }
-
-    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
-        self.concurrency = Some(concurrency);
-        self
     }
 }
 
@@ -64,9 +56,5 @@ impl Transformer for FileToContextTreeSitter {
         let summary_result = self.summarizer.summarize(&node.chunk)?;
         node.metadata.insert(NAME.into(), summary_result);
         Ok(node)
-    }
-
-    fn concurrency(&self) -> Option<usize> {
-        self.concurrency
     }
 }

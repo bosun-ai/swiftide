@@ -25,6 +25,9 @@ impl CodeSummarizerBuilder {
     /// # Returns
     ///
     /// * `Result<Self>` - The builder instance with the language set, or an error if the language is not supported.
+    ///
+    /// # Errors
+    /// * If the language is not supported, an error is returned.
     pub fn try_language(mut self, language: impl TryInto<SupportedLanguages>) -> Result<Self> {
         self.language = Some(
             language
@@ -68,6 +71,9 @@ impl CodeSummarizer {
     /// # Returns
     ///
     /// * `Result<String>` - A result containing a string, or an error if the code could not be parsed.
+    ///
+    /// # Errors
+    /// * If the code could not be parsed, an error is returned.
     pub fn summarize(&self, code: &str) -> Result<String> {
         let mut parser = Parser::new();
         parser.set_language(&self.language.into())?;
@@ -76,30 +82,23 @@ impl CodeSummarizer {
 
         if root_node.has_error() {
             anyhow::bail!("Root node has invalid syntax");
-        } else {
-            let mut cursor = root_node.walk();
-            let mut summary = String::with_capacity(code.len());
-            let mut last_end = 0;
-            self.summarize_node(&mut cursor, code, &mut summary, &mut last_end);
-            Ok(summary)
         }
+
+        let mut cursor = root_node.walk();
+        let mut summary = String::with_capacity(code.len());
+        let mut last_end = 0;
+        self.summarize_node(&mut cursor, code, &mut summary, &mut last_end);
+        Ok(summary)
     }
 
     fn is_unneeded_node(&self, node: Node) -> bool {
         // We can use self.language to determine if a node is needed
         match self.language {
-            SupportedLanguages::Rust => match node.kind() {
-                "line_comment" => false,
-                "block" => true,
-                _ => false,
-            },
-            SupportedLanguages::Typescript => match node.kind() {
-                "line_comment" => false,
-                "statement_block" => true,
-                _ => false,
-            },
+            SupportedLanguages::Rust => matches!(node.kind(), "block"),
+            SupportedLanguages::Typescript | SupportedLanguages::Javascript => {
+                matches!(node.kind(), "statement_block")
+            }
             SupportedLanguages::Python => match node.kind() {
-                "line_comment" => false,
                 "block" => {
                     let parent = node.parent().expect("Python block node has no parent");
                     parent.kind() == "function_definition"
@@ -107,18 +106,12 @@ impl CodeSummarizer {
                 _ => false,
             },
             SupportedLanguages::Ruby => match node.kind() {
-                "line_comment" => false,
                 "body_statement" => {
                     let parent = node
                         .parent()
                         .expect("Ruby body_statement node has no parent");
                     parent.kind() == "def"
                 }
-                _ => false,
-            },
-            SupportedLanguages::Javascript => match node.kind() {
-                "line_comment" => false,
-                "statement_block" => true,
                 _ => false,
             },
         }
@@ -148,7 +141,7 @@ impl CodeSummarizer {
             summary.push_str(&source[*last_end..node.start_byte()]);
             *last_end = node.end_byte();
             if cursor.goto_next_sibling() {
-                self.summarize_node(cursor, source, summary, last_end)
+                self.summarize_node(cursor, source, summary, last_end);
             }
             return;
         }
@@ -157,7 +150,7 @@ impl CodeSummarizer {
 
         // If the node is a non-leaf, recursively summarize its children
         if next_cursor.goto_first_child() {
-            self.summarize_node(&mut next_cursor, source, summary, last_end)
+            self.summarize_node(&mut next_cursor, source, summary, last_end);
         // If the node is a leaf, add the text to the summary
         } else {
             summary.push_str(&source[*last_end..node.end_byte()]);
@@ -165,7 +158,7 @@ impl CodeSummarizer {
         }
 
         if cursor.goto_next_sibling() {
-            self.summarize_node(cursor, source, summary, last_end)
+            self.summarize_node(cursor, source, summary, last_end);
         } else {
             // Done with this node
         }
