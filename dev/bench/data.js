@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720952484053,
+  "lastUpdate": 1720971492784,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1343,6 +1343,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 8",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b54691f769e2d0ac7886938b6e837551926eea2f",
+          "message": "fix(prompts): include default prompts in crate (#174)\n\n- **add prompts to crate**\r\n- **load prompts via cargo manifest dir**",
+          "timestamp": "2024-07-14T17:34:26+02:00",
+          "tree_id": "e5311b930f6a131c82f8c6d67a7fd3d0b3ecdd6c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b54691f769e2d0ac7886938b6e837551926eea2f"
+        },
+        "date": 1720971491816,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
