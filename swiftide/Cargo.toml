@@ -9,7 +9,6 @@ description = "Blazing fast, streaming document and code indexation"
 categories = ["asynchronous"]
 repository = "https://github.com/bosun-ai/swiftide-rs"
 homepage = "https://swiftide.rs"
-include = ["/**/*.prompt.md"]
 
 [badges]
 
