@@ -33,7 +33,6 @@ A2: A hasher to hash the strings.
 {{ context }}
 ```
 {% endif %}
-
 # Code
 
 ```

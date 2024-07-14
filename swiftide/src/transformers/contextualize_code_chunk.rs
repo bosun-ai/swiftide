@@ -166,10 +166,16 @@ mod test {
         node.metadata
             .insert("Original Size".to_string(), "100".to_string());
         node.metadata
+            .insert("Chunk Offset".to_string(), "0".to_string());
+        node.metadata
             .insert("Context (code)".to_string(), "Some context".to_string());
 
         let result = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(result.chunk, "RelevantContext\n\nSome text");
+        assert_eq!(result.chunk, "Some text");
+        assert_eq!(
+            result.metadata.get("Context (code)").unwrap(),
+            "RelevantContext"
+        );
     }
 }
