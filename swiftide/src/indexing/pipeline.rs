@@ -36,7 +36,7 @@ impl Default for Pipeline {
 }
 
 impl Pipeline {
-    /// Creates an `Pipeline` from a given loader.
+    /// Creates a `Pipeline` from a given loader.
     ///
     /// # Arguments
     ///
@@ -53,7 +53,7 @@ impl Pipeline {
         }
     }
 
-    /// Creates an `Pipeline` from a given stream.
+    /// Creates a `Pipeline` from a given stream.
     ///
     /// # Arguments
     ///
@@ -69,7 +69,8 @@ impl Pipeline {
         }
     }
 
-    /// Sets the concurrency level for the pipeline.
+    /// Sets the concurrency level for the pipeline. By default the concurrency is set to the
+    /// number of cpus.
     ///
     /// # Arguments
     ///
@@ -84,7 +85,8 @@ impl Pipeline {
         self
     }
 
-    /// Sets the embed mode for the pipeline.
+    /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a [`Node`]
+    /// be embedded with a vector when transforming with [`crate::transformers::Embed`]
     ///
     /// See also [`super::node::EmbedMode`].
     ///

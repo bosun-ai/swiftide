@@ -1,6 +1,7 @@
 #![allow(clippy::from_over_into)]
 #![cfg(not(tarpaulin_include))]
-//! This module defines the `IndexingStream` type, which is used for handling asynchronous streams of `Node` items in the indexing pipeline.
+
+//! This module defines the `IndexingStream` type, which is used internally by a pipeline  for handling asynchronous streams of `Node` items in the indexing pipeline.
 
 use anyhow::Result;
 use futures_util::stream::{self, Stream};
@@ -73,7 +74,6 @@ impl IndexingStream {
         }
     }
 
-    // NOTE: Can we really guarantee that the iterator will outlive the stream?
     pub fn iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = Result<Node>> + Send + 'static,
