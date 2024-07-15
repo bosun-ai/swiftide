@@ -1,7 +1,10 @@
 //! Various transformers for chunking, embedding and transforming data
 //!
-//! These transformers are generic over their implementation. In most cases you will also need
-//! to enable integrations.
+//! These transformers are generic over their implementation and many require an
+//! [`crate::integrations`] to be configured.
+//!
+//! Transformers that prompt have a default prompt configured. Prompts can be customized
+//! and tailored, supporting Jinja style templating based on [`terra`]. See [`crate::prompt::Prompt`] and [`crate::prompt::PromptTemplate`]
 
 #[cfg(feature = "tree-sitter")]
 pub mod chunk_code;

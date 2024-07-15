@@ -71,7 +71,7 @@ pub enum PromptTemplate {
 }
 
 impl<'tmpl> PromptTemplate {
-    /// Creates a reference to a template stored in the repository
+    /// Creates a reference to a template already stored in the repository
     pub fn from_compiled_template_name(name: impl Into<String>) -> PromptTemplate {
         PromptTemplate::CompiledTemplate(name.into())
     }

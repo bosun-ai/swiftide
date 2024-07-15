@@ -108,6 +108,8 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .await?;
 ```
 
+_You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Features
