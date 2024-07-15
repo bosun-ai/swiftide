@@ -1,3 +1,68 @@
 [workspace]
 changelog_path = "./CHANGELOG.md"
-changelog_config = "cliff.toml"
+
+[changelog]
+body = """
+{%- if not version %}
+## [unreleased]
+{% else -%}
+## {{package}} - [{{ version }}](https://github.com/bosun-ai/swiftide/releases/tag/{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+{% endif -%}
+
+{% macro commit(commit) -%}
+- [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/bosun-ai/swiftide/commit/" ~ commit.id }}) \
+*({{commit.scope | default(value = "uncategorized") | lower }})* {{ commit.message | upper_first | trim }}\
+{% if commit.github.username %} by @{{ commit.github.username }}{%- endif -%}\
+{% if commit.github.pr_number %} in [#{{ commit.github.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.github.pr_number }}){%- endif %}\
+{%- if (commit.github.username and commit.github.username is not containing("[bot]")) %}
+{%- if commit.breaking %} [**breaking**]{% endif %}
+{%- if commit.body %}
+
+````text {#- 4 backticks escape any backticks in body #}
+{{commit.body | indent(prefix="  ") }}
+````
+{%- endif %}
+{%- for footer in commit.footers %}
+{%- if footer.token != "Signed-off-by" and footer.token != "Co-authored-by" %}
+{{ footer.token | indent(prefix="  ") }}{{ footer.separator }}{{ footer.value }}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{% endmacro -%}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits | filter(attribute="scope") | sort(attribute="scope") %}
+{{ self::commit(commit=commit) }}
+{%- endfor -%}
+{% for commit in commits %}
+{%- if not commit.scope %}
+{{ self::commit(commit=commit) }}
+{%- endif -%}
+{%- endfor -%}
+{%- endfor %}
+
+{%- if github.contributors -%}
+{% if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
+### New Contributors
+{%- endif %}\
+{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
+* @{{ contributor.username }} made their first contribution
+{%- if contributor.pr_number %} in \
+[#{{ contributor.pr_number }}]({{ self::remote_url() }}/pull/{{ contributor.pr_number }}) \
+{%- endif %}
+{%- endfor -%}
+{% endif -%}
+
+{% if version %}
+{% if previous.version %}
+**Full Changelog**: {{ self::remote_url() }}/compare/{{ previous.version }}...{{ version }}
+{% endif %}
+{% else -%}
+  {% raw %}\n{% endraw %}
+{% endif %}
+
+{%- macro remote_url() -%}
+https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
+{% endmacro %}
+"""
