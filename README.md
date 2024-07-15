@@ -127,7 +127,7 @@ _You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/
 
 ## Vision
 
-Our goal is to create afast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create a fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
