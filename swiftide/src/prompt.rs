@@ -3,14 +3,15 @@
 //! Prompts are first class citizens in Swiftide and use [tera] under the hood. tera
 //! uses jinja style templates which allows for a lot of flexibility.
 //!
-//! Conceptually, a [Prompt] is something you send to i.e. [`crate::traits::Simpleprompt`]. A prompt can have
+//! Conceptually, a [Prompt] is something you send to i.e.
+//! [`SimplePrompt`][crate::traits::SimplePrompt]. A prompt can have
 //! added context for substitution and other templating features.
 //!
 //! Transformers in Swiftide come with default prompts, and they can be customized or replaced as
 //! needed.
 //!
-//! `PromptTemplates` can be added with [`PromptTemplate::try_compiled_from_str`]. Prompts can also be
-//! created on the fly from anything that implements [Into<String>]. Compiled prompts are stored in
+//! [`PromptTemplate`] can be added with [`PromptTemplate::try_compiled_from_str`]. Prompts can also be
+//! created on the fly from anything that implements [`Into<String>`]. Compiled prompts are stored in
 //! an internal repository.
 //!
 //! Additionally, `PromptTemplate::String` and `PromptTemplate::Static` can be used to create
@@ -40,7 +41,7 @@ use crate::ingestion::Node;
 
 lazy_static! {
     /// Tera repository for templates
-    pub static ref TEMPLATE_REPOSITORY: RwLock<Tera> = {
+    static ref TEMPLATE_REPOSITORY: RwLock<Tera> = {
         let prefix = env!("CARGO_MANIFEST_DIR");
         let path = format!("{prefix}/src/transformers/prompts/**/*.prompt.md");
 
@@ -76,8 +77,28 @@ impl<'tmpl> PromptTemplate {
         PromptTemplate::CompiledTemplate(name.into())
     }
 
+    /// Extends the prompt repository with a custom [`terra::Tera`] instance.
+    ///
+    /// If you have your own prompt templates or want to add other functionality, you can extend
+    /// the repository with your own [`terra::Tera`] instance.
+    ///
+    /// WARN: Do not use this inside a pipeline or any form of load, as it will lock the repository
+    ///
+    /// # Errors
+    ///
+    /// Errors if the repository could not be extended
+    pub async fn extend(tera: &Tera) -> Result<()> {
+        TEMPLATE_REPOSITORY
+            .write()
+            .await
+            .extend(tera)
+            .context("Could not extend prompt repository with custom Tera instance")
+    }
+
     /// Compiles a template from a string and returns a `PromptTemplate` with a reference to the
     /// string.
+    ///
+    /// WARN: Do not use this inside a pipeline or any form of load, as it will lock the repository
     ///
     /// # Errors
     ///
@@ -234,6 +255,23 @@ mod test {
     async fn test_one_off_from_string() {
         let mut prompt: Prompt = "hello {{world}}".into();
         prompt = prompt.with_context_value("world", "swiftide");
+
+        assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+    }
+
+    #[tokio::test]
+    async fn test_extending_with_custom_repository() {
+        let mut custom_tera = Tera::new("**/some/prompts.md").unwrap();
+
+        custom_tera
+            .add_raw_template("hello", "hello {{world}}")
+            .unwrap();
+
+        PromptTemplate::extend(&custom_tera).await.unwrap();
+
+        let prompt = PromptTemplate::from_compiled_template_name("hello")
+            .to_prompt()
+            .with_context_value("world", "swiftide");
 
         assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
     }
