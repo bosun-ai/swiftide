@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721059782321,
+  "lastUpdate": 1721062684003,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1553,6 +1553,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 41",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "eltociear@gmail.com",
+            "name": "Ikko Eltociear Ashimine",
+            "username": "eltociear"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "143c7c9c2638737166f23f2ef8106b7675f6e19b",
+          "message": "docs(README): fix typo (#180)",
+          "timestamp": "2024-07-15T18:54:14+02:00",
+          "tree_id": "18645a513eb0206c9118af2ea7eb26938239ad1c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/143c7c9c2638737166f23f2ef8106b7675f6e19b"
+        },
+        "date": 1721062683401,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 2",
             "unit": "ns/iter"
           }
         ]
