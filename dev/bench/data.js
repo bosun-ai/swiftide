@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720973486028,
+  "lastUpdate": 1721049017549,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1469,6 +1469,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 29",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b95b3955f89ed231cc156dab749ee7bb8be98ee5",
+          "message": "docs(swiftide): documentation improvements and cleanup (#176)\n\n- **chore: remove ingestion stream**\r\n- **Documentation and grammar**",
+          "timestamp": "2024-07-15T15:06:22+02:00",
+          "tree_id": "35797d543eb6cdcda9ede6fed2f17e4fc6ca760c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b95b3955f89ed231cc156dab749ee7bb8be98ee5"
+        },
+        "date": 1721049016977,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
