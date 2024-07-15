@@ -4216,6 +4216,8 @@ dependencies = [
  "pin-project-lite",
  "qdrant-client",
  "redis",
+ "reqwest",
+ "secrecy",
  "serde",
  "serde_json",
  "spider",

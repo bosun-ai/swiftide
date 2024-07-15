@@ -4,6 +4,8 @@
 pub mod aws_bedrock;
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
+#[cfg(feature = "groq")]
+pub mod groq;
 #[cfg(feature = "openai")]
 pub mod openai;
 #[cfg(feature = "qdrant")]
