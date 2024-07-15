@@ -44,11 +44,6 @@ where
 #[async_trait]
 /// Transforms batched single nodes into streams of nodes
 pub trait BatchableTransformer: Send + Sync {
-    /// Defines the batch size for the transformer
-    fn batch_size(&self) -> Option<usize> {
-        None
-    }
-
     /// Transforms a batch of nodes into a stream of nodes
     async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream;
 
