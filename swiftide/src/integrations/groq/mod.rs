@@ -10,22 +10,39 @@ use self::config::GroqConfig;
 mod config;
 mod simple_prompt;
 
-/// The `Groq` struct encapsulates an `Groq` client and default options for  prompt models.
-/// It uses the `Builder` pattern for flexible and customizable instantiation.
+/// The `Groq` struct encapsulates a `Groq` client that implements [`crate::SimplePrompt`]
+///
+/// There is also a builder available.
+///
+/// By default it will look for a `GROQ_API_KEY` environment variable. Note that a model
+/// always needs to be set, either with [`Groq::with_default_prompt_model`] or via the builder.
+/// You can find available models in the Groq documentation.
+///
+/// Under the hood it uses [`async_openai`], with the Groq openai mapping. This means
+/// some features might not work as expected. See the Groq documentation for details.
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct Groq {
     /// The `Groq` client, wrapped in an `Arc` for thread-safe reference counting.
     /// Defaults to a new instance of `async_openai::Client`.
-    #[builder(default = "self.default_client()", setter(custom))]
+    #[builder(default = "default_client()", setter(custom))]
     client: Arc<async_openai::Client<GroqConfig>>,
     /// Default options for prompt models.
     #[builder(default)]
     default_options: Options,
 }
 
+impl Default for Groq {
+    fn default() -> Self {
+        Self {
+            client: default_client(),
+            default_options: Options::default(),
+        }
+    }
+}
+
 /// The `Options` struct holds configuration options for the `Groq` client.
-/// It includes optional fields for specifying the prompt models.
+/// It includes optional fields for specifying the prompt model.
 #[derive(Debug, Default, Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Options {
@@ -46,14 +63,17 @@ impl Groq {
     pub fn builder() -> GroqBuilder {
         GroqBuilder::default()
     }
+
+    /// Sets a default prompt model to use when prompting
+    pub fn with_default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
+        self.default_options = Options {
+            prompt_model: Some(model.into()),
+        };
+        self
+    }
 }
 
 impl GroqBuilder {
-    #[allow(clippy::unused_self)]
-    fn default_client(&self) -> Arc<async_openai::Client<GroqConfig>> {
-        async_openai::Client::with_config(GroqConfig::default()).into()
-    }
-
     /// Sets the `Groq` client for the `Groq` instance.
     ///
     /// # Parameters
@@ -85,11 +105,14 @@ impl GroqBuilder {
     }
 }
 
+fn default_client() -> Arc<async_openai::Client<GroqConfig>> {
+    async_openai::Client::with_config(GroqConfig::default()).into()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
-    /// test default model
     #[test]
     fn test_default_prompt_model() {
         let openai = Groq::builder()
@@ -107,6 +130,19 @@ mod test {
             .unwrap();
         assert_eq!(
             openai.default_options.prompt_model,
+            Some("llama3-8b-8192".to_string())
+        );
+    }
+
+    #[test]
+    fn test_building_via_default() {
+        let mut client = Groq::default();
+
+        assert!(client.default_options.prompt_model.is_none());
+
+        client.with_default_prompt_model("llama3-8b-8192");
+        assert_eq!(
+            client.default_options.prompt_model,
             Some("llama3-8b-8192".to_string())
         );
     }

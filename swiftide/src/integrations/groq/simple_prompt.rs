@@ -45,7 +45,7 @@ impl SimplePrompt for Groq {
         // Log the request for debugging purposes.
         tracing::debug!(
             messages = serde_json::to_string_pretty(&request)?,
-            "[SimplePrompt] Request to openai"
+            "[SimplePrompt] Request to groq"
         );
 
         // Send the request to the Groq API and await the response.
@@ -54,7 +54,7 @@ impl SimplePrompt for Groq {
         // Log the response for debugging purposes.
         tracing::debug!(
             response = serde_json::to_string_pretty(&response)?,
-            "[SimplePrompt] Response from openai"
+            "[SimplePrompt] Response from groq"
         );
 
         // Extract and return the content of the response, returning an error if not found.

@@ -115,7 +115,7 @@ _You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/
 ## Features
 
 - Fast streaming indexing pipeline with async, parallel processing
-- Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
+- Integrations with OpenAI, Groq, Redis, Qdrant, FastEmbed, and Treesitter
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
 - Splitting and merging pipelines
