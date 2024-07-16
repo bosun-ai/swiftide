@@ -10,6 +10,10 @@ use super::supported_languages::SupportedLanguages;
 ///
 /// It does so by parsing the code file and removing function bodies, leaving only the function signatures and
 /// other top-level declarations along with any comments.
+///
+/// The resulting summary can be used as a context when considering subsets of the code file, or for determining
+/// relevance of the code file to a given task.
+///
 #[builder(setter(into), build_fn(error = "anyhow::Error"))]
 pub struct CodeSummarizer {
     #[builder(setter(custom))]
