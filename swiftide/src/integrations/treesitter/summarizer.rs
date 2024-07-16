@@ -8,7 +8,8 @@ use super::supported_languages::SupportedLanguages;
 #[derive(Debug, Builder, Clone)]
 /// Generates a summary of a code file.
 ///
-/// Supports splitting code files into chunks based on a maximum size or a range of bytes.
+/// It does so by parsing the code file and removing function bodies, leaving only the function signatures and
+/// other top-level declarations along with any comments.
 #[builder(setter(into), build_fn(error = "anyhow::Error"))]
 pub struct CodeSummarizer {
     #[builder(setter(custom))]
