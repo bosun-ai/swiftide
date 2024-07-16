@@ -11,6 +11,9 @@ use crate::{
 
 pub const NAME: &str = "Context (code)";
 
+/// FileToContextTreeSitter adds a "Context (Code)" field to the metadata of a node that contains
+/// a summary of the code in the node. It uses the tree-sitter parser to parse the code and
+/// remove any information that is less relevant for tasks that consider the file as a whole.
 #[derive(Debug, Clone, Builder)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct FileToContextTreeSitter {
@@ -42,6 +45,8 @@ impl FileToContextTreeSitter {
 #[async_trait]
 impl Transformer for FileToContextTreeSitter {
     /// Adds a context to the metadata of a `Node` containing code.
+    ///
+    /// It uses the `CodeSummarizer` to generate the context.
     ///
     /// # Parameters
     /// - `node`: The `Node` containing the code of which the context is to be generated.
