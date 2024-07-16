@@ -77,10 +77,10 @@ impl<'tmpl> PromptTemplate {
         PromptTemplate::CompiledTemplate(name.into())
     }
 
-    /// Extends the prompt repository with a custom [`terra::Tera`] instance.
+    /// Extends the prompt repository with a custom [`tera::Tera`] instance.
     ///
     /// If you have your own prompt templates or want to add other functionality, you can extend
-    /// the repository with your own [`terra::Tera`] instance.
+    /// the repository with your own [`tera::Tera`] instance.
     ///
     /// WARN: Do not use this inside a pipeline or any form of load, as it will lock the repository
     ///
