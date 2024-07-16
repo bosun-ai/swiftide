@@ -4,7 +4,7 @@
 //! [`crate::integrations`] to be configured.
 //!
 //! Transformers that prompt have a default prompt configured. Prompts can be customized
-//! and tailored, supporting Jinja style templating based on [`terra`]. See [`crate::prompt::Prompt`] and [`crate::prompt::PromptTemplate`]
+//! and tailored, supporting Jinja style templating based on [`tera`]. See [`crate::prompt::Prompt`] and [`crate::prompt::PromptTemplate`]
 
 #[cfg(feature = "tree-sitter")]
 pub mod chunk_code;
