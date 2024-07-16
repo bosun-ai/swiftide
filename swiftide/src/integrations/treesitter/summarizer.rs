@@ -97,7 +97,6 @@ impl CodeSummarizer {
     }
 
     fn is_unneeded_node(&self, node: Node) -> bool {
-        // We can use self.language to determine if a node is needed
         match self.language {
             SupportedLanguages::Rust => matches!(node.kind(), "block"),
             SupportedLanguages::Typescript | SupportedLanguages::Javascript => {

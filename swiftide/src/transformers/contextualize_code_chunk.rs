@@ -6,7 +6,9 @@ use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 
-/// `ContextualizeCodeChunk` adds context to code chunks by making use of file-level metadata.
+/// `ContextualizeCodeChunk` rewrites the "Context (Code)" metadata field of a chunk to
+/// condense it and make it more relevant to the chunk in question. It is useful as a
+/// step after chunking a file that has had context generated for it with `FileToContextTreeSitter`.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ContextualizeCodeChunk {
