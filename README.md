@@ -112,6 +112,12 @@ _You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Vision
+
+Our goal is to create a fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Features
 
 - Fast streaming indexing pipeline with async, parallel processing
@@ -123,12 +129,70 @@ _You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/
 - Store into multiple backends
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+### ... and more
 
-## Vision
+<details>
+<summary>
 
-Our goal is to create a fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+#### Supported Large Language Model providers
 
+</summary>
+
+- OpenAI (and Azure) - All models and embeddings
+- AWS Bedrock - Anthropic and Titan
+- Groq - All models
+
+</details>
+
+<details>
+<summary>
+
+#### Loading data
+
+</summary>
+
+- Files
+- Scraping
+- Other pipelines and streams
+
+</details>
+
+<details>
+<summary>
+
+#### Transformers and metadata generation
+
+</summary>
+
+- Generate Question and answerers for both text and code (Hyde)
+- Summaries, titles and queries via an LLM
+- Extract definitions and references with tree-sitter
+
+</details>
+
+<details>
+<summary>
+
+#### Splitting and chunking
+
+</summary>
+
+- Markdown
+- Code (with tree-sitter)
+
+</details>
+
+<details>
+<summary>
+
+#### Storage
+
+</summary>
+
+- Qdrant
+- Redis
+
+</details>
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
