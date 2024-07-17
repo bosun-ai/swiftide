@@ -3,7 +3,7 @@
 //! Uses tree-sitter to do the extractions. It tries to only get unique definitions and references,
 //! and only references that are not local.
 //!
-//! See the [`integrations::treesitter::CodeParser`] tests for some examples.
+//! See the [`crate::integrations::treesitter::CodeParser`] tests for some examples.
 //!
 //! # Example
 //!

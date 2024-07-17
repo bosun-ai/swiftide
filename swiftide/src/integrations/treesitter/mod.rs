@@ -1,4 +1,4 @@
-//! Chunking code with tree-sitter
+//! Chunking code with tree-sitter and various tools
 mod code_tree;
 mod queries;
 mod splitter;
