@@ -4,6 +4,36 @@
 //! and only references that are not local.
 //!
 //! See the [`integrations::treesitter::CodeParser`] tests for some examples.
+//!
+//! # Example
+//!
+//! ```no_run
+//! # use swiftide::indexing::Node;
+//! # use swiftide::transformers::metadata_refs_defs_code::*;
+//! # use swiftide::Transformer;
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let transformer = MetadataRefsDefsCode::try_from_language("rust").unwrap();
+//! let code = r#"
+//!   fn main() {
+//!     println!("Hello, World!");
+//!   }
+//! "#;
+//! let mut node = Node::new(code.to_string());
+//!
+//! node = transformer.transform_node(node).await.unwrap();
+//!
+//! assert_eq!(
+//!     node.metadata.get(NAME_REFERENCES),
+//!     Some(&"println".to_string())
+//! );
+//! assert_eq!(
+//!     node.metadata.get(NAME_DEFINITIONS),
+//!     Some(&"main".to_string())
+//! );
+//! # Ok(())
+//! # }
+//! ```
 use derive_builder::Builder;
 
 use crate::{
