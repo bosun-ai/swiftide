@@ -14,6 +14,7 @@ pub mod embed;
 pub mod metadata_keywords;
 pub mod metadata_qa_code;
 pub mod metadata_qa_text;
+pub mod metadata_refs_defs_code;
 pub mod metadata_summary;
 pub mod metadata_title;
 
@@ -25,5 +26,6 @@ pub use embed::Embed;
 pub use metadata_keywords::MetadataKeywords;
 pub use metadata_qa_code::MetadataQACode;
 pub use metadata_qa_text::MetadataQAText;
+pub use metadata_refs_defs_code::MetadataRefsDefsCode;
 pub use metadata_summary::MetadataSummary;
 pub use metadata_title::MetadataTitle;
