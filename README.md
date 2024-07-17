@@ -129,66 +129,16 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Store into multiple backends
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
-### ... and more
+### In detail
 
-<details>
-<summary>
+| **Feature**                                  | **Details**                                                                                                                                                          |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models                                                         |
+| **Loading data**                             | Files <br> Scraping <br> Other pipelines and streams                                                                                                                 |
+| **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
+| **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
+| **Storage**                                  | Qdrant <br> Redis                                                                                                                                                    |
 
-**Supported Large Language Model providers**
-
-</summary>
-
-- OpenAI (and Azure) - All models and embeddings
-- AWS Bedrock - Anthropic and Titan
-- Groq - All models
-
-</details>
-<details>
-<summary>
-
-**Loading data**
-
-</summary>
-
-- Files
-- Scraping
-- Other pipelines and streams
-
-</details>
-<details>
-<summary>
-
-**Transformers and metadata generation**
-
-</summary>
-
-- Generate Question and answerers for both text and code (Hyde)
-- Summaries, titles and queries via an LLM
-- Extract definitions and references with tree-sitter
-
-</details>
-<details>
-<summary>
-
-**Splitting and chunking**
-
-</summary>
-
-- Markdown
-- Code (with tree-sitter)
-
-</details>
-<details>
-<summary>
-
-**Storage**
-
-</summary>
-
-- Qdrant
-- Redis
-
-</details>
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
