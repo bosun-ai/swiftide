@@ -134,7 +134,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 <details>
 <summary>
 
-#### Supported Large Language Model providers
+**Supported Large Language Model providers**
 
 </summary>
 
@@ -143,11 +143,10 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Groq - All models
 
 </details>
-
 <details>
 <summary>
 
-#### Loading data
+**Loading data**
 
 </summary>
 
@@ -156,11 +155,10 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Other pipelines and streams
 
 </details>
-
 <details>
 <summary>
 
-#### Transformers and metadata generation
+**Transformers and metadata generation**
 
 </summary>
 
@@ -169,11 +167,10 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Extract definitions and references with tree-sitter
 
 </details>
-
 <details>
 <summary>
 
-#### Splitting and chunking
+**Splitting and chunking**
 
 </summary>
 
@@ -181,11 +178,10 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Code (with tree-sitter)
 
 </details>
-
 <details>
 <summary>
 
-#### Storage
+**Storage**
 
 </summary>
 
