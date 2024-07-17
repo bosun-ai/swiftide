@@ -83,3 +83,30 @@ impl Transformer for MetadataRefsDefsCode {
         Ok(node)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_transform_node() {
+        let transformer = MetadataRefsDefsCode::try_from_language("rust").unwrap();
+        let code = r#"
+    fn main() {
+        println!("Hello, World!");
+    }
+    "#;
+        let mut node = Node::new(code.to_string());
+
+        node = transformer.transform_node(node).await.unwrap();
+
+        assert_eq!(
+            node.metadata.get(NAME_REFERENCES),
+            Some(&"println".to_string())
+        );
+        assert_eq!(
+            node.metadata.get(NAME_DEFINITIONS),
+            Some(&"main".to_string())
+        );
+    }
+}
