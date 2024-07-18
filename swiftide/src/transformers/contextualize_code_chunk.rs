@@ -99,31 +99,17 @@ impl Transformer for ContextualizeCodeChunk {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.contextualize_code_chunk")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let maybe_original_size = node
-            .metadata
-            .get("Original Size")
-            .map(|size| size.parse::<usize>().unwrap());
+        let original_size = node.original_size;
+        let needs_context = original_size != node.chunk.len();
 
-        let needs_context = match maybe_original_size {
-            Some(size) => size > node.chunk.len(),
-            None => false,
-        };
-
-        let metadata = &mut node.metadata;
-        let maybe_context = metadata.get("Context (code)");
-        let has_context = maybe_context.is_some();
-        let context = if !needs_context || !has_context {
+        let maybe_context = node.metadata.get("Context (code)");
+        let context = if !needs_context || !maybe_context.is_some() {
             return Ok(node);
         } else {
             maybe_context.unwrap()
         };
-        let original_size =
-            maybe_original_size.expect("Original Size not set in contextualize_code_chunk");
 
-        let offset = metadata
-            .get("Chunk Offset")
-            .map(|offset| offset.parse::<usize>().unwrap())
-            .expect("Chunk Offset not set in contextualize_code_chunk");
+        let offset = node.offset;
 
         let prompt = self
             .prompt_template
@@ -165,10 +151,8 @@ mod test {
             .build()
             .unwrap();
         let mut node = Node::new("Some text");
-        node.metadata
-            .insert("Original Size".to_string(), "100".to_string());
-        node.metadata
-            .insert("Chunk Offset".to_string(), "0".to_string());
+        node.offset = 0;
+
         node.metadata
             .insert("Context (code)".to_string(), "Some context".to_string());
 

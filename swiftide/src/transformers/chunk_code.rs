@@ -87,7 +87,6 @@ impl ChunkerTransformer for ChunkCode {
     /// - If the code splitting fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
     async fn transform_node(&self, node: Node) -> IndexingStream {
-        let file_size = node.chunk.len();
         let split_result = self.chunker.split(&node.chunk);
 
         if let Ok(split) = split_result {
@@ -99,10 +98,7 @@ impl ChunkerTransformer for ChunkCode {
                     chunk,
                     ..node.clone()
                 };
-                node.metadata
-                    .insert("Original Size".to_string(), file_size.to_string());
-                node.metadata
-                    .insert("Chunk Offset".to_string(), offset.to_string());
+                node.offset = offset;
                 offset += chunk_size;
                 Ok(node)
             }))

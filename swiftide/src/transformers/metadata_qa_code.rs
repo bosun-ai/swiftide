@@ -98,7 +98,7 @@ impl Transformer for MetadataQACode {
             .with_context_value("questions", self.num_questions);
 
         if let Some(context) = node.metadata.get("Context (code)") {
-            prompt = prompt.with_context_value("context", context.clone());
+            prompt = prompt.with_context_value("context", context.as_str());
         }
 
         let response = self.client.prompt(prompt).await?;
