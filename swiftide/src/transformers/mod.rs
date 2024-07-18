@@ -9,6 +9,15 @@
 #[cfg(feature = "tree-sitter")]
 pub mod chunk_code;
 
+#[cfg(feature = "tree-sitter")]
+pub mod metadata_refs_defs_code;
+
+#[cfg(feature = "tree-sitter")]
+pub use chunk_code::ChunkCode;
+
+#[cfg(feature = "tree-sitter")]
+pub use metadata_refs_defs_code::MetadataRefsDefsCode;
+
 pub mod chunk_markdown;
 pub mod embed;
 pub mod metadata_keywords;
@@ -16,9 +25,6 @@ pub mod metadata_qa_code;
 pub mod metadata_qa_text;
 pub mod metadata_summary;
 pub mod metadata_title;
-
-#[cfg(feature = "tree-sitter")]
-pub use chunk_code::ChunkCode;
 
 pub use chunk_markdown::ChunkMarkdown;
 pub use embed::Embed;
