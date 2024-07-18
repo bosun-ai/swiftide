@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721126076857,
+  "lastUpdate": 1721289226014,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1721,6 +1721,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 11",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f3091f72c74e816f6b9b8aefab058d610becb625",
+          "message": "feat(transformers): References and definitions from code (#186)",
+          "timestamp": "2024-07-18T09:49:58+02:00",
+          "tree_id": "d922566d70bd2efd96a300826cfedd0c983d780c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f3091f72c74e816f6b9b8aefab058d610becb625"
+        },
+        "date": 1721289225595,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
