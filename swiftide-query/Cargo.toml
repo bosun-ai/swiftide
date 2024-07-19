@@ -1,0 +1,17 @@
+[package]
+name = "swiftide-query"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
+futures-util = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
+num_cpus = { workspace = true }
+pin-project-lite = { workspace = true }
+
+# Internal
+swiftide = { path = "../swiftide" }

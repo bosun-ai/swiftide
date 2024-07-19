@@ -1,7 +1,18 @@
 [workspace]
-members = ["swiftide", "examples", "benchmarks"]
+members = ["swiftide", "swiftide-query", "examples", "benchmarks"]
 resolver = "2"
 
 [profile.dev.package]
 insta.opt-level = 3
 similar.opt-level = 3
+
+[workspace.dependencies]
+anyhow = { version = "1.0" }
+async-trait = "0.1"
+derive_builder = "0.20"
+futures-util = "0.3"
+tokio = { version = "1.38", features = ["full"] }
+tokio-stream = "0.1"
+tracing = { version = "0.1", features = ["log"] }
+num_cpus = "1.16"
+pin-project-lite = "0.2"
