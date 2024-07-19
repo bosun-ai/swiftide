@@ -4245,6 +4245,25 @@ dependencies = [
 [[package]]
 name = "swiftide-query"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "derive_builder",
+ "futures-util",
+ "insta",
+ "mockall",
+ "num_cpus",
+ "pin-project-lite",
+ "swiftide",
+ "temp-dir",
+ "test-case",
+ "test-log",
+ "testcontainers",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wiremock",
+]
 
 [[package]]
 name = "syn"

@@ -12,9 +12,20 @@ tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }
 num_cpus = { workspace = true }
 pin-project-lite = { workspace = true }
+tracing = { workspace = true }
 
 # Internal
 swiftide = { path = "../swiftide" }
+
+[dev-dependencies]
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+mockall = { workspace = true }
+temp-dir = { workspace = true }
+wiremock = { workspace = true }
+test-case = { workspace = true }
+insta = { workspace = true }
+
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -16,3 +16,12 @@ tokio-stream = "0.1"
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = "1.16"
 pin-project-lite = "0.2"
+
+# Testing
+test-log = "0.2.16"
+testcontainers = "0.20.0"
+mockall = "0.12.1"
+temp-dir = "0.1.13"
+wiremock = "0.6.0"
+test-case = "3.3.1"
+insta = { version = "1.39.0", features = ["yaml"] }
