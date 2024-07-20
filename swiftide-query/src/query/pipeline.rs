@@ -9,24 +9,28 @@ use tokio::sync::mpsc::Sender;
 use tracing::Instrument as _;
 
 use crate::{
-    search_strategy,
-    traits::{self, Retrieve, SearchStrategyMarker, TransformQuery, TransformResponse},
+    search_strategy::{self, SimilaritySingleEmbedding},
+    traits::{Retrieve, SearchStrategyMarker, TransformQuery, TransformResponse},
 };
 
-use super::{query_stream::QueryStream, Query};
+use super::{
+    query_stream::QueryStream,
+    states::{self, QueryTransformed},
+    Query, TransformableQuery,
+};
 
 /// TODO: Playing around with strategy
 /// Marker trait is _very_ loose
 ///
 /// Probably better to have a full trait, and then implement that for
 /// individual structs. Enums are not types.
-pub struct Pipeline<S: traits::SearchStrategyMarker = search_strategy::SimilaritySingleEmbedding> {
+pub struct Pipeline<'a, S: SearchStrategyMarker = SimilaritySingleEmbedding, T = states::Initial> {
     search_strategy: S,
-    stream: QueryStream,
-    query_sender: Sender<Result<Query>>,
+    stream: QueryStream<'a, T>,
+    query_sender: Sender<Result<Query<states::Initial>>>,
 }
 
-impl Default for Pipeline {
+impl Default for Pipeline<'_> {
     fn default() -> Self {
         let stream = QueryStream::default();
         Self {
@@ -40,27 +44,15 @@ impl Default for Pipeline {
     }
 }
 
-impl<S: traits::SearchStrategyMarker> Pipeline<S> {
-    pub fn with_search_strategy(&mut self, strategy: S) -> &mut Pipeline<S> {
-        self.search_strategy = strategy.into();
-
-        self
-    }
-
-    /// TODO: Play around with api here
-    ///
-    /// Try to:
-    /// Enable passing by ref
-    /// Make pipeline mutable, so that you don't need to do `pipeline = pipeline...`, that's just
-    /// dumb
+impl<'a, 'b, S: SearchStrategyMarker, Q: TransformableQuery> Pipeline<'a, S, Q> {
     pub fn then_transform_query<T: ToOwned<Owned = impl TransformQuery + 'static>>(
         &mut self,
         transformer: T,
-    ) -> &mut Pipeline<S> {
+    ) -> &mut Pipeline<'b, S, QueryTransformed> {
         let transformer = Arc::new(transformer.to_owned());
         let stream = std::mem::take(&mut self.stream);
 
-        self.stream = stream
+        let new_stream: QueryStream<'a, QueryTransformed>  = stream
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_transform_query", query = ?query, transformer = ?transformer);
@@ -70,6 +62,15 @@ impl<S: traits::SearchStrategyMarker> Pipeline<S> {
             .try_buffer_unordered(1)
             .boxed()
             .into();
+
+        self.stream = new_stream;
+        self
+    }
+}
+
+impl<'a, S: SearchStrategyMarker> Pipeline<'a, S> {
+    pub fn with_search_strategy(&mut self, strategy: S) -> &mut Pipeline<'a, S> {
+        self.search_strategy = strategy.into();
 
         self
     }
@@ -117,5 +118,9 @@ impl<S: traits::SearchStrategyMarker> Pipeline<S> {
         self
     }
 
-    pub fn query(&mut self, query: impl Into<Query>) -> Result<Query> {}
+    pub fn query(
+        &mut self,
+        query: impl Into<Query<states::Initial>>,
+    ) -> Result<Query<states::Answered>> {
+    }
 }

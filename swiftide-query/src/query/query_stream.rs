@@ -10,16 +10,16 @@ use pin_project_lite::pin_project;
 use super::Query;
 
 pin_project! {
-    pub struct QueryStream {
+    pub struct QueryStream<'stream, Q: 'stream> {
         #[pin]
-        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query>> + Send>>,
+        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send + 'stream>>,
 
         #[pin]
-        pub(crate) sender: Option<Sender<Result<Query>>>
+        pub(crate) sender: Option<Sender<Result<Query<Q>>>>
     }
 }
 
-impl Default for QueryStream {
+impl<'stream, T: Send + Sync + 'stream> Default for QueryStream<'stream, T> {
     fn default() -> Self {
         let (sender, receiver) = tokio::sync::mpsc::channel(1000);
 
@@ -30,8 +30,8 @@ impl Default for QueryStream {
     }
 }
 
-impl Stream for QueryStream {
-    type Item = Result<Query>;
+impl<'stream, Q: Send> Stream for QueryStream<'stream, Q> {
+    type Item = Result<Query<Q>>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -42,8 +42,10 @@ impl Stream for QueryStream {
     }
 }
 
-impl Into<QueryStream> for Pin<Box<dyn Stream<Item = Result<Query>> + Send>> {
-    fn into(self) -> QueryStream {
+impl<'stream, Q> Into<QueryStream<'stream, Q>>
+    for Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send>>
+{
+    fn into(self) -> QueryStream<'stream, Q> {
         QueryStream {
             inner: self,
             sender: None,

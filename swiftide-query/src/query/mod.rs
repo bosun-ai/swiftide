@@ -5,5 +5,5 @@ mod query;
 mod query_stream;
 
 pub use pipeline::Pipeline;
-pub use query::Query;
+pub use query::*;
 pub use query_stream::QueryStream;
