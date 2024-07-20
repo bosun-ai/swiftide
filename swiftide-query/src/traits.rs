@@ -8,10 +8,10 @@ pub trait TransformQuery: Send + Sync + std::fmt::Debug + ToOwned {
     async fn transform_query(&self, query: Query) -> Result<Query>;
 }
 
-pub trait SearchStrategy {}
+pub trait SearchStrategyMarker {}
 
 #[async_trait]
-pub trait Retrieve: Send + Sync + std::fmt::Debug + ToOwned {
+pub trait Retrieve<S: SearchStrategyMarker>: Send + Sync + std::fmt::Debug + ToOwned {
     async fn retrieve(&self, query: Query) -> Result<Query>;
 }
 

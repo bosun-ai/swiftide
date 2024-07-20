@@ -9,8 +9,8 @@ use tokio::sync::mpsc::Sender;
 use tracing::Instrument as _;
 
 use crate::{
-    search_strategy::SearchStrategy,
-    traits::{self, Retrieve, TransformQuery, TransformResponse},
+    search_strategy,
+    traits::{self, Retrieve, SearchStrategyMarker, TransformQuery, TransformResponse},
 };
 
 use super::{query_stream::QueryStream, Query};
@@ -20,8 +20,8 @@ use super::{query_stream::QueryStream, Query};
 ///
 /// Probably better to have a full trait, and then implement that for
 /// individual structs. Enums are not types.
-pub struct Pipeline<SEARCH_STRATEGY: traits::SearchStrategy = SearchStrategy> {
-    search_strategy: SEARCH_STRATEGY,
+pub struct Pipeline<S: traits::SearchStrategyMarker = search_strategy::SimilaritySingleEmbedding> {
+    search_strategy: S,
     stream: QueryStream,
     query_sender: Sender<Result<Query>>,
 }
@@ -40,9 +40,9 @@ impl Default for Pipeline {
     }
 }
 
-impl Pipeline {
-    pub fn with_search_strategy(&mut self, strategy: SearchStrategy) -> &mut Pipeline {
-        self.search_strategy = strategy;
+impl<S: traits::SearchStrategyMarker> Pipeline<S> {
+    pub fn with_search_strategy(&mut self, strategy: S) -> &mut Pipeline<S> {
+        self.search_strategy = strategy.into();
 
         self
     }
@@ -56,7 +56,7 @@ impl Pipeline {
     pub fn then_transform_query<T: ToOwned<Owned = impl TransformQuery + 'static>>(
         &mut self,
         transformer: T,
-    ) -> &mut Pipeline {
+    ) -> &mut Pipeline<S> {
         let transformer = Arc::new(transformer.to_owned());
         let stream = std::mem::take(&mut self.stream);
 
@@ -74,10 +74,10 @@ impl Pipeline {
         self
     }
 
-    pub fn then_retrieve<T: ToOwned<Owned = impl Retrieve + 'static>>(
+    pub fn then_retrieve<T: ToOwned<Owned = impl Retrieve<S> + 'static>>(
         &mut self,
         retriever: T,
-    ) -> &mut Pipeline {
+    ) -> &mut Pipeline<S> {
         let retriever = Arc::new(retriever.to_owned());
         let stream = std::mem::take(&mut self.stream);
 
@@ -99,7 +99,7 @@ impl Pipeline {
     pub fn then_transform_response<T: ToOwned<Owned = impl TransformResponse + 'static>>(
         &mut self,
         transformer: T,
-    ) -> &mut Pipeline {
+    ) -> &mut Pipeline<S> {
         let transformer = Arc::new(transformer.to_owned());
         let stream = std::mem::take(&mut self.stream);
 
