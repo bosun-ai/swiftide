@@ -71,10 +71,14 @@ pub enum PromptTemplate {
     Static(&'static str),
 }
 
-impl<'tmpl> PromptTemplate {
+impl PromptTemplate {
     /// Creates a reference to a template already stored in the repository
     pub fn from_compiled_template_name(name: impl Into<String>) -> PromptTemplate {
         PromptTemplate::CompiledTemplate(name.into())
+    }
+
+    pub fn from_string(template: impl Into<String>) -> PromptTemplate {
+        PromptTemplate::String(template.into())
     }
 
     /// Extends the prompt repository with a custom [`tera::Tera`] instance.
@@ -171,6 +175,18 @@ impl<'tmpl> PromptTemplate {
             template: self.clone(),
             context: Some(tera::Context::default()),
         }
+    }
+}
+
+impl From<&'static str> for PromptTemplate {
+    fn from(template: &'static str) -> Self {
+        PromptTemplate::Static(template)
+    }
+}
+
+impl From<String> for PromptTemplate {
+    fn from(template: String) -> Self {
+        PromptTemplate::String(template)
     }
 }
 
