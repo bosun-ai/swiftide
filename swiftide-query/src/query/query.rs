@@ -12,6 +12,29 @@ pub struct Query<State> {
     embedding: Option<Embedding>,
 }
 
+impl<T> Query<T> {
+    pub fn original(&self) -> &str {
+        &self.original
+    }
+
+    pub fn current(&self) -> &str {
+        &self.current
+    }
+}
+
+impl Query<states::Pending> {
+    pub fn update(&mut self, new_query: impl Into<String>) {
+        let new_query = new_query.into();
+
+        self.query_transformations.push(TransformationEvent {
+            before: self.current.clone(),
+            after: new_query.clone(),
+        });
+
+        self.current = new_query;
+    }
+}
+
 pub mod states {
     #[derive(Debug, Default)]
     pub struct Pending;
