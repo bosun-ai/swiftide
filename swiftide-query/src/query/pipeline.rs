@@ -10,7 +10,7 @@ use tracing::Instrument as _;
 
 use crate::{
     search_strategy::{self, SimilaritySingleEmbedding},
-    traits::{Answer, Retrieve, SearchStrategyMarker, TransformQuery, TransformResponse},
+    traits::{Answer, Retrieve, SearchStrategy, TransformQuery, TransformResponse},
 };
 
 // # Things to consider
@@ -27,7 +27,7 @@ use super::{
     Query,
 };
 
-pub struct Pipeline<'a, S: SearchStrategyMarker = SimilaritySingleEmbedding, T = states::Pending> {
+pub struct Pipeline<'a, S: SearchStrategy = SimilaritySingleEmbedding, T = states::Pending> {
     search_strategy: S,
     stream: QueryStream<'a, T>,
     query_sender: Sender<Result<Query<states::Pending>>>,
@@ -49,7 +49,7 @@ impl Default for Pipeline<'_> {
 
 impl<'stream: 'static, S> Pipeline<'stream, S, states::Pending>
 where
-    S: SearchStrategyMarker,
+    S: SearchStrategy,
 {
     pub fn then_transform_query<T: ToOwned<Owned = impl TransformQuery + 'stream>>(
         self,
@@ -80,7 +80,7 @@ where
     }
 }
 
-impl<'stream: 'static, S: SearchStrategyMarker> Pipeline<'stream, S, states::Pending> {
+impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Pending> {
     pub fn then_retrieve<T: ToOwned<Owned = impl Retrieve<S> + 'stream>>(
         self,
         retriever: T,
@@ -109,7 +109,7 @@ impl<'stream: 'static, S: SearchStrategyMarker> Pipeline<'stream, S, states::Pen
     }
 }
 
-impl<'stream: 'static, S: SearchStrategyMarker> Pipeline<'stream, S, states::Retrieved> {
+impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
     pub fn then_transform_response<T: ToOwned<Owned = impl TransformResponse + 'stream>>(
         self,
         transformer: T,
@@ -138,7 +138,7 @@ impl<'stream: 'static, S: SearchStrategyMarker> Pipeline<'stream, S, states::Ret
 }
 
 // Now for answering
-impl<'stream: 'static, S: SearchStrategyMarker> Pipeline<'stream, S, states::Retrieved> {
+impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
     pub fn then_answer<T: ToOwned<Owned = impl Answer + 'stream>>(
         self,
         answerer: T,
@@ -165,7 +165,7 @@ impl<'stream: 'static, S: SearchStrategyMarker> Pipeline<'stream, S, states::Ret
     }
 }
 
-impl<'a, S: SearchStrategyMarker> Pipeline<'a, S> {
+impl<'a, S: SearchStrategy> Pipeline<'a, S> {
     pub fn with_search_strategy(&mut self, strategy: S) -> &mut Pipeline<'a, S> {
         self.search_strategy = strategy.into();
 
