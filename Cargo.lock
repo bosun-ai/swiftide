@@ -1447,6 +1447,7 @@ dependencies = [
  "serde_json",
  "spider",
  "swiftide",
+ "swiftide-query",
  "tokio",
  "tracing-subscriber",
 ]

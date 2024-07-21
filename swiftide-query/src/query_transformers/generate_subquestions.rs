@@ -25,10 +25,12 @@ impl GenerateSubquestions {
         GenerateSubquestionsBuilder::default()
     }
 
-    pub fn from_client(client: impl SimplePrompt + 'static) -> GenerateSubquestionsBuilder {
+    pub fn from_client(client: impl SimplePrompt + 'static) -> GenerateSubquestions {
         GenerateSubquestionsBuilder::default()
             .client(client)
             .to_owned()
+            .build()
+            .expect("Failed to build GenerateSubquestions")
     }
 }
 

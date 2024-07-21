@@ -9,7 +9,7 @@ pub struct Query<State> {
     response_transformations: Vec<TransformationEvent>,
 
     // TODO: How would this work when doing a rollup query?
-    embedding: Option<Embedding>,
+    pub embedding: Option<Embedding>,
 }
 
 impl<T> Query<T> {

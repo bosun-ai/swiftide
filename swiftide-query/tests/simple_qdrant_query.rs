@@ -1,4 +1,4 @@
-use swiftide_query::{query, search_strategy::SimilaritySingleEmbedding};
+use swiftide_query::{query, query_transformers, search_strategy::SimilaritySingleEmbedding};
 
 #[test_log::test(tokio::test)]
 async fn test_simple_query() {

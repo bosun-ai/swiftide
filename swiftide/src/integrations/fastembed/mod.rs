@@ -34,6 +34,14 @@ pub struct FastEmbed {
     batch_size: Option<usize>,
 }
 
+impl std::fmt::Debug for FastEmbed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FastEmbedBuilder")
+            .field("batch_size", &self.batch_size)
+            .finish()
+    }
+}
+
 impl FastEmbed {
     /// Tries to build a default `FastEmbed` with `Flag Embedding`.
     ///
