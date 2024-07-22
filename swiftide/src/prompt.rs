@@ -174,6 +174,18 @@ impl<'tmpl> PromptTemplate {
     }
 }
 
+impl From<&'static str> for PromptTemplate {
+    fn from(template: &'static str) -> Self {
+        PromptTemplate::Static(template)
+    }
+}
+
+impl From<String> for PromptTemplate {
+    fn from(template: String) -> Self {
+        PromptTemplate::String(template)
+    }
+}
+
 impl Prompt {
     /// Adds an `ingestion::Node` to the context of the Prompt
     #[must_use]
@@ -274,5 +286,58 @@ mod test {
             .with_context_value("world", "swiftide");
 
         assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+    }
+
+    #[tokio::test]
+    async fn test_coercion_to_prompt() {
+        // str
+        let raw: &str = "hello {{world}}";
+
+        let prompt: Prompt = raw.into();
+        assert_eq!(
+            prompt
+                .with_context_value("world", "swiftide")
+                .render()
+                .await
+                .unwrap(),
+            "hello swiftide"
+        );
+
+        let prompt: Prompt = raw.to_string().into();
+        assert_eq!(
+            prompt
+                .with_context_value("world", "swiftide")
+                .render()
+                .await
+                .unwrap(),
+            "hello swiftide"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_coercion_to_template() {
+        let raw: &str = "hello {{world}}";
+
+        let prompt: PromptTemplate = raw.into();
+        assert_eq!(
+            prompt
+                .to_prompt()
+                .with_context_value("world", "swiftide")
+                .render()
+                .await
+                .unwrap(),
+            "hello swiftide"
+        );
+
+        let prompt: PromptTemplate = raw.to_string().into();
+        assert_eq!(
+            prompt
+                .to_prompt()
+                .with_context_value("world", "swiftide")
+                .render()
+                .await
+                .unwrap(),
+            "hello swiftide"
+        );
     }
 }
