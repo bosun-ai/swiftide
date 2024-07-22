@@ -113,7 +113,7 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             Qdrant::try_from_url(qdrant_url)?
                 .batch_size(50)
                 .vector_size(1536)
-                .collection_name("swiftide-examples".to_string())
+                .collection_name("swiftide-examples")
                 .build()?,
         )
         .run()
