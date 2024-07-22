@@ -1,11 +1,14 @@
 <details>
   <summary>Table of Contents</summary>
+
 <!--toc:start-->
 
 - [About The Project](#about-the-project)
+- [Latest updates on our blog :fire:](#latest-updates-on-our-blog-fire)
 - [Example](#example)
-- [Features](#features)
 - [Vision](#vision)
+- [Features](#features)
+  - [In detail](#in-detail)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -13,8 +16,9 @@
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
-    <!--toc:end-->
-  </details>
+  <!--toc:end-->
+
+    </details>
 
 <a name="readme-top"></a>
 
@@ -48,7 +52,7 @@
   <p align="center">
 Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
     <br />
-    <a href="https://swiftide.rs"><strong>Explore the docs »</strong></a>
+    <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
     <br />
     <br />
     <!-- <a href="https://github.com/bosun-ai/swiftide">View Demo</a> -->
@@ -80,6 +84,14 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 > [!CAUTION]
 > Swiftide is under heavy development and can have breaking changes while we work towards 1.0. Documentation here might fall short of all features, and despite our efforts be slightly outdated. Expect bugs. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you in an issue.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Latest updates on our blog :fire:
+
+- [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
+- [Release - Swiftide 0.6](https://bosun.ai/posts/swiftide-0-6/) (2024-07-12)
+- [Release - Swiftide 0.5](https://bosun.ai/posts/swiftide-0-5/) (2024-07-1)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
