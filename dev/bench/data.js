@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721289226014,
+  "lastUpdate": 1721655062807,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1763,6 +1763,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 837,
             "range": "± 4",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "504fe2632cf4add506dfb189c17d6e4ecf6f3824",
+          "message": "docs(pipeline): Add note that closures can also be used as transformers",
+          "timestamp": "2024-07-22T15:26:54+02:00",
+          "tree_id": "4a1f70594200a409c8aec4fcb7b5ff2414819903",
+          "url": "https://github.com/bosun-ai/swiftide/commit/504fe2632cf4add506dfb189c17d6e4ecf6f3824"
+        },
+        "date": 1721655061789,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 836,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
