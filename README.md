@@ -103,17 +103,16 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             redis_url,
             "swiftide-examples",
         )?)
-        .then(MetadataQACode::new(openai_client.clone()))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
             10..2048,
         )?)
+        .then(MetadataQACode::new(openai_client.clone()))
         .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
-            Qdrant::try_from_url(qdrant_url)?
+            Qdrant::builder()
                 .batch_size(50)
                 .vector_size(1536)
-                .collection_name("swiftide-examples")
                 .build()?,
         )
         .run()
