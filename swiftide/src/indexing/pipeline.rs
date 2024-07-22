@@ -147,6 +147,8 @@ impl Pipeline {
 
     /// Adds a transformer to the pipeline.
     ///
+    /// Closures can also be provided as transformers.
+    ///
     /// # Arguments
     ///
     /// * `transformer` - A transformer that implements the `Transformer` trait.
@@ -174,6 +176,8 @@ impl Pipeline {
     }
 
     /// Adds a batch transformer to the pipeline.
+    ///
+    /// Closures can also be provided as batch transformers.
     ///
     /// # Arguments
     ///
