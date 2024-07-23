@@ -1,9 +1,9 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `Groq` struct.
 //! It defines an asynchronous function to interact with the `Groq` API, allowing prompt processing
 //! and generating responses as part of the Swiftide system.
-use crate::{prompt::Prompt, SimplePrompt};
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
+use swiftide_core::{prompt::Prompt, SimplePrompt};
 
 use super::Groq;
 use anyhow::{Context as _, Result};

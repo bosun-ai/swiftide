@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use fastembed::TextEmbedding;
 
-use crate::{EmbeddingModel, Embeddings};
+use swiftide_core::{EmbeddingModel, Embeddings};
 
 /// A wrapper around the `FastEmbed` library for text embedding.
 ///

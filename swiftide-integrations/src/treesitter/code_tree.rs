@@ -8,7 +8,7 @@ use tree_sitter::{Parser, Query, QueryCursor, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::integrations::treesitter::queries::{python, ruby, rust, typescript};
+use crate::treesitter::queries::{python, ruby, rust, typescript};
 
 use super::SupportedLanguages;
 

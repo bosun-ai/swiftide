@@ -8,10 +8,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use qdrant_client::qdrant::UpsertPointsBuilder;
 
-use crate::{
-    indexing::{IndexingStream, Node},
-    ingestion::EmbeddedField,
-    traits::Persist,
+use swiftide_core::{
+    indexing_stream::IndexingStream, node::EmbeddedField, node::Node, traits::Persist,
 };
 
 use super::{NodeWithVectors, Qdrant};
@@ -56,7 +54,7 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
-    async fn store(&self, node: crate::indexing::Node) -> Result<Node> {
+    async fn store(&self, node: swiftide_core::node::Node) -> Result<Node> {
         let node_with_vectors = NodeWithVectors::new(node.clone(), self.vector_fields());
         let point = node_with_vectors.try_into()?;
 
@@ -85,7 +83,7 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if any node conversion or storage operation fails.
     #[tracing::instrument(skip_all, name = "storage.qdrant.batch_store")]
-    async fn batch_store(&self, nodes: Vec<crate::indexing::Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<swiftide_core::node::Node>) -> IndexingStream {
         let points = nodes
             .iter()
             .map(|node| NodeWithVectors::new(node.clone(), self.vector_fields()))

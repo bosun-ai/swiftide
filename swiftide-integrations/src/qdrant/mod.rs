@@ -12,7 +12,7 @@ use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant;
 
-use crate::ingestion::{EmbeddedField, Node};
+use swiftide_core::node::{EmbeddedField, Node};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";

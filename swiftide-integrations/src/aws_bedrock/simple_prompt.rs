@@ -1,7 +1,7 @@
-use crate::{prompt::Prompt, SimplePrompt};
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::primitives::Blob;
+use swiftide_core::{prompt::Prompt, SimplePrompt};
 
 use super::AwsBedrock;
 
@@ -27,8 +27,10 @@ impl SimplePrompt for AwsBedrock {
 
 #[cfg(test)]
 mod test {
+    use crate::aws_bedrock::models::*;
+    use crate::aws_bedrock::MockBedrockPrompt;
+
     use super::*;
-    use crate::integrations::aws_bedrock::{models::*, MockBedrockPrompt};
     use anyhow::Context as _;
     use test_log;
 

@@ -57,7 +57,6 @@
 //! Each integration has a similarly named feature flag.
 
 pub mod indexing;
-pub mod integrations;
 pub mod loaders;
 pub mod persist;
 pub mod transformers;
@@ -71,6 +70,10 @@ pub use swiftide_core::type_aliases::*;
 
 pub mod traits {
     pub use swiftide_core::traits::*;
+}
+
+pub mod integrations {
+    pub use swiftide_integrations::*;
 }
 
 /// Deprecated re-export of `indexing`, use that instead.

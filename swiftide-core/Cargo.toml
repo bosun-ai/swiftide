@@ -26,3 +26,6 @@ uuid = { version = "1.10", features = ["v4"] }
 
 [features]
 test-utils = ["dep:mockall"]
+
+[lints]
+workspace = true

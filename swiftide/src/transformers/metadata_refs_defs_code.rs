@@ -36,13 +36,11 @@
 //! ```
 use derive_builder::Builder;
 
-use crate::{
-    indexing::Node,
-    integrations::treesitter::{CodeParser, SupportedLanguages},
-    Transformer,
-};
+use crate::{indexing::Node, Transformer};
+
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
+use swiftide_integrations::treesitter::{CodeParser, SupportedLanguages};
 
 pub const NAME_REFERENCES: &str = "References (code)";
 pub const NAME_DEFINITIONS: &str = "Definitions (code)";

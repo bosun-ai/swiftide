@@ -5,9 +5,9 @@ use derive_builder::Builder;
 
 use crate::{
     indexing::{IndexingStream, Node},
-    integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages},
     ChunkerTransformer,
 };
+use swiftide_integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages};
 
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
 /// based on the specified language and chunk size. This is a crucial step in the

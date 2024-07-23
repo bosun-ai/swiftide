@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use htmd::HtmlToMarkdown;
 
-use crate::{indexing::Node, Transformer};
+use swiftide_core::{node::Node, Transformer};
 
 #[derive(Builder)]
 #[builder(pattern = "owned")]
