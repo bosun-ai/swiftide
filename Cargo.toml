@@ -1,5 +1,5 @@
 [workspace]
-members = ["swiftide", "examples", "benchmarks"]
+members = ["swiftide", "examples", "benchmarks", "swiftide-indexing", "swiftide-integrations", "swiftide-core"]
 resolver = "2"
 
 [profile.dev.package]
