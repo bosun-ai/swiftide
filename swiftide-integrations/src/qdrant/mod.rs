@@ -126,7 +126,7 @@ impl Qdrant {
         for (emebddable_type, config) in &self.vectors {
             let vector_name = emebddable_type.to_string();
             let vector_params = self.create_vector_params(config);
-            map.insert(vector_name, vector_params.clone());
+            map.insert(vector_name, vector_params);
         }
 
         Ok(qdrant::vectors_config::Config::ParamsMap(
