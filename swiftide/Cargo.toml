@@ -1,6 +1,6 @@
 [package]
 name = "swiftide"
-version = "0.6.7"
+version = "0.6.6"
 edition = "2021"
 license = "MIT"
 readme = "../README.md"
@@ -13,27 +13,27 @@ homepage = "https://swiftide.rs"
 [badges]
 
 [dependencies]
-anyhow = { version = "1.0" }
-async-trait = "0.1"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
+futures-util = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
+num_cpus = { workspace = true }
+tracing = { workspace = true }
+itertools = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+
 chrono = { version = "0.4" }
-derive_builder = "0.20"
-futures-util = "0.3"
 ignore = "0.4"
 indoc = "2.0"
-itertools = { version = "0.13" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 text-splitter = { version = "0.14", features = ["markdown"] }
-tokio = { version = "1.38", features = ["full"] }
-tokio-stream = "0.1"
-tracing = { version = "0.1", features = ["log"] }
-strum = "0.26"
-strum_macros = "0.26"
-num_cpus = "1.16"
-pin-project-lite = "0.2"
-tera = { version = "1.20", default-features = false }
-lazy_static = { version = "1.5.0" }
-uuid = { version = "1.10", features = ["v4"] }
+
+# Local dependencies
+swiftide-core = { path = "../swiftide-core" }
 
 # Integrations
 async-openai = { version = "0.23", optional = true }
@@ -101,13 +101,15 @@ aws-bedrock = [
 ]
 
 [dev-dependencies]
-test-log = "0.2.16"
-testcontainers = "0.20.0"
-mockall = "0.13.0"
-temp-dir = "0.1.13"
-wiremock = "0.6.0"
-test-case = "3.3.1"
-insta = { version = "1.39.0", features = ["yaml"] }
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+mockall = { workspace = true }
+temp-dir = { workspace = true }
+wiremock = { workspace = true }
+test-case = { workspace = true }
+insta = { workspace = true }
 
 [lints.rust]
 unsafe_code = "forbid"

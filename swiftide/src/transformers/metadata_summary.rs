@@ -61,7 +61,7 @@ impl MetadataSummary {
 
 /// Generates the default prompt template for extracting a summary.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("metadata_summary.prompt.md")
+    include_str!("prompts/metadata_summary.prompt.md").into()
 }
 
 impl MetadataSummaryBuilder {

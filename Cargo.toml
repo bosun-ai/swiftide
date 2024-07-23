@@ -1,7 +1,33 @@
 [workspace]
-members = ["swiftide", "examples", "benchmarks", "swiftide-indexing", "swiftide-integrations", "swiftide-core"]
+members = ["swiftide","swiftide-core", "swiftide-integrations", "swiftide-indexing", "examples", "benchmarks"]
 resolver = "2"
 
 [profile.dev.package]
 insta.opt-level = 3
 similar.opt-level = 3
+
+[workspace.dependencies]
+anyhow = { version = "1.0" }
+async-trait = "0.1"
+derive_builder = "0.20"
+futures-util = "0.3"
+tokio = { version = "1.38", features = ["full"] }
+tokio-stream = "0.1"
+tracing = { version = "0.1", features = ["log"] }
+num_cpus = "1.16"
+pin-project-lite = "0.2"
+itertools = { version = "0.13" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+strum = "0.26"
+strum_macros = "0.26"
+lazy_static = { version = "1.5.0" }
+
+# Testing
+test-log = "0.2.16"
+testcontainers = "0.20.0"
+mockall = "0.12.1"
+temp-dir = "0.1.13"
+wiremock = "0.6.0"
+test-case = "3.3.1"
+insta = { version = "1.39.0", features = ["yaml"] }

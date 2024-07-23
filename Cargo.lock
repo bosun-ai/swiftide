@@ -2592,13 +2592,14 @@ dependencies = [
 
 [[package]]
 name = "mockall"
-version = "0.13.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4c28b3fb6d753d28c20e826cd46ee611fda1cf3cde03a443a974043247c065a"
+checksum = "43766c2b5203b10de348ffe19f7e54564b64f3d6018ff7648d1e2d6d3a0f0a48"
 dependencies = [
  "cfg-if",
  "downcast",
  "fragile",
+ "lazy_static",
  "mockall_derive",
  "predicates",
  "predicates-tree",
@@ -2606,9 +2607,9 @@ dependencies = [
 
 [[package]]
 name = "mockall_derive"
-version = "0.13.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "341014e7f530314e9a1fdbc7400b244efea7122662c96bfa248c31da5bfb2020"
+checksum = "af7cbce79ec385a1d4f54baa90a76401eb15d9cab93685f62e7e9f942aa00ae2"
 dependencies = [
  "cfg-if",
  "proc-macro2",
@@ -4192,7 +4193,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.6.7"
+version = "0.6.6"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4209,10 +4210,8 @@ dependencies = [
  "indoc",
  "insta",
  "itertools 0.13.0",
- "lazy_static",
  "mockall",
  "num_cpus",
- "pin-project-lite",
  "qdrant-client",
  "redis",
  "reqwest",
@@ -4222,8 +4221,8 @@ dependencies = [
  "spider",
  "strum",
  "strum_macros",
+ "swiftide-core",
  "temp-dir",
- "tera",
  "test-case",
  "test-log",
  "testcontainers",
@@ -4237,13 +4236,30 @@ dependencies = [
  "tree-sitter-ruby",
  "tree-sitter-rust",
  "tree-sitter-typescript",
- "uuid",
  "wiremock",
 ]
 
 [[package]]
 name = "swiftide-core"
 version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-util",
+ "itertools 0.13.0",
+ "lazy_static",
+ "mockall",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "tera",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uuid",
+]
 
 [[package]]
 name = "swiftide-indexing"

@@ -60,13 +60,18 @@ pub mod indexing;
 pub mod integrations;
 pub mod loaders;
 pub mod persist;
-pub mod prompt;
-pub mod traits;
 pub mod transformers;
-pub mod type_aliases;
 
-pub use traits::*;
-pub use type_aliases::*;
+#[doc(inline)]
+pub use swiftide_core::prompt;
+#[doc(inline)]
+pub use swiftide_core::traits::*;
+#[doc(inline)]
+pub use swiftide_core::type_aliases::*;
+
+pub mod traits {
+    pub use swiftide_core::traits::*;
+}
 
 /// Deprecated re-export of `indexing`, use that instead.
 #[deprecated(

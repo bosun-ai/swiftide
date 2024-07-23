@@ -1,15 +1,13 @@
 #![allow(clippy::from_over_into)]
-#![cfg(not(tarpaulin_include))]
 
 //! This module defines the `IndexingStream` type, which is used internally by a pipeline  for handling asynchronous streams of `Node` items in the indexing pipeline.
 
+use crate::node::Node;
 use anyhow::Result;
 use futures_util::stream::{self, Stream};
 use pin_project_lite::pin_project;
 use std::pin::Pin;
 use tokio::sync::mpsc::Receiver;
-
-use super::Node;
 
 pub use futures_util::{StreamExt, TryStreamExt};
 

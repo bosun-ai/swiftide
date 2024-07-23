@@ -61,7 +61,7 @@ impl MetadataKeywords {
 
 /// Generates the default prompt template for extracting keywords.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("metadata_keywords.prompt.md")
+    include_str!("prompts/metadata_keywords.prompt.md").into()
 }
 
 impl MetadataKeywordsBuilder {

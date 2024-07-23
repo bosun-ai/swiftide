@@ -3,21 +3,20 @@
 //! All steps defined in the indexing pipeline and the generic transformers can also take a
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
+use crate::indexing_stream::IndexingStream;
+use crate::node::Node;
+use crate::Embeddings;
 use std::fmt::Debug;
 
-use crate::{
-    indexing::{IndexingStream, Node},
-    prompt::Prompt,
-    Embeddings,
-};
+use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
 
 /// All traits are easily mockable under tests
-#[cfg(test)]
+#[cfg(feature = "test-utils")]
 use mockall::{automock, predicate::*};
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Transforms single nodes into single nodes
 pub trait Transformer: Send + Sync {
@@ -40,7 +39,7 @@ where
     }
 }
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Transforms batched single nodes into streams of nodes
 pub trait BatchableTransformer: Send + Sync {
@@ -65,12 +64,12 @@ where
 }
 
 /// Starting point of a stream
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 pub trait Loader {
     fn into_stream(self) -> IndexingStream;
 }
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Turns one node into many nodes
 pub trait ChunkerTransformer: Send + Sync + Debug {
@@ -82,7 +81,7 @@ pub trait ChunkerTransformer: Send + Sync + Debug {
     }
 }
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Caches nodes, typically by their path and hash
 /// Recommended to namespace on the storage
@@ -93,7 +92,7 @@ pub trait NodeCache: Send + Sync + Debug {
     async fn set(&self, node: &Node);
 }
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
@@ -101,7 +100,7 @@ pub trait EmbeddingModel: Send + Sync {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync {
@@ -109,7 +108,7 @@ pub trait SimplePrompt: Debug + Send + Sync {
     async fn prompt(&self, prompt: Prompt) -> Result<String>;
 }
 
-#[cfg_attr(test, automock)]
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Persists nodes
 pub trait Persist: Debug + Send + Sync {

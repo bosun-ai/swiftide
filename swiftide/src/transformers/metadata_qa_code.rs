@@ -61,7 +61,7 @@ impl MetadataQACode {
 ///
 /// This template includes placeholders for the number of questions and the code chunk.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("metadata_qa_code.prompt.md")
+    include_str!("prompts/metadata_qa_code.prompt.md").into()
 }
 
 impl MetadataQACodeBuilder {

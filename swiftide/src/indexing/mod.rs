@@ -18,10 +18,8 @@
 //! indexing pipelines. These pipelines can be customized with different loaders, transformers, and storage
 //! backends to meet specific requirements.
 
-mod indexing_stream;
-mod node;
 mod pipeline;
 
-pub use indexing_stream::*;
-pub use node::*;
 pub use pipeline::*;
+pub use swiftide_core::indexing_stream::*;
+pub use swiftide_core::node::*;

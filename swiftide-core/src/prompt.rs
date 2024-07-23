@@ -24,7 +24,7 @@
 //! ```
 //! #[tokio::main]
 //! # async fn main() {
-//! # use swiftide::prompt::PromptTemplate;
+//! # use swiftide_core::prompt::PromptTemplate;
 //! let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
 //! let prompt = template.to_prompt().with_context_value("world", "swiftide");
 //!
@@ -37,7 +37,7 @@ use tera::Tera;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::ingestion::Node;
+use crate::node::Node;
 
 lazy_static! {
     /// Tera repository for templates

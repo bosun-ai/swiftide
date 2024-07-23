@@ -61,7 +61,7 @@ impl MetadataTitle {
 
 /// Generates the default prompt template for generating questions and answers.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("metadata_title.prompt.md")
+    include_str!("prompts/metadata_title.prompt.md").into()
 }
 
 impl MetadataTitleBuilder {
