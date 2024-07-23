@@ -1,10 +1,10 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
 use std::sync::Arc;
 
-use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
+use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 
 pub const NAME: &str = "Questions and Answers (text)";
 
