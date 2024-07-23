@@ -39,7 +39,7 @@ qdrant-client = { version = "1.10", default-features = false, features = [
 # Testing
 test-log = "0.2.16"
 testcontainers = "0.20.0"
-mockall = "0.12.1"
+mockall = "0.13.0"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"

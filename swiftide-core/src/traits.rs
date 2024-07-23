@@ -14,7 +14,7 @@ use async_trait::async_trait;
 
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
-use mockall::{automock, predicate::*};
+use mockall::{automock, predicate::str};
 
 #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
