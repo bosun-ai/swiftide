@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721719610882,
+  "lastUpdate": 1721763049187,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -1889,6 +1889,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 836,
             "range": "± 4",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "16bafe4da8c98adcf90f5bb63070832201c405b9",
+          "message": "feat(swiftide)!: rework workspace preparing for swiftide-query (#199)\n\nSplits up the project into multiple small, unpublished crates. Boosts\r\ncompile times, makes the code a bit easier to grok and enables\r\nswiftide-query to be build separately.\r\n\r\nBREAKING CHANGE: All indexing related tools are now in\r\n`swiftide::indexing`",
+          "timestamp": "2024-07-23T21:25:13+02:00",
+          "tree_id": "e51466f2659c6bf7c4e0b387c936e1d6c335240c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/16bafe4da8c98adcf90f5bb63070832201c405b9"
+        },
+        "date": 1721763048861,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 837,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
