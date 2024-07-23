@@ -22,8 +22,8 @@
 //! ## Example
 //!
 //! ```no_run
-//! use swiftide::loaders::FileLoader;
-//! use swiftide::transformers::{ChunkMarkdown, Embed, MetadataQAText};
+//! use swiftide::indexing::loaders::FileLoader;
+//! use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
 //! use swiftide::integrations::qdrant::Qdrant;
 //! use swiftide::indexing::Pipeline;
 //! # use anyhow::Result;

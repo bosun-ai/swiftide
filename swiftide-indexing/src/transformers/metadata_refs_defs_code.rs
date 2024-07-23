@@ -8,9 +8,9 @@
 //! # Example
 //!
 //! ```no_run
-//! # use swiftide::indexing::Node;
-//! # use swiftide::transformers::metadata_refs_defs_code::*;
-//! # use swiftide::Transformer;
+//! # use swiftide_core::indexing::Node;
+//! # use swiftide_indexing::transformers::metadata_refs_defs_code::*;
+//! # use swiftide_core::Transformer;
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let transformer = MetadataRefsDefsCode::try_from_language("rust").unwrap();

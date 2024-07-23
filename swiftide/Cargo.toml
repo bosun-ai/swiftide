@@ -13,7 +13,6 @@ homepage = "https://swiftide.rs"
 [badges]
 
 [dependencies]
-
 # Local dependencies
 swiftide-core = { path = "../swiftide-core" }
 swiftide-integrations = { path = "../swiftide-integrations" }
@@ -50,6 +49,7 @@ qdrant-client = { workspace = true, default-features = false, features = [
   "serde",
 ] }
 
+anyhow = { workspace = true }
 test-log = { workspace = true }
 testcontainers = { workspace = true }
 mockall = { workspace = true }
