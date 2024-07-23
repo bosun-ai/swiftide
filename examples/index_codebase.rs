@@ -21,9 +21,9 @@
 
 use swiftide::{
     indexing,
+    indexing::loaders::FileLoader,
+    indexing::transformers::{ChunkCode, Embed, MetadataQACode},
     integrations::{self, qdrant::Qdrant, redis::Redis},
-    loaders::FileLoader,
-    transformers::{ChunkCode, Embed, MetadataQACode},
 };
 
 #[tokio::main]

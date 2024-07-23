@@ -14,10 +14,11 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    indexing, integrations,
-    loaders::FileLoader,
-    persist::MemoryStorage,
-    transformers::{ChunkMarkdown, Embed, MetadataQAText},
+    indexing,
+    indexing::loaders::FileLoader,
+    indexing::persist::MemoryStorage,
+    indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText},
+    integrations,
 };
 
 #[tokio::main]

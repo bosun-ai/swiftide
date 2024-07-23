@@ -3,7 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 
-use crate::{
+use swiftide_core::{
     indexing::{IndexingStream, Node},
     ChunkerTransformer,
 };

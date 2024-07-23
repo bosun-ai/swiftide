@@ -1,12 +1,14 @@
-use crate::{BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer};
 use anyhow::Result;
 use futures_util::{StreamExt, TryStreamExt};
+use swiftide_core::{
+    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer,
+};
 use tokio::sync::mpsc;
 use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
 
-use super::{EmbedMode, IndexingStream, Node};
+use swiftide_core::{indexing_stream::IndexingStream, node::EmbedMode, node::Node};
 
 /// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
@@ -503,10 +505,9 @@ impl Pipeline {
 mod tests {
 
     use super::*;
-    use crate::indexing::Node;
     use crate::persist::MemoryStorage;
-    use crate::traits::*;
     use mockall::Sequence;
+    use swiftide_core::traits::*;
 
     /// Tests a simple run of the indexing pipeline.
     #[test_log::test(tokio::test)]

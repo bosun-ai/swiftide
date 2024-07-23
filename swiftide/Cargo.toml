@@ -13,27 +13,11 @@ homepage = "https://swiftide.rs"
 [badges]
 
 [dependencies]
-anyhow = { workspace = true }
-async-trait = { workspace = true }
-derive_builder = { workspace = true }
-futures-util = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-tokio-stream = { workspace = true }
-num_cpus = { workspace = true }
-tracing = { workspace = true }
-itertools = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-strum = { workspace = true }
-strum_macros = { workspace = true }
-indoc = { workspace = true }
-
-ignore = "0.4"
-text-splitter = { version = "0.14", features = ["markdown"] }
 
 # Local dependencies
 swiftide-core = { path = "../swiftide-core" }
 swiftide-integrations = { path = "../swiftide-integrations" }
+swiftide-indexing = { path = "../swiftide-indexing" }
 
 [features]
 default = []
@@ -43,7 +27,10 @@ qdrant = ["swiftide-integrations/qdrant"]
 # Redis for caching and storage
 redis = ["swiftide-integrations/redis"]
 # Tree-sitter for code operations and chunking
-tree-sitter = ["swiftide-integrations/tree-sitter"]
+tree-sitter = [
+  "swiftide-integrations/tree-sitter",
+  "swiftide-indexing/tree-sitter",
+]
 # OpenAI for embedding and prompting
 openai = ["swiftide-integrations/openai"]
 # Groq prompting
@@ -70,6 +57,9 @@ temp-dir = { workspace = true }
 wiremock = { workspace = true }
 test-case = { workspace = true }
 insta = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
 
 [lints]
 workspace = true

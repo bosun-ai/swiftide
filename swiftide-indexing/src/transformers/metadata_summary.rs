@@ -1,24 +1,24 @@
-//! Generate a title and adds it as metadata
+//! Generate a summary and adds it as metadata
 use std::sync::Arc;
 
-use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
+use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 
-pub const NAME: &str = "Title";
+pub const NAME: &str = "Summary";
 
-/// This module defines the `MetadataTitle` struct and its associated methods,
-/// which are used for generating metadata in the form of a title
+/// This module defines the `MetadataSummary` struct and its associated methods,
+/// which are used for generating metadata in the form of a summary
 /// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
-/// these questions and answers based on the text chunk in an `Node`.
+/// the summary based on the text chunk in an `Node`.
 
-/// `MetadataTitle` is responsible for generating a title
+/// `MetadataSummary` is responsible for generating a summary
 /// for a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
-pub struct MetadataTitle {
+pub struct MetadataSummary {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
@@ -27,15 +27,15 @@ pub struct MetadataTitle {
     concurrency: Option<usize>,
 }
 
-impl MetadataTitle {
-    pub fn builder() -> MetadataTitleBuilder {
-        MetadataTitleBuilder::default()
+impl MetadataSummary {
+    pub fn builder() -> MetadataSummaryBuilder {
+        MetadataSummaryBuilder::default()
     }
 
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataTitleBuilder {
-        MetadataTitleBuilder::default().client(client).to_owned()
+    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataSummaryBuilder {
+        MetadataSummaryBuilder::default().client(client).to_owned()
     }
-    /// Creates a new instance of `MetadataTitle`.
+    /// Creates a new instance of `MetadataSummary`.
     ///
     /// # Arguments
     ///
@@ -43,7 +43,7 @@ impl MetadataTitle {
     ///
     /// # Returns
     ///
-    /// A new instance of `MetadataTitle`.
+    /// A new instance of `MetadataSummary`.
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
@@ -59,12 +59,12 @@ impl MetadataTitle {
     }
 }
 
-/// Generates the default prompt template for generating questions and answers.
+/// Generates the default prompt template for extracting a summary.
 fn default_prompt() -> PromptTemplate {
-    include_str!("prompts/metadata_title.prompt.md").into()
+    include_str!("prompts/metadata_summary.prompt.md").into()
 }
 
-impl MetadataTitleBuilder {
+impl MetadataSummaryBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
@@ -72,8 +72,8 @@ impl MetadataTitleBuilder {
 }
 
 #[async_trait]
-impl Transformer for MetadataTitle {
-    /// Transforms an `Node` by generating questions and answers
+impl Transformer for MetadataSummary {
+    /// Transforms an `Node` by extracting a summary
     /// based on the text chunk within the node.
     ///
     /// # Arguments
@@ -88,8 +88,8 @@ impl Transformer for MetadataTitle {
     /// # Errors
     ///
     /// This function will return an error if the client fails to generate
-    /// questions and answers from the provided prompt.
-    #[tracing::instrument(skip_all, name = "transformers.metadata_title")]
+    /// a summary from the provided prompt.
+    #[tracing::instrument(skip_all, name = "transformers.metadata_summary")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt_template.to_prompt().with_node(&node);
 
@@ -107,11 +107,11 @@ impl Transformer for MetadataTitle {
 
 #[cfg(test)]
 mod test {
-    use crate::MockSimplePrompt;
+    use swiftide_core::MockSimplePrompt;
 
     use super::*;
 
-    #[test_log::test(tokio::test)]
+    #[tokio::test]
     async fn test_template() {
         let template = default_prompt();
 
@@ -120,18 +120,18 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_metadata_title() {
+    async fn test_metadata_summary() {
         let mut client = MockSimplePrompt::new();
 
         client
             .expect_prompt()
-            .returning(|_| Ok("A Title".to_string()));
+            .returning(|_| Ok("A Summary".to_string()));
 
-        let transformer = MetadataTitle::builder().client(client).build().unwrap();
+        let transformer = MetadataSummary::builder().client(client).build().unwrap();
         let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(result.metadata.get("Title").unwrap(), "A Title");
+        assert_eq!(result.metadata.get("Summary").unwrap(), "A Summary");
     }
 }

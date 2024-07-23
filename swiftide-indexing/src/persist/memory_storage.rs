@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use tokio::sync::RwLock;
 
-use crate::{
+use swiftide_core::{
     indexing::{IndexingStream, Node},
     Persist,
 };
@@ -97,8 +97,8 @@ impl Persist for MemoryStorage {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::indexing::Node;
     use futures_util::TryStreamExt;
+    use swiftide_core::indexing::Node;
 
     #[tokio::test]
     async fn test_memory_storage() {

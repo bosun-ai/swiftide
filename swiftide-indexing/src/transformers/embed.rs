@@ -1,12 +1,12 @@
 //! Generic embedding transformer
 use std::{collections::VecDeque, sync::Arc};
 
-use crate::{
+use anyhow::bail;
+use async_trait::async_trait;
+use swiftide_core::{
     indexing::{IndexingStream, Node},
     BatchableTransformer, EmbeddingModel,
 };
-use anyhow::bail;
-use async_trait::async_trait;
 
 /// A transformer that can generate embeddings for an `Node`
 ///
@@ -115,8 +115,8 @@ impl BatchableTransformer for Embed {
 
 #[cfg(test)]
 mod tests {
-    use crate::ingestion::{EmbedMode, EmbeddedField, Node};
-    use crate::{BatchableTransformer, MockEmbeddingModel};
+    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Node};
+    use swiftide_core::{BatchableTransformer, MockEmbeddingModel};
 
     use super::Embed;
 

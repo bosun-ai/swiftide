@@ -1,7 +1,7 @@
 //! Chunk markdown content into smaller pieces
-use crate::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
 use async_trait::async_trait;
 use derive_builder::Builder;
+use swiftide_core::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
 use text_splitter::{Characters, MarkdownSplitter};
 
 #[derive(Debug, Builder)]

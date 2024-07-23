@@ -4198,32 +4198,20 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 name = "swiftide"
 version = "0.6.6"
 dependencies = [
- "anyhow",
  "async-openai",
- "async-trait",
- "derive_builder",
- "futures-util",
- "ignore",
- "indoc",
  "insta",
- "itertools 0.13.0",
  "mockall",
- "num_cpus",
  "qdrant-client",
  "serde",
  "serde_json",
- "strum",
- "strum_macros",
  "swiftide-core",
+ "swiftide-indexing",
  "swiftide-integrations",
  "temp-dir",
  "test-case",
  "test-log",
  "testcontainers",
- "text-splitter",
  "tokio",
- "tokio-stream",
- "tracing",
  "wiremock",
 ]
 
@@ -4251,7 +4239,31 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.1.0"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "derive_builder",
+ "futures-util",
+ "ignore",
+ "indoc",
+ "insta",
+ "itertools 0.13.0",
+ "mockall",
+ "num_cpus",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "swiftide-core",
+ "swiftide-integrations",
+ "test-case",
+ "test-log",
+ "text-splitter",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
 
 [[package]]
 name = "swiftide-integrations"

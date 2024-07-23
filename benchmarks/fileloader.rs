@@ -1,11 +1,11 @@
 use anyhow::Result;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use futures_util::stream::TryStreamExt;
-use swiftide::{indexing::StreamExt, traits::Loader};
+use futures_util::stream::{StreamExt, TryStreamExt};
+use swiftide::traits::Loader;
 
 async fn run_fileloader(num_files: usize) -> Result<usize> {
     let mut total_nodes = 0;
-    let mut stream = swiftide::loaders::FileLoader::new("./benchmarks/fileloader.rs")
+    let mut stream = swiftide::indexing::loaders::FileLoader::new("./benchmarks/fileloader.rs")
         .with_extensions(&["rs"])
         .into_stream()
         .take(num_files);

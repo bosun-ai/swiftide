@@ -1,7 +1,7 @@
 //! Load files from a directory
-use crate::{indexing::IndexingStream, indexing::Node, Loader};
 use anyhow::Context as _;
 use std::path::{Path, PathBuf};
+use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory,
 /// filtering them based on their extensions, and creating a stream of these files for further processing.

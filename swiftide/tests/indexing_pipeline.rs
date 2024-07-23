@@ -2,17 +2,16 @@
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
-use indexing::EmbeddedField;
-use integrations::openai::OpenAI;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::{SearchPointsBuilder, Value};
 use serde_json::json;
-use swiftide::{indexing::Pipeline, loaders::FileLoader, *};
+use swiftide::indexing;
+use swiftide::indexing::*;
+use swiftide::integrations;
 use temp_dir::TempDir;
 use testcontainers::core::wait::HttpWaitStrategy;
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage};
-use transformers::metadata_qa_code;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -54,21 +53,22 @@ async fn test_indexing_pipeline() {
 
     println!("Qdrant URL: {qdrant_url}");
 
-    let result = Pipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
-        .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-        .then(transformers::MetadataQACode::new(openai_client.clone()))
-        .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
-        .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
-        .then_store_with(
-            integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
-                .unwrap()
-                .vector_size(1536)
-                .collection_name("swiftide-test".to_string())
-                .build()
-                .unwrap(),
-        )
-        .run()
-        .await;
+    let result =
+        Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
+            .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
+            .then(transformers::MetadataQACode::new(openai_client.clone()))
+            .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
+            .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
+            .then_store_with(
+                integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
+                    .unwrap()
+                    .vector_size(1536)
+                    .collection_name("swiftide-test".to_string())
+                    .build()
+                    .unwrap(),
+            )
+            .run()
+            .await;
 
     if result.is_err() {
         println!("\n Received the following requests: \n");
@@ -156,24 +156,27 @@ async fn test_named_vectors() {
 
     println!("Qdrant URL: {qdrant_url}");
 
-    let result = Pipeline::from_loader(FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
-        .with_embed_mode(indexing::EmbedMode::PerField)
-        .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-        .then(transformers::MetadataQACode::new(openai_client.clone()))
-        .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
-        .then_in_batch(10, transformers::Embed::new(openai_client.clone()))
-        .then_store_with(
-            integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
-                .unwrap()
-                .vector_size(1536)
-                .collection_name("named-vectors-test".to_string())
-                .with_vector(EmbeddedField::Chunk)
-                .with_vector(EmbeddedField::Metadata(metadata_qa_code::NAME.into()))
-                .build()
-                .unwrap(),
-        )
-        .run()
-        .await;
+    let result =
+        Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
+            .with_embed_mode(indexing::EmbedMode::PerField)
+            .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
+            .then(transformers::MetadataQACode::new(openai_client.clone()))
+            .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
+            .then_in_batch(10, transformers::Embed::new(openai_client.clone()))
+            .then_store_with(
+                integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
+                    .unwrap()
+                    .vector_size(1536)
+                    .collection_name("named-vectors-test".to_string())
+                    .with_vector(EmbeddedField::Chunk)
+                    .with_vector(EmbeddedField::Metadata(
+                        transformers::metadata_qa_code::NAME.into(),
+                    ))
+                    .build()
+                    .unwrap(),
+            )
+            .run()
+            .await;
 
     result.expect("Named vectors test indexing pipeline failed");
 
@@ -182,7 +185,9 @@ async fn test_named_vectors() {
         .unwrap();
 
     let search_request = SearchPointsBuilder::new("named-vectors-test", vec![0_f32; 1536], 10)
-        .vector_name(EmbeddedField::Metadata(metadata_qa_code::NAME.into()).to_string())
+        .vector_name(
+            EmbeddedField::Metadata(transformers::metadata_qa_code::NAME.into()).to_string(),
+        )
         .with_payload(true)
         .with_vectors(true);
 
@@ -222,13 +227,17 @@ async fn test_named_vectors() {
 
     assert_eq!(vectors.len(), 2);
     assert!(vectors.contains_key(&EmbeddedField::Chunk.to_string()));
-    assert!(
-        vectors.contains_key(&EmbeddedField::Metadata(metadata_qa_code::NAME.into()).to_string())
-    );
+    assert!(vectors.contains_key(
+        &EmbeddedField::Metadata(transformers::metadata_qa_code::NAME.into()).to_string()
+    ));
 }
 
 /// Setup `OpenAI` client with the mock server
-fn openai_client(mock_server_uri: &str, embed_model: &str, prompt_model: &str) -> OpenAI {
+fn openai_client(
+    mock_server_uri: &str,
+    embed_model: &str,
+    prompt_model: &str,
+) -> integrations::openai::OpenAI {
     let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server_uri);
     let async_openai = async_openai::Client::with_config(config);
     integrations::openai::OpenAI::builder()

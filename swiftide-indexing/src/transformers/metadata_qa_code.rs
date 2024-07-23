@@ -2,7 +2,7 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
+use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 
@@ -111,7 +111,7 @@ impl Transformer for MetadataQACode {
 
 #[cfg(test)]
 mod test {
-    use crate::MockSimplePrompt;
+    use swiftide_core::MockSimplePrompt;
 
     use super::*;
 

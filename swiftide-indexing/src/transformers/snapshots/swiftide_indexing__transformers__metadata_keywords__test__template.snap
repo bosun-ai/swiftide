@@ -1,0 +1,28 @@
+---
+source: swiftide-indexing/src/transformers/metadata_keywords.rs
+expression: prompt.render().await.unwrap()
+---
+# Task
+
+Your task is to generate a descriptive, concise keywords for the given text
+
+# Constraints
+
+- Only respond in the example format
+- Respond with a keywords that are representative of the text
+- Only include keywords that are literally included in the text
+- Respond with a comma-separated list of keywords
+
+# Example
+
+Respond in the following example format and do not include anything else:
+
+```
+<keyword>,<other-keyword>
+```
+
+# Text
+
+```
+test
+```

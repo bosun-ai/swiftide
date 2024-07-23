@@ -36,7 +36,7 @@
 //! ```
 use derive_builder::Builder;
 
-use crate::{indexing::Node, Transformer};
+use swiftide_core::{indexing::Node, Transformer};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;

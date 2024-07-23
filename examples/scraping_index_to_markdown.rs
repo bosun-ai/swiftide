@@ -13,9 +13,9 @@
 use spider::website::Website;
 use swiftide::{
     indexing,
+    indexing::persist::MemoryStorage,
+    indexing::transformers::ChunkMarkdown,
     integrations::scraping::{HtmlToMarkdownTransformer, ScrapingLoader},
-    persist::MemoryStorage,
-    transformers::ChunkMarkdown,
 };
 
 #[tokio::main]
