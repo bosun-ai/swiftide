@@ -157,8 +157,8 @@ impl QdrantBuilder {
     /// Adds new [`VectorConfig`]
     ///
     /// When not configured Pipeline by default configures vector only for [`EmbeddedField::Combined`]
-    /// Default config is enough when [`crate::indexing::Pipeline::with_embed_mode`] is not set
-    /// or when the value is set to [`crate::indexing::EmbedMode::SingleWithMetadata`].
+    /// Default config is enough when [`swiftide::indexing::Pipeline::with_embed_mode`] is not set
+    /// or when the value is set to [`swiftide::indexing::EmbedMode::SingleWithMetadata`].
     #[must_use]
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {

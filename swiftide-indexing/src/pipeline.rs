@@ -90,7 +90,7 @@ impl Pipeline {
     /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a [`Node`]
     /// be embedded with a vector when transforming with [`crate::transformers::Embed`]
     ///
-    /// See also [`super::node::EmbedMode`].
+    /// See also [`swiftide::indexing::EmbedMode`].
     ///
     /// # Arguments
     ///

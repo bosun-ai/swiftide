@@ -20,7 +20,16 @@ swiftide-indexing = { path = "../swiftide-indexing" }
 
 [features]
 default = []
-all = ["qdrant", "redis", "tree-sitter", "openai", "fastembed"]
+all = [
+  "qdrant",
+  "redis",
+  "tree-sitter",
+  "openai",
+  "fastembed",
+  "scraping",
+  "aws-bedrock",
+  "groq",
+]
 # Qdrant for storage
 qdrant = ["swiftide-integrations/qdrant"]
 # Redis for caching and storage
@@ -67,3 +76,4 @@ workspace = true
 [package.metadata.docs.rs]
 all-features = true
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

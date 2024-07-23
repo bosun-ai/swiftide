@@ -4,9 +4,12 @@ members = [
   "swiftide-core",
   "swiftide-integrations",
   "swiftide-indexing",
+
   "examples",
   "benchmarks",
 ]
+
+default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [profile.dev.package]

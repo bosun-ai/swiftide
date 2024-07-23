@@ -63,15 +63,25 @@ pub use swiftide_core::traits::*;
 #[doc(inline)]
 pub use swiftide_core::type_aliases::*;
 
+/// Common traits for common behaviour
 pub mod traits {
+    #[doc(inline)]
     pub use swiftide_core::traits::*;
 }
 
+/// Integrations with various platforms and external services.
 pub mod integrations {
+    #[doc(inline)]
     pub use swiftide_integrations::*;
 }
 
+/// This module serves as the main entry point for indexing in Swiftide.
+///
+/// The indexing system in Swiftide is designed to handle the asynchronous processing of large volumes
+/// of data, including loading, transforming, and storing data chunks.
 pub mod indexing {
+    #[doc(inline)]
     pub use swiftide_core::indexing::*;
+    #[doc(inline)]
     pub use swiftide_indexing::*;
 }

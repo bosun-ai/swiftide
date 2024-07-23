@@ -14,6 +14,7 @@ use async_trait::async_trait;
 
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
+#[doc(hidden)]
 use mockall::{automock, predicate::str};
 
 #[cfg_attr(feature = "test-utils", automock)]
@@ -64,12 +65,12 @@ where
 }
 
 /// Starting point of a stream
-#[cfg_attr(feature = "test-utils", automock)]
+#[cfg_attr(feature = "test-utils", automock, doc(hidden))]
 pub trait Loader {
     fn into_stream(self) -> IndexingStream;
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
+#[cfg_attr(feature = "test-utils", automock, doc(hidden))]
 #[async_trait]
 /// Turns one node into many nodes
 pub trait ChunkerTransformer: Send + Sync + Debug {

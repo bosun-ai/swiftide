@@ -10,7 +10,7 @@ use self::config::GroqConfig;
 mod config;
 mod simple_prompt;
 
-/// The `Groq` struct encapsulates a `Groq` client that implements [`crate::SimplePrompt`]
+/// The `Groq` struct encapsulates a `Groq` client that implements [`swiftide::traits::SimplePrompt`]
 ///
 /// There is also a builder available.
 ///
