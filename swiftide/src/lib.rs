@@ -22,8 +22,8 @@
 //! ## Example
 //!
 //! ```no_run
-//! use swiftide::loaders::FileLoader;
-//! use swiftide::transformers::{ChunkMarkdown, Embed, MetadataQAText};
+//! use swiftide::indexing::loaders::FileLoader;
+//! use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
 //! use swiftide::integrations::qdrant::Qdrant;
 //! use swiftide::indexing::Pipeline;
 //! # use anyhow::Result;
@@ -56,27 +56,32 @@
 //! Either use the 'all' feature flag (not recommended), or enable the integrations that you need.
 //! Each integration has a similarly named feature flag.
 
-pub mod indexing;
-pub mod integrations;
-pub mod loaders;
-pub mod persist;
-pub mod prompt;
-pub mod traits;
-pub mod transformers;
-pub mod type_aliases;
+#[doc(inline)]
+pub use swiftide_core::prompt;
+#[doc(inline)]
+pub use swiftide_core::traits::*;
+#[doc(inline)]
+pub use swiftide_core::type_aliases::*;
 
-pub use traits::*;
-pub use type_aliases::*;
+/// Common traits for common behaviour
+pub mod traits {
+    #[doc(inline)]
+    pub use swiftide_core::traits::*;
+}
 
-/// Deprecated re-export of `indexing`, use that instead.
-#[deprecated(
-    since = "0.6.0",
-    note = "Renamed references of Indexing to Indexing for more appropriate naming. Will be removed in a future release."
-)]
-pub mod ingestion {
-    pub use crate::indexing::*;
+/// Integrations with various platforms and external services.
+pub mod integrations {
+    #[doc(inline)]
+    pub use swiftide_integrations::*;
+}
 
-    pub use crate::indexing::IndexingStream;
-    pub use crate::indexing::Node;
-    pub use crate::indexing::Pipeline;
+/// This module serves as the main entry point for indexing in Swiftide.
+///
+/// The indexing system in Swiftide is designed to handle the asynchronous processing of large volumes
+/// of data, including loading, transforming, and storing data chunks.
+pub mod indexing {
+    #[doc(inline)]
+    pub use swiftide_core::indexing::*;
+    #[doc(inline)]
+    pub use swiftide_indexing::*;
 }

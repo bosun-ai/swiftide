@@ -17,15 +17,15 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
+    indexing::loaders::FileLoader,
+    indexing::transformers::{
+        metadata_keywords, metadata_qa_text, metadata_summary, metadata_title, ChunkMarkdown,
+        Embed, MetadataKeywords, MetadataQAText, MetadataSummary, MetadataTitle,
+    },
     indexing::{self, EmbedMode, EmbeddedField},
     integrations::{
         self,
         qdrant::{Distance, Qdrant, VectorConfig},
-    },
-    loaders::FileLoader,
-    transformers::{
-        metadata_keywords, metadata_qa_text, metadata_summary, metadata_title, ChunkMarkdown,
-        Embed, MetadataKeywords, MetadataQAText, MetadataSummary, MetadataTitle,
     },
 };
 

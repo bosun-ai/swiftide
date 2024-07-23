@@ -1,11 +1,11 @@
 use anyhow::Result;
 use criterion::{criterion_group, criterion_main, Criterion};
 use swiftide::{
+    indexing::loaders::FileLoader,
+    indexing::persist::MemoryStorage,
+    indexing::transformers::{ChunkMarkdown, Embed},
     indexing::Pipeline,
     integrations::fastembed::FastEmbed,
-    loaders::FileLoader,
-    persist::MemoryStorage,
-    transformers::{ChunkMarkdown, Embed},
 };
 
 async fn run_pipeline() -> Result<()> {
