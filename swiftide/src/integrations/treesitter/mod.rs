@@ -1,8 +1,8 @@
 //! Chunking code with tree-sitter
+mod outliner;
 mod splitter;
-mod summarizer;
 mod supported_languages;
 
+pub use outliner::{CodeOutliner, CodeOutlinerBuilder};
 pub use splitter::{ChunkSize, CodeSplitter, CodeSplitterBuilder};
-pub use summarizer::{CodeSummarizer, CodeSummarizerBuilder};
 pub use supported_languages::SupportedLanguages;

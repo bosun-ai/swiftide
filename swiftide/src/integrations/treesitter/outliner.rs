@@ -15,13 +15,13 @@ use super::supported_languages::SupportedLanguages;
 /// relevance of the code file to a given task.
 ///
 #[builder(setter(into), build_fn(error = "anyhow::Error"))]
-pub struct CodeSummarizer {
+pub struct CodeOutliner {
     #[builder(setter(custom))]
     language: SupportedLanguages,
 }
 
-impl CodeSummarizerBuilder {
-    /// Attempts to set the language for the `CodeSummarizer`.
+impl CodeOutlinerBuilder {
+    /// Attempts to set the language for the `CodeOutliner`.
     ///
     /// # Arguments
     ///
@@ -44,30 +44,30 @@ impl CodeSummarizerBuilder {
     }
 }
 
-impl CodeSummarizer {
-    /// Creates a new `CodeSummarizer` with the specified language
+impl CodeOutliner {
+    /// Creates a new `CodeOutliner` with the specified language
     ///
     /// # Arguments
     ///
-    /// * `language` - The programming language for which the code will be summarized.
+    /// * `language` - The programming language for which the code will be outlined.
     ///
     /// # Returns
     ///
-    /// * `Self` - A new instance of `CodeSummarizer`.
+    /// * `Self` - A new instance of `CodeOutliner`.
     pub fn new(language: SupportedLanguages) -> Self {
         Self { language }
     }
 
-    /// Creates a new builder for `CodeSummarizer`.
+    /// Creates a new builder for `CodeOutliner`.
     ///
     /// # Returns
     ///
-    /// * `CodeSummarizerBuilder` - A new builder instance for `CodeSummarizer`.
-    pub fn builder() -> CodeSummarizerBuilder {
-        CodeSummarizerBuilder::default()
+    /// * `CodeOutlinerBuilder` - A new builder instance for `CodeOutliner`.
+    pub fn builder() -> CodeOutlinerBuilder {
+        CodeOutlinerBuilder::default()
     }
 
-    /// Summarizes a code file.
+    /// outlines a code file.
     ///
     /// # Arguments
     ///
@@ -79,7 +79,7 @@ impl CodeSummarizer {
     ///
     /// # Errors
     /// * If the code could not be parsed, an error is returned.
-    pub fn summarize(&self, code: &str) -> Result<String> {
+    pub fn outline(&self, code: &str) -> Result<String> {
         let mut parser = Parser::new();
         parser.set_language(&self.language.into())?;
         let tree = parser.parse(code, None).context("No nodes found")?;
@@ -92,7 +92,7 @@ impl CodeSummarizer {
         let mut cursor = root_node.walk();
         let mut summary = String::with_capacity(code.len());
         let mut last_end = 0;
-        self.summarize_node(&mut cursor, code, &mut summary, &mut last_end);
+        self.outline_node(&mut cursor, code, &mut summary, &mut last_end);
         Ok(summary)
     }
 
@@ -121,7 +121,7 @@ impl CodeSummarizer {
         }
     }
 
-    /// Summarizes a syntax node
+    /// outlines a syntax node
     ///
     /// # Arguments
     ///
@@ -132,7 +132,7 @@ impl CodeSummarizer {
     /// # Returns
     ///
     /// * `String` - A summary of the syntax node.
-    fn summarize_node(
+    fn outline_node(
         &self,
         cursor: &mut TreeCursor,
         source: &str,
@@ -145,16 +145,16 @@ impl CodeSummarizer {
             summary.push_str(&source[*last_end..node.start_byte()]);
             *last_end = node.end_byte();
             if cursor.goto_next_sibling() {
-                self.summarize_node(cursor, source, summary, last_end);
+                self.outline_node(cursor, source, summary, last_end);
             }
             return;
         }
 
         let mut next_cursor = cursor.clone();
 
-        // If the node is a non-leaf, recursively summarize its children
+        // If the node is a non-leaf, recursively outline its children
         if next_cursor.goto_first_child() {
-            self.summarize_node(&mut next_cursor, source, summary, last_end);
+            self.outline_node(&mut next_cursor, source, summary, last_end);
         // If the node is a leaf, add the text to the summary
         } else {
             summary.push_str(&source[*last_end..node.end_byte()]);
@@ -162,7 +162,7 @@ impl CodeSummarizer {
         }
 
         if cursor.goto_next_sibling() {
-            self.summarize_node(cursor, source, summary, last_end);
+            self.outline_node(cursor, source, summary, last_end);
         } else {
             // Done with this node
         }
@@ -177,7 +177,7 @@ mod tests {
     // We should strip away all code blocks and leave only imports, comments, function signatures,
     // class, interface and structure definitions and definitions of constants, variables and other members.
     #[test]
-    fn test_summarize_rust() {
+    fn test_outline_rust() {
         let code = r#"
 use anyhow::{Context as _, Result};
 // This is a comment
@@ -194,8 +194,8 @@ impl Bla {
         self.a = 1;
     }
 }"#;
-        let summarizer = CodeSummarizer::new(SupportedLanguages::Rust);
-        let summary = summarizer.summarize(code).unwrap();
+        let outliner = CodeOutliner::new(SupportedLanguages::Rust);
+        let summary = outliner.outline(code).unwrap();
         assert_eq!(
             summary,
             "\nuse anyhow::{Context as _, Result};\n// This is a comment\nfn main(a: usize, b: usize) -> usize \n\npub struct Bla {\n    a: usize\n}\n\nimpl Bla {\n    fn ok(&mut self) \n}"
@@ -203,7 +203,7 @@ impl Bla {
     }
 
     #[test]
-    fn test_summarize_typescript() {
+    fn test_outline_typescript() {
         let code = r#"
 import { Context as _, Result } from 'anyhow';
 // This is a comment
@@ -218,8 +218,8 @@ export class Bla {
 export interface Bla {
     ok(): void;
 }"#;
-        let summarizer = CodeSummarizer::new(SupportedLanguages::Typescript);
-        let summary = summarizer.summarize(code).unwrap();
+        let outliner = CodeOutliner::new(SupportedLanguages::Typescript);
+        let summary = outliner.outline(code).unwrap();
         assert_eq!(
             summary,
             "\nimport { Context as _, Result } from 'anyhow';\n// This is a comment\nfunction main(a: number, b: number): number \n\nexport class Bla {\n    a: number;\n}\n\nexport interface Bla {\n    ok(): void;\n}"
@@ -227,7 +227,7 @@ export interface Bla {
     }
 
     #[test]
-    fn test_summarize_python() {
+    fn test_outline_python() {
         let code = r#"
 import sys
 # This is a comment
@@ -241,8 +241,8 @@ class Bla:
     def ok(self):
         self.a = 1
 "#;
-        let summarizer = CodeSummarizer::new(SupportedLanguages::Python);
-        let summary = summarizer.summarize(code).unwrap();
+        let outliner = CodeOutliner::new(SupportedLanguages::Python);
+        let summary = outliner.outline(code).unwrap();
         assert_eq!(
             summary,
             "\nimport sys\n# This is a comment\ndef main(a: int, b: int) -> int:\n    \n\nclass Bla:\n    def __init__(self):\n        \n\n    def ok(self):\n        "
@@ -250,7 +250,7 @@ class Bla:
     }
 
     #[test]
-    fn test_summarize_ruby() {
+    fn test_outline_ruby() {
         let code = r#"
 require 'anyhow'
 # This is a comment
@@ -264,8 +264,8 @@ class Bla
     end
 end
 "#;
-        let summarizer = CodeSummarizer::new(SupportedLanguages::Ruby);
-        let summary = summarizer.summarize(code).unwrap();
+        let outliner = CodeOutliner::new(SupportedLanguages::Ruby);
+        let summary = outliner.outline(code).unwrap();
         assert_eq!(
             summary,
             "\nrequire 'anyhow'\n# This is a comment\ndef main(a, b)\n    puts \"Hello, world!\"\nend\n\nclass Bla\n    def ok\n        @a = 1\n    end\nend"
@@ -273,7 +273,7 @@ end
     }
 
     #[test]
-    fn test_summarize_javascript() {
+    fn test_outline_javascript() {
         let code = r#"
 import { Context as _, Result } from 'anyhow';
 // This is a comment
@@ -291,8 +291,8 @@ class Bla {
     }
 }
 "#;
-        let summarizer = CodeSummarizer::new(SupportedLanguages::Javascript);
-        let summary = summarizer.summarize(code).unwrap();
+        let outliner = CodeOutliner::new(SupportedLanguages::Javascript);
+        let summary = outliner.outline(code).unwrap();
         assert_eq!(
             summary,
             "\nimport { Context as _, Result } from 'anyhow';\n// This is a comment\nfunction main(a, b) \n\nclass Bla {\n    constructor() \n\n    ok() \n}"

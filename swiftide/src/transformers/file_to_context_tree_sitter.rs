@@ -5,7 +5,7 @@ use derive_builder::Builder;
 
 use crate::{
     indexing::Node,
-    integrations::treesitter::{CodeSummarizer, SupportedLanguages},
+    integrations::treesitter::{CodeOutliner, SupportedLanguages},
     Transformer,
 };
 
@@ -17,7 +17,7 @@ pub const NAME: &str = "Context (code)";
 #[derive(Debug, Clone, Builder)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct FileToContextTreeSitter {
-    summarizer: CodeSummarizer,
+    outliner: CodeOutliner,
 }
 
 impl FileToContextTreeSitter {
@@ -34,10 +34,10 @@ impl FileToContextTreeSitter {
     /// - `Result<Self>`: Returns an instance of `FileToContextTreeSitter` if successful, otherwise returns an error.
     ///
     /// # Errors
-    /// - Returns an error if the language is not supported or if the `CodeSummarizer` fails to build.
+    /// - Returns an error if the language is not supported or if the `CodeOutliner` fails to build.
     pub fn try_for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
         Ok(Self {
-            summarizer: CodeSummarizer::builder().try_language(lang)?.build()?,
+            outliner: CodeOutliner::builder().try_language(lang)?.build()?,
         })
     }
 }
@@ -46,7 +46,7 @@ impl FileToContextTreeSitter {
 impl Transformer for FileToContextTreeSitter {
     /// Adds a context to the metadata of a `Node` containing code.
     ///
-    /// It uses the `CodeSummarizer` to generate the context.
+    /// It uses the `CodeOutliner` to generate the context.
     ///
     /// # Parameters
     /// - `node`: The `Node` containing the code of which the context is to be generated.
@@ -58,7 +58,7 @@ impl Transformer for FileToContextTreeSitter {
     /// - If the code summarizing fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.file_to_context_tree_sitter")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let summary_result = self.summarizer.summarize(&node.chunk)?;
+        let summary_result = self.outliner.outline(&node.chunk)?;
         node.metadata.insert(NAME.into(), summary_result);
         Ok(node)
     }
