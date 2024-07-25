@@ -1,0 +1,97 @@
+[package]
+name = "swiftide-integrations"
+publish = false
+edition = "2021"
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core" }
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+itertools = { workspace = true }
+chrono = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+
+
+# Integrations
+async-openai = { workspace = true, optional = true }
+qdrant-client = { workspace = true, optional = true, default-features = false, features = [
+  "serde",
+] }
+redis = { version = "0.25", features = [
+  "aio",
+  "tokio-comp",
+  "connection-manager",
+  "tokio-rustls-comp",
+], optional = true }
+tree-sitter = { version = "0.22", optional = true }
+tree-sitter-rust = { version = "0.21", optional = true }
+tree-sitter-python = { version = "0.21", optional = true }
+tree-sitter-ruby = { version = "0.21", optional = true }
+tree-sitter-typescript = { version = "0.21", optional = true }
+tree-sitter-javascript = { version = "0.21", optional = true }
+fastembed = { version = "3.6", optional = true }
+spider = { version = "1.98", optional = true }
+htmd = { version = "0.1", optional = true }
+aws-config = { version = "1.5", features = [
+  "behavior-version-latest",
+], optional = true }
+aws-credential-types = { version = "1.2", features = [
+  "hardcoded-credentials",
+], optional = true }
+aws-sdk-bedrockruntime = { version = "1.37", features = [
+  "behavior-version-latest",
+], optional = true }
+secrecy = { version = "0.8.0", optional = true }
+reqwest = { version = "0.12.5", optional = true, default-features = false }
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+
+mockall = { workspace = true }
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+test-case = { workspace = true }
+futures-util = { workspace = true }
+indoc = { workspace = true }
+
+[features]
+default = ["rustls"]
+# Ensures rustls is used 
+rustls = ["reqwest/rustls-tls-native-roots"]
+# Qdrant for storage
+qdrant = ["dep:qdrant-client"]
+# Redis for caching and storage
+redis = ["dep:redis"]
+# Tree-sitter for code operations and chunking
+tree-sitter = [
+  "dep:tree-sitter",
+  "dep:tree-sitter-rust",
+  "dep:tree-sitter-python",
+  "dep:tree-sitter-ruby",
+  "dep:tree-sitter-typescript",
+  "dep:tree-sitter-javascript",
+]
+# OpenAI for embedding and prompting
+openai = ["dep:async-openai"]
+# Groq prompting
+groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+# FastEmbed (by qdrant) for fast, local embeddings
+fastembed = ["dep:fastembed"]
+# Scraping via spider as loader and a html to markdown transformer
+scraping = ["dep:spider", "dep:htmd"]
+# AWS Bedrock for prompting
+aws-bedrock = [
+  "dep:aws-config",
+  "dep:aws-credential-types",
+  "dep:aws-sdk-bedrockruntime",
+]
+
+[lints]
+workspace = true

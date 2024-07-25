@@ -4,18 +4,20 @@ version = "0.0.0"
 publish = false
 edition = "2021"
 
-[dev-dependencies]
+[dependencies]
 tokio = { version = "1.0", features = ["full"] }
 swiftide = { path = "../swiftide/", features = [
     "all",
     "scraping",
     "aws-bedrock",
+    "groq",
 ] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
 spider = "1.98"
 
 [[example]]
+doc-scrape-examples = true
 name = "index-codebase"
 path = "index_codebase.rs"
 
@@ -24,25 +26,35 @@ name = "index-codebase-reduced-context"
 path = "index_codebase_reduced_context.rs"
 
 [[example]]
+doc-scrape-examples = true
 name = "fastembed"
 path = "fastembed.rs"
 
 [[example]]
+doc-scrape-examples = true
 name = "index-redis"
 path = "index_into_redis.rs"
 
 [[example]]
+doc-scrape-examples = true
 name = "index-markdown-metadata"
 path = "index_markdown_lots_of_metadata.rs"
 
 [[example]]
+doc-scrape-examples = true
 name = "scraping-index"
 path = "scraping_index_to_markdown.rs"
 
 [[example]]
+doc-scrape-examples = true
 name = "aws-bedrock"
 path = "aws_bedrock.rs"
 
 [[example]]
+doc-scrape-examples = true
 name = "store-multiple-vectors"
 path = "store_multiple_vectors.rs"
+
+[[example]]
+name = "index-groq"
+path = "index_groq.rs"

@@ -12,9 +12,9 @@
 
 use swiftide::{
     indexing,
+    indexing::loaders::FileLoader,
+    indexing::transformers::Embed,
     integrations::{fastembed::FastEmbed, qdrant::Qdrant},
-    loaders::FileLoader,
-    transformers::Embed,
 };
 
 #[tokio::main]

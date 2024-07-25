@@ -1,11 +1,14 @@
 <details>
   <summary>Table of Contents</summary>
+
 <!--toc:start-->
 
 - [About The Project](#about-the-project)
+- [Latest updates on our blog :fire:](#latest-updates-on-our-blog-fire)
 - [Example](#example)
-- [Features](#features)
 - [Vision](#vision)
+- [Features](#features)
+  - [In detail](#in-detail)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -13,8 +16,9 @@
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
-    <!--toc:end-->
-  </details>
+  <!--toc:end-->
+
+    </details>
 
 <a name="readme-top"></a>
 
@@ -48,7 +52,7 @@
   <p align="center">
 Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
     <br />
-    <a href="https://swiftide.rs"><strong>Explore the docs »</strong></a>
+    <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
     <br />
     <br />
     <!-- <a href="https://github.com/bosun-ai/swiftide">View Demo</a> -->
@@ -83,6 +87,14 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Latest updates on our blog :fire:
+
+- [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
+- [Release - Swiftide 0.6](https://bosun.ai/posts/swiftide-0-6/) (2024-07-12)
+- [Release - Swiftide 0.5](https://bosun.ai/posts/swiftide-0-5/) (2024-07-1)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Example
 
 ```rust
@@ -91,29 +103,36 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             redis_url,
             "swiftide-examples",
         )?)
-        .then(MetadataQACode::new(openai_client.clone()))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
             10..2048,
         )?)
+        .then(MetadataQACode::new(openai_client.clone()))
         .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
-            Qdrant::try_from_url(qdrant_url)?
+            Qdrant::builder()
                 .batch_size(50)
                 .vector_size(1536)
-                .collection_name("swiftide-examples".to_string())
                 .build()?,
         )
         .run()
         .await?;
 ```
 
+_You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Vision
+
+Our goal is to create a fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Features
 
 - Fast streaming indexing pipeline with async, parallel processing
-- Integrations with OpenAI, Redis, Qdrant, FastEmbed, and Treesitter
+- Integrations with OpenAI, Groq, Redis, Qdrant, FastEmbed, and Treesitter
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
 - Splitting and merging pipelines
@@ -121,11 +140,15 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
 - Store into multiple backends
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+### In detail
 
-## Vision
-
-Our goal is to create afast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+| **Feature**                                  | **Details**                                                                                                                                                          |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models                                                         |
+| **Loading data**                             | Files <br> Scraping <br> Other pipelines and streams                                                                                                                 |
+| **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
+| **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
+| **Storage**                                  | Qdrant <br> Redis                                                                                                                                                    |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

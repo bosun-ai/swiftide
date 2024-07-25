@@ -20,7 +20,8 @@
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
 use swiftide::{
-    indexing, integrations::redis::Redis, loaders::FileLoader, transformers::ChunkCode,
+    indexing, indexing::loaders::FileLoader, indexing::transformers::ChunkCode,
+    integrations::redis::Redis,
 };
 
 #[tokio::main]

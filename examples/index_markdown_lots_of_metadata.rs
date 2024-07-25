@@ -17,11 +17,11 @@
 
 use swiftide::{
     indexing,
-    integrations::{self, qdrant::Qdrant},
-    loaders::FileLoader,
-    transformers::{
+    indexing::loaders::FileLoader,
+    indexing::transformers::{
         ChunkMarkdown, Embed, MetadataKeywords, MetadataQAText, MetadataSummary, MetadataTitle,
     },
+    integrations::{self, qdrant::Qdrant},
 };
 
 #[tokio::main]
