@@ -6,12 +6,12 @@ use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
 
-/// `ContextualizeCodeChunk` rewrites the "Context (Code)" metadata field of a chunk to
+/// `CompressCodeChunk` rewrites the "Context (Code)" metadata field of a chunk to
 /// condense it and make it more relevant to the chunk in question. It is useful as a
 /// step after chunking a file that has had context generated for it with `FileToContextTreeSitter`.
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
-pub struct ContextualizeCodeChunk {
+pub struct CompressCodeContext {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
@@ -28,17 +28,17 @@ fn extract_markdown_codeblock(text: String) -> String {
         .unwrap_or(text)
 }
 
-impl ContextualizeCodeChunk {
-    pub fn builder() -> ContextualizeCodeChunkBuilder {
-        ContextualizeCodeChunkBuilder::default()
+impl CompressCodeContext {
+    pub fn builder() -> CompressCodeContextBuilder {
+        CompressCodeContextBuilder::default()
     }
 
-    pub fn from_client(client: impl SimplePrompt + 'static) -> ContextualizeCodeChunkBuilder {
-        ContextualizeCodeChunkBuilder::default()
+    pub fn from_client(client: impl SimplePrompt + 'static) -> CompressCodeContextBuilder {
+        CompressCodeContextBuilder::default()
             .client(client)
             .to_owned()
     }
-    /// Creates a new instance of `ContextualizeCodeChunk`.
+    /// Creates a new instance of `CompressCodeContext`.
     ///
     /// # Arguments
     ///
@@ -46,7 +46,7 @@ impl ContextualizeCodeChunk {
     ///
     /// # Returns
     ///
-    /// A new instance of `ContextualizeCodeChunk` with a default prompt and a default number of questions.
+    /// A new instance of `CompressCodeContext` with a default prompt and a default number of questions.
     pub fn new(client: impl SimplePrompt + 'static) -> Self {
         Self {
             client: Arc::new(client),
@@ -70,10 +70,10 @@ impl ContextualizeCodeChunk {
 ///
 /// A string representing the default prompt template.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("contextualize_code_chunk.prompt.md")
+    PromptTemplate::from_compiled_template_name("compress_code_context.prompt.md")
 }
 
-impl ContextualizeCodeChunkBuilder {
+impl CompressCodeContextBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
@@ -81,7 +81,7 @@ impl ContextualizeCodeChunkBuilder {
 }
 
 #[async_trait]
-impl Transformer for ContextualizeCodeChunk {
+impl Transformer for CompressCodeContext {
     /// Asynchronously transforms an `Node` by adding context to it based on the original file metadata.
     ///
     /// This method uses the `SimplePrompt` client to merge the chunk with its context.
@@ -97,7 +97,7 @@ impl Transformer for ContextualizeCodeChunk {
     /// # Errors
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
-    #[tracing::instrument(skip_all, name = "transformers.contextualize_code_chunk")]
+    #[tracing::instrument(skip_all, name = "transformers.compress_code_context")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let original_size = node.original_size;
         let needs_context = original_size != node.chunk.len();
@@ -139,14 +139,14 @@ mod test {
     use super::*;
 
     #[tokio::test]
-    async fn test_contextualize_code_chunk() {
+    async fn test_compress_code_context() {
         let mut client = MockSimplePrompt::new();
 
         client
             .expect_prompt()
             .returning(|_| Ok("RelevantContext".to_string()));
 
-        let transformer = ContextualizeCodeChunk::builder()
+        let transformer = CompressCodeContext::builder()
             .client(client)
             .build()
             .unwrap();

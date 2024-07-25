@@ -10,7 +10,7 @@ pub mod chunk_code;
 pub mod file_to_context_tree_sitter;
 
 pub mod chunk_markdown;
-pub mod contextualize_code_chunk;
+pub mod compress_code_context;
 pub mod embed;
 pub mod metadata_keywords;
 pub mod metadata_qa_code;
@@ -25,7 +25,7 @@ pub use chunk_code::ChunkCode;
 pub use file_to_context_tree_sitter::FileToContextTreeSitter;
 
 pub use chunk_markdown::ChunkMarkdown;
-pub use contextualize_code_chunk::ContextualizeCodeChunk;
+pub use compress_code_context::CompressCodeContext;
 pub use embed::Embed;
 pub use metadata_keywords::MetadataKeywords;
 pub use metadata_qa_code::MetadataQACode;

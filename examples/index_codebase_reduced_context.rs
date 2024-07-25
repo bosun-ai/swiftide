@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "rust",
             10..2048,
         )?)
-        .then(swiftide::transformers::ContextualizeCodeChunk::new(
+        .then(swiftide::transformers::CompressCodeContext::new(
             openai_client.clone(),
         ))
         .then_in_batch(10, Embed::new(openai_client.clone()))
