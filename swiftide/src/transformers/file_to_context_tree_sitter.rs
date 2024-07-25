@@ -1,4 +1,4 @@
-//! Chunk code using tree-sitter
+//! Add file-level context to the metadata of a node containing code using the tree-sitter parser.
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -44,7 +44,7 @@ impl FileToContextTreeSitter {
 
 #[async_trait]
 impl Transformer for FileToContextTreeSitter {
-    /// Adds a context to the metadata of a `Node` containing code.
+    /// Adds context to the metadata of a `Node` containing code in the "Context (Code)" field.
     ///
     /// It uses the `CodeOutliner` to generate the context.
     ///
@@ -55,11 +55,11 @@ impl Transformer for FileToContextTreeSitter {
     /// - `Node`: The same `Node` instances, with the metadata updated to include the generated context.
     ///
     /// # Errors
-    /// - If the code summarizing fails, an error is sent downstream.
+    /// - If the code outlining fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.file_to_context_tree_sitter")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let summary_result = self.outliner.outline(&node.chunk)?;
-        node.metadata.insert(NAME.into(), summary_result);
+        let outline_result = self.outliner.outline(&node.chunk)?;
+        node.metadata.insert(NAME.into(), outline_result);
         Ok(node)
     }
 }
