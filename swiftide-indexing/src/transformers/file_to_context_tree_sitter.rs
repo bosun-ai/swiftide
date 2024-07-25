@@ -3,11 +3,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 
-use crate::{
-    indexing::Node,
-    integrations::treesitter::{CodeOutliner, SupportedLanguages},
-    Transformer,
-};
+use swiftide_core::indexing::Node;
+use swiftide_core::Transformer;
+
+use swiftide_integrations::treesitter::{CodeOutliner, SupportedLanguages};
 
 pub const NAME: &str = "Context (code)";
 

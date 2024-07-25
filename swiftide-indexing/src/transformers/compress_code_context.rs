@@ -2,9 +2,9 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
-use crate::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 use anyhow::Result;
 use async_trait::async_trait;
+use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
 
 /// `CompressCodeChunk` rewrites the "Context (Code)" metadata field of a chunk to
 /// condense it and make it more relevant to the chunk in question. It is useful as a

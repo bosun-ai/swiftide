@@ -29,9 +29,6 @@ pub mod metadata_summary;
 pub mod metadata_title;
 
 #[cfg(feature = "tree-sitter")]
-pub use chunk_code::ChunkCode;
-
-#[cfg(feature = "tree-sitter")]
 pub use file_to_context_tree_sitter::FileToContextTreeSitter;
 
 pub use chunk_markdown::ChunkMarkdown;
