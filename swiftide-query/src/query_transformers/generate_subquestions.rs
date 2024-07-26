@@ -76,7 +76,7 @@ impl TransformQuery for GenerateSubquestions {
                     .with_context_value("num_questions", self.num_questions),
             )
             .await?;
-        query.update(new_query);
+        query.transformed_query(new_query);
 
         Ok(query)
     }

@@ -20,10 +20,21 @@ impl<T> Query<T> {
     pub fn current(&self) -> &str {
         &self.current
     }
+
+    fn transition_to<S>(self, new_state: S) -> Query<S> {
+        Query {
+            state: new_state,
+            original: self.original,
+            current: self.current,
+            query_transformations: self.query_transformations,
+            response_transformations: self.response_transformations,
+            embedding: self.embedding,
+        }
+    }
 }
 
 impl Query<states::Pending> {
-    pub fn update(&mut self, new_query: impl Into<String>) {
+    pub fn transformed_query(&mut self, new_query: impl Into<String>) {
         let new_query = new_query.into();
 
         self.query_transformations.push(TransformationEvent {
@@ -33,6 +44,12 @@ impl Query<states::Pending> {
 
         self.current = new_query;
     }
+
+    pub fn retrieved_documents(self, documents: Vec<String>) -> Query<states::Retrieved> {
+        let state = states::Retrieved { documents };
+
+        self.transition_to(state)
+    }
 }
 
 pub mod states {
@@ -41,7 +58,7 @@ pub mod states {
 
     #[derive(Debug)]
     pub struct Retrieved {
-        documents: Vec<String>,
+        pub(crate) documents: Vec<String>,
     }
     #[derive(Debug)]
     pub struct Answered {

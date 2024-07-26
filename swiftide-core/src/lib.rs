@@ -1,11 +1,11 @@
 mod indexing_stream;
-mod indexing_traits;
+pub mod indexing_traits;
 mod node;
 mod query;
 mod query_stream;
-mod query_traits;
-mod search_strategy;
-mod type_aliases;
+pub mod query_traits;
+mod search_strategies;
+pub mod type_aliases;
 
 pub mod prompt;
 pub use type_aliases::*;
@@ -24,7 +24,9 @@ pub mod querying {
     pub use crate::query::*;
     pub use crate::query_stream::*;
     pub use crate::query_traits::*;
-    pub use crate::search_strategy::*;
+    pub mod search_strategies {
+        pub use crate::search_strategies::*;
+    }
 }
 
 /// Re-export of commonly used dependencies.

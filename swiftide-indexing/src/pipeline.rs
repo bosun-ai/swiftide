@@ -8,7 +8,7 @@ use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
 
-use swiftide_core::{indexing_stream::IndexingStream, node::EmbedMode, node::Node};
+use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 
 /// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
@@ -507,7 +507,7 @@ mod tests {
     use super::*;
     use crate::persist::MemoryStorage;
     use mockall::Sequence;
-    use swiftide_core::traits::*;
+    use swiftide_core::indexing::*;
 
     /// Tests a simple run of the indexing pipeline.
     #[test_log::test(tokio::test)]

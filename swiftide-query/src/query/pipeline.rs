@@ -2,8 +2,8 @@ use std::sync::Arc;
 use swiftide_core::{
     prelude::*,
     querying::{
-        states, Answer, Query, QueryStream, Retrieve, SearchStrategy, SimilaritySingleEmbedding,
-        TransformQuery, TransformResponse,
+        search_strategies::SimilaritySingleEmbedding, states, Answer, Query, QueryStream, Retrieve,
+        SearchStrategy, TransformQuery, TransformResponse,
     },
 };
 use tokio::sync::mpsc::Sender;
@@ -61,7 +61,7 @@ where
     }
 }
 
-impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Pending> {
+impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states::Pending> {
     pub fn then_retrieve<T: ToOwned<Owned = impl Retrieve<S> + 'stream>>(
         self,
         retriever: T,
@@ -73,18 +73,20 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Pending> 
             search_strategy,
         } = self;
 
+        let strategy_for_stream = search_strategy.clone();
         let new_stream = stream
             .map_ok(move |query| {
+                let search_strategy = strategy_for_stream.clone();
                 let retriever = Arc::clone(&retriever);
                 let span =
                     tracing::trace_span!("then_retrieve", query = ?query, retriever = ?retriever);
-                async move { retriever.retrieve(query).await }.instrument(span)
+                async move { retriever.retrieve(&search_strategy, query).await }.instrument(span)
             })
             .try_buffer_unordered(1);
 
         Pipeline {
             stream: new_stream.boxed().into(),
-            search_strategy,
+            search_strategy: search_strategy.clone(),
             query_sender,
         }
     }

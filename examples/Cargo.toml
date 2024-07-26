@@ -12,7 +12,6 @@ swiftide = { path = "../swiftide/", features = [
   "aws-bedrock",
   "groq",
 ] }
-swiftide-query = { path = "../swiftide-query/" }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
 spider = "1.98"
