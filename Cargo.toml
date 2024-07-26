@@ -1,5 +1,15 @@
 [workspace]
-members = ["swiftide", "swiftide-query", "examples", "benchmarks"]
+members = [
+  "swiftide",
+  "swiftide-core",
+  "swiftide-integrations",
+  "swiftide-indexing",
+
+  "examples",
+  "benchmarks",
+]
+
+default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [profile.dev.package]
@@ -16,12 +26,37 @@ tokio-stream = "0.1"
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = "1.16"
 pin-project-lite = "0.2"
+itertools = { version = "0.13" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+strum = "0.26"
+strum_macros = "0.26"
+lazy_static = { version = "1.5.0" }
+chrono = { version = "0.4" }
+indoc = "2.0"
+async-openai = { version = "0.23" }
+qdrant-client = { version = "1.10", default-features = false, features = [
+  "serde",
+] }
 
 # Testing
 test-log = "0.2.16"
 testcontainers = "0.20.0"
-mockall = "0.12.1"
+mockall = "0.13.0"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
 insta = { version = "1.39.0", features = ["yaml"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+cargo = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+blocks_in_conditions = "allow"
+must_use_candidate = "allow"
+module_name_repetitions = "allow"
+missing_fields_in_debug = "allow"
+# Should be fixed asap
+multiple_crate_versions = "allow"

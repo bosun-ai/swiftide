@@ -1,0 +1,38 @@
+---
+source: swiftide-indexing/src/transformers/metadata_qa_code.rs
+expression: prompt.render().await.unwrap()
+---
+# Task
+
+Your task is to generate questions and answers for the given code.
+
+Given that somebody else might ask questions about the code, consider things like:
+
+- What does this code do?
+- What other internal parts does the code use?
+- Does this code have any dependencies?
+- What are some potential use cases for this code?
+- ... and so on
+
+# Constraints
+
+- Generate only 5 questions and answers.
+- Only respond in the example format
+- Only respond with questions and answers that can be derived from the code.
+
+# Example
+
+Respond in the following example format and do not include anything else:
+
+```
+Q1: What does this code do?
+A1: It transforms strings into integers.
+Q2: What other internal parts does the code use?
+A2: A hasher to hash the strings.
+```
+
+# Code
+
+```
+test
+```

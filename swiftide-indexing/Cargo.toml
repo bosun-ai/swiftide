@@ -1,0 +1,43 @@
+[package]
+name = "swiftide-indexing"
+publish = false
+edition = "2021"
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core" }
+swiftide-integrations = { path = "../swiftide-integrations", optional = true }
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
+futures-util = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
+num_cpus = { workspace = true }
+tracing = { workspace = true }
+itertools = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+indoc = { workspace = true }
+
+ignore = "0.4"
+text-splitter = { version = "0.14", features = ["markdown"] }
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+test-log = { workspace = true }
+mockall = { workspace = true }
+insta = { workspace = true }
+test-case = { workspace = true }
+
+[features]
+# TODO: Should not depend on integrations, transformers that use them should be in integrations instead and re-exported from root for convencience
+tree-sitter = [
+  "swiftide-integrations?/tree-sitter",
+  "dep:swiftide-integrations",
+]
+
+[lints]
+workspace = true
