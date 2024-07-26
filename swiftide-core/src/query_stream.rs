@@ -7,7 +7,7 @@ use futures_util::stream::Stream;
 pub use futures_util::{StreamExt, TryStreamExt};
 use pin_project_lite::pin_project;
 
-use super::Query;
+use crate::querying::Query;
 
 pin_project! {
     pub struct QueryStream<'stream, Q: 'stream> {
@@ -15,7 +15,7 @@ pin_project! {
         pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send + 'stream>>,
 
         #[pin]
-        pub(crate) sender: Option<Sender<Result<Query<Q>>>>
+        pub sender: Option<Sender<Result<Query<Q>>>>
     }
 }
 

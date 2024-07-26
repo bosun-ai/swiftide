@@ -1,4 +1,4 @@
-use swiftide::Embedding;
+use crate::Embedding;
 
 #[derive(Clone, Debug, Default)]
 pub struct Query<State> {

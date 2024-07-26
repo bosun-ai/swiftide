@@ -57,16 +57,18 @@
 //! Each integration has a similarly named feature flag.
 
 #[doc(inline)]
-pub use swiftide_core::prompt;
+pub use swiftide_core::indexing_traits::*;
 #[doc(inline)]
-pub use swiftide_core::traits::*;
+pub use swiftide_core::prompt;
 #[doc(inline)]
 pub use swiftide_core::type_aliases::*;
 
 /// Common traits for common behaviour
 pub mod traits {
     #[doc(inline)]
-    pub use swiftide_core::traits::*;
+    pub use swiftide_core::indexing_traits::*;
+    #[doc(inline)]
+    pub use swiftide_core::querying_traits::*;
 }
 
 /// Integrations with various platforms and external services.

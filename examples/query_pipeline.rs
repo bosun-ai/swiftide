@@ -1,8 +1,8 @@
 use swiftide::{
     indexing,
+    indexing::loaders::FileLoader,
+    indexing::transformers::{ChunkCode, ChunkMarkdown, Embed, MetadataQACode, MetadataQAText},
     integrations::{self, qdrant::Qdrant, redis::Redis},
-    loaders::FileLoader,
-    transformers::{ChunkCode, ChunkMarkdown, Embed, MetadataQACode, MetadataQAText},
 };
 use swiftide_query::{query, query_transformers, search_strategy::SimilaritySingleEmbedding};
 

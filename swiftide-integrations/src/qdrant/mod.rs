@@ -4,6 +4,7 @@
 
 mod indexing_node;
 mod persist;
+mod retrieve;
 use std::collections::{HashMap, HashSet};
 
 use std::sync::Arc;
@@ -12,7 +13,7 @@ use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant;
 
-use swiftide_core::node::{EmbeddedField, Node};
+use swiftide_core::indexing::{EmbeddedField, Node};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";

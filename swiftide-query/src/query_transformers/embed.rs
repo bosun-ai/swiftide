@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use anyhow::Result;
-use async_trait::async_trait;
-use swiftide::EmbeddingModel;
-
-use crate::{
-    query::{states, Query},
-    traits::TransformQuery,
+use swiftide_core::{
+    indexing::EmbeddingModel,
+    prelude::*,
+    querying::{states, Query, TransformQuery},
 };
 
 #[derive(Debug, Clone)]

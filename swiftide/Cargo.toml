@@ -17,6 +17,7 @@ homepage = "https://swiftide.rs"
 swiftide-core = { path = "../swiftide-core" }
 swiftide-integrations = { path = "../swiftide-integrations" }
 swiftide-indexing = { path = "../swiftide-indexing" }
+swiftide-query = { path = "../swiftide-query" }
 
 [features]
 default = []

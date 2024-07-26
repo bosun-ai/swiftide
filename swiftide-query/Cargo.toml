@@ -1,6 +1,6 @@
 [package]
 name = "swiftide-query"
-version = "0.1.0"
+publish = false
 edition = "2021"
 
 [dependencies]
@@ -15,7 +15,7 @@ pin-project-lite = { workspace = true }
 tracing = { workspace = true }
 
 # Internal
-swiftide = { path = "../swiftide" }
+swiftide-core = { path = "../swiftide-core" }
 
 [dev-dependencies]
 test-log = { workspace = true }

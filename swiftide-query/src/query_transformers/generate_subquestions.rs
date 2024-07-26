@@ -1,13 +1,9 @@
-use anyhow::Result;
 use std::sync::Arc;
-
-use async_trait::async_trait;
-use derive_builder::Builder;
-use swiftide::{prompt::PromptTemplate, SimplePrompt};
-
-use crate::{
-    query::{states, Query},
-    traits::TransformQuery,
+use swiftide_core::{
+    indexing::SimplePrompt,
+    prelude::*,
+    prompt::PromptTemplate,
+    querying::{states, Query, TransformQuery},
 };
 
 #[derive(Debug, Clone, Builder)]

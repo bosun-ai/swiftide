@@ -1,20 +1,12 @@
-use anyhow::Result;
-use futures_util::{StreamExt as _, TryStreamExt as _};
 use std::sync::Arc;
+use swiftide_core::{
+    prelude::*,
+    querying::{
+        states, Answer, Query, QueryStream, Retrieve, SearchStrategy, SimilaritySingleEmbedding,
+        TransformQuery, TransformResponse,
+    },
+};
 use tokio::sync::mpsc::Sender;
-
-use tracing::Instrument as _;
-
-use crate::{
-    search_strategy::SimilaritySingleEmbedding,
-    traits::{Answer, Retrieve, SearchStrategy, TransformQuery, TransformResponse},
-};
-
-use super::{
-    query_stream::QueryStream,
-    states::{self},
-    Query,
-};
 
 pub struct Pipeline<'stream, S: SearchStrategy = SimilaritySingleEmbedding, T = states::Pending> {
     search_strategy: S,
