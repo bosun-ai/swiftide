@@ -89,5 +89,5 @@ impl Answer for Simple {
 mod test {
     use super::*;
 
-    assert_default_prompt_snapshot!("question" => "What is love?", "documents" => vec!["First document", "Second Document"]);
+    assert_default_prompt_snapshot!("question" => "What is love?", "context" => "My context");
 }

@@ -10,11 +10,6 @@ What is love?
 * If the question cannot be answered by the provided context, state that it cannot be answered.
 * Answer the question completely and format it as markdown.
 
-## Documents
+## Context
 
----
-First document
----
----
-Second Document
----
+My context
