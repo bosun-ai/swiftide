@@ -1,3 +1,10 @@
+//! Generate an answer based on the current query
+//!
+//! For example, after retrieving documents, and those are summarized,
+//! will answer the original question with the current text in the query.
+//!
+//! WARN: If no previous response transformations have been done, the last query before retrieval
+//! will be used.
 use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
@@ -20,6 +27,11 @@ impl Simple {
         SimpleBuilder::default()
     }
 
+    /// Builds a new simple answer generator from a client that implements [`SimplePrompt`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the build failed
     pub fn from_client(client: impl SimplePrompt + 'static) -> Simple {
         SimpleBuilder::default()
             .client(client)
@@ -47,13 +59,9 @@ fn default_prompt() -> PromptTemplate {
     * If the question cannot be answered by the provided context, state that it cannot be answered.
     * Answer the question completely and format it as markdown.
 
-    ## Documents
+    ## Context
 
-    {% for document in documents -%}
-    ---
-    {{ document }}
-    ---
-    {% endfor -%}
+    {{ context }}
     "
     )
     .into()
@@ -69,7 +77,7 @@ impl Answer for Simple {
                 self.prompt_template
                     .to_prompt()
                     .with_context_value("question", query.original())
-                    .with_context_value("documents", query.documents()),
+                    .with_context_value("current", query.current()),
             )
             .await?;
 

@@ -19,6 +19,10 @@
 //! - Store into multiple backends
 //! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 //!
+//! ## Querying
+//!
+//! We are working on an experimental query pipeline, which you can find in [`swiftide::query`]
+//!
 //! ## Example
 //!
 //! ```no_run
@@ -86,6 +90,7 @@ pub mod indexing {
     pub use swiftide_indexing::*;
 }
 
+/// Query your indexed data with a transforming pipeline
 pub mod query {
     #[doc(inline)]
     pub use swiftide_core::querying::*;

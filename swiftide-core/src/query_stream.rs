@@ -1,3 +1,6 @@
+//! Internally used by a query pipeline
+//!
+//! Has a sender and receiver to initialize the stream
 use anyhow::Result;
 use std::pin::Pin;
 use tokio::sync::mpsc::Sender;

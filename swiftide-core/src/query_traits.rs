@@ -6,6 +6,7 @@ use crate::query::{
     Query,
 };
 
+/// Can transform queries before retrieval
 #[async_trait]
 pub trait TransformQuery: Send + Sync + std::fmt::Debug + ToOwned {
     async fn transform_query(
@@ -16,6 +17,7 @@ pub trait TransformQuery: Send + Sync + std::fmt::Debug + ToOwned {
 
 pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
+/// Can retrieve documents given a SearchStrategy
 #[async_trait]
 pub trait Retrieve<S: SearchStrategy + ?Sized>: Send + Sync + std::fmt::Debug + ToOwned {
     async fn retrieve(
@@ -25,13 +27,14 @@ pub trait Retrieve<S: SearchStrategy + ?Sized>: Send + Sync + std::fmt::Debug + 
     ) -> Result<Query<states::Retrieved>>;
 }
 
+/// Can transform a response after retrieval
 #[async_trait]
 pub trait TransformResponse: Send + Sync + std::fmt::Debug + ToOwned {
     async fn transform_response(&self, query: Query<Retrieved>)
         -> Result<Query<states::Retrieved>>;
 }
 
-// If we do roleup, answer could also take all queries in the stream instead
+/// Can answer the original query
 #[async_trait]
 pub trait Answer: Send + Sync + std::fmt::Debug + ToOwned {
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>>;

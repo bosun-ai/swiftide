@@ -20,6 +20,35 @@ use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 /// * `stream` - The stream of `Node` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
+///
+///# Example
+///
+/// ```no_run
+/// use swiftide::indexing::loaders::FileLoader;
+/// use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
+/// use swiftide::integrations::qdrant::Qdrant;
+/// use swiftide::indexing::Pipeline;
+/// # use anyhow::Result;
+///
+/// # #[tokio::main]
+/// # async fn main() -> Result<()> {
+/// # let qdrant_url = "url";
+/// # let openai_client = swiftide::integrations::openai::OpenAI::builder().build()?;
+///  Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
+///          .then_chunk(ChunkMarkdown::from_chunk_range(10..512))
+///          .then(MetadataQAText::new(openai_client.clone()))
+///          .then_in_batch(10, Embed::new(openai_client.clone()))
+///          .then_store_with(
+///              Qdrant::try_from_url(qdrant_url)?
+///                  .batch_size(50)
+///                  .vector_size(1536)
+///                  .collection_name("swiftide-examples".to_string())
+///                  .build()?,
+///          )
+///          .run()
+///          .await
+/// # }
+/// ```
 pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,

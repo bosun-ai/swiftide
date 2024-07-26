@@ -1,3 +1,10 @@
+//! A query is the main object going through a query pipeline
+//!
+//! It acts as a statemachine, with the following transitions:
+//!
+//! `states::Pending`: No documents have been retrieved
+//! `states::Retrieved`: Documents have been retrieved
+//! `states::Answered`: The query has been answered
 use crate::Embedding;
 
 type Document = String;
@@ -28,10 +35,12 @@ impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
 }
 
 impl<T> Query<T> {
+    /// Return the query it started with
     pub fn original(&self) -> &str {
         &self.original
     }
 
+    /// Return the current query (or after retrieval!)
     pub fn current(&self) -> &str {
         &self.current
     }
@@ -49,6 +58,7 @@ impl<T> Query<T> {
 }
 
 impl Query<states::Pending> {
+    /// Transforms the current query
     pub fn transformed_query(&mut self, new_query: impl Into<String>) {
         let new_query = new_query.into();
 
@@ -60,6 +70,7 @@ impl Query<states::Pending> {
         self.current = new_query;
     }
 
+    /// Add retrieved documents and transition to `states::Retrieved`
     pub fn retrieved_documents(self, documents: Vec<Document>) -> Query<states::Retrieved> {
         let state = states::Retrieved { documents };
 
@@ -68,6 +79,7 @@ impl Query<states::Pending> {
 }
 
 impl Query<states::Retrieved> {
+    /// Transforms the current response
     pub fn transformed_response(&mut self, new_response: impl Into<String>) {
         let new_response = new_response.into();
 
@@ -79,10 +91,12 @@ impl Query<states::Retrieved> {
         self.current = new_response;
     }
 
+    /// Returns the last retrieved documents
     pub fn documents(&self) -> &[Document] {
         &self.state.documents
     }
 
+    /// Transition the query to `states::Answered`
     #[must_use]
     pub fn answered(self, answer: impl Into<String>) -> Query<states::Answered> {
         let state = states::Answered {
@@ -93,6 +107,7 @@ impl Query<states::Retrieved> {
 }
 
 impl Query<states::Answered> {
+    /// Returns the answer of the query
     pub fn answer(&self) -> &str {
         &self.state.answer
     }
@@ -125,6 +140,7 @@ impl<T: AsRef<str>> From<T> for Query<states::Pending> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct TransformationEvent {
     before: String,

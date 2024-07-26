@@ -1,3 +1,6 @@
+//! Generate subquestions for a query
+//!
+//! Useful for similarity search where you want a wider vector coverage
 use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
@@ -21,6 +24,11 @@ impl GenerateSubquestions {
         GenerateSubquestionsBuilder::default()
     }
 
+    /// Builds a new subquestions generator from a client that implements [`SimplePrompt`]
+    ///
+    /// # Panics
+    ///
+    /// Panics if the build failed
     pub fn from_client(client: impl SimplePrompt + 'static) -> GenerateSubquestions {
         GenerateSubquestionsBuilder::default()
             .client(client)

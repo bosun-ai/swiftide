@@ -1,6 +1,8 @@
 //! This module provides integration with the Qdrant vector database.
 //! It includes functionalities to interact with Qdrant, such as creating and managing vector collections,
 //! storing data, and ensuring proper indexing for efficient searches.
+//!
+//! Qdrant can be used both in `indexing::Pipeline` and `query::Pipeline`
 
 mod indexing_node;
 mod persist;

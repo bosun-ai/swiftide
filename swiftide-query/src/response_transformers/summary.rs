@@ -20,6 +20,14 @@ impl Summary {
         SummaryBuilder::default()
     }
 
+    /// Builds a new summary generator from a client that implements [`SimplePrompt`].
+    ///
+    /// Will try to summarize documents using an llm, instructed to preserve as much information as
+    /// possible.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the build failed
     pub fn from_client(client: impl SimplePrompt + 'static) -> Summary {
         SummaryBuilder::default()
             .client(client)
