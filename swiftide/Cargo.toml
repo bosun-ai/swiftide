@@ -51,8 +51,12 @@ scraping = ["swiftide-integrations/scraping"]
 # AWS Bedrock for prompting
 aws-bedrock = ["swiftide-integrations/aws-bedrock"]
 
+# Testing, internal only
+test-utils = []
+
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-test-utils = { path = "../swiftide-test-utils" }
 
 async-openai = { workspace = true }
 qdrant-client = { workspace = true, default-features = false, features = [

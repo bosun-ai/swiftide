@@ -4209,6 +4209,7 @@ dependencies = [
  "swiftide-indexing",
  "swiftide-integrations",
  "swiftide-query",
+ "swiftide-test-utils",
  "temp-dir",
  "test-case",
  "test-log",
@@ -4330,6 +4331,27 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
+ "wiremock",
+]
+
+[[package]]
+name = "swiftide-test-utils"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "insta",
+ "mockall",
+ "qdrant-client",
+ "serde",
+ "serde_json",
+ "swiftide-core",
+ "swiftide-integrations",
+ "temp-dir",
+ "test-case",
+ "test-log",
+ "testcontainers",
+ "tokio",
  "wiremock",
 ]
 

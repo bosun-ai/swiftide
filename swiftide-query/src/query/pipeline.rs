@@ -12,34 +12,6 @@
 //! must implement.
 //!
 //! A query pipeline is lazy and only runs when query is called.
-//!
-//! # Example
-//!
-//! ```no_run
-//!
-//! # use anyhow::Result;
-//! # use swiftide::query::{query_transformers, self, response_transformers, answers}
-//!
-//! # #[tokio::main]
-//! # async fn main() -> Result<()> {
-//! # let qdrant_url = "url";
-//! # let openai_client = swiftide::integrations::openai::OpenAI::builder().build()?;
-//! query::Pipeline::default()
-//!     .then_transform_query(query_transformers::GenerateSubquestions::from_client(
-//!         openai_client.clone(),
-//!     ))
-//!     .then_transform_query(query_transformers::Embed::from_client(
-//!         openai_client.clone(),
-//!     ))
-//!     .then_retrieve(qdrant.clone())
-//!     .then_transform_response(response_transformers::Summary::from_client(
-//!         openai_client.clone(),
-//!     ))
-//!     .then_answer(answers::Simple::from_client(openai_client.clone()))
-//!     .query("What is swiftide?")
-//!     .await
-//! # }
-//! ```
 
 use std::sync::Arc;
 use swiftide_core::{

@@ -23,13 +23,15 @@
 //!
 //! We are working on an experimental query pipeline, which you can find in [`swiftide::query`]
 //!
-//! ## Example
+//! ## Examples
+//!
+//! ### Indexing markdown
 //!
 //! ```no_run
-//! use swiftide::indexing::loaders::FileLoader;
-//! use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
-//! use swiftide::integrations::qdrant::Qdrant;
-//! use swiftide::indexing::Pipeline;
+//! # use swiftide::indexing::loaders::FileLoader;
+//! # use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
+//! # use swiftide::integrations::qdrant::Qdrant;
+//! # use swiftide::indexing::Pipeline;
 //! # use anyhow::Result;
 //!
 //! # #[tokio::main]
@@ -49,6 +51,39 @@
 //!          )
 //!          .run()
 //!          .await
+//! # }
+//! ```
+//!
+//! ### Experimental querying
+//!
+//! ```no_run
+//! # use anyhow::Result;
+//! # use swiftide::query::{query_transformers, self, response_transformers, answers};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<()> {
+//! # let qdrant_url = "url";
+//! # let openai_client = swiftide::integrations::openai::OpenAI::builder().build()?;
+//! # let qdrant = swiftide::integrations::qdrant::Qdrant::try_from_url(qdrant_url)?
+//! #                .batch_size(50)
+//! #                .vector_size(1536)
+//! #                .collection_name("swiftide-examples".to_string())
+//! #                .build()?;
+//! query::Pipeline::default()
+//!     .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+//!         openai_client.clone(),
+//!     ))
+//!     .then_transform_query(query_transformers::Embed::from_client(
+//!         openai_client.clone(),
+//!     ))
+//!     .then_retrieve(qdrant.clone())
+//!     .then_transform_response(response_transformers::Summary::from_client(
+//!         openai_client.clone(),
+//!     ))
+//!     .then_answer(answers::Simple::from_client(openai_client.clone()))
+//!     .query("What is swiftide?")
+//!     .await?;
+//! # Ok(())
 //! # }
 //! ```
 //!
@@ -97,3 +132,7 @@ pub mod query {
     #[doc(inline)]
     pub use swiftide_query::*;
 }
+
+#[doc(hidden)]
+#[cfg(feature = "test-utils")]
+pub mod test_utils;
