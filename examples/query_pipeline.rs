@@ -4,7 +4,7 @@ use swiftide::{
         loaders::FileLoader,
         transformers::{ChunkMarkdown, Embed, MetadataQAText},
     },
-    integrations::{self, qdrant::Qdrant, redis::Redis},
+    integrations::{self, qdrant::Qdrant},
     query::{self, answers, query_transformers, response_transformers},
 };
 

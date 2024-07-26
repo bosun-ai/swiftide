@@ -42,12 +42,12 @@ impl<'stream, Q: Send> Stream for QueryStream<'stream, Q> {
     }
 }
 
-impl<'stream, Q> Into<QueryStream<'stream, Q>>
-    for Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send>>
+impl<'stream, Q> From<Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send>>>
+    for QueryStream<'stream, Q>
 {
-    fn into(self) -> QueryStream<'stream, Q> {
+    fn from(val: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send>>) -> Self {
         QueryStream {
-            inner: self,
+            inner: val,
             sender: None,
         }
     }

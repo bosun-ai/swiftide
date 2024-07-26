@@ -3,7 +3,7 @@ use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
     prompt::PromptTemplate,
-    querying::{states, Query, TransformQuery},
+    querying::{states, Query},
     TransformResponse,
 };
 
