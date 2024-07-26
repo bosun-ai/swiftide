@@ -31,3 +31,6 @@ pub mod querying {
 
 /// Re-export of commonly used dependencies.
 pub mod prelude;
+
+#[cfg(feature = "test-utils")]
+pub mod test_utils;

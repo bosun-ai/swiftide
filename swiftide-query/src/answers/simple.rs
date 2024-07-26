@@ -76,3 +76,10 @@ impl Answer for Simple {
         Ok(query.answered(answer))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    assert_default_prompt_snapshot!("question" => "What is love?", "documents" => vec!["First document", "Second Document"]);
+}

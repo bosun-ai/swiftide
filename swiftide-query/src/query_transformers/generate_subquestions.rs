@@ -82,3 +82,10 @@ impl TransformQuery for GenerateSubquestions {
         Ok(query)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    assert_default_prompt_snapshot!("question" => "What is love?", "num_questions" => 5);
+}

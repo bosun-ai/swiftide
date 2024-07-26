@@ -19,6 +19,8 @@ indoc = { workspace = true }
 swiftide-core = { path = "../swiftide-core" }
 
 [dev-dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+
 test-log = { workspace = true }
 testcontainers = { workspace = true }
 mockall = { workspace = true }
