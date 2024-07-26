@@ -1,6 +1,8 @@
 use crate::Embedding;
 
-#[derive(Clone, Debug, Default)]
+type Document = String;
+
+#[derive(Clone, Default)]
 pub struct Query<State> {
     original: String,
     current: String,
@@ -10,6 +12,19 @@ pub struct Query<State> {
 
     // TODO: How would this work when doing a rollup query?
     pub embedding: Option<Embedding>,
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Query")
+            .field("original", &self.original)
+            .field("current", &self.current)
+            .field("state", &self.state)
+            .field("query_transformations", &self.query_transformations)
+            .field("response_transformations", &self.response_transformations)
+            .field("embedding", &self.embedding.is_some())
+            .finish()
+    }
 }
 
 impl<T> Query<T> {
@@ -45,24 +60,57 @@ impl Query<states::Pending> {
         self.current = new_query;
     }
 
-    pub fn retrieved_documents(self, documents: Vec<String>) -> Query<states::Retrieved> {
+    pub fn retrieved_documents(self, documents: Vec<Document>) -> Query<states::Retrieved> {
         let state = states::Retrieved { documents };
 
         self.transition_to(state)
     }
 }
 
+impl Query<states::Retrieved> {
+    pub fn transformed_response(&mut self, new_response: impl Into<String>) {
+        let new_response = new_response.into();
+
+        self.response_transformations.push(TransformationEvent {
+            before: self.current.clone(),
+            after: new_response.clone(),
+        });
+
+        self.current = new_response;
+    }
+
+    pub fn documents(&self) -> &[Document] {
+        &self.state.documents
+    }
+
+    #[must_use]
+    pub fn answered(self, answer: impl Into<String>) -> Query<states::Answered> {
+        let state = states::Answered {
+            answer: answer.into(),
+        };
+        self.transition_to(state)
+    }
+}
+
+impl Query<states::Answered> {
+    pub fn answer(&self) -> &str {
+        &self.state.answer
+    }
+}
+
 pub mod states {
+    use super::Document;
+
     #[derive(Debug, Default)]
     pub struct Pending;
 
     #[derive(Debug)]
     pub struct Retrieved {
-        pub(crate) documents: Vec<String>,
+        pub(crate) documents: Vec<Document>,
     }
     #[derive(Debug)]
     pub struct Answered {
-        answer: String,
+        pub(crate) answer: String,
     }
 }
 

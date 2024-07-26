@@ -1,0 +1,78 @@
+use std::sync::Arc;
+use swiftide_core::{
+    indexing::SimplePrompt,
+    prelude::*,
+    prompt::PromptTemplate,
+    querying::{states, Query, TransformQuery},
+    Answer, TransformResponse,
+};
+
+#[derive(Debug, Clone, Builder)]
+pub struct Simple {
+    #[builder(setter(custom))]
+    client: Arc<dyn SimplePrompt>,
+    #[builder(default = "default_prompt()")]
+    prompt_template: PromptTemplate,
+}
+
+impl Simple {
+    pub fn builder() -> SimpleBuilder {
+        SimpleBuilder::default()
+    }
+
+    pub fn from_client(client: impl SimplePrompt + 'static) -> Simple {
+        SimpleBuilder::default()
+            .client(client)
+            .to_owned()
+            .build()
+            .expect("Failed to build Simple")
+    }
+}
+
+impl SimpleBuilder {
+    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
+        self.client = Some(Arc::new(client));
+        self
+    }
+}
+
+fn default_prompt() -> PromptTemplate {
+    indoc::indoc!(
+        "
+    Answer the following question based on the context provided:
+    {{ question }}
+
+    ## Constraints
+    * Do not include any information that is not in the provided context.
+    * If the question cannot be answered by the provided context, state that it cannot be answered.
+    * Answer the question completely and format it as markdown.
+
+    ## Documents
+
+    {% for document in documents -%}
+    ---
+    {{ document }}
+    ---
+    {% endfor -%}
+    "
+    )
+    .into()
+}
+
+#[async_trait]
+impl Answer for Simple {
+    #[tracing::instrument]
+    async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
+        let answer = self
+            .client
+            .prompt(
+                self.prompt_template
+                    .to_prompt()
+                    .with_context_value("question", query.original())
+                    .with_context_value("documents", query.documents()),
+            )
+            .await?;
+
+        Ok(query.answered(answer))
+    }
+}

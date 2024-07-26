@@ -4317,6 +4317,7 @@ dependencies = [
  "async-trait",
  "derive_builder",
  "futures-util",
+ "indoc",
  "insta",
  "mockall",
  "num_cpus",

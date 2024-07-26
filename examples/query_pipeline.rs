@@ -2,10 +2,10 @@ use swiftide::{
     indexing::{
         self,
         loaders::FileLoader,
-        transformers::{ChunkCode, ChunkMarkdown, Embed, MetadataQACode, MetadataQAText},
+        transformers::{ChunkMarkdown, Embed, MetadataQAText},
     },
     integrations::{self, qdrant::Qdrant, redis::Redis},
-    query::{self, query_transformers, retrievers, search_strategies},
+    query::{self, answers, query_transformers, response_transformers},
 };
 
 #[tokio::main]
@@ -13,13 +13,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     let openai_client = integrations::openai::OpenAI::builder()
-        .default_embed_model("text-embedding-3-small")
-        .default_prompt_model("gpt-3.5-turbo")
+        .default_embed_model("text-embedding-3-large")
+        .default_prompt_model("gpt-4o")
         .build()?;
 
     let qdrant = Qdrant::builder()
         .batch_size(50)
-        .vector_size(1536)
+        .vector_size(3072)
         .collection_name("swiftide-examples")
         .build()?;
 
@@ -31,8 +31,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run()
         .await?;
 
+    // By default the search strategy is SimilaritySingleEmbedding
+    // which takes the latest query, embeds it, and does a similarity search
     let pipeline = query::Pipeline::default()
-        .with_search_strategy(search_strategies::SimilaritySingleEmbedding::default())
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(
             openai_client.clone(),
         ))
@@ -40,10 +41,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             openai_client.clone(),
         ))
         .then_retrieve(qdrant.clone())
-        .then_transform_response(response_transformers::Summary::default())
-        .then_answer(answers::Simple::default());
+        .then_transform_response(response_transformers::Summary::from_client(
+            openai_client.clone(),
+        ))
+        .then_answer(answers::Simple::from_client(openai_client.clone()));
 
-    let result = pipeline.query("What is swiftide?").await?;
-    println!("{:?}", result);
+    let result = pipeline
+        .query("What is swiftide? Please provide an elaborate explanation")
+        .await?;
+
+    println!("{:?}", result.answer());
     Ok(())
 }

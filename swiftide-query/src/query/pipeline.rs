@@ -14,16 +14,25 @@ pub struct Pipeline<'stream, S: SearchStrategy = SimilaritySingleEmbedding, T = 
     query_sender: Sender<Result<Query<states::Pending>>>,
 }
 
-impl Default for Pipeline<'_> {
+impl<S: SearchStrategy> Default for Pipeline<'_, S> {
     fn default() -> Self {
         let stream = QueryStream::default();
         Self {
-            search_strategy: SimilaritySingleEmbedding::default(),
+            search_strategy: S::default(),
             query_sender: stream
                 .sender
                 .clone()
                 .expect("Pipeline received stream without query entrypoint"),
             stream,
+        }
+    }
+}
+
+impl<'a, S: SearchStrategy> Pipeline<'a, S> {
+    pub fn from_search_strategy(strategy: S) -> Pipeline<'a, S> {
+        Pipeline {
+            search_strategy: strategy,
+            ..Default::default()
         }
     }
 }
@@ -148,14 +157,6 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
     }
 }
 
-impl<'a, S: SearchStrategy> Pipeline<'a, S> {
-    pub fn with_search_strategy(&mut self, strategy: S) -> &mut Pipeline<'a, S> {
-        self.search_strategy = strategy;
-
-        self
-    }
-}
-
 impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
     pub async fn query(
         mut self,
@@ -163,15 +164,8 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
     ) -> Result<Query<states::Answered>> {
         self.query_sender.send(Ok(query.into())).await?;
 
-        let mut answer = None;
-        while let Some(first_answer) = self.stream.try_next().await? {
-            if answer.is_some() {
-                tracing::warn!("Received multiple answers, ignoring all but the first");
-                continue;
-            }
-            answer = Some(first_answer);
-        }
-
-        answer.ok_or_else(|| anyhow::anyhow!("No answer received"))
+        self.stream.try_next().await?.ok_or_else(|| {
+            anyhow::anyhow!("Pipeline did not receive a response from the query stream")
+        })
     }
 }

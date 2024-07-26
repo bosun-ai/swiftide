@@ -9,6 +9,7 @@ use super::Qdrant;
 
 #[async_trait]
 impl Retrieve<SimilaritySingleEmbedding> for Qdrant {
+    #[tracing::instrument]
     async fn retrieve(
         &self,
         search_strategy: &SimilaritySingleEmbedding,
@@ -25,7 +26,12 @@ impl Retrieve<SimilaritySingleEmbedding> for Qdrant {
         .with_payload(true)
         .build();
 
-        let result = self.client.search_points(points).await?.result;
+        let result = self
+            .client
+            .search_points(points)
+            .await
+            .context("Failed to retrieve from qdrant")?
+            .result;
 
         let documents = result
             .into_iter()

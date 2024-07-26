@@ -14,7 +14,7 @@ pub trait TransformQuery: Send + Sync + std::fmt::Debug + ToOwned {
     ) -> Result<Query<states::Pending>>;
 }
 
-pub trait SearchStrategy: Clone + Send + Sync {}
+pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
 #[async_trait]
 pub trait Retrieve<S: SearchStrategy + ?Sized>: Send + Sync + std::fmt::Debug + ToOwned {

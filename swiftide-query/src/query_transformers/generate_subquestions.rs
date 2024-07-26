@@ -38,7 +38,7 @@ impl GenerateSubquestionsBuilder {
 }
 
 fn default_prompt() -> PromptTemplate {
-    r"
+    indoc::indoc!("
     Your job is to help a query tool find the right context.
 
     Given the following question:
@@ -58,17 +58,18 @@ fn default_prompt() -> PromptTemplate {
     - Additional question 3
     - Additional question 4
     - Additional question 5
-    ".into()
+    ").into()
 }
 
 #[async_trait]
 impl TransformQuery for GenerateSubquestions {
+    #[tracing::instrument]
     async fn transform_query(
         &self,
         mut query: Query<states::Pending>,
     ) -> Result<Query<states::Pending>> {
-        let client = Arc::clone(&self.client);
-        let new_query = client
+        let new_query = self
+            .client
             .prompt(
                 self.prompt_template
                     .to_prompt()
