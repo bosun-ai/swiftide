@@ -1,9 +1,12 @@
 //! This module provides integration with the Qdrant vector database.
 //! It includes functionalities to interact with Qdrant, such as creating and managing vector collections,
 //! storing data, and ensuring proper indexing for efficient searches.
+//!
+//! Qdrant can be used both in `indexing::Pipeline` and `query::Pipeline`
 
 mod indexing_node;
 mod persist;
+mod retrieve;
 use std::collections::{HashMap, HashSet};
 
 use std::sync::Arc;
@@ -12,7 +15,7 @@ use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant;
 
-use swiftide_core::node::{EmbeddedField, Node};
+use swiftide_core::indexing::{EmbeddedField, Node};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -96,6 +99,7 @@ impl Qdrant {
     /// Errors if client fails build
     pub async fn create_index_if_not_exists(&self) -> Result<()> {
         tracing::info!("Checking if collection {} exists", self.collection_name);
+
         if self.client.collection_exists(&self.collection_name).await? {
             tracing::warn!("Collection {} exists", self.collection_name);
             return Ok(());

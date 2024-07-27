@@ -58,3 +58,7 @@ path = "store_multiple_vectors.rs"
 [[example]]
 name = "index-groq"
 path = "index_groq.rs"
+
+[[example]]
+name = "query-pipeline"
+path = "query_pipeline.rs"

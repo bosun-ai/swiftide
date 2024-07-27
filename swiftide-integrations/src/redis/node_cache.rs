@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use swiftide_core::{node::Node, traits::NodeCache};
+use swiftide_core::indexing::{Node, NodeCache};
 
 use super::Redis;
 

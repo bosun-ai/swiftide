@@ -1,0 +1,34 @@
+[package]
+name = "swiftide-query"
+publish = false
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
+futures-util = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
+num_cpus = { workspace = true }
+pin-project-lite = { workspace = true }
+tracing = { workspace = true }
+indoc = { workspace = true }
+
+# Internal
+swiftide-core = { path = "../swiftide-core" }
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+mockall = { workspace = true }
+temp-dir = { workspace = true }
+wiremock = { workspace = true }
+test-case = { workspace = true }
+insta = { workspace = true }
+
+
+[lints]
+workspace = true

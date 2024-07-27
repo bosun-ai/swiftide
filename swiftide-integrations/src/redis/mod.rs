@@ -18,7 +18,7 @@ use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use tokio::sync::RwLock;
 
-use swiftide_core::node::Node;
+use swiftide_core::indexing::Node;
 
 mod node_cache;
 mod persist;

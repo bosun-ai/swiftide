@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::primitives::Blob;
-use swiftide_core::{prompt::Prompt, SimplePrompt};
+use swiftide_core::{indexing::SimplePrompt, prompt::Prompt};
 
 use super::AwsBedrock;
 

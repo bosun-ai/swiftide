@@ -1,1 +1,2 @@
-pub type Embeddings = Vec<Vec<f32>>;
+pub type Embedding = Vec<f32>;
+pub type Embeddings = Vec<Embedding>;

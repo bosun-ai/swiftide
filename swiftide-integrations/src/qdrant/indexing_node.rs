@@ -10,7 +10,7 @@ use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
 };
-use swiftide_core::node::EmbeddedField;
+use swiftide_core::indexing::EmbeddedField;
 
 use super::NodeWithVectors;
 
@@ -92,15 +92,15 @@ mod tests {
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
-    use swiftide_core::node::{EmbeddedField, Node};
+    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Node};
 
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
-            embed_mode: swiftide_core::node::EmbedMode::SingleWithMetadata,
             original_size: 4,
-            offset: 0
+            offset: 0,
+            embed_mode: EmbedMode::SingleWithMetadata
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -118,9 +118,9 @@ mod tests {
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
-            embed_mode: swiftide_core::node::EmbedMode::PerField,
             original_size: 4,
-            offset: 0
+            offset: 0,
+            embed_mode: EmbedMode::PerField
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -147,9 +147,9 @@ mod tests {
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
             ])),
             metadata: BTreeMap::from([("m1".into(), "mv1".into()), ("m2".into(), "mv2".into())]),
-            embed_mode: swiftide_core::node::EmbedMode::Both,
             original_size: 4,
-            offset: 0
+            offset: 0,
+            embed_mode: EmbedMode::Both
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([

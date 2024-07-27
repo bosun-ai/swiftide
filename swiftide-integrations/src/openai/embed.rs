@@ -23,7 +23,13 @@ impl EmbeddingModel for OpenAI {
             messages = serde_json::to_string_pretty(&request)?,
             "[Embed] Request to openai"
         );
-        let response = self.client.embeddings().create(request).await?;
+        let response = self
+            .client
+            .embeddings()
+            .create(request)
+            .await
+            .context("Request to OpenAI Failed")?;
+
         tracing::debug!("[Embed] Response openai");
 
         // WARN: Naively assumes that the order is preserved. Might not always be the case.
