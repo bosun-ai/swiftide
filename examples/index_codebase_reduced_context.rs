@@ -21,12 +21,10 @@
 //! [Swiftide]: https://github.com/bosun-ai/swiftide
 //! [examples]: https://github.com/bosun-ai/swiftide/blob/master/examples
 
-use swiftide::{
-    indexing,
-    integrations::{self, qdrant::Qdrant, redis::Redis},
-    loaders::FileLoader,
-    transformers::{ChunkCode, Embed, MetadataQACode},
-};
+use swiftide::indexing;
+use swiftide::indexing::loaders::FileLoader;
+use swiftide::indexing::transformers::{ChunkCode, Embed, MetadataQACode};
+use swiftide::integrations::{self, qdrant::Qdrant, redis::Redis};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -47,13 +45,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             redis_url,
             "swiftide-examples-codebase-reduced-context",
         )?)
-        .then(swiftide::transformers::FileToContextTreeSitter::try_for_language("rust")?)
+        .then(indexing::transformers::FileToContextTreeSitter::try_for_language("rust")?)
         .then(MetadataQACode::new(openai_client.clone()))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
             10..2048,
         )?)
-        .then(swiftide::transformers::CompressCodeContext::new(
+        .then(indexing::transformers::CompressCodeContext::new(
             openai_client.clone(),
         ))
         .then_in_batch(10, Embed::new(openai_client.clone()))

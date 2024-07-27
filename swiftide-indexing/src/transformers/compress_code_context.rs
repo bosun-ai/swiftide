@@ -103,7 +103,7 @@ impl Transformer for CompressCodeContext {
         let needs_context = original_size != node.chunk.len();
 
         let maybe_context = node.metadata.get("Context (code)");
-        let context = if !needs_context || !maybe_context.is_some() {
+        let context = if !needs_context || maybe_context.is_none() {
             return Ok(node);
         } else {
             maybe_context.unwrap()

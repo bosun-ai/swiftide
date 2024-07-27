@@ -10,7 +10,7 @@ use swiftide_integrations::treesitter::{CodeOutliner, SupportedLanguages};
 
 pub const NAME: &str = "Context (code)";
 
-/// FileToContextTreeSitter adds a "Context (Code)" field to the metadata of a node that contains
+/// `FileToContextTreeSitter` adds a "Context (Code)" field to the metadata of a node that contains
 /// a summary of the code in the node. It uses the tree-sitter parser to parse the code and
 /// remove any information that is less relevant for tasks that consider the file as a whole.
 #[derive(Debug, Clone, Builder)]
