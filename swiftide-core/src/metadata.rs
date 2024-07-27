@@ -92,7 +92,6 @@ where
     }
 }
 
-// Implement iterator such that the returned values are borrowed
 impl IntoIterator for Metadata {
     type Item = (String, serde_json::Value);
     type IntoIter = std::collections::btree_map::IntoIter<String, serde_json::Value>;
@@ -109,7 +108,6 @@ impl<'iter> IntoIterator for &'iter Metadata {
     }
 }
 
-// Implement deserialize such that it forwards to the inner BTreeMap
 impl<'de> serde::Deserialize<'de> for Metadata {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         BTreeMap::deserialize(deserializer).map(|inner| Metadata { inner })
