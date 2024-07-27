@@ -99,8 +99,6 @@ impl Transformer for CompressCodeContext {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.compress_code_context")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let original_size = node.original_size;
-
         let maybe_context = node.metadata.get("Context (code)");
         let context = if maybe_context.is_none() {
             return Ok(node);
@@ -108,14 +106,9 @@ impl Transformer for CompressCodeContext {
             maybe_context.unwrap()
         };
 
-        let offset = node.offset;
-
         let prompt = self
             .prompt_template
             .to_prompt()
-            // TODO: Context should have line numbers so it is easier to associate the chunk with the context
-            .with_context_value("original_size", original_size)
-            .with_context_value("offset", offset)
             .with_context_value("context", context.as_str())
             .with_context_value("code", node.chunk.clone());
 
