@@ -4242,6 +4242,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "swiftide-derive"
+version = "0.0.0"
+dependencies = [
+ "quote",
+ "syn 2.0.72",
+]
+
+[[package]]
 name = "swiftide-indexing"
 version = "0.0.0"
 dependencies = [
