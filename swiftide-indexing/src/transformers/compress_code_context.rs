@@ -134,7 +134,7 @@ impl Transformer for CompressCodeContext {
 
 #[cfg(test)]
 mod test {
-    use crate::MockSimplePrompt;
+    use swiftide_core::MockSimplePrompt;
 
     use super::*;
 
