@@ -101,10 +101,7 @@ impl Node {
         if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
             embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
             for (name, value) in &self.metadata {
-                embeddables.push((
-                    EmbeddedField::Metadata(name.clone()),
-                    value.to_string().clone(),
-                ));
+                embeddables.push((EmbeddedField::Metadata(name.clone()), value.to_string()));
             }
         }
 

@@ -4,7 +4,10 @@
 //! data compatibility with Qdrant's required format.
 
 use anyhow::{bail, Result};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    string::ToString,
+};
 
 use qdrant_client::{
     client::Payload,
@@ -36,19 +39,24 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
 
         // Extend the metadata with additional information.
         node.metadata.extend([
-            ("path".to_string(), node.path.to_string_lossy().to_string()),
-            ("content".to_string(), node.chunk),
-            (
-                "last_updated_at".to_string(),
-                chrono::Utc::now().to_rfc3339(),
-            ),
+            ("path", node.path.to_string_lossy().to_string()),
+            ("content", node.chunk),
+            ("last_updated_at", chrono::Utc::now().to_rfc3339()),
         ]);
 
         // Create a payload compatible with Qdrant's API.
         let payload: Payload = node
             .metadata
             .iter()
-            .map(|(k, v)| (k.as_str(), Value::from(v.to_string().as_str())))
+            .map(|(k, v)| {
+                (
+                    k.as_str(),
+                    Value::from(
+                        v.as_str()
+                            .map_or_else(|| v.to_string(), ToString::to_string),
+                    ),
+                )
+            })
             .collect::<HashMap<&str, Value>>()
             .into();
 
