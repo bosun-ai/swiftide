@@ -70,7 +70,7 @@ impl CompressCodeContext {
 ///
 /// A string representing the default prompt template.
 fn default_prompt() -> PromptTemplate {
-    PromptTemplate::from_compiled_template_name("compress_code_context.prompt.md")
+    include_str!("prompts/compress_code_context.prompt.md").into()
 }
 
 impl CompressCodeContextBuilder {
@@ -129,6 +129,21 @@ mod test {
     use swiftide_core::MockSimplePrompt;
 
     use super::*;
+
+    #[test_log::test(tokio::test)]
+    async fn test_compress_code_template() {
+        let template = default_prompt();
+
+        let context = "Relevant Context";
+        let code = "Code using context";
+
+        let prompt = template
+            .to_prompt()
+            .with_context_value("context", context)
+            .with_context_value("code", code);
+
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
 
     #[tokio::test]
     async fn test_compress_code_context() {
