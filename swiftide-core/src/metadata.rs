@@ -2,7 +2,7 @@
 //!
 //! Typically metadata is used to extract or generate additional information about the node
 //!
-//! Internally it uses a BTreeMap to store the key-value pairs, to ensure the data is sorted.
+//! Internally it uses a `BTreeMap` to store the key-value pairs, to ensure the data is sorted.
 use std::collections::{btree_map::IntoValues, BTreeMap};
 
 use serde::Deserializer;
