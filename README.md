@@ -70,7 +70,9 @@ Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+Swiftide is a data indexing, processing and query library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+
+With Swiftide, you can build your AI application from idea to production in a few lines of code.
 
 <div align="center">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
@@ -132,6 +134,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 ## Features
 
 - Fast streaming indexing pipeline with async, parallel processing
+- Experimental query pipeline
 - Integrations with OpenAI, Groq, Redis, Qdrant, FastEmbed, and Treesitter
 - A variety of loaders, transformers, and embedders and other common, generic tools
 - Bring your own transformers by extending straightforward traits
