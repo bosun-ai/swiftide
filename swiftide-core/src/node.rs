@@ -101,7 +101,10 @@ impl Node {
         if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
             embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
             for (name, value) in &self.metadata {
-                embeddables.push((EmbeddedField::Metadata(name.clone()), value.to_string()));
+                let value = value
+                    .as_str()
+                    .map_or_else(|| value.to_string(), ToString::to_string);
+                embeddables.push((EmbeddedField::Metadata(name.clone()), value));
             }
         }
 
@@ -121,7 +124,13 @@ impl Node {
         let metadata = self
             .metadata
             .iter()
-            .map(|(k, v)| format!("{k}: {v}"))
+            .map(|(k, v)| {
+                let v = v
+                    .as_str()
+                    .map_or_else(|| v.to_string(), ToString::to_string);
+
+                format!("{k}: {v}")
+            })
             .collect::<Vec<String>>()
             .join("\n");
 

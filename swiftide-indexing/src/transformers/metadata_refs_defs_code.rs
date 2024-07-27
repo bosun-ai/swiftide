@@ -24,12 +24,12 @@
 //! node = transformer.transform_node(node).await.unwrap();
 //!
 //! assert_eq!(
-//!     node.metadata.get(NAME_REFERENCES),
-//!     Some(&"println".to_string())
+//!     node.metadata.get(NAME_REFERENCES).unwrap().as_str().unwrap(),
+//!     "println"
 //! );
 //! assert_eq!(
-//!     node.metadata.get(NAME_DEFINITIONS),
-//!     Some(&"main".to_string())
+//!     node.metadata.get(NAME_DEFINITIONS).unwrap().as_str().unwrap(),
+//!     "main"
 //! );
 //! # Ok(())
 //! # }
