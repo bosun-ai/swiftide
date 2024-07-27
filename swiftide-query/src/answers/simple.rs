@@ -3,8 +3,8 @@
 //! For example, after retrieving documents, and those are summarized,
 //! will answer the original question with the current text in the query.
 //!
-//! WARN: If no previous response transformations have been done, the last query before retrieval
-//! will be used.
+//! If `current` on the Query is empty, it will concatenate the documents
+//! as context instead.
 use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
@@ -71,13 +71,19 @@ fn default_prompt() -> PromptTemplate {
 impl Answer for Simple {
     #[tracing::instrument]
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
+        let context = if query.current().is_empty() {
+            &query.documents().join("\n---\n")
+        } else {
+            query.current()
+        };
+
         let answer = self
             .client
             .prompt(
                 self.prompt_template
                     .to_prompt()
                     .with_context_value("question", query.original())
-                    .with_context_value("current", query.current()),
+                    .with_context_value("context", context),
             )
             .await?;
 
