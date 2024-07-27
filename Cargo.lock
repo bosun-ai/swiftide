@@ -4208,6 +4208,8 @@ dependencies = [
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
+ "swiftide-query",
+ "swiftide-test-utils",
  "temp-dir",
  "test-case",
  "test-log",
@@ -4222,6 +4224,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "derive_builder",
  "futures-util",
  "itertools 0.13.0",
  "lazy_static",
@@ -4305,6 +4308,51 @@ dependencies = [
  "tree-sitter-ruby",
  "tree-sitter-rust",
  "tree-sitter-typescript",
+]
+
+[[package]]
+name = "swiftide-query"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "derive_builder",
+ "futures-util",
+ "indoc",
+ "insta",
+ "mockall",
+ "num_cpus",
+ "pin-project-lite",
+ "swiftide-core",
+ "temp-dir",
+ "test-case",
+ "test-log",
+ "testcontainers",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "wiremock",
+]
+
+[[package]]
+name = "swiftide-test-utils"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "insta",
+ "mockall",
+ "qdrant-client",
+ "serde",
+ "serde_json",
+ "swiftide-core",
+ "swiftide-integrations",
+ "temp-dir",
+ "test-case",
+ "test-log",
+ "testcontainers",
+ "tokio",
+ "wiremock",
 ]
 
 [[package]]

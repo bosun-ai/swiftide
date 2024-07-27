@@ -9,7 +9,7 @@ use pin_project_lite::pin_project;
 use std::pin::Pin;
 use tokio::sync::mpsc::Receiver;
 
-pub use futures_util::{StreamExt, TryStreamExt};
+pub use futures_util::StreamExt;
 
 // We need to inform the compiler that `inner` is pinned as well
 pin_project! {

@@ -13,7 +13,7 @@ use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
 };
-use swiftide_core::node::EmbeddedField;
+use swiftide_core::indexing::EmbeddedField;
 
 use super::NodeWithVectors;
 
@@ -100,16 +100,25 @@ mod tests {
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
+<<<<<<< HEAD
     use swiftide_core::{
         indexing::Metadata,
         node::{EmbeddedField, Node},
     };
+=======
+    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Node};
+>>>>>>> master
 
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
+<<<<<<< HEAD
             metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::node::EmbedMode::SingleWithMetadata
+=======
+            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
+            embed_mode: EmbedMode::SingleWithMetadata
+>>>>>>> master
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -126,8 +135,13 @@ mod tests {
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
+<<<<<<< HEAD
             metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::node::EmbedMode::PerField
+=======
+            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
+            embed_mode: EmbedMode::PerField
+>>>>>>> master
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -153,8 +167,13 @@ mod tests {
                 (EmbeddedField::Metadata("m1".into()), vec![1.0]),
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
             ])),
+<<<<<<< HEAD
             metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
             embed_mode: swiftide_core::node::EmbedMode::Both
+=======
+            metadata: BTreeMap::from([("m1".into(), "mv1".into()), ("m2".into(), "mv2".into())]),
+            embed_mode: EmbedMode::Both
+>>>>>>> master
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([

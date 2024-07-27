@@ -7,7 +7,7 @@
 //! The pipeline will:
 //! - Load all `.rs` files from the current directory
 //! - Skip any nodes previously processed; hashes are based on the path and chunk (not the
-//! metadata!)
+//!   metadata!)
 //! - Run metadata QA on each chunk; generating questions and answers and adding metadata
 //! - Chunk the code into pieces of 10 to 2048 bytes
 //! - Embed the chunks in batches of 10, Metadata is embedded by default

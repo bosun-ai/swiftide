@@ -2,7 +2,10 @@ use derive_builder::Builder;
 use spider::website::Website;
 use tokio::{runtime::Handle, sync::RwLock};
 
-use swiftide_core::{indexing_stream::IndexingStream, node::Node, traits::Loader};
+use swiftide_core::{
+    indexing::{IndexingStream, Node},
+    Loader,
+};
 
 #[derive(Debug, Builder)]
 #[builder(pattern = "owned")]

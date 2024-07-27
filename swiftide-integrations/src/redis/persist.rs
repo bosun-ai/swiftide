@@ -1,7 +1,10 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
-use swiftide_core::{indexing_stream::IndexingStream, node::Node, Persist};
+use swiftide_core::{
+    indexing::{IndexingStream, Node},
+    Persist,
+};
 
 use super::Redis;
 

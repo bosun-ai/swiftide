@@ -97,7 +97,7 @@ pub trait NodeCache: Send + Sync + Debug {
 #[async_trait]
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
-pub trait EmbeddingModel: Send + Sync {
+pub trait EmbeddingModel: Send + Sync + Debug {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 
