@@ -121,3 +121,58 @@ impl serde::Serialize for Metadata {
         self.inner.serialize(serializer)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_insert_and_get() {
+        let mut metadata = Metadata::default();
+        let key = "key";
+        let value = "value";
+        metadata.insert(key, "value");
+
+        assert_eq!(metadata.get(key).unwrap().as_str(), Some(value));
+    }
+
+    #[test]
+    fn test_iter() {
+        let mut metadata = Metadata::default();
+        metadata.insert("key1", json!("value1"));
+        metadata.insert("key2", json!("value2"));
+
+        let mut iter = metadata.iter();
+        assert_eq!(iter.next(), Some((&"key1".to_string(), &json!("value1"))));
+        assert_eq!(iter.next(), Some((&"key2".to_string(), &json!("value2"))));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_extend() {
+        let mut metadata = Metadata::default();
+        metadata.extend(vec![("key1", json!("value1")), ("key2", json!("value2"))]);
+
+        assert_eq!(metadata.get("key1"), Some(&json!("value1")));
+        assert_eq!(metadata.get("key2"), Some(&json!("value2")));
+    }
+
+    #[test]
+    fn test_from_vec() {
+        let metadata = Metadata::from(vec![("key1", json!("value1")), ("key2", json!("value2"))]);
+
+        assert_eq!(metadata.get("key1"), Some(&json!("value1")));
+        assert_eq!(metadata.get("key2"), Some(&json!("value2")));
+    }
+
+    #[test]
+    fn test_into_values() {
+        let mut metadata = Metadata::default();
+        metadata.insert("key1", json!("value1"));
+        metadata.insert("key2", json!("value2"));
+
+        let values: Vec<_> = metadata.into_values().collect();
+        assert_eq!(values, vec![json!("value1"), json!("value2")]);
+    }
+}
