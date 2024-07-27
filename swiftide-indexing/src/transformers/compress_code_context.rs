@@ -82,9 +82,9 @@ impl CompressCodeContextBuilder {
 
 #[async_trait]
 impl Transformer for CompressCodeContext {
-    /// Asynchronously transforms an `Node` by adding context to it based on the original file metadata.
+    /// Asynchronously transforms an `Node` by reducing the size of the context to make it more relevant to the chunk.
     ///
-    /// This method uses the `SimplePrompt` client to merge the chunk with its context.
+    /// This method uses the `SimplePrompt` client to compress the context of the `Node` and updates the `Node` with the compressed context.
     ///
     /// # Arguments
     ///
@@ -100,10 +100,9 @@ impl Transformer for CompressCodeContext {
     #[tracing::instrument(skip_all, name = "transformers.compress_code_context")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let original_size = node.original_size;
-        let needs_context = original_size != node.chunk.len();
 
         let maybe_context = node.metadata.get("Context (code)");
-        let context = if !needs_context || maybe_context.is_none() {
+        let context = if maybe_context.is_none() {
             return Ok(node);
         } else {
             maybe_context.unwrap()
