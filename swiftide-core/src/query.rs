@@ -53,6 +53,7 @@ impl<T> Query<T> {
         }
     }
 
+    #[allow(dead_code)]
     fn history(&self) -> &Vec<TransformationEvent> {
         &self.transformation_history
     }
