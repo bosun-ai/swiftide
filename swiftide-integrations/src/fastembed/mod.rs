@@ -1,5 +1,7 @@
 //! `FastEmbed` integration for text embedding.
 
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -21,15 +23,18 @@ use swiftide_core::{EmbeddingModel, Embeddings};
 /// Node that the embedding vector dimensions need to match the dimensions of the vector database collection
 ///
 /// Requires the `fastembed` feature to be enabled.
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 #[builder(
     pattern = "owned",
     setter(strip_option),
     build_fn(error = "anyhow::Error")
 )]
 pub struct FastEmbed {
-    #[builder(default = "TextEmbedding::try_new(Default::default())?")]
-    embedding_model: TextEmbedding,
+    #[builder(
+        setter(custom),
+        default = "TextEmbedding::try_new(Default::default())?.into()"
+    )]
+    embedding_model: Arc<TextEmbedding>,
     #[builder(default)]
     batch_size: Option<usize>,
 }
@@ -54,6 +59,15 @@ impl FastEmbed {
 
     pub fn builder() -> FastEmbedBuilder {
         FastEmbedBuilder::default()
+    }
+}
+
+impl FastEmbedBuilder {
+    #[must_use]
+    pub fn embedding_model(mut self, fastembed: TextEmbedding) -> Self {
+        self.embedding_model = Some(Arc::new(fastembed));
+
+        self
     }
 }
 
