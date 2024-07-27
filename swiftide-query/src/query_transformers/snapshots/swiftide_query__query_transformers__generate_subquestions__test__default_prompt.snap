@@ -1,0 +1,23 @@
+---
+source: swiftide-query/src/query_transformers/generate_subquestions.rs
+expression: prompt.render().await.unwrap()
+---
+Your job is to help a query tool find the right context.
+
+Given the following question:
+What is love?
+
+Please think of 5  additional questions that can help answering the original question.
+
+Especially consider what might be relevant to answer the question, like dependencies, usage and structure of the code.
+
+Please respond with the original question and the additional questions only.
+
+## Example
+
+- What is love?
+- Additional question 1
+- Additional question 2
+- Additional question 3
+- Additional question 4
+- Additional question 5

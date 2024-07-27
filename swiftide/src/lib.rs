@@ -19,13 +19,19 @@
 //! - Store into multiple backends
 //! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 //!
-//! ## Example
+//! ## Querying
+//!
+//! We are working on an experimental query pipeline, which you can find in [`swiftide::query`]
+//!
+//! ## Examples
+//!
+//! ### Indexing markdown
 //!
 //! ```no_run
-//! use swiftide::indexing::loaders::FileLoader;
-//! use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
-//! use swiftide::integrations::qdrant::Qdrant;
-//! use swiftide::indexing::Pipeline;
+//! # use swiftide::indexing::loaders::FileLoader;
+//! # use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
+//! # use swiftide::integrations::qdrant::Qdrant;
+//! # use swiftide::indexing::Pipeline;
 //! # use anyhow::Result;
 //!
 //! # #[tokio::main]
@@ -48,6 +54,39 @@
 //! # }
 //! ```
 //!
+//! ### Experimental querying
+//!
+//! ```no_run
+//! # use anyhow::Result;
+//! # use swiftide::query::{query_transformers, self, response_transformers, answers};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<()> {
+//! # let qdrant_url = "url";
+//! # let openai_client = swiftide::integrations::openai::OpenAI::builder().build()?;
+//! # let qdrant = swiftide::integrations::qdrant::Qdrant::try_from_url(qdrant_url)?
+//! #                .batch_size(50)
+//! #                .vector_size(1536)
+//! #                .collection_name("swiftide-examples".to_string())
+//! #                .build()?;
+//! query::Pipeline::default()
+//!     .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+//!         openai_client.clone(),
+//!     ))
+//!     .then_transform_query(query_transformers::Embed::from_client(
+//!         openai_client.clone(),
+//!     ))
+//!     .then_retrieve(qdrant.clone())
+//!     .then_transform_response(response_transformers::Summary::from_client(
+//!         openai_client.clone(),
+//!     ))
+//!     .then_answer(answers::Simple::from_client(openai_client.clone()))
+//!     .query("What is swiftide?")
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Feature flags
 //!
 //! Swiftide has little features enabled by default as there are some dependency heavy
@@ -59,14 +98,14 @@
 #[doc(inline)]
 pub use swiftide_core::prompt;
 #[doc(inline)]
-pub use swiftide_core::traits::*;
-#[doc(inline)]
 pub use swiftide_core::type_aliases::*;
 
-/// Common traits for common behaviour
+/// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {
     #[doc(inline)]
-    pub use swiftide_core::traits::*;
+    pub use swiftide_core::indexing_traits::*;
+    #[doc(inline)]
+    pub use swiftide_core::query_traits::*;
 }
 
 /// Integrations with various platforms and external services.
@@ -85,3 +124,15 @@ pub mod indexing {
     #[doc(inline)]
     pub use swiftide_indexing::*;
 }
+
+/// Query your indexed data with a transforming pipeline
+pub mod query {
+    #[doc(inline)]
+    pub use swiftide_core::querying::*;
+    #[doc(inline)]
+    pub use swiftide_query::*;
+}
+
+#[doc(hidden)]
+#[cfg(feature = "test-utils")]
+pub mod test_utils;

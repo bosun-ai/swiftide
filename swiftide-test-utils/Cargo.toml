@@ -1,0 +1,29 @@
+[package]
+name = "swiftide-test-utils"
+publish = false
+edition = "2021"
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-integrations = { path = "../swiftide-integrations", all-features = true }
+
+async-openai = { workspace = true }
+qdrant-client = { workspace = true, default-features = false, features = [
+  "serde",
+] }
+
+anyhow = { workspace = true }
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+mockall = { workspace = true }
+temp-dir = { workspace = true }
+wiremock = { workspace = true }
+test-case = { workspace = true }
+insta = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
+[features]
+default = ["test-utils"]
+test-utils = []

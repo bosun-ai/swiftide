@@ -6,10 +6,8 @@ members = [
   "swiftide-indexing",
 
   "examples",
-  "benchmarks",
+  "benchmarks", "swiftide-test-utils",
 ]
-
-default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [profile.dev.package]
