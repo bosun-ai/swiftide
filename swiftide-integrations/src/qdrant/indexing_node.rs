@@ -48,7 +48,7 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
         let payload: Payload = node
             .metadata
             .iter()
-            .map(|(k, v)| (k.as_str(), Value::from(v.as_str())))
+            .map(|(k, v)| (k.as_str(), Value::from(v.to_string().as_str())))
             .collect::<HashMap<&str, Value>>()
             .into();
 
@@ -84,7 +84,7 @@ fn try_create_vectors(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap, HashSet};
+    use std::collections::{HashMap, HashSet};
 
     use qdrant_client::qdrant::{
         vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
@@ -92,12 +92,15 @@ mod tests {
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
-    use swiftide_core::node::{EmbeddedField, Node};
+    use swiftide_core::{
+        indexing::Metadata,
+        node::{EmbeddedField, Node},
+    };
 
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
-            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
+            metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::node::EmbedMode::SingleWithMetadata
         },
         HashSet::from([EmbeddedField::Combined]),
@@ -115,7 +118,7 @@ mod tests {
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
-            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
+            metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::node::EmbedMode::PerField
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
@@ -142,7 +145,7 @@ mod tests {
                 (EmbeddedField::Metadata("m1".into()), vec![1.0]),
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
             ])),
-            metadata: BTreeMap::from([("m1".into(), "mv1".into()), ("m2".into(), "mv2".into())]),
+            metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
             embed_mode: swiftide_core::node::EmbedMode::Both
         },
         HashSet::from([EmbeddedField::Combined]),

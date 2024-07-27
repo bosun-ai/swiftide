@@ -18,7 +18,7 @@
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     fmt::Debug,
     hash::{Hash, Hasher},
     path::PathBuf,
@@ -26,6 +26,8 @@ use std::{
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+
+use crate::metadata::Metadata;
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -43,7 +45,7 @@ pub struct Node {
     /// Optional vector representation of embedded data.
     pub vectors: Option<HashMap<EmbeddedField, Vec<f32>>>,
     /// Metadata associated with the node.
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: Metadata,
     /// Mode of embedding data Chunk and Metadata
     pub embed_mode: EmbedMode,
 }
@@ -99,7 +101,10 @@ impl Node {
         if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
             embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
             for (name, value) in &self.metadata {
-                embeddables.push((EmbeddedField::Metadata(name.clone()), value.clone()));
+                embeddables.push((
+                    EmbeddedField::Metadata(name.clone()),
+                    value.to_string().clone(),
+                ));
             }
         }
 

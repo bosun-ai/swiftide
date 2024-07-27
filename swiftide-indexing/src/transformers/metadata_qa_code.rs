@@ -99,7 +99,7 @@ impl Transformer for MetadataQACode {
 
         let response = self.client.prompt(prompt).await?;
 
-        node.metadata.insert(NAME.into(), response);
+        node.metadata.insert(NAME, response);
 
         Ok(node)
     }
