@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722197656188,
+  "lastUpdate": 1722202706855,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2099,6 +2099,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 148,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "bafd90706346c3e208390f1296f10e2c17ad61b1",
+          "message": "fix: update all cargo package descriptions",
+          "timestamp": "2024-07-28T23:32:09+02:00",
+          "tree_id": "40e53111008da3aa99b2b7b4f3e190ea83119821",
+          "url": "https://github.com/bosun-ai/swiftide/commit/bafd90706346c3e208390f1296f10e2c17ad61b1"
+        },
+        "date": 1722202705843,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
