@@ -2,6 +2,13 @@
 name = "swiftide-core"
 version = "0.7.0"
 edition = "2021"
+license = "MIT"
+readme = "../README.md"
+keywords = ["llm", "rag", "ai", "data", "openai"]
+description = "Blazing fast, streaming pipeline library for AI applications"
+categories = ["asynchronous"]
+repository = "https://github.com/bosun-ai/swiftide-rs"
+homepage = "https://swiftide.rs"
 
 [dependencies]
 anyhow = { workspace = true }
