@@ -1484,9 +1484,9 @@ dependencies = [
 
 [[package]]
 name = "fastembed"
-version = "3.10.0"
+version = "3.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebd8680fcc51c123956acb42f9834f3502d347bb8bab48a16960cdbb067d7c5d"
+checksum = "28d5f4b8c024ec4b1ee259e32492aaf49219f4cc2c450df4df908918ece78604"
 dependencies = [
  "anyhow",
  "hf-hub",
