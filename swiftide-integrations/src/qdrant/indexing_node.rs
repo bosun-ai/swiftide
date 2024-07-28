@@ -4,7 +4,10 @@
 //! data compatibility with Qdrant's required format.
 
 use anyhow::{bail, Result};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    string::ToString,
+};
 
 use qdrant_client::{
     client::Payload,
@@ -36,19 +39,24 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
 
         // Extend the metadata with additional information.
         node.metadata.extend([
-            ("path".to_string(), node.path.to_string_lossy().to_string()),
-            ("content".to_string(), node.chunk),
-            (
-                "last_updated_at".to_string(),
-                chrono::Utc::now().to_rfc3339(),
-            ),
+            ("path", node.path.to_string_lossy().to_string()),
+            ("content", node.chunk),
+            ("last_updated_at", chrono::Utc::now().to_rfc3339()),
         ]);
 
         // Create a payload compatible with Qdrant's API.
         let payload: Payload = node
             .metadata
             .iter()
-            .map(|(k, v)| (k.as_str(), Value::from(v.as_str())))
+            .map(|(k, v)| {
+                (
+                    k.as_str(),
+                    Value::from(
+                        v.as_str()
+                            .map_or_else(|| v.to_string(), ToString::to_string),
+                    ),
+                )
+            })
             .collect::<HashMap<&str, Value>>()
             .into();
 
@@ -84,21 +92,21 @@ fn try_create_vectors(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap, HashSet};
+    use std::collections::{HashMap, HashSet};
 
     use qdrant_client::qdrant::{
         vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
     };
+    use swiftide_core::indexing::{EmbeddedField, Metadata, Node};
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
-    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Node};
 
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
-            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
-            embed_mode: EmbedMode::SingleWithMetadata
+            metadata: Metadata::from([("m1", "mv1")]),
+            embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -115,8 +123,8 @@ mod tests {
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
-            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
-            embed_mode: EmbedMode::PerField
+            metadata: Metadata::from([("m1", "mv1")]),
+            embed_mode: swiftide_core::indexing::EmbedMode::PerField
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -142,8 +150,8 @@ mod tests {
                 (EmbeddedField::Metadata("m1".into()), vec![1.0]),
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
             ])),
-            metadata: BTreeMap::from([("m1".into(), "mv1".into()), ("m2".into(), "mv2".into())]),
-            embed_mode: EmbedMode::Both
+            metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
+            embed_mode: swiftide_core::indexing::EmbedMode::Both
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([

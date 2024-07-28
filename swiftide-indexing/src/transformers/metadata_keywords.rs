@@ -96,7 +96,7 @@ impl Transformer for MetadataKeywords {
         let prompt = self.prompt_template.to_prompt().with_node(&node);
         let response = self.client.prompt(prompt).await?;
 
-        node.metadata.insert(NAME.into(), response);
+        node.metadata.insert(NAME, response);
 
         Ok(node)
     }

@@ -97,7 +97,7 @@ impl Transformer for MetadataSummary {
 
         let response = self.client.prompt(prompt).await?;
 
-        node.metadata.insert(NAME.into(), response);
+        node.metadata.insert(NAME, response);
 
         Ok(node)
     }

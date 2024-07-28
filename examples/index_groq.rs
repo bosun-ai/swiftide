@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .get_all_values()
             .await
             .into_iter()
-            .flat_map(|n| n.metadata.into_values())
+            .flat_map(|n| n.metadata.into_values().map(|v| v.to_string()))
             .collect::<Vec<_>>()
             .join("\n")
     );

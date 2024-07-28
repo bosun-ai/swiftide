@@ -44,8 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .get_all_values()
             .await
             .iter()
-            .filter_map(|n| n.metadata.get("Summary"))
-            .cloned()
+            .filter_map(|n| n.metadata.get("Summary").map(|v| v.to_string()))
             .collect::<Vec<_>>()
             .join("\n---\n")
     );
