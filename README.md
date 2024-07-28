@@ -50,7 +50,7 @@
   <h3 align="center">Swiftide</h3>
 
   <p align="center">
-Blazing fast data pipelines for Retrieval Augmented Generation written in Rust
+Fast, streaming indexing and query library for AI applications, written in Rust
     <br />
     <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
     <br />
