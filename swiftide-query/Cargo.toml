@@ -1,6 +1,6 @@
 [package]
 name = "swiftide-query"
-publish = false
+version = "0.7.0"
 edition = "2021"
 
 [dependencies]
@@ -16,7 +16,7 @@ tracing = { workspace = true }
 indoc = { workspace = true }
 
 # Internal
-swiftide-core = { path = "../swiftide-core" }
+swiftide-core = { path = "../swiftide-core", version = "0.7.0" }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

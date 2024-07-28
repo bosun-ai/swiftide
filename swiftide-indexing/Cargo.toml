@@ -1,11 +1,11 @@
 [package]
 name = "swiftide-indexing"
-publish = false
+version = "0.7.0"
 edition = "2021"
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core" }
-swiftide-integrations = { path = "../swiftide-integrations", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.7" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.7", optional = true }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
