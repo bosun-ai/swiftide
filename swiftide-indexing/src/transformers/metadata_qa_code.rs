@@ -17,6 +17,8 @@ pub struct MetadataQACode {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
+    /// The prompt templated used. Can be overwritten via the builder. Has the `node` and
+    /// `num_questions` available as context.
     prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
