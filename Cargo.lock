@@ -4231,7 +4231,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4254,7 +4254,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4282,7 +4282,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4323,7 +4323,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
