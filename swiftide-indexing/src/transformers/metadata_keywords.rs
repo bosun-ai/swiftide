@@ -21,6 +21,8 @@ pub const NAME: &str = "Keywords";
 pub struct MetadataKeywords {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
+    /// The prompt templated used. Can be overwritten via the builder. Has the `node` available as
+    /// context.
     #[builder(default = "default_prompt()")]
     prompt_template: PromptTemplate,
     #[builder(default)]

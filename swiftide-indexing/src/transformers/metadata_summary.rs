@@ -22,6 +22,8 @@ pub struct MetadataSummary {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
+    /// The prompt templated used. Can be overwritten via the builder. Has the `node` available as
+    /// context.
     prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
