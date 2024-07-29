@@ -70,7 +70,7 @@ Fast, streaming indexing and query library for AI applications, written in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a data indexing, processing and query library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+Swiftide is a data indexing, processing and query library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. Queries can then be augmented by retrieving the indexed data and generating an answer. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 
 With Swiftide, you can build your AI application from idea to production in a few lines of code.
 
@@ -136,7 +136,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Fast streaming indexing pipeline with async, parallel processing
 - Experimental query pipeline
 - Integrations with OpenAI, Groq, Redis, Qdrant, FastEmbed, and Treesitter
-- A variety of loaders, transformers, and embedders and other common, generic tools
+- A variety of loaders, transformers, semantic chunkers, embedders, and more
 - Bring your own transformers by extending straightforward traits
 - Splitting and merging pipelines
 - Jinja-like templating for prompts
@@ -176,7 +176,7 @@ Other integrations will need to be installed accordingly.
    cargo add swiftide
    ```
 
-3. Enable the features of integrations you would like to have or use 'all' in your `Cargo.toml`
+3. Enable the features of integrations you would like to use in your `Cargo.toml`
 4. Write a pipeline (see our examples and documentation)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
