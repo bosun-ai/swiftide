@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722205205613,
+  "lastUpdate": 1722247389328,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2183,6 +2183,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 148,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "ba07ab93722d974ac93ed5d4a22bf53317bc11ae",
+          "message": "docs(README): Readme improvements",
+          "timestamp": "2024-07-29T11:35:31+02:00",
+          "tree_id": "9897d8a7badda48858b75dd03d60836165d77386",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ba07ab93722d974ac93ed5d4a22bf53317bc11ae"
+        },
+        "date": 1722247388978,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
