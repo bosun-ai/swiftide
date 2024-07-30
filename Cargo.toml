@@ -6,7 +6,7 @@ members = [
   "swiftide-indexing",
 
   "examples",
-  "benchmarks", "swiftide-test-utils",
+  "benchmarks", "swiftide-test-utils", "swiftide-derive",
 ]
 resolver = "2"
 
