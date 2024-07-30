@@ -14,12 +14,18 @@ use swiftide_core::{
     Answer,
 };
 
-#[derive(Debug, Clone, Builder)]
+#[derive(Clone, Builder)]
 pub struct Simple {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
     prompt_template: PromptTemplate,
+}
+
+impl std::fmt::Debug for Simple {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Simple").finish()
+    }
 }
 
 impl Simple {

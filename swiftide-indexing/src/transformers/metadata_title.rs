@@ -16,11 +16,11 @@ pub const NAME: &str = "Title";
 /// `MetadataTitle` is responsible for generating a title
 /// for a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
-#[derive(Debug, Clone, Builder)]
+#[derive(Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct MetadataTitle {
     #[builder(setter(custom))]
-    client: Arc<dyn SimplePrompt>,
+    client: Arc<Box<dyn SimplePrompt>>,
     #[builder(default = "default_prompt()")]
     /// The prompt templated used. Can be overwritten via the builder. Has the `node` available as
     /// context.
@@ -34,7 +34,7 @@ impl MetadataTitle {
         MetadataTitleBuilder::default()
     }
 
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataTitleBuilder {
+    pub fn from_client(client: impl AsRef<dyn SimplePrompt + 'static>) -> MetadataTitleBuilder {
         MetadataTitleBuilder::default().client(client).to_owned()
     }
     /// Creates a new instance of `MetadataTitle`.
@@ -46,9 +46,9 @@ impl MetadataTitle {
     /// # Returns
     ///
     /// A new instance of `MetadataTitle`.
-    pub fn new(client: impl SimplePrompt + 'static) -> Self {
+    pub fn new(client: impl AsRef<dyn SimplePrompt + 'static>) -> Self {
         Self {
-            client: Arc::new(client),
+            client: Arc::new(dyn_clone::clone_box(client.as_ref())),
             prompt_template: default_prompt(),
             concurrency: None,
         }
@@ -67,8 +67,9 @@ fn default_prompt() -> PromptTemplate {
 }
 
 impl MetadataTitleBuilder {
-    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
+    pub fn client(&mut self, client: impl AsRef<dyn SimplePrompt + 'static>) -> &mut Self {
+        let client = Arc::new(dyn_clone::clone_box(client.as_ref()));
+        self.client = Some(client);
         self
     }
 }

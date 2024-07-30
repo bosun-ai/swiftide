@@ -7,11 +7,14 @@ use crate::indexing_stream::IndexingStream;
 use crate::node::Node;
 use crate::Embeddings;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
 
+use dyn_clone::DynClone;
+use mockall::mock;
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
 #[doc(hidden)]
@@ -101,13 +104,44 @@ pub trait EmbeddingModel: Send + Sync + Debug {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
+// #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Given a string prompt, queries an LLM
-pub trait SimplePrompt: Debug + Send + Sync {
+pub trait SimplePrompt: Send + Sync + DynClone {
     // Takes a simple prompt, prompts the llm and returns the response
     async fn prompt(&self, prompt: Prompt) -> Result<String>;
 }
+
+// #[cfg(feature = "test-utils")]
+// mock! {
+//     pub SimplePrompt<T:  Send + Sync + Clone + AsRef<anyhow::Error> + 'static> {
+//     }
+//
+//     impl<T: Send + Sync + Clone + AsRef<anyhow::Error> + 'static> Clone for SimplePrompt<T> {
+//         fn clone(&self) -> Self;
+//     }
+//
+//
+//     #[async_trait]
+//     impl<T:  Send + Sync + Clone + 'static> SimplePrompt for SimplePrompt<T> {
+//         async fn prompt(&self, prompt: Prompt) -> Result<String>;
+//     }
+// }
+
+// pub trait DynClonedArcBox<T: DynClone>: AsRef<T> {
+//     fn arc_boxed(&self) -> Arc<Box<T>> {
+//         Arc::new(dyn_clone::clone_box(self.as_ref()))
+//     }
+// }
+//
+// impl DynClonedArcBox for dyn SimplePrompt {}
+
+// impl ToOwned for dyn SimplePrompt {
+//     type Owned = Box<dyn SimplePrompt>;
+//     fn to_owned(&self) -> Self::Owned {
+//         Box::new(self.clone())
+//     }
+// }
 
 #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]

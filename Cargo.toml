@@ -6,7 +6,8 @@ members = [
   "swiftide-indexing",
 
   "examples",
-  "benchmarks", "swiftide-test-utils",
+  "benchmarks",
+  "swiftide-test-utils",
 ]
 resolver = "2"
 
@@ -36,6 +37,7 @@ async-openai = { version = "0.23" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
 ] }
+dyn-clone = "1.0"
 
 # Testing
 test-log = "0.2.16"
