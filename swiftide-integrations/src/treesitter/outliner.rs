@@ -114,7 +114,7 @@ impl CodeOutliner {
                     let parent = node
                         .parent()
                         .expect("Ruby body_statement node has no parent");
-                    parent.kind() == "def"
+                    parent.kind() == "method"
                 }
                 _ => false,
             },
@@ -268,7 +268,7 @@ end
         let summary = outliner.outline(code).unwrap();
         assert_eq!(
             summary,
-            "\nrequire 'anyhow'\n# This is a comment\ndef main(a, b)\n    puts \"Hello, world!\"\nend\n\nclass Bla\n    def ok\n        @a = 1\n    end\nend"
+            "\nrequire 'anyhow'\n# This is a comment\ndef main(a, b)\n    \nend\n\nclass Bla\n    def ok\n        \n    end\nend"
         );
     }
 
