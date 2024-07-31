@@ -51,8 +51,11 @@ impl Loader for ScrapingLoader {
 
         let _recv_thread = tokio::spawn(async move {
             while let Ok(res) = spider_rx.recv().await {
+                let html = res.get_html();
+                let original_size = html.len();
                 let node = Node {
-                    chunk: res.get_html(),
+                    chunk: html,
+                    original_size,
                     // TODO: Probably not the best way to represent this
                     // and will fail. Can we add more metadata too?
                     path: res.get_url().into(),

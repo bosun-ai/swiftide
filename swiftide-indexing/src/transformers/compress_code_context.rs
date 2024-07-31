@@ -100,11 +100,15 @@ impl Transformer for CompressCodeContext {
     #[tracing::instrument(skip_all, name = "transformers.compress_code_context")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let maybe_context = node.metadata.get("Context (code)");
-        let context = if maybe_context.is_none() {
+
+        let Some(context) = maybe_context else {
             return Ok(node);
-        } else {
-            maybe_context.unwrap()
         };
+
+        // If the chunk is not smaller than the original size, we don't need to do operations on the context
+        if node.chunk.len() >= node.original_size {
+            return Ok(node);
+        }
 
         let prompt = self
             .prompt_template

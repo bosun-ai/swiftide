@@ -60,9 +60,11 @@ impl FileLoader {
             .map(|entry| {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content = std::fs::read_to_string(&entry).unwrap();
+                let original_size = content.len();
                 Node {
                     path: entry,
                     chunk: content,
+                    original_size,
                     ..Default::default()
                 }
             })
@@ -99,9 +101,11 @@ impl Loader for FileLoader {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content =
                     std::fs::read_to_string(entry.path()).context("Failed to read file")?;
+                let original_size = content.len();
                 Ok(Node {
                     path: entry.path().into(),
                     chunk: content,
+                    original_size,
                     ..Default::default()
                 })
             });
