@@ -22,6 +22,8 @@ pub struct MetadataTitle {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
+    /// The prompt templated used. Can be overwritten via the builder. Has the `node` available as
+    /// context.
     prompt_template: PromptTemplate,
     #[builder(default)]
     concurrency: Option<usize>,
@@ -95,7 +97,7 @@ impl Transformer for MetadataTitle {
 
         let response = self.client.prompt(prompt).await?;
 
-        node.metadata.insert(NAME.into(), response);
+        node.metadata.insert(NAME, response);
 
         Ok(node)
     }

@@ -1,11 +1,11 @@
 [package]
 name = "swiftide"
-version = "0.6.7"
+version = "0.7.0"
 edition = "2021"
 license = "MIT"
 readme = "../README.md"
 keywords = ["llm", "rag", "ai", "data", "openai"]
-description = "Blazing fast, streaming document and code indexation"
+description = "Blazing fast, streaming pipeline library for AI applications"
 categories = ["asynchronous"]
 repository = "https://github.com/bosun-ai/swiftide-rs"
 homepage = "https://swiftide.rs"
@@ -14,10 +14,10 @@ homepage = "https://swiftide.rs"
 
 [dependencies]
 # Local dependencies
-swiftide-core = { path = "../swiftide-core" }
-swiftide-integrations = { path = "../swiftide-integrations" }
-swiftide-indexing = { path = "../swiftide-indexing" }
-swiftide-query = { path = "../swiftide-query" }
+swiftide-core = { path = "../swiftide-core", version = "0.7" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.7" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.7" }
+swiftide-query = { path = "../swiftide-query", version = "0.7" }
 
 [features]
 default = []

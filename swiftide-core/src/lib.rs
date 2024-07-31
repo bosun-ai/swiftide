@@ -10,6 +10,8 @@ pub mod type_aliases;
 pub mod prompt;
 pub use type_aliases::*;
 
+mod metadata;
+
 /// All traits are available from the root
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
@@ -17,6 +19,7 @@ pub use crate::query_traits::*;
 pub mod indexing {
     pub use crate::indexing_stream::IndexingStream;
     pub use crate::indexing_traits::*;
+    pub use crate::metadata::*;
     pub use crate::node::*;
 }
 

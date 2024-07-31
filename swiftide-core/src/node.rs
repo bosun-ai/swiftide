@@ -18,7 +18,7 @@
 //! individual units of data. It is particularly useful in scenarios where metadata and data chunks
 //! need to be processed together.
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     fmt::Debug,
     hash::{Hash, Hasher},
     path::PathBuf,
@@ -26,6 +26,8 @@ use std::{
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+
+use crate::metadata::Metadata;
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -43,7 +45,7 @@ pub struct Node {
     /// Optional vector representation of embedded data.
     pub vectors: Option<HashMap<EmbeddedField, Vec<f32>>>,
     /// Metadata associated with the node.
-    pub metadata: BTreeMap<String, String>,
+    pub metadata: Metadata,
     /// Mode of embedding data Chunk and Metadata
     pub embed_mode: EmbedMode,
     /// Size of the input this node was originally derived from in bytes
@@ -106,7 +108,10 @@ impl Node {
         if self.embed_mode == EmbedMode::PerField || self.embed_mode == EmbedMode::Both {
             embeddables.push((EmbeddedField::Chunk, self.chunk.clone()));
             for (name, value) in &self.metadata {
-                embeddables.push((EmbeddedField::Metadata(name.clone()), value.clone()));
+                let value = value
+                    .as_str()
+                    .map_or_else(|| value.to_string(), ToString::to_string);
+                embeddables.push((EmbeddedField::Metadata(name.clone()), value));
             }
         }
 
@@ -126,7 +131,13 @@ impl Node {
         let metadata = self
             .metadata
             .iter()
-            .map(|(k, v)| format!("{k}: {v}"))
+            .map(|(k, v)| {
+                let v = v
+                    .as_str()
+                    .map_or_else(|| v.to_string(), ToString::to_string);
+
+                format!("{k}: {v}")
+            })
             .collect::<Vec<String>>()
             .join("\n");
 

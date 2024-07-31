@@ -115,12 +115,10 @@ impl BatchableTransformer for Embed {
 
 #[cfg(test)]
 mod tests {
-    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Node};
+    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Metadata, Node};
     use swiftide_core::{BatchableTransformer, MockEmbeddingModel};
 
     use super::Embed;
-
-    use std::collections::HashMap;
 
     use futures_util::StreamExt;
     use mockall::predicate::*;
@@ -130,7 +128,7 @@ mod tests {
     struct TestData<'a> {
         pub embed_mode: EmbedMode,
         pub chunk: &'a str,
-        pub metadata: HashMap<&'a str, &'a str>,
+        pub metadata: Metadata,
         pub expected_embedables: Vec<&'a str>,
         pub expected_vectors: Vec<(EmbeddedField, Vec<f32>)>,
     }
@@ -139,14 +137,14 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::SingleWithMetadata,
             chunk: "chunk_1",
-            metadata: HashMap::from([("meta_1", "prompt_1")]),
+            metadata: Metadata::from([("meta_1", "prompt_1")]),
             expected_embedables: vec!["meta_1: prompt_1\nchunk_1"],
             expected_vectors: vec![(EmbeddedField::Combined, vec![1f32])]
         },
         TestData {
             embed_mode: EmbedMode::SingleWithMetadata,
             chunk: "chunk_2",
-            metadata: HashMap::from([("meta_2", "prompt_2")]),
+            metadata: Metadata::from([("meta_2", "prompt_2")]),
             expected_embedables: vec!["meta_2: prompt_2\nchunk_2"],
             expected_vectors: vec![(EmbeddedField::Combined, vec![2f32])]
         }
@@ -155,7 +153,7 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::PerField,
             chunk: "chunk_1",
-            metadata: HashMap::from([("meta_1", "prompt 1")]),
+            metadata: Metadata::from([("meta_1", "prompt 1")]),
             expected_embedables: vec!["chunk_1", "prompt 1"],
             expected_vectors: vec![
                 (EmbeddedField::Chunk, vec![10f32]),
@@ -165,7 +163,7 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::PerField,
             chunk: "chunk_2",
-            metadata: HashMap::from([("meta_2", "prompt 2")]),
+            metadata: Metadata::from([("meta_2", "prompt 2")]),
             expected_embedables: vec!["chunk_2", "prompt 2"],
             expected_vectors: vec![
                 (EmbeddedField::Chunk, vec![20f32]),
@@ -177,7 +175,7 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::Both,
             chunk: "chunk_1",
-            metadata: HashMap::from([("meta_1", "prompt 1")]),
+            metadata: Metadata::from([("meta_1", "prompt 1")]),
             expected_embedables: vec!["meta_1: prompt 1\nchunk_1", "chunk_1", "prompt 1"],
             expected_vectors: vec![
                 (EmbeddedField::Combined, vec![10f32]),
@@ -188,7 +186,7 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::Both,
             chunk: "chunk_2",
-            metadata: HashMap::from([("meta_2", "prompt 2")]),
+            metadata: Metadata::from([("meta_2", "prompt 2")]),
             expected_embedables: vec!["meta_2: prompt 2\nchunk_2", "chunk_2", "prompt 2"],
             expected_vectors: vec![
                 (EmbeddedField::Combined, vec![20f32]),
@@ -201,7 +199,7 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::Both,
             chunk: "chunk_1",
-            metadata: HashMap::from([("meta_10", "prompt 10"), ("meta_11", "prompt 11"), ("meta_12", "prompt 12")]),
+            metadata: Metadata::from([("meta_10", "prompt 10"), ("meta_11", "prompt 11"), ("meta_12", "prompt 12")]),
             expected_embedables: vec!["meta_10: prompt 10\nmeta_11: prompt 11\nmeta_12: prompt 12\nchunk_1", "chunk_1", "prompt 10", "prompt 11", "prompt 12"],
             expected_vectors: vec![
                 (EmbeddedField::Combined, vec![10f32]),
@@ -214,7 +212,7 @@ mod tests {
         TestData {
             embed_mode: EmbedMode::Both,
             chunk: "chunk_2",
-            metadata: HashMap::from([("meta_20", "prompt 20"), ("meta_21", "prompt 21"), ("meta_22", "prompt 22")]),
+            metadata: Metadata::from([("meta_20", "prompt 20"), ("meta_21", "prompt 21"), ("meta_22", "prompt 22")]),
             expected_embedables: vec!["meta_20: prompt 20\nmeta_21: prompt 21\nmeta_22: prompt 22\nchunk_2", "chunk_2", "prompt 20", "prompt 21", "prompt 22"],
             expected_vectors: vec![
                 (EmbeddedField::Combined, vec![20f32]),
@@ -232,11 +230,7 @@ mod tests {
             .iter()
             .map(|data| Node {
                 chunk: data.chunk.into(),
-                metadata: data
-                    .metadata
-                    .iter()
-                    .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
-                    .collect(),
+                metadata: data.metadata.clone(),
                 embed_mode: data.embed_mode,
                 ..Default::default()
             })

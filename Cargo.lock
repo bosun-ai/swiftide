@@ -328,9 +328,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-bedrockruntime"
-version = "1.41.0"
+version = "1.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f1172a0b0e21969fd412121ea9cba409b9f64d33d7896c4438d9f86cababb21"
+checksum = "a14412d4118540ab412639daa518ddff40c81d26b0aa9b22eb05fe3452179d17"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -1484,9 +1484,9 @@ dependencies = [
 
 [[package]]
 name = "fastembed"
-version = "3.10.0"
+version = "3.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebd8680fcc51c123956acb42f9834f3502d347bb8bab48a16960cdbb067d7c5d"
+checksum = "28d5f4b8c024ec4b1ee259e32492aaf49219f4cc2c450df4df908918ece78604"
 dependencies = [
  "anyhow",
  "hf-hub",
@@ -2699,6 +2699,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-bigint"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "num-complex"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3415,9 +3425,9 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.25.4"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0d7a6955c7511f60f3ba9e86c6d02b3c3f144f8c24b288d1f4e18074ab8bbec"
+checksum = "8cc5b667390cb038bc65fc4b18c06e2550469f7e06a02d886f1a018a11f63563"
 dependencies = [
  "arc-swap",
  "async-trait",
@@ -3426,9 +3436,10 @@ dependencies = [
  "futures",
  "futures-util",
  "itoa",
+ "num-bigint",
  "percent-encoding",
  "pin-project-lite",
- "rustls 0.22.4",
+ "rustls 0.23.11",
  "rustls-native-certs 0.7.1",
  "rustls-pemfile 2.1.2",
  "rustls-pki-types",
@@ -3437,7 +3448,7 @@ dependencies = [
  "socket2",
  "tokio",
  "tokio-retry",
- "tokio-rustls 0.25.0",
+ "tokio-rustls 0.26.0",
  "tokio-util",
  "url",
 ]
@@ -4046,9 +4057,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "1.99.10"
+version = "1.99.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55ef88a585ed7e18dc62072f4734a88d7e019a019ad1f3aee643868d4b8eba79"
+checksum = "e23ad22d5e55b09f480f849b37dd2fe315e3cf1df0f5261209aa5482483c617f"
 dependencies = [
  "ahash",
  "bytes",
@@ -4196,7 +4207,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.6.7"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4220,7 +4231,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4243,7 +4254,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4272,7 +4283,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4313,7 +4324,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4694,9 +4705,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.39.0"
+version = "1.39.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c3318c4fc7126c339a40fbc025927d0328ca32259f68bfe4321660644c1f626"
+checksum = "daa4fb1bc778bd6f04cbfc4bb2d06a7396a8f299dc33ea1900cedaa316f467b1"
 dependencies = [
  "backtrace",
  "bytes",
