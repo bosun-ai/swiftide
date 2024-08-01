@@ -58,7 +58,7 @@ impl Transformer for FileToContextTreeSitter {
     #[tracing::instrument(skip_all, name = "transformers.file_to_context_tree_sitter")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let outline_result = self.outliner.outline(&node.chunk)?;
-        node.metadata.insert(NAME.into(), outline_result);
+        node.metadata.insert(NAME, outline_result);
         Ok(node)
     }
 }
