@@ -125,15 +125,10 @@ mod tests {
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
-<<<<<<< HEAD
-            metadata: BTreeMap::from([("m1".into(), "mv1".into())]),
-            original_size: 4,
-            offset: 0,
-            embed_mode: EmbedMode::PerField
-=======
             metadata: Metadata::from([("m1", "mv1")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::PerField
->>>>>>> origin/master
+            embed_mode: swiftide_core::indexing::EmbedMode::PerField,
+            original_size: 4,
+            offset: 0
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -159,15 +154,10 @@ mod tests {
                 (EmbeddedField::Metadata("m1".into()), vec![1.0]),
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
             ])),
-<<<<<<< HEAD
-            metadata: BTreeMap::from([("m1".into(), "mv1".into()), ("m2".into(), "mv2".into())]),
+            metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
+            embed_mode: swiftide_core::indexing::EmbedMode::Both,
             original_size: 4,
             offset: 0,
-            embed_mode: EmbedMode::Both
-=======
-            metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::Both
->>>>>>> origin/master
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
