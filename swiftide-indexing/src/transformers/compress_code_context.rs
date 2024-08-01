@@ -163,6 +163,7 @@ mod test {
             .unwrap();
         let mut node = Node::new("Some text");
         node.offset = 0;
+        node.original_size = 100;
 
         node.metadata
             .insert("Context (code)".to_string(), "Some context".to_string());
