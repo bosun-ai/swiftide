@@ -78,7 +78,7 @@ where
         let new_stream = stream
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
-                let span = tracing::trace_span!("then_transform_query", query = ?query, transformer = ?transformer);
+                let span = tracing::trace_span!("then_transform_query", query = ?query);
 
                 async move { transformer.transform_query(query).await }.instrument(span)
             })
@@ -111,8 +111,7 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
             .map_ok(move |query| {
                 let search_strategy = strategy_for_stream.clone();
                 let retriever = Arc::clone(&retriever);
-                let span =
-                    tracing::trace_span!("then_retrieve", query = ?query, retriever = ?retriever);
+                let span = tracing::trace_span!("then_retrieve", query = ?query);
                 async move { retriever.retrieve(&search_strategy, query).await }.instrument(span)
             })
             .try_buffer_unordered(1);
@@ -142,7 +141,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
         let new_stream = stream
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
-                let span = tracing::trace_span!("then_transform_response", query = ?query, transformer = ?transformer);
+                let span = tracing::trace_span!("then_transform_response", query = ?query);
                 async move { transformer.transform_response(query).await }.instrument(span)
             })
             .try_buffer_unordered(1);
@@ -171,8 +170,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
         let new_stream = stream
             .map_ok(move |query: Query<states::Retrieved>| {
                 let answerer = Arc::clone(&answerer);
-                let span =
-                    tracing::trace_span!("then_answer", query = ?query, answerer = ?answerer);
+                let span = tracing::trace_span!("then_answer", query = ?query);
                 async move { answerer.answer(query).await }.instrument(span)
             })
             .try_buffer_unordered(1);
@@ -199,5 +197,28 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         self.stream.try_next().await?.ok_or_else(|| {
             anyhow::anyhow!("Pipeline did not receive a response from the query stream")
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use swiftide_core::querying::search_strategies;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_closures_in_each_step() {
+        let pipeline = Pipeline::default()
+            .then_transform_query(move |query: Query<states::Pending>| Ok(query))
+            .then_retrieve(
+                move |_: &search_strategies::SimilaritySingleEmbedding,
+                      query: Query<states::Pending>| {
+                    Ok(query.retrieved_documents(vec![]))
+                },
+            )
+            .then_transform_response(Ok)
+            .then_answer(move |query: Query<states::Retrieved>| Ok(query.answered("Ok")));
+        let response = pipeline.query("What").await.unwrap();
+        assert_eq!(response.answer(), "Ok");
     }
 }
