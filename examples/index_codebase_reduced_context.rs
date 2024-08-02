@@ -40,16 +40,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or("redis://localhost:6379")
         .to_owned();
 
+    let chunk_size = 2048;
+
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(Redis::try_from_url(
             redis_url,
             "swiftide-examples-codebase-reduced-context",
         )?)
-        .then(indexing::transformers::FileToContextTreeSitter::try_for_language("rust")?)
+        .then(
+            indexing::transformers::FileToContextTreeSitter::try_for_language(
+                "rust",
+                Some(chunk_size),
+            )?,
+        )
         .then(MetadataQACode::new(openai_client.clone()))
         .then_chunk(ChunkCode::try_for_language_and_chunk_size(
             "rust",
-            10..2048,
+            10..chunk_size,
         )?)
         .then(indexing::transformers::CompressCodeContext::new(
             openai_client.clone(),

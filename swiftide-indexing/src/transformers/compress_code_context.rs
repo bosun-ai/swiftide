@@ -105,11 +105,6 @@ impl Transformer for CompressCodeContext {
             return Ok(node);
         };
 
-        // If the chunk is not smaller than the original size, we don't need to do operations on the context
-        if node.chunk.len() >= node.original_size {
-            return Ok(node);
-        }
-
         let prompt = self
             .prompt_template
             .to_prompt()

@@ -17,6 +17,7 @@ pub const NAME: &str = "Context (code)";
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct FileToContextTreeSitter {
     outliner: CodeOutliner,
+    minimum_file_size: Option<usize>,
 }
 
 impl FileToContextTreeSitter {
@@ -34,9 +35,13 @@ impl FileToContextTreeSitter {
     ///
     /// # Errors
     /// - Returns an error if the language is not supported or if the `CodeOutliner` fails to build.
-    pub fn try_for_language(lang: impl TryInto<SupportedLanguages>) -> Result<Self> {
+    pub fn try_for_language(
+        lang: impl TryInto<SupportedLanguages>,
+        minimum_file_size: Option<usize>,
+    ) -> Result<Self> {
         Ok(Self {
             outliner: CodeOutliner::builder().try_language(lang)?.build()?,
+            minimum_file_size,
         })
     }
 }
@@ -57,6 +62,12 @@ impl Transformer for FileToContextTreeSitter {
     /// - If the code outlining fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.file_to_context_tree_sitter")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
+        if let Some(minimum_file_size) = self.minimum_file_size {
+            if node.chunk.len() < minimum_file_size {
+                return Ok(node);
+            }
+        }
+
         let outline_result = self.outliner.outline(&node.chunk)?;
         node.metadata.insert(NAME, outline_result);
         Ok(node)
