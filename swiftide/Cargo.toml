@@ -22,14 +22,15 @@ swiftide-query = { path = "../swiftide-query", version = "0.7" }
 [features]
 default = []
 all = [
-  "qdrant",
-  "redis",
-  "tree-sitter",
-  "openai",
-  "fastembed",
-  "scraping",
-  "aws-bedrock",
-  "groq",
+    "qdrant",
+    "redis",
+    "tree-sitter",
+    "openai",
+    "fastembed",
+    "scraping",
+    "aws-bedrock",
+    "groq",
+    "ollama",
 ]
 # Qdrant for storage
 qdrant = ["swiftide-integrations/qdrant"]
@@ -37,13 +38,15 @@ qdrant = ["swiftide-integrations/qdrant"]
 redis = ["swiftide-integrations/redis"]
 # Tree-sitter for code operations and chunking
 tree-sitter = [
-  "swiftide-integrations/tree-sitter",
-  "swiftide-indexing/tree-sitter",
+    "swiftide-integrations/tree-sitter",
+    "swiftide-indexing/tree-sitter",
 ]
 # OpenAI for embedding and prompting
 openai = ["swiftide-integrations/openai"]
 # Groq prompting
 groq = ["swiftide-integrations/groq"]
+# Ollama prompting
+ollama = ["swiftide-integrations/ollama"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["swiftide-integrations/fastembed"]
 # Scraping via spider as loader and a html to markdown transformer
@@ -60,7 +63,7 @@ swiftide-test-utils = { path = "../swiftide-test-utils" }
 
 async-openai = { workspace = true }
 qdrant-client = { workspace = true, default-features = false, features = [
-  "serde",
+    "serde",
 ] }
 
 anyhow = { workspace = true }
