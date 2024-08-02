@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722324332592,
+  "lastUpdate": 1722620431202,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2249,6 +2249,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/f7accdeecf01efc291503282554257846725ce57"
         },
         "date": 1722324331615,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9eb589416c2a56f9942b6f6bed3771cec6acebaf",
+          "message": "feat(query): add support for closures in all steps (#215)",
+          "timestamp": "2024-08-02T19:34:48+02:00",
+          "tree_id": "ffc2d2486bef361a16163d1de77883afe4f58593",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9eb589416c2a56f9942b6f6bed3771cec6acebaf"
+        },
+        "date": 1722620430767,
         "tool": "cargo",
         "benches": [
           {
