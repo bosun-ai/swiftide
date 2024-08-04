@@ -1,8 +1,15 @@
 [package]
 name = "examples"
-version = "0.0.0"
 publish = false
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }

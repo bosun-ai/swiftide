@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "benchmarks"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1445,7 +1445,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "serde_json",
  "spider",
@@ -4347,7 +4347,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.0.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-openai",
