@@ -23,7 +23,7 @@ tracing = { workspace = true }
 indoc = { workspace = true }
 
 # Internal
-swiftide-core = { path = "../swiftide-core", version = "0.7.0" }
+swiftide-core = { path = "../swiftide-core", version = "0.7.1" }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
