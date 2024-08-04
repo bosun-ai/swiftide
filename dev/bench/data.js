@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722769782371,
+  "lastUpdate": 1722778314135,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2351,6 +2351,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 148,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "53e662b8c30f6ac6d11863685d3850ab48397766",
+          "message": "feat(ci): add cargo deny to lint dependencies (#213)",
+          "timestamp": "2024-08-04T15:26:21+02:00",
+          "tree_id": "82faa6766351fb5de75d5d9866dec7a01c4b846c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/53e662b8c30f6ac6d11863685d3850ab48397766"
+        },
+        "date": 1722778313742,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 2",
             "unit": "ns/iter"
           }
         ]
