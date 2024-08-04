@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - [53e662b](https://github.com/bosun-ai/swiftide/commit/53e662b8c30f6ac6d11863685d3850ab48397766) *(ci)* Add cargo deny to lint dependencies ([#213](https://github.com/bosun-ai/swiftide/pull/213))
 
 - [b2d31e5](https://github.com/bosun-ai/swiftide/commit/b2d31e555cb8da525513490e7603df1f6b2bfa5b) *(integrations)* Add ollama support ([#214](https://github.com/bosun-ai/swiftide/pull/214))
+  
+- [9eb5894](https://github.com/bosun-ai/swiftide/commit/9eb589416c2a56f9942b6f6bed3771cec6acebaf) *(query)* Support arbitrary closures in all steps ([#215](https://github.com/bosun-ai/swiftide/pull/215))
 
 ### Documentation
 
