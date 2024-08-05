@@ -3,9 +3,9 @@
 //! All steps defined in the indexing pipeline and the generic transformers can also take a
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
-use crate::indexing_stream::IndexingStream;
 use crate::node::Node;
 use crate::Embeddings;
+use crate::{indexing_stream::IndexingStream, SparseEmbeddings};
 use std::fmt::Debug;
 
 use crate::prompt::Prompt;
@@ -99,6 +99,14 @@ pub trait NodeCache: Send + Sync + Debug {
 /// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync + Debug {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+}
+
+#[cfg_attr(feature = "test-utils", automock)]
+#[async_trait]
+/// Embeds a list of strings and returns its embeddings.
+/// Assumes the strings will be moved.
+pub trait SparseEmbeddingModel: Send + Sync + Debug {
+    async fn embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
