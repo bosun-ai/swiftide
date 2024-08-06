@@ -93,11 +93,15 @@ impl Transformer for MetadataQACode {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let prompt = self
+        let mut prompt = self
             .prompt_template
             .to_prompt()
             .with_node(&node)
             .with_context_value("questions", self.num_questions);
+
+        if let Some(outline) = node.metadata.get("Outline") {
+            prompt = prompt.with_context_value("outline", outline.as_str());
+        }
 
         let response = self.client.prompt(prompt).await?;
 
@@ -125,6 +129,18 @@ mod test {
             .to_prompt()
             .with_node(&Node::new("test"))
             .with_context_value("questions", 5);
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_template_with_outline() {
+        let template = default_prompt();
+
+        let prompt = template
+            .to_prompt()
+            .with_node(&Node::new("test"))
+            .with_context_value("questions", 5)
+            .with_context_value("outline", "Test outline");
         insta::assert_snapshot!(prompt.render().await.unwrap());
     }
 

@@ -30,6 +30,10 @@ name = "index-codebase"
 path = "index_codebase.rs"
 
 [[example]]
+name = "index-codebase-reduced-context"
+path = "index_codebase_reduced_context.rs"
+
+[[example]]
 doc-scrape-examples = true
 name = "fastembed"
 path = "fastembed.rs"

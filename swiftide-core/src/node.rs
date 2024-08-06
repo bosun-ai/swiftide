@@ -48,6 +48,10 @@ pub struct Node {
     pub metadata: Metadata,
     /// Mode of embedding data Chunk and Metadata
     pub embed_mode: EmbedMode,
+    /// Size of the input this node was originally derived from in bytes
+    pub original_size: usize,
+    /// Offset of the chunk relative to the start of the input this node was originally derived from in bytes
+    pub offset: usize,
 }
 
 impl Debug for Node {
@@ -80,8 +84,11 @@ impl Node {
     ///
     /// The other fields are set to their default values.
     pub fn new(chunk: impl Into<String>) -> Node {
+        let chunk = chunk.into();
+        let original_size = chunk.len();
         Node {
-            chunk: chunk.into(),
+            chunk,
+            original_size,
             ..Default::default()
         }
     }

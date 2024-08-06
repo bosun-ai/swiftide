@@ -4281,6 +4281,7 @@ dependencies = [
  "itertools 0.13.0",
  "mockall",
  "num_cpus",
+ "regex",
  "serde",
  "serde_json",
  "strum",

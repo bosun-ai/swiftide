@@ -26,7 +26,13 @@ A1: It transforms strings into integers.
 Q2: What other internal parts does the code use?
 A2: A hasher to hash the strings.
 ```
+{% if outline %}
 
+## Outline of the parent file
+```
+{{ outline }}
+```
+{% endif %}
 # Code
 
 ```

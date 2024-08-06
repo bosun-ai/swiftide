@@ -105,6 +105,8 @@ mod tests {
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
+            original_size: 4,
+            offset: 0,
             metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata
         },
@@ -112,7 +114,7 @@ mod tests {
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
-            ("m1".into(), Value::from("mv1"))]), 
+            ("m1".into(), Value::from("mv1"))]),
             vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vector(Vector { data: vec![1.0], ..Default::default()} )) })
         };
         "Node with single vector creates struct with unnamed vector"
@@ -124,13 +126,15 @@ mod tests {
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
             ])),
             metadata: Metadata::from([("m1", "mv1")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::PerField
+            embed_mode: swiftide_core::indexing::EmbedMode::PerField,
+            original_size: 4,
+            offset: 0
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
-            ("m1".into(), Value::from("mv1"))]), 
+            ("m1".into(), Value::from("mv1"))]),
             vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vectors(NamedVectors { vectors: HashMap::from([
                 ("Chunk".into(), qdrant_client::qdrant::Vector {
                     data: vec![1.0], ..Default::default()
@@ -151,14 +155,16 @@ mod tests {
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
             ])),
             metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::Both
+            embed_mode: swiftide_core::indexing::EmbedMode::Both,
+            original_size: 4,
+            offset: 0,
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
-            ("m1".into(), Value::from("mv1")), 
-            ("m2".into(), Value::from("mv2"))]), 
+            ("m1".into(), Value::from("mv1")),
+            ("m2".into(), Value::from("mv2"))]),
             vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vectors(NamedVectors { vectors: HashMap::from([
                 ("Combined".into(), qdrant_client::qdrant::Vector {
                     data: vec![1.0], ..Default::default()
