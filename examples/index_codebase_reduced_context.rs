@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "swiftide-examples-codebase-reduced-context",
         )?)
         .then(
-            indexing::transformers::FileToContextTreeSitter::try_for_language(
+            indexing::transformers::OutlineCodeTreeSitter::try_for_language(
                 "rust",
                 Some(chunk_size),
             )?,
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "rust",
             10..chunk_size,
         )?)
-        .then(indexing::transformers::CompressCodeContext::new(
+        .then(indexing::transformers::CompressCodeOutline::new(
             openai_client.clone(),
         ))
         .then_in_batch(10, Embed::new(openai_client.clone()))

@@ -99,8 +99,8 @@ impl Transformer for MetadataQACode {
             .with_node(&node)
             .with_context_value("questions", self.num_questions);
 
-        if let Some(context) = node.metadata.get("Context (code)") {
-            prompt = prompt.with_context_value("context", context.as_str());
+        if let Some(outline) = node.metadata.get("Outline") {
+            prompt = prompt.with_context_value("outline", outline.as_str());
         }
 
         let response = self.client.prompt(prompt).await?;
@@ -129,6 +129,18 @@ mod test {
             .to_prompt()
             .with_node(&Node::new("test"))
             .with_context_value("questions", 5);
+        insta::assert_snapshot!(prompt.render().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_template_with_outline() {
+        let template = default_prompt();
+
+        let prompt = template
+            .to_prompt()
+            .with_node(&Node::new("test"))
+            .with_context_value("questions", 5)
+            .with_context_value("outline", "Test outline");
         insta::assert_snapshot!(prompt.render().await.unwrap());
     }
 

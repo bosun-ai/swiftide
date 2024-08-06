@@ -1,9 +1,9 @@
 ---
-source: swiftide-indexing/src/transformers/compress_code_context.rs
+source: swiftide-indexing/src/transformers/compress_code_outline.rs
 expression: prompt.render().await.unwrap()
 ---
-# Filtering Code Context
-Your task is to filter the given file context to the code chunk provided. The goal is to provide a context that is still contains the lines needed for understanding the code in the chunk whilst leaving out any irrelevant information.
+# Filtering Code Outline
+Your task is to filter the given file outline to the code chunk provided. The goal is to provide a context that is still contains the lines needed for understanding the code in the chunk whilst leaving out any irrelevant information.
 
 ## Constraints
   * Only use lines from the provided context, do not add any additional information
@@ -14,10 +14,10 @@ Your task is to filter the given file context to the code chunk provided. The go
 
 ## Code
 ```
-Code using context
+Code using outline
 ```
 
-## Context
+## Outline
 ```
-Relevant Context
+Relevant Outline
 ```

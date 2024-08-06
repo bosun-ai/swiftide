@@ -10,7 +10,7 @@
 pub mod chunk_code;
 
 #[cfg(feature = "tree-sitter")]
-pub mod file_to_context_tree_sitter;
+pub mod outline_code_tree_sitter;
 
 #[cfg(feature = "tree-sitter")]
 pub mod metadata_refs_defs_code;
@@ -22,7 +22,7 @@ pub use chunk_code::ChunkCode;
 pub use metadata_refs_defs_code::MetadataRefsDefsCode;
 
 pub mod chunk_markdown;
-pub mod compress_code_context;
+pub mod compress_code_outline;
 pub mod embed;
 pub mod metadata_keywords;
 pub mod metadata_qa_code;
@@ -31,10 +31,10 @@ pub mod metadata_summary;
 pub mod metadata_title;
 
 #[cfg(feature = "tree-sitter")]
-pub use file_to_context_tree_sitter::FileToContextTreeSitter;
+pub use outline_code_tree_sitter::OutlineCodeTreeSitter;
 
 pub use chunk_markdown::ChunkMarkdown;
-pub use compress_code_context::CompressCodeContext;
+pub use compress_code_outline::CompressCodeOutline;
 pub use embed::Embed;
 pub use metadata_keywords::MetadataKeywords;
 pub use metadata_qa_code::MetadataQACode;

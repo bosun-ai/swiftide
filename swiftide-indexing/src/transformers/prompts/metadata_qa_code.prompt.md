@@ -26,11 +26,11 @@ A1: It transforms strings into integers.
 Q2: What other internal parts does the code use?
 A2: A hasher to hash the strings.
 ```
-{% if context %}
+{% if outline %}
 
-## Context
+## Outline
 ```
-{{ context }}
+{{ outline }}
 ```
 {% endif %}
 # Code

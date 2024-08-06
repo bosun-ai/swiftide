@@ -1,5 +1,5 @@
 ---
-source: swiftide/src/transformers/metadata_qa_code.rs
+source: swiftide-indexing/src/transformers/metadata_qa_code.rs
 expression: prompt.render().await.unwrap()
 ---
 # Task
@@ -29,6 +29,12 @@ Q1: What does this code do?
 A1: It transforms strings into integers.
 Q2: What other internal parts does the code use?
 A2: A hasher to hash the strings.
+```
+
+
+## Outline
+```
+Test outline
 ```
 
 # Code
