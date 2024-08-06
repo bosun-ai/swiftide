@@ -28,7 +28,7 @@ A2: A hasher to hash the strings.
 ```
 {% if outline %}
 
-## Outline
+## Outline of the parent file
 ```
 {{ outline }}
 ```
