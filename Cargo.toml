@@ -6,9 +6,21 @@ members = [
   "swiftide-indexing",
 
   "examples",
-  "benchmarks", "swiftide-test-utils",
+  "benchmarks",
+  "swiftide-test-utils",
 ]
 resolver = "2"
+
+[workspace.package]
+version = "0.7.1"
+edition = "2021"
+license = "MIT"
+readme = "README.md"
+keywords = ["llm", "rag", "ai", "data", "openai"]
+description = "Blazing fast, streaming pipeline library for AI applications"
+categories = ["asynchronous"]
+repository = "https://github.com/bosun-ai/swiftide-rs"
+homepage = "https://swiftide.rs"
 
 [profile.dev.package]
 insta.opt-level = 3

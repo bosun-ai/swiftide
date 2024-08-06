@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "benchmarks"
-version = "0.0.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1445,7 +1445,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "0.0.0"
+version = "0.7.1"
 dependencies = [
  "serde_json",
  "spider",
@@ -1484,9 +1484,9 @@ dependencies = [
 
 [[package]]
 name = "fastembed"
-version = "3.11.1"
+version = "3.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28d5f4b8c024ec4b1ee259e32492aaf49219f4cc2c450df4df908918ece78604"
+checksum = "17909bfe2039bcb2d9bcad7a91ae3f26b11470715d0678bf170d877e97038858"
 dependencies = [
  "anyhow",
  "hf-hub",
@@ -2767,6 +2767,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ollama-rs"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "255252ec57e13d2d6ae074c7b7cd8c004d17dafb1e03f954ba2fd5cc226f8f49"
+dependencies = [
+ "async-trait",
+ "log",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "url",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3226,7 +3240,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18bec9b0adc4eba778b33684b7ba3e7137789434769ee3ce3930463ef904cfca"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.72",
@@ -3270,9 +3284,9 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "1.10.2"
+version = "1.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4ee6fc7c7837bcd78678eab038e72f005fe9cf30faf374a91cca7109e08793f"
+checksum = "8b3660716b1555923d189c2a8e4bf849e9c2cf86a346d868eb2616cf83844a2a"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -3901,11 +3915,12 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.120"
+version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
+checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
 dependencies = [
  "itoa",
+ "memchr",
  "ryu",
  "serde",
 ]
@@ -4207,7 +4222,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4231,7 +4246,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4254,7 +4269,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4283,7 +4298,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4299,6 +4314,7 @@ dependencies = [
  "indoc",
  "itertools 0.13.0",
  "mockall",
+ "ollama-rs",
  "qdrant-client",
  "redis",
  "reqwest",
@@ -4324,7 +4340,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4348,7 +4364,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.0.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "async-openai",

@@ -1,14 +1,14 @@
 [package]
 name = "swiftide-query"
-version = "0.7.0"
-edition = "2021"
-license = "MIT"
-readme = "../README.md"
-keywords = ["llm", "rag", "ai", "data", "openai"]
-description = "Blazing fast, streaming pipeline library for AI applications"
-categories = ["asynchronous"]
-repository = "https://github.com/bosun-ai/swiftide-rs"
-homepage = "https://swiftide.rs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
@@ -23,7 +23,7 @@ tracing = { workspace = true }
 indoc = { workspace = true }
 
 # Internal
-swiftide-core = { path = "../swiftide-core", version = "0.7.0" }
+swiftide-core = { path = "../swiftide-core", version = "0.7.1" }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

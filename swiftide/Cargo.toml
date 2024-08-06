@@ -1,14 +1,14 @@
 [package]
 name = "swiftide"
-version = "0.7.0"
-edition = "2021"
-license = "MIT"
-readme = "../README.md"
-keywords = ["llm", "rag", "ai", "data", "openai"]
-description = "Blazing fast, streaming pipeline library for AI applications"
-categories = ["asynchronous"]
-repository = "https://github.com/bosun-ai/swiftide-rs"
-homepage = "https://swiftide.rs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [badges]
 
@@ -30,6 +30,7 @@ all = [
     "scraping",
     "aws-bedrock",
     "groq",
+    "ollama",
 ]
 # Qdrant for storage
 qdrant = ["swiftide-integrations/qdrant"]
@@ -44,6 +45,8 @@ tree-sitter = [
 openai = ["swiftide-integrations/openai"]
 # Groq prompting
 groq = ["swiftide-integrations/groq"]
+# Ollama prompting
+ollama = ["swiftide-integrations/ollama"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["swiftide-integrations/fastembed"]
 # Scraping via spider as loader and a html to markdown transformer

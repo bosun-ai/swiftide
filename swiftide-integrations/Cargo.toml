@@ -1,14 +1,14 @@
 [package]
 name = "swiftide-integrations"
-version = "0.7.0"
-edition = "2021"
-license = "MIT"
-readme = "../README.md"
-keywords = ["llm", "rag", "ai", "data", "openai"]
-description = "Blazing fast, streaming pipeline library for AI applications"
-categories = ["asynchronous"]
-repository = "https://github.com/bosun-ai/swiftide-rs"
-homepage = "https://swiftide.rs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 swiftide-core = { path = "../swiftide-core", version = "0.7" }
@@ -29,13 +29,13 @@ strum_macros = { workspace = true }
 # Integrations
 async-openai = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
-  "serde",
+    "serde",
 ] }
 redis = { version = "0.26", features = [
-  "aio",
-  "tokio-comp",
-  "connection-manager",
-  "tokio-rustls-comp",
+    "aio",
+    "tokio-comp",
+    "connection-manager",
+    "tokio-rustls-comp",
 ], optional = true }
 tree-sitter = { version = "0.22", optional = true }
 tree-sitter-rust = { version = "0.21", optional = true }
@@ -47,16 +47,17 @@ fastembed = { version = "3.6", optional = true }
 spider = { version = "1.98", optional = true }
 htmd = { version = "0.1", optional = true }
 aws-config = { version = "1.5", features = [
-  "behavior-version-latest",
+    "behavior-version-latest",
 ], optional = true }
 aws-credential-types = { version = "1.2", features = [
-  "hardcoded-credentials",
+    "hardcoded-credentials",
 ], optional = true }
 aws-sdk-bedrockruntime = { version = "1.37", features = [
-  "behavior-version-latest",
+    "behavior-version-latest",
 ], optional = true }
 secrecy = { version = "0.8.0", optional = true }
 reqwest = { version = "0.12.5", optional = true, default-features = false }
+ollama-rs = { version = "0.2.0", optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -70,7 +71,7 @@ indoc = { workspace = true }
 
 [features]
 default = ["rustls"]
-# Ensures rustls is used 
+# Ensures rustls is used
 rustls = ["reqwest/rustls-tls-native-roots"]
 # Qdrant for storage
 qdrant = ["dep:qdrant-client"]
@@ -78,26 +79,28 @@ qdrant = ["dep:qdrant-client"]
 redis = ["dep:redis"]
 # Tree-sitter for code operations and chunking
 tree-sitter = [
-  "dep:tree-sitter",
-  "dep:tree-sitter-rust",
-  "dep:tree-sitter-python",
-  "dep:tree-sitter-ruby",
-  "dep:tree-sitter-typescript",
-  "dep:tree-sitter-javascript",
+    "dep:tree-sitter",
+    "dep:tree-sitter-rust",
+    "dep:tree-sitter-python",
+    "dep:tree-sitter-ruby",
+    "dep:tree-sitter-typescript",
+    "dep:tree-sitter-javascript",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
 # Groq prompting
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+# Ollama prompting
+ollama = ["dep:ollama-rs"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
 # Scraping via spider as loader and a html to markdown transformer
 scraping = ["dep:spider", "dep:htmd"]
 # AWS Bedrock for prompting
 aws-bedrock = [
-  "dep:aws-config",
-  "dep:aws-credential-types",
-  "dep:aws-sdk-bedrockruntime",
+    "dep:aws-config",
+    "dep:aws-credential-types",
+    "dep:aws-sdk-bedrockruntime",
 ]
 
 [lints]

@@ -1,8 +1,15 @@
 [package]
 name = "examples"
-version = "0.0.0"
 publish = false
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
@@ -11,6 +18,7 @@ swiftide = { path = "../swiftide/", features = [
     "scraping",
     "aws-bedrock",
     "groq",
+    "ollama",
 ] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
@@ -58,6 +66,10 @@ path = "store_multiple_vectors.rs"
 [[example]]
 name = "index-groq"
 path = "index_groq.rs"
+
+[[example]]
+name = "index-ollama"
+path = "index_ollama.rs"
 
 [[example]]
 name = "query-pipeline"

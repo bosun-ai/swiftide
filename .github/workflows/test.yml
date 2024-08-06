@@ -33,6 +33,8 @@ jobs:
         uses: crate-ci/typos@master
       - name: "Rustfmt"
         run: cargo fmt --all --check
+      - name: Lint dependencies
+        uses: EmbarkStudios/cargo-deny-action@v1
 
   test:
     name: Test

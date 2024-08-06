@@ -111,6 +111,7 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             10..2048,
         )?)
         .then(MetadataQACode::new(openai_client.clone()))
+        .then(move |node| my_own_thing(node))
         .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
             Qdrant::builder()
@@ -138,7 +139,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Experimental query pipeline
 - Integrations with OpenAI, Groq, Redis, Qdrant, FastEmbed, and Treesitter
 - A variety of loaders, transformers, semantic chunkers, embedders, and more
-- Bring your own transformers by extending straightforward traits
+- Bring your own transformers by extending straightforward traits or use a closure
 - Splitting and merging pipelines
 - Jinja-like templating for prompts
 - Store into multiple backends
