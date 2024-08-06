@@ -11,6 +11,8 @@ pub mod chunk_code;
 
 #[cfg(feature = "tree-sitter")]
 pub mod file_to_context_tree_sitter;
+
+#[cfg(feature = "tree-sitter")]
 pub mod metadata_refs_defs_code;
 
 #[cfg(feature = "tree-sitter")]

@@ -109,7 +109,7 @@ impl Transformer for CompressCodeContext {
             .prompt_template
             .to_prompt()
             .with_context_value("context", context.as_str())
-            .with_context_value("code", node.chunk.clone());
+            .with_context_value("code", node.chunk.as_str());
 
         let response = extract_markdown_codeblock(self.client.prompt(prompt).await?);
 
