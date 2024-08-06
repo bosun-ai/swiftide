@@ -3,11 +3,31 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use derive_builder::Builder;
-use fastembed::TextEmbedding;
+use fastembed::{SparseTextEmbedding, TextEmbedding};
 
-use swiftide_core::{EmbeddingModel, Embeddings};
+pub use swiftide_core::EmbeddingModel as _;
+pub use swiftide_core::SparseEmbeddingModel as _;
+
+mod embedding_model;
+mod sparse_embedding_model;
+
+pub enum EmbeddingModelType {
+    Dense(TextEmbedding),
+    Sparse(SparseTextEmbedding),
+}
+
+impl From<TextEmbedding> for EmbeddingModelType {
+    fn from(val: TextEmbedding) -> Self {
+        EmbeddingModelType::Dense(val)
+    }
+}
+
+impl From<SparseTextEmbedding> for EmbeddingModelType {
+    fn from(val: SparseTextEmbedding) -> Self {
+        EmbeddingModelType::Sparse(val)
+    }
+}
 
 /// A wrapper around the `FastEmbed` library for text embedding.
 ///
@@ -32,9 +52,9 @@ use swiftide_core::{EmbeddingModel, Embeddings};
 pub struct FastEmbed {
     #[builder(
         setter(custom),
-        default = "TextEmbedding::try_new(Default::default())?.into()"
+        default = "Arc::new(TextEmbedding::try_new(Default::default())?.into())"
     )]
-    embedding_model: Arc<TextEmbedding>,
+    embedding_model: Arc<EmbeddingModelType>,
     #[builder(default)]
     batch_size: Option<usize>,
 }
@@ -57,6 +77,14 @@ impl FastEmbed {
         Self::builder().build()
     }
 
+    pub fn try_default_sparse() -> Result<Self> {
+        Self::builder()
+            .embedding_model(SparseTextEmbedding::try_new(
+                fastembed::SparseInitOptions::default(),
+            )?)
+            .build()
+    }
+
     pub fn builder() -> FastEmbedBuilder {
         FastEmbedBuilder::default()
     }
@@ -64,18 +92,10 @@ impl FastEmbed {
 
 impl FastEmbedBuilder {
     #[must_use]
-    pub fn embedding_model(mut self, fastembed: TextEmbedding) -> Self {
-        self.embedding_model = Some(Arc::new(fastembed));
+    pub fn embedding_model(mut self, fastembed: impl Into<EmbeddingModelType>) -> Self {
+        self.embedding_model = Some(Arc::new(fastembed.into()));
 
         self
-    }
-}
-
-#[async_trait]
-impl EmbeddingModel for FastEmbed {
-    #[tracing::instrument(skip_all)]
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
-        self.embedding_model.embed(input, self.batch_size)
     }
 }
 
@@ -88,5 +108,17 @@ mod tests {
         let fastembed = FastEmbed::try_default().unwrap();
         let embeddings = fastembed.embed(vec!["hello".to_string()]).await.unwrap();
         assert_eq!(embeddings.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_sparse_fastembed() {
+        let fastembed = FastEmbed::try_default_sparse().unwrap();
+        let embeddings = fastembed
+            .sparse_embed(vec!["hello".to_string()])
+            .await
+            .unwrap();
+        assert_eq!(embeddings.len(), 1);
+        assert_eq!(embeddings[0].values.len(), 1);
+        assert_eq!(embeddings[0].indices.len(), embeddings[0].values.len());
     }
 }

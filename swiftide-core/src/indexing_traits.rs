@@ -106,7 +106,7 @@ pub trait EmbeddingModel: Send + Sync + Debug {
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
 pub trait SparseEmbeddingModel: Send + Sync + Debug {
-    async fn embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
