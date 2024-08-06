@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722971217136,
+  "lastUpdate": 1722975379459,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2501,6 +2501,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/1ff2855450ee341439d8a11a1fe17f7ad1b5b451"
         },
         "date": 1722971216713,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@tinco.nl",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e728a7c7a2fcf7b22c31e5d6c66a896f634f6901",
+          "message": "feat: Code outlines in chunk metadata (#137)\n\nAdded a transformer that generates outlines for code files using tree sitter. And another that compresses the outline to be more relevant to chunks. Additionally added a step to the metadata QA tool that uses the outline to improve the contextual awareness during QA generation.",
+          "timestamp": "2024-08-06T22:10:33+02:00",
+          "tree_id": "08bd2c26e956e4a3fe049020872719d7e5410e51",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e728a7c7a2fcf7b22c31e5d6c66a896f634f6901"
+        },
+        "date": 1722975379079,
         "tool": "cargo",
         "benches": [
           {
