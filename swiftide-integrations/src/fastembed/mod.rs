@@ -117,8 +117,10 @@ mod tests {
             .sparse_embed(vec!["hello".to_string()])
             .await
             .unwrap();
-        assert_eq!(embeddings.len(), 1);
-        assert_eq!(embeddings[0].values.len(), 1);
+
+        // Model can vary in size, assert it's small and not the full dictionary (30k+)
+        assert!(embeddings[0].values.len() > 1);
+        assert!(embeddings[0].values.len() < 100);
         assert_eq!(embeddings[0].indices.len(), embeddings[0].values.len());
     }
 }
