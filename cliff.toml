@@ -79,7 +79,11 @@ body = """
 {% endif %}
 
 {%- macro remote_url() -%}
+{%- if remote.github -%}
 https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
+{% else -%}
+https://github.com/bosun-ai/swiftide
+{%- endif -%}
 {% endmacro %}
 """
 
