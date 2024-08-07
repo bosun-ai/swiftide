@@ -1,0 +1,281 @@
+//! Generic embedding transformer
+use std::{collections::VecDeque, sync::Arc};
+
+use anyhow::bail;
+use async_trait::async_trait;
+use swiftide_core::{
+    indexing::{IndexingStream, Node},
+    BatchableTransformer, SparseEmbeddingModel,
+};
+
+/// A transformer that can generate embeddings for an `Node`
+///
+/// This file defines the `SparseEmbed` struct and its implementation of the `BatchableTransformer` trait.
+pub struct SparseEmbed {
+    embed_model: Arc<dyn SparseEmbeddingModel>,
+    concurrency: Option<usize>,
+}
+
+impl std::fmt::Debug for SparseEmbed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SparseEmbed")
+            .field("concurrency", &self.concurrency)
+            .finish()
+    }
+}
+
+impl SparseEmbed {
+    /// Creates a new instance of the `SparseEmbed` transformer.
+    ///
+    /// # Parameters
+    ///
+    /// * `model` - An embedding model that implements the `SparseEmbeddingModel` trait.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `SparseEmbed`.
+    pub fn new(model: impl SparseEmbeddingModel + 'static) -> Self {
+        Self {
+            embed_model: Arc::new(model),
+            concurrency: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+        self.concurrency = Some(concurrency);
+        self
+    }
+}
+
+#[async_trait]
+impl BatchableTransformer for SparseEmbed {
+    /// Transforms a batch of `Node` objects by generating embeddings for them.
+    ///
+    /// # Parameters
+    ///
+    /// * `nodes` - A vector of `Node` objects to be transformed.
+    ///
+    /// # Returns
+    ///
+    /// An `IndexingStream` containing the transformed `Node` objects with their embeddings.
+    ///
+    /// # Errors
+    ///
+    /// If the embedding process fails, the function returns a stream with the error.
+    #[tracing::instrument(skip_all, name = "transformers.embed")]
+    async fn batch_transform(&self, mut nodes: Vec<Node>) -> IndexingStream {
+        // TODO: We should drop chunks that go over the token limit of the SparseEmbedModel
+
+        // SparseEmbeddedFields grouped by node stored in order of processed nodes.
+        let mut embeddings_keys_groups = VecDeque::with_capacity(nodes.len());
+        // SparseEmbeddable data of every node stored in order of processed nodes.
+        let embeddables_data = nodes
+            .iter_mut()
+            .fold(Vec::new(), |mut embeddables_data, node| {
+                let embeddables = node.as_embeddables();
+                let mut embeddables_keys = Vec::with_capacity(embeddables.len());
+                for (embeddable_key, embeddable_data) in embeddables {
+                    embeddables_keys.push(embeddable_key);
+                    embeddables_data.push(embeddable_data);
+                }
+                embeddings_keys_groups.push_back(embeddables_keys);
+                embeddables_data
+            });
+
+        // SparseEmbeddings vectors of every node stored in order of processed nodes.
+        let mut embeddings = match self.embed_model.sparse_embed(embeddables_data).await {
+            Ok(embeddngs) => VecDeque::from(embeddngs),
+            Err(err) => return IndexingStream::iter(Err(err)),
+        };
+
+        // Iterator of nodes with embeddings vectors map.
+        let nodes_iter = nodes.into_iter().map(move |mut node| {
+            let Some(embedding_keys) = embeddings_keys_groups.pop_front() else {
+                bail!("Missing embedding data");
+            };
+            node.vectors = embedding_keys
+                .into_iter()
+                .map(|embedded_field| {
+                    embeddings
+                        .pop_front()
+                        .map(|embedding| (embedded_field, embedding))
+                })
+                .collect();
+            Ok(node)
+        });
+
+        IndexingStream::iter(nodes_iter)
+    }
+
+    fn concurrency(&self) -> Option<usize> {
+        self.concurrency
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use swiftide_core::indexing::{EmbeddedField, Metadata, Node, SparseEmbedMode};
+    use swiftide_core::{BatchableTransformer, MockSparseEmbeddingModel};
+
+    use super::SparseEmbed;
+
+    use futures_util::StreamExt;
+    use mockall::predicate::*;
+    use test_case::test_case;
+
+    #[derive(Clone)]
+    struct TestData<'a> {
+        pub embed_mode: SparseEmbedMode,
+        pub chunk: &'a str,
+        pub metadata: Metadata,
+        pub expected_embedables: Vec<&'a str>,
+        pub expected_vectors: Vec<(SparseEmbeddedField, Vec<f32>)>,
+    }
+
+    #[test_case(vec![
+        TestData {
+            embed_mode: SparseEmbedMode::SingleWithMetadata,
+            chunk: "chunk_1",
+            metadata: Metadata::from([("meta_1", "prompt_1")]),
+            expected_embedables: vec!["meta_1: prompt_1\nchunk_1"],
+            expected_vectors: vec![(SparseEmbeddedField::Combined, vec![1f32])]
+        },
+        TestData {
+            embed_mode: SparseEmbedMode::SingleWithMetadata,
+            chunk: "chunk_2",
+            metadata: Metadata::from([("meta_2", "prompt_2")]),
+            expected_embedables: vec!["meta_2: prompt_2\nchunk_2"],
+            expected_vectors: vec![(SparseEmbeddedField::Combined, vec![2f32])]
+        }
+    ]; "Multiple nodes SparseEmbedMode::SingleWithMetadata with metadata.")]
+    #[test_case(vec![
+        TestData {
+            embed_mode: SparseEmbedMode::PerField,
+            chunk: "chunk_1",
+            metadata: Metadata::from([("meta_1", "prompt 1")]),
+            expected_embedables: vec!["chunk_1", "prompt 1"],
+            expected_vectors: vec![
+                (SparseEmbeddedField::Chunk, vec![10f32]),
+                (SparseEmbeddedField::Metadata("meta_1".into()), vec![11f32])
+            ]
+        },
+        TestData {
+            embed_mode: SparseEmbedMode::PerField,
+            chunk: "chunk_2",
+            metadata: Metadata::from([("meta_2", "prompt 2")]),
+            expected_embedables: vec!["chunk_2", "prompt 2"],
+            expected_vectors: vec![
+                (SparseEmbeddedField::Chunk, vec![20f32]),
+                (SparseEmbeddedField::Metadata("meta_2".into()), vec![21f32])
+            ]
+        }
+    ]; "Multiple nodes SparseEmbedMode::PerField with metadata.")]
+    #[test_case(vec![
+        TestData {
+            embed_mode: SparseEmbedMode::Both,
+            chunk: "chunk_1",
+            metadata: Metadata::from([("meta_1", "prompt 1")]),
+            expected_embedables: vec!["meta_1: prompt 1\nchunk_1", "chunk_1", "prompt 1"],
+            expected_vectors: vec![
+                (SparseEmbeddedField::Combined, vec![10f32]),
+                (SparseEmbeddedField::Chunk, vec![11f32]),
+                (SparseEmbeddedField::Metadata("meta_1".into()), vec![12f32])
+            ]
+        },
+        TestData {
+            embed_mode: SparseEmbedMode::Both,
+            chunk: "chunk_2",
+            metadata: Metadata::from([("meta_2", "prompt 2")]),
+            expected_embedables: vec!["meta_2: prompt 2\nchunk_2", "chunk_2", "prompt 2"],
+            expected_vectors: vec![
+                (SparseEmbeddedField::Combined, vec![20f32]),
+                (SparseEmbeddedField::Chunk, vec![21f32]),
+                (SparseEmbeddedField::Metadata("meta_2".into()), vec![22f32])
+            ]
+        }
+    ]; "Multiple nodes SparseEmbedMode::Both with metadata.")]
+    #[test_case(vec![
+        TestData {
+            embed_mode: SparseEmbedMode::Both,
+            chunk: "chunk_1",
+            metadata: Metadata::from([("meta_10", "prompt 10"), ("meta_11", "prompt 11"), ("meta_12", "prompt 12")]),
+            expected_embedables: vec!["meta_10: prompt 10\nmeta_11: prompt 11\nmeta_12: prompt 12\nchunk_1", "chunk_1", "prompt 10", "prompt 11", "prompt 12"],
+            expected_vectors: vec![
+                (SparseEmbeddedField::Combined, vec![10f32]),
+                (SparseEmbeddedField::Chunk, vec![11f32]),
+                (SparseEmbeddedField::Metadata("meta_10".into()), vec![12f32]),
+                (SparseEmbeddedField::Metadata("meta_11".into()), vec![13f32]),
+                (SparseEmbeddedField::Metadata("meta_12".into()), vec![14f32]),
+            ]
+        },
+        TestData {
+            embed_mode: SparseEmbedMode::Both,
+            chunk: "chunk_2",
+            metadata: Metadata::from([("meta_20", "prompt 20"), ("meta_21", "prompt 21"), ("meta_22", "prompt 22")]),
+            expected_embedables: vec!["meta_20: prompt 20\nmeta_21: prompt 21\nmeta_22: prompt 22\nchunk_2", "chunk_2", "prompt 20", "prompt 21", "prompt 22"],
+            expected_vectors: vec![
+                (SparseEmbeddedField::Combined, vec![20f32]),
+                (SparseEmbeddedField::Chunk, vec![21f32]),
+                (SparseEmbeddedField::Metadata("meta_20".into()), vec![22f32]),
+                (SparseEmbeddedField::Metadata("meta_21".into()), vec![23f32]),
+                (SparseEmbeddedField::Metadata("meta_22".into()), vec![24f32])
+            ]
+        }
+    ]; "Multiple nodes SparseEmbedMode::Both with multiple metadata.")]
+    #[test_case(vec![]; "No ingestion nodes")]
+    #[tokio::test]
+    async fn batch_transform(test_data: Vec<TestData<'_>>) {
+        let test_nodes: Vec<Node> = test_data
+            .iter()
+            .map(|data| Node {
+                chunk: data.chunk.into(),
+                metadata: data.metadata.clone(),
+                embed_mode: data.embed_mode,
+                ..Default::default()
+            })
+            .collect();
+
+        let expected_nodes: Vec<Node> = test_nodes
+            .clone()
+            .into_iter()
+            .zip(test_data.iter())
+            .map(|(mut expected_node, test_data)| {
+                expected_node.vectors = Some(test_data.expected_vectors.iter().cloned().collect());
+                expected_node
+            })
+            .collect();
+
+        let expected_embeddables_batch = test_data
+            .clone()
+            .iter()
+            .flat_map(|d| &d.expected_embedables)
+            .map(ToString::to_string)
+            .collect::<Vec<String>>();
+        let expected_vectors_batch: Vec<Vec<f32>> = test_data
+            .clone()
+            .iter()
+            .flat_map(|d| d.expected_vectors.iter().map(|(_, v)| v).cloned())
+            .collect();
+
+        let mut model_mock = MockSparseEmbeddingModel::new();
+        model_mock
+            .expect_embed()
+            .withf(move |embeddables| expected_embeddables_batch.eq(embeddables))
+            .times(1)
+            .returning_st(move |_| Ok(expected_vectors_batch.clone()));
+
+        let embed = SparseEmbed::new(model_mock);
+
+        let mut stream = embed.batch_transform(test_nodes).await;
+
+        for expected_node in expected_nodes {
+            let ingested_node = stream
+                .next()
+                .await
+                .expect("IngestionStream has same length as expected_nodes")
+                .expect("Is OK");
+            debug_assert_eq!(ingested_node, expected_node);
+        }
+    }
+}
