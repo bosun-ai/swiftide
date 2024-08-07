@@ -137,7 +137,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 
 - Fast streaming indexing pipeline with async, parallel processing
 - Experimental query pipeline
-- Integrations with OpenAI, Groq, Redis, Qdrant, FastEmbed, and Treesitter
+- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed, and Treesitter
 - A variety of loaders, transformers, semantic chunkers, embedders, and more
 - Bring your own transformers by extending straightforward traits or use a closure
 - Splitting and merging pipelines
@@ -149,7 +149,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models                                                         |
+| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                                |
 | **Loading data**                             | Files <br> Scraping <br> Other pipelines and streams                                                                                                                 |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
