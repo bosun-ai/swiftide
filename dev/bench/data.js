@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722975379459,
+  "lastUpdate": 1723043407918,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2543,6 +2543,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/e728a7c7a2fcf7b22c31e5d6c66a896f634f6901"
         },
         "date": 1722975379079,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "73d1649ca8427aa69170f6451eac55316581ed9a",
+          "message": "docs(README): Add Ollama support to README",
+          "timestamp": "2024-08-07T17:04:00+02:00",
+          "tree_id": "f91c99a39c22218962465d683ca2136e0d567d73",
+          "url": "https://github.com/bosun-ai/swiftide/commit/73d1649ca8427aa69170f6451eac55316581ed9a"
+        },
+        "date": 1723043407342,
         "tool": "cargo",
         "benches": [
           {
