@@ -223,7 +223,7 @@ See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full li
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
-## Comunity
+## Community
 
 If you want to get more involved with Swiftide, have questions or want to chat, you can find us on [discord](https://discord.gg/3jjXYen9UY).
 
