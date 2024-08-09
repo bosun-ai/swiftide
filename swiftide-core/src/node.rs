@@ -27,7 +27,7 @@ use std::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::metadata::Metadata;
+use crate::{metadata::Metadata, Embedding, SparseEmbedding};
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -43,7 +43,9 @@ pub struct Node {
     /// Data chunk contained in the node.
     pub chunk: String,
     /// Optional vector representation of embedded data.
-    pub vectors: Option<HashMap<EmbeddedField, Vec<f32>>>,
+    pub vectors: Option<HashMap<EmbeddedField, Embedding>>,
+    /// Optional sparse vector representation of embedded data.
+    pub sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
     /// Metadata associated with the node.
     pub metadata: Metadata,
     /// Mode of embedding data Chunk and Metadata
@@ -67,6 +69,15 @@ impl Debug for Node {
             .field("metadata", &self.metadata)
             .field(
                 "vectors",
+                &self
+                    .vectors
+                    .iter()
+                    .flat_map(HashMap::iter)
+                    .map(|(embed_type, vec)| format!("'{embed_type}': {}", vec.len()))
+                    .join(","),
+            )
+            .field(
+                "sparse_vectors",
                 &self
                     .vectors
                     .iter()
