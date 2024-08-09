@@ -1,8 +1,8 @@
 [workspace]
-changelog_path = "./CHANGELOG.md"
-changelog_config = "cliff.toml"
+changelog_update = false
 git_tag_enable = false
 git_release_enable = false
+changelog_config = "../cliff.toml"
 
 [[package]]
 # Only release the main package on github
@@ -10,3 +10,6 @@ name = "swiftide"
 git_tag_name = "v{{ version }}"
 git_tag_enable = true
 git_release_enable = true
+changelog_path = "../CHANGELOG.md"
+changelog_update = true
+changelog_include = ["swiftide-*"]
