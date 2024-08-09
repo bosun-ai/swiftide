@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.7" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.7", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.8" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.8", optional = true }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }

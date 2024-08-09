@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0](https://github.com/bosun-ai/swiftide/releases/tag/0.8.0) - 2024-08-09
+
+### Added
+
+- [e728a7c](https://github.com/bosun-ai/swiftide/commit/e728a7c7a2fcf7b22c31e5d6c66a896f634f6901) *(uncategorized)* Code outlines in chunk metadata ([#137](https://github.com/bosun-ai/swiftide/pull/137))
+
+### Other
+
+- [b3f04de](https://github.com/bosun-ai/swiftide/commit/b3f04defe94e5b26876c8d99049f4d87b5f2dc18) *(readme)* Add link to discord ([#219](https://github.com/bosun-ai/swiftide/pull/219))
+
+- [73d1649](https://github.com/bosun-ai/swiftide/commit/73d1649ca8427aa69170f6451eac55316581ed9a) *(readme)* Add Ollama support to README
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.7.1...0.8.0
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.7.1](https://github.com/bosun-ai/swiftide/releases/tag/0.7.1) - 2024-08-04
 
 ### Features
