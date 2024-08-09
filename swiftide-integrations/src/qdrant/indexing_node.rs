@@ -33,32 +33,29 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
     /// A `Result` which is `Ok` if the conversion is successful, containing the `qdrant::PointStruct`.
     /// If the conversion fails, it returns an `anyhow::Error`.
     fn try_into(self) -> Result<qdrant::PointStruct> {
-        let mut node = self.node;
+        let node = self.node;
         // Calculate a unique identifier for the node.
         let id = node.calculate_hash();
 
         // Extend the metadata with additional information.
-        node.metadata.extend([
-            ("path", node.path.to_string_lossy().to_string()),
-            ("content", node.chunk),
-            ("last_updated_at", chrono::Utc::now().to_rfc3339()),
-        ]);
+        // TODO: The node is already cloned in the `NodeWithVectors` constructor.
+        // Then additional data is added to the metadata, including the full chunk
+        // Data is then taken as ref and reassigned. Seems like a lot of needless allocations
 
         // Create a payload compatible with Qdrant's API.
-        let payload: Payload = node
+        let mut payload: Payload = node
             .metadata
-            .iter()
-            .map(|(k, v)| {
-                (
-                    k.as_str(),
-                    Value::from(
-                        v.as_str()
-                            .map_or_else(|| v.to_string(), ToString::to_string),
-                    ),
-                )
-            })
-            .collect::<HashMap<&str, Value>>()
+            .into_iter()
+            .map(|(k, v)| (k, Value::from(v)))
+            .collect::<HashMap<String, Value>>()
             .into();
+
+        payload.insert("path", Value::from(node.path.to_string_lossy().to_string()));
+        payload.insert("content", Value::from(node.chunk));
+        payload.insert(
+            "last_updated_at",
+            Value::from(chrono::Utc::now().to_rfc3339()),
+        );
 
         let Some(vectors) = node.vectors else {
             bail!("Node without vectors")
