@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723195555786,
+  "lastUpdate": 1723199154014,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2687,6 +2687,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 148,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1a0097cbb671bbda73d6d7409ddf8ed1b243018e",
+          "message": "fix(deps): update rust crate spider to v1.99.30 (#211)\n\n[![Mend\r\nRenovate](https://app.renovatebot.com/images/banner.svg)](https://renovatebot.com)\r\n\r\nThis PR contains the following updates:\r\n\r\n| Package | Type | Update | Change |\r\n|---|---|---|---|\r\n| [spider](https://togithub.com/spider-rs/spider) | dependencies | patch\r\n| `1.99.11` -> `1.99.30` |\r\n\r\n---\r\n\r\n### Release Notes\r\n\r\n<details>\r\n<summary>spider-rs/spider (spider)</summary>\r\n\r\n###\r\n[`v1.99.30`](https://togithub.com/spider-rs/spider/releases/tag/v1.99.30)\r\n\r\n### Whats Changed\r\n\r\n-   feat Web automation steps by target url or path.\r\n-   add internal ViewPort for chrome handling.\r\n-   add partial eq configuration\r\n\r\n```rust\r\n    let mut automation_scripts = HashMap::new();\r\n\r\n    automation_scripts.insert(\r\n        \"/en/blog\".into(),\r\n        Vec::from([\r\n            WebAutomation::Evaluate(r#\"document.body.style.background = \"blue\";\"#.into()),\r\n            WebAutomation::ScrollY(2000),\r\n            WebAutomation::Click(\"article a\".into()),\r\n            WebAutomation::Wait(5000),\r\n            WebAutomation::Screenshot {\r\n                output: \"example.png\".into(),\r\n                full_page: true,\r\n                omit_background: true,\r\n            },\r\n        ]),\r\n    );\r\n\r\n    let mut website: Website = Website::new(\"https://rsseau.fr/en/blog\")\r\n        .with_chrome_intercept(true, true)\r\n        .with_wait_for_idle_network(Some(WaitForIdleNetwork::new(Some(Duration::from_secs(30)))))\r\n        .with_caching(cfg!(feature = \"cache\"))\r\n        .with_limit(1)\r\n        .with_automation_scripts(Some(automation_scripts))\r\n        .build()\r\n        .unwrap();\r\n```\r\n\r\n\r\nhttps://github.com/user-attachments/assets/e2b995e1-ef33-462e-9652-febdee56935a\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v1.99.21...v1.99.30\r\n\r\n###\r\n[`v1.99.28`](https://togithub.com/spider-rs/spider/compare/v1.99.27...v1.99.28)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.27...v1.99.28)\r\n\r\n###\r\n[`v1.99.25`](https://togithub.com/spider-rs/spider/compare/v1.99.24...v1.99.25)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.24...v1.99.25)\r\n\r\n###\r\n[`v1.99.24`](https://togithub.com/spider-rs/spider/compare/v1.99.23...v1.99.24)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.23...v1.99.24)\r\n\r\n###\r\n[`v1.99.23`](https://togithub.com/spider-rs/spider/compare/v1.99.21...v1.99.23)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.21...v1.99.23)\r\n\r\n###\r\n[`v1.99.21`](https://togithub.com/spider-rs/spider/releases/tag/v1.99.21)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.20...v1.99.21)\r\n\r\n### Whats Changed\r\n\r\nYou can now block ads over the network when using chrome and\r\nchrome_intercept using the `adblock` feature flag.\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v1.99.18...v1.99.21\r\n\r\n###\r\n[`v1.99.20`](https://togithub.com/spider-rs/spider/compare/v1.99.19...v1.99.20)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.19...v1.99.20)\r\n\r\n###\r\n[`v1.99.19`](https://togithub.com/spider-rs/spider/compare/v1.99.18...v1.99.19)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.18...v1.99.19)\r\n\r\n###\r\n[`v1.99.18`](https://togithub.com/spider-rs/spider/releases/tag/v1.99.18)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.17...v1.99.18)\r\n\r\n### Whats Changed\r\n\r\n1. chore(fs,chrome): fix chrome fs storing\r\n\\[[#&#8203;198](https://togithub.com/spider-rs/spider/issues/198)]\r\n\r\nThanks for the help [@&#8203;haijd](https://togithub.com/haijd)\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v1.99.16...v1.99.18\r\n\r\n###\r\n[`v1.99.17`](https://togithub.com/spider-rs/spider/compare/v1.99.16...v1.99.17)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.16...v1.99.17)\r\n\r\n###\r\n[`v1.99.16`](https://togithub.com/spider-rs/spider/releases/tag/v1.99.16)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v1.99.15...v1.99.16)\r\n\r\n#### What's Changed\r\n\r\n- Fixing clap issues\r\n[#&#8203;195](https://togithub.com/spider-rs/spider/issues/195) by\r\n[@&#8203;jmikedupont2](https://togithub.com/jmikedupont2) in\r\n[https://github.com/spider-rs/spider/pull/196](https://togithub.com/spider-rs/spider/pull/196)\r\n-   Fix chrome fingerprint and initial document scripts setup\r\n- Perf improvements for smart mode handling assets with compile time\r\nconstant map\r\n\r\n#### New Contributors\r\n\r\n- [@&#8203;jmikedupont2](https://togithub.com/jmikedupont2) made their\r\nfirst contribution in\r\n[https://github.com/spider-rs/spider/pull/196](https://togithub.com/spider-rs/spider/pull/196)\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v1.99.10...v1.99.16\r\n\r\n</details>\r\n\r\n---\r\n\r\n### Configuration\r\n\r\n📅 **Schedule**: Branch creation - At any time (no schedule defined),\r\nAutomerge - At any time (no schedule defined).\r\n\r\n🚦 **Automerge**: Disabled by config. Please merge this manually once you\r\nare satisfied.\r\n\r\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\r\nrebase/retry checkbox.\r\n\r\n🔕 **Ignore**: Close this PR and you won't be reminded about this update\r\nagain.\r\n\r\n---\r\n\r\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\r\nthis box\r\n\r\n---\r\n\r\nThis PR was generated by [Mend\r\nRenovate](https://www.mend.io/free-developer-tools/renovate/). View the\r\n[repository job\r\nlog](https://developer.mend.io/github/bosun-ai/swiftide).\r\n\r\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiIzNy40NDAuNyIsInVwZGF0ZWRJblZlciI6IjM4LjIwLjEiLCJ0YXJnZXRCcmFuY2giOiJtYXN0ZXIiLCJsYWJlbHMiOltdfQ==-->\r\n\r\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2024-08-09T12:20:06+02:00",
+          "tree_id": "3044ca538bb7da9717e7b42e215da23fdc6634aa",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1a0097cbb671bbda73d6d7409ddf8ed1b243018e"
+        },
+        "date": 1723199153002,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 148,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
