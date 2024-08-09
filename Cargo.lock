@@ -4072,14 +4072,13 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "1.99.11"
+version = "1.99.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e23ad22d5e55b09f480f849b37dd2fe315e3cf1df0f5261209aa5482483c617f"
+checksum = "710344c3e74448a445a2eebb42d3199be832774d68e49ac2d8ffe0a4d74f2c7f"
 dependencies = [
  "ahash",
  "bytes",
  "case_insensitive_string",
- "compact_str",
  "cssparser",
  "ego-tree",
  "fast_html5ever",
@@ -4088,6 +4087,8 @@ dependencies = [
  "log",
  "num_cpus",
  "percent-encoding",
+ "phf 0.11.2",
+ "phf_codegen 0.11.2",
  "quick-xml",
  "reqwest",
  "selectors",
