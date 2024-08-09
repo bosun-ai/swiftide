@@ -108,7 +108,8 @@ mod tests {
             original_size: 4,
             offset: 0,
             metadata: Metadata::from([("m1", "mv1")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata
+            embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata,
+            ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -128,7 +129,8 @@ mod tests {
             metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::indexing::EmbedMode::PerField,
             original_size: 4,
-            offset: 0
+            offset: 0,
+            ..Default::default()
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -158,6 +160,7 @@ mod tests {
             embed_mode: swiftide_core::indexing::EmbedMode::Both,
             original_size: 4,
             offset: 0,
+            ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
