@@ -14,7 +14,7 @@ impl SparseEmbeddingModel for FastEmbed {
                     embeddings
                         .into_iter()
                         .map(|embedding| SparseEmbedding {
-                            indices: embedding.indices,
+                            indices: embedding.indices.iter().map(|v| *v as u32).collect(),
                             values: embedding.values,
                         })
                         .collect()

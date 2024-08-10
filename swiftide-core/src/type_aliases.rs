@@ -5,7 +5,7 @@ pub type Embeddings = Vec<Embedding>;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct SparseEmbedding {
-    pub indices: Vec<usize>,
+    pub indices: Vec<u32>,
     pub values: Vec<f32>,
 }
 pub type SparseEmbeddings = Vec<SparseEmbedding>;
