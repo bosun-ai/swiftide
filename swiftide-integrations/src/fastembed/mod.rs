@@ -34,13 +34,18 @@ impl From<SparseTextEmbedding> for EmbeddingModelType {
 /// Supports a variety of fast text embedding models. The default is the `Flag Embedding` model
 /// with a dimension size of 384.
 ///
+/// A default can also be used for sparse embeddings, which by default uses Splade. Sparse
+/// embeddings are useful for more exact search in combination with dense vectors.
+///
+/// `Into` is implemented for all available models from fastembed-rs.
+///
 /// See the [FastEmbed documentation](https://docs.rs/fastembed) for more information on usage.
 ///
 /// `FastEmbed` can be customized by setting the embedding model via the builder. The batch size can
 /// also be set and is recommended. Batch size should match the batch size in the indexing
 /// pipeline.
 ///
-/// Node that the embedding vector dimensions need to match the dimensions of the vector database collection
+/// Note that the embedding vector dimensions need to match the dimensions of the vector database collection
 ///
 /// Requires the `fastembed` feature to be enabled.
 #[derive(Builder, Clone)]
@@ -77,6 +82,11 @@ impl FastEmbed {
         Self::builder().build()
     }
 
+    /// Tries to build a default `FastEmbed` for sparse embeddings using Splade
+    ///
+    /// # Errors
+    ///
+    /// Errors if the build fails
     pub fn try_default_sparse() -> Result<Self> {
         Self::builder()
             .embedding_model(SparseTextEmbedding::try_new(

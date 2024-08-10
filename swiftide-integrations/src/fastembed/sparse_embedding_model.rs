@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use swiftide_core::{SparseEmbedding, SparseEmbeddingModel, SparseEmbeddings};
 
@@ -10,12 +10,22 @@ impl SparseEmbeddingModel for FastEmbed {
         if let EmbeddingModelType::Sparse(embedding_model) = &*self.embedding_model {
             embedding_model
                 .embed(input, self.batch_size)
-                .map(|embeddings| {
+                .and_then(|embeddings| {
                     embeddings
                         .into_iter()
-                        .map(|embedding| SparseEmbedding {
-                            indices: embedding.indices.iter().map(|v| *v as u32).collect(),
-                            values: embedding.values,
+                        .map(|embedding| {
+                            Ok(SparseEmbedding {
+                                indices: embedding
+                                    .indices
+                                    .iter()
+                                    .map(|v| {
+                                        u32::try_from(*v).context(
+                                            "Could not convert sparse vector from u32 to usize",
+                                        )
+                                    })
+                                    .collect::<Result<Vec<_>>>()?,
+                                values: embedding.values,
+                            })
                         })
                         .collect()
                 })

@@ -96,7 +96,7 @@ async fn test_sparse_indexing_pipeline() {
             .collect::<Vec<_>>()
     );
 
-    /// Search using the dense vector
+    // Search using the dense vector
     let dense = node
         .vectors
         .unwrap()
@@ -124,7 +124,7 @@ async fn test_sparse_indexing_pipeline() {
         "fn main() { println!(\"Hello, World!\"); }"
     );
 
-    /// Search using the sparse vector
+    // Search using the sparse vector
     let sparse = node
         .sparse_vectors
         .unwrap()
@@ -134,8 +134,9 @@ async fn test_sparse_indexing_pipeline() {
         .cloned()
         .unwrap();
 
+    // Search sparse
     let search_request = SearchPointsBuilder::new("swiftide-test", sparse.values.as_slice(), 10)
-        .sparse_indices(sparse.indices.iter().map(|i| *i).collect::<Vec<_>>())
+        .sparse_indices(sparse.indices.clone())
         .vector_name(format!("{}_sparse", EmbeddedField::Combined))
         .with_payload(true);
 
@@ -154,7 +155,7 @@ async fn test_sparse_indexing_pipeline() {
         "fn main() { println!(\"Hello, World!\"); }"
     );
 
-    /// Search hybrid
+    // Search hybrid
     let search_response = qdrant_client
         .query(
             QueryPointsBuilder::new("swiftide-test")
@@ -162,7 +163,7 @@ async fn test_sparse_indexing_pipeline() {
                 .add_prefetch(
                     PrefetchQueryBuilder::default()
                         .query(Query::new_nearest(VectorInput::new_sparse(
-                            sparse.indices.iter().map(|i| *i).collect::<Vec<_>>(),
+                            sparse.indices,
                             sparse.values,
                         )))
                         .using("Combined_sparse")

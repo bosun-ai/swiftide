@@ -99,11 +99,7 @@ fn try_create_vectors(
             qdrant_vectors = qdrant_vectors.add_vector(
                 format!("{field}_sparse"),
                 qdrant::Vector::new_sparse(
-                    sparse_vector
-                        .indices
-                        .into_iter()
-                        .map(|i| i)
-                        .collect::<Vec<_>>(),
+                    sparse_vector.indices.into_iter().collect::<Vec<_>>(),
                     sparse_vector.values,
                 ),
             );
@@ -199,12 +195,13 @@ mod tests {
         };
         "Storing only `Combined` vector. Skipping other vectors."
     )]
+    #[allow(clippy::needless_pass_by_value)]
     fn try_into_point_struct_test(
         node: Node,
         vector_fields: HashSet<EmbeddedField>,
         mut expected_point: PointStruct,
     ) {
-        let node = NodeWithVectors::new(&node, vector_fields.iter().collect(), Default::default());
+        let node = NodeWithVectors::new(&node, vector_fields.iter().collect());
         let point: PointStruct = node.try_into().expect("Can create PointStruct");
 
         // patch last_update_at field to avoid test failure because of time difference

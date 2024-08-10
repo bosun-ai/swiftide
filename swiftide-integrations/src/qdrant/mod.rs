@@ -292,21 +292,15 @@ pub type Distance = qdrant::Distance;
 
 /// Utility struct combining `Node` with `EmbeddedField`s of configured _Qdrant_ vectors.
 struct NodeWithVectors<'a> {
-    vector_fields: HashSet<&'a EmbeddedField>,
-    sparse_vector_fields: HashSet<&'a EmbeddedField>,
     node: &'a Node,
+    vector_fields: HashSet<&'a EmbeddedField>,
 }
 
 impl<'a> NodeWithVectors<'a> {
-    pub fn new(
-        node: &'a Node,
-        vector_fields: HashSet<&'a EmbeddedField>,
-        sparse_vector_fields: HashSet<&'a EmbeddedField>,
-    ) -> Self {
+    pub fn new(node: &'a Node, vector_fields: HashSet<&'a EmbeddedField>) -> Self {
         Self {
-            vector_fields,
-            sparse_vector_fields,
             node,
+            vector_fields,
         }
     }
 }

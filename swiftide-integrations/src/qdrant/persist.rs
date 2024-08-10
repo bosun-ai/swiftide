@@ -55,8 +55,7 @@ impl Persist for Qdrant {
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
     async fn store(&self, node: Node) -> Result<Node> {
-        let node_with_vectors =
-            NodeWithVectors::new(&node, self.vector_fields(), self.sparse_vector_fields());
+        let node_with_vectors = NodeWithVectors::new(&node, self.vector_fields());
         let point = node_with_vectors.try_into()?;
 
         tracing::debug!(?point, "Storing node");
@@ -87,9 +86,7 @@ impl Persist for Qdrant {
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
         let points = nodes
             .iter()
-            .map(|node| {
-                NodeWithVectors::new(node, self.vector_fields(), self.sparse_vector_fields())
-            })
+            .map(|node| NodeWithVectors::new(node, self.vector_fields()))
             .map(NodeWithVectors::try_into)
             .collect::<Result<Vec<_>>>();
 
@@ -118,9 +115,5 @@ impl Persist for Qdrant {
 impl Qdrant {
     fn vector_fields(&self) -> HashSet<&EmbeddedField> {
         self.vectors.keys().collect::<HashSet<_>>()
-    }
-
-    fn sparse_vector_fields(&self) -> HashSet<&EmbeddedField> {
-        self.sparse_vectors.keys().collect::<HashSet<_>>()
     }
 }
