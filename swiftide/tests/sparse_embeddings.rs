@@ -3,8 +3,8 @@
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
 use qdrant_client::qdrant::{
-    Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder,
-    ScrollPointsBuilder, SearchPointsBuilder, VectorInput,
+    Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder, ScrollPointsBuilder,
+    SearchPointsBuilder, VectorInput,
 };
 use swiftide::indexing::*;
 use swiftide::integrations;
@@ -135,7 +135,7 @@ async fn test_sparse_indexing_pipeline() {
         .unwrap();
 
     let search_request = SearchPointsBuilder::new("swiftide-test", sparse.values.as_slice(), 10)
-        .sparse_indices(sparse.indices.iter().map(|i| { *i }).collect::<Vec<_>>())
+        .sparse_indices(sparse.indices.iter().map(|i| *i).collect::<Vec<_>>())
         .vector_name(format!("{}_sparse", EmbeddedField::Combined))
         .with_payload(true);
 
@@ -162,7 +162,7 @@ async fn test_sparse_indexing_pipeline() {
                 .add_prefetch(
                     PrefetchQueryBuilder::default()
                         .query(Query::new_nearest(VectorInput::new_sparse(
-                            sparse.indices.iter().map(|i| { *i }).collect::<Vec<_>>(),
+                            sparse.indices.iter().map(|i| *i).collect::<Vec<_>>(),
                             sparse.values,
                         )))
                         .using("Combined_sparse")
