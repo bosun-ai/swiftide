@@ -2,10 +2,9 @@
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
-use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::{
-    Condition, Filter, Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder,
-    ScrollPointsBuilder, SearchPointsBuilder, Value, VectorInput,
+    Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder,
+    ScrollPointsBuilder, SearchPointsBuilder, VectorInput,
 };
 use swiftide::indexing::*;
 use swiftide::integrations;
@@ -93,7 +92,7 @@ async fn test_sparse_indexing_pipeline() {
     dbg!(
         std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
             .unwrap()
-            .split("\n")
+            .split('\n')
             .collect::<Vec<_>>()
     );
 
@@ -136,7 +135,7 @@ async fn test_sparse_indexing_pipeline() {
         .unwrap();
 
     let search_request = SearchPointsBuilder::new("swiftide-test", sparse.values.as_slice(), 10)
-        .sparse_indices(sparse.indices.iter().map(|i| *i as u32).collect::<Vec<_>>())
+        .sparse_indices(sparse.indices.iter().map(|i| { *i }).collect::<Vec<_>>())
         .vector_name(format!("{}_sparse", EmbeddedField::Combined))
         .with_payload(true);
 
@@ -163,7 +162,7 @@ async fn test_sparse_indexing_pipeline() {
                 .add_prefetch(
                     PrefetchQueryBuilder::default()
                         .query(Query::new_nearest(VectorInput::new_sparse(
-                            sparse.indices.iter().map(|i| *i as u32).collect::<Vec<_>>(),
+                            sparse.indices.iter().map(|i| { *i }).collect::<Vec<_>>(),
                             sparse.values,
                         )))
                         .using("Combined_sparse")

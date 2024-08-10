@@ -102,7 +102,7 @@ fn try_create_vectors(
                     sparse_vector
                         .indices
                         .into_iter()
-                        .map(|i| i as u32)
+                        .map(|i| i)
                         .collect::<Vec<_>>(),
                     sparse_vector.values,
                 ),

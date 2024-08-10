@@ -14,7 +14,7 @@ use std::sync::Arc;
 use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
 use qdrant_client::qdrant::{
-    self, sparse_vectors_config, SparseVectorParamsBuilder, SparseVectorsConfigBuilder,
+    self, SparseVectorParamsBuilder, SparseVectorsConfigBuilder,
 };
 
 use swiftide_core::indexing::{EmbeddedField, Node};
@@ -305,10 +305,6 @@ impl<'a> NodeWithVectors<'a> {
         vector_fields: HashSet<&'a EmbeddedField>,
         sparse_vector_fields: HashSet<&'a EmbeddedField>,
     ) -> Self {
-        Self {
-            vector_fields,
-            node,
-            sparse_vector_fields,
-        }
+        Self { vector_fields, sparse_vector_fields, node }
     }
 }

@@ -109,13 +109,13 @@ async fn test_indexing_pipeline() {
     dbg!(
         std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
             .unwrap()
-            .split("\n")
+            .split('\n')
             .collect::<Vec<_>>()
     );
     dbg!(
         std::str::from_utf8(&qdrant_container.stderr_to_vec().await.unwrap())
             .unwrap()
-            .split("\n")
+            .split('\n')
             .collect::<Vec<_>>()
     );
     dbg!(stored_node);

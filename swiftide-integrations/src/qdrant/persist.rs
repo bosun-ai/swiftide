@@ -88,7 +88,7 @@ impl Persist for Qdrant {
         let points = nodes
             .iter()
             .map(|node| {
-                NodeWithVectors::new(&node, self.vector_fields(), self.sparse_vector_fields())
+                NodeWithVectors::new(node, self.vector_fields(), self.sparse_vector_fields())
             })
             .map(NodeWithVectors::try_into)
             .collect::<Result<Vec<_>>>();
