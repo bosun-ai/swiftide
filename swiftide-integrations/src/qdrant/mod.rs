@@ -110,26 +110,18 @@ impl Qdrant {
         }
 
         let vectors_config = self.create_vectors_config()?;
+        tracing::debug!(?vectors_config, "Adding vectors config");
 
-        let request = if let Some(sparse_vectors_config) = self.create_sparse_vectors_config() {
-            tracing::warn!(
-                "Creating collection {} with sparse config",
-                &self.collection_name
-            );
+        let mut collection = qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
+            .vectors_config(vectors_config);
 
-            tracing::debug!(?vectors_config);
-            tracing::debug!(?sparse_vectors_config);
-            qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
-                .vectors_config(vectors_config)
-                .sparse_vectors_config(sparse_vectors_config)
-        } else {
-            tracing::warn!("Creating collection {}", &self.collection_name);
+        if let Some(sparse_vectors_config) = self.create_sparse_vectors_config() {
+            tracing::debug!(?sparse_vectors_config, "Adding sparse vectors config");
+            collection = collection.sparse_vectors_config(sparse_vectors_config);
+        }
+        tracing::warn!("Creating collection");
 
-            qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
-                .vectors_config(vectors_config)
-        };
-
-        self.client.create_collection(request).await?;
+        self.client.create_collection(collection).await?;
         Ok(())
     }
 

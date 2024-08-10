@@ -40,6 +40,8 @@ impl Persist for Qdrant {
 
     /// Stores a single indexing node in the Qdrant storage.
     ///
+    /// WARN: If running debug builds, the store is blocking and will impact performance
+    ///
     /// # Parameters
     ///
     /// - `node`: The `Node` to be stored.
@@ -60,10 +62,10 @@ impl Persist for Qdrant {
         tracing::debug!(?point, "Storing node");
 
         self.client
-            .upsert_points(UpsertPointsBuilder::new(
-                self.collection_name.to_string(),
-                vec![point],
-            ))
+            .upsert_points(
+                UpsertPointsBuilder::new(self.collection_name.to_string(), vec![point])
+                    .wait(cfg!(debug_assertions)),
+            )
             .await?;
         Ok(node)
     }

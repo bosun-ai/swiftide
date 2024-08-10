@@ -41,7 +41,7 @@ async fn test_indexing_pipeline() {
 
     let (_redis, redis_url) = start_redis().await;
 
-    let (_qdrant, qdrant_url) = start_qdrant().await;
+    let (qdrant_container, qdrant_url) = start_qdrant().await;
 
     // Coverage CI runs in container, just accept the double qdrant and use the service instead
     let qdrant_url = std::env::var("QDRANT_URL").unwrap_or(qdrant_url);
@@ -52,7 +52,7 @@ async fn test_indexing_pipeline() {
         Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
             .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
             .then(transformers::MetadataQACode::new(openai_client.clone()))
-            .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
+            // .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
             .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
             .log_nodes()
             .then_store_with(
@@ -106,6 +106,18 @@ async fn test_indexing_pipeline() {
         .await
         .unwrap();
 
+    dbg!(
+        std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
+            .unwrap()
+            .split("\n")
+            .collect::<Vec<_>>()
+    );
+    dbg!(
+        std::str::from_utf8(&qdrant_container.stderr_to_vec().await.unwrap())
+            .unwrap()
+            .split("\n")
+            .collect::<Vec<_>>()
+    );
     dbg!(stored_node);
 
     let search_request =

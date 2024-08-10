@@ -83,12 +83,19 @@ fn try_create_vectors(
     }
     let mut qdrant_vectors = qdrant::NamedVectors::default();
 
-    for vector in vectors {
-        qdrant_vectors = qdrant_vectors.add_vector(vector.0.to_string(), vector.1.clone());
+    for (field, vector) in vectors {
+        if !vector_fields.contains(&field) {
+            continue;
+        }
+        qdrant_vectors = qdrant_vectors.add_vector(field.to_string(), vector);
     }
 
     if let Some(sparse_vectors) = sparse_vectors {
         for (field, sparse_vector) in sparse_vectors {
+            if !vector_fields.contains(&field) {
+                continue;
+            }
+
             qdrant_vectors = qdrant_vectors.add_vector(
                 format!("{field}_sparse"),
                 qdrant::Vector::new_sparse(

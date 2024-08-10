@@ -90,12 +90,12 @@ async fn test_sparse_indexing_pipeline() {
         .unwrap();
 
     dbg!(stored_node);
-    // dbg!(
-    //     std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
-    //         .unwrap()
-    //         .split("\n")
-    //         .collect::<Vec<_>>()
-    // );
+    dbg!(
+        std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
+            .unwrap()
+            .split("\n")
+            .collect::<Vec<_>>()
+    );
 
     /// Search using the dense vector
     let dense = node
