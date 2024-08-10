@@ -33,7 +33,7 @@ pub fn openai_client(
 /// Setup Qdrant container.
 /// Returns container server and `server_url`.
 pub async fn start_qdrant() -> (ContainerAsync<GenericImage>, String) {
-    let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.9.2")
+    let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.10.1")
         .with_exposed_port(6334.into())
         .with_exposed_port(6333.into())
         .with_wait_for(testcontainers::core::WaitFor::http(

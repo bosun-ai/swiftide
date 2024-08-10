@@ -3,7 +3,10 @@
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
 use qdrant_client::qdrant::vectors::VectorsOptions;
-use qdrant_client::qdrant::{SearchPointsBuilder, Value};
+use qdrant_client::qdrant::{
+    Condition, Filter, Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder,
+    ScrollPointsBuilder, SearchPointsBuilder, Value, VectorInput,
+};
 use swiftide::indexing::*;
 use swiftide::integrations;
 use swiftide_integrations::fastembed::FastEmbed;
@@ -25,7 +28,7 @@ use wiremock::MockServer;
 /// If the indexing pipeline encounters an error, the test will print the received requests
 /// for debugging purposes.
 #[test_log::test(tokio::test)]
-async fn test_indexing_pipeline() {
+async fn test_sparse_indexing_pipeline() {
     // Setup temporary directory and file for testing
     let tempdir = TempDir::new().unwrap();
     let codefile = tempdir.child("main.rs");
@@ -36,53 +39,39 @@ async fn test_indexing_pipeline() {
 
     mock_embeddings(&mock_server, 1).await;
 
-    let (_qdrant, qdrant_url) = start_qdrant().await;
-    let fastembed = FastEmbed::try_default_sparse().unwrap();
-
-    // Coverage CI runs in container, just accept the double qdrant and use the service instead
-    let qdrant_url = std::env::var("QDRANT_URL").unwrap_or(qdrant_url);
+    let (qdrant_container, qdrant_url) = start_qdrant().await;
+    let fastembed_sparse = FastEmbed::try_default_sparse().unwrap();
+    let fastembed = FastEmbed::try_default().unwrap();
+    let memory_storage = persist::MemoryStorage::default();
 
     println!("Qdrant URL: {qdrant_url}");
 
     let result =
         Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
             .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-            .then_in_batch(1, transformers::SparseEmbed::new(fastembed))
+            .then_in_batch(20, transformers::SparseEmbed::new(fastembed_sparse))
+            .then_in_batch(20, transformers::Embed::new(fastembed))
             .log_nodes()
             .then_store_with(
                 integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
                     .unwrap()
-                    .vector_size(1536)
+                    .vector_size(384)
+                    .with_vector(EmbeddedField::Combined)
+                    .with_sparse_vector(EmbeddedField::Combined)
                     .collection_name("swiftide-test".to_string())
                     .build()
                     .unwrap(),
             )
+            .then_store_with(memory_storage.clone())
             .run()
             .await;
 
-    if result.is_err() {
-        println!("\n Received the following requests: \n");
-        // Just some serde magic to pretty print requests on failure
-        let received_requests = mock_server
-            .received_requests()
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .map(|req| {
-                format!(
-                    "- {} {}\n{}",
-                    req.method,
-                    req.url,
-                    serde_json::to_string_pretty(
-                        &serde_json::from_slice::<Value>(&req.body).unwrap()
-                    )
-                    .unwrap()
-                )
-            })
-            .collect::<Vec<String>>()
-            .join("\n---\n");
-        println!("{received_requests}");
-    };
+    let node = memory_storage
+        .get_all_values()
+        .await
+        .first()
+        .unwrap()
+        .clone();
 
     result.expect("Indexing pipeline failed");
 
@@ -90,16 +79,40 @@ async fn test_indexing_pipeline() {
         .build()
         .unwrap();
 
-    let search_request =
-        SearchPointsBuilder::new("swiftide-test", vec![0_f32; 1536], 10).with_payload(true);
+    let stored_node = qdrant_client
+        .scroll(
+            ScrollPointsBuilder::new("swiftide-test")
+                .limit(1)
+                .with_payload(true)
+                .with_vectors(true),
+        )
+        .await
+        .unwrap();
+
+    dbg!(stored_node);
+    // dbg!(
+    //     std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
+    //         .unwrap()
+    //         .split("\n")
+    //         .collect::<Vec<_>>()
+    // );
+
+    /// Search using the dense vector
+    let dense = node
+        .vectors
+        .unwrap()
+        .into_values()
+        .collect::<Vec<_>>()
+        .first()
+        .cloned()
+        .unwrap();
+    let search_request = SearchPointsBuilder::new("swiftide-test", dense.as_slice(), 10)
+        .with_payload(true)
+        .vector_name(EmbeddedField::Combined);
 
     let search_response = qdrant_client.search_points(search_request).await.unwrap();
-
-    dbg!(&search_response);
-
     let first = search_response.result.first().unwrap();
 
-    dbg!(first);
     assert!(first
         .payload
         .get("path")
@@ -111,13 +124,73 @@ async fn test_indexing_pipeline() {
         first.payload.get("content").unwrap().as_str().unwrap(),
         "fn main() { println!(\"Hello, World!\"); }"
     );
+
+    /// Search using the sparse vector
+    let sparse = node
+        .sparse_vectors
+        .unwrap()
+        .into_values()
+        .collect::<Vec<_>>()
+        .first()
+        .cloned()
+        .unwrap();
+
+    let search_request = SearchPointsBuilder::new("swiftide-test", sparse.values.as_slice(), 10)
+        .sparse_indices(sparse.indices.iter().map(|i| *i as u32).collect::<Vec<_>>())
+        .vector_name(format!("{}_sparse", EmbeddedField::Combined))
+        .with_payload(true);
+
+    let search_response = qdrant_client.search_points(search_request).await.unwrap();
+    let first = search_response.result.first().unwrap();
+
+    assert!(first
+        .payload
+        .get("path")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .ends_with("main.rs"));
     assert_eq!(
-        first
-            .payload
-            .get("Questions and Answers (code)")
-            .unwrap()
-            .as_str()
-            .unwrap(),
-        "\n\nHello there, how may I assist you today?"
+        first.payload.get("content").unwrap().as_str().unwrap(),
+        "fn main() { println!(\"Hello, World!\"); }"
+    );
+
+    /// Search hybrid
+    let search_response = qdrant_client
+        .query(
+            QueryPointsBuilder::new("swiftide-test")
+                .with_payload(true)
+                .add_prefetch(
+                    PrefetchQueryBuilder::default()
+                        .query(Query::new_nearest(VectorInput::new_sparse(
+                            sparse.indices.iter().map(|i| *i as u32).collect::<Vec<_>>(),
+                            sparse.values,
+                        )))
+                        .using("Combined_sparse")
+                        .limit(20u64),
+                )
+                .add_prefetch(
+                    PrefetchQueryBuilder::default()
+                        .query(Query::new_nearest(dense))
+                        .using("Combined")
+                        .limit(20u64),
+                )
+                .query(Query::new_fusion(Fusion::Rrf)),
+        )
+        .await
+        .unwrap();
+
+    let first = search_response.result.first().unwrap();
+
+    assert!(first
+        .payload
+        .get("path")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .ends_with("main.rs"));
+    assert_eq!(
+        first.payload.get("content").unwrap().as_str().unwrap(),
+        "fn main() { println!(\"Hello, World!\"); }"
     );
 }

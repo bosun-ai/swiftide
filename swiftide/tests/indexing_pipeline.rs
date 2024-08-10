@@ -3,7 +3,7 @@
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
 use qdrant_client::qdrant::vectors::VectorsOptions;
-use qdrant_client::qdrant::{SearchPointsBuilder, Value};
+use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder, Value};
 use swiftide::indexing::*;
 use swiftide::integrations;
 use swiftide_test_utils::*;
@@ -95,6 +95,18 @@ async fn test_indexing_pipeline() {
     let qdrant_client = qdrant_client::Qdrant::from_url(&qdrant_url)
         .build()
         .unwrap();
+
+    let stored_node = qdrant_client
+        .scroll(
+            ScrollPointsBuilder::new("swiftide-test")
+                .limit(1)
+                .with_payload(true)
+                .with_vectors(true),
+        )
+        .await
+        .unwrap();
+
+    dbg!(stored_node);
 
     let search_request =
         SearchPointsBuilder::new("swiftide-test", vec![0_f32; 1536], 10).with_payload(true);

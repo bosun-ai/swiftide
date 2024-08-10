@@ -79,10 +79,16 @@ impl Debug for Node {
             .field(
                 "sparse_vectors",
                 &self
-                    .vectors
+                    .sparse_vectors
                     .iter()
                     .flat_map(HashMap::iter)
-                    .map(|(embed_type, vec)| format!("'{embed_type}': {}", vec.len()))
+                    .map(|(embed_type, vec)| {
+                        format!(
+                            "'{embed_type}': indices({}), values({})",
+                            vec.indices.len(),
+                            vec.values.len()
+                        )
+                    })
                     .join(","),
             )
             .field("embed_mode", &self.embed_mode)
@@ -194,7 +200,9 @@ pub enum EmbedMode {
 }
 
 /// Type of Embeddable stored in model.
-#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash, strum_macros::Display)]
+#[derive(
+    Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash, strum_macros::Display, Debug,
+)]
 pub enum EmbeddedField {
     #[default]
     /// Embeddable created from Chunk of data combined with Metadata.
@@ -205,4 +213,11 @@ pub enum EmbeddedField {
     /// String stores Metadata name.
     #[strum(to_string = "Metadata: {0}")]
     Metadata(String),
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<String> for EmbeddedField {
+    fn into(self) -> String {
+        self.to_string()
+    }
 }
