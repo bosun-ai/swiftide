@@ -3,9 +3,9 @@
 //! All steps defined in the indexing pipeline and the generic transformers can also take a
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
-use crate::indexing_stream::IndexingStream;
 use crate::node::Node;
 use crate::Embeddings;
+use crate::{indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream};
 use std::fmt::Debug;
 
 use crate::prompt::Prompt;
@@ -21,7 +21,7 @@ use mockall::{automock, predicate::str};
 #[async_trait]
 /// Transforms single nodes into single nodes
 pub trait Transformer: Send + Sync {
-    async fn transform_node(&self, node: Node) -> Result<Node>;
+    async fn transform_node(&self, defaults: &IndexingDefaults, node: Node) -> Result<Node>;
 
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
@@ -33,10 +33,10 @@ pub trait Transformer: Send + Sync {
 /// Use a closure as a transformer
 impl<F> Transformer for F
 where
-    F: Fn(Node) -> Result<Node> + Send + Sync,
+    F: Fn(&IndexingDefaults, Node) -> Result<Node> + Send + Sync,
 {
-    async fn transform_node(&self, node: Node) -> Result<Node> {
-        self(node)
+    async fn transform_node(&self, defaults: &IndexingDefaults, node: Node) -> Result<Node> {
+        self(defaults, node)
     }
 }
 

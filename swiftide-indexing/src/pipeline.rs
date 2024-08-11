@@ -1,7 +1,8 @@
 use anyhow::Result;
 use futures_util::{StreamExt, TryStreamExt};
 use swiftide_core::{
-    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer,
+    indexing::IndexingDefaults, BatchableTransformer, ChunkerTransformer, Loader, NodeCache,
+    Persist, Transformer,
 };
 use tokio::sync::mpsc;
 use tracing::Instrument;
@@ -26,6 +27,7 @@ pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
     concurrency: usize,
+    indexing_defaults: IndexingDefaults,
 }
 
 impl Default for Pipeline {
@@ -35,6 +37,7 @@ impl Default for Pipeline {
             stream: IndexingStream::empty(),
             storage: Vec::default(),
             concurrency: num_cpus::get(),
+            indexing_defaults: IndexingDefaults::default(),
         }
     }
 }
@@ -164,13 +167,17 @@ impl Pipeline {
     pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
         let transformer = Arc::new(transformer);
+        let indexing_defaults = self.indexing_defaults.clone();
+
         self.stream = self
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
+                let indexing_defaults = indexing_defaults.clone();
                 let span = tracing::trace_span!("then", node = ?node );
 
-                async move { transformer.transform_node(node).await }.instrument(span)
+                async move { transformer.transform_node(&indexing_defaults, node).await }
+                    .instrument(span)
             })
             .try_buffer_unordered(concurrency)
             .boxed()
@@ -350,12 +357,14 @@ impl Pipeline {
             stream: left_rx.into(),
             storage: self.storage.clone(),
             concurrency: self.concurrency,
+            indexing_defaults: self.indexing_defaults.clone(),
         };
 
         let right_pipeline = Self {
             stream: right_rx.into(),
             storage: self.storage.clone(),
             concurrency: self.concurrency,
+            indexing_defaults: self.indexing_defaults.clone(),
         };
 
         (left_pipeline, right_pipeline)
@@ -528,10 +537,12 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| vec![Ok(Node::default())].into());
 
-        transformer.expect_transform_node().returning(|mut node| {
-            node.chunk = "transformed".to_string();
-            Ok(node)
-        });
+        transformer
+            .expect_transform_node()
+            .returning(|_, mut node| {
+                node.chunk = "transformed".to_string();
+                Ok(node)
+            });
         transformer.expect_concurrency().returning(|| None);
 
         batch_transformer
@@ -587,7 +598,7 @@ mod tests {
             .returning(|| vec![Ok(Node::default())].into());
         transformer
             .expect_transform_node()
-            .returning(|_node| Err(anyhow::anyhow!("Error transforming node")));
+            .returning(|_, _node| Err(anyhow::anyhow!("Error transforming node")));
         transformer.expect_concurrency().returning(|| None);
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
@@ -621,7 +632,7 @@ mod tests {
             .expect_transform_node()
             .times(3)
             .in_sequence(&mut seq)
-            .returning(|mut node| {
+            .returning(|_, mut node| {
                 node.chunk = "transformed".to_string();
                 Ok(node)
             });
@@ -639,7 +650,7 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_transformer() {
         let mut loader = MockLoader::new();
-        let transformer = |node: Node| {
+        let transformer = |_: &IndexingDefaults, node: Node| {
             let mut node = node;
             node.chunk = "transformed".to_string();
             Ok(node)
@@ -752,14 +763,14 @@ mod tests {
 
         // change the chunk to 'left'
         left = left
-            .then(move |mut node: Node| {
+            .then(move |_: &IndexingDefaults, mut node: Node| {
                 node.chunk = "left".to_string();
 
                 Ok(node)
             })
             .log_all();
 
-        right = right.then(move |mut node: Node| {
+        right = right.then(move |_: &IndexingDefaults, mut node: Node| {
             node.chunk = "right".to_string();
             Ok(node)
         });
