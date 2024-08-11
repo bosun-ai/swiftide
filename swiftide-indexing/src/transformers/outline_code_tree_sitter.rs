@@ -3,7 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 
-use swiftide_core::indexing::Node;
+use swiftide_core::indexing::{IndexingDefaults, Node};
 use swiftide_core::Transformer;
 
 use swiftide_integrations::treesitter::{CodeOutliner, SupportedLanguages};
@@ -61,7 +61,7 @@ impl Transformer for OutlineCodeTreeSitter {
     /// # Errors
     /// - If the code outlining fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.outline_code_tree_sitter")]
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, _default: &IndexingDefaults, mut node: Node) -> Result<Node> {
         if let Some(minimum_file_size) = self.minimum_file_size {
             if node.chunk.len() < minimum_file_size {
                 return Ok(node);

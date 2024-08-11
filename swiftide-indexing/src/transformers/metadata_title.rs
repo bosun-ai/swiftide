@@ -4,7 +4,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
+use swiftide_core::{
+    indexing::{IndexingDefaults, Node},
+    prompt::PromptTemplate,
+    SimplePrompt, Transformer,
+};
 
 pub const NAME: &str = "Title";
 
@@ -92,7 +96,7 @@ impl Transformer for MetadataTitle {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_title")]
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, _defaults: &IndexingDefaults, mut node: Node) -> Result<Node> {
         let prompt = self.prompt_template.to_prompt().with_node(&node);
 
         let response = self.client.prompt(prompt).await?;
@@ -132,7 +136,10 @@ mod test {
         let transformer = MetadataTitle::builder().client(client).build().unwrap();
         let node = Node::new("Some text");
 
-        let result = transformer.transform_node(node).await.unwrap();
+        let result = transformer
+            .transform_node(&IndexingDefaults::default(), node)
+            .await
+            .unwrap();
 
         assert_eq!(result.metadata.get("Title").unwrap(), "A Title");
     }

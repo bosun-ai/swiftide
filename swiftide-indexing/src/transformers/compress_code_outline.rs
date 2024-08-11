@@ -4,7 +4,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
+use swiftide_core::{
+    indexing::{IndexingDefaults, Node},
+    prompt::PromptTemplate,
+    SimplePrompt, Transformer,
+};
 
 /// `CompressCodeChunk` rewrites the "Outline" metadata field of a chunk to
 /// condense it and make it more relevant to the chunk in question. It is useful as a
@@ -98,7 +102,7 @@ impl Transformer for CompressCodeOutline {
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.compress_code_outline")]
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, _defaults: &IndexingDefaults, mut node: Node) -> Result<Node> {
         let maybe_outline = node.metadata.get("Outline");
 
         let Some(outline) = maybe_outline else {
@@ -163,7 +167,10 @@ mod test {
         node.metadata
             .insert("Outline".to_string(), "Some outline".to_string());
 
-        let result = transformer.transform_node(node).await.unwrap();
+        let result = transformer
+            .transform_node(&IndexingDefaults::default(), node)
+            .await
+            .unwrap();
 
         assert_eq!(result.chunk, "Some text");
         assert_eq!(result.metadata.get("Outline").unwrap(), "RelevantOutline");

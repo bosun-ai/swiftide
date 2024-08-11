@@ -3,7 +3,10 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use htmd::HtmlToMarkdown;
 
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{
+    indexing::{IndexingDefaults, Node},
+    Transformer,
+};
 
 #[derive(Builder)]
 #[builder(pattern = "owned")]
@@ -49,7 +52,7 @@ impl Transformer for HtmlToMarkdownTransformer {
     ///
     /// Will Err the node if the conversion fails.
     #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+    async fn transform_node(&self, _defaults: &IndexingDefaults, node: Node) -> Result<Node> {
         let chunk = self.htmd.convert(&node.chunk);
         Ok(Node {
             chunk: chunk?,
@@ -70,7 +73,10 @@ mod test {
     async fn test_html_to_markdown() {
         let node = Node::new("<h1>Hello, World!</h1>");
         let transformer = HtmlToMarkdownTransformer::default();
-        let transformed_node = transformer.transform_node(node).await.unwrap();
+        let transformed_node = transformer
+            .transform_node(&IndexingDefaults::default(), node)
+            .await
+            .unwrap();
         assert_eq!(transformed_node.chunk, "# Hello, World!");
     }
 }

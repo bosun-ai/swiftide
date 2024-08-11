@@ -36,7 +36,10 @@
 //! ```
 use derive_builder::Builder;
 
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{
+    indexing::{IndexingDefaults, Node},
+    Transformer,
+};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
@@ -91,7 +94,7 @@ impl MetadataRefsDefsCode {
 impl Transformer for MetadataRefsDefsCode {
     /// Extracts references and definitions from code and
     /// adds them as metadata to the node if present
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, _defaults: &IndexingDefaults, mut node: Node) -> Result<Node> {
         let refs_defs = self
             .code_parser
             .parse(&node.chunk)?
@@ -126,7 +129,10 @@ mod test {
     "#;
         let mut node = Node::new(code.to_string());
 
-        node = transformer.transform_node(node).await.unwrap();
+        node = transformer
+            .transform_node(&IndexingDefaults::default(), node)
+            .await
+            .unwrap();
 
         assert_eq!(
             node.metadata.get(NAME_REFERENCES).unwrap().as_str(),
