@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -8,18 +10,15 @@ use swiftide_core::{
     Transformer,
 };
 
-#[derive(Builder)]
-#[builder(pattern = "owned")]
 /// Transforms HTML content into markdown.
 ///
 /// Useful for converting scraping results into markdown.
+#[swiftide_macros::indexing_transformer(derive(skip_default, skip_debug))]
 pub struct HtmlToMarkdownTransformer {
     /// The `HtmlToMarkdown` instance used to convert HTML to markdown.
     ///
     /// Sets a sane default, but can be customized.
-    htmd: HtmlToMarkdown,
-    #[builder(default)]
-    concurrency: Option<usize>,
+    htmd: Arc<HtmlToMarkdown>,
 }
 
 impl Default for HtmlToMarkdownTransformer {
@@ -27,16 +26,12 @@ impl Default for HtmlToMarkdownTransformer {
         Self {
             htmd: HtmlToMarkdown::builder()
                 .skip_tags(vec!["script", "style"])
-                .build(),
+                .build()
+                .into(),
             concurrency: None,
+            client: None,
+            indexing_defaults: None,
         }
-    }
-}
-
-impl HtmlToMarkdownTransformer {
-    #[allow(dead_code)]
-    pub fn builder() -> HtmlToMarkdownTransformerBuilder {
-        HtmlToMarkdownTransformerBuilder::default()
     }
 }
 
@@ -52,7 +47,7 @@ impl Transformer for HtmlToMarkdownTransformer {
     ///
     /// Will Err the node if the conversion fails.
     #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]
-    async fn transform_node(&self, _defaults: &IndexingDefaults, node: Node) -> Result<Node> {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
         let chunk = self.htmd.convert(&node.chunk);
         Ok(Node {
             chunk: chunk?,
@@ -73,10 +68,7 @@ mod test {
     async fn test_html_to_markdown() {
         let node = Node::new("<h1>Hello, World!</h1>");
         let transformer = HtmlToMarkdownTransformer::default();
-        let transformed_node = transformer
-            .transform_node(&IndexingDefaults::default(), node)
-            .await
-            .unwrap();
+        let transformed_node = transformer.transform_node(node).await.unwrap();
         assert_eq!(transformed_node.chunk, "# Hello, World!");
     }
 }

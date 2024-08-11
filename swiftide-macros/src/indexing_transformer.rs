@@ -1,78 +1,169 @@
 use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse_macro_input, punctuated::Punctuated, token::Comma, Data, DeriveInput, Field, Fields,
-    MetaList,
-};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Ident, ItemStruct};
 
-#[derive(FromMeta)]
+#[derive(FromMeta, Default)]
+#[darling(default)]
 struct TransformerArgs {
-    metadata_field_name: String,
-    default_prompt_file: String,
+    metadata_field_name: Option<String>,
+    default_prompt_file: Option<String>,
+
+    derive: DeriveOptions,
+}
+
+#[derive(FromMeta, Debug, Default)]
+#[darling(default)]
+struct DeriveOptions {
+    skip_debug: bool,
+    skip_clone: bool,
+    skip_default: bool,
 }
 
 pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let args = parse_args(args).unwrap();
+    let input = parse_macro_input!(input as ItemStruct);
+    let args = match parse_args(args) {
+        Ok(args) => args,
+        Err(e) => return e.write_errors().into(),
+    };
 
-    let struct_name = input.ident.to_string();
-    let builder_name = format!("{struct_name}Builder");
+    let struct_name = &input.ident;
+    let builder_name = Ident::new(
+        &format!("{struct_name}Builder"),
+        proc_macro2::Span::call_site(),
+    );
     let vis = &input.vis;
-    let existing_fields = extract_existing_fields(input.data);
+    let existing_fields =
+        extract_existing_fields(input.fields).collect::<Vec<proc_macro2::TokenStream>>();
 
-    let metadata_field_name = args.metadata_field_name;
-    let default_prompt_file = args.default_prompt_file;
+    let metadata_field_name = match args.metadata_field_name {
+        Some(name) => quote! { pub const NAME: &str = #name; },
+        None => quote! {},
+    };
+
+    let prompt_template_struct_attr = match &args.default_prompt_file {
+        Some(_file) => quote! {
+            #[builder(default = "default_prompt()")]
+            prompt_template: hidden::PromptTemplate,
+        },
+        None => quote! {},
+    };
+
+    let default_prompt_fn = match &args.default_prompt_file {
+        Some(file) => quote! {
+            fn default_prompt() -> hidden::PromptTemplate {
+                include_str!(#file).into()
+            }
+        },
+        None => quote! {},
+    };
+
+    let derive = {
+        let mut tokens = vec![quote! { hidden::Builder}];
+        if !args.derive.skip_debug {
+            tokens.push(quote! { Debug });
+        }
+        if !args.derive.skip_clone {
+            tokens.push(quote! { Clone });
+        }
+
+        quote! { #[derive(#(#tokens),*)] }
+    };
+
+    let default_impl = if args.derive.skip_default {
+        quote! {}
+    } else {
+        quote! {
+            impl Default for #struct_name {
+                fn default() -> Self {
+                    #builder_name::default().build().unwrap()
+                }
+            }
+        }
+    };
 
     quote! {
-        pub const NAME: &str = #metadata_field_name;
+        mod hidden {
+            pub use std::sync::Arc;
+            pub use anyhow::Result;
+            pub use derive_builder::Builder;
+            pub use swiftide_core::{
+                indexing::{IndexingDefaults},
+                prompt::{Prompt, PromptTemplate},
+                SimplePrompt, Transformer, WithIndexingDefaults
+            };
+        }
 
-        #[derive(Debug, Clone, Builder)]
+        #metadata_field_name
+
+        #derive
         #[builder(setter(into, strip_option))]
-        #vis #struct_name {
+        #vis struct #struct_name {
             #(#existing_fields).*
             #[builder(setter(custom))]
-            client: Option<Arc<dyn SimplePrompt>>,
+            client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
 
-            #[builder(default = "default_prompt()")]
-            prompt_template: PromptTemplate,
+            #prompt_template_struct_attr
+
             #[builder(default)]
             concurrency: Option<usize>,
             #[builder(private, default)]
             indexing_defaults: Option<IndexingDefaults>,
         }
 
+        #default_impl
+
         impl #struct_name {
             pub fn builder() -> #builder_name {
                 #builder_name::default()
             }
-            pub fn build_from_client(client: impl SimplePrompt + 'static) -> #builder_name {
+
+            pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> #builder_name {
                 #builder_name::default().client(client).to_owned()
             }
-            pub fn new(client: impl SimplePrompt + 'static) -> Self {
-                Self {
-                    client: Some(Arc::new(client)),
-                    prompt_template: default_prompt(),
-                    concurrency: None,
-                }
+
+            pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
+                #builder_name::default().client(client.into()).build().unwrap()
             }
+
             #[must_use]
             pub fn with_concurrency(mut self, concurrency: usize) -> Self {
                 self.concurrency = Some(concurrency);
                 self
             }
+
+
+            async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String> {
+
+                if let Some(client) = &self.client {
+                    return client.prompt(prompt).await
+                };
+
+                let Some(defaults) = &self.indexing_defaults.as_ref() else {
+                    anyhow::bail!("No client provided")
+                };
+
+                let Some(client) = defaults.simple_prompt() else {
+                    anyhow::bail!("No client provided")
+                };
+                client.prompt(prompt).await
+            }
         }
 
         impl #builder_name {
-            pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-                self.client = Some(Arc::new(client));
+            pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
+                self.client = Some(Some(hidden::Arc::new(client)));
                 self
             }
         }
 
-        fn default_prompt() -> PromptTemplate {
-            include_str!(#default_prompt_file).into()
+        impl hidden::WithIndexingDefaults for #struct_name {
+            fn with_indexing_defaults(&mut self, defaults: hidden::IndexingDefaults) {
+                self.indexing_defaults = Some(defaults);
+            }
         }
+
+        #default_prompt_fn
     }
     .into()
 }
@@ -83,25 +174,14 @@ fn parse_args(args: TokenStream) -> Result<TransformerArgs, Error> {
     TransformerArgs::from_list(&attr_args)
 }
 
-fn extract_existing_fields(data: Data) -> impl Iterator<Item = proc_macro2::TokenStream> {
-    let fields = if let Data::Struct(data_struct) = data {
-        if let Fields::Named(fields_named) = data_struct.fields {
-            fields_named.named
-        } else {
-            // Only handle named fields for this macro
-            panic!("Expected named fields");
-        }
-    } else {
-        panic!("Expected a struct");
-    };
-
+fn extract_existing_fields(fields: Fields) -> impl Iterator<Item = proc_macro2::TokenStream> {
     fields.into_iter().map(|field| {
         let field_name = &field.ident;
         let field_type = &field.ty;
         let field_vis = &field.vis;
 
         quote! {
-            #field_vis #field_name: #field_type
+            #field_vis #field_name: #field_type,
         }
     })
 }

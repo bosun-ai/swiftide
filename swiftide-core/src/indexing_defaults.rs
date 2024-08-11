@@ -12,10 +12,10 @@ pub struct IndexingDefaultsInner {
 }
 
 impl IndexingDefaults {
-    pub fn simple_prompt(&self) -> &Option<Box<dyn SimplePrompt>> {
-        &self.0.simple_prompt
+    pub fn simple_prompt(&self) -> Option<&dyn SimplePrompt> {
+        self.0.simple_prompt.as_deref()
     }
-    pub fn embedding_model(&self) -> &Option<Box<dyn EmbeddingModel>> {
-        &self.0.embedding_model
+    pub fn embedding_model(&self) -> Option<&dyn EmbeddingModel> {
+        self.0.embedding_model.as_deref()
     }
 }

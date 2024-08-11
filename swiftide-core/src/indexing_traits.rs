@@ -21,7 +21,7 @@ use mockall::{automock, predicate::str};
 #[async_trait]
 /// Transforms single nodes into single nodes
 pub trait Transformer: Send + Sync {
-    async fn transform_node(&self, defaults: &IndexingDefaults, node: Node) -> Result<Node>;
+    async fn transform_node(&self, node: Node) -> Result<Node>;
 
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
@@ -33,10 +33,10 @@ pub trait Transformer: Send + Sync {
 /// Use a closure as a transformer
 impl<F> Transformer for F
 where
-    F: Fn(&IndexingDefaults, Node) -> Result<Node> + Send + Sync,
+    F: Fn(Node) -> Result<Node> + Send + Sync,
 {
-    async fn transform_node(&self, defaults: &IndexingDefaults, node: Node) -> Result<Node> {
-        self(defaults, node)
+    async fn transform_node(&self, node: Node) -> Result<Node> {
+        self(node)
     }
 }
 
@@ -120,3 +120,13 @@ pub trait Persist: Debug + Send + Sync {
         None
     }
 }
+
+pub trait WithIndexingDefaults {
+    fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
+}
+
+impl WithIndexingDefaults for dyn Transformer {}
+impl<F> WithIndexingDefaults for F where F: Fn(Node) -> Result<Node> + Send + Sync {}
+
+#[cfg(feature = "test-utils")]
+impl WithIndexingDefaults for MockTransformer {}
