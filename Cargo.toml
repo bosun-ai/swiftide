@@ -7,7 +7,7 @@ members = [
 
   "examples",
   "benchmarks",
-  "swiftide-test-utils",
+  "swiftide-test-utils", "swiftide-macros",
 ]
 resolver = "2"
 
