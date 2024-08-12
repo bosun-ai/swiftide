@@ -3241,7 +3241,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18bec9b0adc4eba778b33684b7ba3e7137789434769ee3ce3930463ef904cfca"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "syn 2.0.74",
@@ -4602,9 +4602,9 @@ dependencies = [
 
 [[package]]
 name = "text-splitter"
-version = "0.14.1"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b10765cee3b684768f654b1849be5b555eef28f894c114c05e6dec4e41c1423c"
+checksum = "ea57b83410a18a2a5d077b3248d24e1fc516d56171406c6b109d8bff242d96a3"
 dependencies = [
  "ahash",
  "auto_enums",
