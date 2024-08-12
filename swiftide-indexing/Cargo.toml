@@ -32,7 +32,7 @@ indoc = { workspace = true }
 
 regex = "1.10.5"
 ignore = "0.4"
-text-splitter = { version = "0.14", features = ["markdown"] }
+text-splitter = { version = "0.15", features = ["markdown"] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
