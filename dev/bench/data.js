@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723474478909,
+  "lastUpdate": 1723491295998,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2939,6 +2939,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 11",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3d213b40d0b2d1dd259dd22ba99614fedae64353",
+          "message": "docs(README): Add link to 0.8 release",
+          "timestamp": "2024-08-12T21:29:12+02:00",
+          "tree_id": "2d5f2f732030e77968db3bfb763c7b0cfaf12bfc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3d213b40d0b2d1dd259dd22ba99614fedae64353"
+        },
+        "date": 1723491294950,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
