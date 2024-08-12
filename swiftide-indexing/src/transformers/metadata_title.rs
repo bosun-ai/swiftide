@@ -1,12 +1,9 @@
 //! Generate a title and adds it as metadata
-use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
 use swiftide_core::{
-    indexing::{IndexingDefaults, Node},
-    prompt::PromptTemplate,
+    indexing::Node,
     SimplePrompt, Transformer,
 };
 

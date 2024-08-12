@@ -2,11 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
 use htmd::HtmlToMarkdown;
 
 use swiftide_core::{
-    indexing::{IndexingDefaults, Node},
+    indexing::Node,
     Transformer,
 };
 

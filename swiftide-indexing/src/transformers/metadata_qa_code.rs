@@ -1,12 +1,9 @@
 //! Generate questions and answers based on code chunks and add them as metadata
-use derive_builder::Builder;
-use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{
-    indexing::{IndexingDefaults, Node},
-    prompt::PromptTemplate,
+    indexing::Node,
     SimplePrompt, Transformer,
 };
 

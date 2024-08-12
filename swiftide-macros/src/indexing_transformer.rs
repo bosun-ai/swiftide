@@ -1,7 +1,7 @@
 use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Ident, ItemStruct};
+use syn::{parse_macro_input, Fields, Ident, ItemStruct};
 
 #[derive(FromMeta, Default)]
 #[darling(default)]

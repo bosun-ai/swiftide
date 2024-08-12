@@ -1,9 +1,8 @@
 //! Add the outline of the code in the given file to the metadata of a node, using tree-sitter.
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
 
-use swiftide_core::indexing::{IndexingDefaults, Node};
+use swiftide_core::indexing::Node;
 use swiftide_core::Transformer;
 
 use swiftide_integrations::treesitter::{CodeOutliner, SupportedLanguages};

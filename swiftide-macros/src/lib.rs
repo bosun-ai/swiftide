@@ -1,9 +1,6 @@
 //! This crate provides macros for generating boilerplate code
 //! for indexing transformers
-use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, MetaList};
 
 mod indexing_transformer;
 use indexing_transformer::indexing_transformer_impl;

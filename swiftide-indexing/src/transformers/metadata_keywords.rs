@@ -2,7 +2,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{
-    indexing::{IndexingDefaults, Node},
+    indexing::Node,
     Transformer,
 };
 

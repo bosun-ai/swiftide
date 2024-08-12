@@ -36,10 +36,9 @@
 //! ```
 use std::sync::Arc;
 
-use derive_builder::Builder;
 
 use swiftide_core::{
-    indexing::{IndexingDefaults, Node},
+    indexing::Node,
     Transformer,
 };
 
