@@ -125,8 +125,18 @@ pub trait WithIndexingDefaults {
     fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
 }
 
+pub trait WithBatchIndexingDefaults {
+    fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
+}
+
 impl WithIndexingDefaults for dyn Transformer {}
-impl<F> WithIndexingDefaults for F where F: Fn(Node) -> Result<Node> + Send + Sync {}
+impl WithBatchIndexingDefaults for dyn BatchableTransformer {}
+
+impl<F> WithIndexingDefaults for F where F: Fn(Node) -> Result<Node> {}
+impl<F> WithBatchIndexingDefaults for F where F: Fn(Vec<Node>) -> IndexingStream {}
 
 #[cfg(feature = "test-utils")]
 impl WithIndexingDefaults for MockTransformer {}
+//
+#[cfg(feature = "test-utils")]
+impl WithBatchIndexingDefaults for MockBatchableTransformer {}

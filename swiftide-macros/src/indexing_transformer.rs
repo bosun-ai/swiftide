@@ -101,7 +101,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
         #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
         #vis struct #struct_name {
             #(#existing_fields)*
-            #[builder(setter(custom))]
+            #[builder(setter(custom), default)]
             client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
 
             #prompt_template_struct_attr
@@ -190,8 +190,10 @@ fn extract_existing_fields(fields: Fields) -> impl Iterator<Item = proc_macro2::
         let field_name = &field.ident;
         let field_type = &field.ty;
         let field_vis = &field.vis;
+        let field_attrs = &field.attrs;
 
         quote! {
+            #(#field_attrs)*
             #field_vis #field_name: #field_type,
         }
     })

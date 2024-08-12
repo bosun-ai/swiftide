@@ -2,7 +2,7 @@ use anyhow::Result;
 use futures_util::{StreamExt, TryStreamExt};
 use swiftide_core::{
     indexing::IndexingDefaults, BatchableTransformer, ChunkerTransformer, Loader, NodeCache,
-    Persist, Transformer, WithIndexingDefaults,
+    Persist, SimplePrompt, Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
 };
 use tokio::sync::mpsc;
 use tracing::Instrument;
@@ -58,6 +58,14 @@ impl Pipeline {
             stream,
             ..Default::default()
         }
+    }
+
+    /// Sets the default LLM client to be used for LLM prompts for all transformers in the
+    /// pipeline.
+    #[must_use]
+    pub fn with_default_llm_client(mut self, client: impl SimplePrompt + 'static) -> Self {
+        self.indexing_defaults = IndexingDefaults::from_simple_prompt(Box::new(client));
+        self
     }
 
     /// Creates a `Pipeline` from a given stream.
@@ -204,10 +212,13 @@ impl Pipeline {
     pub fn then_in_batch(
         mut self,
         batch_size: usize,
-        transformer: impl BatchableTransformer + 'static,
+        mut transformer: impl BatchableTransformer + WithBatchIndexingDefaults + 'static,
     ) -> Self {
-        let transformer = Arc::new(transformer);
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
+
+        transformer.with_indexing_defaults(self.indexing_defaults.clone());
+
+        let transformer = Arc::new(transformer);
         self.stream = self
             .stream
             .try_chunks(batch_size)
