@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723472763125,
+  "lastUpdate": 1723474478909,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2897,6 +2897,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b52b9f05e22e3ddc94cfdee45ddeea98720a3677",
+          "message": "chore: release (#220)\n\n## 🤖 New release\r\n* `swiftide`: 0.7.1 -> 0.8.0\r\n* `swiftide-core`: 0.7.1 -> 0.8.0\r\n* `swiftide-indexing`: 0.7.1 -> 0.8.0\r\n* `swiftide-integrations`: 0.7.1 -> 0.8.0\r\n* `swiftide-macros`: 0.7.1 -> 0.8.0\r\n* `swiftide-query`: 0.7.1 -> 0.8.0\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.8.0](https://github.com/bosun-ai/swiftide/releases/tag/0.8.0) -\r\n2024-08-12\r\n\r\n### Added\r\n\r\n-\r\n[67336f1](https://github.com/bosun-ai/swiftide/commit/67336f1d9c7fde474bdddfd0054b40656df244e0)\r\n*(indexing)* Sparse vector support with Splade and Qdrant\r\n([#222](https://github.com/bosun-ai/swiftide/pull/222))\r\n\r\n-\r\n[2e25ad4](https://github.com/bosun-ai/swiftide/commit/2e25ad4b999a8562a472e086a91020ec4f8300d8)\r\n*(indexing)* Default LLM for indexing pipeline and boilerplate\r\nTransformer macro\r\n([#227](https://github.com/bosun-ai/swiftide/pull/227))\r\n\r\n-\r\n[e728a7c](https://github.com/bosun-ai/swiftide/commit/e728a7c7a2fcf7b22c31e5d6c66a896f634f6901)\r\n*(uncategorized)* Code outlines in chunk metadata\r\n([#137](https://github.com/bosun-ai/swiftide/pull/137))\r\n\r\n### Fixed\r\n\r\n-\r\n[3cce606](https://github.com/bosun-ai/swiftide/commit/3cce60698cb59a0f1d3902e85ff6b07555f6de58)\r\n*(deps)* Update rust crate text-splitter to 0.15\r\n([#224](https://github.com/bosun-ai/swiftide/pull/224))\r\n\r\n### Other\r\n\r\n-\r\n[4970a68](https://github.com/bosun-ai/swiftide/commit/4970a683acccc71503e64044dc02addaf2e9c87c)\r\n*(readme)* Fix discord links\r\n\r\n-\r\n[b3f04de](https://github.com/bosun-ai/swiftide/commit/b3f04defe94e5b26876c8d99049f4d87b5f2dc18)\r\n*(readme)* Add link to discord\r\n([#219](https://github.com/bosun-ai/swiftide/pull/219))\r\n\r\n-\r\n[73d1649](https://github.com/bosun-ai/swiftide/commit/73d1649ca8427aa69170f6451eac55316581ed9a)\r\n*(readme)* Add Ollama support to README\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.7.1...0.8.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-08-12T16:48:44+02:00",
+          "tree_id": "2ff6e1c73e9e7a877f2ee152caa58dec133d853e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b52b9f05e22e3ddc94cfdee45ddeea98720a3677"
+        },
+        "date": 1723474477934,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 11",
             "unit": "ns/iter"
           }
         ]
