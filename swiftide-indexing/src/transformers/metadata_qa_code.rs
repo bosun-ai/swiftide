@@ -2,10 +2,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{
-    indexing::Node,
-    SimplePrompt, Transformer,
-};
+use swiftide_core::{indexing::Node, Transformer};
 
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
 /// This struct integrates with the indexing pipeline to enhance the metadata of each code chunk
