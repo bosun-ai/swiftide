@@ -1,81 +1,24 @@
 //! Generate questions and answers based on code chunks and add them as metadata
-use derive_builder::Builder;
-use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{indexing::Node, prompt::PromptTemplate, SimplePrompt, Transformer};
-
-pub const NAME: &str = "Questions and Answers (code)";
+use swiftide_core::{indexing::Node, Transformer};
 
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
 /// This struct integrates with the indexing pipeline to enhance the metadata of each code chunk
 /// by adding relevant questions and answers.
-#[derive(Debug, Clone, Builder)]
-#[builder(setter(into, strip_option))]
+#[swiftide_macros::indexing_transformer(
+    metadata_field_name = "Questions and Answers (code)",
+    default_prompt_file = "prompts/metadata_qa_code.prompt.md"
+)]
 pub struct MetadataQACode {
-    #[builder(setter(custom))]
-    client: Arc<dyn SimplePrompt>,
-    #[builder(default = "default_prompt()")]
-    /// The prompt templated used. Can be overwritten via the builder. Has the `node` and
-    /// `num_questions` available as context.
-    prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
-    #[builder(default)]
-    concurrency: Option<usize>,
-}
-
-impl MetadataQACode {
-    pub fn builder() -> MetadataQACodeBuilder {
-        MetadataQACodeBuilder::default()
-    }
-
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataQACodeBuilder {
-        MetadataQACodeBuilder::default().client(client).to_owned()
-    }
-    /// Creates a new instance of `MetadataQACode`.
-    ///
-    /// # Arguments
-    ///
-    /// * `client` - An implementation of the `SimplePrompt` trait used to generate questions and answers.
-    ///
-    /// # Returns
-    ///
-    /// A new instance of `MetadataQACode` with a default prompt and a default number of questions.
-    pub fn new(client: impl SimplePrompt + 'static) -> Self {
-        Self {
-            client: Arc::new(client),
-            prompt_template: default_prompt(),
-            num_questions: 5,
-            concurrency: None,
-        }
-    }
-
-    #[must_use]
-    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
-        self.concurrency = Some(concurrency);
-        self
-    }
-}
-
-/// Returns the default prompt template for generating questions and answers.
-///
-/// This template includes placeholders for the number of questions and the code chunk.
-fn default_prompt() -> PromptTemplate {
-    include_str!("prompts/metadata_qa_code.prompt.md").into()
-}
-
-impl MetadataQACodeBuilder {
-    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
-        self
-    }
 }
 
 #[async_trait]
 impl Transformer for MetadataQACode {
-    /// Asynchronously transforms an `Node` by generating questions and answers for its code chunk.
+    /// Asynchronously transforms a `Node` by generating questions and answers for its code chunk.
     ///
     /// This method uses the `SimplePrompt` client to generate questions and answers based on the code chunk
     /// and adds this information to the node's metadata.
@@ -103,7 +46,7 @@ impl Transformer for MetadataQACode {
             prompt = prompt.with_context_value("outline", outline.as_str());
         }
 
-        let response = self.client.prompt(prompt).await?;
+        let response = self.prompt(prompt).await?;
 
         node.metadata.insert(NAME, response);
 

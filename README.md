@@ -102,6 +102,7 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ```rust
 indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+        .with_default_llm_client(openai_client.clone())
         .filter_cached(Redis::try_from_url(
             redis_url,
             "swiftide-examples",
@@ -110,7 +111,7 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
             "rust",
             10..2048,
         )?)
-        .then(MetadataQACode::new(openai_client.clone()))
+        .then(MetadataQACode::default())
         .then(move |node| my_own_thing(node))
         .then_in_batch(10, Embed::new(openai_client.clone()))
         .then_store_with(
@@ -223,6 +224,7 @@ See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full li
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
+
 ## Community
 
 If you want to get more involved with Swiftide, have questions or want to chat, you can find us on [discord](https://discord.gg/3jjXYen9UY).

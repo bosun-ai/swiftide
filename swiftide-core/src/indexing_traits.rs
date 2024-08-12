@@ -3,9 +3,9 @@
 //! All steps defined in the indexing pipeline and the generic transformers can also take a
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
-use crate::indexing_stream::IndexingStream;
 use crate::node::Node;
 use crate::Embeddings;
+use crate::{indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream};
 use std::fmt::Debug;
 
 use crate::prompt::Prompt;
@@ -120,3 +120,23 @@ pub trait Persist: Debug + Send + Sync {
         None
     }
 }
+
+pub trait WithIndexingDefaults {
+    fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
+}
+
+pub trait WithBatchIndexingDefaults {
+    fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
+}
+
+impl WithIndexingDefaults for dyn Transformer {}
+impl WithBatchIndexingDefaults for dyn BatchableTransformer {}
+
+impl<F> WithIndexingDefaults for F where F: Fn(Node) -> Result<Node> {}
+impl<F> WithBatchIndexingDefaults for F where F: Fn(Vec<Node>) -> IndexingStream {}
+
+#[cfg(feature = "test-utils")]
+impl WithIndexingDefaults for MockTransformer {}
+//
+#[cfg(feature = "test-utils")]
+impl WithBatchIndexingDefaults for MockBatchableTransformer {}

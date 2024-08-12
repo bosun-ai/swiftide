@@ -50,8 +50,9 @@ async fn test_indexing_pipeline() {
 
     let result =
         Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
+            .with_default_llm_client(openai_client.clone())
             .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-            .then(transformers::MetadataQACode::new(openai_client.clone()))
+            .then(transformers::MetadataQACode::default())
             .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
             .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
             .log_nodes()

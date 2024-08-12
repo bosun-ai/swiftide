@@ -1,3 +1,4 @@
+mod indexing_defaults;
 mod indexing_stream;
 pub mod indexing_traits;
 mod node;
@@ -17,6 +18,7 @@ pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
 
 pub mod indexing {
+    pub use crate::indexing_defaults::*;
     pub use crate::indexing_stream::IndexingStream;
     pub use crate::indexing_traits::*;
     pub use crate::metadata::*;

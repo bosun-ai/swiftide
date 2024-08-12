@@ -1,30 +1,22 @@
 //! Add the outline of the code in the given file to the metadata of a node, using tree-sitter.
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
 
 use swiftide_core::indexing::Node;
 use swiftide_core::Transformer;
 
 use swiftide_integrations::treesitter::{CodeOutliner, SupportedLanguages};
 
-pub const NAME: &str = "Outline";
-
 /// `OutlineCodeTreeSitter` adds a "Outline" field to the metadata of a node that contains
 /// a summary of the code in the node. It uses the tree-sitter parser to parse the code and
 /// remove any information that is less relevant for tasks that consider the file as a whole.
-#[derive(Debug, Clone, Builder)]
-#[builder(pattern = "owned", setter(into, strip_option))]
+#[swiftide_macros::indexing_transformer(metadata_field_name = "Outline", derive(skip_default))]
 pub struct OutlineCodeTreeSitter {
     outliner: CodeOutliner,
     minimum_file_size: Option<usize>,
 }
 
 impl OutlineCodeTreeSitter {
-    pub fn builder() -> OutlineCodeTreeSitterBuilder {
-        OutlineCodeTreeSitterBuilder::default()
-    }
-
     /// Tries to create a `OutlineCodeTreeSitter` instance for a given programming language.
     ///
     /// # Parameters
@@ -42,6 +34,9 @@ impl OutlineCodeTreeSitter {
         Ok(Self {
             outliner: CodeOutliner::builder().try_language(lang)?.build()?,
             minimum_file_size,
+            client: None,
+            concurrency: None,
+            indexing_defaults: None,
         })
     }
 }
