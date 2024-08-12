@@ -1,0 +1,23 @@
+[package]
+name = "swiftide-macros"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+syn = "2.0"
+darling = "0.20"
+proc-macro2 = "1.0"
+
+[lints]
+workspace = true

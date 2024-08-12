@@ -3918,9 +3918,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.122"
+version = "1.0.124"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
+checksum = "66ad62847a56b3dba58cc891acd13884b9c61138d330c0d7b6181713d4fce38d"
 dependencies = [
  "itoa",
  "memchr",
@@ -4292,6 +4292,7 @@ dependencies = [
  "strum_macros",
  "swiftide-core",
  "swiftide-integrations",
+ "swiftide-macros",
  "test-case",
  "test-log",
  "text-splitter",
@@ -4329,6 +4330,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "swiftide-core",
+ "swiftide-macros",
  "test-case",
  "test-log",
  "testcontainers",
@@ -4340,6 +4342,16 @@ dependencies = [
  "tree-sitter-ruby",
  "tree-sitter-rust",
  "tree-sitter-typescript",
+]
+
+[[package]]
+name = "swiftide-macros"
+version = "0.7.1"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.72",
 ]
 
 [[package]]

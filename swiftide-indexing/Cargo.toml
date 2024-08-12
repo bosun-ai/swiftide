@@ -13,6 +13,7 @@ homepage.workspace = true
 [dependencies]
 swiftide-core = { path = "../swiftide-core", version = "0.7" }
 swiftide-integrations = { path = "../swiftide-integrations", version = "0.7", optional = true }
+swiftide-macros = { path = "../swiftide-macros", version = "0.7" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -43,8 +44,8 @@ test-case = { workspace = true }
 [features]
 # TODO: Should not depend on integrations, transformers that use them should be in integrations instead and re-exported from root for convencience
 tree-sitter = [
-    "swiftide-integrations?/tree-sitter",
-    "dep:swiftide-integrations",
+  "swiftide-integrations?/tree-sitter",
+  "dep:swiftide-integrations",
 ]
 
 [lints]

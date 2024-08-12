@@ -1,7 +1,8 @@
 use anyhow::Result;
 use futures_util::{StreamExt, TryStreamExt};
 use swiftide_core::{
-    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, Transformer,
+    indexing::IndexingDefaults, BatchableTransformer, ChunkerTransformer, Loader, NodeCache,
+    Persist, SimplePrompt, Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
 };
 use tokio::sync::mpsc;
 use tracing::Instrument;
@@ -26,6 +27,7 @@ pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
     concurrency: usize,
+    indexing_defaults: IndexingDefaults,
 }
 
 impl Default for Pipeline {
@@ -35,6 +37,7 @@ impl Default for Pipeline {
             stream: IndexingStream::empty(),
             storage: Vec::default(),
             concurrency: num_cpus::get(),
+            indexing_defaults: IndexingDefaults::default(),
         }
     }
 }
@@ -55,6 +58,14 @@ impl Pipeline {
             stream,
             ..Default::default()
         }
+    }
+
+    /// Sets the default LLM client to be used for LLM prompts for all transformers in the
+    /// pipeline.
+    #[must_use]
+    pub fn with_default_llm_client(mut self, client: impl SimplePrompt + 'static) -> Self {
+        self.indexing_defaults = IndexingDefaults::from_simple_prompt(Box::new(client));
+        self
     }
 
     /// Creates a `Pipeline` from a given stream.
@@ -161,8 +172,14 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
     #[must_use]
-    pub fn then(mut self, transformer: impl Transformer + 'static) -> Self {
+    pub fn then(
+        mut self,
+        mut transformer: impl Transformer + WithIndexingDefaults + 'static,
+    ) -> Self {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
+
+        transformer.with_indexing_defaults(self.indexing_defaults.clone());
+
         let transformer = Arc::new(transformer);
         self.stream = self
             .stream
@@ -199,10 +216,13 @@ impl Pipeline {
     pub fn then_in_batch(
         mut self,
         batch_size: usize,
-        transformer: impl BatchableTransformer + 'static,
+        mut transformer: impl BatchableTransformer + WithBatchIndexingDefaults + 'static,
     ) -> Self {
-        let transformer = Arc::new(transformer);
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
+
+        transformer.with_indexing_defaults(self.indexing_defaults.clone());
+
+        let transformer = Arc::new(transformer);
         self.stream = self
             .stream
             .try_chunks(batch_size)
@@ -369,12 +389,14 @@ impl Pipeline {
             stream: left_rx.into(),
             storage: self.storage.clone(),
             concurrency: self.concurrency,
+            indexing_defaults: self.indexing_defaults.clone(),
         };
 
         let right_pipeline = Self {
             stream: right_rx.into(),
             storage: self.storage.clone(),
             concurrency: self.concurrency,
+            indexing_defaults: self.indexing_defaults.clone(),
         };
 
         (left_pipeline, right_pipeline)

@@ -1,22 +1,20 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
 use htmd::HtmlToMarkdown;
 
 use swiftide_core::{indexing::Node, Transformer};
 
-#[derive(Builder)]
-#[builder(pattern = "owned")]
 /// Transforms HTML content into markdown.
 ///
 /// Useful for converting scraping results into markdown.
+#[swiftide_macros::indexing_transformer(derive(skip_default, skip_debug))]
 pub struct HtmlToMarkdownTransformer {
     /// The `HtmlToMarkdown` instance used to convert HTML to markdown.
     ///
     /// Sets a sane default, but can be customized.
-    htmd: HtmlToMarkdown,
-    #[builder(default)]
-    concurrency: Option<usize>,
+    htmd: Arc<HtmlToMarkdown>,
 }
 
 impl Default for HtmlToMarkdownTransformer {
@@ -24,16 +22,12 @@ impl Default for HtmlToMarkdownTransformer {
         Self {
             htmd: HtmlToMarkdown::builder()
                 .skip_tags(vec!["script", "style"])
-                .build(),
+                .build()
+                .into(),
             concurrency: None,
+            client: None,
+            indexing_defaults: None,
         }
-    }
-}
-
-impl HtmlToMarkdownTransformer {
-    #[allow(dead_code)]
-    pub fn builder() -> HtmlToMarkdownTransformerBuilder {
-        HtmlToMarkdownTransformerBuilder::default()
     }
 }
 

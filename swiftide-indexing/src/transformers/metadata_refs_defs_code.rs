@@ -34,7 +34,7 @@
 //! # Ok(())
 //! # }
 //! ```
-use derive_builder::Builder;
+use std::sync::Arc;
 
 use swiftide_core::{indexing::Node, Transformer};
 
@@ -46,17 +46,9 @@ pub const NAME_REFERENCES: &str = "References (code)";
 pub const NAME_DEFINITIONS: &str = "Definitions (code)";
 
 /// `MetadataRefsDefsCode` is responsible for extracting references and definitions.
-#[derive(Debug, Builder)]
-#[builder(
-    pattern = "owned",
-    setter(into, strip_option),
-    build_fn(error = "anyhow::Error")
-)]
+#[swiftide_macros::indexing_transformer(derive(skip_default))]
 pub struct MetadataRefsDefsCode {
-    code_parser: CodeParser,
-
-    #[builder(default)]
-    concurrency: Option<usize>,
+    code_parser: Arc<CodeParser>,
 }
 
 impl MetadataRefsDefsCode {
@@ -74,16 +66,6 @@ impl MetadataRefsDefsCode {
         MetadataRefsDefsCode::builder()
             .code_parser(CodeParser::from_language(language))
             .build()
-    }
-
-    pub fn builder() -> MetadataRefsDefsCodeBuilder {
-        MetadataRefsDefsCodeBuilder::default()
-    }
-
-    #[must_use]
-    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
-        self.concurrency = Some(concurrency);
-        self
     }
 }
 
