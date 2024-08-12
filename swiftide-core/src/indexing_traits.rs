@@ -5,7 +5,9 @@
 //! trait and it should work out of the box.
 use crate::node::Node;
 use crate::Embeddings;
-use crate::{indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream, SparseEmbeddings};
+use crate::{
+    indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream, SparseEmbeddings,
+};
 use std::fmt::Debug;
 
 use crate::prompt::Prompt;
