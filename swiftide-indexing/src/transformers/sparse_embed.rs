@@ -48,8 +48,8 @@ impl SparseEmbed {
     }
 }
 
-impl WithBatchIndexingDefaults for Embed {}
-impl WithIndexingDefaults for Embed {}
+impl WithBatchIndexingDefaults for SparseEmbed {}
+impl WithIndexingDefaults for SparseEmbed {}
 
 #[async_trait]
 impl BatchableTransformer for SparseEmbed {
