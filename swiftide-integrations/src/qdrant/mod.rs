@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context as _, Result};
 use derive_builder::Builder;
-use qdrant_client::qdrant;
+use qdrant_client::qdrant::{self, SparseVectorParamsBuilder, SparseVectorsConfigBuilder};
 
 use swiftide_core::indexing::{EmbeddedField, Node};
 
@@ -54,6 +54,8 @@ pub struct Qdrant {
     batch_size: Option<usize>,
     #[builder(private, default = "Self::default_vectors()")]
     vectors: HashMap<EmbeddedField, VectorConfig>,
+    #[builder(private, default)]
+    sparse_vectors: HashMap<EmbeddedField, SparseVectorConfig>,
 }
 
 impl Qdrant {
@@ -98,26 +100,33 @@ impl Qdrant {
     ///
     /// Errors if client fails build
     pub async fn create_index_if_not_exists(&self) -> Result<()> {
-        tracing::info!("Checking if collection {} exists", self.collection_name);
+        tracing::info!("Checking if collection {} exists", &self.collection_name);
 
         if self.client.collection_exists(&self.collection_name).await? {
-            tracing::warn!("Collection {} exists", self.collection_name);
+            tracing::warn!("Collection {} exists", &self.collection_name);
             return Ok(());
         }
 
-        tracing::warn!("Creating collection {}", self.collection_name);
         let vectors_config = self.create_vectors_config()?;
-        let request = qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
+        tracing::debug!(?vectors_config, "Adding vectors config");
+
+        let mut collection = qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
             .vectors_config(vectors_config);
 
-        self.client.create_collection(request).await?;
+        if let Some(sparse_vectors_config) = self.create_sparse_vectors_config() {
+            tracing::debug!(?sparse_vectors_config, "Adding sparse vectors config");
+            collection = collection.sparse_vectors_config(sparse_vectors_config);
+        }
+        tracing::warn!("Creating collection");
+
+        self.client.create_collection(collection).await?;
         Ok(())
     }
 
     fn create_vectors_config(&self) -> Result<qdrant_client::qdrant::vectors_config::Config> {
         if self.vectors.is_empty() {
             bail!("No configured vectors");
-        } else if self.vectors.len() == 1 {
+        } else if self.vectors.len() == 1 && self.sparse_vectors.is_empty() {
             let config = self
                 .vectors
                 .values()
@@ -127,9 +136,10 @@ impl Qdrant {
             return Ok(qdrant::vectors_config::Config::Params(vector_params));
         }
         let mut map = HashMap::<String, qdrant::VectorParams>::default();
-        for (emebddable_type, config) in &self.vectors {
-            let vector_name = emebddable_type.to_string();
+        for (embedded_field, config) in &self.vectors {
+            let vector_name = embedded_field.to_string();
             let vector_params = self.create_vector_params(config);
+
             map.insert(vector_name, vector_params);
         }
 
@@ -138,9 +148,24 @@ impl Qdrant {
         ))
     }
 
+    fn create_sparse_vectors_config(&self) -> Option<qdrant::SparseVectorConfig> {
+        if self.sparse_vectors.is_empty() {
+            return None;
+        }
+        let mut sparse_vectors_config = SparseVectorsConfigBuilder::default();
+        for embedded_field in self.sparse_vectors.keys() {
+            let vector_name = format!("{embedded_field}_sparse");
+            let vector_params = SparseVectorParamsBuilder::default();
+            sparse_vectors_config.add_named_vector_params(vector_name, vector_params);
+        }
+
+        Some(sparse_vectors_config.into())
+    }
+
     fn create_vector_params(&self, config: &VectorConfig) -> qdrant::VectorParams {
         let size = config.vector_size.unwrap_or(self.vector_size);
         let distance = config.distance.unwrap_or(self.vector_distance);
+
         qdrant::VectorParamsBuilder::new(size, distance).build()
     }
 }
@@ -158,7 +183,7 @@ impl QdrantBuilder {
         Ok(Arc::new(client))
     }
 
-    /// Adds new [`VectorConfig`]
+    /// Configures a dense vector on the collection
     ///
     /// When not configured Pipeline by default configures vector only for [`EmbeddedField::Combined`]
     /// Default config is enough when [`swiftide::indexing::Pipeline::with_embed_mode`] is not set
@@ -170,6 +195,24 @@ impl QdrantBuilder {
         }
         let vector = vector.into();
         if let Some(vectors) = self.vectors.as_mut() {
+            if let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector) {
+                tracing::warn!(
+                    "Overriding named vector config: {}",
+                    overridden_vector.embedded_field
+                );
+            }
+        }
+        self
+    }
+
+    /// Configures a sparse vector on the collection
+    #[must_use]
+    pub fn with_sparse_vector(mut self, vector: impl Into<SparseVectorConfig>) -> QdrantBuilder {
+        if self.sparse_vectors.is_none() {
+            self = self.sparse_vectors(HashMap::default());
+        }
+        let vector = vector.into();
+        if let Some(vectors) = self.sparse_vectors.as_mut() {
             if let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector) {
                 tracing::warn!(
                     "Overriding named vector config: {}",
@@ -231,19 +274,33 @@ impl From<EmbeddedField> for VectorConfig {
     }
 }
 
+/// Sparse Vector config
+#[derive(Clone, Builder, Default)]
+pub struct SparseVectorConfig {
+    embedded_field: EmbeddedField,
+}
+
+impl From<EmbeddedField> for SparseVectorConfig {
+    fn from(value: EmbeddedField) -> Self {
+        Self {
+            embedded_field: value,
+        }
+    }
+}
+
 pub type Distance = qdrant::Distance;
 
 /// Utility struct combining `Node` with `EmbeddedField`s of configured _Qdrant_ vectors.
-struct NodeWithVectors {
-    vector_fields: HashSet<EmbeddedField>,
-    node: Node,
+struct NodeWithVectors<'a> {
+    node: &'a Node,
+    vector_fields: HashSet<&'a EmbeddedField>,
 }
 
-impl NodeWithVectors {
-    pub fn new(node: Node, vector_fields: HashSet<EmbeddedField>) -> Self {
+impl<'a> NodeWithVectors<'a> {
+    pub fn new(node: &'a Node, vector_fields: HashSet<&'a EmbeddedField>) -> Self {
         Self {
-            vector_fields,
             node,
+            vector_fields,
         }
     }
 }

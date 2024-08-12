@@ -187,7 +187,11 @@ impl Pipeline {
                 let transformer = transformer.clone();
                 let span = tracing::trace_span!("then", node = ?node );
 
-                async move { transformer.transform_node(node).await }.instrument(span)
+                async move {
+                    tracing::debug!(?node, "Transforming node");
+                    transformer.transform_node(node).await
+                }
+                .instrument(span)
             })
             .try_buffer_unordered(concurrency)
             .boxed()
@@ -226,7 +230,11 @@ impl Pipeline {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
 
-                async move { Ok(transformer.batch_transform(nodes).await) }.instrument(span)
+                async move {
+                    tracing::debug!(num_nodes = nodes.len(), "Batch transforming nodes");
+                    Ok(transformer.batch_transform(nodes).await)
+                }
+                .instrument(span)
             })
             .try_buffer_unordered(concurrency) // First get the streams from each future
             .try_flatten_unordered(concurrency) // Then flatten all the streams back into one
@@ -254,7 +262,11 @@ impl Pipeline {
                 let chunker = Arc::clone(&chunker);
                 let span = tracing::trace_span!("then_chunk", chunker = ?chunker, node = ?node );
 
-                async move { Ok(chunker.transform_node(node).await) }.instrument(span)
+                async move {
+                    tracing::debug!(?node, "Chunking node");
+                    Ok(chunker.transform_node(node).await)
+                }
+                .instrument(span)
             })
             .try_buffer_unordered(concurrency)
             .try_flatten_unordered(concurrency)
@@ -291,7 +303,9 @@ impl Pipeline {
                     let storage = Arc::clone(&storage);
                     let span = tracing::trace_span!("then_store_with_batched", storage = ?storage, nodes = ?nodes );
 
-                    async move { Ok(storage.batch_store(nodes).await) }.instrument(span)
+                    async move {
+                        tracing::debug!(num_nodes = nodes.len(), "Batch storing nodes");
+                        Ok(storage.batch_store(nodes).await) }.instrument(span)
                 })
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(self.concurrency)
@@ -304,7 +318,12 @@ impl Pipeline {
                     let span =
                         tracing::trace_span!("then_store_with", storage = ?storage, node = ?node );
 
-                    async move { storage.store(node).await }.instrument(span)
+                    async move {
+                        tracing::debug!(?node, "Storing node");
+
+                        storage.store(node).await
+                    }
+                    .instrument(span)
                 })
                 .try_buffer_unordered(self.concurrency)
                 .boxed()

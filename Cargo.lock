@@ -1447,6 +1447,7 @@ dependencies = [
 name = "examples"
 version = "0.7.1"
 dependencies = [
+ "qdrant-client",
  "serde_json",
  "spider",
  "swiftide",
@@ -3290,8 +3291,10 @@ checksum = "8b3660716b1555923d189c2a8e4bf849e9c2cf86a346d868eb2616cf83844a2a"
 dependencies = [
  "anyhow",
  "derive_builder",
+ "futures-util",
  "prost",
  "prost-types",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror",

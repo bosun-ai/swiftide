@@ -14,15 +14,16 @@ homepage.workspace = true
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 swiftide = { path = "../swiftide/", features = [
-    "all",
-    "scraping",
-    "aws-bedrock",
-    "groq",
-    "ollama",
+  "all",
+  "scraping",
+  "aws-bedrock",
+  "groq",
+  "ollama",
 ] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
 spider = "1.98"
+qdrant-client = "1.10.3"
 
 [[example]]
 doc-scrape-examples = true
@@ -74,3 +75,7 @@ path = "index_ollama.rs"
 [[example]]
 name = "query-pipeline"
 path = "query_pipeline.rs"
+
+[[example]]
+name = "hybrid-search"
+path = "hybrid_search.rs"

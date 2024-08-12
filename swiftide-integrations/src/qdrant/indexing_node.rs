@@ -13,13 +13,13 @@ use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
 };
-use swiftide_core::indexing::EmbeddedField;
+use swiftide_core::{indexing::EmbeddedField, Embedding, SparseEmbedding};
 
 use super::NodeWithVectors;
 
 /// Implements the `TryInto` trait to convert an `NodeWithVectors` into a `qdrant::PointStruct`.
 /// This conversion is necessary for storing the node in the Qdrant vector database.
-impl TryInto<qdrant::PointStruct> for NodeWithVectors {
+impl TryInto<qdrant::PointStruct> for NodeWithVectors<'_> {
     type Error = anyhow::Error;
 
     /// Converts the `Node` into a `qdrant::PointStruct`.
@@ -33,37 +33,35 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
     /// A `Result` which is `Ok` if the conversion is successful, containing the `qdrant::PointStruct`.
     /// If the conversion fails, it returns an `anyhow::Error`.
     fn try_into(self) -> Result<qdrant::PointStruct> {
-        let mut node = self.node;
+        let node = self.node;
         // Calculate a unique identifier for the node.
         let id = node.calculate_hash();
 
         // Extend the metadata with additional information.
-        node.metadata.extend([
-            ("path", node.path.to_string_lossy().to_string()),
-            ("content", node.chunk),
-            ("last_updated_at", chrono::Utc::now().to_rfc3339()),
-        ]);
+        // TODO: The node is already cloned in the `NodeWithVectors` constructor.
+        // Then additional data is added to the metadata, including the full chunk
+        // Data is then taken as ref and reassigned. Seems like a lot of needless allocations
 
         // Create a payload compatible with Qdrant's API.
-        let payload: Payload = node
+        let mut payload: Payload = node
             .metadata
             .iter()
-            .map(|(k, v)| {
-                (
-                    k.as_str(),
-                    Value::from(
-                        v.as_str()
-                            .map_or_else(|| v.to_string(), ToString::to_string),
-                    ),
-                )
-            })
-            .collect::<HashMap<&str, Value>>()
+            .map(|(k, v)| (k.clone(), Value::from(v.clone())))
+            .collect::<HashMap<String, Value>>()
             .into();
 
-        let Some(vectors) = node.vectors else {
+        payload.insert("path", Value::from(node.path.to_string_lossy().to_string()));
+        payload.insert("content", Value::from(node.chunk.clone()));
+        payload.insert(
+            "last_updated_at",
+            Value::from(chrono::Utc::now().to_rfc3339()),
+        );
+
+        let Some(vectors) = node.vectors.clone() else {
             bail!("Node without vectors")
         };
-        let vectors = try_create_vectors(&self.vector_fields, vectors)?;
+        let vectors =
+            try_create_vectors(&self.vector_fields, vectors, node.sparse_vectors.clone())?;
 
         // Construct the `qdrant::PointStruct` and return it.
         Ok(qdrant::PointStruct::new(id, vectors, payload))
@@ -71,23 +69,44 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors {
 }
 
 fn try_create_vectors(
-    vector_fields: &HashSet<EmbeddedField>,
-    vectors: HashMap<EmbeddedField, Vec<f32>>,
+    vector_fields: &HashSet<&EmbeddedField>,
+    vectors: HashMap<EmbeddedField, Embedding>,
+    sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
 ) -> Result<qdrant::Vectors> {
     if vectors.is_empty() {
         bail!("Node with empty vectors")
-    } else if vectors.len() == 1 {
+    } else if vectors.len() == 1 && sparse_vectors.is_none() {
         let Some(vector) = vectors.into_values().next() else {
             bail!("Node has no vector entry")
         };
         return Ok(vector.into());
     }
-    let vectors = vectors
-        .into_iter()
-        .filter(|(field, _)| vector_fields.contains(field))
-        .map(|(vector_type, vector)| (vector_type.to_string(), vector))
-        .collect::<HashMap<String, Vec<f32>>>();
-    Ok(vectors.into())
+    let mut qdrant_vectors = qdrant::NamedVectors::default();
+
+    for (field, vector) in vectors {
+        if !vector_fields.contains(&field) {
+            continue;
+        }
+        qdrant_vectors = qdrant_vectors.add_vector(field.to_string(), vector);
+    }
+
+    if let Some(sparse_vectors) = sparse_vectors {
+        for (field, sparse_vector) in sparse_vectors {
+            if !vector_fields.contains(&field) {
+                continue;
+            }
+
+            qdrant_vectors = qdrant_vectors.add_vector(
+                format!("{field}_sparse"),
+                qdrant::Vector::new_sparse(
+                    sparse_vector.indices.into_iter().collect::<Vec<_>>(),
+                    sparse_vector.values,
+                ),
+            );
+        }
+    }
+
+    Ok(qdrant_vectors.into())
 }
 
 #[cfg(test)]
@@ -108,7 +127,8 @@ mod tests {
             original_size: 4,
             offset: 0,
             metadata: Metadata::from([("m1", "mv1")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata
+            embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata,
+            ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -128,7 +148,8 @@ mod tests {
             metadata: Metadata::from([("m1", "mv1")]),
             embed_mode: swiftide_core::indexing::EmbedMode::PerField,
             original_size: 4,
-            offset: 0
+            offset: 0,
+            ..Default::default()
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -158,6 +179,7 @@ mod tests {
             embed_mode: swiftide_core::indexing::EmbedMode::Both,
             original_size: 4,
             offset: 0,
+            ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
@@ -173,12 +195,13 @@ mod tests {
         };
         "Storing only `Combined` vector. Skipping other vectors."
     )]
+    #[allow(clippy::needless_pass_by_value)]
     fn try_into_point_struct_test(
         node: Node,
         vector_fields: HashSet<EmbeddedField>,
         mut expected_point: PointStruct,
     ) {
-        let node = NodeWithVectors::new(node, vector_fields);
+        let node = NodeWithVectors::new(&node, vector_fields.iter().collect());
         let point: PointStruct = node.try_into().expect("Can create PointStruct");
 
         // patch last_update_at field to avoid test failure because of time difference

@@ -3,7 +3,7 @@
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
 
 use qdrant_client::qdrant::vectors::VectorsOptions;
-use qdrant_client::qdrant::{SearchPointsBuilder, Value};
+use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder, Value};
 use swiftide::indexing::*;
 use swiftide::integrations;
 use swiftide_test_utils::*;
@@ -41,7 +41,7 @@ async fn test_indexing_pipeline() {
 
     let (_redis, redis_url) = start_redis().await;
 
-    let (_qdrant, qdrant_url) = start_qdrant().await;
+    let (qdrant_container, qdrant_url) = start_qdrant().await;
 
     // Coverage CI runs in container, just accept the double qdrant and use the service instead
     let qdrant_url = std::env::var("QDRANT_URL").unwrap_or(qdrant_url);
@@ -96,6 +96,30 @@ async fn test_indexing_pipeline() {
     let qdrant_client = qdrant_client::Qdrant::from_url(&qdrant_url)
         .build()
         .unwrap();
+
+    let stored_node = qdrant_client
+        .scroll(
+            ScrollPointsBuilder::new("swiftide-test")
+                .limit(1)
+                .with_payload(true)
+                .with_vectors(true),
+        )
+        .await
+        .unwrap();
+
+    dbg!(
+        std::str::from_utf8(&qdrant_container.stdout_to_vec().await.unwrap())
+            .unwrap()
+            .split('\n')
+            .collect::<Vec<_>>()
+    );
+    dbg!(
+        std::str::from_utf8(&qdrant_container.stderr_to_vec().await.unwrap())
+            .unwrap()
+            .split('\n')
+            .collect::<Vec<_>>()
+    );
+    dbg!(stored_node);
 
     let search_request =
         SearchPointsBuilder::new("swiftide-test", vec![0_f32; 1536], 10).with_payload(true);

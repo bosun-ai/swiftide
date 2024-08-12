@@ -138,14 +138,15 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 
 ## Features
 
-- Fast streaming indexing pipeline with async, parallel processing
+- Fast, modular streaming indexing pipeline with async, parallel processing
 - Experimental query pipeline
-- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed, and Treesitter
 - A variety of loaders, transformers, semantic chunkers, embedders, and more
 - Bring your own transformers by extending straightforward traits or use a closure
 - Splitting and merging pipelines
 - Jinja-like templating for prompts
 - Store into multiple backends
+- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, and Treesitter
+- Sparse vector support for hybrid search
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
 ### In detail

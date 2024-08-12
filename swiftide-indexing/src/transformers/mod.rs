@@ -29,6 +29,7 @@ pub mod metadata_qa_code;
 pub mod metadata_qa_text;
 pub mod metadata_summary;
 pub mod metadata_title;
+pub mod sparse_embed;
 
 #[cfg(feature = "tree-sitter")]
 pub use outline_code_tree_sitter::OutlineCodeTreeSitter;
@@ -41,3 +42,4 @@ pub use metadata_qa_code::MetadataQACode;
 pub use metadata_qa_text::MetadataQAText;
 pub use metadata_summary::MetadataSummary;
 pub use metadata_title::MetadataTitle;
+pub use sparse_embed::SparseEmbed;
