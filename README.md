@@ -61,6 +61,8 @@ Fast, streaming indexing and query library for AI applications, written in Rust
     <a href="https://github.com/bosun-ai/swiftide/issues/new?labels=bug&template=bug_report.md">Report Bug</a>
     ·
     <a href="https://github.com/bosun-ai/swiftide/issues/new?labels=enhancement&template=feature_request.md">Request Feature</a>
+    ·
+    <a href="https://discord.gg/3jjXYen9UY">Discord</a>
   </p>
 </div>
 
@@ -82,7 +84,7 @@ While working with other Python-based tooling, frustrations arose around perform
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
-We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue or contact us on [[discord](https://discord.gg/3jjXYen9UY).
+We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue or contact us on [discord](https://discord.gg/3jjXYen9UY).
 
 > [!CAUTION]
 > Swiftide is under heavy development and can have breaking changes while we work towards 1.0. Documentation here might fall short of all features, and despite our efforts be slightly outdated. Expect bugs. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you in an issue.
