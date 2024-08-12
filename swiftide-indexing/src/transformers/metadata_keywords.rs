@@ -1,10 +1,7 @@
 //! Extract keywords from a node and add them as metadata
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{
-    indexing::Node,
-    Transformer,
-};
+use swiftide_core::{indexing::Node, Transformer};
 
 /// This module defines the `MetadataKeywords` struct and its associated methods,
 /// which are used for generating metadata in the form of keywords

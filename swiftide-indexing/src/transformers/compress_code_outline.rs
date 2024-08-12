@@ -1,10 +1,7 @@
 //! `CompressCodeOutline` is a transformer that reduces the size of the outline of a the parent file of a chunk to make it more relevant to the chunk.
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{
-    indexing::Node,
-    Transformer,
-};
+use swiftide_core::{indexing::Node, Transformer};
 
 /// `CompressCodeChunk` rewrites the "Outline" metadata field of a chunk to
 /// condense it and make it more relevant to the chunk in question. It is useful as a
