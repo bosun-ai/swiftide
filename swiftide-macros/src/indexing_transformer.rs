@@ -20,6 +20,7 @@ struct DeriveOptions {
     skip_default: bool,
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
     let args = match parse_args(args) {
@@ -97,9 +98,9 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
         #metadata_field_name
 
         #derive
-        #[builder(setter(into, strip_option))]
+        #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
         #vis struct #struct_name {
-            #(#existing_fields).*
+            #(#existing_fields)*
             #[builder(setter(custom))]
             client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
 
@@ -108,7 +109,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
             #[builder(default)]
             concurrency: Option<usize>,
             #[builder(private, default)]
-            indexing_defaults: Option<IndexingDefaults>,
+            indexing_defaults: Option<hidden::IndexingDefaults>,
         }
 
         #default_impl
@@ -123,7 +124,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
             }
 
             pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
-                #builder_name::default().client(client.into()).build().unwrap()
+                #builder_name::default().client(client).build().unwrap()
             }
 
             #[must_use]

@@ -1,16 +1,8 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
-use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
-use swiftide_core::{
-    indexing::{IndexingDefaults, Node},
-    prompt::PromptTemplate,
-    SimplePrompt, Transformer,
-};
-
-pub const NAME: &str = "Questions and Answers (text)";
+use swiftide_core::{indexing::Node, Transformer};
 
 /// This module defines the `MetadataQAText` struct and its associated methods,
 /// which are used for generating metadata in the form of questions and answers
@@ -20,64 +12,13 @@ pub const NAME: &str = "Questions and Answers (text)";
 /// `MetadataQAText` is responsible for generating questions and answers
 /// from a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
-#[derive(Debug, Clone, Builder)]
-#[builder(setter(into, strip_option))]
+#[swiftide_macros::indexing_transformer(
+    metadata_field_name = "Questions and Answers (text)",
+    default_prompt_file = "prompts/metadata_qa_text.prompt.md"
+)]
 pub struct MetadataQAText {
-    #[builder(setter(custom))]
-    client: Arc<dyn SimplePrompt>,
-    #[builder(default = "default_prompt()")]
-    /// The prompt templated used. Can be overwritten via the builder. Has the `node` and
-    /// `num_questions` available as context.
-    prompt_template: PromptTemplate,
     #[builder(default = "5")]
     num_questions: usize,
-    #[builder(default)]
-    concurrency: Option<usize>,
-}
-
-impl MetadataQAText {
-    pub fn builder() -> MetadataQATextBuilder {
-        MetadataQATextBuilder::default()
-    }
-
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataQATextBuilder {
-        MetadataQATextBuilder::default().client(client).to_owned()
-    }
-    /// Creates a new instance of `MetadataQAText`.
-    ///
-    /// # Arguments
-    ///
-    /// * `client` - An implementation of the `SimplePrompt` trait.
-    ///
-    /// # Returns
-    ///
-    /// A new instance of `MetadataQAText`.
-    pub fn new(client: impl SimplePrompt + 'static) -> Self {
-        Self {
-            client: Arc::new(client),
-            prompt_template: default_prompt(),
-            num_questions: 5,
-            concurrency: None,
-        }
-    }
-
-    #[must_use]
-    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
-        self.concurrency = Some(concurrency);
-        self
-    }
-}
-
-/// Generates the default prompt template for generating questions and answers.
-fn default_prompt() -> PromptTemplate {
-    include_str!("prompts/metadata_qa_text.prompt.md").into()
-}
-
-impl MetadataQATextBuilder {
-    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
-        self
-    }
 }
 
 #[async_trait]
@@ -99,14 +40,14 @@ impl Transformer for MetadataQAText {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_text")]
-    async fn transform_node(&self, _defaults: &IndexingDefaults, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
             .prompt_template
             .to_prompt()
             .with_node(&node)
             .with_context_value("questions", self.num_questions);
 
-        let response = self.client.prompt(prompt).await?;
+        let response = self.prompt(prompt).await?;
 
         node.metadata.insert(NAME, response);
 
@@ -146,10 +87,7 @@ mod test {
         let transformer = MetadataQAText::builder().client(client).build().unwrap();
         let node = Node::new("Some text");
 
-        let result = transformer
-            .transform_node(&IndexingDefaults::default(), node)
-            .await
-            .unwrap();
+        let result = transformer.transform_node(node).await.unwrap();
 
         assert_eq!(
             result.metadata.get("Questions and Answers (text)").unwrap(),

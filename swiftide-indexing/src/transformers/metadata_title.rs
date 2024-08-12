@@ -10,8 +10,6 @@ use swiftide_core::{
     SimplePrompt, Transformer,
 };
 
-pub const NAME: &str = "Title";
-
 /// This module defines the `MetadataTitle` struct and its associated methods,
 /// which are used for generating metadata in the form of a title
 /// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
@@ -20,62 +18,11 @@ pub const NAME: &str = "Title";
 /// `MetadataTitle` is responsible for generating a title
 /// for a given text chunk. It uses a templated prompt to interact with a client
 /// that implements the `SimplePrompt` trait.
-#[derive(Debug, Clone, Builder)]
-#[builder(setter(into, strip_option))]
-pub struct MetadataTitle {
-    #[builder(setter(custom))]
-    client: Arc<dyn SimplePrompt>,
-    #[builder(default = "default_prompt()")]
-    /// The prompt templated used. Can be overwritten via the builder. Has the `node` available as
-    /// context.
-    prompt_template: PromptTemplate,
-    #[builder(default)]
-    concurrency: Option<usize>,
-}
-
-impl MetadataTitle {
-    pub fn builder() -> MetadataTitleBuilder {
-        MetadataTitleBuilder::default()
-    }
-
-    pub fn from_client(client: impl SimplePrompt + 'static) -> MetadataTitleBuilder {
-        MetadataTitleBuilder::default().client(client).to_owned()
-    }
-    /// Creates a new instance of `MetadataTitle`.
-    ///
-    /// # Arguments
-    ///
-    /// * `client` - An implementation of the `SimplePrompt` trait.
-    ///
-    /// # Returns
-    ///
-    /// A new instance of `MetadataTitle`.
-    pub fn new(client: impl SimplePrompt + 'static) -> Self {
-        Self {
-            client: Arc::new(client),
-            prompt_template: default_prompt(),
-            concurrency: None,
-        }
-    }
-
-    #[must_use]
-    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
-        self.concurrency = Some(concurrency);
-        self
-    }
-}
-
-/// Generates the default prompt template for generating questions and answers.
-fn default_prompt() -> PromptTemplate {
-    include_str!("prompts/metadata_title.prompt.md").into()
-}
-
-impl MetadataTitleBuilder {
-    pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
-        self
-    }
-}
+#[swiftide_macros::indexing_transformer(
+    metadata_field_name = "Title",
+    default_prompt_file = "prompts/metadata_title.prompt.md"
+)]
+pub struct MetadataTitle {}
 
 #[async_trait]
 impl Transformer for MetadataTitle {
@@ -96,10 +43,10 @@ impl Transformer for MetadataTitle {
     /// This function will return an error if the client fails to generate
     /// questions and answers from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_title")]
-    async fn transform_node(&self, _defaults: &IndexingDefaults, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self.prompt_template.to_prompt().with_node(&node);
 
-        let response = self.client.prompt(prompt).await?;
+        let response = self.prompt(prompt).await?;
 
         node.metadata.insert(NAME, response);
 
@@ -136,10 +83,7 @@ mod test {
         let transformer = MetadataTitle::builder().client(client).build().unwrap();
         let node = Node::new("Some text");
 
-        let result = transformer
-            .transform_node(&IndexingDefaults::default(), node)
-            .await
-            .unwrap();
+        let result = transformer.transform_node(node).await.unwrap();
 
         assert_eq!(result.metadata.get("Title").unwrap(), "A Title");
     }
