@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0](https://github.com/bosun-ai/swiftide/releases/tag/0.8.0) - 2024-08-12
+
+### Added
+
+- [67336f1](https://github.com/bosun-ai/swiftide/commit/67336f1d9c7fde474bdddfd0054b40656df244e0) *(indexing)* Sparse vector support with Splade and Qdrant ([#222](https://github.com/bosun-ai/swiftide/pull/222))
+
+- [2e25ad4](https://github.com/bosun-ai/swiftide/commit/2e25ad4b999a8562a472e086a91020ec4f8300d8) *(indexing)* Default LLM for indexing pipeline and boilerplate Transformer macro ([#227](https://github.com/bosun-ai/swiftide/pull/227))
+
+- [e728a7c](https://github.com/bosun-ai/swiftide/commit/e728a7c7a2fcf7b22c31e5d6c66a896f634f6901) *(uncategorized)* Code outlines in chunk metadata ([#137](https://github.com/bosun-ai/swiftide/pull/137))
+
+### Fixed
+
+- [3cce606](https://github.com/bosun-ai/swiftide/commit/3cce60698cb59a0f1d3902e85ff6b07555f6de58) *(deps)* Update rust crate text-splitter to 0.15 ([#224](https://github.com/bosun-ai/swiftide/pull/224))
+
+### Other
+
+- [4970a68](https://github.com/bosun-ai/swiftide/commit/4970a683acccc71503e64044dc02addaf2e9c87c) *(readme)* Fix discord links
+
+- [b3f04de](https://github.com/bosun-ai/swiftide/commit/b3f04defe94e5b26876c8d99049f4d87b5f2dc18) *(readme)* Add link to discord ([#219](https://github.com/bosun-ai/swiftide/pull/219))
+
+- [73d1649](https://github.com/bosun-ai/swiftide/commit/73d1649ca8427aa69170f6451eac55316581ed9a) *(readme)* Add Ollama support to README
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.7.1...0.8.0
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.7.1](https://github.com/bosun-ai/swiftide/releases/tag/0.7.1) - 2024-08-04
 
 ### Features
