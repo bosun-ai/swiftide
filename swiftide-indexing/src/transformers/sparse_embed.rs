@@ -5,7 +5,7 @@ use anyhow::bail;
 use async_trait::async_trait;
 use swiftide_core::{
     indexing::{IndexingStream, Node},
-    BatchableTransformer, SparseEmbeddingModel,
+    BatchableTransformer, SparseEmbeddingModel, WithBatchIndexingDefaults, WithIndexingDefaults,
 };
 
 /// A transformer that can generate embeddings for an `Node`
@@ -47,6 +47,9 @@ impl SparseEmbed {
         self
     }
 }
+
+impl WithBatchIndexingDefaults for Embed {}
+impl WithIndexingDefaults for Embed {}
 
 #[async_trait]
 impl BatchableTransformer for SparseEmbed {
