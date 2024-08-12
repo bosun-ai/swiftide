@@ -115,18 +115,22 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
         #default_impl
 
         impl #struct_name {
+            /// Creates a new builder for the transformer
             pub fn builder() -> #builder_name {
                 #builder_name::default()
             }
 
+            /// Build a new transformer from a client
             pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> #builder_name {
                 #builder_name::default().client(client).to_owned()
             }
 
+            /// Create a new transformer from a client
             pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
                 #builder_name::default().client(client).build().unwrap()
             }
 
+            /// Set the concurrency level for the transformer
             #[must_use]
             pub fn with_concurrency(mut self, concurrency: usize) -> Self {
                 self.concurrency = Some(concurrency);
@@ -134,6 +138,12 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
             }
 
 
+            /// Prompts either the client provided to the transformer or a default client
+            /// provided on the indexing pipeline
+            ///
+            /// # Errors
+            ///
+            /// Gives an error if no (default) client is provided
             async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String> {
 
                 if let Some(client) = &self.client {
