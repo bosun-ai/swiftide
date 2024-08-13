@@ -3241,7 +3241,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18bec9b0adc4eba778b33684b7ba3e7137789434769ee3ce3930463ef904cfca"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.74",
@@ -3285,9 +3285,9 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "1.10.3"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b3660716b1555923d189c2a8e4bf849e9c2cf86a346d868eb2616cf83844a2a"
+checksum = "26955138c3afae5f9d36decd09f1e4e02e266132359b8631093e9cddb1662600"
 dependencies = [
  "anyhow",
  "derive_builder",
