@@ -7,7 +7,7 @@ use swiftide_core::{indexing::Node, Transformer};
 /// condense it and make it more relevant to the chunk in question. It is useful as a
 /// step after chunking a file that has had outline generated for it with `FileToOutlineTreeSitter`.
 #[swiftide_macros::indexing_transformer(
-    metadata_field_name = "Code Outline",
+    metadata_field_name = "Outline",
     default_prompt_file = "prompts/compress_code_outline.prompt.md"
 )]
 pub struct CompressCodeOutline {}
@@ -39,21 +39,15 @@ impl Transformer for CompressCodeOutline {
     /// This function will return an error if the `SimplePrompt` client fails to generate a response.
     #[tracing::instrument(skip_all, name = "transformers.compress_code_outline")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let maybe_outline = node.metadata.get("Outline");
-
-        let Some(outline) = maybe_outline else {
+        if node.metadata.get(NAME).is_none() {
             return Ok(node);
-        };
+        }
 
-        let prompt = self
-            .prompt_template
-            .to_prompt()
-            .with_context_value("outline", outline.as_str())
-            .with_context_value("code", node.chunk.as_str());
+        let prompt = self.prompt_template.to_prompt().with_node(&node);
 
         let response = extract_markdown_codeblock(self.prompt(prompt).await?);
 
-        node.metadata.insert("Outline".to_string(), response);
+        node.metadata.insert(NAME, response);
 
         Ok(node)
     }
@@ -75,11 +69,10 @@ mod test {
 
         let outline = "Relevant Outline";
         let code = "Code using outline";
+        let mut node = Node::new(code);
+        node.metadata.insert("Outline", outline);
 
-        let prompt = template
-            .to_prompt()
-            .with_context_value("outline", outline)
-            .with_context_value("code", code);
+        let prompt = template.to_prompt().with_node(&node);
 
         insta::assert_snapshot!(prompt.render().await.unwrap());
     }

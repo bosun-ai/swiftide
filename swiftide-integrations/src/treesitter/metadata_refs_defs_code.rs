@@ -38,9 +38,9 @@ use std::sync::Arc;
 
 use swiftide_core::{indexing::Node, Transformer};
 
+use crate::treesitter::{CodeParser, SupportedLanguages};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use swiftide_integrations::treesitter::{CodeParser, SupportedLanguages};
 
 pub const NAME_REFERENCES: &str = "References (code)";
 pub const NAME_DEFINITIONS: &str = "Definitions (code)";

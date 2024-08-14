@@ -3,11 +3,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 
+use crate::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages};
 use swiftide_core::{
     indexing::{IndexingStream, Node},
     ChunkerTransformer,
 };
-use swiftide_integrations::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages};
 
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
 /// based on the specified language and chunk size. This is a crucial step in the
