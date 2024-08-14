@@ -4,3 +4,4 @@ pub mod query_transformers;
 pub mod response_transformers;
 
 pub use query::*;
+pub mod evaluators;
