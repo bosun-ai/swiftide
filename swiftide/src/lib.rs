@@ -123,6 +123,14 @@ pub mod indexing {
     pub use swiftide_core::indexing::*;
     #[doc(inline)]
     pub use swiftide_indexing::*;
+
+    pub mod transformers {
+        #[cfg(feature = "tree-sitter")]
+        #[doc(inline)]
+        pub use swiftide_integrations::treesitter::transformers::*;
+
+        pub use swiftide_indexing::transformers::*;
+    }
 }
 
 /// Query your indexed data with a transforming pipeline

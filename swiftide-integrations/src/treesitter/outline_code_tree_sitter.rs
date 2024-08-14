@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use swiftide_core::indexing::Node;
 use swiftide_core::Transformer;
 
-use swiftide_integrations::treesitter::{CodeOutliner, SupportedLanguages};
+use crate::treesitter::{CodeOutliner, SupportedLanguages};
 
 /// `OutlineCodeTreeSitter` adds a "Outline" field to the metadata of a node that contains
 /// a summary of the code in the node. It uses the tree-sitter parser to parse the code and

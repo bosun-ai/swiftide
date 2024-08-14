@@ -12,7 +12,6 @@ homepage.workspace = true
 
 [dependencies]
 swiftide-core = { path = "../swiftide-core", version = "0.8" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.8", optional = true }
 swiftide-macros = { path = "../swiftide-macros", version = "0.8" }
 
 anyhow = { workspace = true }
@@ -30,7 +29,6 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 indoc = { workspace = true }
 
-regex = "1.10.5"
 ignore = "0.4"
 text-splitter = { version = "0.15", features = ["markdown"] }
 
@@ -43,10 +41,7 @@ test-case = { workspace = true }
 
 [features]
 # TODO: Should not depend on integrations, transformers that use them should be in integrations instead and re-exported from root for convencience
-tree-sitter = [
-  "swiftide-integrations?/tree-sitter",
-  "dep:swiftide-integrations",
-]
+tree-sitter = []
 
 [lints]
 workspace = true
