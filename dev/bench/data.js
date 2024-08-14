@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723491295998,
+  "lastUpdate": 1723662904524,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -2981,6 +2981,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 4",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e9d00160148807a8e2d1df1582e6ea85cfd2d8d0",
+          "message": "chore(indexing,integrations): Move tree-sitter dependencies to integrations (#235)\n\nRemoves the dependency of indexing on integrations, resulting in much\r\nfaster builds when developing on indexing.",
+          "timestamp": "2024-08-14T21:09:24+02:00",
+          "tree_id": "d966248b11eb74d572b0c56249ea6eff83f251d8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e9d00160148807a8e2d1df1582e6ea85cfd2d8d0"
+        },
+        "date": 1723662904181,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
