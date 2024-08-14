@@ -126,7 +126,7 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
         let strategy_for_stream = search_strategy.clone();
         let evaluator_for_stream = evaluator.clone();
 
-        let mut new_stream = stream
+        let new_stream = stream
             .map_ok(move |query| {
                 let search_strategy = strategy_for_stream.clone();
                 let retriever = Arc::clone(&retriever);
