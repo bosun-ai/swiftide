@@ -9,7 +9,7 @@
 //!
 //! ```no_run
 //! # use swiftide_core::indexing::Node;
-//! # use swiftide_indexing::transformers::metadata_refs_defs_code::*;
+//! # use swiftide_integrations::treesitter::transformers::metadata_refs_defs_code::*;
 //! # use swiftide_core::Transformer;
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
