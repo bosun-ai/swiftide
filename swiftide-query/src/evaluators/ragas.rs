@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
@@ -14,7 +15,7 @@ pub struct Ragas {
     dataset: Arc<RwLock<EvaluationDataSet>>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EvaluationData {
     question: String,
     answer: String,
@@ -73,45 +74,28 @@ impl EvaluationDataSet {
         Ok(())
     }
 
-    //
-    // Outputs json for ragas
-    //
-    // Format:
-    // {
-    //    "question": [questions],
-    //    "answer": [answers],
-    //    "contexts": [contexts],
-    //    "ground_truth": [ground_truth]
-    //    }
+    /// Outputs json for ragas
+    ///
+    /// # Format
+    ///
+    /// ```json
+    /// [
+    ///   {
+    ///   "question": "What is the capital of France?",
+    ///   "answer": "Paris",
+    ///   "contexts": ["Paris is the capital of France"],
+    ///   "ground_truth": "Paris"
+    ///   },
+    ///   {
+    ///   "question": "What is the capital of France?",
+    ///   "answer": "Paris",
+    ///   "contexts": ["Paris is the capital of France"],
+    ///   "ground_truth": "Paris"
+    ///   }
+    /// ]
+    /// ```
     pub fn to_json(&self) -> String {
-        let questions = self
-            .0
-            .values()
-            .map(|data| data.question.to_string())
-            .collect::<Vec<String>>();
-        let answers = self
-            .0
-            .values()
-            .map(|data| data.answer.to_string())
-            .collect::<Vec<String>>();
-        let contexts = self
-            .0
-            .values()
-            .map(|data| data.contexts.clone())
-            .collect::<Vec<Vec<String>>>();
-        let ground_truth = self
-            .0
-            .values()
-            .map(|data| data.ground_truth.to_string())
-            .collect::<Vec<String>>();
-
-        json!({
-            "question": questions,
-            "answer": answers,
-            "contexts": contexts,
-            "ground_truth": ground_truth,
-        })
-        .to_string()
+        json!(self.0.values().collect::<Vec<_>>()).to_string()
     }
 }
 
