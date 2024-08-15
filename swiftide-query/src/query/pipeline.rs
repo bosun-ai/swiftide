@@ -259,7 +259,7 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
     }
 
     pub async fn query_all(
-        mut self,
+        self,
         queries: Vec<impl Into<Query<states::Pending>> + Clone>,
     ) -> Result<Vec<Query<states::Answered>>> {
         let Pipeline {
