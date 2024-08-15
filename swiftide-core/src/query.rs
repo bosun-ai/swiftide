@@ -218,13 +218,15 @@ mod tests {
     fn test_query_transformed_response() {
         let query = Query::<states::Pending>::from("test query");
         let documents = vec!["doc1".to_string(), "doc2".to_string()];
-        let mut query = query.retrieved_documents(documents);
+        let mut query = query.retrieved_documents(documents.clone());
         query.transformed_response("new response");
 
         assert_eq!(query.current(), "new response");
         assert_eq!(query.history().len(), 2);
+        assert_eq!(query.documents(), &documents);
+        assert_eq!(query.original, "test query");
         if let TransformationEvent::Transformed { before, after } = &query.history()[1] {
-            assert_eq!(before, "test query");
+            assert_eq!(before, "");
             assert_eq!(after, "new response");
         } else {
             panic!("Unexpected event in history");
