@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723752738076,
+  "lastUpdate": 1723753132253,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3149,6 +3149,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "49ad014561598c2101c1eac565aee9e80c7eae97",
+          "message": "feat(ci): Publish releases to discord (#245)",
+          "timestamp": "2024-08-15T22:13:12+02:00",
+          "tree_id": "d494ab3c186c8e579fb9e7f53bd7b33e84b008e5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/49ad014561598c2101c1eac565aee9e80c7eae97"
+        },
+        "date": 1723753131175,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
