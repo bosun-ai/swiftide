@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723662904524,
+  "lastUpdate": 1723745970728,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3023,6 +3023,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 6",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "24439339a9b935befcbcc92e56c01c5048605138",
+          "message": "feat(qdrant): Add access to inner client for custom operations (#242)",
+          "timestamp": "2024-08-15T20:13:55+02:00",
+          "tree_id": "1d99436a0d95093731360fb30008f9849f54053c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/24439339a9b935befcbcc92e56c01c5048605138"
+        },
+        "date": 1723745969620,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
