@@ -25,6 +25,7 @@ itertools = { workspace = true }
 chrono = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
+regex = { workspace = true }
 
 
 # Integrations
@@ -69,6 +70,7 @@ testcontainers = { workspace = true }
 test-case = { workspace = true }
 futures-util = { workspace = true }
 indoc = { workspace = true }
+insta = { workspace = true }
 
 [features]
 default = ["rustls"]

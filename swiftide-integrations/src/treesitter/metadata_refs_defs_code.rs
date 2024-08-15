@@ -9,7 +9,7 @@
 //!
 //! ```no_run
 //! # use swiftide_core::indexing::Node;
-//! # use swiftide_indexing::transformers::metadata_refs_defs_code::*;
+//! # use swiftide_integrations::treesitter::transformers::metadata_refs_defs_code::*;
 //! # use swiftide_core::Transformer;
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -38,9 +38,9 @@ use std::sync::Arc;
 
 use swiftide_core::{indexing::Node, Transformer};
 
+use crate::treesitter::{CodeParser, SupportedLanguages};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use swiftide_integrations::treesitter::{CodeParser, SupportedLanguages};
 
 pub const NAME_REFERENCES: &str = "References (code)";
 pub const NAME_DEFINITIONS: &str = "Definitions (code)";

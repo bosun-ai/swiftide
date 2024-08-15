@@ -60,20 +60,11 @@ impl Transformer for MetadataQACode {
 
 #[cfg(test)]
 mod test {
-    use swiftide_core::MockSimplePrompt;
+    use swiftide_core::{assert_default_prompt_snapshot, MockSimplePrompt};
 
     use super::*;
 
-    #[tokio::test]
-    async fn test_template() {
-        let template = default_prompt();
-
-        let prompt = template
-            .to_prompt()
-            .with_node(&Node::new("test"))
-            .with_context_value("questions", 5);
-        insta::assert_snapshot!(prompt.render().await.unwrap());
-    }
+    assert_default_prompt_snapshot!("test", "questions" => 5);
 
     #[tokio::test]
     async fn test_template_with_outline() {
