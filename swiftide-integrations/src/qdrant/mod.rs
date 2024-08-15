@@ -169,9 +169,8 @@ impl Qdrant {
         qdrant::VectorParamsBuilder::new(size, distance).build()
     }
 
-    #[allow(dead_code)]
     /// Returns the inner client for custom operations
-    fn client(&self) -> &Arc<qdrant_client::Qdrant> {
+    pub fn client(&self) -> &Arc<qdrant_client::Qdrant> {
         &self.client
     }
 }
