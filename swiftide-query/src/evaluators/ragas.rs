@@ -57,7 +57,7 @@ impl EvaluateQuery for Ragas {
 impl EvaluationDataSet {
     pub fn record_answers_as_ground_truth(&mut self) {
         for data in self.0.values_mut() {
-            data.ground_truth = data.answer.clone();
+            data.ground_truth.clone_from(&data.answer);
         }
     }
 
