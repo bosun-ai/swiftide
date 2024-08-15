@@ -49,8 +49,7 @@ impl SimpleBuilder {
 }
 
 fn default_prompt() -> PromptTemplate {
-    indoc::indoc!(
-        "
+    r"
     Answer the following question based on the context provided:
     {{ question }}
 
@@ -63,7 +62,6 @@ fn default_prompt() -> PromptTemplate {
 
     {{ context }}
     "
-    )
     .into()
 }
 
@@ -76,6 +74,14 @@ impl Answer for Simple {
         } else {
             query.current()
         };
+
+        let prompt = self
+            .prompt_template
+            .to_prompt()
+            .with_context_value("question", query.original())
+            .with_context_value("context", context);
+
+        tracing::debug!(prompt = ?prompt, "Prompting from Simple for answer");
 
         let answer = self
             .client

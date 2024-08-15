@@ -32,6 +32,14 @@ impl Ragas {
             dataset: Arc::new(RwLock::new(questions.into())),
         }
     }
+
+    pub async fn questions(&self) -> Vec<Query<states::Pending>> {
+        self.dataset.read().await.0.keys().map(Into::into).collect()
+    }
+
+    pub async fn to_json(&self) -> String {
+        self.dataset.read().await.to_json()
+    }
 }
 
 #[async_trait]
@@ -109,6 +117,24 @@ impl From<Vec<String>> for EvaluationDataSet {
                         question.clone(),
                         EvaluationData {
                             question,
+                            ..EvaluationData::default()
+                        },
+                    )
+                })
+                .collect(),
+        )
+    }
+}
+
+impl From<&[String]> for EvaluationDataSet {
+    fn from(val: &[String]) -> Self {
+        EvaluationDataSet(
+            val.iter()
+                .map(|question| {
+                    (
+                        question.to_string(),
+                        EvaluationData {
+                            question: question.to_string(),
                             ..EvaluationData::default()
                         },
                     )
