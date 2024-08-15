@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723753132253,
+  "lastUpdate": 1723754566309,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3191,6 +3191,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "09033105f08c4144e6b74b298f2943cdd32472c6",
+          "message": "chore: release (#229)\n\n## 🤖 New release\r\n* `swiftide`: 0.8.0 -> 0.9.0\r\n* `swiftide-core`: 0.8.0 -> 0.9.0\r\n* `swiftide-indexing`: 0.8.0 -> 0.9.0\r\n* `swiftide-macros`: 0.8.0 -> 0.9.0\r\n* `swiftide-integrations`: 0.8.0 -> 0.9.0\r\n* `swiftide-query`: 0.8.0 -> 0.9.0\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.9.0](https://github.com/bosun-ai/swiftide/releases/tag/0.9.0) -\r\n2024-08-15\r\n\r\n### Added\r\n\r\n-\r\n[2443933](https://github.com/bosun-ai/swiftide/commit/24439339a9b935befcbcc92e56c01c5048605138)\r\n*(qdrant)* Add access to inner client for custom operations\r\n([#242](https://github.com/bosun-ai/swiftide/pull/242))\r\n\r\n-\r\n[4fff613](https://github.com/bosun-ai/swiftide/commit/4fff613b461e8df993327cb364cabc65cd5901d8)\r\n*(query)* Add concurrency on query pipeline and add query_all\r\n\r\n### Fixed\r\n\r\n-\r\n[8a1cc69](https://github.com/bosun-ai/swiftide/commit/8a1cc69712b4361893c0564c7d6f7d1ed21e5710)\r\n*(query)* After retrieval current transormation should be empty\r\n\r\n### Other\r\n\r\n-\r\n[3d213b4](https://github.com/bosun-ai/swiftide/commit/3d213b40d0b2d1dd259dd22ba99614fedae64353)\r\n*(readme)* Add link to 0.8 release\r\n\r\n-\r\n[e9d0016](https://github.com/bosun-ai/swiftide/commit/e9d00160148807a8e2d1df1582e6ea85cfd2d8d0)\r\n*(indexing,integrations)* Move tree-sitter dependencies to integrations\r\n([#235](https://github.com/bosun-ai/swiftide/pull/235))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.8.0...0.9.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-08-15T22:37:13+02:00",
+          "tree_id": "6a39caa49954a03bdd0cbe569280b6a6c3ac8211",
+          "url": "https://github.com/bosun-ai/swiftide/commit/09033105f08c4144e6b74b298f2943cdd32472c6"
+        },
+        "date": 1723754565916,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 155,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
