@@ -30,6 +30,7 @@ pub struct Pipeline<'stream, S: SearchStrategy = SimilaritySingleEmbedding, T = 
     stream: QueryStream<'stream, T>,
     query_sender: Sender<Result<Query<states::Pending>>>,
     evaluator: Option<Arc<Box<dyn EvaluateQuery>>>,
+    default_concurrency: usize,
 }
 
 /// By default the [`SearchStrategy`] is [`SimilaritySingleEmbedding`], which embed the current
@@ -45,6 +46,7 @@ impl<S: SearchStrategy> Default for Pipeline<'_, S> {
                 .expect("Pipeline received stream without query entrypoint"),
             stream,
             evaluator: None,
+            default_concurrency: num_cpus::get(),
         }
     }
 }
@@ -88,6 +90,7 @@ where
             query_sender,
             search_strategy,
             evaluator,
+            default_concurrency,
         } = self;
 
         let new_stream = stream
@@ -97,13 +100,14 @@ where
 
                 async move { transformer.transform_query(query).await }.instrument(span)
             })
-            .try_buffer_unordered(1);
+            .try_buffer_unordered(default_concurrency);
 
         Pipeline {
             stream: new_stream.boxed().into(),
             search_strategy,
             query_sender,
             evaluator,
+            default_concurrency,
         }
     }
 }
@@ -121,6 +125,7 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
             query_sender,
             search_strategy,
             evaluator,
+            default_concurrency,
         } = self;
 
         let strategy_for_stream = search_strategy.clone();
@@ -145,13 +150,14 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
                 }
                 .instrument(span)
             })
-            .try_buffer_unordered(1);
+            .try_buffer_unordered(default_concurrency);
 
         Pipeline {
             stream: new_stream.boxed().into(),
             search_strategy: search_strategy.clone(),
             query_sender,
             evaluator,
+            default_concurrency,
         }
     }
 }
@@ -169,6 +175,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             query_sender,
             search_strategy,
             evaluator,
+            default_concurrency,
         } = self;
 
         let new_stream = stream
@@ -177,13 +184,14 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
                 let span = tracing::trace_span!("then_transform_response", query = ?query);
                 async move { transformer.transform_response(query).await }.instrument(span)
             })
-            .try_buffer_unordered(1);
+            .try_buffer_unordered(default_concurrency);
 
         Pipeline {
             stream: new_stream.boxed().into(),
             search_strategy,
             query_sender,
             evaluator,
+            default_concurrency,
         }
     }
 }
@@ -201,6 +209,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             query_sender,
             search_strategy,
             evaluator,
+            default_concurrency,
         } = self;
         let evaluator_for_stream = evaluator.clone();
 
@@ -221,12 +230,13 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
                 }
                 .instrument(span)
             })
-            .try_buffer_unordered(1);
+            .try_buffer_unordered(default_concurrency);
         Pipeline {
             stream: new_stream.boxed().into(),
             search_strategy,
             query_sender,
             evaluator,
+            default_concurrency,
         }
     }
 }
@@ -246,6 +256,36 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         self.stream.try_next().await?.ok_or_else(|| {
             anyhow::anyhow!("Pipeline did not receive a response from the query stream")
         })
+    }
+
+    pub async fn query_all(
+        mut self,
+        queries: Vec<impl Into<Query<states::Pending>> + Clone>,
+    ) -> Result<Vec<Query<states::Answered>>> {
+        let Pipeline {
+            query_sender,
+            mut stream,
+            ..
+        } = self;
+
+        for query in &queries {
+            query_sender.send(Ok(query.clone().into())).await?;
+        }
+        tracing::info!("All queries sent");
+        // Force close the stream
+        // TODO: Drop is not closing the stream?
+        // drop(query_sender);
+
+        let mut results = vec![];
+        while let Some(result) = stream.try_next().await? {
+            tracing::debug!(?result, "Received an answer");
+            results.push(result);
+            // Drop should do this but it doesnt
+            if results.len() == queries.len() {
+                break;
+            }
+        }
+        Ok(results)
     }
 }
 
