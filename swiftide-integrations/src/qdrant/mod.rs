@@ -168,6 +168,11 @@ impl Qdrant {
 
         qdrant::VectorParamsBuilder::new(size, distance).build()
     }
+
+    /// Returns the inner client for custom operations
+    pub fn client(&self) -> &Arc<qdrant_client::Qdrant> {
+        &self.client
+    }
 }
 
 impl QdrantBuilder {
