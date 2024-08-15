@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 
 use swiftide_core::{
@@ -37,6 +37,10 @@ impl Ragas {
         self.dataset.read().await.0.keys().map(Into::into).collect()
     }
 
+    pub async fn record_answers_as_ground_truth(&self) {
+        self.dataset.write().await.record_answers_as_ground_truth();
+    }
+
     pub async fn to_json(&self) -> String {
         self.dataset.read().await.to_json()
     }
@@ -51,6 +55,12 @@ impl EvaluateQuery for Ragas {
 }
 
 impl EvaluationDataSet {
+    pub fn record_answers_as_ground_truth(&mut self) {
+        for data in self.0.values_mut() {
+            data.ground_truth = data.answer.clone();
+        }
+    }
+
     pub fn upsert_evaluation(&mut self, query: &QueryEvaluation) -> Result<()> {
         match query {
             QueryEvaluation::RetrieveDocuments(query) => self.upsert_retrieved_documents(query),
@@ -161,5 +171,18 @@ impl From<Vec<(String, String)>> for EvaluationDataSet {
                 })
                 .collect(),
         )
+    }
+}
+
+impl FromStr for EvaluationDataSet {
+    type Err = serde_json::Error;
+
+    fn from_str(val: &str) -> std::prelude::v1::Result<Self, Self::Err> {
+        let data: Vec<EvaluationData> = serde_json::from_str(val)?;
+        Ok(EvaluationDataSet(
+            data.into_iter()
+                .map(|data| (data.question.clone(), data))
+                .collect(),
+        ))
     }
 }
