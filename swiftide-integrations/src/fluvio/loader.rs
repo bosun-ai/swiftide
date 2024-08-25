@@ -182,7 +182,7 @@ mod tests {
         }
     }
 
-    #[test_log::test(tokio::test)]
+    #[test_log::test(tokio::test(flavor = "multi_thread"))]
     async fn test_fluvio_loader() {
         static TOPIC_NAME: &str = "hello-rust";
         static PARTITION_NUM: u32 = 0;
@@ -251,18 +251,5 @@ mod tests {
         let node: Node = loader.into_stream().try_next().await.unwrap().unwrap();
 
         assert_eq!(node.chunk, "Hello fluvio");
-
-        // let runner = AsyncRunner::new();
-        // let fluvio = runner.run(fluvio_image);
-        // let fluvio = fluvio.await.unwrap();
-        // let fluvio_address = format!("{}:{}", fluvio.host(), 9003);
-        // let fluvio = Fluvio::new(fluvio_address, "test-topic".to_owned());
-        // let stream = fluvio.into_stream();
-        // let mut stream = stream.take(1);
-        // let fluvio_client = fluvio::Fluvio::connect().await.unwrap();
-        // let producer = fluvio_client.topic_producer("test-topic").await.unwrap();
-        // producer.send_record("test-message".into()).await.unwrap();
-        // let node = stream.next().await.unwrap().unwrap();
-        // assert_eq!(node.name, "test-message");
     }
 }
