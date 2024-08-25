@@ -71,6 +71,9 @@ fluvio = { version = "0.23", optional = true }
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 
+# Used for hacking fluv to play nice
+flv-util = "0.5.2"
+
 mockall = { workspace = true }
 test-log = { workspace = true }
 testcontainers = { workspace = true }

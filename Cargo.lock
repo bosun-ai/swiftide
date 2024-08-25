@@ -5299,6 +5299,7 @@ dependencies = [
  "derive_builder",
  "fastembed",
  "fluvio",
+ "flv-util",
  "futures-util",
  "htmd",
  "indoc",
