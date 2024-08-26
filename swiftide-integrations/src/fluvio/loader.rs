@@ -20,8 +20,7 @@ impl Loader for Fluvio {
                 } else {
                     fluvio::Fluvio::connect().await
                 }
-                .context(format!("Failed to connect to Fluvio {fluvio_config:?}"))
-                .unwrap();
+                .context(format!("Failed to connect to Fluvio {fluvio_config:?}"))?;
                 client.consumer_with_config(consumer_config).await
             })
         })
@@ -41,13 +40,12 @@ impl Loader for Fluvio {
     }
 }
 
-// Test fluvio with testcontainers, manually connect the Loader to the testcontainer and use a
-// fluvio client to send a test message, then assert that the message is received by the Loader
 #[cfg(test)]
 mod tests {
-    use std::{pin::Pin, time::Duration};
+    use std::pin::Pin;
 
     use super::*;
+    use anyhow::Result;
     use fluvio::{
         consumer::ConsumerConfigExt,
         metadata::{customspu::CustomSpuSpec, topic::TopicSpec},
@@ -55,31 +53,31 @@ mod tests {
     };
     use flv_util::socket_helpers::ServerAddress;
     use futures_util::TryStreamExt;
-    use indoc::{formatdoc, indoc};
-    use itertools::Itertools;
     use regex::Regex;
     use testcontainers::{runners::AsyncRunner, ContainerAsync, GenericImage, ImageExt};
     use tokio::io::{AsyncBufRead, AsyncBufReadExt};
 
+    // NOTE: Move to test-utils / upstream to testcontainers if needed elsewhere
     struct FluvioCluster {
         sc: ContainerAsync<GenericImage>,
         spu: ContainerAsync<GenericImage>,
 
-        // topic_name: String,
-        // partition_num: u32,
-        // partitions: u32,
-        // replicas: u32,
+        partitions: u32,
+        replicas: u32,
         port: u16,
         host_spu_port: u16,
-        host: String,
+        client: fluvio::Fluvio,
     }
 
     impl FluvioCluster {
-        pub async fn start() -> FluvioCluster {
+        // Starts a fluvio cluster and connects the spu to the sc
+        pub async fn start() -> Result<FluvioCluster> {
             static SC_PORT: u16 = 9003;
             static SPU_PORT1: u16 = 9010;
             static SPU_PORT2: u16 = 9011;
             static NETWORK_NAME: &str = "fluvio";
+            static PARTITIONS: u32 = 1;
+            static REPLICAS: u32 = 1;
 
             let sc = GenericImage::new("infinyon/fluvio", "latest")
                 .with_exposed_port(SC_PORT.into())
@@ -91,8 +89,7 @@ mod tests {
                 .with_cmd("./fluvio-run sc --local /fluvio/metadata".split(' '))
                 .with_env_var("RUST_LOG", "info")
                 .start()
-                .await
-                .expect("Failed to start fluvio");
+                .await?;
 
             let spu = GenericImage::new("infinyon/fluvio", "latest")
                 .with_exposed_port(SPU_PORT1.into())
@@ -101,45 +98,51 @@ mod tests {
                 ))
                 .with_network(NETWORK_NAME)
                 .with_container_name("spu")
-                // .with_exposed_port(SPU_PORT2.into())
-                .with_cmd(format!("./fluvio-run spu -i 5001 -p spu:{SPU_PORT1} -v spu:{SPU_PORT2} --sc-addr sc:9004 --log-base-dir /fluvio/data").split(" "))
+                .with_cmd(format!("./fluvio-run spu -i 5001 -p spu:{SPU_PORT1} -v spu:{SPU_PORT2} --sc-addr sc:9004 --log-base-dir /fluvio/data").split(' '))
                 .with_env_var("RUST_LOG", "info")
                 .start()
-                .await
-                .expect("Failed to start fluvio");
+                .await?;
 
-            let host_spu_port_1 = spu.get_host_port_ipv4(SPU_PORT1).await.unwrap();
-            let host = sc.get_host().await.unwrap().to_string();
+            let host_spu_port_1 = spu.get_host_port_ipv4(SPU_PORT1).await?;
+            let sc_host_port = sc.get_host_port_ipv4(SC_PORT).await?;
+            let endpoint = format!("127.0.0.1:{sc_host_port}");
+            let config = fluvio::FluvioConfig::new(&endpoint);
+            let client = fluvio::Fluvio::connect_with_config(&config).await?;
 
-            // let entrypoint = formatdoc!(r#"
-            //     /bin/sh -c "
-            //         fluvio profile add docker sc:{SC_PORT} docker;
-            //         fluvio cluster spu register --id 5001 -p 0.0.0.0:{host_spu_port_1} --private-server spu:{SPU_PORT2};
-            //         exit 0;
-            //     "
-            //     "#).replace('\n', "");
-            //
-            // dbg!(&entrypoint);
-            //
-            // GenericImage::
-            // let sc_setup = GenericImage::new("infinyon/fluvio", "latest")
-            //     .with_entrypoint(&entrypoint)
-            //     .with_network(NETWORK_NAME)
-            //     // .with_cmd(entrypoint.split(" "))
-            //     .with_env_var("RUST_LOG", "info")
-            //     .start()
-            //     .await
-            //     .expect("Failed to start fluvio");
-            //
-            let sc_host_port = sc.get_host_port_ipv4(SC_PORT).await.unwrap();
-
-            FluvioCluster {
+            let cluster = FluvioCluster {
                 sc,
                 spu,
                 port: sc_host_port,
                 host_spu_port: host_spu_port_1,
-                host,
-            }
+                client,
+                replicas: REPLICAS,
+                partitions: PARTITIONS,
+            };
+
+            cluster.connect_spu_to_sc().await;
+
+            Ok(cluster)
+        }
+
+        async fn connect_spu_to_sc(&self) {
+            let admin = self.client().admin().await;
+
+            let spu_spec = CustomSpuSpec {
+                id: 5001,
+                public_endpoint: ServerAddress::try_from(format!("0.0.0.0:{}", self.host_spu_port))
+                    .unwrap()
+                    .into(),
+                private_endpoint: ServerAddress::try_from(format!("spu:{}", 9011))
+                    .unwrap()
+                    .into(),
+                rack: None,
+                public_endpoint_local: None,
+            };
+
+            admin
+                .create("SPU".to_string(), false, spu_spec)
+                .await
+                .unwrap();
         }
 
         pub fn forward_logs_to_tracing(&self) {
@@ -148,6 +151,17 @@ mod tests {
 
             Self::log_stdout(self.spu.stdout(true));
             Self::log_stderr(self.spu.stderr(true));
+        }
+
+        pub fn client(&self) -> &fluvio::Fluvio {
+            &self.client
+        }
+
+        pub async fn create_topic(&self, topic_name: impl Into<String>) -> Result<()> {
+            let admin = self.client().admin().await;
+            let topic_spec = TopicSpec::new_computed(self.partitions, self.replicas, None);
+
+            admin.create(topic_name.into(), false, topic_spec).await
         }
 
         fn log_stdout(reader: Pin<Box<dyn AsyncBufRead + Send>>) {
@@ -177,7 +191,6 @@ mod tests {
         }
 
         pub fn endpoint(&self) -> String {
-            // format!("{}:{}", self.host, self.port)
             format!("127.0.0.1:{}", self.port)
         }
     }
@@ -186,46 +199,15 @@ mod tests {
     async fn test_fluvio_loader() {
         static TOPIC_NAME: &str = "hello-rust";
         static PARTITION_NUM: u32 = 0;
-        static PARTITIONS: u32 = 1;
-        static REPLICAS: u32 = 1;
 
-        let fluvio_cluster = FluvioCluster::start().await;
-        fluvio_cluster.forward_logs_to_tracing();
-        tokio::time::sleep(Duration::from_secs(1)).await;
-
-        let config = fluvio::FluvioConfig::new(fluvio_cluster.endpoint());
-
-        dbg!(&config);
-        let client = fluvio::Fluvio::connect_with_config(&config).await.unwrap();
-
-        // Create a topic
-        let admin = client.admin().await;
-
-        //         fluvio cluster spu register --id 5001 -p 0.0.0.0:{host_spu_port_1} --private-server spu:{SPU_PORT2};
-        let spu_spec = CustomSpuSpec {
-            id: 5001,
-            public_endpoint: ServerAddress::try_from(format!(
-                "0.0.0.0:{}",
-                fluvio_cluster.host_spu_port
-            ))
-            .unwrap()
-            .into(),
-            private_endpoint: ServerAddress::try_from(format!("spu:{}", 9011))
-                .unwrap()
-                .into(),
-            rack: None,
-            public_endpoint_local: None,
-        };
-
-        admin
-            .create("SPU".to_string(), false, spu_spec)
+        let fluvio_cluster = FluvioCluster::start()
             .await
-            .unwrap();
-        // assert!(false);
-        let topic_spec = TopicSpec::new_computed(PARTITIONS, REPLICAS, None);
-        let _result = admin
-            .create(TOPIC_NAME.to_string(), false, topic_spec)
-            .await;
+            .expect("Failed to start Fluvio cluster");
+
+        fluvio_cluster.forward_logs_to_tracing();
+        fluvio_cluster.create_topic(TOPIC_NAME).await.unwrap();
+
+        let client = fluvio_cluster.client();
 
         let producer = client.topic_producer(TOPIC_NAME).await.unwrap();
         producer
@@ -235,6 +217,7 @@ mod tests {
         producer.flush().await.unwrap();
 
         // Consume the topic with the loader
+        let config = fluvio::FluvioConfig::new(fluvio_cluster.endpoint());
         let loader = Fluvio::builder()
             .fluvio_config(&config)
             .consumer_config_ext(
