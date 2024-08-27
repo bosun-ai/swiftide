@@ -19,7 +19,7 @@ use swiftide_core::{indexing::Node, Transformer};
 pub struct MetadataSummary {}
 
 #[async_trait]
-impl Transformer for MetadataSummary {
+impl Transformer for MetadataSummary<'_> {
     /// Transforms an `Node` by extracting a summary
     /// based on the text chunk within the node.
     ///

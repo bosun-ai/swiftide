@@ -18,7 +18,7 @@ use swiftide_core::{indexing::Node, Transformer};
 pub struct MetadataKeywords {}
 
 #[async_trait]
-impl Transformer for MetadataKeywords {
+impl Transformer for MetadataKeywords<'_> {
     /// Transforms an `Node` by extracting a keywords
     /// based on the text chunk within the node.
     ///

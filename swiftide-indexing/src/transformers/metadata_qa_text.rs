@@ -22,7 +22,7 @@ pub struct MetadataQAText {
 }
 
 #[async_trait]
-impl Transformer for MetadataQAText {
+impl Transformer for MetadataQAText<'_> {
     /// Transforms an `Node` by generating questions and answers
     /// based on the text chunk within the node.
     ///

@@ -75,7 +75,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
         quote! {}
     } else {
         quote! {
-            impl Default for #struct_name {
+            impl Default for #struct_name<'_> {
                 fn default() -> Self {
                     #builder_name::default().build().unwrap()
                 }
@@ -99,10 +99,10 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
 
         #derive
         #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
-        #vis struct #struct_name {
+        #vis struct #struct_name<'client> {
             #(#existing_fields)*
             #[builder(setter(custom), default)]
-            client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
+            client: Option<hidden::Arc<dyn hidden::SimplePrompt + 'client>>,
 
             #prompt_template_struct_attr
 
@@ -114,19 +114,19 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
 
         #default_impl
 
-        impl #struct_name {
+        impl<'client> #struct_name<'client> {
             /// Creates a new builder for the transformer
-            pub fn builder() -> #builder_name {
+            pub fn builder() -> #builder_name<'client> {
                 #builder_name::default()
             }
 
             /// Build a new transformer from a client
-            pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> #builder_name {
+            pub fn from_client(client: impl hidden::SimplePrompt + 'client) -> #builder_name<'client> {
                 #builder_name::default().client(client).to_owned()
             }
 
             /// Create a new transformer from a client
-            pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
+            pub fn new(client: impl hidden::SimplePrompt + 'client) -> Self {
                 #builder_name::default().client(client).build().unwrap()
             }
 
@@ -161,14 +161,14 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
             }
         }
 
-        impl #builder_name {
-            pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
+        impl<'client> #builder_name<'client> {
+            pub fn client(&mut self, client: impl hidden::SimplePrompt + 'client) -> &mut Self {
                 self.client = Some(Some(hidden::Arc::new(client)));
                 self
             }
         }
 
-        impl hidden::WithIndexingDefaults for #struct_name {
+        impl hidden::WithIndexingDefaults for #struct_name<'_> {
             fn with_indexing_defaults(&mut self, defaults: hidden::IndexingDefaults) {
                 self.indexing_defaults = Some(defaults);
             }

@@ -21,7 +21,7 @@ fn extract_markdown_codeblock(text: String) -> String {
 }
 
 #[async_trait]
-impl Transformer for CompressCodeOutline {
+impl Transformer for CompressCodeOutline<'_> {
     /// Asynchronously transforms an `Node` by reducing the size of the outline to make it more relevant to the chunk.
     ///
     /// This method uses the `SimplePrompt` client to compress the outline of the `Node` and updates the `Node` with the compressed outline.
