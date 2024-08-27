@@ -11,12 +11,12 @@ use swiftide_core::{
 /// A transformer that can generate embeddings for an `Node`
 ///
 /// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
-pub struct Embed {
-    embed_model: Arc<dyn EmbeddingModel>,
+pub struct Embed<'client> {
+    embed_model: Arc<dyn EmbeddingModel + 'client>,
     concurrency: Option<usize>,
 }
 
-impl std::fmt::Debug for Embed {
+impl std::fmt::Debug for Embed<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Embed")
             .field("concurrency", &self.concurrency)
@@ -24,7 +24,7 @@ impl std::fmt::Debug for Embed {
     }
 }
 
-impl Embed {
+impl<'client> Embed<'client> {
     /// Creates a new instance of the `Embed` transformer.
     ///
     /// # Parameters
@@ -34,7 +34,7 @@ impl Embed {
     /// # Returns
     ///
     /// A new instance of `Embed`.
-    pub fn new(model: impl EmbeddingModel + 'static) -> Self {
+    pub fn new(model: impl EmbeddingModel + 'client) -> Self {
         Self {
             embed_model: Arc::new(model),
             concurrency: None,
@@ -48,11 +48,11 @@ impl Embed {
     }
 }
 
-impl WithBatchIndexingDefaults for Embed {}
-impl WithIndexingDefaults for Embed {}
+impl WithBatchIndexingDefaults for Embed<'_> {}
+impl WithIndexingDefaults for Embed<'_> {}
 
 #[async_trait]
-impl BatchableTransformer for Embed {
+impl BatchableTransformer for Embed<'_> {
     /// Transforms a batch of `Node` objects by generating embeddings for them.
     ///
     /// # Parameters

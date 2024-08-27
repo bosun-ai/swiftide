@@ -11,12 +11,12 @@ use swiftide_core::{
 /// A transformer that can generate embeddings for an `Node`
 ///
 /// This file defines the `SparseEmbed` struct and its implementation of the `BatchableTransformer` trait.
-pub struct SparseEmbed {
-    embed_model: Arc<dyn SparseEmbeddingModel>,
+pub struct SparseEmbed<'client> {
+    embed_model: Arc<dyn SparseEmbeddingModel + 'client>,
     concurrency: Option<usize>,
 }
 
-impl std::fmt::Debug for SparseEmbed {
+impl std::fmt::Debug for SparseEmbed<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SparseEmbed")
             .field("concurrency", &self.concurrency)
@@ -24,7 +24,7 @@ impl std::fmt::Debug for SparseEmbed {
     }
 }
 
-impl SparseEmbed {
+impl SparseEmbed<'_> {
     /// Creates a new instance of the `SparseEmbed` transformer.
     ///
     /// # Parameters
@@ -48,11 +48,11 @@ impl SparseEmbed {
     }
 }
 
-impl WithBatchIndexingDefaults for SparseEmbed {}
-impl WithIndexingDefaults for SparseEmbed {}
+impl WithBatchIndexingDefaults for SparseEmbed<'_> {}
+impl WithIndexingDefaults for SparseEmbed<'_> {}
 
 #[async_trait]
-impl BatchableTransformer for SparseEmbed {
+impl BatchableTransformer for SparseEmbed<'_> {
     /// Transforms a batch of `Node` objects by generating embeddings for them.
     ///
     /// # Parameters
