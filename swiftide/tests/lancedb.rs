@@ -74,6 +74,7 @@ async fn test_lancedb() {
 
     assert_eq!(result.num_rows(), 1);
     assert_eq!(result.num_columns(), 4);
+    dbg!(result.columns());
     assert!(result.column_by_name("id").is_some());
     assert_eq!(
         result
@@ -85,14 +86,17 @@ async fn test_lancedb() {
             .value(0),
         code
     );
-    // assert_eq!(
-    //     result
-    //         .column_by_name("questions_and_answers__code_")
-    //         .unwrap()
-    //         .as_string_view()
-    //         .value(0),
-    //     "\n\nHello there, how may I assist you today?"
-    // );
+    assert_eq!(
+        result
+            .column_by_name("questions_and_answers__code_")
+            .unwrap()
+            .as_any()
+            .downcast_ref::<StringArray>() // as_string() doesn't work, wtf
+            .unwrap()
+            .value(0),
+        "\n\nHello there, how may I assist you today?"
+    );
+    
     assert_eq!(
         result
             .column_by_name("vector_combined")

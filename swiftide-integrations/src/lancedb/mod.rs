@@ -203,12 +203,14 @@ impl From<EmbeddedField> for VectorConfig {
 #[derive(Clone)]
 pub struct MetadataConfig {
     field: String,
+    original_field: String,
 }
 
 impl<T: AsRef<str>> From<T> for MetadataConfig {
     fn from(val: T) -> Self {
         MetadataConfig {
             field: normalize_field_name(val.as_ref()),
+            original_field: val.as_ref().to_string(),
         }
     }
 }

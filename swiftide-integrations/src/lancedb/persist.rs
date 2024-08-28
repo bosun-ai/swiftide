@@ -116,9 +116,9 @@ impl LanceDB {
                     for node in nodes {
                         let data = node
                             .metadata
-                            .get(&config.field)
+                            .get(&config.original_field)
                             // TODO: Verify this gives the correct data
-                            .and_then(|v| v.as_str().map(normalize_field_name));
+                            .and_then(|v| v.as_str());
 
                         row.push(data);
                     }
