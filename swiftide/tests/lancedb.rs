@@ -1,7 +1,5 @@
 use arrow_array::*;
-use arrow_array::{
-    cast::AsArray, Array, RecordBatch, StringArray,
-};
+use arrow_array::{cast::AsArray, Array, RecordBatch, StringArray};
 use lancedb::query::ExecutableQuery;
 use swiftide::{
     indexing::{
