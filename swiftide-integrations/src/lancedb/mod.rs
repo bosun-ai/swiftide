@@ -1,4 +1,3 @@
-use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -14,23 +13,29 @@ pub mod persist;
 
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
+#[allow(dead_code)]
 pub struct LanceDB {
-    /// Connection pool for LanceDB
-    /// By default will use settings provided when creating the LanceDB instance.
+    /**
+    Connection pool for `LanceDB`
+    By default will use settings provided when creating the instance.
+    */
     #[builder(default = "self.default_connection_pool()?")]
     connection_pool: Arc<LanceDBConnectionPool>,
 
-    /// Set the URI for the LanceDB instance. Required unless a connection pool is provided.
+    /// Set the URI. Required unless a connection pool is provided.
     uri: Option<String>,
+    /// The maximum number of connections, defaults to 10.
     #[builder(default = "Some(10)")]
-    /// The maximum number of connections to LanceDB, defaults to 10.
     pool_size: Option<usize>,
 
-    /// API key for LanceDB
+    /// Optional API key
+    #[builder(default)]
     api_key: Option<String>,
-    /// Region for LanceDB
+    /// Optional Region
+    #[builder(default)]
     region: Option<String>,
     /// Storage options
+    #[builder(default)]
     storage_options: Vec<(String, String)>,
 
     #[builder(private, default = "self.default_schema_from_fields()")]
@@ -45,14 +50,14 @@ pub struct LanceDB {
     /// sizes by specifying the size in the vector configuration.
     vector_size: Option<i32>,
 
-    /// Batch size for storing nodes in LanceDB. Default is 256.
+    /// Batch size for storing nodes in `LanceDB`. Default is 256.
     #[builder(default = "256")]
     batch_size: usize,
 
-    /// Field configuration for LanceDB, will result in the eventual schema.
+    /// Field configuration for `LanceDB`, will result in the eventual schema.
     ///
     /// Supports multiple field types, see [`FieldConfig`] for more details.
-    #[builder(default)]
+    #[builder(default = "self.default_fields()")]
     fields: Vec<FieldConfig>,
 }
 
@@ -69,11 +74,13 @@ impl LanceDB {
         LanceDBBuilder::default()
     }
 
-    /// Get a connection to LanceDB from the connection pool
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the connection cannot be retrieved.
+    /**
+    Get a connection to `LanceDB` from the connection pool
+
+    # Errors
+
+    Returns an error if the connection cannot be retrieved.
+    */
     pub async fn get_connection(&self) -> Result<Object<LanceDBPoolManager>> {
         Box::pin(self.connection_pool.get())
             .await
@@ -84,7 +91,7 @@ impl LanceDB {
 impl LanceDBBuilder {
     pub fn with_vector(&mut self, config: impl Into<VectorConfig>) -> &mut Self {
         if self.fields.is_none() {
-            self.fields(Vec::default());
+            self.fields(self.default_fields());
         }
 
         self.fields
@@ -97,7 +104,7 @@ impl LanceDBBuilder {
 
     pub fn with_metadata(&mut self, config: impl Into<MetadataConfig>) -> &mut Self {
         if self.fields.is_none() {
-            self.fields(Vec::default());
+            self.fields(self.default_fields());
         }
         self.fields
             .as_mut()
@@ -106,11 +113,16 @@ impl LanceDBBuilder {
         self
     }
 
+    #[allow(clippy::unused_self)]
+    fn default_fields(&self) -> Vec<FieldConfig> {
+        vec![FieldConfig::ID, FieldConfig::Chunk]
+    }
+
     fn default_schema_from_fields(&self) -> Arc<Schema> {
         let mut fields = Vec::new();
         let vector_size = self.vector_size;
 
-        for ref field in self.fields.clone().unwrap_or_default() {
+        for field in self.fields.as_deref().unwrap_or(&self.default_fields()) {
             match field {
                 FieldConfig::Vector(config) => {
                     let vector_size = config.vector_size.or(vector_size.flatten()).expect(
@@ -120,17 +132,20 @@ impl LanceDBBuilder {
                     fields.push(Field::new(
                         config.field_name(),
                         DataType::FixedSizeList(
-                            Arc::new(Field::new("item", DataType::Float32, false)),
+                            Arc::new(Field::new("item", DataType::Float32, true)),
                             vector_size,
                         ),
-                        false,
+                        true,
                     ));
                 }
                 FieldConfig::Chunk => {
-                    fields.push(Field::new("chunk", DataType::Utf8, true));
+                    fields.push(Field::new("chunk", DataType::Utf8, false));
                 }
                 FieldConfig::Metadata(config) => {
                     fields.push(Field::new(&config.field, DataType::Utf8, true));
+                }
+                FieldConfig::ID => {
+                    fields.push(Field::new("id", DataType::UInt64, false));
                 }
             }
         }
@@ -146,11 +161,7 @@ impl LanceDBBuilder {
             .build()?;
 
         LanceDBConnectionPool::builder(mgr)
-            .max_size(
-                self.pool_size
-                    .flatten()
-                    .context("Pool size should be set")?,
-            )
+            .max_size(self.pool_size.flatten().unwrap_or(10))
             .build()
             .map(Arc::new)
             .map_err(Into::into)
@@ -162,6 +173,7 @@ pub enum FieldConfig {
     Vector(VectorConfig),
     Metadata(MetadataConfig),
     Chunk,
+    ID,
 }
 
 #[derive(Clone)]
@@ -189,19 +201,6 @@ impl From<EmbeddedField> for VectorConfig {
 }
 
 #[derive(Clone)]
-pub struct SparseVectorConfig {
-    embedded_field: EmbeddedField,
-}
-
-impl From<EmbeddedField> for SparseVectorConfig {
-    fn from(val: EmbeddedField) -> Self {
-        SparseVectorConfig {
-            embedded_field: val,
-        }
-    }
-}
-
-#[derive(Clone)]
 pub struct MetadataConfig {
     field: String,
 }
@@ -214,7 +213,7 @@ impl<T: AsRef<str>> From<T> for MetadataConfig {
     }
 }
 
-fn normalize_field_name(field: &str) -> String {
+pub(crate) fn normalize_field_name(field: &str) -> String {
     field
         .to_lowercase()
         .replace(|c: char| !c.is_alphanumeric(), "_")

@@ -8,8 +8,11 @@ use lancedb::connection::ConnectBuilder;
 #[builder(setter(into), build_fn(error = "anyhow::Error"))]
 pub struct LanceDBPoolManager {
     uri: String,
+    #[builder(default)]
     api_key: Option<String>,
+    #[builder(default)]
     region: Option<String>,
+    #[builder(default)]
     storage_options: Vec<(String, String)>,
 }
 
@@ -20,17 +23,6 @@ impl LanceDBPoolManager {
         LanceDBPoolManagerBuilder::default()
     }
 }
-
-// impl LanceDBConnectionPoolBuilder {
-//     fn default_pool_manager(&self) -> Result<LanceDBPoolManager> {
-//         LanceDBPoolManagerBuilder::default()
-//             .uri(self.uri.clone().context("Expected URI")?)
-//             .api_key(self.api_key.clone().flatten())
-//             .region(self.region.clone().flatten())
-//             .storage_options(self.storage_options.clone().unwrap_or_default())
-//             .build()
-//     }
-// }
 
 impl Manager for LanceDBPoolManager {
     type Type = lancedb::Connection;

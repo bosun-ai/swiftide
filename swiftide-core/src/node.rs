@@ -116,6 +116,7 @@ impl Node {
     ///
     /// Embeddable data mapped to their `EmbeddedField`.
     pub fn as_embeddables(&self) -> Vec<(EmbeddedField, String)> {
+        // TODO: Figure out a clever way to do zero copy
         let mut embeddables = Vec::new();
 
         if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
