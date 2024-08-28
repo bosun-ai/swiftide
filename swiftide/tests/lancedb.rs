@@ -1,6 +1,6 @@
 use arrow_array::*;
 use arrow_array::{
-    cast::AsArray, types::Utf8Type, AnyDictionaryArray, Array, RecordBatch, StringArray,
+    cast::AsArray, Array, RecordBatch, StringArray,
 };
 use lancedb::query::ExecutableQuery;
 use swiftide::{
@@ -12,9 +12,9 @@ use swiftide::{
     },
     query::TryStreamExt as _,
 };
-use swiftide_indexing::{loaders, persist, transformers, Pipeline};
+use swiftide_indexing::{loaders, transformers, Pipeline};
 use swiftide_integrations::{fastembed::FastEmbed, lancedb::LanceDB};
-use swiftide_test_utils::{mock_chat_completions, mock_embeddings, openai_client};
+use swiftide_test_utils::{mock_chat_completions, openai_client};
 use temp_dir::TempDir;
 use wiremock::MockServer;
 
