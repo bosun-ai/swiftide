@@ -528,9 +528,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-bedrockruntime"
-version = "1.43.0"
+version = "1.44.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b00f9f20f813c584e87e631369faa3feaf40af663988d75149f723fb9a09a4a5"
+checksum = "21ff82650b9e072492a927378fab86067e4dcca1e4455d7aef82f15a7b86e1cb"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -703,9 +703,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-runtime"
-version = "1.6.2"
+version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce87155eba55e11768b8c1afa607f3e864ae82f03caf63258b37455b0ad02537"
+checksum = "0abbf454960d0db2ad12684a1640120e7557294b0ff8e2f11236290a1b293225"
 dependencies = [
  "aws-smithy-async",
  "aws-smithy-http",
@@ -747,9 +747,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-types"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfe321a6b21f5d8eabd0ade9c55d3d0335f3c3157fc2b3e87f05f34b539e4df5"
+checksum = "f37570a4e8ce26bd3a69c7c011f13eee6b2a1135c4518cb57030f4257077ca36"
 dependencies = [
  "base64-simd",
  "bytes",
@@ -900,7 +900,7 @@ dependencies = [
 
 [[package]]
 name = "benchmarks"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "fluvio",
  "qdrant-client",
@@ -4152,7 +4152,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18bec9b0adc4eba778b33684b7ba3e7137789434769ee3ce3930463ef904cfca"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.74",
@@ -4196,9 +4196,9 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "1.10.3"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b3660716b1555923d189c2a8e4bf849e9c2cf86a346d868eb2616cf83844a2a"
+checksum = "26955138c3afae5f9d36decd09f1e4e02e266132359b8631093e9cddb1662600"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -4220,9 +4220,9 @@ checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
 name = "quick-xml"
-version = "0.31.0"
+version = "0.36.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1004a344b30a54e2ee58d66a71b32d2db2feb0a31f9a2d302bf0536f15de2a33"
+checksum = "96a05e2e8efddfa51a84ca47cec303fac86c8541b686d37cac5efc0e094417bc"
 dependencies = [
  "memchr",
  "serde",
@@ -4861,9 +4861,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.124"
+version = "1.0.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66ad62847a56b3dba58cc891acd13884b9c61138d330c0d7b6181713d4fce38d"
+checksum = "83c8e735a073ccf5be70aa8066aa984eaf2fa000db6c8d0100ae605b366d31ed"
 dependencies = [
  "itoa",
  "memchr",
@@ -5062,9 +5062,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "1.99.30"
+version = "1.99.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "710344c3e74448a445a2eebb42d3199be832774d68e49ac2d8ffe0a4d74f2c7f"
+checksum = "cac06119639aca1b09a4827201e369738a0275d8d795f6468a25c08882de65a1"
 dependencies = [
  "ahash",
  "bytes",
@@ -5213,7 +5213,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -5237,7 +5237,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5260,7 +5260,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5288,7 +5288,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -5335,7 +5335,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-macros"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -5345,7 +5345,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5369,7 +5369,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-openai",

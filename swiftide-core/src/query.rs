@@ -75,17 +75,16 @@ impl Query<states::Pending> {
 
     /// Add retrieved documents and transition to `states::Retrieved`
     pub fn retrieved_documents(mut self, documents: Vec<Document>) -> Query<states::Retrieved> {
-        let new_response = String::new();
-
         self.transformation_history
             .push(TransformationEvent::Retrieved {
                 before: self.current.clone(),
-                after: new_response.clone(),
+                after: String::new(),
                 documents: documents.clone(),
             });
 
         let state = states::Retrieved { documents };
 
+        self.current.clear();
         self.transition_to(state)
     }
 }
@@ -200,6 +199,7 @@ mod tests {
         let query = query.retrieved_documents(documents.clone());
         assert_eq!(query.documents(), &documents);
         assert_eq!(query.history().len(), 1);
+        assert!(query.current().is_empty());
         if let TransformationEvent::Retrieved {
             before,
             after,
@@ -218,13 +218,15 @@ mod tests {
     fn test_query_transformed_response() {
         let query = Query::<states::Pending>::from("test query");
         let documents = vec!["doc1".to_string(), "doc2".to_string()];
-        let mut query = query.retrieved_documents(documents);
+        let mut query = query.retrieved_documents(documents.clone());
         query.transformed_response("new response");
 
         assert_eq!(query.current(), "new response");
         assert_eq!(query.history().len(), 2);
+        assert_eq!(query.documents(), &documents);
+        assert_eq!(query.original, "test query");
         if let TransformationEvent::Transformed { before, after } = &query.history()[1] {
-            assert_eq!(before, "test query");
+            assert_eq!(before, "");
             assert_eq!(after, "new response");
         } else {
             panic!("Unexpected event in history");
