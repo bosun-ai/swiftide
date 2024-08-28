@@ -1,4 +1,5 @@
 use swiftide::indexing::{
+    transformers::metadata_qa_code::NAME as METADATA_QA_CODE_NAME,
     transformers::{ChunkCode, MetadataQACode},
     EmbeddedField,
 };
@@ -37,7 +38,7 @@ async fn test_sparse_indexing_pipeline() {
                     .uri(tempdir.child("lancedb").to_str().unwrap())
                     .vector_size(384)
                     .with_vector(EmbeddedField::Combined)
-                    .with_sparse_vector(EmbeddedField::Combined)
+                    .with_metadata(METADATA_QA_CODE_NAME)
                     .table_name("swiftide_test")
                     .build()
                     .unwrap(),
