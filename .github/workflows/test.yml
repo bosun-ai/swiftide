@@ -28,6 +28,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - uses: r7kamura/rust-problem-matchers@v1
       - name: Check typos
         uses: crate-ci/typos@master
@@ -45,6 +47,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Test"
         run: cargo test --verbose --workspace --all-features
@@ -60,6 +64,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
       - uses: r7kamura/rust-problem-matchers@v1

@@ -25,6 +25,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
