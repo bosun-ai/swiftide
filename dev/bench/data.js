@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723796085065,
+  "lastUpdate": 1724922096016,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3275,6 +3275,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cc7ec0849d7398561c1ff1c48037458e7d4e23fa",
+          "message": "fix(deps): update rust crate spider to v2 (#237)\n\nThis PR contains the following updates:\r\n\r\n| Package | Type | Update | Change |\r\n|---|---|---|---|\r\n| [spider](https://togithub.com/spider-rs/spider) | dependencies | major\r\n| `1.98` -> `2.0` |\r\n\r\n---\r\n\r\n### Release Notes\r\n\r\n<details>\r\n<summary>spider-rs/spider (spider)</summary>\r\n\r\n###\r\n[`v2.2.4`](https://togithub.com/spider-rs/spider/releases/tag/v2.2.4)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.2.3...v2.2.4)\r\n\r\n### Whats Changed\r\n\r\nWe can now auto detect locales without losing out on performance. We\r\ndefault enabled the `encoding` flag for this change!\r\n\r\n```rust\r\nlet mut website: Website = Website::new(\"https://tenki.jp\");\r\n// all of the content output has the proper encoding automatically\r\n```\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v2.1.9...v2.2.4\r\n\r\n###\r\n[`v2.2.3`](https://togithub.com/spider-rs/spider/compare/v2.2.2...v2.2.3)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.2.2...v2.2.3)\r\n\r\n###\r\n[`v2.2.2`](https://togithub.com/spider-rs/spider/compare/v2.2.1...v2.2.2)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.2.1...v2.2.2)\r\n\r\n###\r\n[`v2.2.1`](https://togithub.com/spider-rs/spider/compare/v2.2.0...v2.2.1)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.2.0...v2.2.1)\r\n\r\n###\r\n[`v2.2.0`](https://togithub.com/spider-rs/spider/compare/v2.1.9...v2.2.0)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.1.9...v2.2.0)\r\n\r\n###\r\n[`v2.1.9`](https://togithub.com/spider-rs/spider/releases/tag/v2.1.9)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.1.8...v2.1.9)\r\n\r\n### Whats New\r\n\r\nThis release brings bug fixes with chrome opening pages causing hangs.\r\nThe builder method `website.with_return_page_links` can be used to\r\nattach the links found on the web page to the page object.\r\n\r\n- chore(chrome): fix instances being left open from ignorable handler\r\nerrors\r\n- chore(scrape): add sitemap and smart\r\n\\[[#&#8203;206](https://togithub.com/spider-rs/spider/issues/206)]\r\n-   feat(page): add return page links configuration\r\n-   chore(config): fix budget reset on crawl end\r\n\r\nThanks [@&#8203;DimitriTimoz](https://togithub.com/DimitriTimoz)\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v2.0.6...v2.1.9\r\n\r\n###\r\n[`v2.1.8`](https://togithub.com/spider-rs/spider/compare/v2.1.6...v2.1.8)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.1.6...v2.1.8)\r\n\r\n###\r\n[`v2.1.3`](https://togithub.com/spider-rs/spider/compare/v2.1.2...v2.1.3)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.1.2...v2.1.3)\r\n\r\n###\r\n[`v2.0.18`](https://togithub.com/spider-rs/spider/compare/v2.0.17...v2.0.18)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.17...v2.0.18)\r\n\r\n###\r\n[`v2.0.17`](https://togithub.com/spider-rs/spider/compare/v2.0.16...v2.0.17)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.16...v2.0.17)\r\n\r\n###\r\n[`v2.0.16`](https://togithub.com/spider-rs/spider/compare/v2.0.15...v2.0.16)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.15...v2.0.16)\r\n\r\n###\r\n[`v2.0.15`](https://togithub.com/spider-rs/spider/compare/v2.0.14...v2.0.15)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.14...v2.0.15)\r\n\r\n###\r\n[`v2.0.14`](https://togithub.com/spider-rs/spider/compare/v2.0.13...v2.0.14)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.13...v2.0.14)\r\n\r\n###\r\n[`v2.0.13`](https://togithub.com/spider-rs/spider/compare/v2.0.12...v2.0.13)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.12...v2.0.13)\r\n\r\n###\r\n[`v2.0.12`](https://togithub.com/spider-rs/spider/compare/v2.0.11...v2.0.12)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.11...v2.0.12)\r\n\r\n###\r\n[`v2.0.6`](https://togithub.com/spider-rs/spider/releases/tag/v2.0.6)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.5...v2.0.6)\r\n\r\n#### What's Changed\r\n\r\n-   add http response cookies map\r\n-   fix chrome fs feature flag build\r\n- Update README.md by\r\n[@&#8203;James4Ever0](https://togithub.com/James4Ever0) in\r\n[https://github.com/spider-rs/spider/pull/203](https://togithub.com/spider-rs/spider/pull/203)\r\n\r\n#### New Contributors\r\n\r\n- [@&#8203;James4Ever0](https://togithub.com/James4Ever0) made their\r\nfirst contribution in\r\n[https://github.com/spider-rs/spider/pull/203](https://togithub.com/spider-rs/spider/pull/203)\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v2.0.3...v2.0.6\r\n\r\n###\r\n[`v2.0.3`](https://togithub.com/spider-rs/spider/releases/tag/v2.0.3)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.2...v2.0.3)\r\n\r\n### Whats Changed\r\n\r\n1. Scrape and Crawl now perform functionality identically as scrape\r\nre-uses crawl underneath.\r\n2.  Scrape API cleanup\r\n3.  Add get_chrome_page chrome page ref\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v1.99.30...v2.0.3\r\n\r\n###\r\n[`v2.0.2`](https://togithub.com/spider-rs/spider/compare/v2.0.1...v2.0.2)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.1...v2.0.2)\r\n\r\n###\r\n[`v2.0.1`](https://togithub.com/spider-rs/spider/compare/v2.0.0...v2.0.1)\r\n\r\n[Compare\r\nSource](https://togithub.com/spider-rs/spider/compare/v2.0.0...v2.0.1)\r\n\r\n</details>\r\n\r\n---\r\n\r\n### Configuration\r\n\r\n📅 **Schedule**: Branch creation - At any time (no schedule defined),\r\nAutomerge - At any time (no schedule defined).\r\n\r\n🚦 **Automerge**: Disabled by config. Please merge this manually once you\r\nare satisfied.\r\n\r\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\r\nrebase/retry checkbox.\r\n\r\n🔕 **Ignore**: Close this PR and you won't be reminded about this update\r\nagain.\r\n\r\n---\r\n\r\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\r\nthis box\r\n\r\n---\r\n\r\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\r\nView the [repository job\r\nlog](https://developer.mend.io/github/bosun-ai/swiftide).\r\n\r\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiIzOC4yNi4xIiwidXBkYXRlZEluVmVyIjoiMzguNTYuMCIsInRhcmdldEJyYW5jaCI6Im1hc3RlciIsImxhYmVscyI6W119-->\r\n\r\n---------\r\n\r\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2024-08-29T10:55:55+02:00",
+          "tree_id": "826aecb7f3deba8dd273c1ecbf8d2eb0fd06b46e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/cc7ec0849d7398561c1ff1c48037458e7d4e23fa"
+        },
+        "date": 1724922095041,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
