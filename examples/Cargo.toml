@@ -19,11 +19,13 @@ swiftide = { path = "../swiftide/", features = [
   "aws-bedrock",
   "groq",
   "ollama",
+  "fluvio",
 ] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
 spider = { workspace = true }
 qdrant-client = "1.10.3"
+fluvio = "0.23.1"
 
 [[example]]
 doc-scrape-examples = true
@@ -79,3 +81,7 @@ path = "query_pipeline.rs"
 [[example]]
 name = "hybrid-search"
 path = "hybrid_search.rs"
+
+[[example]]
+name = "fluvio"
+path = "fluvio.rs"
