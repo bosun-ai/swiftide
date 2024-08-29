@@ -8,22 +8,31 @@ example at [swiftide-tutorials](https://github.com/bosun-ai/swiftide-tutorial).
 
 # Example
 
-```no_run
+```ignore
+# use swiftide_query::*;
+# use anyhow::{Result, Context};
+# #[tokio::main]
+# async fn main() -> anyhow::Result<()> {
+
+let openai = swiftide::integrations::openai::OpenAi::default();
+let qdrant = swiftide::integrations::qdrant::Qdrant::default();
+
 let ragas = evaluators::ragas::Ragas::from_prepared_questions(questions);
 
 let pipeline = query::Pipeline::default()
     .evaluate_with(ragas.clone())
-    .then_transform_query(GenerateSubquestions::from_client(context.openai.clone()))
+    .then_transform_query(query_transformers::GenerateSubquestions::from_client(openai.clone()))
     .then_transform_query(query_transformers::Embed::from_client(
-        context.openai.clone(),
+        openai.clone(),
     ))
-    .then_retrieve(context.qdrant.clone())
-    .then_answer(Simple::from_client(context.openai.clone()));
+    .then_retrieve(qdrant.clone())
+    .then_answer(answers::Simple::from_client(openai.clone()));
 
-pipeline.query_all(ragas.questions().await).await?;
+pipeline.query_all(ragas.questions().await).await.unwrap();
 
-std::fs::write(args.output, ragas.to_json()).context("Failed to write ragas.json")?;
-```
+std::fs::write("output.json", ragas.to_json().await).unwrap();
+# Ok(())
+# }
 */
 use anyhow::Result;
 use async_trait::async_trait;
