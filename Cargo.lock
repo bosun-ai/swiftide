@@ -5369,6 +5369,8 @@ dependencies = [
  "mockall",
  "num_cpus",
  "pin-project-lite",
+ "serde",
+ "serde_json",
  "swiftide-core",
  "temp-dir",
  "test-case",

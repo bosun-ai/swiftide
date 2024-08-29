@@ -1,7 +1,7 @@
-//! Search strategies provide a generic way for Retrievers to implement their
-//! search in various ways.
-//!
-//! The strategy is also yielded to the Retriever and can contain addition configuration
+/// Search strategies provide a generic way for Retrievers to implement their
+/// search in various ways.
+///
+/// The strategy is also yielded to the Retriever and can contain addition configuration
 use crate::querying;
 
 /// A very simple search where it takes the embedding on the current query

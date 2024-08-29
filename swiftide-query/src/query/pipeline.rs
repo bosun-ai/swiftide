@@ -20,6 +20,7 @@ use swiftide_core::{
         search_strategies::SimilaritySingleEmbedding, states, Answer, Query, QueryStream, Retrieve,
         SearchStrategy, TransformQuery, TransformResponse,
     },
+    EvaluateQuery,
 };
 use tokio::sync::mpsc::Sender;
 
@@ -28,6 +29,7 @@ pub struct Pipeline<'stream, S: SearchStrategy = SimilaritySingleEmbedding, T = 
     search_strategy: S,
     stream: QueryStream<'stream, T>,
     query_sender: Sender<Result<Query<states::Pending>>>,
+    evaluator: Option<Arc<Box<dyn EvaluateQuery>>>,
     default_concurrency: usize,
 }
 
@@ -43,6 +45,7 @@ impl<S: SearchStrategy> Default for Pipeline<'_, S> {
                 .clone()
                 .expect("Pipeline received stream without query entrypoint"),
             stream,
+            evaluator: None,
             default_concurrency: num_cpus::get(),
         }
     }
@@ -63,6 +66,17 @@ impl<'stream: 'static, S> Pipeline<'stream, S, states::Pending>
 where
     S: SearchStrategy,
 {
+    /// Evaluate queries with an evaluator
+    #[must_use]
+    pub fn evaluate_with<T: ToOwned<Owned = impl EvaluateQuery + 'stream>>(
+        mut self,
+        evaluator: T,
+    ) -> Self {
+        self.evaluator = Some(Arc::new(Box::new(evaluator.to_owned())));
+
+        self
+    }
+
     /// Transform a query into something else, see [`crate::query_transformers`]
     #[must_use]
     pub fn then_transform_query<T: ToOwned<Owned = impl TransformQuery + 'stream>>(
@@ -75,6 +89,7 @@ where
             stream,
             query_sender,
             search_strategy,
+            evaluator,
             default_concurrency,
         } = self;
 
@@ -91,6 +106,7 @@ where
             stream: new_stream.boxed().into(),
             search_strategy,
             query_sender,
+            evaluator,
             default_concurrency,
         }
     }
@@ -108,16 +124,31 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
             stream,
             query_sender,
             search_strategy,
+            evaluator,
             default_concurrency,
         } = self;
 
         let strategy_for_stream = search_strategy.clone();
+        let evaluator_for_stream = evaluator.clone();
+
         let new_stream = stream
             .map_ok(move |query| {
                 let search_strategy = strategy_for_stream.clone();
                 let retriever = Arc::clone(&retriever);
                 let span = tracing::trace_span!("then_retrieve", query = ?query);
-                async move { retriever.retrieve(&search_strategy, query).await }.instrument(span)
+                let evaluator_for_stream = evaluator_for_stream.clone();
+
+                async move {
+                    let result = retriever.retrieve(&search_strategy, query).await?;
+
+                    if let Some(evaluator) = evaluator_for_stream.as_ref() {
+                        evaluator.evaluate(result.clone().into()).await?;
+                        Ok(result)
+                    } else {
+                        Ok(result)
+                    }
+                }
+                .instrument(span)
             })
             .try_buffer_unordered(default_concurrency);
 
@@ -125,6 +156,7 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
             stream: new_stream.boxed().into(),
             search_strategy: search_strategy.clone(),
             query_sender,
+            evaluator,
             default_concurrency,
         }
     }
@@ -142,6 +174,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             stream,
             query_sender,
             search_strategy,
+            evaluator,
             default_concurrency,
         } = self;
 
@@ -157,6 +190,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             stream: new_stream.boxed().into(),
             search_strategy,
             query_sender,
+            evaluator,
             default_concurrency,
         }
     }
@@ -174,19 +208,34 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             stream,
             query_sender,
             search_strategy,
+            evaluator,
             default_concurrency,
         } = self;
+        let evaluator_for_stream = evaluator.clone();
+
         let new_stream = stream
             .map_ok(move |query: Query<states::Retrieved>| {
                 let answerer = Arc::clone(&answerer);
                 let span = tracing::trace_span!("then_answer", query = ?query);
-                async move { answerer.answer(query).await }.instrument(span)
+                let evaluator_for_stream = evaluator_for_stream.clone();
+
+                async move {
+                    let result = answerer.answer(query).await?;
+                    if let Some(evaluator) = evaluator_for_stream.as_ref() {
+                        evaluator.evaluate(result.clone().into()).await?;
+                        Ok(result)
+                    } else {
+                        Ok(result)
+                    }
+                }
+                .instrument(span)
             })
             .try_buffer_unordered(default_concurrency);
         Pipeline {
             stream: new_stream.boxed().into(),
             search_strategy,
             query_sender,
+            evaluator,
             default_concurrency,
         }
     }
@@ -234,7 +283,6 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         while let Some(result) = stream.try_next().await? {
             tracing::debug!(?result, "Received an answer");
             results.push(result);
-
             if results.len() == queries.len() {
                 break;
             }
