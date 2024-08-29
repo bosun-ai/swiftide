@@ -5,18 +5,24 @@
 //! `states::Pending`: No documents have been retrieved
 //! `states::Retrieved`: Documents have been retrieved
 //! `states::Answered`: The query has been answered
+use derive_builder::Builder;
+
 use crate::Embedding;
 
 type Document = String;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Builder)]
+#[builder(setter(into))]
 pub struct Query<State> {
     original: String,
+    #[builder(default = "self.original.clone().unwrap_or_default()")]
     current: String,
     state: State,
+    #[builder(default)]
     transformation_history: Vec<TransformationEvent>,
 
     // TODO: How would this work when doing a rollup query?
+    #[builder(default)]
     pub embedding: Option<Embedding>,
 }
 
@@ -32,7 +38,11 @@ impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
     }
 }
 
-impl<T> Query<T> {
+impl<T: Clone> Query<T> {
+    pub fn builder() -> QueryBuilder<T> {
+        QueryBuilder::default().clone()
+    }
+
     /// Return the query it started with
     pub fn original(&self) -> &str {
         &self.original
@@ -126,16 +136,19 @@ impl Query<states::Answered> {
 }
 
 pub mod states {
+    use super::Builder;
     use super::Document;
 
     #[derive(Debug, Default, Clone)]
     pub struct Pending;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Default, Clone, Builder)]
+    #[builder(setter(into))]
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
     }
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Default, Clone, Builder)]
+    #[builder(setter(into))]
     pub struct Answered {
         pub(crate) answer: String,
     }

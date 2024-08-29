@@ -186,3 +186,182 @@ impl FromStr for EvaluationDataSet {
         ))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use swiftide_core::querying::{states, Query, QueryEvaluation};
+    use tokio::sync::RwLock;
+
+    #[tokio::test]
+    async fn test_ragas_from_prepared_questions() {
+        let questions = vec!["What is Rust?".to_string(), "What is Tokio?".to_string()];
+        let ragas = Ragas::from_prepared_questions(questions.clone());
+
+        let stored_questions = ragas.questions().await;
+        assert_eq!(stored_questions.len(), questions.len());
+
+        for question in questions {
+            assert!(stored_questions.iter().any(|q| q.original() == question));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_ragas_record_answers_as_ground_truth() {
+        let dataset = Arc::new(RwLock::new(EvaluationDataSet::from(vec![(
+            "What is Rust?".to_string(),
+            "A programming language".to_string(),
+        )])));
+        let ragas = Ragas {
+            dataset: dataset.clone(),
+        };
+
+        {
+            let mut lock = dataset.write().await;
+            let data = lock.0.get_mut("What is Rust?").unwrap();
+            data.answer = "A systems programming language".to_string();
+        }
+
+        ragas.record_answers_as_ground_truth().await;
+
+        let updated_data = ragas.dataset.read().await;
+        let data = updated_data.0.get("What is Rust?").unwrap();
+        assert_eq!(data.ground_truth, "A systems programming language");
+    }
+
+    #[tokio::test]
+    async fn test_ragas_to_json() {
+        let dataset = EvaluationDataSet::from(vec![(
+            "What is Rust?".to_string(),
+            "A programming language".to_string(),
+        )]);
+        let ragas = Ragas {
+            dataset: Arc::new(RwLock::new(dataset)),
+        };
+
+        let json_output = ragas.to_json().await;
+        let expected_json = "[{\"answer\":\"\",\"contexts\":[],\"ground_truth\":\"A programming language\",\"question\":\"What is Rust?\"}]";
+        assert_eq!(json_output, expected_json);
+    }
+
+    #[tokio::test]
+    async fn test_evaluate_query_upsert_retrieved_documents() {
+        let dataset = EvaluationDataSet::from(vec!["What is Rust?".to_string()]);
+        let ragas = Ragas {
+            dataset: Arc::new(RwLock::new(dataset.clone())),
+        };
+
+        let query = Query::builder()
+            .original("What is Rust?")
+            .state(
+                states::RetrievedBuilder::default()
+                    .documents(vec!["Rust is a language".to_string()])
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .unwrap();
+        let evaluation = QueryEvaluation::RetrieveDocuments(query.clone());
+
+        ragas.evaluate(evaluation).await.unwrap();
+
+        let updated_data = ragas.dataset.read().await;
+        let data = updated_data.0.get("What is Rust?").unwrap();
+        assert_eq!(data.contexts, vec!["Rust is a language"]);
+    }
+
+    #[tokio::test]
+    async fn test_evaluate_query_upsert_answer() {
+        let dataset = EvaluationDataSet::from(vec!["What is Rust?".to_string()]);
+        let ragas = Ragas {
+            dataset: Arc::new(RwLock::new(dataset.clone())),
+        };
+
+        let query = Query::builder()
+            .original("What is Rust?")
+            .state(
+                states::AnsweredBuilder::default()
+                    .answer("A systems programming language")
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .unwrap();
+        let evaluation = QueryEvaluation::AnswerQuery(query.clone());
+
+        ragas.evaluate(evaluation).await.unwrap();
+
+        let updated_data = ragas.dataset.read().await;
+        let data = updated_data.0.get("What is Rust?").unwrap();
+        assert_eq!(data.answer, "A systems programming language");
+    }
+
+    #[tokio::test]
+    async fn test_evaluation_dataset_record_answers_as_ground_truth() {
+        let mut dataset = EvaluationDataSet::from(vec!["What is Rust?".to_string()]);
+        let data = dataset.0.get_mut("What is Rust?").unwrap();
+        data.answer = "A programming language".to_string();
+
+        dataset.record_answers_as_ground_truth();
+
+        let data = dataset.0.get("What is Rust?").unwrap();
+        assert_eq!(data.ground_truth, "A programming language");
+    }
+
+    #[tokio::test]
+    async fn test_evaluation_dataset_to_json() {
+        let dataset = EvaluationDataSet::from(vec![(
+            "What is Rust?".to_string(),
+            "A programming language".to_string(),
+        )]);
+
+        let json_output = dataset.to_json();
+        let expected_json = "[{\"answer\":\"\",\"contexts\":[],\"ground_truth\":\"A programming language\",\"question\":\"What is Rust?\"}]";
+        assert_eq!(json_output, expected_json);
+    }
+
+    #[tokio::test]
+    async fn test_evaluation_dataset_upsert_retrieved_documents() {
+        let mut dataset = EvaluationDataSet::from(vec!["What is Rust?".to_string()]);
+
+        let query = Query::builder()
+            .original("What is Rust?")
+            .state(
+                states::RetrievedBuilder::default()
+                    .documents(vec!["Rust is a language".to_string()])
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .unwrap();
+        dataset
+            .upsert_evaluation(&QueryEvaluation::RetrieveDocuments(query.clone()))
+            .unwrap();
+
+        let data = dataset.0.get("What is Rust?").unwrap();
+        assert_eq!(data.contexts, vec!["Rust is a language"]);
+    }
+
+    #[tokio::test]
+    async fn test_evaluation_dataset_upsert_answer() {
+        let mut dataset = EvaluationDataSet::from(vec!["What is Rust?".to_string()]);
+
+        let query = Query::builder()
+            .original("What is Rust?")
+            .state(
+                states::AnsweredBuilder::default()
+                    .answer("A systems programming language")
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .unwrap();
+        dataset
+            .upsert_evaluation(&QueryEvaluation::AnswerQuery(query.clone()))
+            .unwrap();
+
+        let data = dataset.0.get("What is Rust?").unwrap();
+        assert_eq!(data.answer, "A systems programming language");
+    }
+}
