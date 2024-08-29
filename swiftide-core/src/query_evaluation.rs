@@ -1,5 +1,6 @@
 use crate::querying::{states, Query};
 
+/// Wraps a query for evaluation. Used by the [`EvaluateQuery`] trait.
 pub enum QueryEvaluation {
     /// Retrieve documents
     RetrieveDocuments(Query<states::Retrieved>),

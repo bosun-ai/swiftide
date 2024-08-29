@@ -31,6 +31,7 @@ where
     }
 }
 
+/// A search strategy for the query pipeline
 pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
 /// Can retrieve documents given a SearchStrategy

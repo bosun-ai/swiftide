@@ -11,6 +11,13 @@ use crate::Embedding;
 
 type Document = String;
 
+/// A query is the main object going through a query pipeline
+///
+/// It acts as a statemachine, with the following transitions:
+///
+/// `states::Pending`: No documents have been retrieved
+/// `states::Retrieved`: Documents have been retrieved
+/// `states::Answered`: The query has been answered
 #[derive(Clone, Default, Builder)]
 #[builder(setter(into))]
 pub struct Query<State> {
@@ -135,20 +142,24 @@ impl Query<states::Answered> {
     }
 }
 
+/// States of a query
 pub mod states {
     use super::Builder;
     use super::Document;
 
     #[derive(Debug, Default, Clone)]
+    /// The query is pending and has not been used
     pub struct Pending;
 
     #[derive(Debug, Default, Clone, Builder)]
     #[builder(setter(into))]
+    /// Documents have been retrieved
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
     }
     #[derive(Debug, Default, Clone, Builder)]
     #[builder(setter(into))]
+    /// The query has been answered
     pub struct Answered {
         pub(crate) answer: String,
     }
@@ -167,6 +178,7 @@ impl<T: AsRef<str>> From<T> for Query<states::Pending> {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
+/// Records changes to a query
 pub enum TransformationEvent {
     Transformed {
         before: String,

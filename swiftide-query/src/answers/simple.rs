@@ -14,6 +14,13 @@ use swiftide_core::{
     Answer,
 };
 
+/// Generate an answer based on the current query
+///
+/// For example, after retrieving documents, and those are summarized,
+/// will answer the original question with the current text in the query.
+///
+/// If `current` on the Query is empty, it will concatenate the documents
+/// as context instead.
 #[derive(Debug, Clone, Builder)]
 pub struct Simple {
     #[builder(setter(custom))]

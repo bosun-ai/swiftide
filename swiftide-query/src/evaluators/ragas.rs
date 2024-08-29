@@ -46,12 +46,13 @@ use swiftide_core::{
     EvaluateQuery,
 };
 
+/// Ragas evaluator to be used in a pipeline
 #[derive(Debug, Clone)]
 pub struct Ragas {
     dataset: Arc<RwLock<EvaluationDataSet>>,
 }
 
-/// Data structure for RAGAS compatible JSON
+/// Row structure for RAGAS compatible JSON
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EvaluationData {
     question: String,
@@ -60,6 +61,7 @@ pub struct EvaluationData {
     ground_truth: String,
 }
 
+/// Dataset for RAGAS compatible JSON, indexed by question
 #[derive(Debug, Clone)]
 pub struct EvaluationDataSet(HashMap<String, EvaluationData>);
 
