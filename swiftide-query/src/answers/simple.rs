@@ -49,7 +49,7 @@ impl SimpleBuilder {
 }
 
 fn default_prompt() -> PromptTemplate {
-    r"
+    indoc::indoc! {"
     Answer the following question based on the context provided:
     {{ question }}
 
@@ -61,7 +61,7 @@ fn default_prompt() -> PromptTemplate {
     ## Context
 
     {{ context }}
-    "
+    "}
     .into()
 }
 
