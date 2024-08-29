@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724922096016,
+  "lastUpdate": 1724928738735,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3317,6 +3317,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c00b6c8f08fca46451387f3034d3d53805f3e401",
+          "message": "feat(query): Ragas support (#236)\n\nWork in progress on support for ragas as per\r\nhttps://github.com/explodinggradients/ragas/issues/1165 and #232\r\n\r\nAdd an optional evaluator to a pipeline. Evaluators need to handle\r\ntransformation events in the query pipeline. The Ragas evaluator\r\ncaptures the transformations as per\r\nhttps://docs.ragas.io/en/latest/howtos/applications/data_preparation.html.\r\n\r\nYou can find a working notebook here\r\nhttps://github.com/bosun-ai/swiftide-tutorial/blob/c510788a625215f46575415161659edf26fc1fd5/ragas/notebook.ipynb\r\nwith a pipeline using it here\r\nhttps://github.com/bosun-ai/swiftide-tutorial/pull/1\r\n\r\n\r\n\r\nTODO:\r\n- [x] Test it with Ragas\r\n- [x] Add more tests",
+          "timestamp": "2024-08-29T12:46:53+02:00",
+          "tree_id": "482a8ad885f78018ea287f04ac56852ebb9e8e61",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c00b6c8f08fca46451387f3034d3d53805f3e401"
+        },
+        "date": 1724928738392,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
