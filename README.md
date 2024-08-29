@@ -146,7 +146,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Splitting and merging pipelines
 - Jinja-like templating for prompts
 - Store into multiple backends
-- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, and Treesitter
+- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, Fluvio, and Treesitter
 - Sparse vector support for hybrid search
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
@@ -155,7 +155,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                                |
-| **Loading data**                             | Files <br> Scraping <br> Other pipelines and streams                                                                                                                 |
+| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Other pipelines and streams                                                                                                     |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
 | **Storage**                                  | Qdrant <br> Redis                                                                                                                                                    |
