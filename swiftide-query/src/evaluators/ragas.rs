@@ -1,3 +1,30 @@
+/*!
+The Ragas evaluator allows you to export a RAGAS compatible JSON dataset.
+
+RAGAS requires a ground truth to compare to. You can either record the answers for an initial dataset, or provide the ground truth yourself.
+
+Refer to the ragas documentation on how to use the dataset or take a look at a more involved
+example at [swiftide-tutorials](https://github.com/bosun-ai/swiftide-tutorial).
+
+# Example
+
+```no_run
+let ragas = evaluators::ragas::Ragas::from_prepared_questions(questions);
+
+let pipeline = query::Pipeline::default()
+    .evaluate_with(ragas.clone())
+    .then_transform_query(GenerateSubquestions::from_client(context.openai.clone()))
+    .then_transform_query(query_transformers::Embed::from_client(
+        context.openai.clone(),
+    ))
+    .then_retrieve(context.qdrant.clone())
+    .then_answer(Simple::from_client(context.openai.clone()));
+
+pipeline.query_all(ragas.questions().await).await?;
+
+std::fs::write(args.output, ragas.to_json()).context("Failed to write ragas.json")?;
+```
+*/
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -15,6 +42,7 @@ pub struct Ragas {
     dataset: Arc<RwLock<EvaluationDataSet>>,
 }
 
+/// Data structure for RAGAS compatible JSON
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EvaluationData {
     question: String,
@@ -27,6 +55,8 @@ pub struct EvaluationData {
 pub struct EvaluationDataSet(HashMap<String, EvaluationData>);
 
 impl Ragas {
+    /// Builds a new Ragas evaluator from a list of questions or a list of tuples with questions and
+    /// ground truths. You can also call `parse` to load a dataset from a JSON string.
     pub fn from_prepared_questions(questions: impl Into<EvaluationDataSet>) -> Self {
         Ragas {
             dataset: Arc::new(RwLock::new(questions.into())),
@@ -37,10 +67,12 @@ impl Ragas {
         self.dataset.read().await.0.keys().map(Into::into).collect()
     }
 
+    /// Records the current answers as ground truths in the dataset
     pub async fn record_answers_as_ground_truth(&self) {
         self.dataset.write().await.record_answers_as_ground_truth();
     }
 
+    /// Outputs the dataset as a JSON string compatible with RAGAS
     pub async fn to_json(&self) -> String {
         self.dataset.read().await.to_json()
     }
@@ -55,13 +87,13 @@ impl EvaluateQuery for Ragas {
 }
 
 impl EvaluationDataSet {
-    pub fn record_answers_as_ground_truth(&mut self) {
+    pub(crate) fn record_answers_as_ground_truth(&mut self) {
         for data in self.0.values_mut() {
             data.ground_truth.clone_from(&data.answer);
         }
     }
 
-    pub fn upsert_evaluation(&mut self, query: &QueryEvaluation) -> Result<()> {
+    pub(crate) fn upsert_evaluation(&mut self, query: &QueryEvaluation) -> Result<()> {
         match query {
             QueryEvaluation::RetrieveDocuments(query) => self.upsert_retrieved_documents(query),
             QueryEvaluation::AnswerQuery(query) => self.upsert_answer(query),
@@ -112,7 +144,7 @@ impl EvaluationDataSet {
     ///   }
     /// ]
     /// ```
-    pub fn to_json(&self) -> String {
+    pub(crate) fn to_json(&self) -> String {
         json!(self.0.values().collect::<Vec<_>>()).to_string()
     }
 }
@@ -174,6 +206,7 @@ impl From<Vec<(String, String)>> for EvaluationDataSet {
     }
 }
 
+/// Parse an existing dataset from a JSON string
 impl FromStr for EvaluationDataSet {
     type Err = serde_json::Error;
 
