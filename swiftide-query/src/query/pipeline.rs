@@ -258,6 +258,12 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         })
     }
 
+    /// Runs the pipeline with multiple queries
+    ///
+    /// # Errors
+    ///
+    /// Errors if any of the transformations failed, no response was found, or the stream was
+    /// closed.
     pub async fn query_all(
         self,
         queries: Vec<impl Into<Query<states::Pending>> + Clone>,
@@ -272,15 +278,11 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
             query_sender.send(Ok(query.clone().into())).await?;
         }
         tracing::info!("All queries sent");
-        // Force close the stream
-        // TODO: Drop is not closing the stream?
-        // drop(query_sender);
 
         let mut results = vec![];
         while let Some(result) = stream.try_next().await? {
             tracing::debug!(?result, "Received an answer");
             results.push(result);
-            // Drop should do this but it doesnt
             if results.len() == queries.len() {
                 break;
             }

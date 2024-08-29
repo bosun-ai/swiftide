@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0](https://github.com/bosun-ai/swiftide/releases/tag/0.9.0) - 2024-08-15
+
+### Added
+
+- [2443933](https://github.com/bosun-ai/swiftide/commit/24439339a9b935befcbcc92e56c01c5048605138) *(qdrant)* Add access to inner client for custom operations ([#242](https://github.com/bosun-ai/swiftide/pull/242))
+
+- [4fff613](https://github.com/bosun-ai/swiftide/commit/4fff613b461e8df993327cb364cabc65cd5901d8) *(query)* Add concurrency on query pipeline and add query_all
+
+### Fixed
+
+- [8a1cc69](https://github.com/bosun-ai/swiftide/commit/8a1cc69712b4361893c0564c7d6f7d1ed21e5710) *(query)* After retrieval current transormation should be empty
+
+### Other
+
+- [3d213b4](https://github.com/bosun-ai/swiftide/commit/3d213b40d0b2d1dd259dd22ba99614fedae64353) *(readme)* Add link to 0.8 release
+
+- [e9d0016](https://github.com/bosun-ai/swiftide/commit/e9d00160148807a8e2d1df1582e6ea85cfd2d8d0) *(indexing,integrations)* Move tree-sitter dependencies to integrations ([#235](https://github.com/bosun-ai/swiftide/pull/235))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.8.0...0.9.0
+
+
+
 ## [0.8.0](https://github.com/bosun-ai/swiftide/releases/tag/0.8.0) - 2024-08-12
 
 ### Added

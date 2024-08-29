@@ -14,23 +14,23 @@ homepage.workspace = true
 
 [dependencies]
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.8" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.8" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.8" }
-swiftide-query = { path = "../swiftide-query", version = "0.8" }
+swiftide-core = { path = "../swiftide-core", version = "0.9" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.9" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.9" }
+swiftide-query = { path = "../swiftide-query", version = "0.9" }
 
 [features]
 default = []
 all = [
-    "qdrant",
-    "redis",
-    "tree-sitter",
-    "openai",
-    "fastembed",
-    "scraping",
-    "aws-bedrock",
-    "groq",
-    "ollama",
+  "qdrant",
+  "redis",
+  "tree-sitter",
+  "openai",
+  "fastembed",
+  "scraping",
+  "aws-bedrock",
+  "groq",
+  "ollama",
 ]
 # Qdrant for storage
 qdrant = ["swiftide-integrations/qdrant"]
@@ -38,8 +38,8 @@ qdrant = ["swiftide-integrations/qdrant"]
 redis = ["swiftide-integrations/redis"]
 # Tree-sitter for code operations and chunking
 tree-sitter = [
-    "swiftide-integrations/tree-sitter",
-    "swiftide-indexing/tree-sitter",
+  "swiftide-integrations/tree-sitter",
+  "swiftide-indexing/tree-sitter",
 ]
 # OpenAI for embedding and prompting
 openai = ["swiftide-integrations/openai"]
@@ -53,6 +53,7 @@ fastembed = ["swiftide-integrations/fastembed"]
 scraping = ["swiftide-integrations/scraping"]
 # AWS Bedrock for prompting
 aws-bedrock = ["swiftide-integrations/aws-bedrock"]
+fluvio = ["swiftide-integrations/fluvio"]
 
 # Testing, internal only
 test-utils = []
@@ -63,7 +64,7 @@ swiftide-test-utils = { path = "../swiftide-test-utils" }
 
 async-openai = { workspace = true }
 qdrant-client = { workspace = true, default-features = false, features = [
-    "serde",
+  "serde",
 ] }
 
 anyhow = { workspace = true }
