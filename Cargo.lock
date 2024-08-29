@@ -887,6 +887,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "chardetng"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14b8f0b65b7b08ae3c8187e8d77174de20cb6777864c6b832d8ad365999cf1ea"
+dependencies = [
+ "cfg-if",
+ "encoding_rs",
+ "memchr",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3241,7 +3252,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18bec9b0adc4eba778b33684b7ba3e7137789434769ee3ce3930463ef904cfca"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "syn 2.0.74",
@@ -4075,15 +4086,17 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "1.99.37"
+version = "2.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cac06119639aca1b09a4827201e369738a0275d8d795f6468a25c08882de65a1"
+checksum = "b7f00760dffa7861915e6363263a3d6c7543c4c1237feae0205fb40a5b8d208b"
 dependencies = [
  "ahash",
  "bytes",
  "case_insensitive_string",
+ "chardetng",
  "cssparser",
  "ego-tree",
+ "encoding_rs",
  "fast_html5ever",
  "hashbrown 0.14.5",
  "lazy_static",
