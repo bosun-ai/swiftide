@@ -23,7 +23,7 @@ swiftide = { path = "../swiftide/", features = [
 ] }
 tracing-subscriber = "0.3"
 serde_json = "1.0"
-spider = "1.98"
+spider = { workspace = true }
 qdrant-client = "1.10.3"
 fluvio = "0.23.1"
 
