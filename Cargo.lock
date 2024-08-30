@@ -2597,6 +2597,7 @@ dependencies = [
  "serde_json",
  "spider",
  "swiftide",
+ "temp-dir",
  "tokio",
  "tracing-subscriber",
 ]
