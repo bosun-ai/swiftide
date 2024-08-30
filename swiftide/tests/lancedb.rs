@@ -1,6 +1,4 @@
-use arrow_array::*;
 use arrow_array::{cast::AsArray, Array, RecordBatch, StringArray};
-use lancedb::index::Index;
 use lancedb::query::ExecutableQuery;
 use swiftide::query::{self, states, Query, TransformationEvent};
 use swiftide::{
@@ -53,14 +51,6 @@ async fn test_lancedb() {
         .run()
         .await
         .unwrap();
-
-    let conn = lancedb.get_connection().await.unwrap();
-    let tbl = conn.open_table("swiftide_test").execute().await.unwrap();
-
-    // tbl.create_index(&["vector_combined"], Index::Auto)
-    //     .execute()
-    //     .await
-    //     .unwrap();
 
     let query_pipeline = query::Pipeline::default()
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(
