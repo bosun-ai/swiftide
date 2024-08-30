@@ -53,8 +53,10 @@ fastembed = ["swiftide-integrations/fastembed"]
 scraping = ["swiftide-integrations/scraping"]
 # AWS Bedrock for prompting
 aws-bedrock = ["swiftide-integrations/aws-bedrock"]
-# Lancdb
+# Lancdb persistance and querying
 lancedb = ["swiftide-integrations/lancedb"]
+# Fluvio loader
+fluvio = ["swiftide-integrations/fluvio"]
 
 # Testing, internal only
 test-utils = []

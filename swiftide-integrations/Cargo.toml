@@ -26,6 +26,7 @@ chrono = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 regex = { workspace = true }
+futures-util = { workspace = true }
 
 
 # Integrations
@@ -66,15 +67,23 @@ deadpool = { version = "0.12", optional = true, features = [
   "rt_tokio_1",
 ] }
 arrow-array = { version = "52.2", optional = true }
+# Unfortunately their rustls version fails to compile
+# fluvio = { version = "0.23", default-features = false, features = [
+#   "compress",
+#   "rustls",
+# ], optional = true }
+fluvio = { version = "0.23", optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+
+# Used for hacking fluv to play nice
+flv-util = "0.5.2"
 
 mockall = { workspace = true }
 test-log = { workspace = true }
 testcontainers = { workspace = true }
 test-case = { workspace = true }
-futures-util = { workspace = true }
 indoc = { workspace = true }
 insta = { workspace = true }
 
@@ -112,6 +121,8 @@ aws-bedrock = [
   "dep:aws-sdk-bedrockruntime",
 ]
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
+# Fluvio loader
+fluvio = ["dep:fluvio"]
 
 [lints]
 workspace = true
