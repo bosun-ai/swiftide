@@ -1,6 +1,8 @@
 use arrow_array::*;
 use arrow_array::{cast::AsArray, Array, RecordBatch, StringArray};
+use lancedb::index::Index;
 use lancedb::query::ExecutableQuery;
+use swiftide::query::{self, states, Query, TransformationEvent};
 use swiftide::{
     indexing::{
         transformers::{
@@ -12,6 +14,7 @@ use swiftide::{
 };
 use swiftide_indexing::{loaders, transformers, Pipeline};
 use swiftide_integrations::{fastembed::FastEmbed, lancedb::LanceDB};
+use swiftide_query::{answers, query_transformers, response_transformers};
 use swiftide_test_utils::{mock_chat_completions, openai_client};
 use temp_dir::TempDir;
 use wiremock::MockServer;
@@ -43,20 +46,56 @@ async fn test_lancedb() {
 
     Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
-        .then(MetadataQACode::new(openai_client))
-        .then_in_batch(20, transformers::Embed::new(fastembed))
+        .then(MetadataQACode::new(openai_client.clone()))
+        .then_in_batch(20, transformers::Embed::new(fastembed.clone()))
         .log_nodes()
         .then_store_with(lancedb.clone())
         .run()
         .await
         .unwrap();
 
-    // Assert that
-    // * Vector got persisted
-    // * Metadata field got persisted
-    // * Indirectly correct table got created
+    let conn = lancedb.get_connection().await.unwrap();
+    let tbl = conn.open_table("swiftide_test").execute().await.unwrap();
 
-    // Temporary tests to check before query pipeline
+    // tbl.create_index(&["vector_combined"], Index::Auto)
+    //     .execute()
+    //     .await
+    //     .unwrap();
+
+    let query_pipeline = query::Pipeline::default()
+        .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+            openai_client.clone(),
+        ))
+        .then_transform_query(query_transformers::Embed::from_client(fastembed.clone()))
+        .then_retrieve(lancedb.clone())
+        .then_transform_response(response_transformers::Summary::from_client(
+            openai_client.clone(),
+        ))
+        .then_answer(answers::Simple::from_client(openai_client.clone()));
+
+    let result: Query<states::Answered> = query_pipeline.query("What is swiftide?").await.unwrap();
+
+    dbg!(&result);
+
+    assert_eq!(
+        result.answer(),
+        "\n\nHello there, how may I assist you today?"
+    );
+    let TransformationEvent::Retrieved { documents, .. } = result
+        .history()
+        .iter()
+        .find(|e| matches!(e, TransformationEvent::Retrieved { .. }))
+        .unwrap()
+    else {
+        panic!("No documents found")
+    };
+
+    assert_eq!(
+        documents.first().unwrap(),
+        "fn main() { println!(\"Hello, World!\"); }"
+    );
+
+    // Manually assert everything was stored as expected
     let conn = lancedb.get_connection().await.unwrap();
     let table = conn.open_table("swiftide_test").execute().await.unwrap();
 
@@ -96,7 +135,7 @@ async fn test_lancedb() {
             .value(0),
         "\n\nHello there, how may I assist you today?"
     );
-    
+
     assert_eq!(
         result
             .column_by_name("vector_combined")

@@ -16,12 +16,12 @@ use swiftide_core::indexing::IndexingStream;
 use swiftide_core::indexing::Node;
 use swiftide_core::Persist;
 
-use super::normalize_field_name;
 use super::FieldConfig;
 use super::LanceDB;
 
 #[async_trait]
 impl Persist for LanceDB {
+    #[tracing::instrument(skip_all)]
     async fn setup(&self) -> Result<()> {
         let conn = self.get_connection().await?;
         let schema = self.schema.clone();
@@ -33,6 +33,7 @@ impl Persist for LanceDB {
             .map_err(Into::into)
     }
 
+    #[tracing::instrument(skip_all)]
     async fn store(&self, node: Node) -> Result<Node> {
         let mut nodes = vec![node; 1];
         self.store_nodes(&nodes).await?;
@@ -42,6 +43,7 @@ impl Persist for LanceDB {
         Ok(node)
     }
 
+    #[tracing::instrument(skip_all)]
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
         self.store_nodes(&nodes).await.map(|()| nodes).into()
     }

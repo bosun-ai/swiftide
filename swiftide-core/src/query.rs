@@ -54,7 +54,7 @@ impl<T> Query<T> {
     }
 
     #[allow(dead_code)]
-    fn history(&self) -> &Vec<TransformationEvent> {
+    pub fn history(&self) -> &Vec<TransformationEvent> {
         &self.transformation_history
     }
 }
@@ -153,7 +153,7 @@ impl<T: AsRef<str>> From<T> for Query<states::Pending> {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TransformationEvent {
     Transformed {
         before: String,

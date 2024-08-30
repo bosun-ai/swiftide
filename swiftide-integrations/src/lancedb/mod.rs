@@ -10,7 +10,20 @@ use lancedb::arrow::arrow_schema::{DataType, Field, Schema};
 use swiftide_core::indexing::EmbeddedField;
 pub mod connection_pool;
 pub mod persist;
+pub mod retrieve;
 
+/**
+`LanceDB` is a columnar database that separates data and compute.
+
+This enables local, embedded databases, or storing in a cloud storage.
+
+See examples for more information.
+
+Implements `Persist` and `Retrieve`.
+
+Note: For querying large tables you manually need to create an index. You can get an
+active connection via `get_connection`.
+*/
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
 #[allow(dead_code)]
@@ -89,6 +102,7 @@ impl LanceDB {
 }
 
 impl LanceDBBuilder {
+    #[allow(clippy::missing_panics_doc)]
     pub fn with_vector(&mut self, config: impl Into<VectorConfig>) -> &mut Self {
         if self.fields.is_none() {
             self.fields(self.default_fields());
@@ -96,19 +110,20 @@ impl LanceDBBuilder {
 
         self.fields
             .as_mut()
-            .expect("Fields should be initialized")
+            .unwrap()
             .push(FieldConfig::Vector(config.into()));
 
         self
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn with_metadata(&mut self, config: impl Into<MetadataConfig>) -> &mut Self {
         if self.fields.is_none() {
             self.fields(self.default_fields());
         }
         self.fields
             .as_mut()
-            .expect("Fields should be initialized")
+            .unwrap()
             .push(FieldConfig::Metadata(config.into()));
         self
     }
@@ -138,14 +153,11 @@ impl LanceDBBuilder {
                         true,
                     ));
                 }
-                FieldConfig::Chunk => {
-                    fields.push(Field::new("chunk", DataType::Utf8, false));
-                }
-                FieldConfig::Metadata(config) => {
-                    fields.push(Field::new(&config.field, DataType::Utf8, true));
+                FieldConfig::Chunk | FieldConfig::Metadata(_) => {
+                    fields.push(Field::new(field.field_name(), DataType::Utf8, false));
                 }
                 FieldConfig::ID => {
-                    fields.push(Field::new("id", DataType::UInt64, false));
+                    fields.push(Field::new(field.field_name(), DataType::UInt64, false));
                 }
             }
         }
@@ -174,6 +186,17 @@ pub enum FieldConfig {
     Metadata(MetadataConfig),
     Chunk,
     ID,
+}
+
+impl FieldConfig {
+    pub fn field_name(&self) -> String {
+        match self {
+            FieldConfig::Vector(config) => config.field_name(),
+            FieldConfig::Metadata(config) => config.field.clone(),
+            FieldConfig::Chunk => "chunk".into(),
+            FieldConfig::ID => "id".into(),
+        }
+    }
 }
 
 #[derive(Clone)]
