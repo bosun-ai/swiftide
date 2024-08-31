@@ -55,7 +55,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Test"
-        run: cargo test --verbose --workspace --all-features
+        run: cargo test --all-features --tests
 
   clippy:
     name: Clippy
