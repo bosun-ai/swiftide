@@ -2,6 +2,7 @@
 mod code_tree;
 mod outliner;
 mod queries;
+pub mod refs_defs;
 mod splitter;
 mod supported_languages;
 
