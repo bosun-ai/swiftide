@@ -81,10 +81,8 @@ insta = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-
-# TODO: Remove me when lancedb tests use query pipeline
-lancedb = { version = "0.9" }
-arrow-array = { version = "52.2" }
+lancedb = { workspace = true }
+arrow-array = { workspace = true }
 
 [lints]
 workspace = true

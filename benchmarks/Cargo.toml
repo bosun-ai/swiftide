@@ -12,13 +12,13 @@ repository.workspace = true
 homepage.workspace = true
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["full"] }
-swiftide = { path = "../swiftide/", features = ["all"] }
+tokio = { workspace = true, features = ["full"] }
+swiftide = { path = "../swiftide", features = ["all"] }
 tracing-subscriber = "0.3"
-serde_json = "1.0"
+serde_json = { workspace = true }
 criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
-anyhow = "1.0"
-futures-util = "0.3"
+anyhow = { workspace = true }
+futures-util = { workspace = true }
 
 [[bench]]
 name = "fileloader"

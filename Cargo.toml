@@ -53,6 +53,9 @@ async-openai = { version = "0.24", default-features = false }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
 ] }
+fluvio = { version = "0.23", default-features = false }
+lancedb = { version = "0.9" }
+arrow-array = { version = "52.2" }
 
 # Testing
 test-log = "0.2.16"
@@ -62,10 +65,6 @@ temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
 insta = { version = "1.39.0", features = ["yaml"] }
-fluvio = { version = "0.23", default-features = false, features = [
-  "compress",
-  "rustls",
-] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
