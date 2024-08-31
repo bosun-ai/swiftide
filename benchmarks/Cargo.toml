@@ -16,7 +16,10 @@ tokio = { workspace = true, features = ["full"] }
 swiftide = { path = "../swiftide", features = ["all"] }
 tracing-subscriber = "0.3"
 serde_json = { workspace = true }
-criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
+criterion = { version = "0.5.1", features = [
+  "html_reports",
+  "async_tokio",
+], default_features = false }
 anyhow = { workspace = true }
 futures-util = { workspace = true }
 
