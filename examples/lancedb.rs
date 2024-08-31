@@ -10,7 +10,7 @@ use swiftide::{
         },
         EmbeddedField,
     },
-    integrations::{self, lancedb::LanceDB, qdrant::Qdrant},
+    integrations::{self, lancedb::LanceDB},
     query::{self, answers, query_transformers, response_transformers},
 };
 use temp_dir::TempDir;
