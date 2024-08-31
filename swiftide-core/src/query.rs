@@ -7,7 +7,7 @@
 //! `states::Answered`: The query has been answered
 use derive_builder::Builder;
 
-use crate::Embedding;
+use crate::{Embedding, SparseEmbedding};
 
 type Document = String;
 
@@ -31,6 +31,9 @@ pub struct Query<State> {
     // TODO: How would this work when doing a rollup query?
     #[builder(default)]
     pub embedding: Option<Embedding>,
+
+    #[builder(default)]
+    pub sparse_embedding: Option<SparseEmbedding>,
 }
 
 impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
@@ -67,6 +70,7 @@ impl<T: Clone> Query<T> {
             current: self.current,
             transformation_history: self.transformation_history,
             embedding: self.embedding,
+            sparse_embedding: self.sparse_embedding,
         }
     }
 
