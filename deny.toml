@@ -15,6 +15,8 @@ allow = [
   "Apache-2.0 WITH LLVM-exception",
   "Unlicense",
   "CC0-1.0",
+  "zlib-acknowledgement",
+  "0BSD",
 ]
 exceptions = [{ allow = ["OpenSSL"], crate = "ring" }]
 
