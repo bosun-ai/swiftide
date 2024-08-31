@@ -12,6 +12,7 @@ allow = [
   "Unicode-DFS-2016",
   "WTFPL",
   "MPL-2.0",
+  "Apache-2.0 WITH LLVM-exception",
   "Unlicense",
 ]
 exceptions = [{ allow = ["OpenSSL"], crate = "ring" }]

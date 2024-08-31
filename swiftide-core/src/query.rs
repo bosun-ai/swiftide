@@ -5,18 +5,31 @@
 //! `states::Pending`: No documents have been retrieved
 //! `states::Retrieved`: Documents have been retrieved
 //! `states::Answered`: The query has been answered
+use derive_builder::Builder;
+
 use crate::Embedding;
 
 type Document = String;
 
-#[derive(Clone, Default)]
+/// A query is the main object going through a query pipeline
+///
+/// It acts as a statemachine, with the following transitions:
+///
+/// `states::Pending`: No documents have been retrieved
+/// `states::Retrieved`: Documents have been retrieved
+/// `states::Answered`: The query has been answered
+#[derive(Clone, Default, Builder)]
+#[builder(setter(into))]
 pub struct Query<State> {
     original: String,
+    #[builder(default = "self.original.clone().unwrap_or_default()")]
     current: String,
     state: State,
+    #[builder(default)]
     transformation_history: Vec<TransformationEvent>,
 
     // TODO: How would this work when doing a rollup query?
+    #[builder(default)]
     pub embedding: Option<Embedding>,
 }
 
@@ -32,7 +45,11 @@ impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
     }
 }
 
-impl<T> Query<T> {
+impl<T: Clone> Query<T> {
+    pub fn builder() -> QueryBuilder<T> {
+        QueryBuilder::default().clone()
+    }
+
     /// Return the query it started with
     pub fn original(&self) -> &str {
         &self.original
@@ -125,17 +142,24 @@ impl Query<states::Answered> {
     }
 }
 
+/// States of a query
 pub mod states {
+    use super::Builder;
     use super::Document;
 
     #[derive(Debug, Default, Clone)]
+    /// The query is pending and has not been used
     pub struct Pending;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Default, Clone, Builder)]
+    #[builder(setter(into))]
+    /// Documents have been retrieved
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
     }
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Default, Clone, Builder)]
+    #[builder(setter(into))]
+    /// The query has been answered
     pub struct Answered {
         pub(crate) answer: String,
     }
@@ -154,6 +178,7 @@ impl<T: AsRef<str>> From<T> for Query<states::Pending> {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
+/// Records changes to a query
 pub enum TransformationEvent {
     Transformed {
         before: String,

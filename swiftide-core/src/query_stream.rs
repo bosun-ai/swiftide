@@ -13,6 +13,9 @@ use pin_project_lite::pin_project;
 use crate::querying::Query;
 
 pin_project! {
+    /// Internally used by a query pipeline
+    ///
+    /// Has a sender and receiver to initialize the stream
     pub struct QueryStream<'stream, Q: 'stream> {
         #[pin]
         pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send + 'stream>>,

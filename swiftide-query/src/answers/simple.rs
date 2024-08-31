@@ -14,6 +14,13 @@ use swiftide_core::{
     Answer,
 };
 
+/// Generate an answer based on the current query
+///
+/// For example, after retrieving documents, and those are summarized,
+/// will answer the original question with the current text in the query.
+///
+/// If `current` on the Query is empty, it will concatenate the documents
+/// as context instead.
 #[derive(Debug, Clone, Builder)]
 pub struct Simple {
     #[builder(setter(custom))]
@@ -49,8 +56,7 @@ impl SimpleBuilder {
 }
 
 fn default_prompt() -> PromptTemplate {
-    indoc::indoc!(
-        "
+    indoc::indoc! {"
     Answer the following question based on the context provided:
     {{ question }}
 
@@ -62,8 +68,7 @@ fn default_prompt() -> PromptTemplate {
     ## Context
 
     {{ context }}
-    "
-    )
+    "}
     .into()
 }
 
@@ -76,6 +81,14 @@ impl Answer for Simple {
         } else {
             query.current()
         };
+
+        let prompt = self
+            .prompt_template
+            .to_prompt()
+            .with_context_value("question", query.original())
+            .with_context_value("context", context);
+
+        tracing::debug!(prompt = ?prompt, "Prompting from Simple for answer");
 
         let answer = self
             .client

@@ -131,10 +131,14 @@ pub trait Persist: Debug + Send + Sync {
     }
 }
 
+/// Allows for passing defaults from the pipeline to the transformer
+/// Required for batch transformers as at least a marker, implementation is not required
 pub trait WithIndexingDefaults {
     fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
 }
 
+/// Allows for passing defaults from the pipeline to the batch transformer
+/// Required for batch transformers as at least a marker, implementation is not required
 pub trait WithBatchIndexingDefaults {
     fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
 }

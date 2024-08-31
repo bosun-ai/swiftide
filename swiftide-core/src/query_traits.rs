@@ -1,9 +1,12 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::query::{
-    states::{self, Retrieved},
-    Query,
+use crate::{
+    query::{
+        states::{self, Retrieved},
+        Query,
+    },
+    querying::QueryEvaluation,
 };
 
 /// Can transform queries before retrieval
@@ -28,6 +31,7 @@ where
     }
 }
 
+/// A search strategy for the query pipeline
 pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
 /// Can retrieve documents given a SearchStrategy
@@ -86,4 +90,12 @@ where
     async fn answer(&self, query: Query<Retrieved>) -> Result<Query<states::Answered>> {
         (self)(query)
     }
+}
+
+/// Evaluates a query
+///
+/// An evaluator needs to be able to respond to each step in the query pipeline
+#[async_trait]
+pub trait EvaluateQuery: Send + Sync {
+    async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()>;
 }

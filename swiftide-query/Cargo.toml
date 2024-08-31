@@ -21,6 +21,8 @@ num_cpus = { workspace = true }
 pin-project-lite = { workspace = true }
 tracing = { workspace = true }
 indoc = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 # Internal
 swiftide-core = { path = "../swiftide-core", version = "0.9.0" }
