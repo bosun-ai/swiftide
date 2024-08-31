@@ -12,7 +12,7 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-tokio = { version = "1.0", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 swiftide = { path = "../swiftide/", features = [
   "all",
   "scraping",
@@ -23,11 +23,11 @@ swiftide = { path = "../swiftide/", features = [
   "lancedb",
 ] }
 tracing-subscriber = "0.3"
-serde_json = "1.0"
+serde_json = { workspace = true }
 spider = { workspace = true }
-qdrant-client = "1.10.3"
-fluvio = "0.23.1"
-temp-dir = "0.1.13"
+qdrant-client = { workspace = true }
+fluvio = { workspace = true }
+temp-dir = { workspace = true }
 
 [[example]]
 doc-scrape-examples = true
