@@ -8,6 +8,8 @@ pub mod fastembed;
 pub mod fluvio;
 #[cfg(feature = "groq")]
 pub mod groq;
+#[cfg(feature = "lancedb")]
+pub mod lancedb;
 #[cfg(feature = "ollama")]
 pub mod ollama;
 #[cfg(feature = "openai")]
