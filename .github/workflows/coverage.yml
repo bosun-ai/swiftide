@@ -7,16 +7,13 @@ on:
       - master
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-coverage
   cancel-in-progress: true
 
 jobs:
   test:
     name: coverage
     runs-on: ubuntu-latest
-    env:
-      RUST_LOG: swiftide=debug
-      RUST_BACKTRACE: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,10 +29,10 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-llvm-cov
+          tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo llvm-cov --lcov --output-path target/lcov.info --all-features --workspace
+          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 240 --coveralls
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
