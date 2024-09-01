@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725225206932,
+  "lastUpdate": 1725225862054,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3527,6 +3527,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "baefe8e5892bdb49d529cc9ff25ca1f01df873e8",
+          "message": "fix(ci): Trigger discord update on released",
+          "timestamp": "2024-09-01T23:18:00+02:00",
+          "tree_id": "f6007db7f87f39af7fb0e9b20e8156ef5d8b41bc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/baefe8e5892bdb49d529cc9ff25ca1f01df873e8"
+        },
+        "date": 1725225861052,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 155,
+            "range": "± 2",
             "unit": "ns/iter"
           }
         ]
