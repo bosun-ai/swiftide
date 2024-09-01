@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725221439945,
+  "lastUpdate": 1725225206932,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3485,6 +3485,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 6",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "732a166f388d4aefaeec694103e3d1ff57655d69",
+          "message": "fix: Remove no default features from futures-util",
+          "timestamp": "2024-09-01T23:07:01+02:00",
+          "tree_id": "e1c5486cb7ae6bf53aa4154708aa3054a0622d1d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/732a166f388d4aefaeec694103e3d1ff57655d69"
+        },
+        "date": 1725225206543,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
