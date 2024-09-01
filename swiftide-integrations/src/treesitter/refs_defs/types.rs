@@ -84,6 +84,10 @@ impl Definition {
     }
 
     pub fn add_contained_definition(&mut self, definition_id: String) {
+        println!(
+            "Adding contained definition: {} to {}",
+            definition_id, self.id
+        );
         self.contained_definitions.push(definition_id);
     }
 

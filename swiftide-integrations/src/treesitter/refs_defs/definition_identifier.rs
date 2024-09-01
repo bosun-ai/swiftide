@@ -96,6 +96,13 @@ impl DefinitionIdentifier {
         let name_node = node.child_by_field_name("name")?;
         let name = name_node.utf8_text(source.as_bytes()).ok()?;
 
+        println!(
+            "Created definition: id: {}, name: {}, type: {:?}",
+            node.id(),
+            name,
+            def_type
+        );
+
         Some(Definition::new(
             format!("def_{}", node.id()),
             name.to_string(),
