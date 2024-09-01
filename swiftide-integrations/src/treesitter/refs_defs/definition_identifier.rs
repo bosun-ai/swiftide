@@ -79,6 +79,9 @@ impl DefinitionIdentifier {
             "trait_item" => self.create_definition(node, source, "class".to_string()),
             "impl_item" => self.create_definition(node, source, "class".to_string()),
             "function_item" => self.create_definition(node, source, "function".to_string()),
+            "function_signature_item" => {
+                self.create_definition(node, source, "function".to_string())
+            }
             "mod_item" => self.create_definition(node, source, "module".to_string()),
             _ => None,
         }
@@ -99,5 +102,155 @@ impl DefinitionIdentifier {
             def_type,
             true, // All these types can contain other definitions
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_definition_identifier() {
+        let source_code = r#"
+mod my_module {
+    pub struct MyStruct {
+        field: i32,
+    }
+
+    impl MyStruct {
+        fn new() -> Self {
+            MyStruct { field: 0 }
+        }
+    }
+
+    pub fn module_function() -> i32 {
+        42
+    }
+
+    pub trait MyTrait {
+        fn trait_method(&self);
+    }
+
+    pub enum MyEnum {
+        VariantA,
+        VariantB(i32),
+    }
+}
+
+fn main() {
+    println!("Hello, world!");
+}
+"#;
+
+        let language = tree_sitter_rust::language();
+        let identifier = DefinitionIdentifier::new(language);
+
+        let file = identifier
+            .identify_definitions("test_file.rs", source_code)
+            .unwrap();
+
+        // Check if all expected definitions are present
+        let expected_definitions = vec![
+            ("my_module", "module"),
+            ("MyStruct", "class"),
+            ("new", "function"),
+            ("module_function", "function"),
+            ("MyTrait", "class"),
+            ("trait_method", "function"),
+            ("MyEnum", "class"),
+            ("main", "function"),
+        ];
+
+        for (name, def_type) in expected_definitions.clone() {
+            let entry = file.definitions.iter().find(|def| def.name == *name);
+
+            assert!(
+                entry.is_some(),
+                "Expected definition not found: {} ({:?}), all entries: {:?}",
+                name,
+                def_type,
+                file.definitions
+            );
+
+            let entry = entry.unwrap();
+
+            assert!(
+                entry.definition_type == def_type,
+                "Expected definition has wrong type: {} (has {:?}, expected {:?}), all entries: {:?}",
+                name,
+                entry.definition_type,
+                def_type,
+                file.definitions
+            );
+        }
+
+        // Check hierarchical structure
+        let module_def = file
+            .definitions
+            .iter()
+            .find(|d| d.name == "my_module")
+            .unwrap();
+        let module_children: HashSet<_> = module_def
+            .contained_definitions
+            .iter()
+            .map(|id| {
+                file.definitions
+                    .iter()
+                    .find(|d| d.id == *id)
+                    .unwrap()
+                    .name
+                    .to_string()
+            })
+            .collect();
+
+        let expected_module_children: HashSet<_> = file
+            .definitions
+            .iter()
+            .filter(|d| {
+                d.name == "MyStruct"
+                    || d.name == "module_function"
+                    || d.name == "MyTrait"
+                    || d.name == "MyEnum"
+            })
+            .map(|d| d.name.clone())
+            .collect();
+
+        assert_eq!(
+            module_children, expected_module_children,
+            "Module's contained definitions do not match expected"
+        );
+
+        // Check that main function is not in the module
+        assert!(
+            !module_children.contains(
+                &file
+                    .definitions
+                    .iter()
+                    .find(|d| d.name == "main")
+                    .unwrap()
+                    .id
+            ),
+            "Main function should not be in the module"
+        );
+
+        // Check that the impl block contains the 'new' function
+        let impl_def = file
+            .definitions
+            .iter()
+            .find(|d| {
+                d.name == "MyStruct"
+                    && d.contained_definitions.iter().any(|id| {
+                        file.definitions
+                            .iter()
+                            .any(|d2| d2.id == *id && d2.name == "new")
+                    })
+            })
+            .unwrap();
+
+        assert!(
+            !impl_def.contained_definitions.is_empty(),
+            "Impl block should contain the 'new' function"
+        );
     }
 }
