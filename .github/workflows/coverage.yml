@@ -32,7 +32,7 @@ jobs:
           tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 240 --coveralls
+          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 240 --coveralls ${{ secrets.COVERALLS_REPO_TOKEN }}
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2
