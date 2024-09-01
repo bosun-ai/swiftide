@@ -19,9 +19,9 @@ jobs:
         uses: actions/checkout@v4
 
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          components: llvm-tools
+          components: llvm-tools-preview
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
       - name: Cache Cargo dependencies
