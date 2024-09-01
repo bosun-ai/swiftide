@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724932964656,
+  "lastUpdate": 1725215405026,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3401,6 +3401,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9b257dadea6c07f720ac4ea447342b2f6d91d0ec",
+          "message": "chore: Default features cleanup (#262)\n\nIntegrations are messy and pull a lot in. A potential solution is to\r\ndisable default features, only add what is actually required, and put\r\nthe responsibility at users if they need anything specific. Feature\r\nunification should then take care of the rest.",
+          "timestamp": "2024-09-01T20:24:07+02:00",
+          "tree_id": "dc43719770f06311b2eaaa9f5af42bb8f8924315",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9b257dadea6c07f720ac4ea447342b2f6d91d0ec"
+        },
+        "date": 1725215404651,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
