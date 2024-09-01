@@ -1,4 +1,5 @@
 use crate::treesitter::refs_defs::types::{Definition, DefinitionType, File};
+use crate::treesitter::util;
 use anyhow::{Context, Result};
 use tree_sitter::{Node, Parser, TreeCursor};
 
@@ -43,6 +44,10 @@ impl DefinitionIdentifier {
         let node = cursor.node();
 
         if let Some(definition) = self.node_to_definition(node, source) {
+            println!(
+                "Processing definition {:?} under {:?}",
+                definition.name, parent_id
+            );
             let def_id = definition.id.clone();
             file.add_definition(definition);
 
@@ -74,13 +79,13 @@ impl DefinitionIdentifier {
 
     fn node_to_definition(&self, node: Node, source: &str) -> Option<Definition> {
         match node.kind() {
-            "struct_item" => self.create_definition(node, source, "class".to_string()),
-            "enum_item" => self.create_definition(node, source, "class".to_string()),
-            "trait_item" => self.create_definition(node, source, "class".to_string()),
-            "impl_item" => self.create_definition(node, source, "class".to_string()),
+            "struct_item" => self.create_definition(node, source, "struct".to_string()),
+            "enum_item" => self.create_definition(node, source, "enum".to_string()),
+            "trait_item" => self.create_definition(node, source, "trait".to_string()),
+            "impl_item" => self.create_definition(node, source, "impl".to_string()),
             "function_item" => self.create_definition(node, source, "function".to_string()),
             "function_signature_item" => {
-                self.create_definition(node, source, "function".to_string())
+                self.create_definition(node, source, "function_signature".to_string())
             }
             "mod_item" => self.create_definition(node, source, "module".to_string()),
             _ => None,
@@ -93,15 +98,12 @@ impl DefinitionIdentifier {
         source: &str,
         def_type: DefinitionType,
     ) -> Option<Definition> {
-        let name_node = node.child_by_field_name("name")?;
+        let name_node = if def_type == "impl" {
+            node.child_by_field_name("type")?
+        } else {
+            node.child_by_field_name("name")?
+        };
         let name = name_node.utf8_text(source.as_bytes()).ok()?;
-
-        println!(
-            "Created definition: id: {}, name: {}, type: {:?}",
-            node.id(),
-            name,
-            def_type
-        );
 
         Some(Definition::new(
             format!("def_{}", node.id()),
@@ -160,12 +162,12 @@ fn main() {
         // Check if all expected definitions are present
         let expected_definitions = vec![
             ("my_module", "module"),
-            ("MyStruct", "class"),
+            ("MyStruct", "struct"),
             ("new", "function"),
             ("module_function", "function"),
-            ("MyTrait", "class"),
-            ("trait_method", "function"),
-            ("MyEnum", "class"),
+            ("MyTrait", "trait"),
+            ("trait_method", "function_signature"),
+            ("MyEnum", "enum"),
             ("main", "function"),
         ];
 

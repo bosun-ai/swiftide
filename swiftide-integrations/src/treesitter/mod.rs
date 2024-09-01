@@ -5,6 +5,7 @@ mod queries;
 pub mod refs_defs;
 mod splitter;
 mod supported_languages;
+pub mod util;
 
 pub use code_tree::{CodeParser, CodeTree, ReferencesAndDefinitions};
 pub use outliner::{CodeOutliner, CodeOutlinerBuilder};
