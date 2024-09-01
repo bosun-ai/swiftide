@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725215405026,
+  "lastUpdate": 1725221439945,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3443,6 +3443,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2e0484d6394cd4300eded002ecab482cb3aba91d",
+          "message": "chore: release v0.9.1 (#257)\n\n## 🤖 New release\r\n* `swiftide`: 0.9.0 -> 0.9.1\r\n* `swiftide-core`: 0.9.0 -> 0.9.1\r\n* `swiftide-indexing`: 0.9.0 -> 0.9.1\r\n* `swiftide-macros`: 0.9.0 -> 0.9.1\r\n* `swiftide-integrations`: 0.9.0 -> 0.9.1\r\n* `swiftide-query`: 0.9.0 -> 0.9.1\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.9.1](https://github.com/bosun-ai/swiftide/releases/tag/0.9.1) -\r\n2024-09-01\r\n\r\n### Added\r\n\r\n-\r\n[b891f93](https://github.com/bosun-ai/swiftide/commit/b891f932e43b9c76198d238bcde73a6bb1dfbfdb)\r\n*(integrations)* Add fluvio as loader support\r\n([#243](https://github.com/bosun-ai/swiftide/pull/243))\r\n\r\n-\r\n[c00b6c8](https://github.com/bosun-ai/swiftide/commit/c00b6c8f08fca46451387f3034d3d53805f3e401)\r\n*(query)* Ragas support\r\n([#236](https://github.com/bosun-ai/swiftide/pull/236))\r\n\r\n-\r\n[a1250c1](https://github.com/bosun-ai/swiftide/commit/a1250c1cef57e2b74760fd31772e106993a3b079)\r\n*(uncategorized)* LanceDB support\r\n([#254](https://github.com/bosun-ai/swiftide/pull/254))\r\n\r\n### Fixed\r\n\r\n-\r\n[d5a76ae](https://github.com/bosun-ai/swiftide/commit/d5a76aef7890fd2c17f720cfb43dafc7333c3bf9)\r\n*(deps)* Update rust crate fastembed to v4\r\n([#250](https://github.com/bosun-ai/swiftide/pull/250))\r\n\r\n-\r\n[cc7ec08](https://github.com/bosun-ai/swiftide/commit/cc7ec0849d7398561c1ff1c48037458e7d4e23fa)\r\n*(deps)* Update rust crate spider to v2\r\n([#237](https://github.com/bosun-ai/swiftide/pull/237))\r\n\r\n### Other\r\n\r\n-\r\n[fb381b8](https://github.com/bosun-ai/swiftide/commit/fb381b8896a5fc863a4185445ce51fefb99e6c11)\r\n*(readme)* Copy improvements\r\n([#261](https://github.com/bosun-ai/swiftide/pull/261))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.9.0...0.9.1\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-09-01T22:04:37+02:00",
+          "tree_id": "c37310f0fdd0ede38995638e0c73bed2708d47ab",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2e0484d6394cd4300eded002ecab482cb3aba91d"
+        },
+        "date": 1725221439393,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
