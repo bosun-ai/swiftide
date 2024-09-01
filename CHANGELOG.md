@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1](https://github.com/bosun-ai/swiftide/releases/tag/0.9.1) - 2024-09-01
+
+### Added
+
+- [b891f93](https://github.com/bosun-ai/swiftide/commit/b891f932e43b9c76198d238bcde73a6bb1dfbfdb) *(integrations)* Add fluvio as loader support ([#243](https://github.com/bosun-ai/swiftide/pull/243))
+
+- [c00b6c8](https://github.com/bosun-ai/swiftide/commit/c00b6c8f08fca46451387f3034d3d53805f3e401) *(query)* Ragas support ([#236](https://github.com/bosun-ai/swiftide/pull/236))
+
+- [a1250c1](https://github.com/bosun-ai/swiftide/commit/a1250c1cef57e2b74760fd31772e106993a3b079) *(uncategorized)* LanceDB support ([#254](https://github.com/bosun-ai/swiftide/pull/254))
+
+### Fixed
+
+- [d5a76ae](https://github.com/bosun-ai/swiftide/commit/d5a76aef7890fd2c17f720cfb43dafc7333c3bf9) *(deps)* Update rust crate fastembed to v4 ([#250](https://github.com/bosun-ai/swiftide/pull/250))
+
+- [cc7ec08](https://github.com/bosun-ai/swiftide/commit/cc7ec0849d7398561c1ff1c48037458e7d4e23fa) *(deps)* Update rust crate spider to v2 ([#237](https://github.com/bosun-ai/swiftide/pull/237))
+
+### Other
+
+- [fb381b8](https://github.com/bosun-ai/swiftide/commit/fb381b8896a5fc863a4185445ce51fefb99e6c11) *(readme)* Copy improvements ([#261](https://github.com/bosun-ai/swiftide/pull/261))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.9.0...0.9.1
+
+
+
 ## [0.9.0](https://github.com/bosun-ai/swiftide/releases/tag/0.9.0) - 2024-08-15
 
 ### Added
