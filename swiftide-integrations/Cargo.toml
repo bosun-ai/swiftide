@@ -42,7 +42,7 @@ redis = { version = "0.26", features = [
 ], optional = true }
 tree-sitter = { version = "0.22", optional = true }
 tree-sitter-rust = { version = "0.21", optional = true }
-tree-sitter-python = { version = "0.21", optional = true }
+tree-sitter-python = { version = "0.23", optional = true }
 tree-sitter-ruby = { version = "0.21", optional = true }
 tree-sitter-typescript = { version = "0.21", optional = true }
 tree-sitter-javascript = { version = "0.21", optional = true }
