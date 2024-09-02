@@ -43,14 +43,10 @@ impl DefinitionIdentifier {
     ) {
         let node = cursor.node();
 
-        if let Some(definition) = self.node_to_definition(node, source) {
-            println!(
-                "Processing definition {:?} under {:?}",
-                definition.name, parent_id
-            );
-            let def_id = definition.id.clone();
-            file.add_definition(definition);
+        let mut definitions = self.node_to_definitions(node, source);
 
+        for definition in definitions.iter() {
+            let def_id = definition.id.clone();
             if let Some(ref parent_id) = parent_id {
                 if let Some(parent_def) = file
                     .definitions
@@ -60,6 +56,21 @@ impl DefinitionIdentifier {
                     parent_def.add_contained_definition(def_id.clone());
                 }
             }
+            file.add_definition(definition.clone());
+        }
+
+        let is_singular_or_empty = definitions.len() == 1 || definitions.is_empty();
+        let singular_definition = if is_singular_or_empty {
+            definitions.pop()
+        } else {
+            None
+        };
+
+        // Would it ever happen that there are multiple definitions in a single node, that then
+        // also has children that contain definitions? In Rust, the only multi-definition node
+        // I know off right now is the `use` statement and it doesn't have children.
+        if let Some(definition) = singular_definition {
+            let def_id = definition.id.clone();
 
             let mut next_cursor = cursor.clone();
             if next_cursor.goto_first_child() {
@@ -77,40 +88,119 @@ impl DefinitionIdentifier {
         }
     }
 
-    fn node_to_definition(&self, node: Node, source: &str) -> Option<Definition> {
+    fn node_to_definitions(&self, node: Node, source: &str) -> Vec<Definition> {
         match node.kind() {
-            "struct_item" => self.create_definition(node, source, "struct".to_string()),
-            "enum_item" => self.create_definition(node, source, "enum".to_string()),
-            "trait_item" => self.create_definition(node, source, "trait".to_string()),
-            "impl_item" => self.create_definition(node, source, "impl".to_string()),
-            "function_item" => self.create_definition(node, source, "function".to_string()),
+            "use_declaration" => self.create_definitions(node, source, "use".to_string()),
+            "struct_item" => self.create_definitions(node, source, "struct".to_string()),
+            "enum_item" => self.create_definitions(node, source, "enum".to_string()),
+            "trait_item" => self.create_definitions(node, source, "trait".to_string()),
+            "impl_item" => self.create_definitions(node, source, "impl".to_string()),
+            "function_item" => self.create_definitions(node, source, "function".to_string()),
             "function_signature_item" => {
-                self.create_definition(node, source, "function_signature".to_string())
+                self.create_definitions(node, source, "function_signature".to_string())
             }
-            "mod_item" => self.create_definition(node, source, "module".to_string()),
-            _ => None,
+            "mod_item" => self.create_definitions(node, source, "module".to_string()),
+            _ => vec![],
         }
     }
 
-    fn create_definition(
+    fn name_from_node(
         &self,
         node: Node,
         source: &str,
-        def_type: DefinitionType,
-    ) -> Option<Definition> {
+        def_type: &DefinitionType,
+    ) -> Option<String> {
         let name_node = if def_type == "impl" {
             node.child_by_field_name("type")?
         } else {
             node.child_by_field_name("name")?
         };
-        let name = name_node.utf8_text(source.as_bytes()).ok()?;
+        name_node
+            .utf8_text(source.as_bytes())
+            .ok()
+            .map(|s| s.to_string())
+    }
 
-        Some(Definition::new(
-            format!("def_{}", node.id()),
-            name.to_string(),
-            def_type,
-            true, // All these types can contain other definitions
-        ))
+    fn create_definitions_from_use(
+        &self,
+        node: Node,
+        source: &str,
+        def_type: DefinitionType,
+    ) -> Vec<Definition> {
+        let mut definitions = Vec::new();
+
+        if let Some(argument) = node.child_by_field_name("argument") {
+            match argument.kind() {
+                "scoped_identifier" => {
+                    // Handle cases like "use std::fs::File;" and "use std::io;"
+                    let full_path = argument.utf8_text(source.as_bytes()).unwrap().to_string();
+                    let parts: Vec<&str> = full_path.split("::").collect();
+                    let name = parts.last().unwrap().to_string();
+                    definitions.push(Definition::new(
+                        format!("def_{}", node.id()),
+                        name,
+                        def_type,
+                        Some(full_path),
+                        false,
+                    ));
+                }
+                "scoped_use_list" => {
+                    // Handle cases like "use std::collections::{HashMap, HashSet};"
+                    if let Some(path) = argument.child_by_field_name("path") {
+                        let base_path = path.utf8_text(source.as_bytes()).unwrap().to_string();
+                        if let Some(use_list) = argument.child_by_field_name("list") {
+                            for child in use_list.named_children(&mut use_list.walk()) {
+                                if child.kind() == "identifier" {
+                                    let name =
+                                        child.utf8_text(source.as_bytes()).unwrap().to_string();
+                                    let full_path = format!("{}::{}", base_path, name);
+                                    definitions.push(Definition::new(
+                                        format!("def_{}", child.id()),
+                                        name,
+                                        def_type.clone(),
+                                        Some(full_path),
+                                        false,
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {
+                    // Handle any other unexpected cases
+                    println!(
+                        "Unexpected argument type in use declaration: {}",
+                        argument.kind()
+                    );
+                }
+            }
+        }
+
+        definitions
+    }
+
+    fn create_definitions(
+        &self,
+        node: Node,
+        source: &str,
+        def_type: DefinitionType,
+    ) -> Vec<Definition> {
+        if def_type == "use" {
+            return self.create_definitions_from_use(node, source, def_type);
+        }
+
+        let name = self.name_from_node(node, source, &def_type);
+
+        if let Some(name) = name {
+            return vec![Definition::new(
+                format!("def_{}", node.id()),
+                name.to_string(),
+                def_type,
+                None,
+                true, // All these types can contain other definitions
+            )];
+        }
+        vec![]
     }
 }
 
@@ -122,14 +212,18 @@ mod tests {
     #[test]
     fn test_definition_identifier() {
         let source_code = r#"
+use std::collections::{ HashMap, HashSet };
+use std::fs::File;
+use std::io;
+
 mod my_module {
     pub struct MyStruct {
-        field: i32,
+        field: HashMap,
     }
 
     impl MyStruct {
         fn new() -> Self {
-            MyStruct { field: 0 }
+            MyStruct { field: HashMap::new() }
         }
     }
 
@@ -161,6 +255,10 @@ fn main() {
 
         // Check if all expected definitions are present
         let expected_definitions = vec![
+            ("HashMap", "use"),
+            ("HashSet", "use"),
+            ("File", "use"),
+            ("io", "use"),
             ("my_module", "module"),
             ("MyStruct", "struct"),
             ("new", "function"),

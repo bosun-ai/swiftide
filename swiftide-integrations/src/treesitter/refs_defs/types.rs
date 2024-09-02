@@ -14,6 +14,7 @@ pub struct Definition {
     pub id: String,
     pub name: String,
     pub definition_type: DefinitionType,
+    pub alias: Option<String>,
     pub is_scope: bool,
     pub contained_definitions: Vec<String>, // IDs of contained definitions
     pub contained_references: Vec<String>,  // IDs of contained references
@@ -71,11 +72,18 @@ impl File {
 }
 
 impl Definition {
-    pub fn new(id: String, name: String, definition_type: DefinitionType, is_scope: bool) -> Self {
+    pub fn new(
+        id: String,
+        name: String,
+        definition_type: DefinitionType,
+        alias: Option<String>,
+        is_scope: bool,
+    ) -> Self {
         Definition {
             id,
             name,
             definition_type,
+            alias,
             is_scope,
             contained_definitions: Vec::new(),
             contained_references: Vec::new(),
