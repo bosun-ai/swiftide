@@ -72,7 +72,9 @@ Fast, streaming indexing and query library for AI applications, written in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a data indexing, processing and query library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. Queries can then be augmented by retrieving the indexed data and generating an answer. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+Swiftide is a Rust native library for building LLM applications. Large language models are amazing, but need context
+to solve real problems. Swiftide allows you to ingest, transform and index large amounts of data fast, and then query that data so it it can be injected into prompts.
+This process is called Retrieval Augmented Generation.
 
 With Swiftide, you can build your AI application from idea to production in a few lines of code.
 
