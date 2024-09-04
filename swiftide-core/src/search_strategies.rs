@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use derive_builder::Builder;
 
 const DEFAULT_TOP_K: u64 = 10;
@@ -8,6 +10,26 @@ const DEFAULT_TOP_N: u64 = 10;
 ///
 /// The strategy is also yielded to the Retriever and can contain addition configuration
 use crate::{indexing::EmbeddedField, querying};
+
+/// A strategy that can be build with a generic query for the retriever to use
+///
+/// The retriever will manage extracting the documents, only the query is needed.
+#[derive(Debug, Clone)]
+pub struct CustomQuery<Q> {
+    query: Arc<Q>,
+}
+
+impl<Q: Send + Sync + Clone> CustomQuery<Q> {
+    pub fn from_query(query: Q) -> Self {
+        CustomQuery {
+            query: query.into(),
+        }
+    }
+
+    pub fn query(&self) -> &Q {
+        &self.query
+    }
+}
 
 /// A very simple search where it takes the embedding on the current query
 /// and returns `top_k` documents.
@@ -128,3 +150,4 @@ impl SimilaritySingleEmbedding {
 
 impl querying::SearchStrategy for SimilaritySingleEmbedding {}
 impl querying::SearchStrategy for HybridSearch {}
+impl<Q: Send + Sync + Clone> querying::SearchStrategy for CustomQuery<Q> {}

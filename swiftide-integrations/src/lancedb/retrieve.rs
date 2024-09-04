@@ -5,7 +5,10 @@ use futures_util::TryStreamExt;
 use itertools::Itertools;
 use lancedb::query::{ExecutableQuery, QueryBase as _};
 use swiftide_core::{
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{CustomQuery, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -47,6 +50,36 @@ impl Retrieve<SimilaritySingleEmbedding> for LanceDB {
             .nearest_to(embedding.as_slice())?
             .column(&column_name)
             .limit(usize::try_from(search_strategy.top_k())?)
+            .execute()
+            .await?
+            .try_collect::<Vec<_>>()
+            .await?
+            .first()
+            .context("Failed to retrieve documents")?
+            .to_owned();
+
+        let documents: Vec<String> = result
+            .column_by_name("chunk")
+            .and_then(|raw_array| raw_array.as_any().downcast_ref::<StringArray>())
+            .context("Could not cast documents to strings")?
+            .iter()
+            .flatten()
+            .map_into()
+            .collect();
+
+        Ok(query.retrieved_documents(documents))
+    }
+}
+
+#[async_trait]
+impl Retrieve<CustomQuery<lancedb::query::Query>> for LanceDB {
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomQuery<lancedb::query::Query>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let result = search_strategy
+            .query()
             .execute()
             .await?
             .try_collect::<Vec<_>>()
