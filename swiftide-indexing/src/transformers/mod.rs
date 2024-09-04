@@ -7,6 +7,7 @@
 //! and tailored, supporting Jinja style templating based on [`tera`]. See [`swiftide::prompt::Prompt`] and [`swiftide::prompt::PromptTemplate`]
 
 pub mod chunk_markdown;
+pub mod chunk_text;
 pub mod embed;
 pub mod metadata_keywords;
 pub mod metadata_qa_text;
@@ -15,6 +16,7 @@ pub mod metadata_title;
 pub mod sparse_embed;
 
 pub use chunk_markdown::ChunkMarkdown;
+pub use chunk_text::ChunkText;
 pub use embed::Embed;
 pub use metadata_keywords::MetadataKeywords;
 pub use metadata_qa_text::MetadataQAText;
