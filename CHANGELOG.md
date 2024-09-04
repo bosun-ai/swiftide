@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.2](https://github.com/bosun-ai/swiftide/releases/tag/0.9.2) - 2024-09-04
+
+### Added
+
+- [84e9bae](https://github.com/bosun-ai/swiftide/commit/84e9baefb366f0a949ae7dcbdd8f97931da0b4be) *(indexing)* Add chunker for text with text_splitter ([#270](https://github.com/bosun-ai/swiftide/pull/270))
+
+- [387fbf2](https://github.com/bosun-ai/swiftide/commit/387fbf29c2bce06284548f9af146bb3969562761) *(query)* Hybrid search for qdrant in query pipeline ([#260](https://github.com/bosun-ai/swiftide/pull/260))
+
+### Fixed
+
+- [6e92b12](https://github.com/bosun-ai/swiftide/commit/6e92b12faa020f12ef5e770282e7b2e854f4910c) *(deps)* Update rust crate text-splitter to 0.16 ([#267](https://github.com/bosun-ai/swiftide/pull/267))
+
+### Other
+
+- [1dc4c90](https://github.com/bosun-ai/swiftide/commit/1dc4c90436c9c8c8d0eb080e300afce53090c73e) *(readme)* Add new blog links
+
+- [064c7e1](https://github.com/bosun-ai/swiftide/commit/064c7e157775a7aaf9628a39f941be35ce0be99a) *(readme)* Update intro
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.9.1...0.9.2
+
+
+
 ## [0.9.1](https://github.com/bosun-ai/swiftide/releases/tag/0.9.1) - 2024-09-01
 
 ### Added
