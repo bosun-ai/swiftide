@@ -32,7 +32,7 @@ where
 }
 
 /// A search strategy for the query pipeline
-pub trait SearchStrategy: Clone + Send + Sync + Default {}
+pub trait SearchStrategy: Clone + Send + Sync {}
 
 /// Can retrieve documents given a SearchStrategy
 #[async_trait]

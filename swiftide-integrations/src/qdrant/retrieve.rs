@@ -1,8 +1,8 @@
-use qdrant_client::qdrant::{self, PrefetchQueryBuilder, SearchPointsBuilder};
+use qdrant_client::qdrant::{self, PrefetchQueryBuilder, QueryPoints, SearchPointsBuilder};
 use swiftide_core::{
     prelude::{Result, *},
     querying::{
-        search_strategies::{HybridSearch, SimilaritySingleEmbedding},
+        search_strategies::{CustomQuery, HybridSearch, SimilaritySingleEmbedding},
         states, Query,
     },
     Retrieve,
@@ -91,6 +91,34 @@ impl Retrieve<HybridSearch> for Qdrant {
                     .query(qdrant::Query::new_fusion(qdrant::Fusion::Rrf))
                     .limit(search_strategy.top_k()),
             )
+            .await?
+            .result;
+
+        let documents = result
+            .into_iter()
+            .map(|scored_point| {
+                Ok(scored_point
+                    .payload
+                    .get("content")
+                    .context("Expected document in qdrant payload")?
+                    .to_string())
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        Ok(query.retrieved_documents(documents))
+    }
+}
+
+#[async_trait]
+impl Retrieve<CustomQuery<QueryPoints>> for Qdrant {
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomQuery<QueryPoints>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let result = self
+            .client
+            .query(search_strategy.query().to_owned())
             .await?
             .result;
 
