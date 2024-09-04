@@ -6133,9 +6133,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.11.2"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb4e75767fbc9d92b90e4d0c011f61358cde9513b31ef07ea3631b15ffc3b4fd"
+checksum = "4d31cbfcd94884c3a67ec210c83efb06cb43674043458b0ad59f6947f8462c23"
 dependencies = [
  "bitflags 2.6.0",
  "memchr",
@@ -7970,16 +7970,16 @@ dependencies = [
 
 [[package]]
 name = "text-splitter"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea57b83410a18a2a5d077b3248d24e1fc516d56171406c6b109d8bff242d96a3"
+checksum = "1748653a823a7c13806bc797a9f74a88a169a0fe248cb3c758ad27bcd1c0c1a3"
 dependencies = [
  "ahash",
  "auto_enums",
  "either",
  "itertools 0.13.0",
  "once_cell",
- "pulldown-cmark 0.11.2",
+ "pulldown-cmark 0.12.0",
  "regex",
  "strum",
  "thiserror",
