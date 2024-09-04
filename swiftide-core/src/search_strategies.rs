@@ -1,4 +1,3 @@
-
 use derive_builder::Builder;
 
 const DEFAULT_TOP_K: u64 = 10;
