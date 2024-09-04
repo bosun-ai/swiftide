@@ -1,37 +1,38 @@
-name: Coverage
-
-on:
-  pull_request:
-  push:
-    branches:
-      - master
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  test:
-    name: coverage
-    runs-on: ubuntu-latest
-    env:
-      RUST_LOG: swiftide=debug
-      RUST_BACKTRACE: 1
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-llvm-cov
-      - name: Generate code coverage
-        run: |
-          cargo llvm-cov --lcov --output-path target/lcov.info --all-features
-
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+# name: Coverage
+#
+# on:
+#   pull_request:
+#   push:
+#     branches:
+#       - master
+#
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-coverage
+#   cancel-in-progress: true
+#
+# jobs:
+#   test:
+#     name: coverage
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#
+#       - uses: actions/checkout@v4
+#       - uses: dtolnay/rust-toolchain@stable
+#         with:
+#           components: llvm-tools-preview
+#       - name: Install Protoc
+#         uses: arduino/setup-protoc@v3
+#       - name: Cache Cargo dependencies
+#         uses: Swatinem/rust-cache@v2
+#       - name: Install cargo-llvm-cov
+#         uses: taiki-e/install-action@v2
+#         with:
+#           tool: cargo-tarpaulin
+#       - name: Generate code coverage
+#         run: |
+#           cargo tarpaulin --verbose --all-features --tests --timeout 1200 --coveralls ${{ secrets.COVERALLS_REPO_TOKEN }}
+#
+#       # - name: Coveralls
+#       #   uses: coverallsapp/github-action@v2

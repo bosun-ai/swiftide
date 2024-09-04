@@ -42,6 +42,18 @@ impl Into<IndexingStream> for Vec<Result<Node>> {
     }
 }
 
+impl Into<IndexingStream> for Vec<Node> {
+    fn into(self) -> IndexingStream {
+        IndexingStream::from_nodes(self)
+    }
+}
+
+impl Into<IndexingStream> for anyhow::Error {
+    fn into(self) -> IndexingStream {
+        IndexingStream::iter(vec![Err(self)])
+    }
+}
+
 impl Into<IndexingStream> for Result<Vec<Node>> {
     fn into(self) -> IndexingStream {
         match self {
@@ -80,5 +92,9 @@ impl IndexingStream {
         IndexingStream {
             inner: stream::iter(iter).boxed(),
         }
+    }
+
+    pub fn from_nodes(nodes: Vec<Node>) -> Self {
+        IndexingStream::iter(nodes.into_iter().map(Ok))
     }
 }

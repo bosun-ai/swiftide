@@ -116,6 +116,7 @@ impl Node {
     ///
     /// Embeddable data mapped to their `EmbeddedField`.
     pub fn as_embeddables(&self) -> Vec<(EmbeddedField, String)> {
+        // TODO: Figure out a clever way to do zero copy
         let mut embeddables = Vec::new();
 
         if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
@@ -215,9 +216,35 @@ pub enum EmbeddedField {
     Metadata(String),
 }
 
+impl EmbeddedField {
+    /// Returns the name of the field when it would be a sparse vector
+    pub fn sparse_field_name(&self) -> String {
+        format!("{self}_sparse")
+    }
+
+    /// Returns the name of the field when it would be a dense vector
+    pub fn field_name(&self) -> String {
+        format!("{self}")
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<String> for EmbeddedField {
     fn into(self) -> String {
         self.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case(&EmbeddedField::Combined, ["Combined", "Combined_sparse"])]
+    #[test_case(&EmbeddedField::Chunk, ["Chunk", "Chunk_sparse"])]
+    #[test_case(&EmbeddedField::Metadata("test".into()), ["Metadata: test", "Metadata: test_sparse"])]
+    fn field_name_tests(embedded_field: &EmbeddedField, expected: [&str; 2]) {
+        assert_eq!(embedded_field.field_name(), expected[0]);
+        assert_eq!(embedded_field.sparse_field_name(), expected[1]);
     }
 }

@@ -72,7 +72,9 @@ Fast, streaming indexing and query library for AI applications, written in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a data indexing, processing and query library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. Queries can then be augmented by retrieving the indexed data and generating an answer. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+Swiftide is a Rust native library for building LLM applications. Large language models are amazing, but need context
+to solve real problems. Swiftide allows you to ingest, transform and index large amounts of data fast, and then query that data so it it can be injected into prompts.
+This process is called Retrieval Augmented Generation.
 
 With Swiftide, you can build your AI application from idea to production in a few lines of code.
 
@@ -80,11 +82,13 @@ With Swiftide, you can build your AI application from idea to production in a fe
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
 </div>
 
-While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Indexing performance went from tens of minutes to a few seconds.
+While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Swiftide's goal is to offer a fully fledged retrieval augmented generation library, that is fast, easy-to-use, reliable and easy-to-extend.
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
 We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue or contact us on [discord](https://discord.gg/3jjXYen9UY).
+
+**Great starting points are this readme, [swiftide.rs](https://swiftide.rs), [the examples folder](https://github.com/bosun-ai/swiftide/tree/master/examples), our blog at [bosun.ai](https://bosun.ai), and in depth tutorials at [swiftide-tutorial](https://github.com/bosun-ai/swiftide-tutorial).**
 
 > [!CAUTION]
 > Swiftide is under heavy development and can have breaking changes while we work towards 1.0. Documentation here might fall short of all features, and despite our efforts be slightly outdated. Expect bugs. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you in an issue.
@@ -93,6 +97,8 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
+- [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-01-02)
+- [Bring your own transformers](https://bosun.ai/posts/bring-your-own-transformers-in-swiftide/) (2024-08-13)
 - [Release - Swiftide 0.8](https://bosun.ai/posts/swiftide-0-8/) (2024-08-12)
 - [Release - Swiftide 0.7](https://bosun.ai/posts/swiftide-0-7/) (2024-07-28)
 - [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
@@ -102,6 +108,8 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Example
+
+Indexing a local code project, chunking into smaller pieces, enriching the nodes with metadata, and persisting into [Qdrant](https://qdrant.tech):
 
 ```rust
 indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
@@ -127,13 +135,29 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .await?;
 ```
 
+Querying for an example on how to use the query pipeline:
+
+```rust
+query::Pipeline::default()
+    .then_transform_query(GenerateSubquestions::from_client(
+        openai_client.clone(),
+    ))
+    .then_transform_query(Embed::from_client(
+        openai_client.clone(),
+    ))
+    .then_retrieve(qdrant.clone())
+    .then_answer(Simple::from_client(openai_client.clone()))
+    .query("How can I use the query pipeline in Swiftide?")
+    .await?;
+```
+
 _You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Vision
 
-Our goal is to create a fast, extendable platform for data indexing and querying to further the development of automated LLM applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create a fast, extendable platform for Retrieval Augmented Generation to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -146,7 +170,8 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 - Splitting and merging pipelines
 - Jinja-like templating for prompts
 - Store into multiple backends
-- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, Fluvio, and Treesitter
+- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, Fluvio, LanceDB, and Treesitter
+- Evaluate pipelines with RAGAS
 - Sparse vector support for hybrid search
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 
@@ -158,7 +183,7 @@ Our goal is to create a fast, extendable platform for data indexing and querying
 | **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Other pipelines and streams                                                                                                     |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
-| **Storage**                                  | Qdrant <br> Redis                                                                                                                                                    |
+| **Storage**                                  | Qdrant <br> Redis <br> LanceDB                                                                                                                                       |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -172,7 +197,7 @@ Make sure you have the rust toolchain installed. [rustup](https://rustup.rs) Is 
 
 To use OpenAI, an API key is required. Note that by default `async_openai` uses the `OPENAI_API_KEY` environment variables.
 
-Other integrations will need to be installed accordingly.
+Other integrations might have their own requirements.
 
 ### Installation
 
@@ -210,7 +235,7 @@ Nodes have a path, chunk and metadata. Currently metadata is copied over when ch
 Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `EmbedModel` to do their things.
 
 > [!NOTE]
-> No integrations are enabled by default as some are code heavy. Either cherry-pick the integrations you need or use the "all" feature flag.
+> No integrations are enabled by default as some are code heavy. We recommend you to cherry-pick the integrations you need. By convention flags have the same name as the integration they represent.
 
 > [!WARNING]
 > Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
@@ -242,7 +267,7 @@ Swiftide is in a very early stage and we are aware that we lack features for the
 If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
-If you just want to contribute (bless you!), see [our issues](https://github.com/bosun-ai/swiftide/issues).
+If you just want to contribute (bless you!), see [our issues](https://github.com/bosun-ai/swiftide/issues) or join us on Discord.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)

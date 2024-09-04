@@ -53,6 +53,9 @@ fastembed = ["swiftide-integrations/fastembed"]
 scraping = ["swiftide-integrations/scraping"]
 # AWS Bedrock for prompting
 aws-bedrock = ["swiftide-integrations/aws-bedrock"]
+# Lancdb persistance and querying
+lancedb = ["swiftide-integrations/lancedb"]
+# Fluvio loader
 fluvio = ["swiftide-integrations/fluvio"]
 
 # Testing, internal only
@@ -78,6 +81,8 @@ insta = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+lancedb = { workspace = true }
+arrow-array = { workspace = true }
 
 [lints]
 workspace = true
