@@ -35,11 +35,11 @@ pub struct Pipeline<'stream, S: SearchStrategy = SimilaritySingleEmbedding, T = 
 
 /// By default the [`SearchStrategy`] is [`SimilaritySingleEmbedding`], which embed the current
 /// query and returns a collection of documents.
-impl<S: SearchStrategy> Default for Pipeline<'_, S> {
+impl Default for Pipeline<'_, SimilaritySingleEmbedding> {
     fn default() -> Self {
         let stream = QueryStream::default();
         Self {
-            search_strategy: S::default(),
+            search_strategy: SimilaritySingleEmbedding::default(),
             query_sender: stream
                 .sender
                 .clone()
@@ -53,11 +53,23 @@ impl<S: SearchStrategy> Default for Pipeline<'_, S> {
 
 impl<'a, S: SearchStrategy> Pipeline<'a, S> {
     /// Create a query pipeline from a [`SearchStrategy`]
+    ///
+    /// # Panics
+    ///
+    /// Panics if the inner stream fails to build
     #[must_use]
     pub fn from_search_strategy(strategy: S) -> Pipeline<'a, S> {
+        let stream = QueryStream::default();
+
         Pipeline {
             search_strategy: strategy,
-            ..Default::default()
+            query_sender: stream
+                .sender
+                .clone()
+                .expect("Pipeline received stream without query entrypoint"),
+            stream,
+            evaluator: None,
+            default_concurrency: num_cpus::get(),
         }
     }
 }

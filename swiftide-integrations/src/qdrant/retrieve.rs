@@ -67,6 +67,7 @@ impl Retrieve<HybridSearch> for Qdrant {
             anyhow::bail!("No sparse embedding for query")
         };
 
+        // NOTE: Potential improvement to consume the vectors instead of cloning
         let result = self
             .client
             .query(
@@ -75,15 +76,15 @@ impl Retrieve<HybridSearch> for Qdrant {
                     .add_prefetch(
                         PrefetchQueryBuilder::default()
                             .query(qdrant::Query::new_nearest(qdrant::VectorInput::new_sparse(
-                                sparse.indices,
-                                sparse.values,
+                                sparse.indices.clone(),
+                                sparse.values.clone(),
                             )))
-                            .using(search_strategy.sparse_vector_field().field_name())
+                            .using(search_strategy.sparse_vector_field().sparse_field_name())
                             .limit(search_strategy.top_n()),
                     )
                     .add_prefetch(
                         PrefetchQueryBuilder::default()
-                            .query(qdrant::Query::new_nearest(*dense))
+                            .query(qdrant::Query::new_nearest(dense.clone()))
                             .using(search_strategy.dense_vector_field().field_name())
                             .limit(search_strategy.top_n()),
                     )
