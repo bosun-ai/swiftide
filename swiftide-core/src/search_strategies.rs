@@ -1,4 +1,3 @@
-use std::thread::Builder;
 
 use derive_builder::Builder;
 

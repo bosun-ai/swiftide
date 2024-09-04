@@ -12,7 +12,7 @@ use swiftide::{
         transformers::{self, ChunkCode, MetadataQACode},
         EmbeddedField,
     },
-    integrations::{fastembed::FastEmbed, groq, openai, qdrant::Qdrant},
+    integrations::{fastembed::FastEmbed, openai, qdrant::Qdrant},
     query::{self, answers, query_transformers, search_strategies::HybridSearch},
 };
 

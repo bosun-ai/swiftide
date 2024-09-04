@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use swiftide_core::{
-    indexing::EmbeddingModel,
     prelude::*,
     querying::{states, Query, TransformQuery},
     SparseEmbeddingModel,

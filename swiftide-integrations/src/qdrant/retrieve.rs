@@ -1,4 +1,4 @@
-use qdrant_client::qdrant::{self, PrefetchQueryBuilder, QueryPointsBuilder, SearchPointsBuilder};
+use qdrant_client::qdrant::{self, PrefetchQueryBuilder, SearchPointsBuilder};
 use swiftide_core::{
     prelude::{Result, *},
     querying::{

@@ -2,7 +2,6 @@ use swiftide::indexing::{self, *};
 use swiftide::query::search_strategies::HybridSearch;
 use swiftide::{integrations, query};
 use swiftide_integrations::fastembed::FastEmbed;
-use swiftide_integrations::qdrant::Qdrant;
 use swiftide_query::{answers, query_transformers, response_transformers};
 use swiftide_test_utils::*;
 use temp_dir::TempDir;
