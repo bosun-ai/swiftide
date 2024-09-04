@@ -184,6 +184,7 @@ Our goal is to create a fast, extendable platform for Retrieval Augmented Genera
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
 | **Storage**                                  | Qdrant <br> Redis <br> LanceDB                                                                                                                                       |
+| **Query pipeline**                           | Similarity and hybrid search, query and response transformations, and evaluation                                                                                     |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -217,9 +218,16 @@ Other integrations might have their own requirements.
 
 ## Usage and concepts
 
-Before building your stream, you need to enable and configure any integrations required. See /examples.
+Before building your streams, you need to enable and configure any integrations required. See /examples.
 
-A stream starts with a Loader that emits Nodes. For instance, with the Fileloader each file is a Node.
+_We have a lot of examples, please refer to /examples and the [Documentation](https://docs.rs/swiftide/latest/swiftide/)_
+
+> [!NOTE]
+> No integrations are enabled by default as some are code heavy. We recommend you to cherry-pick the integrations you need. By convention flags have the same name as the integration they represent.
+
+### Indexing
+
+An indexing stream starts with a Loader that emits Nodes. For instance, with the Fileloader each file is a Node.
 
 You can then slice and dice, augment, and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
 
@@ -234,13 +242,22 @@ Nodes have a path, chunk and metadata. Currently metadata is copied over when ch
 
 Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `EmbedModel` to do their things.
 
-> [!NOTE]
-> No integrations are enabled by default as some are code heavy. We recommend you to cherry-pick the integrations you need. By convention flags have the same name as the integration they represent.
-
 > [!WARNING]
 > Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
 
-_For more examples, please refer to /examples and the [Documentation](https://docs.rs/swiftide/latest/swiftide/)_
+### Querying
+
+A query stream starts with a search strategy. In the query pipeline a `Query` goes through several stages. Transformers and retrievers work together to get the right context into a prompt, before generating an answer. Transformers and Retrievers operate on different stages of the Query via a generic statemachine. Additionally, the search strategy is generic over the pipeline and Retrievers need to implement specifically for each strategy.
+
+That sounds like a lot but, tl&dr; the query pipeline is _fully and strongly typed_.
+
+- **Pending** The query has not been executed, and can be further transformed with transformers
+- **Retrieved** Documents have been retrieved, and can be further transformed to provide context for an answer
+- **Answered** The query is done
+
+Additionally, query pipelines can also be evaluated. I.e. by [Ragas](https://ragas.io).
+
+Similar to the indexing pipeline each step is governed by simple Traits and closures implement these traits as well.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
