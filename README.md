@@ -252,7 +252,7 @@ A query stream starts with a search strategy. In the query pipeline a `Query` go
 That sounds like a lot but, tl&dr; the query pipeline is _fully and strongly typed_.
 
 - **Pending** The query has not been executed, and can be further transformed with transformers
-- **Retrieved** Documents have been retrieved, and can be futher transformed to provide context for an answer
+- **Retrieved** Documents have been retrieved, and can be further transformed to provide context for an answer
 - **Answered** The query is done
 
 Additionally, query pipelines can also be evaluated. I.e. by [Ragas](https://ragas.io).
