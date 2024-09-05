@@ -97,7 +97,7 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
-- [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-01-02)
+- [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-09-02)
 - [Bring your own transformers](https://bosun.ai/posts/bring-your-own-transformers-in-swiftide/) (2024-08-13)
 - [Release - Swiftide 0.8](https://bosun.ai/posts/swiftide-0-8/) (2024-08-12)
 - [Release - Swiftide 0.7](https://bosun.ai/posts/swiftide-0-7/) (2024-07-28)
