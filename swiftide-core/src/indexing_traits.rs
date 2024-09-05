@@ -14,15 +14,15 @@ use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
 
+use dyn_clone::DynClone;
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
 #[doc(hidden)]
 use mockall::{automock, predicate::str};
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Transforms single nodes into single nodes
-pub trait Transformer: Send + Sync {
+pub trait Transformer: Send + Sync + DynClone {
     async fn transform_node(&self, node: Node) -> Result<Node>;
 
     /// Overrides the default concurrency of the pipeline
@@ -31,11 +31,27 @@ pub trait Transformer: Send + Sync {
     }
 }
 
+#[cfg(feature = "test-utils")]
+mockall::mock! {
+    #[derive(Debug)]
+    pub Transformer {}
+
+    impl Clone for Transformer {
+        fn clone(&self) -> Self;
+    }
+
+    #[async_trait]
+    impl Transformer for Transformer {
+        async fn transform_node(&self, node: Node) -> Result<Node>;
+        fn concurrency(&self) -> Option<usize>;
+    }
+}
+
 #[async_trait]
 /// Use a closure as a transformer
 impl<F> Transformer for F
 where
-    F: Fn(Node) -> Result<Node> + Send + Sync,
+    F: Fn(Node) -> Result<Node> + Send + Sync + Clone,
 {
     async fn transform_node(&self, node: Node) -> Result<Node> {
         self(node)
@@ -111,12 +127,42 @@ pub trait SparseEmbeddingModel: Send + Sync + Debug {
     async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
+// #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Given a string prompt, queries an LLM
-pub trait SimplePrompt: Debug + Send + Sync {
+pub trait SimplePrompt: Debug + Send + Sync + DynClone {
     // Takes a simple prompt, prompts the llm and returns the response
     async fn prompt(&self, prompt: Prompt) -> Result<String>;
+}
+
+#[cfg(feature = "test-utils")]
+mockall::mock! {
+    #[derive(Debug)]
+    pub SimplePrompt {}
+
+
+    impl Clone for SimplePrompt {
+        fn clone(&self) -> Self;
+    }
+
+    #[async_trait]
+    impl SimplePrompt for SimplePrompt {
+        async fn prompt(&self, prompt: Prompt) -> Result<String>;
+    }
+}
+
+#[async_trait]
+impl<T: SimplePrompt> SimplePrompt for &T {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+        (*self).prompt(prompt).await
+    }
+}
+
+#[async_trait]
+impl<T: SimplePrompt + Clone> SimplePrompt for Box<T> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+        (*self).prompt(prompt).await
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock)]

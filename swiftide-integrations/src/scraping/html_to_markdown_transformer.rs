@@ -17,7 +17,7 @@ pub struct HtmlToMarkdownTransformer {
     htmd: Arc<HtmlToMarkdown>,
 }
 
-impl Default for HtmlToMarkdownTransformer<'_> {
+impl Default for HtmlToMarkdownTransformer {
     fn default() -> Self {
         Self {
             htmd: HtmlToMarkdown::builder()
@@ -31,14 +31,14 @@ impl Default for HtmlToMarkdownTransformer<'_> {
     }
 }
 
-impl std::fmt::Debug for HtmlToMarkdownTransformer<'_> {
+impl std::fmt::Debug for HtmlToMarkdownTransformer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HtmlToMarkdownTransformer").finish()
     }
 }
 
 #[async_trait]
-impl Transformer for HtmlToMarkdownTransformer<'_> {
+impl Transformer for HtmlToMarkdownTransformer {
     /// Converts the HTML content in the `Node` to markdown.
     ///
     /// Will Err the node if the conversion fails.

@@ -19,7 +19,7 @@ use swiftide_core::{indexing::Node, Transformer};
 pub struct MetadataTitle {}
 
 #[async_trait]
-impl Transformer for MetadataTitle<'_> {
+impl Transformer for MetadataTitle {
     /// Transforms an `Node` by generating questions and answers
     /// based on the text chunk within the node.
     ///

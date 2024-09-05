@@ -16,7 +16,7 @@ pub struct OutlineCodeTreeSitter {
     minimum_file_size: Option<usize>,
 }
 
-impl OutlineCodeTreeSitter<'_> {
+impl OutlineCodeTreeSitter {
     /// Tries to create a `OutlineCodeTreeSitter` instance for a given programming language.
     ///
     /// # Parameters
@@ -42,7 +42,7 @@ impl OutlineCodeTreeSitter<'_> {
 }
 
 #[async_trait]
-impl Transformer for OutlineCodeTreeSitter<'_> {
+impl Transformer for OutlineCodeTreeSitter {
     /// Adds context to the metadata of a `Node` containing code in the "Outline" field.
     ///
     /// It uses the `CodeOutliner` to generate the context.

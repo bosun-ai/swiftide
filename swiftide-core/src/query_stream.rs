@@ -8,21 +8,19 @@ use tokio_stream::wrappers::ReceiverStream;
 
 use futures_util::stream::Stream;
 pub use futures_util::{StreamExt, TryStreamExt};
-use pin_project_lite::pin_project;
 
 use crate::querying::Query;
 
-pin_project! {
-    /// Internally used by a query pipeline
-    ///
-    /// Has a sender and receiver to initialize the stream
-    pub struct QueryStream<'stream, Q: 'stream> {
-        #[pin]
-        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send + 'stream>>,
+#[pin_project::pin_project]
+/// Internally used by a query pipeline
+///
+/// Has a sender and receiver to initialize the stream
+pub struct QueryStream<'stream, Q: 'stream> {
+    #[pin]
+    pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send + 'stream>>,
 
-        #[pin]
-        pub sender: Option<Sender<Result<Query<Q>>>>
-    }
+    #[pin]
+    pub sender: Option<Sender<Result<Query<Q>>>>,
 }
 
 impl<'stream, T: Send + Sync + 'stream> Default for QueryStream<'stream, T> {

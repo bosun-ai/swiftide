@@ -15,7 +15,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tracing = { workspace = true }
 async-trait = { workspace = true }
-pin-project-lite = { workspace = true }
+pin-project = { workspace = true }
 futures-util = { workspace = true }
 tokio-stream = { workspace = true }
 itertools = { workspace = true }
@@ -26,6 +26,7 @@ strum_macros = { workspace = true }
 mockall = { workspace = true, optional = true }
 lazy_static = { workspace = true }
 derive_builder = { workspace = true }
+dyn-clone = { workspace = true }
 
 tera = { version = "1.20", default-features = false }
 uuid = { version = "1.10", features = ["v4"] }

@@ -75,7 +75,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
         quote! {}
     } else {
         quote! {
-            impl Default for #struct_name<'_> {
+            impl Default for #struct_name {
                 fn default() -> Self {
                     #builder_name::default().build().unwrap()
                 }
@@ -86,23 +86,24 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
     quote! {
         mod hidden {
             pub use std::sync::Arc;
-            pub use anyhow::Result;
-            pub use derive_builder::Builder;
+            pub use swiftide_core::ext::anyhow::Result;
+            pub use swiftide_core::ext::derive_builder::Builder;
             pub use swiftide_core::{
                 indexing::{IndexingDefaults},
                 prompt::{Prompt, PromptTemplate},
                 SimplePrompt, Transformer, WithIndexingDefaults
             };
+            pub use swiftide_core::ext::dyn_clone;
         }
 
         #metadata_field_name
 
         #derive
         #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
-        #vis struct #struct_name<'client> {
+        #vis struct #struct_name {
             #(#existing_fields)*
             #[builder(setter(custom), default)]
-            client: Option<hidden::Arc<dyn hidden::SimplePrompt + 'client>>,
+            client: Option<hidden::Arc<Box<dyn hidden::SimplePrompt>>>,
 
             #prompt_template_struct_attr
 
@@ -114,19 +115,19 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
 
         #default_impl
 
-        impl<'client> #struct_name<'client> {
+        impl #struct_name {
             /// Creates a new builder for the transformer
-            pub fn builder() -> #builder_name<'client> {
+            pub fn builder() -> #builder_name {
                 #builder_name::default()
             }
 
             /// Build a new transformer from a client
-            pub fn from_client(client: impl hidden::SimplePrompt + 'client) -> #builder_name<'client> {
+            pub fn from_client<C>(client: C) -> #builder_name where for<'a> C: hidden::SimplePrompt + Clone + 'a, {
                 #builder_name::default().client(client).to_owned()
             }
 
             /// Create a new transformer from a client
-            pub fn new(client: impl hidden::SimplePrompt + 'client) -> Self {
+            pub fn new<C>(client: C) -> Self  where for<'a> C: hidden::SimplePrompt + Clone + 'a {
                 #builder_name::default().client(client).build().unwrap()
             }
 
@@ -161,14 +162,15 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
             }
         }
 
-        impl<'client> #builder_name<'client> {
-            pub fn client(&mut self, client: impl hidden::SimplePrompt + 'client) -> &mut Self {
-                self.client = Some(Some(hidden::Arc::new(client)));
+        impl #builder_name {
+            pub fn client<C>(&mut self, client: C) -> &mut Self  where for<'a> C: hidden::SimplePrompt + Clone + 'a{
+                let arc_client = hidden::dyn_clone::clone_box(&client.clone());
+                self.client = Some(Some(hidden::Arc::new(arc_client)));
                 self
             }
         }
 
-        impl hidden::WithIndexingDefaults for #struct_name<'_> {
+        impl hidden::WithIndexingDefaults for #struct_name {
             fn with_indexing_defaults(&mut self, defaults: hidden::IndexingDefaults) {
                 self.indexing_defaults = Some(defaults);
             }

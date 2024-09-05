@@ -51,7 +51,7 @@ pub struct MetadataRefsDefsCode {
     code_parser: Arc<CodeParser>,
 }
 
-impl MetadataRefsDefsCode<'_> {
+impl MetadataRefsDefsCode {
     /// Tries to build a new `MetadataRefsDefsCode` transformer
     ///
     /// # Errors
@@ -70,7 +70,7 @@ impl MetadataRefsDefsCode<'_> {
 }
 
 #[async_trait]
-impl Transformer for MetadataRefsDefsCode<'_> {
+impl Transformer for MetadataRefsDefsCode {
     /// Extracts references and definitions from code and
     /// adds them as metadata to the node if present
     async fn transform_node(&self, mut node: Node) -> Result<Node> {

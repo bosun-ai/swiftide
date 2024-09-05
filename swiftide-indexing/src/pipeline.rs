@@ -63,8 +63,12 @@ impl Pipeline {
     /// Sets the default LLM client to be used for LLM prompts for all transformers in the
     /// pipeline.
     #[must_use]
-    pub fn with_default_llm_client(mut self, client: impl SimplePrompt + 'static) -> Self {
-        self.indexing_defaults = IndexingDefaults::from_simple_prompt(Box::new(client));
+    pub fn with_default_llm_client<C>(mut self, client: C) -> Self
+    where
+        for<'a> C: SimplePrompt + Clone + 'a,
+    {
+        let client = dyn_clone::clone_box(&client.clone());
+        self.indexing_defaults = IndexingDefaults::from_simple_prompt(client);
         self
     }
 
@@ -172,15 +176,15 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
     #[must_use]
-    pub fn then(
-        mut self,
-        mut transformer: impl Transformer + WithIndexingDefaults + 'static,
-    ) -> Self {
+    pub fn then<T>(mut self, mut transformer: T) -> Self
+    where
+        for<'b> T: Transformer + WithIndexingDefaults + Clone + 'b,
+    {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
 
         transformer.with_indexing_defaults(self.indexing_defaults.clone());
-
-        let transformer = Arc::new(transformer);
+        let boxed = dyn_clone::clone_box(&transformer.clone());
+        let transformer = Arc::new(boxed);
         self.stream = self
             .stream
             .map_ok(move |node| {
@@ -213,11 +217,10 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each batch of nodes.
     #[must_use]
-    pub fn then_in_batch(
-        mut self,
-        batch_size: usize,
-        mut transformer: impl BatchableTransformer + WithBatchIndexingDefaults + 'static,
-    ) -> Self {
+    pub fn then_in_batch<T>(mut self, batch_size: usize, mut transformer: T) -> Self
+    where
+        for<'b> T: BatchableTransformer + WithBatchIndexingDefaults + 'b,
+    {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
 
         transformer.with_indexing_defaults(self.indexing_defaults.clone());

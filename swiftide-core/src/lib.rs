@@ -41,3 +41,11 @@ pub mod prelude;
 
 #[cfg(feature = "test-utils")]
 pub mod test_utils;
+
+#[doc(hidden)]
+/// Re-export of commonly used dependencies.
+pub mod ext {
+    pub use anyhow;
+    pub use derive_builder;
+    pub use dyn_clone;
+}

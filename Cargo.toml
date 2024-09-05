@@ -36,6 +36,7 @@ tokio = { version = "1.38", features = ["full"] }
 tokio-stream = { version = "0.1" }
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = { version = "1.16" }
+pin-project = { version = "1.1.5" }
 pin-project-lite = { version = "0.2" }
 itertools = { version = "0.13" }
 serde = { version = "1.0", features = ["derive"] }
@@ -46,6 +47,7 @@ lazy_static = { version = "1.5.0" }
 chrono = { version = "0.4" }
 indoc = { version = "2.0" }
 regex = { version = "1.10.6" }
+dyn-clone = { version = "1.0" }
 
 # Integrations
 spider = { version = "2.2" }

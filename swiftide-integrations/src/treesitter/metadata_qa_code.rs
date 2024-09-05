@@ -17,7 +17,7 @@ pub struct MetadataQACode {
 }
 
 #[async_trait]
-impl Transformer for MetadataQACode<'_> {
+impl Transformer for MetadataQACode {
     /// Asynchronously transforms a `Node` by generating questions and answers for its code chunk.
     ///
     /// This method uses the `SimplePrompt` client to generate questions and answers based on the code chunk
