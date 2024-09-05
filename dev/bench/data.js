@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725490553682,
+  "lastUpdate": 1725556059060,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3779,6 +3779,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 155,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "wu543065657@163.com",
+            "name": "Dezhi Wu",
+            "username": "dzvon"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3711f6fb2b51e97e4606b744cc963c04b44b6963",
+          "message": "docs(README): Fix date (#273)\n\nI suppose this should be 09-02.",
+          "timestamp": "2024-09-05T19:01:29+02:00",
+          "tree_id": "68cdc4f9c06c43bcfd3b56b1b77aa6366ea576dc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3711f6fb2b51e97e4606b744cc963c04b44b6963"
+        },
+        "date": 1725556058727,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
