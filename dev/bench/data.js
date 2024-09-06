@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725633105760,
+  "lastUpdate": 1725643315005,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3863,6 +3863,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "57fe4aa73b1b98dd8eac87c6440e0f2a0c66d4e8",
+          "message": "feat(indexing)!: Use UUIDv3 for indexing node ids (#277)\n\nUse UUIDv3 to generate node ids for storage and cache. This is more\r\nreliable than the previous u64 hashing, with less chance for collision.\r\nAdditionally, the previous hash algorithm changes over Rust releases and\r\nshould not be used.\r\n\r\nCloses #272 and needed for proper Rust 1.81 support as in #275 \r\n\r\nBREAKING CHANGE: All generated ids are now UUIDs, meaning all persisted\r\ndata needs to be purged or manually updated, as default upserts will\r\nfail. There is no backwards compatibility.",
+          "timestamp": "2024-09-06T19:15:40+02:00",
+          "tree_id": "bb2900180d0ed1525dffe585baaa17faedd7cd48",
+          "url": "https://github.com/bosun-ai/swiftide/commit/57fe4aa73b1b98dd8eac87c6440e0f2a0c66d4e8"
+        },
+        "date": 1725643314610,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
