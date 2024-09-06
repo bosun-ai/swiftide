@@ -42,7 +42,7 @@ impl Loader for Fluvio {
 
 #[cfg(test)]
 mod tests {
-    use std::{pin::Pin, thread::sleep, time::Duration};
+    use std::pin::Pin;
 
     use super::*;
     use anyhow::Result;
