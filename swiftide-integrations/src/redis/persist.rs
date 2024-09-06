@@ -109,7 +109,7 @@ mod tests {
             .unwrap();
 
         let node = Node {
-            id: Some(1),
+            id: None,
             path: "test".into(),
             chunk: "chunk".into(),
             ..Default::default()
@@ -134,12 +134,12 @@ mod tests {
             .unwrap();
         let nodes = vec![
             Node {
-                id: Some(1),
+                id: None,
                 path: "test".into(),
                 ..Default::default()
             },
             Node {
-                id: Some(2),
+                id: None,
                 path: "other".into(),
                 ..Default::default()
             },
@@ -168,7 +168,7 @@ mod tests {
             .build()
             .unwrap();
         let node = Node {
-            id: Some(1),
+            id: None,
             ..Default::default()
         };
 

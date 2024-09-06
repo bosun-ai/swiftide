@@ -157,7 +157,14 @@ impl LanceDBBuilder {
                     fields.push(Field::new(field.field_name(), DataType::Utf8, false));
                 }
                 FieldConfig::ID => {
-                    fields.push(Field::new(field.field_name(), DataType::UInt64, false));
+                    fields.push(Field::new(
+                        field.field_name(),
+                        DataType::FixedSizeList(
+                            Arc::new(Field::new("item", DataType::UInt8, true)),
+                            16,
+                        ),
+                        false,
+                    ));
                 }
             }
         }

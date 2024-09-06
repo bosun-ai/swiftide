@@ -21,6 +21,7 @@ use std::{
     collections::HashMap,
     fmt::Debug,
     hash::{Hash, Hasher},
+    os::unix::ffi::OsStrExt,
     path::PathBuf,
 };
 
@@ -37,7 +38,7 @@ use crate::{metadata::Metadata, Embedding, SparseEmbedding};
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Node {
     /// Optional identifier for the node.
-    pub id: Option<u64>,
+    pub id: Option<uuid::Uuid>,
     /// File path associated with the node.
     pub path: PathBuf,
     /// Data chunk contained in the node.
@@ -162,17 +163,26 @@ impl Node {
         format!("{}\n{}", metadata, self.chunk)
     }
 
-    /// Calculates a hash value for the node based on its path and chunk.
+    /// Retrieve the identifier of the node.
     ///
-    /// The hash value is calculated using the default hasher provided by the standard library.
+    /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
+    /// UUID (v3).
     ///
-    /// # Returns
-    ///
-    /// A 64-bit hash value representing the node.
-    pub fn calculate_hash(&self) -> u64 {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        self.hash(&mut hasher);
-        hasher.finish()
+    /// If previously calculated, the identifier is returned directly. If not, a new identifier is
+    /// calculated without storing it.
+    pub fn id(&self) -> uuid::Uuid {
+        if let Some(id) = self.id {
+            return id;
+        }
+
+        let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
+        uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
+    }
+
+    /// Updates the identifier of the node.
+    pub fn update_id(&mut self) {
+        self.id = None;
+        self.id = Some(self.id());
     }
 }
 
