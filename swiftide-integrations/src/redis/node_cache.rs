@@ -99,7 +99,7 @@ mod tests {
         cache.reset_cache().await;
 
         let node = Node {
-            id: Some(1),
+            id: None,
             path: "test".into(),
             chunk: "chunk".into(),
             ..Default::default()
