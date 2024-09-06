@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725645518207,
+  "lastUpdate": 1725646256314,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3947,6 +3947,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 6",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "465de7fc952d66f4cd15002ef39aab0e7ec3ac26",
+          "message": "chore: Update CHANGELOG.md with breaking change",
+          "timestamp": "2024-09-06T20:04:40+02:00",
+          "tree_id": "38a1831714c54f619f1a2f2c3f50beaec473bc5d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/465de7fc952d66f4cd15002ef39aab0e7ec3ac26"
+        },
+        "date": 1725646255929,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
