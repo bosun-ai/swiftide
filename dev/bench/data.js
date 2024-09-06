@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725643315005,
+  "lastUpdate": 1725645518207,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3905,6 +3905,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "807e902d1498e4364768f6b74cf88bcdaf435719",
+          "message": "chore: release v0.10.0 (#274)\n\n## 🤖 New release\r\n* `swiftide`: 0.9.2 -> 0.10.0\r\n* `swiftide-core`: 0.9.2 -> 0.10.0\r\n* `swiftide-indexing`: 0.9.2 -> 0.10.0\r\n* `swiftide-macros`: 0.9.2 -> 0.10.0\r\n* `swiftide-integrations`: 0.9.2 -> 0.10.0\r\n* `swiftide-query`: 0.9.2 -> 0.10.0\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.10.0](https://github.com/bosun-ai/swiftide/releases/tag/0.10.0) -\r\n2024-09-06\r\n\r\nBREAKING CHANGE: Indexing nodes now have their ID calculated using UUIDv3 via MD5 as the previous algorithm was unreliable and broke in 1.81. Added benefit that collision chance is even smaller. This means that when indexing again, nodes will have different IDs and upsert will not work. Backwards compatibility is non-trivial. If this is a huge issue, ping us on discord and we will look into it.\r\n\r\n### Added\r\n\r\n-\r\n[57fe4aa](https://github.com/bosun-ai/swiftide/commit/57fe4aa73b1b98dd8eac87c6440e0f2a0c66d4e8)\r\n*(indexing)* Use UUIDv3 for indexing node ids\r\n([#277](https://github.com/bosun-ai/swiftide/pull/277))\r\n\r\n### Fixed\r\n\r\n-\r\n[5a724df](https://github.com/bosun-ai/swiftide/commit/5a724df895d35cfa606721d611afd073a23191de)\r\n*(uncategorized)* Rust 1.81 support\r\n([#275](https://github.com/bosun-ai/swiftide/pull/275))\r\n\r\n### Other\r\n\r\n-\r\n[3711f6f](https://github.com/bosun-ai/swiftide/commit/3711f6fb2b51e97e4606b744cc963c04b44b6963)\r\n*(readme)* Fix date\r\n([#273](https://github.com/bosun-ai/swiftide/pull/273))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.9.2...0.10.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-09-06T19:52:17+02:00",
+          "tree_id": "4e890f181ccb7e9c6d52bde593dea5bbfb85dc8a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/807e902d1498e4364768f6b74cf88bcdaf435719"
+        },
+        "date": 1725645517138,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
