@@ -133,7 +133,62 @@ pub mod indexing {
     }
 }
 
-/// Query your indexed data with a transforming pipeline
+/// # Querying pipelines
+///
+/// Swiftide allows you to define sophisticated query pipelines.
+///
+/// Consider the following code that uses Swiftide to load some markdown text, chunk it, embed it, and store it in a Qdrant index:
+///
+/// ```rust
+/// let openai_client = integrations::openai::OpenAI::builder()
+///     .default_embed_model("text-embedding-3-large")
+///     .default_prompt_model("gpt-4o")
+///     .build()?;
+///
+/// let qdrant = Qdrant::builder()
+///     .batch_size(50)
+///     .vector_size(3072)
+///     .collection_name("swiftide-examples")
+///     .build()?;
+///
+/// indexing::Pipeline::from_loader(FileLoader::new("README.md"))
+///     .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
+///     .then(MetadataQAText::new(openai_client.clone()))
+///     .then_in_batch(10, Embed::new(openai_client.clone()))
+///     .then_store_with(qdrant.clone())
+///     .run()
+///     .await?;
+/// ```
+///
+/// We could then define a query pipeline that uses the Qdrant index to answer questions:
+///
+/// ```rust
+/// // By default the search strategy is SimilaritySingleEmbedding
+/// // which takes the latest query, embeds it, and does a similarity search
+/// let pipeline = query::Pipeline::default()
+///     .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+///         openai_client.clone(),
+///     ))
+///     .then_transform_query(query_transformers::Embed::from_client(
+///         openai_client.clone(),
+///     ))
+///     .then_retrieve(qdrant.clone())
+///     .then_transform_response(response_transformers::Summary::from_client(
+///         openai_client.clone(),
+///     ))
+///     .then_answer(answers::Simple::from_client(openai_client.clone()));
+///
+/// let result = pipeline
+///     .query("What is swiftide? Please provide an elaborate explanation")
+///     .await?;
+///
+/// println!("{:?}", result.answer());
+/// ```
+///
+/// By using a query pipeline to transform queries, we can improve the quality of the answers we get from our index.
+/// In this example, we used an LLM to generate subquestions, embedding those and then using them to search the index.
+/// Finally, we summarize the results and combine them together into a single answer.
+///
 pub mod query {
     #[doc(inline)]
     pub use swiftide_core::querying::*;
