@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [0.10.0](https://github.com/bosun-ai/swiftide/releases/tag/0.10.0) - 2024-09-06
 
+BREAKING CHANGE: Indexing nodes now have their ID calculated using UUIDv3 via MD5 as the previous algorithm was unreliable and broke in 1.81. Added benefit that collision chance is even smaller. This means that when indexing again, nodes will have different IDs and upsert will not work. Backwards compatibility is non-trivial. If this is a huge issue, ping us on discord and we will look into it.
+
 ### Added
 
 - [57fe4aa](https://github.com/bosun-ai/swiftide/commit/57fe4aa73b1b98dd8eac87c6440e0f2a0c66d4e8) *(indexing)* Use UUIDv3 for indexing node ids ([#277](https://github.com/bosun-ai/swiftide/pull/277))
