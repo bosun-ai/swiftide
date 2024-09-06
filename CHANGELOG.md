@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0](https://github.com/bosun-ai/swiftide/releases/tag/0.10.0) - 2024-09-06
+
+### Added
+
+- [57fe4aa](https://github.com/bosun-ai/swiftide/commit/57fe4aa73b1b98dd8eac87c6440e0f2a0c66d4e8) *(indexing)* Use UUIDv3 for indexing node ids ([#277](https://github.com/bosun-ai/swiftide/pull/277))
+
+### Fixed
+
+- [5a724df](https://github.com/bosun-ai/swiftide/commit/5a724df895d35cfa606721d611afd073a23191de) *(uncategorized)* Rust 1.81 support ([#275](https://github.com/bosun-ai/swiftide/pull/275))
+
+### Other
+
+- [3711f6f](https://github.com/bosun-ai/swiftide/commit/3711f6fb2b51e97e4606b744cc963c04b44b6963) *(readme)* Fix date ([#273](https://github.com/bosun-ai/swiftide/pull/273))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.9.2...0.10.0
+
+
+
 ## [0.9.2](https://github.com/bosun-ai/swiftide/releases/tag/0.9.2) - 2024-09-04
 
 ### Added

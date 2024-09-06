@@ -14,10 +14,10 @@ homepage.workspace = true
 
 [dependencies]
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.9" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.9" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.9" }
-swiftide-query = { path = "../swiftide-query", version = "0.9" }
+swiftide-core = { path = "../swiftide-core", version = "0.10" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.10" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.10" }
+swiftide-query = { path = "../swiftide-query", version = "0.10" }
 
 [features]
 default = []
