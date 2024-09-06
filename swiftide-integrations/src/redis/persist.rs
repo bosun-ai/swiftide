@@ -9,6 +9,7 @@ use swiftide_core::{
 use super::Redis;
 
 #[async_trait]
+#[allow(dependency_on_unit_never_type_fallback)]
 impl Persist for Redis {
     async fn setup(&self) -> Result<()> {
         Ok(())
