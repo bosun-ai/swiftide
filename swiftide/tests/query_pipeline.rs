@@ -1,5 +1,6 @@
+use qdrant_client::qdrant::{QueryPointsBuilder, SearchPointsBuilder};
 use swiftide::indexing::{self, *};
-use swiftide::query::search_strategies::HybridSearch;
+use swiftide::query::search_strategies::{self, CustomQuery, HybridSearch};
 use swiftide::{integrations, query};
 use swiftide_integrations::fastembed::FastEmbed;
 use swiftide_query::{answers, query_transformers, response_transformers};
@@ -128,6 +129,78 @@ async fn test_hybrid_search_qdrant() {
             fastembed_sparse.clone(),
         ))
         .then_retrieve(qdrant_client.clone())
+        .then_answer(answers::Simple::from_client(openai_client.clone()));
+
+    let result = query_pipeline.query("What is swiftide?").await.unwrap();
+
+    assert!(result.embedding.is_some());
+    assert!(!result.answer().is_empty());
+}
+
+#[test_log::test(tokio::test)]
+async fn test_custom_query() {
+    // Setup temporary directory and file for testing
+    let tempdir = TempDir::new().unwrap();
+    let codefile = tempdir.child("main.rs");
+    std::fs::write(&codefile, "fn main() { println!(\"Hello, World!\"); }").unwrap();
+
+    // Setup mock servers to simulate API responses
+    let mock_server = MockServer::start().await;
+
+    mock_chat_completions(&mock_server).await;
+
+    let openai_client = openai_client(&mock_server.uri(), "text-embedding-3-small", "gpt-4o");
+
+    let (_qdrant, qdrant_url) = start_qdrant().await;
+
+    let qdrant_client = integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
+        .unwrap()
+        .vector_size(384)
+        .collection_name("swiftide-test".to_string())
+        .build()
+        .unwrap();
+
+    let fastembed = integrations::fastembed::FastEmbed::try_default().unwrap();
+
+    println!("Qdrant URL: {qdrant_url}");
+
+    indexing::Pipeline::from_loader(
+        loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]),
+    )
+    .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
+    .then_in_batch(1, transformers::Embed::new(fastembed.clone()))
+    .then_store_with(qdrant_client.clone())
+    .run()
+    .await
+    .unwrap();
+
+    // let query = SearchPointsBuilder::new(
+    //     &self.collection_name,
+    //     embedding.to_owned(),
+    //     search_strategy.top_k(),
+    // )
+    // .with_payload(true)
+    // .build();
+
+    let custom_search_strategy =
+        search_strategies::CustomQuery::from_query(|strategy, query_node| {
+            let embedding = query_node.embedding.as_ref().unwrap();
+            QueryPointsBuilder::new("swiftide-test")
+                .try_into
+                .with_payload(true)
+                .build();
+
+            points
+        });
+    let query_pipeline = query::Pipeline::default()
+        .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+            openai_client.clone(),
+        ))
+        .then_transform_query(query_transformers::Embed::from_client(fastembed.clone()))
+        .then_retrieve(qdrant_client.clone())
+        .then_transform_response(response_transformers::Summary::from_client(
+            openai_client.clone(),
+        ))
         .then_answer(answers::Simple::from_client(openai_client.clone()));
 
     let result = query_pipeline.query("What is swiftide?").await.unwrap();

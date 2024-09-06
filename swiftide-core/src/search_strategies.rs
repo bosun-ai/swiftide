@@ -9,25 +9,36 @@ const DEFAULT_TOP_N: u64 = 10;
 /// search in various ways.
 ///
 /// The strategy is also yielded to the Retriever and can contain addition configuration
-use crate::{indexing::EmbeddedField, querying};
+use crate::{
+    indexing::EmbeddedField,
+    querying::{self, search_strategies, states, Query},
+};
 
 /// A strategy that can be build with a generic query for the retriever to use
 ///
 /// The retriever will manage extracting the documents, only the query is needed.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CustomQuery<Q> {
-    query: Arc<Q>,
+    query: Arc<dyn Fn(&CustomQuery<Q>, &Query<states::Pending>) -> Q + Send + Sync>,
+}
+
+impl<Q> std::fmt::Debug for CustomQuery<Q> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "CustomQuery")
+    }
 }
 
 impl<Q: Send + Sync + Clone> CustomQuery<Q> {
-    pub fn from_query(query: Q) -> Self {
+    pub fn from_query(
+        query: impl Fn(&CustomQuery<Q>, &Query<states::Pending>) -> Q + Send + Sync + 'static,
+    ) -> Self {
         CustomQuery {
-            query: query.into(),
+            query: Arc::new(query),
         }
     }
 
-    pub fn query(&self) -> &Q {
-        &self.query
+    pub fn query(&self, query_node: &Query<states::Pending>) -> Q {
+        (*self.query)(self, query_node)
     }
 }
 

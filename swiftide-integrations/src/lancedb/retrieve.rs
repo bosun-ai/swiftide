@@ -78,8 +78,8 @@ impl Retrieve<CustomQuery<lancedb::query::Query>> for LanceDB {
         search_strategy: &CustomQuery<lancedb::query::Query>,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
-        let result = search_strategy
-            .query()
+        let retrieval_query = search_strategy.query(&query);
+        let result = retrieval_query
             .execute()
             .await?
             .try_collect::<Vec<_>>()

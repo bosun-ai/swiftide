@@ -116,11 +116,8 @@ impl Retrieve<CustomQuery<QueryPoints>> for Qdrant {
         search_strategy: &CustomQuery<QueryPoints>,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
-        let result = self
-            .client
-            .query(search_strategy.query().to_owned())
-            .await?
-            .result;
+        let retrieval_query = search_strategy.query(&query);
+        let result = self.client.query(retrieval_query).await?.result;
 
         let documents = result
             .into_iter()
