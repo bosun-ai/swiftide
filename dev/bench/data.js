@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725556059060,
+  "lastUpdate": 1725633105760,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3821,6 +3821,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5a724df895d35cfa606721d611afd073a23191de",
+          "message": "fix!: Rust 1.81 support (#275)\n\nFixing id generation properly as per #272, will be merged in together.\r\n\r\n- **Clippy**\r\n- **fix(qdrant)!: Default hasher changed in Rust 1.81**",
+          "timestamp": "2024-09-06T16:25:27+02:00",
+          "tree_id": "930fbeffeee6000117bcde4296214d9fba35030f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5a724df895d35cfa606721d611afd073a23191de"
+        },
+        "date": 1725633105326,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 2",
             "unit": "ns/iter"
           }
         ]
