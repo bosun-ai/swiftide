@@ -36,7 +36,7 @@ pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
 /// Can retrieve documents given a SearchStrategy
 #[async_trait]
-pub trait Retrieve<S: SearchStrategy + ?Sized>: Send + Sync + ToOwned {
+pub trait Retrieve<S: SearchStrategy>: Send + Sync + ToOwned {
     async fn retrieve(
         &self,
         search_strategy: &S,
@@ -47,7 +47,7 @@ pub trait Retrieve<S: SearchStrategy + ?Sized>: Send + Sync + ToOwned {
 #[async_trait]
 impl<S, F> Retrieve<S> for F
 where
-    S: SearchStrategy + ?Sized,
+    S: SearchStrategy,
     F: Fn(&S, Query<states::Pending>) -> Result<Query<states::Retrieved>> + Send + Sync + ToOwned,
 {
     async fn retrieve(

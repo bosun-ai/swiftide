@@ -121,6 +121,8 @@ mod tests {
 
     use crate::qdrant::indexing_node::NodeWithVectors;
 
+    static EXPECTED_VECTOR_ID: u64 = 17_298_870_094_173_045_322;
+
     #[test_case(
         Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
@@ -131,7 +133,7 @@ mod tests {
             ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(EXPECTED_VECTOR_ID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]),
@@ -152,7 +154,7 @@ mod tests {
             ..Default::default()
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
-        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(EXPECTED_VECTOR_ID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]),
@@ -182,7 +184,7 @@ mod tests {
             ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(EXPECTED_VECTOR_ID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1")),
