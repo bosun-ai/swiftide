@@ -68,9 +68,17 @@ deadpool = { version = "0.12", optional = true, features = [
 fluvio = { workspace = true, optional = true }
 arrow-array = { workspace = true, optional = true }
 lancedb = { workspace = true, optional = true }
+parquet = { workspace = true, optional = true, features = [
+  "async",
+  "arrow",
+  "snap",
+] }
+arrow = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+
+arrow = { workspace = true, features = ["test_utils"] }
 
 # Used for hacking fluv to play nice
 flv-util = "0.5.2"
@@ -118,6 +126,8 @@ aws-bedrock = [
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
+# Paruqet loader
+parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 
 [lints]
 workspace = true
