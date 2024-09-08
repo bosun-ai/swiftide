@@ -196,6 +196,12 @@ impl Hash for Node {
     }
 }
 
+impl<T: Into<String>> From<T> for Node {
+    fn from(value: T) -> Self {
+        Node::new(value)
+    }
+}
+
 /// Embed mode of the pipeline.
 ///
 /// See also [`super::pipeline::Pipeline::with_embed_mode`].
