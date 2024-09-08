@@ -1,6 +1,6 @@
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use arrow_array::StringArray;
-use futures_util::{StreamExt as _, TryStreamExt as _};
+use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
 use swiftide_core::{
     indexing::{IndexingStream, Node},
@@ -45,26 +45,29 @@ impl Loader for Parquet {
 
         let stream = builder.build().expect("Failed to build parquet builder");
 
-        let swiftide_stream = stream
-            .map_ok(move |batch| {
-                assert!(batch.num_columns() == 1, "Number of columns _must_ be 1");
+        let swiftide_stream = stream.flat_map_unordered(None, move |result_batch| {
+            let Ok(batch) = result_batch else {
+                let new_result: Result<Node> = Err(anyhow::anyhow!(result_batch.unwrap_err()));
 
-                let node_values = batch
-                    .column(0) // Should only have one column at this point
-                    .as_any()
-                    .downcast_ref::<StringArray>()
-                    .unwrap()
-                    .into_iter()
-                    .flatten()
-                    .map(Node::from)
-                    .map(Ok)
-                    .collect::<Vec<_>>();
+                return vec![new_result].into();
+            };
+            assert!(batch.num_columns() == 1, "Number of columns _must_ be 1");
 
-                IndexingStream::iter(node_values)
-            })
-            .map_err(|e| anyhow::anyhow!("Error loading parquet batch {e}"));
+            let node_values = batch
+                .column(0) // Should only have one column at this point
+                .as_any()
+                .downcast_ref::<StringArray>()
+                .unwrap()
+                .into_iter()
+                .flatten()
+                .map(Node::from)
+                .map(Ok)
+                .collect::<Vec<_>>();
 
-        swiftide_stream.boxed().try_flatten().boxed().into()
+            IndexingStream::iter(node_values)
+        });
+
+        swiftide_stream.boxed().into()
 
         // let mask = ProjectionMask::
     }
@@ -73,6 +76,8 @@ impl Loader for Parquet {
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
+
+    use futures_util::TryStreamExt as _;
 
     use super::*;
 
