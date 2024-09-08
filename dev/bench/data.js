@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725646256314,
+  "lastUpdate": 1725825100642,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -3989,6 +3989,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bdf17adf5d3addc84aaf45ad893b816cb46431e3",
+          "message": "feat(indexing): Parquet loader (#279)\n\nIngest and index data from parquet files.",
+          "timestamp": "2024-09-08T21:45:20+02:00",
+          "tree_id": "915775ac9061a20c8c9a9e0da5bdc78189c38024",
+          "url": "https://github.com/bosun-ai/swiftide/commit/bdf17adf5d3addc84aaf45ad893b816cb46431e3"
+        },
+        "date": 1725825099611,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 151,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
