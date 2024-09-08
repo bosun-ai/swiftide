@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725825100642,
+  "lastUpdate": 1725826292592,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4031,6 +4031,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 151,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ephraimkunz@me.com",
+            "name": "Ephraim Kunz",
+            "username": "ephraimkunz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a98dbcb455d33f0537cea4d3614da95f1a4b6554",
+          "message": "feat(integrations): Add ollama embeddings support (#278)\n\nUpdate to the most recent ollama-rs, which exposes the batch embedding\r\nAPI Ollama exposes (https://github.com/pepperoni21/ollama-rs/pull/61).\r\nThis allows the Ollama struct in Swiftide to implement `EmbeddingModel`.\r\n\r\nUse the same pattern that the OpenAI struct uses to manage separate\r\nembedding and prompt models.\r\n\r\n---------\r\n\r\nCo-authored-by: Timon Vonk <mail@timonv.nl>",
+          "timestamp": "2024-09-08T22:05:11+02:00",
+          "tree_id": "94b18ffbd0bba5f5dfef778a64fa68cc968230b1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a98dbcb455d33f0537cea4d3614da95f1a4b6554"
+        },
+        "date": 1725826291543,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
