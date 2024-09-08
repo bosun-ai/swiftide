@@ -157,29 +157,29 @@ mod test {
 
     #[test]
     fn test_default_embed_model() {
-        let openai = Ollama::builder()
+        let ollama = Ollama::builder()
             .default_embed_model("mxbai-embed-large")
             .build()
             .unwrap();
         assert_eq!(
-            openai.default_options.embed_model,
+            ollama.default_options.embed_model,
             Some("mxbai-embed-large".to_string())
         );
     }
 
     #[test]
     fn test_default_models() {
-        let openai = Ollama::builder()
+        let ollama = Ollama::builder()
             .default_embed_model("mxbai-embed-large")
             .default_prompt_model("llama3.1")
             .build()
             .unwrap();
         assert_eq!(
-            openai.default_options.embed_model,
+            ollama.default_options.embed_model,
             Some("mxbai-embed-large".to_string())
         );
         assert_eq!(
-            openai.default_options.prompt_model,
+            ollama.default_options.prompt_model,
             Some("llama3.1".to_string())
         );
     }
