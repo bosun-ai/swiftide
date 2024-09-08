@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725826292592,
+  "lastUpdate": 1725827325953,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4073,6 +4073,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a960ebf4e2fc3a58c8e9d02b94f27fdb9bd83bd8",
+          "message": "chore: release v0.11.0 (#283)\n\n## 🤖 New release\r\n* `swiftide`: 0.10.0 -> 0.11.0\r\n* `swiftide-core`: 0.10.0 -> 0.11.0\r\n* `swiftide-indexing`: 0.10.0 -> 0.11.0\r\n* `swiftide-macros`: 0.10.0 -> 0.11.0\r\n* `swiftide-integrations`: 0.10.0 -> 0.11.0\r\n* `swiftide-query`: 0.10.0 -> 0.11.0\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.11.0](https://github.com/bosun-ai/swiftide/releases/tag/0.11.0) -\r\n2024-09-08\r\n\r\n### Added\r\n\r\n-\r\n[bdf17ad](https://github.com/bosun-ai/swiftide/commit/bdf17adf5d3addc84aaf45ad893b816cb46431e3)\r\n*(indexing)* Parquet loader\r\n([#279](https://github.com/bosun-ai/swiftide/pull/279))\r\n\r\n-\r\n[a98dbcb](https://github.com/bosun-ai/swiftide/commit/a98dbcb455d33f0537cea4d3614da95f1a4b6554)\r\n*(integrations)* Add ollama embeddings support\r\n([#278](https://github.com/bosun-ai/swiftide/pull/278))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.10.0...0.11.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-09-08T22:22:25+02:00",
+          "tree_id": "95d4701e379a9f6433e41c87d9cc9a55267d97c3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a960ebf4e2fc3a58c8e9d02b94f27fdb9bd83bd8"
+        },
+        "date": 1725827324745,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
