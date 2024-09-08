@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0](https://github.com/bosun-ai/swiftide/releases/tag/0.11.0) - 2024-09-08
+
+### Added
+
+- [bdf17ad](https://github.com/bosun-ai/swiftide/commit/bdf17adf5d3addc84aaf45ad893b816cb46431e3) *(indexing)* Parquet loader ([#279](https://github.com/bosun-ai/swiftide/pull/279))
+
+- [a98dbcb](https://github.com/bosun-ai/swiftide/commit/a98dbcb455d33f0537cea4d3614da95f1a4b6554) *(integrations)* Add ollama embeddings support ([#278](https://github.com/bosun-ai/swiftide/pull/278))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.10.0...0.11.0
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.10.0](https://github.com/bosun-ai/swiftide/releases/tag/0.10.0) - 2024-09-06
 
 BREAKING CHANGE: Indexing nodes now have their ID calculated using UUIDv3 via MD5 as the previous algorithm was unreliable and broke in 1.81. Added benefit that collision chance is even smaller. This means that when indexing again, nodes will have different IDs and upsert will not work. Backwards compatibility is non-trivial. If this is a huge issue, ping us on discord and we will look into it.
