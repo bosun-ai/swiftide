@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
       - name: Install Protoc
@@ -32,7 +32,7 @@ jobs:
           tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo tarpaulin --verbose --all-features --tests --timeout 1200 --coveralls ${{ secrets.COVERALLS_REPO_TOKEN }}
+          cargo +nightly tarpaulin --verbose --all-features --tests --timeout 1200 --coveralls ${{ secrets.COVERALLS_REPO_TOKEN }}
 
       # - name: Coveralls
       #   uses: coverallsapp/github-action@v2
