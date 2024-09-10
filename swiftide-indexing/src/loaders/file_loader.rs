@@ -112,6 +112,10 @@ impl Loader for FileLoader {
 
         IndexingStream::iter(files)
     }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        self.into_stream()
+    }
 }
 
 #[cfg(test)]
