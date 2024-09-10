@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.1](https://github.com/bosun-ai/swiftide/releases/tag/0.11.1) - 2024-09-10
+
+### Added
+
+- [3c9491b](https://github.com/bosun-ai/swiftide/commit/3c9491b8e1ce31a030eaac53f56890629a087f70) *(uncategorized)* Implemtent traits T for Box<T> for indexing and query traits ([#285](https://github.com/bosun-ai/swiftide/pull/285))
+
+### Fixed
+
+- [dfa546b](https://github.com/bosun-ai/swiftide/commit/dfa546b310e71a7cb78a927cc8f0ee4e2046a592) *(uncategorized)* Add missing parquet feature flag
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.11.0...0.11.1
+
+
+
 ## [0.11.0](https://github.com/bosun-ai/swiftide/releases/tag/0.11.0) - 2024-09-08
 
 ### Added
