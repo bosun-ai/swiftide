@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725979182035,
+  "lastUpdate": 1725995307056,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4157,6 +4157,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1887755518a8fc84feadef6c91d75a91fd739f29",
+          "message": "chore: release v0.11.1 (#284)\n\n## 🤖 New release\r\n* `swiftide`: 0.11.0 -> 0.11.1\r\n* `swiftide-core`: 0.11.0 -> 0.11.1\r\n* `swiftide-indexing`: 0.11.0 -> 0.11.1\r\n* `swiftide-macros`: 0.11.0 -> 0.11.1\r\n* `swiftide-integrations`: 0.11.0 -> 0.11.1\r\n* `swiftide-query`: 0.11.0 -> 0.11.1\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.11.1](https://github.com/bosun-ai/swiftide/releases/tag/0.11.1) -\r\n2024-09-10\r\n\r\n### Fixed\r\n\r\n-\r\n[dfa546b](https://github.com/bosun-ai/swiftide/commit/dfa546b310e71a7cb78a927cc8f0ee4e2046a592)\r\n*(uncategorized)* Add missing parquet feature flag\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.11.0...0.11.1\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-09-10T21:01:59+02:00",
+          "tree_id": "92d1cf6a3f73692f75e9184bbf8bc607740d5ba5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1887755518a8fc84feadef6c91d75a91fd739f29"
+        },
+        "date": 1725995305964,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
