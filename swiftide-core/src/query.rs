@@ -18,7 +18,7 @@ type Document = String;
 /// `states::Pending`: No documents have been retrieved
 /// `states::Retrieved`: Documents have been retrieved
 /// `states::Answered`: The query has been answered
-#[derive(Clone, Default, Builder)]
+#[derive(Clone, Default, Builder, PartialEq)]
 #[builder(setter(into))]
 pub struct Query<State> {
     original: String,
@@ -81,6 +81,10 @@ impl<T: Clone> Query<T> {
 }
 
 impl Query<states::Pending> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Transforms the current query
     pub fn transformed_query(&mut self, new_query: impl Into<String>) {
         let new_query = new_query.into();
@@ -111,6 +115,10 @@ impl Query<states::Pending> {
 }
 
 impl Query<states::Retrieved> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Transforms the current response
     pub fn transformed_response(&mut self, new_response: impl Into<String>) {
         let new_response = new_response.into();
@@ -140,6 +148,10 @@ impl Query<states::Retrieved> {
 }
 
 impl Query<states::Answered> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Returns the answer of the query
     pub fn answer(&self) -> &str {
         &self.state.answer
@@ -155,13 +167,13 @@ pub mod states {
     /// The query is pending and has not been used
     pub struct Pending;
 
-    #[derive(Debug, Default, Clone, Builder)]
+    #[derive(Debug, Default, Clone, Builder, PartialEq)]
     #[builder(setter(into))]
     /// Documents have been retrieved
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
     }
-    #[derive(Debug, Default, Clone, Builder)]
+    #[derive(Debug, Default, Clone, Builder, PartialEq)]
     #[builder(setter(into))]
     /// The query has been answered
     pub struct Answered {

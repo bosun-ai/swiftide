@@ -825,4 +825,42 @@ mod tests {
             2
         );
     }
+
+    #[tokio::test]
+    async fn test_all_steps_should_work_as_dyn_box() {
+        let mut loader = MockLoader::new();
+        loader
+            .expect_into_stream_boxed()
+            .returning(|| vec![Ok(Node::default())].into());
+
+        let mut transformer = MockTransformer::new();
+        transformer.expect_transform_node().returning(Ok);
+        transformer.expect_concurrency().returning(|| None);
+
+        let mut batch_transformer = MockBatchableTransformer::new();
+        batch_transformer
+            .expect_batch_transform()
+            .returning(std::convert::Into::into);
+        batch_transformer.expect_concurrency().returning(|| None);
+        let mut chunker = MockChunkerTransformer::new();
+        chunker
+            .expect_transform_node()
+            .returning(|node| vec![node].into());
+        chunker.expect_concurrency().returning(|| None);
+
+        let mut storage = MockPersist::new();
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_store().returning(Ok);
+        storage.expect_batch_size().returning(|| None);
+
+        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader>)
+            .then(Box::new(transformer) as Box<dyn Transformer>)
+            .then_in_batch(
+                1,
+                Box::new(batch_transformer) as Box<dyn BatchableTransformer>,
+            )
+            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
+            .then_store_with(Box::new(storage) as Box<dyn Persist>);
+        pipeline.run().await.unwrap();
+    }
 }

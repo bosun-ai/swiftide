@@ -9,7 +9,12 @@ use crate::{
     querying::QueryEvaluation,
 };
 
+#[cfg(feature = "test-utils")]
+#[doc(hidden)]
+use mockall::{automock, predicate::str};
+
 /// Can transform queries before retrieval
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 pub trait TransformQuery: Send + Sync {
     async fn transform_query(
@@ -81,6 +86,7 @@ where
 }
 
 /// Can transform a response after retrieval
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 pub trait TransformResponse: Send + Sync {
     async fn transform_response(&self, query: Query<Retrieved>)
@@ -105,6 +111,7 @@ impl TransformResponse for Box<dyn TransformResponse> {
 }
 
 /// Can answer the original query
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 pub trait Answer: Send + Sync {
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>>;
@@ -130,6 +137,7 @@ impl Answer for Box<dyn Answer> {
 /// Evaluates a query
 ///
 /// An evaluator needs to be able to respond to each step in the query pipeline
+#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 pub trait EvaluateQuery: Send + Sync {
     async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()>;

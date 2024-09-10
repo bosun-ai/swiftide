@@ -1,3 +1,5 @@
+#![cfg(not(tarpaulin_include))]
+
 use serde::{Deserialize, Serialize};
 
 pub type Embedding = Vec<f32>;
