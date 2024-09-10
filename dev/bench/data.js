@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725827325953,
+  "lastUpdate": 1725979182035,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4097,6 +4097,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/a960ebf4e2fc3a58c8e9d02b94f27fdb9bd83bd8"
         },
         "date": 1725827324745,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "dfa546b310e71a7cb78a927cc8f0ee4e2046a592",
+          "message": "fix: Add missing parquet feature flag",
+          "timestamp": "2024-09-10T16:33:17+02:00",
+          "tree_id": "214ca74b05201e0edb8609e210f0037a315d5d92",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dfa546b310e71a7cb78a927cc8f0ee4e2046a592"
+        },
+        "date": 1725979181624,
         "tool": "cargo",
         "benches": [
           {
