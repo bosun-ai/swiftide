@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.1](https://github.com/bosun-ai/swiftide/releases/tag/0.11.1) - 2024-09-10
+
+### Fixed
+
+- [dfa546b](https://github.com/bosun-ai/swiftide/commit/dfa546b310e71a7cb78a927cc8f0ee4e2046a592) *(uncategorized)* Add missing parquet feature flag
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.11.0...0.11.1
+
+
+
 ## [0.11.0](https://github.com/bosun-ai/swiftide/releases/tag/0.11.0) - 2024-09-08
 
 ### Added
