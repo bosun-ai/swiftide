@@ -57,6 +57,8 @@ aws-bedrock = ["swiftide-integrations/aws-bedrock"]
 lancedb = ["swiftide-integrations/lancedb"]
 # Fluvio loader
 fluvio = ["swiftide-integrations/fluvio"]
+# Parquet loader
+parquet = ["swiftide-integrations/parquet"]
 
 # Testing, internal only
 test-utils = []
