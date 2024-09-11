@@ -1,4 +1,4 @@
-#![cfg(not(tarpaulin_include))]
+#![cfg(not(coverage))]
 
 use serde::{Deserialize, Serialize};
 
