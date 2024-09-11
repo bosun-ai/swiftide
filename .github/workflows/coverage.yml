@@ -32,7 +32,7 @@ jobs:
           tool: cargo-llvm-cov
       - name: Generate code coverage
         run: |
-          cargo +nightly llvm-cov --workspace --all-features
+          cargo +nightly llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2
