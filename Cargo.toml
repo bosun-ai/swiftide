@@ -71,7 +71,9 @@ insta = { version = "1.39.0", features = ["yaml"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
-unexpected_cfgs = { level = "allow", check-cfg = ['cfg(coverage)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+  'cfg(coverage,coverage_nightly)',
+] }
 
 [workspace.lints.clippy]
 cargo = { level = "warn", priority = -1 }

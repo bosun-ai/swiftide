@@ -6,7 +6,6 @@ mod indexing_transformer;
 use indexing_transformer::indexing_transformer_impl;
 
 /// Generates boilerplate for an indexing transformer.
-#[cfg(not(coverage))]
 #[proc_macro_attribute]
 pub fn indexing_transformer(args: TokenStream, item: TokenStream) -> TokenStream {
     indexing_transformer_impl(args, item)

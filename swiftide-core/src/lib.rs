@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 mod indexing_defaults;
 mod indexing_stream;
 pub mod indexing_traits;
