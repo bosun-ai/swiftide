@@ -24,15 +24,13 @@ jobs:
           components: llvm-tools-preview
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
-      - name: Cache Cargo dependencies
-        uses: Swatinem/rust-cache@v2
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-tarpaulin
+          tool: cargo-llvm-cov
       - name: Generate code coverage
         run: |
-          cargo +nightly tarpaulin --workspace --all-features --tests --timeout 1200 --coveralls ${{ secrets.COVERALLS_REPO_TOKEN }}
+          cargo +nightly llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
-      # - name: Coveralls
-      #   uses: coverallsapp/github-action@v2
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2

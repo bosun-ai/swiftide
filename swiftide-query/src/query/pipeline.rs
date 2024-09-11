@@ -80,22 +80,19 @@ where
 {
     /// Evaluate queries with an evaluator
     #[must_use]
-    pub fn evaluate_with<T: ToOwned<Owned = impl EvaluateQuery + 'stream>>(
-        mut self,
-        evaluator: T,
-    ) -> Self {
-        self.evaluator = Some(Arc::new(Box::new(evaluator.to_owned())));
+    pub fn evaluate_with<T: EvaluateQuery + 'stream>(mut self, evaluator: T) -> Self {
+        self.evaluator = Some(Arc::new(Box::new(evaluator)));
 
         self
     }
 
     /// Transform a query into something else, see [`crate::query_transformers`]
     #[must_use]
-    pub fn then_transform_query<T: ToOwned<Owned = impl TransformQuery + 'stream>>(
+    pub fn then_transform_query<T: TransformQuery + 'stream>(
         self,
         transformer: T,
     ) -> Pipeline<'stream, S, states::Pending> {
-        let transformer = Arc::new(transformer.to_owned());
+        let transformer = Arc::new(transformer);
 
         let Pipeline {
             stream,
@@ -177,11 +174,11 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
 impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
     /// Transforms a retrieved query into something else
     #[must_use]
-    pub fn then_transform_response<T: ToOwned<Owned = impl TransformResponse + 'stream>>(
+    pub fn then_transform_response<T: TransformResponse + 'stream>(
         self,
         transformer: T,
     ) -> Pipeline<'stream, S, states::Retrieved> {
-        let transformer = Arc::new(transformer.to_owned());
+        let transformer = Arc::new(transformer);
         let Pipeline {
             stream,
             query_sender,
@@ -211,11 +208,11 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
 impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
     /// Generates an answer based on previous transformations
     #[must_use]
-    pub fn then_answer<T: ToOwned<Owned = impl Answer + 'stream>>(
+    pub fn then_answer<T: Answer + 'stream>(
         self,
         answerer: T,
     ) -> Pipeline<'stream, S, states::Answered> {
-        let answerer = Arc::new(answerer.to_owned());
+        let answerer = Arc::new(answerer);
         let Pipeline {
             stream,
             query_sender,
@@ -305,7 +302,9 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
 
 #[cfg(test)]
 mod test {
-    use swiftide_core::querying::search_strategies;
+    use swiftide_core::{
+        querying::search_strategies, MockAnswer, MockTransformQuery, MockTransformResponse,
+    };
 
     use super::*;
 
@@ -323,5 +322,33 @@ mod test {
             .then_answer(move |query: Query<states::Retrieved>| Ok(query.answered("Ok")));
         let response = pipeline.query("What").await.unwrap();
         assert_eq!(response.answer(), "Ok");
+    }
+
+    #[tokio::test]
+    async fn test_all_steps_should_accept_dyn_box() {
+        let mut query_transformer = MockTransformQuery::new();
+        query_transformer.expect_transform_query().returning(Ok);
+
+        let mut response_transformer = MockTransformResponse::new();
+        response_transformer
+            .expect_transform_response()
+            .returning(Ok);
+        let mut answer_transformer = MockAnswer::new();
+        answer_transformer
+            .expect_answer()
+            .returning(|query| Ok(query.answered("OK")));
+
+        let pipeline = Pipeline::default()
+            .then_transform_query(Box::new(query_transformer) as Box<dyn TransformQuery>)
+            .then_retrieve(
+                |_: &search_strategies::SimilaritySingleEmbedding,
+                 query: Query<states::Pending>| {
+                    Ok(query.retrieved_documents(vec![]))
+                },
+            )
+            .then_transform_response(Box::new(response_transformer) as Box<dyn TransformResponse>)
+            .then_answer(Box::new(answer_transformer) as Box<dyn Answer>);
+        let response = pipeline.query("What").await.unwrap();
+        assert_eq!(response.answer(), "OK");
     }
 }

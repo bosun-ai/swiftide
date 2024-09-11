@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, coverage(off))]
+
 use serde::{Deserialize, Serialize};
 
 pub type Embedding = Vec<f32>;

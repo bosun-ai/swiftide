@@ -38,3 +38,52 @@ impl QueryEvaluation {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_retrieved() {
+        let query = Query::<states::Retrieved>::new(); // Assuming Query has a new() method
+        let evaluation = QueryEvaluation::from(query.clone());
+
+        match evaluation {
+            QueryEvaluation::RetrieveDocuments(q) => assert_eq!(q, query),
+            QueryEvaluation::AnswerQuery(_) => panic!("Unexpected QueryEvaluation variant"),
+        }
+    }
+
+    #[test]
+    fn test_from_answered() {
+        let query = Query::<states::Answered>::new(); // Assuming Query has a new() method
+        let evaluation = QueryEvaluation::from(query.clone());
+
+        match evaluation {
+            QueryEvaluation::AnswerQuery(q) => assert_eq!(q, query),
+            QueryEvaluation::RetrieveDocuments(_) => panic!("Unexpected QueryEvaluation variant"),
+        }
+    }
+
+    #[test]
+    fn test_retrieve_documents_query() {
+        let query = Query::<states::Retrieved>::new(); // Assuming Query has a new() method
+        let evaluation = QueryEvaluation::RetrieveDocuments(query.clone());
+
+        match evaluation.retrieve_documents_query() {
+            Some(q) => assert_eq!(q, query),
+            None => panic!("Expected a query, got None"),
+        }
+    }
+
+    #[test]
+    fn test_answer_query() {
+        let query = Query::<states::Answered>::new(); // Assuming Query has a new() method
+        let evaluation = QueryEvaluation::AnswerQuery(query.clone());
+
+        match evaluation.answer_query() {
+            Some(q) => assert_eq!(q, query),
+            None => panic!("Expected a query, got None"),
+        }
+    }
+}
