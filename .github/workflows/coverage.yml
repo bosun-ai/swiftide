@@ -14,17 +14,14 @@ jobs:
   test:
     name: coverage
     runs-on: ubuntu-latest
-    env:
-      RUST_LOG: swiftide=debug
-      RUST_BACKTRACE: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          components: llvm-tools
+          components: llvm-tools-preview
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
       - name: Cache Cargo dependencies
@@ -32,10 +29,10 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-llvm-cov
+          tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo llvm-cov --lcov --output-path target/lcov.info --all-features --workspace
+          cargo +nightly tarpaulin --workspace --all-features --tests --timeout 1200 --coveralls ${{ secrets.COVERALLS_REPO_TOKEN }}
 
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v2
