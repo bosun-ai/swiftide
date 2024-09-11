@@ -272,7 +272,7 @@ impl Pipeline {
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
-            .try_flatten_unordered(concurrency)
+            .try_flatten_unordered(None)
             .boxed()
             .into();
 
@@ -316,7 +316,7 @@ impl Pipeline {
                 })
                 .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
-                .try_flatten_unordered(self.concurrency)
+                .try_flatten_unordered(None)
                 .boxed().into();
         } else {
             self.stream = self
