@@ -1,5 +1,3 @@
-#![cfg(not(coverage))]
-
 use serde::{Deserialize, Serialize};
 
 pub type Embedding = Vec<f32>;
