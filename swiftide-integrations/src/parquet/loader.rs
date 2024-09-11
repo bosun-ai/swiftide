@@ -71,6 +71,10 @@ impl Loader for Parquet {
 
         // let mask = ProjectionMask::
     }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        self.into_stream()
+    }
 }
 
 #[cfg(test)]

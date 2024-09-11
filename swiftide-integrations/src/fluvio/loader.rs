@@ -38,6 +38,10 @@ impl Loader for Fluvio {
 
         swiftide_stream.boxed().into()
     }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        self.into_stream()
+    }
 }
 
 #[cfg(test)]
