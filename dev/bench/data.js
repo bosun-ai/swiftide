@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725995307056,
+  "lastUpdate": 1726053892152,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4199,6 +4199,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "45d8a57d1afb4f16ad76b15236308d753cf45743",
+          "message": "fix(ci): Use llm-cov preview via nightly and improve test coverage (#289)\n\nFix test coverage in CI. Simplified the trait bounds on the query\r\npipeline for now to make it all work and fit together, and added more\r\ntests to assert boxed versions of trait objects work in tests.",
+          "timestamp": "2024-09-11T13:18:36+02:00",
+          "tree_id": "410027b2a1d10fba35c10409281775c34f6908e6",
+          "url": "https://github.com/bosun-ai/swiftide/commit/45d8a57d1afb4f16ad76b15236308d753cf45743"
+        },
+        "date": 1726053891044,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 2",
             "unit": "ns/iter"
           }
         ]
