@@ -66,7 +66,14 @@ impl Debug for Node {
         f.debug_struct("Node")
             .field("id", &self.id)
             .field("path", &self.path)
-            .field("chunk", &self.chunk)
+            .field(
+                "chunk",
+                &format!(
+                    "{} ({})",
+                    &self.chunk.as_str()[..std::cmp::min(100, self.chunk.len())],
+                    self.chunk.chars().count()
+                ),
+            )
             .field("metadata", &self.metadata)
             .field(
                 "vectors",
