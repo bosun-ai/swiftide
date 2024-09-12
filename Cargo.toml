@@ -58,7 +58,7 @@ fluvio = { version = "0.23", default-features = false }
 lancedb = { version = "0.10", default-features = false }
 arrow-array = { version = "52.2", default-features = false }
 arrow = { version = "52.2" }
-parquet = { version = "52.2", default-features = false, features = ["async"] }
+parquet = { version = "53.0", default-features = false, features = ["async"] }
 
 # Testing
 test-log = "0.2.16"
