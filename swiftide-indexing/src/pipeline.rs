@@ -1,5 +1,5 @@
 use anyhow::Result;
-use futures_util::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
+use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
     indexing::IndexingDefaults, BatchableTransformer, ChunkerTransformer, Loader, NodeCache,
     Persist, SimplePrompt, Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
