@@ -70,7 +70,7 @@ impl Debug for Node {
                 "chunk",
                 &format!(
                     "{} ({})",
-                    &self.chunk.as_str()[..std::cmp::min(100, self.chunk.len())],
+                    &self.chunk.chars().take(100).collect::<String>(),
                     self.chunk.chars().count()
                 ),
             )
@@ -269,5 +269,16 @@ mod tests {
     fn field_name_tests(embedded_field: &EmbeddedField, expected: [&str; 2]) {
         assert_eq!(embedded_field.field_name(), expected[0]);
         assert_eq!(embedded_field.sparse_field_name(), expected[1]);
+    }
+
+    #[test]
+    fn test_debugging_node_with_utf8_char_boundary() {
+        let node = Node::new("🦀".repeat(101));
+        // Single char
+        let _ = format!("{node:?}");
+
+        // With invalid char boundary
+        Node::new("Jürgen".repeat(100));
+        let _ = format!("{node:?}");
     }
 }
