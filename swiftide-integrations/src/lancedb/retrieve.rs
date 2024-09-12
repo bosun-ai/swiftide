@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result};
-use arrow_array::{RecordBatch, StringArray};
+use arrow_array::StringArray;
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use itertools::Itertools;
