@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726152383684,
+  "lastUpdate": 1726174517938,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4409,6 +4409,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f1589604d1e0cb42a07d5a48080e3d7ecb90ee38",
+          "message": "feat: Major performance improvements (#291)\n\nFutures that do not yield were not run in parallel properly. With this\r\nfutures are spawned on a tokio worker thread by default.\r\n\r\nWhen embedding (fastembed) and storing a 85k row dataset, there's a\r\n~1.35x performance improvement:\r\n<img width=\"621\" alt=\"image\"\r\nsrc=\"https://github.com/user-attachments/assets/ba2d4d96-8d4a-44f1-b02d-6ac2af0cedb7\">\r\n\r\n~~Need to do one more test with IO bound futures as well. Pretty huge,\r\nnot that it was slow.~~\r\n\r\nWith IO bound openai it's 1.5x.",
+          "timestamp": "2024-09-12T22:49:13+02:00",
+          "tree_id": "57bf16511162036ad4a02c60bb30764c341d85eb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f1589604d1e0cb42a07d5a48080e3d7ecb90ee38"
+        },
+        "date": 1726174517561,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
