@@ -17,10 +17,11 @@ impl EmbeddingModel for OpenAI {
 
         let request = CreateEmbeddingRequestArgs::default()
             .model(model)
-            .input(input)
+            .input(&input)
             .build()?;
         tracing::debug!(
-            messages = serde_json::to_string_pretty(&request)?,
+            num_chunks = input.len(),
+            model = &model,
             "[Embed] Request to openai"
         );
         let response = self
@@ -30,7 +31,8 @@ impl EmbeddingModel for OpenAI {
             .await
             .context("Request to OpenAI Failed")?;
 
-        tracing::debug!("[Embed] Response openai");
+        let num_embeddings = response.data.len();
+        tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");
 
         // WARN: Naively assumes that the order is preserved. Might not always be the case.
         Ok(response.data.into_iter().map(|d| d.embedding).collect())
