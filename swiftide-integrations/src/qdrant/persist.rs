@@ -98,10 +98,10 @@ impl Persist for Qdrant {
 
         let result = self
             .client
-            .upsert_points(UpsertPointsBuilder::new(
-                self.collection_name.to_string(),
-                points,
-            ))
+            .upsert_points(
+                UpsertPointsBuilder::new(self.collection_name.to_string(), points)
+                    .wait(cfg!(debug_assertions)),
+            )
             .await;
 
         if result.is_ok() {

@@ -30,11 +30,15 @@ derive_builder = { workspace = true }
 tera = { version = "1.20", default-features = false }
 uuid = { workspace = true, features = ["v4", "v3"] }
 
+# Integrations
+qdrant-client = { workspace = true, optional = true }
+
 [dev-dependencies]
 test-case = { workspace = true }
 
 [features]
 test-utils = ["dep:mockall"]
+qdrant = ["dep:qdrant-client"]
 
 [lints]
 workspace = true

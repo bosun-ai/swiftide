@@ -33,7 +33,7 @@ all = [
   "ollama",
 ]
 # Qdrant for storage
-qdrant = ["swiftide-integrations/qdrant"]
+qdrant = ["swiftide-integrations/qdrant", "swiftide-core/qdrant"]
 # Redis for caching and storage
 redis = ["swiftide-integrations/redis"]
 # Tree-sitter for code operations and chunking

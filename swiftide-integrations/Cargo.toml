@@ -77,6 +77,10 @@ arrow = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-test-utils = { path = "../swiftide-test-utils", features = [
+  "test-utils",
+] }
+temp-dir = { workspace = true }
 
 arrow = { workspace = true, features = ["test_utils"] }
 
@@ -95,7 +99,7 @@ default = ["rustls"]
 # Ensures rustls is used
 rustls = ["reqwest/rustls-tls-native-roots"]
 # Qdrant for storage
-qdrant = ["dep:qdrant-client"]
+qdrant = ["dep:qdrant-client", "swiftide-core/qdrant"]
 # Redis for caching and storage
 redis = ["dep:redis"]
 # Tree-sitter for code operations and chunking

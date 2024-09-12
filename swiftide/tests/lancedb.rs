@@ -1,5 +1,6 @@
 use arrow_array::{cast::AsArray, Array, RecordBatch, StringArray};
 use lancedb::query::ExecutableQuery;
+use swiftide::indexing;
 use swiftide::query::{self, states, Query, TransformationEvent};
 use swiftide::{
     indexing::{
@@ -38,6 +39,7 @@ async fn test_lancedb() {
         .vector_size(384)
         .with_vector(EmbeddedField::Combined)
         .with_metadata(METADATA_QA_CODE_NAME)
+        .with_metadata("filter")
         .table_name("swiftide_test")
         .build()
         .unwrap();
@@ -45,6 +47,11 @@ async fn test_lancedb() {
     Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
+        .then(|mut node: indexing::Node| {
+            node.metadata
+                .insert("filter".to_string(), "true".to_string());
+            Ok(node)
+        })
         .then_in_batch(20, transformers::Embed::new(fastembed.clone()))
         .log_nodes()
         .then_store_with(lancedb.clone())
@@ -52,7 +59,11 @@ async fn test_lancedb() {
         .await
         .unwrap();
 
-    let query_pipeline = query::Pipeline::default()
+    let strategy = query::search_strategies::SimilaritySingleEmbedding::from_filter(
+        "filter = \"true\"".to_string(),
+    );
+
+    let query_pipeline = query::Pipeline::from_search_strategy(strategy)
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(
             openai_client.clone(),
         ))
@@ -102,7 +113,7 @@ async fn test_lancedb() {
         .clone();
 
     assert_eq!(result.num_rows(), 1);
-    assert_eq!(result.num_columns(), 4);
+    assert_eq!(result.num_columns(), 5);
     dbg!(result.columns());
     assert!(result.column_by_name("id").is_some());
     assert_eq!(
