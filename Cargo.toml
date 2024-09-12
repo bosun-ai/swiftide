@@ -62,7 +62,7 @@ parquet = { version = "52.2", default-features = false, features = ["async"] }
 
 # Testing
 test-log = "0.2.16"
-testcontainers = "0.20.0"
+testcontainers = { version = "0.22.0", features = ["http_wait"] }
 mockall = "0.13.0"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
