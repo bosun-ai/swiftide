@@ -34,7 +34,7 @@ async-openai = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
 ] }
-redis = { version = "0.26", features = [
+redis = { version = "0.27", features = [
   "aio",
   "tokio-comp",
   "connection-manager",
