@@ -4,7 +4,6 @@
 //! data compatibility with Qdrant's required format.
 
 use anyhow::{bail, Result};
-use itertools::Itertools as _;
 use std::{
     collections::{HashMap, HashSet},
     string::ToString,
