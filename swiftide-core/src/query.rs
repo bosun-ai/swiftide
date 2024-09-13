@@ -81,8 +81,11 @@ impl<T: Clone> Query<T> {
 }
 
 impl Query<states::Pending> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(query: impl Into<String>) -> Self {
+        Self {
+            original: query.into(),
+            ..Default::default()
+        }
     }
 
     /// Transforms the current query

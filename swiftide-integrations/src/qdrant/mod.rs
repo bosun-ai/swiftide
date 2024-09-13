@@ -53,9 +53,9 @@ pub struct Qdrant {
     #[builder(default)]
     batch_size: Option<usize>,
     #[builder(private, default = "Self::default_vectors()")]
-    vectors: HashMap<EmbeddedField, VectorConfig>,
+    pub(crate) vectors: HashMap<EmbeddedField, VectorConfig>,
     #[builder(private, default)]
-    sparse_vectors: HashMap<EmbeddedField, SparseVectorConfig>,
+    pub(crate) sparse_vectors: HashMap<EmbeddedField, SparseVectorConfig>,
 }
 
 impl Qdrant {

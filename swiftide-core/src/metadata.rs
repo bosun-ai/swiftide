@@ -59,6 +59,21 @@ where
     }
 }
 
+impl<K, V> From<(K, V)> for Metadata
+where
+    K: Into<String>,
+    V: Into<serde_json::Value>,
+{
+    fn from(items: (K, V)) -> Self {
+        let sliced: [(K, V); 1] = [items];
+        let inner = sliced
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
+        Metadata { inner }
+    }
+}
+
 impl<'a, K, V> From<&'a [(K, V)]> for Metadata
 where
     K: Into<String> + Clone,

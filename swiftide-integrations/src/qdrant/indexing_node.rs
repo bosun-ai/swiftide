@@ -50,8 +50,8 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors<'_> {
             .collect::<HashMap<String, Value>>()
             .into();
 
-        payload.insert("path", Value::from(node.path.to_string_lossy().to_string()));
-        payload.insert("content", Value::from(node.chunk.clone()));
+        payload.insert("path", node.path.to_string_lossy().to_string());
+        payload.insert("content", node.chunk.clone());
         payload.insert(
             "last_updated_at",
             Value::from(chrono::Utc::now().to_rfc3339()),

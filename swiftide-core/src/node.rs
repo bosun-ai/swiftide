@@ -118,6 +118,27 @@ impl Node {
         }
     }
 
+    pub fn with_metadata(&mut self, metadata: impl Into<Metadata>) -> &mut Self {
+        self.metadata = metadata.into();
+        self
+    }
+
+    pub fn with_vectors(
+        &mut self,
+        vectors: impl Into<HashMap<EmbeddedField, Embedding>>,
+    ) -> &mut Self {
+        self.vectors = Some(vectors.into());
+        self
+    }
+
+    pub fn with_sparse_vectors(
+        &mut self,
+        sparse_vectors: impl Into<HashMap<EmbeddedField, SparseEmbedding>>,
+    ) -> &mut Self {
+        self.sparse_vectors = Some(sparse_vectors.into());
+        self
+    }
+
     /// Creates embeddable data depending on chosen `EmbedMode`.
     ///
     /// # Returns
