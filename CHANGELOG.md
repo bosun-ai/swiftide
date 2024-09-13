@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0](https://github.com/bosun-ai/swiftide/releases/tag/0.12.0) - 2024-09-13
+
+### Added
+
+- [e902cb7](https://github.com/bosun-ai/swiftide/commit/e902cb7487221d3e88f13d88532da081e6ef8611) *(query)* Add support for filters in SimilaritySingleEmbedding ([#298](https://github.com/bosun-ai/swiftide/pull/298))
+
+- [f158960](https://github.com/bosun-ai/swiftide/commit/f1589604d1e0cb42a07d5a48080e3d7ecb90ee38) *(uncategorized)* Major performance improvements ([#291](https://github.com/bosun-ai/swiftide/pull/291))
+
+### Fixed
+
+- [45d8a57](https://github.com/bosun-ai/swiftide/commit/45d8a57d1afb4f16ad76b15236308d753cf45743) *(ci)* Use llm-cov preview via nightly and improve test coverage ([#289](https://github.com/bosun-ai/swiftide/pull/289))
+
+- [501dd39](https://github.com/bosun-ai/swiftide/commit/501dd391aed6fe6bdec1a2baeba114489604f153) *(deps)* Update rust crate redis to 0.27 ([#294](https://github.com/bosun-ai/swiftide/pull/294))
+
+- [f95f806](https://github.com/bosun-ai/swiftide/commit/f95f806a0701b14a3cad5da307c27c01325a264d) *(indexing)* Debugging nodes should respect utf8 char boundaries
+
+- [f8314cc](https://github.com/bosun-ai/swiftide/commit/f8314ccdbe16ad7e6691899dd01f81a61b20180f) *(indexing)* Limit logged chunk to max 100 chars ([#292](https://github.com/bosun-ai/swiftide/pull/292))
+
+- [9464ca1](https://github.com/bosun-ai/swiftide/commit/9464ca123f08d8dfba3f1bfabb57e9af97018534) *(uncategorized)* Bad embed error propagation ([#293](https://github.com/bosun-ai/swiftide/pull/293))
+
+- [8595553](https://github.com/bosun-ai/swiftide/commit/859555334d7e4129215b9f084d9f9840fac5ce36) *(uncategorized)* Implement into_stream_boxed for all loaders
+
+### Other
+
+- [37c4bd9](https://github.com/bosun-ai/swiftide/commit/37c4bd9f9ac97646adb2c4b99b8f7bf0bee4c794) *(deps)* Update treesitter ([#296](https://github.com/bosun-ai/swiftide/pull/296))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.11.1...0.12.0
+
+
+
 ## [0.11.1](https://github.com/bosun-ai/swiftide/releases/tag/0.11.1) - 2024-09-10
 
 ### Fixed
