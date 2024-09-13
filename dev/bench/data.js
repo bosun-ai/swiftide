@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726237399043,
+  "lastUpdate": 1726239861871,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4535,6 +4535,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "41898282+github-actions[bot]@users.noreply.github.com",
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "55c944d5d557ceea8518d2474881409e0419edac",
+          "message": "chore: release v0.12.0 (#290)\n\n## 🤖 New release\r\n* `swiftide`: 0.11.1 -> 0.12.0\r\n* `swiftide-core`: 0.11.1 -> 0.12.0\r\n* `swiftide-indexing`: 0.11.1 -> 0.12.0\r\n* `swiftide-macros`: 0.11.1 -> 0.12.0\r\n* `swiftide-integrations`: 0.11.1 -> 0.12.0\r\n* `swiftide-query`: 0.11.1 -> 0.12.0\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.12.0](https://github.com/bosun-ai/swiftide/releases/tag/0.12.0) -\r\n2024-09-13\r\n\r\n### Added\r\n\r\n-\r\n[e902cb7](https://github.com/bosun-ai/swiftide/commit/e902cb7487221d3e88f13d88532da081e6ef8611)\r\n*(query)* Add support for filters in SimilaritySingleEmbedding\r\n([#298](https://github.com/bosun-ai/swiftide/pull/298))\r\n\r\n-\r\n[f158960](https://github.com/bosun-ai/swiftide/commit/f1589604d1e0cb42a07d5a48080e3d7ecb90ee38)\r\n*(uncategorized)* Major performance improvements\r\n([#291](https://github.com/bosun-ai/swiftide/pull/291))\r\n\r\n### Fixed\r\n\r\n-\r\n[45d8a57](https://github.com/bosun-ai/swiftide/commit/45d8a57d1afb4f16ad76b15236308d753cf45743)\r\n*(ci)* Use llm-cov preview via nightly and improve test coverage\r\n([#289](https://github.com/bosun-ai/swiftide/pull/289))\r\n\r\n-\r\n[501dd39](https://github.com/bosun-ai/swiftide/commit/501dd391aed6fe6bdec1a2baeba114489604f153)\r\n*(deps)* Update rust crate redis to 0.27\r\n([#294](https://github.com/bosun-ai/swiftide/pull/294))\r\n\r\n-\r\n[f95f806](https://github.com/bosun-ai/swiftide/commit/f95f806a0701b14a3cad5da307c27c01325a264d)\r\n*(indexing)* Debugging nodes should respect utf8 char boundaries\r\n\r\n-\r\n[f8314cc](https://github.com/bosun-ai/swiftide/commit/f8314ccdbe16ad7e6691899dd01f81a61b20180f)\r\n*(indexing)* Limit logged chunk to max 100 chars\r\n([#292](https://github.com/bosun-ai/swiftide/pull/292))\r\n\r\n-\r\n[9464ca1](https://github.com/bosun-ai/swiftide/commit/9464ca123f08d8dfba3f1bfabb57e9af97018534)\r\n*(uncategorized)* Bad embed error propagation\r\n([#293](https://github.com/bosun-ai/swiftide/pull/293))\r\n\r\n-\r\n[8595553](https://github.com/bosun-ai/swiftide/commit/859555334d7e4129215b9f084d9f9840fac5ce36)\r\n*(uncategorized)* Implement into_stream_boxed for all loaders\r\n\r\n### Other\r\n\r\n-\r\n[37c4bd9](https://github.com/bosun-ai/swiftide/commit/37c4bd9f9ac97646adb2c4b99b8f7bf0bee4c794)\r\n*(deps)* Update treesitter\r\n([#296](https://github.com/bosun-ai/swiftide/pull/296))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.11.1...0.12.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2024-09-13T16:58:06+02:00",
+          "tree_id": "bac12660a645e75f4172d5732d5855d4d45220f8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/55c944d5d557ceea8518d2474881409e0419edac"
+        },
+        "date": 1726239861489,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
