@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726174517938,
+  "lastUpdate": 1726218605599,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4451,6 +4451,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e902cb7487221d3e88f13d88532da081e6ef8611",
+          "message": "feat(query): Add support for filters in SimilaritySingleEmbedding (#298)\n\nAdds support for filters for Qdrant and Lancedb in\r\nSimilaritySingleEmbedding. Also fixes several small bugs and brings\r\nimproved tests.",
+          "timestamp": "2024-09-13T11:03:52+02:00",
+          "tree_id": "341105c78806c3628968bcc6283103f6f5102fc9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e902cb7487221d3e88f13d88532da081e6ef8611"
+        },
+        "date": 1726218604951,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
