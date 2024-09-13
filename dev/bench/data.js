@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726239861871,
+  "lastUpdate": 1726245332512,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4559,6 +4559,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/55c944d5d557ceea8518d2474881409e0419edac"
         },
         "date": 1726239861489,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 156,
+            "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "214ee8d2850f61c275fe5b743ba63ae8acb618ec",
+          "message": "docs(README): Add link to latest release post",
+          "timestamp": "2024-09-13T18:29:15+02:00",
+          "tree_id": "ddf002266b635fc6bb88a60e5a985f6907bdd8dd",
+          "url": "https://github.com/bosun-ai/swiftide/commit/214ee8d2850f61c275fe5b743ba63ae8acb618ec"
+        },
+        "date": 1726245332109,
         "tool": "cargo",
         "benches": [
           {
