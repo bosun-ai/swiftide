@@ -74,7 +74,7 @@ fn default_prompt() -> PromptTemplate {
 
 #[async_trait]
 impl Answer for Simple {
-    #[tracing::instrument(skip_self)]
+    #[tracing::instrument(skip_all)]
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
         let context = if query.current().is_empty() {
             &query.documents().join("\n---\n")
