@@ -145,9 +145,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.88"
+version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e1496f8fb1fbf272686b8d37f523dab3e4a7443300055e74cdaa449f3114356"
+checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
 
 [[package]]
 name = "arbitrary"
@@ -593,9 +593,9 @@ dependencies = [
 
 [[package]]
 name = "async-process"
-version = "2.2.4"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8a07789659a4d385b79b18b9127fc27e1a59e1e89117c78c5ea3b806f016374"
+checksum = "63255f1dc2381611000436537bbedfe83183faa303a5a0edaf191edef06526bb"
 dependencies = [
  "async-channel 2.3.1",
  "async-io 2.3.4",
@@ -608,7 +608,6 @@ dependencies = [
  "futures-lite 2.3.0",
  "rustix 0.38.37",
  "tracing",
- "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1537,9 +1536,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.18"
+version = "1.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b62ac837cdb5cb22e10a256099b4fc502b1dfe560cb282963a974d7abd80e476"
+checksum = "2d74707dde2ba56f86ae90effb3b43ddd369504387e718014de010cec7959800"
 dependencies = [
  "jobserver",
  "libc",
@@ -2860,16 +2859,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a437bef3baa91c0a29bc3a3641e14c7cd3a9ce3243fadefb30bb72a44acb064f"
+checksum = "68d0a53efe9832626f6c56dcf9826a1a119fc237a7b2715f3f68eb4f7d7244a6"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
- "base64 0.22.1",
- "bytes",
  "cfg-if",
  "chrono",
  "derive_builder",
@@ -2884,13 +2881,11 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-stream-dispatcher",
  "fluvio-types",
- "futures-lite 2.3.0",
  "futures-util",
  "once_cell",
  "pin-project",
  "semver",
  "serde",
- "serde_json",
  "siphasher 1.0.1",
  "thiserror",
  "tokio",
@@ -2911,18 +2906,16 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.29.0"
+version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e92bd947b7a1877ba8eb36b379b478e92148947b407c375e758fe9be2cee92d2"
+checksum = "8aff317349d026baa29745a4dd7c3fc22e5b8652646bc3640150d6cee9abfda6"
 dependencies = [
  "anyhow",
- "async-trait",
  "base64 0.22.1",
  "bytes",
  "bytesize",
  "derive_builder",
  "flate2",
- "fluvio-future",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
@@ -2996,16 +2989,15 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.24.2"
+version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cc1314d904319cf2a2e89bfb9f113f2700a5e6c5179753779efcb221f40bc24"
+checksum = "507c721d21b8d6b2be4c7f9016803df9f3c69e6f83498f64fc12b1b565d93f9a"
 dependencies = [
  "anyhow",
  "fluvio-controlplane-metadata",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-stream-model",
- "fluvio-types",
  "paste",
  "static_assertions",
  "thiserror",
@@ -3038,11 +3030,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.14.9"
+version = "0.14.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d98d2c341d5aaa1d08162a7936e87f5da3110eafcc3bd84a79e850053c554877"
+checksum = "c945f5ade92202b9588a2114a45323048e7c49c5c434b69086a9d7b2297ad4c1"
 dependencies = [
- "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
@@ -3065,9 +3056,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7856cf9d5330aa74ce168284f5a9aeb2782c6961c191b9ffd5424250b847edf3"
+checksum = "8d5566353fe913eaf07b73aacbd54fc55a497e0fd6fba30f8acbea9277ac9f28"
 dependencies = [
  "bytes",
  "derive_builder",
@@ -3084,25 +3075,24 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22f7f45291006e26eb43826b130f1f01ba8428312bc88c398c0faef0f960ad11"
+checksum = "0b5b7e4a1f1241cf750babfc5d99db4b965524f7e35a9c1fdefd6ec74616cc03"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
  "cfg-if",
- "event-listener 5.3.1",
  "fluvio-future",
  "fluvio-stream-model",
  "fluvio-types",
  "futures-util",
  "once_cell",
+ "parking_lot 0.12.3",
  "serde",
  "serde_yaml",
  "tempfile",
- "thiserror",
  "tokio",
  "tracing",
 ]
@@ -3760,7 +3750,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -5013,9 +5003,9 @@ checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "memmap2"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe751422e4a8caa417e13c3ea66452215d7d63e19e604f4980461212f3ae1322"
+checksum = "fd3f7eed9d3848f8b98834af67102b720745c4ec028fcd0aa0239277e7de374f"
 dependencies = [
  "libc",
 ]
@@ -5406,9 +5396,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.19.0"
+version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+checksum = "33ea5043e58958ee56f3e15a90aee535795cd7dfd319846288d93c5b57d85cbe"
 
 [[package]]
 name = "oneshot"
@@ -7257,9 +7247,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.4.1"
+version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cc9ca45d8dcb92b41659362a05e7f4ead2910bcda9c8c16869d62b076eccdf3"
+checksum = "a7d72ef2496a6893ef1a5d3acd2d3db0c3b3c46270904beba239c572dd4897cd"
 dependencies = [
  "ahash",
  "auto_encoder",
@@ -7279,6 +7269,7 @@ dependencies = [
  "reqwest",
  "selectors",
  "smallvec",
+ "string-interner",
  "string_concat",
  "strum",
  "tendril",
@@ -7353,6 +7344,17 @@ name = "stfu8"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51f1e89f093f99e7432c491c382b88a6860a5adbe6bf02574bf0a08efff1978"
+
+[[package]]
+name = "string-interner"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c6a0d765f5807e98a091107bae0a56ea3799f66a5de47b2c84c94a39c09974e"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.14.5",
+ "serde",
+]
 
 [[package]]
 name = "string_cache"
@@ -8640,9 +8642,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-segmentation"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
 name = "unicode-width"
@@ -8948,7 +8950,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
