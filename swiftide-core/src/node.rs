@@ -28,11 +28,7 @@ use std::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    metadata::Metadata,
-    util::debug_long_utf8,
-    Embedding, SparseEmbedding,
-};
+use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbedding};
 
 /// Represents a unit of data in the indexing process.
 ///
