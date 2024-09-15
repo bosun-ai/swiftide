@@ -71,7 +71,7 @@ fn default_prompt() -> PromptTemplate {
 
 #[async_trait]
 impl TransformQuery for GenerateSubquestions {
-    #[tracing::instrument]
+    #[tracing::instrument(skip_self)]
     async fn transform_query(
         &self,
         mut query: Query<states::Pending>,
