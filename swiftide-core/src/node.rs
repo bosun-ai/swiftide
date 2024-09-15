@@ -28,7 +28,11 @@ use std::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{metadata::Metadata, Embedding, SparseEmbedding};
+use crate::{
+    metadata::Metadata,
+    util::{debug_long_utf8, safe_truncate_utf8},
+    Embedding, SparseEmbedding,
+};
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -66,14 +70,7 @@ impl Debug for Node {
         f.debug_struct("Node")
             .field("id", &self.id)
             .field("path", &self.path)
-            .field(
-                "chunk",
-                &format!(
-                    "{} ({})",
-                    &self.chunk.chars().take(100).collect::<String>(),
-                    self.chunk.chars().count()
-                ),
-            )
+            .field("chunk", &debug_long_utf8(&self.chunk, 100))
             .field("metadata", &self.metadata)
             .field(
                 "vectors",

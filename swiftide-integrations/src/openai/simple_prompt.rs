@@ -3,7 +3,7 @@
 //! and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, SimplePrompt};
+use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
 
 use super::OpenAI;
 use anyhow::{Context as _, Result};
@@ -44,7 +44,7 @@ impl SimplePrompt for OpenAI {
 
         // Log the request for debugging purposes.
         tracing::debug!(
-            messages = serde_json::to_string_pretty(&request)?,
+            messages = debug_long_utf8(serde_json::to_string_pretty(&request)?, 100),
             "[SimplePrompt] Request to openai"
         );
 
@@ -53,7 +53,7 @@ impl SimplePrompt for OpenAI {
 
         // Log the response for debugging purposes.
         tracing::debug!(
-            response = serde_json::to_string_pretty(&response)?,
+            response = debug_long_utf8(serde_json::to_string_pretty(&response)?, 100),
             "[SimplePrompt] Response from openai"
         );
 

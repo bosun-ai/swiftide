@@ -7,9 +7,30 @@ use std::collections::{btree_map::IntoValues, BTreeMap};
 
 use serde::Deserializer;
 
-#[derive(Debug, Clone, Default, PartialEq)]
+use crate::util::debug_long_utf8;
+
+#[derive(Clone, Default, PartialEq)]
 pub struct Metadata {
     inner: BTreeMap<String, serde_json::Value>,
+}
+
+impl std::fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_map()
+            .entries(
+                self.inner
+                    .iter()
+                    .map(|(k, v): (&String, &serde_json::Value)| {
+                        let fvalue = v.as_str().map_or_else(
+                            || debug_long_utf8(v.to_string(), 100),
+                            ToString::to_string,
+                        );
+
+                        (k, fvalue)
+                    }),
+            )
+            .finish()
+    }
 }
 
 impl Metadata {
