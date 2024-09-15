@@ -7,7 +7,7 @@
 //! `states::Answered`: The query has been answered
 use derive_builder::Builder;
 
-use crate::{Embedding, SparseEmbedding};
+use crate::{util::debug_long_utf8, Embedding, SparseEmbedding};
 
 type Document = String;
 
@@ -39,8 +39,8 @@ pub struct Query<State> {
 impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Query")
-            .field("original", &self.original)
-            .field("current", &self.current)
+            .field("original", &debug_long_utf8(&self.original, 100))
+            .field("current", &debug_long_utf8(&self.current, 100))
             .field("state", &self.state)
             .field("transformation_history", &self.transformation_history)
             .field("embedding", &self.embedding.is_some())
@@ -163,6 +163,8 @@ impl Query<states::Answered> {
 
 /// States of a query
 pub mod states {
+    use crate::util::debug_long_utf8;
+
     use super::Builder;
     use super::Document;
 
@@ -170,17 +172,42 @@ pub mod states {
     /// The query is pending and has not been used
     pub struct Pending;
 
-    #[derive(Debug, Default, Clone, Builder, PartialEq)]
+    #[derive(Default, Clone, Builder, PartialEq)]
     #[builder(setter(into))]
     /// Documents have been retrieved
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
     }
-    #[derive(Debug, Default, Clone, Builder, PartialEq)]
+
+    impl std::fmt::Debug for Retrieved {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("Retrieved")
+                .field("num_documents", &self.documents.len())
+                .field(
+                    "documents",
+                    &self
+                        .documents
+                        .iter()
+                        .map(|d| debug_long_utf8(d, 100))
+                        .collect::<Vec<_>>(),
+                )
+                .finish()
+        }
+    }
+
+    #[derive(Default, Clone, Builder, PartialEq)]
     #[builder(setter(into))]
     /// The query has been answered
     pub struct Answered {
         pub(crate) answer: String,
+    }
+
+    impl std::fmt::Debug for Answered {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("Answered")
+                .field("answer", &debug_long_utf8(&self.answer, 100))
+                .finish()
+        }
     }
 }
 
@@ -213,7 +240,12 @@ impl std::fmt::Debug for TransformationEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TransformationEvent::Transformed { before, after } => {
-                write!(f, "Transformed: {before} -> {after}")
+                write!(
+                    f,
+                    "Transformed: {} -> {}",
+                    &debug_long_utf8(before, 100),
+                    &debug_long_utf8(after, 100)
+                )
             }
             TransformationEvent::Retrieved {
                 before,
@@ -223,8 +255,8 @@ impl std::fmt::Debug for TransformationEvent {
                 write!(
                     f,
                     "Retrieved: {} -> {}\nDocuments: {:?}",
-                    before,
-                    after,
+                    &debug_long_utf8(before, 100),
+                    &debug_long_utf8(after, 100),
                     documents.len()
                 )
             }
