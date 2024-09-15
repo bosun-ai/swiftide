@@ -8,6 +8,17 @@ pub enum QueryEvaluation {
     AnswerQuery(Query<states::Answered>),
 }
 
+impl std::fmt::Debug for QueryEvaluation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueryEvaluation::RetrieveDocuments(query) => {
+                write!(f, "RetrieveDocuments({:?})", query)
+            }
+            QueryEvaluation::AnswerQuery(query) => write!(f, "AnswerQuery({:?})", query),
+        }
+    }
+}
+
 impl From<Query<states::Retrieved>> for QueryEvaluation {
     fn from(val: Query<states::Retrieved>) -> Self {
         QueryEvaluation::RetrieveDocuments(val)

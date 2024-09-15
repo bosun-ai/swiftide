@@ -91,6 +91,7 @@ impl Ragas {
 
 #[async_trait]
 impl EvaluateQuery for Ragas {
+    #[tracing::instrument(skip_self)]
     async fn evaluate(&self, query: QueryEvaluation) -> Result<()> {
         let mut dataset = self.dataset.write().await;
         dataset.upsert_evaluation(&query)

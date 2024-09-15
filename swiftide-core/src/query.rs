@@ -195,8 +195,7 @@ impl<T: AsRef<str>> From<T> for Query<states::Pending> {
     }
 }
 
-#[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 /// Records changes to a query
 pub enum TransformationEvent {
     Transformed {
@@ -208,6 +207,29 @@ pub enum TransformationEvent {
         after: String,
         documents: Vec<Document>,
     },
+}
+
+impl std::fmt::Debug for TransformationEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransformationEvent::Transformed { before, after } => {
+                write!(f, "Transformed: {before} -> {after}")
+            }
+            TransformationEvent::Retrieved {
+                before,
+                after,
+                documents,
+            } => {
+                write!(
+                    f,
+                    "Retrieved: {} -> {}\nDocuments: {:?}",
+                    before,
+                    after,
+                    documents.len()
+                )
+            }
+        }
+    }
 }
 
 #[cfg(test)]
