@@ -145,11 +145,11 @@ impl Pipeline {
                     tracing::trace_span!("filter_cached", node_cache = ?cache, node = ?node );
                 async move {
                     if cache.get(&node).await {
-                        tracing::info!(node_cache = cache.name(), "Node in cache, skipping");
+                        tracing::debug!(node = ?node, node_cache = cache.name(), "Node in cache, skipping");
                         Ok(None)
                     } else {
                         cache.set(&node).await;
-                        tracing::info!(node_cache = cache.name(), "Node not in cache, processing");
+                        tracing::debug!(node = ?node, node_cache = cache.name(), "Node not in cache, processing");
                         Ok(Some(node))
                     }
                 }
@@ -185,10 +185,10 @@ impl Pipeline {
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
-                let span = tracing::trace_span!("then", node = ?node );
+                let span = tracing::trace_span!("then", node = ?node);
 
                 task::spawn(async move {
-                    tracing::info!(transformer = transformer.name(), "Transforming node");
+                    tracing::debug!(node = ?node, transformer = transformer.name(), "Transforming node");
                     transformer.transform_node(node).await
                 })
                 .instrument(span)
@@ -233,7 +233,7 @@ impl Pipeline {
                 let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
 
                 tokio::spawn(async move {
-                    tracing::info!(
+                    tracing::debug!(
                         batch_transformer = transformer.name(),
                         num_nodes = nodes.len(),
                         "Batch transforming nodes"
@@ -271,7 +271,7 @@ impl Pipeline {
                 let span = tracing::trace_span!("then_chunk", chunker = ?chunker, node = ?node );
 
                 tokio::spawn(async move {
-                    tracing::info!(chunker = chunker.name(), "Chunking node");
+                    tracing::debug!(chunker = chunker.name(), "Chunking node");
                     chunker.transform_node(node).await
                 })
                 .instrument(span)
@@ -314,7 +314,7 @@ impl Pipeline {
                     let span = tracing::trace_span!("then_store_with_batched", storage = ?storage, nodes = ?nodes );
 
                 tokio::spawn(async move {
-                        tracing::info!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
+                        tracing::debug!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
                         storage.batch_store(nodes).await
                     })
                     .instrument(span)
@@ -334,7 +334,7 @@ impl Pipeline {
                         tracing::trace_span!("then_store_with", storage = ?storage, node = ?node );
 
                     tokio::spawn(async move {
-                        tracing::info!(storage = storage.name(), "Storing node");
+                        tracing::debug!(storage = storage.name(), "Storing node");
 
                         storage.store(node).await
                     })
@@ -537,6 +537,7 @@ impl Pipeline {
             "Starting indexing pipeline with {} concurrency",
             self.concurrency
         );
+        let now = std::time::Instant::now();
         if self.storage.is_empty() {
             anyhow::bail!("No storage configured for indexing pipeline");
         }
@@ -554,7 +555,13 @@ impl Pipeline {
             total_nodes += 1;
         }
 
-        tracing::warn!("Processed {} nodes", total_nodes);
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            elapsed_in_seconds,
+            "Processed {} nodes in {} seconds",
+            total_nodes,
+            elapsed_in_seconds
+        );
         tracing::Span::current().record("total_nodes", total_nodes);
 
         Ok(())
