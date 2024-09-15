@@ -598,6 +598,7 @@ mod tests {
             Ok(node)
         });
         transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "transformer");
 
         batch_transformer
             .expect_batch_transform()
@@ -605,6 +606,7 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|nodes| IndexingStream::iter(nodes.into_iter().map(Ok)));
         batch_transformer.expect_concurrency().returning(|| None);
+        batch_transformer.expect_name().returning(|| "transformer");
 
         chunker
             .expect_transform_node()
@@ -620,6 +622,7 @@ mod tests {
                 nodes.into()
             });
         chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "chunker");
 
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
@@ -629,6 +632,7 @@ mod tests {
             .in_sequence(&mut seq)
             .withf(|node| node.chunk.starts_with("transformed_chunk_"))
             .returning(Ok);
+        storage.expect_name().returning(|| "storage");
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
@@ -691,9 +695,11 @@ mod tests {
                 Ok(node)
             });
         transformer.expect_concurrency().returning(|| Some(3));
+        transformer.expect_name().returning(|| "transformer");
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
         storage.expect_store().times(3).returning(Ok);
+        storage.expect_name().returning(|| "storage");
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)

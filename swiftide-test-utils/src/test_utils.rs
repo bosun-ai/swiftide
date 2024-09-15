@@ -33,7 +33,7 @@ pub fn openai_client(
 /// Setup Qdrant container.
 /// Returns container server and `server_url`.
 pub async fn start_qdrant() -> (ContainerAsync<GenericImage>, String) {
-    let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.10.1")
+    let qdrant = testcontainers::GenericImage::new("qdrant/qdrant", "v1.11.3")
         .with_exposed_port(6334.into())
         .with_exposed_port(6333.into())
         .with_wait_for(testcontainers::core::WaitFor::http(
@@ -54,7 +54,7 @@ pub async fn start_qdrant() -> (ContainerAsync<GenericImage>, String) {
 /// Setup Redis container for caching in the test.
 /// Returns container server and `server_url`.
 pub async fn start_redis() -> (ContainerAsync<GenericImage>, String) {
-    let redis = testcontainers::GenericImage::new("redis", "7.2.4")
+    let redis = testcontainers::GenericImage::new("redis", "7-alpine")
         .with_exposed_port(6379.into())
         .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
             "Ready to accept connections",
