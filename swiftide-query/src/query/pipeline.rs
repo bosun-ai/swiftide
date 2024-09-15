@@ -110,7 +110,7 @@ where
 
                 tokio::spawn(
                     async move {
-                        tracing::info!(
+                        tracing::debug!(
                             query_transformer = transformer.name(),
                             "Transforming query"
                         );
@@ -160,7 +160,7 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
                 tokio::spawn(async move {
-                    tracing::info!(retriever = retriever.name(), "Retrieving documents");
+                    tracing::debug!(retriever = retriever.name(), "Retrieving documents");
 
                     let result = retriever.retrieve(&search_strategy, query).await?;
 
@@ -208,7 +208,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_transform_response", query = ?query);
                 tokio::spawn(async move {
-                    tracing::info!(
+                    tracing::debug!(
                         response_transformer = transformer.name(),
                         "Transforming response"
                     );
@@ -254,7 +254,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
                 tokio::spawn(async move {
-                    tracing::info!(answerer = answerer.name(), "Answering query");
+                    tracing::debug!(answerer = answerer.name(), "Answering query");
                     let result = answerer.answer(query).await?;
 
                     if let Some(evaluator) = evaluator_for_stream.as_ref() {
@@ -290,13 +290,23 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         mut self,
         query: impl Into<Query<states::Pending>>,
     ) -> Result<Query<states::Answered>> {
-        tracing::info!("Sending query");
+        tracing::debug!("Sending query");
+        let now = std::time::Instant::now();
 
         self.query_sender.send(Ok(query.into())).await?;
 
-        self.stream.try_next().await?.ok_or_else(|| {
+        let answer = self.stream.try_next().await?.ok_or_else(|| {
             anyhow::anyhow!("Pipeline did not receive a response from the query stream")
-        })
+        });
+
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            elapsed_in_seconds,
+            "Answered query in {} seconds",
+            elapsed_in_seconds
+        );
+
+        answer
     }
 
     /// Runs the pipeline with a user query, accepts `&str` as well.
@@ -311,18 +321,29 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         &mut self,
         query: impl Into<Query<states::Pending>>,
     ) -> Result<Query<states::Answered>> {
-        tracing::info!("Sending query");
+        tracing::warn!("Sending query");
+        let now = std::time::Instant::now();
 
         self.query_sender.send(Ok(query.into())).await?;
 
-        self.stream
+        let answer = self
+            .stream
             .by_ref()
             .take(1)
             .try_next()
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("Pipeline did not receive a response from the query stream")
-            })
+            });
+
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            elapsed_in_seconds,
+            "Answered query in {} seconds",
+            elapsed_in_seconds
+        );
+
+        answer
     }
 
     /// Runs the pipeline with multiple queries
@@ -335,7 +356,8 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         self,
         queries: Vec<impl Into<Query<states::Pending>> + Clone>,
     ) -> Result<Vec<Query<states::Answered>>> {
-        tracing::info!("Sending queries");
+        tracing::warn!("Sending queries");
+        let now = std::time::Instant::now();
 
         let Pipeline {
             query_sender,
@@ -356,6 +378,14 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
                 break;
             }
         }
+
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            num_queries = queries.len(),
+            elapsed_in_seconds,
+            "Answered all queries in {} seconds",
+            elapsed_in_seconds
+        );
         Ok(results)
     }
 }
