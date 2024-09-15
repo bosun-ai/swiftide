@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     metadata::Metadata,
-    util::{debug_long_utf8, safe_truncate_utf8},
+    util::debug_long_utf8,
     Embedding, SparseEmbedding,
 };
 
