@@ -29,6 +29,11 @@ pub trait Transformer: Send + Sync {
     fn concurrency(&self) -> Option<usize> {
         None
     }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -72,6 +77,11 @@ pub trait BatchableTransformer: Send + Sync {
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
         None
+    }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
     }
 }
 
@@ -125,6 +135,11 @@ pub trait Loader {
     fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
         unimplemented!("Please implement into_stream_boxed for your loader, it needs to be implemented on the concrete type")
     }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 impl Loader for Box<dyn Loader> {
@@ -157,6 +172,11 @@ pub trait ChunkerTransformer: Send + Sync + Debug {
     fn concurrency(&self) -> Option<usize> {
         None
     }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -188,6 +208,11 @@ impl ChunkerTransformer for &dyn ChunkerTransformer {
 pub trait NodeCache: Send + Sync + Debug {
     async fn get(&self, node: &Node) -> bool;
     async fn set(&self, node: &Node);
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -216,6 +241,11 @@ impl NodeCache for &dyn NodeCache {
 /// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync + Debug {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -238,6 +268,11 @@ impl EmbeddingModel for &dyn EmbeddingModel {
 /// Assumes the strings will be moved.
 pub trait SparseEmbeddingModel: Send + Sync + Debug {
     async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -260,6 +295,11 @@ impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
 pub trait SimplePrompt: Debug + Send + Sync {
     // Takes a simple prompt, prompts the llm and returns the response
     async fn prompt(&self, prompt: Prompt) -> Result<String>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -285,6 +325,11 @@ pub trait Persist: Debug + Send + Sync {
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream;
     fn batch_size(&self) -> Option<usize> {
         None
+    }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
     }
 }
 

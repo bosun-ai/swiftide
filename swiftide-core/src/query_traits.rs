@@ -21,6 +21,11 @@ pub trait TransformQuery: Send + Sync {
         &self,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Pending>>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -57,6 +62,11 @@ pub trait Retrieve<S: SearchStrategy>: Send + Sync {
         search_strategy: &S,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -91,6 +101,11 @@ where
 pub trait TransformResponse: Send + Sync {
     async fn transform_response(&self, query: Query<Retrieved>)
         -> Result<Query<states::Retrieved>>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -115,6 +130,11 @@ impl TransformResponse for Box<dyn TransformResponse> {
 #[async_trait]
 pub trait Answer: Send + Sync {
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
