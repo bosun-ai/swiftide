@@ -267,6 +267,30 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         })
     }
 
+    /// Runs the pipeline with a user query, accepts `&str` as well.
+    ///
+    /// Does not consume the pipeline and requires a mutable reference. This allows
+    /// the pipeline to be reused.
+    ///
+    /// # Errors
+    ///
+    /// Errors if any of the transformations failed or no response was found
+    pub async fn query_mut(
+        &mut self,
+        query: impl Into<Query<states::Pending>>,
+    ) -> Result<Query<states::Answered>> {
+        self.query_sender.send(Ok(query.into())).await?;
+
+        self.stream
+            .by_ref()
+            .take(1)
+            .try_next()
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Pipeline did not receive a response from the query stream")
+            })
+    }
+
     /// Runs the pipeline with multiple queries
     ///
     /// # Errors
@@ -350,5 +374,24 @@ mod test {
             .then_answer(Box::new(answer_transformer) as Box<dyn Answer>);
         let response = pipeline.query("What").await.unwrap();
         assert_eq!(response.answer(), "OK");
+    }
+
+    #[tokio::test]
+    async fn test_reuse_with_query_mut() {
+        let mut pipeline = Pipeline::default()
+            .then_transform_query(move |query: Query<states::Pending>| Ok(query))
+            .then_retrieve(
+                move |_: &search_strategies::SimilaritySingleEmbedding,
+                      query: Query<states::Pending>| {
+                    Ok(query.retrieved_documents(vec![]))
+                },
+            )
+            .then_transform_response(Ok)
+            .then_answer(move |query: Query<states::Retrieved>| Ok(query.answered("Ok")));
+
+        let response = pipeline.query_mut("What").await.unwrap();
+        assert_eq!(response.answer(), "Ok");
+        let response = pipeline.query_mut("What").await.unwrap();
+        assert_eq!(response.answer(), "Ok");
     }
 }
