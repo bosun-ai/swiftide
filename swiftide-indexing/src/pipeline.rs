@@ -145,11 +145,11 @@ impl Pipeline {
                     tracing::trace_span!("filter_cached", node_cache = ?cache, node = ?node );
                 async move {
                     if cache.get(&node).await {
-                        tracing::debug!("Node in cache, skipping");
+                        tracing::info!(node_cache = cache.name(), "Node in cache, skipping");
                         Ok(None)
                     } else {
                         cache.set(&node).await;
-                        tracing::debug!("Node not in cache, passing through");
+                        tracing::info!(node_cache = cache.name(), "Node not in cache, processing");
                         Ok(Some(node))
                     }
                 }
@@ -187,9 +187,12 @@ impl Pipeline {
                 let transformer = transformer.clone();
                 let span = tracing::trace_span!("then", node = ?node );
 
-                task::spawn(async move { transformer.transform_node(node).await })
-                    .instrument(span)
-                    .err_into::<anyhow::Error>()
+                task::spawn(async move {
+                    tracing::info!(transformer = transformer.name(), "Transforming node");
+                    transformer.transform_node(node).await
+                })
+                .instrument(span)
+                .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(concurrency)
             .map(|x| x.and_then(|x| x))
@@ -230,7 +233,11 @@ impl Pipeline {
                 let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
 
                 tokio::spawn(async move {
-                    tracing::debug!(num_nodes = nodes.len(), "Batch transforming nodes");
+                    tracing::info!(
+                        batch_transformer = transformer.name(),
+                        num_nodes = nodes.len(),
+                        "Batch transforming nodes"
+                    );
                     transformer.batch_transform(nodes).await
                 })
                 .instrument(span)
@@ -264,7 +271,7 @@ impl Pipeline {
                 let span = tracing::trace_span!("then_chunk", chunker = ?chunker, node = ?node );
 
                 tokio::spawn(async move {
-                    tracing::debug!(?node, "Chunking node");
+                    tracing::info!(chunker = chunker.name(), "Chunking node");
                     chunker.transform_node(node).await
                 })
                 .instrument(span)
@@ -307,7 +314,7 @@ impl Pipeline {
                     let span = tracing::trace_span!("then_store_with_batched", storage = ?storage, nodes = ?nodes );
 
                 tokio::spawn(async move {
-                        tracing::debug!(num_nodes = nodes.len(), "Batch storing nodes");
+                        tracing::info!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
                         storage.batch_store(nodes).await
                     })
                     .instrument(span)
@@ -327,7 +334,7 @@ impl Pipeline {
                         tracing::trace_span!("then_store_with", storage = ?storage, node = ?node );
 
                     tokio::spawn(async move {
-                        tracing::debug!(?node, "Storing node");
+                        tracing::info!(storage = storage.name(), "Storing node");
 
                         storage.store(node).await
                     })

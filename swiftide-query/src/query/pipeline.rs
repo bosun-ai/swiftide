@@ -109,7 +109,14 @@ where
                 let span = tracing::trace_span!("then_transform_query", query = ?query);
 
                 tokio::spawn(
-                    async move { transformer.transform_query(query).await }.instrument(span),
+                    async move {
+                        tracing::info!(
+                            query_transformer = transformer.name(),
+                            "Transforming query"
+                        );
+                        transformer.transform_query(query).await
+                    }
+                    .instrument(span),
                 )
                 .err_into::<anyhow::Error>()
             })
@@ -153,6 +160,8 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
                 tokio::spawn(async move {
+                    tracing::info!(retriever = retriever.name(), "Retrieving documents");
+
                     let result = retriever.retrieve(&search_strategy, query).await?;
 
                     if let Some(evaluator) = evaluator_for_stream.as_ref() {
@@ -198,9 +207,15 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_transform_response", query = ?query);
-                tokio::spawn(async move { transformer.transform_response(query).await })
-                    .instrument(span)
-                    .err_into::<anyhow::Error>()
+                tokio::spawn(async move {
+                    tracing::info!(
+                        response_transformer = transformer.name(),
+                        "Transforming response"
+                    );
+                    transformer.transform_response(query).await
+                })
+                .instrument(span)
+                .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(default_concurrency)
             .map(|x| x.and_then(|x| x));
@@ -239,7 +254,9 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
                 tokio::spawn(async move {
+                    tracing::info!(answerer = answerer.name(), "Answering query");
                     let result = answerer.answer(query).await?;
+
                     if let Some(evaluator) = evaluator_for_stream.as_ref() {
                         evaluator.evaluate(result.clone().into()).await?;
                         Ok(result)
@@ -273,6 +290,8 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         mut self,
         query: impl Into<Query<states::Pending>>,
     ) -> Result<Query<states::Answered>> {
+        tracing::info!("Sending query");
+
         self.query_sender.send(Ok(query.into())).await?;
 
         self.stream.try_next().await?.ok_or_else(|| {
@@ -292,6 +311,8 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         &mut self,
         query: impl Into<Query<states::Pending>>,
     ) -> Result<Query<states::Answered>> {
+        tracing::info!("Sending query");
+
         self.query_sender.send(Ok(query.into())).await?;
 
         self.stream
@@ -314,6 +335,8 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         self,
         queries: Vec<impl Into<Query<states::Pending>> + Clone>,
     ) -> Result<Vec<Query<states::Answered>>> {
+        tracing::info!("Sending queries");
+
         let Pipeline {
             query_sender,
             mut stream,
