@@ -22,7 +22,7 @@ impl SparseEmbed {
 
 #[async_trait]
 impl TransformQuery for SparseEmbed {
-    #[tracing::instrument]
+    #[tracing::instrument(skip_self)]
     async fn transform_query(
         &self,
         mut query: Query<states::Pending>,

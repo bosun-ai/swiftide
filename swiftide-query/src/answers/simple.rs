@@ -82,14 +82,6 @@ impl Answer for Simple {
             query.current()
         };
 
-        let prompt = self
-            .prompt_template
-            .to_prompt()
-            .with_context_value("question", query.original())
-            .with_context_value("context", context);
-
-        tracing::debug!(prompt = ?prompt, "Prompting from Simple for answer");
-
         let answer = self
             .client
             .prompt(
