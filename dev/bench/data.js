@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726245332512,
+  "lastUpdate": 1726485292737,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4619,6 +4619,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 156,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "d62b0478872e460956607f52b72470b76eb32d91",
+          "message": "fix(ci): Update testcontainer images and fix tests",
+          "timestamp": "2024-09-16T13:08:48+02:00",
+          "tree_id": "3c29f21c98e39840566741985a7c143bbffbb06c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d62b0478872e460956607f52b72470b76eb32d91"
+        },
+        "date": 1726485292373,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 163,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
