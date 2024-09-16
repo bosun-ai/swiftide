@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.1](https://github.com/bosun-ai/swiftide/releases/tag/0.12.1) - 2024-09-16
+
+### Added
+
+- [ec227d2](https://github.com/bosun-ai/swiftide/commit/ec227d25b987b7fd63ab1b3862ef19b14632bd04) *(indexing,query)* Add concise info log with transformation name
+
+- [081a248](https://github.com/bosun-ai/swiftide/commit/081a248e67292c1800837315ec53583be5e0cb82) *(query)* Improve query performance similar to indexing in 0.12
+
+- [01cf579](https://github.com/bosun-ai/swiftide/commit/01cf579922a877bb78e0de20114ade501e5a63db) *(query)* Add query_mut for reusable query pipelines
+
+- [8029926](https://github.com/bosun-ai/swiftide/commit/80299269054eb440e55a42667a7bcc9ba6514a7b) *(query,indexing)* Add duration in log output on pipeline completion
+
+### Fixed
+
+- [d62b047](https://github.com/bosun-ai/swiftide/commit/d62b0478872e460956607f52b72470b76eb32d91) *(ci)* Update testcontainer images and fix tests
+
+- [39b6ecb](https://github.com/bosun-ai/swiftide/commit/39b6ecb6175e5233b129f94876f95182b8bfcdc3) *(core)* Truncate long strings safely when printing debug logs
+
+- [16e9c74](https://github.com/bosun-ai/swiftide/commit/16e9c7455829100b9ae82305e5a1d2568264af9f) *(openai)* Reduce debug verbosity
+
+- [6914d60](https://github.com/bosun-ai/swiftide/commit/6914d607717294467cddffa867c3d25038243fc1) *(qdrant)* Reduce debug verbosity when storing nodes
+
+- [3d13889](https://github.com/bosun-ai/swiftide/commit/3d1388973b5e2a135256ae288d47dbde0399487f) *(query)* Reduce and improve debugging verbosity
+
+- [133cf1d](https://github.com/bosun-ai/swiftide/commit/133cf1d0be09049ca3e90b45675a965bb2464cb2) *(query)* Remove verbose debug and skip self in instrumentation
+
+- [a871c61](https://github.com/bosun-ai/swiftide/commit/a871c61ad52ed181d6f9cb6a66ed07bccaadee08) *(uncategorized)* Fmt
+
+- [ce17981](https://github.com/bosun-ai/swiftide/commit/ce179819ab75460453236723c7f9a89fd61fb99a) *(uncategorized)* Clippy
+
+### Other
+
+- [214ee8d](https://github.com/bosun-ai/swiftide/commit/214ee8d2850f61c275fe5b743ba63ae8acb618ec) *(readme)* Add link to latest release post
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.0...0.12.1
+
+
+
 ## [0.12.0](https://github.com/bosun-ai/swiftide/releases/tag/0.12.0) - 2024-09-13
 
 ### Added
