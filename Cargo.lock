@@ -2860,16 +2860,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.23.1"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a437bef3baa91c0a29bc3a3641e14c7cd3a9ce3243fadefb30bb72a44acb064f"
+checksum = "68d0a53efe9832626f6c56dcf9826a1a119fc237a7b2715f3f68eb4f7d7244a6"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
  "async-lock 3.4.0",
  "async-trait",
- "base64 0.22.1",
- "bytes",
  "cfg-if",
  "chrono",
  "derive_builder",
@@ -2884,13 +2882,11 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-stream-dispatcher",
  "fluvio-types",
- "futures-lite 2.3.0",
  "futures-util",
  "once_cell",
  "pin-project",
  "semver",
  "serde",
- "serde_json",
  "siphasher 1.0.1",
  "thiserror",
  "tokio",
@@ -3065,9 +3061,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7856cf9d5330aa74ce168284f5a9aeb2782c6961c191b9ffd5424250b847edf3"
+checksum = "8d5566353fe913eaf07b73aacbd54fc55a497e0fd6fba30f8acbea9277ac9f28"
 dependencies = [
  "bytes",
  "derive_builder",
@@ -3760,7 +3756,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
