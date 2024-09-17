@@ -224,8 +224,6 @@ impl<T: Into<String>> From<T> for Node {
 }
 
 /// Embed mode of the pipeline.
-///
-/// See also [`super::pipeline::Pipeline::with_embed_mode`].
 #[derive(Copy, Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EmbedMode {
     #[default]

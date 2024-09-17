@@ -21,7 +21,7 @@
 //!
 //! ## Querying
 //!
-//! We are working on an experimental query pipeline, which you can find in [`swiftide::query`]
+//! We are working on an experimental query pipeline, which you can find in [`swiftide_query`]
 //!
 //! ## Examples
 //!

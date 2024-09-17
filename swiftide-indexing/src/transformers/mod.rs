@@ -1,10 +1,12 @@
 //! Various transformers for chunking, embedding and transforming data
 //!
-//! These transformers are generic over their implementation and many require an
-//! [`swiftide::integrations`] to be configured.
+//! These transformers are generic over their implementation and many require a
+//! swiftide integration to be configured.
 //!
 //! Transformers that prompt have a default prompt configured. Prompts can be customized
-//! and tailored, supporting Jinja style templating based on [`tera`]. See [`swiftide::prompt::Prompt`] and [`swiftide::prompt::PromptTemplate`]
+//! and tailored, supporting Jinja style templating based on [tera](https://docs.rs/tera/latest/tera/).
+//!
+//!  See [`swiftide_core::prompt::Prompt`] and [`swiftide_core::prompt::PromptTemplate`]
 
 pub mod chunk_markdown;
 pub mod chunk_text;
