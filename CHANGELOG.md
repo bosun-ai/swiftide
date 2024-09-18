@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.2](https://github.com/bosun-ai/swiftide/releases/tag/0.12.2) - 2024-09-18
+
+### Other
+
+- [d84814e](https://github.com/bosun-ai/swiftide/commit/d84814eef1bf12e485053fb69fb658d963100789) *(uncategorized)* Fix broken documentation links and other cargo doc warnings ([#304](https://github.com/bosun-ai/swiftide/pull/304))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.1...0.12.2
+
+
+
 ## [0.12.1](https://github.com/bosun-ai/swiftide/releases/tag/0.12.1) - 2024-09-16
 
 ### Added
