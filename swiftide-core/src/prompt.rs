@@ -4,7 +4,7 @@
 //! uses jinja style templates which allows for a lot of flexibility.
 //!
 //! Conceptually, a [Prompt] is something you send to i.e.
-//! [`SimplePrompt`][crate::traits::SimplePrompt]. A prompt can have
+//! [`SimplePrompt`][crate::SimplePrompt]. A prompt can have
 //! added context for substitution and other templating features.
 //!
 //! Transformers in Swiftide come with default prompts, and they can be customized or replaced as

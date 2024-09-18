@@ -22,7 +22,6 @@ use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
 ///
-/// ```
 pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
@@ -103,7 +102,7 @@ impl Pipeline {
     /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a [`Node`]
     /// be embedded with a vector when transforming with [`crate::transformers::Embed`]
     ///
-    /// See also [`swiftide::indexing::EmbedMode`].
+    /// See also [`swiftide_core::indexing::EmbedMode`].
     ///
     /// # Arguments
     ///
