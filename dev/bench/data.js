@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726490034008,
+  "lastUpdate": 1726649858702,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4703,6 +4703,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 11",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@tinco.nl",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d84814eef1bf12e485053fb69fb658d963100789",
+          "message": "docs: fix broken documentation links and other cargo doc warnings (#304)\n\nRunning `cargo doc --all-features` resulted in a lot of warnings.",
+          "timestamp": "2024-09-18T10:51:25+02:00",
+          "tree_id": "e254bcd74a3bdb365a9639c6adc90a50f8b3d86e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d84814eef1bf12e485053fb69fb658d963100789"
+        },
+        "date": 1726649857593,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 163,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
