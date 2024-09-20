@@ -97,6 +97,7 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
+- [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
 - [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-09-02)
 - [Bring your own transformers](https://bosun.ai/posts/bring-your-own-transformers-in-swiftide/) (2024-08-13)
 - [Release - Swiftide 0.8](https://bosun.ai/posts/swiftide-0-8/) (2024-08-12)
@@ -180,7 +181,7 @@ Our goal is to create a fast, extendable platform for Retrieval Augmented Genera
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                                |
-| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Other pipelines and streams                                                                                                     |
+| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
 | **Storage**                                  | Qdrant <br> Redis <br> LanceDB                                                                                                                                       |

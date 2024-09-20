@@ -14,6 +14,8 @@ pub mod lancedb;
 pub mod ollama;
 #[cfg(feature = "openai")]
 pub mod openai;
+#[cfg(feature = "parquet")]
+pub mod parquet;
 #[cfg(feature = "qdrant")]
 pub mod qdrant;
 #[cfg(feature = "redis")]

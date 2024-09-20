@@ -21,13 +21,14 @@ use std::{
     collections::HashMap,
     fmt::Debug,
     hash::{Hash, Hasher},
+    os::unix::ffi::OsStrExt,
     path::PathBuf,
 };
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{metadata::Metadata, Embedding, SparseEmbedding};
+use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbedding};
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -37,7 +38,7 @@ use crate::{metadata::Metadata, Embedding, SparseEmbedding};
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Node {
     /// Optional identifier for the node.
-    pub id: Option<u64>,
+    pub id: Option<uuid::Uuid>,
     /// File path associated with the node.
     pub path: PathBuf,
     /// Data chunk contained in the node.
@@ -65,7 +66,7 @@ impl Debug for Node {
         f.debug_struct("Node")
             .field("id", &self.id)
             .field("path", &self.path)
-            .field("chunk", &self.chunk)
+            .field("chunk", &debug_long_utf8(&self.chunk, 100))
             .field("metadata", &self.metadata)
             .field(
                 "vectors",
@@ -108,6 +109,27 @@ impl Node {
             original_size,
             ..Default::default()
         }
+    }
+
+    pub fn with_metadata(&mut self, metadata: impl Into<Metadata>) -> &mut Self {
+        self.metadata = metadata.into();
+        self
+    }
+
+    pub fn with_vectors(
+        &mut self,
+        vectors: impl Into<HashMap<EmbeddedField, Embedding>>,
+    ) -> &mut Self {
+        self.vectors = Some(vectors.into());
+        self
+    }
+
+    pub fn with_sparse_vectors(
+        &mut self,
+        sparse_vectors: impl Into<HashMap<EmbeddedField, SparseEmbedding>>,
+    ) -> &mut Self {
+        self.sparse_vectors = Some(sparse_vectors.into());
+        self
     }
 
     /// Creates embeddable data depending on chosen `EmbedMode`.
@@ -162,17 +184,26 @@ impl Node {
         format!("{}\n{}", metadata, self.chunk)
     }
 
-    /// Calculates a hash value for the node based on its path and chunk.
+    /// Retrieve the identifier of the node.
     ///
-    /// The hash value is calculated using the default hasher provided by the standard library.
+    /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
+    /// UUID (v3).
     ///
-    /// # Returns
-    ///
-    /// A 64-bit hash value representing the node.
-    pub fn calculate_hash(&self) -> u64 {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        self.hash(&mut hasher);
-        hasher.finish()
+    /// If previously calculated, the identifier is returned directly. If not, a new identifier is
+    /// calculated without storing it.
+    pub fn id(&self) -> uuid::Uuid {
+        if let Some(id) = self.id {
+            return id;
+        }
+
+        let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
+        uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
+    }
+
+    /// Updates the identifier of the node.
+    pub fn update_id(&mut self) {
+        self.id = None;
+        self.id = Some(self.id());
     }
 }
 
@@ -186,9 +217,13 @@ impl Hash for Node {
     }
 }
 
+impl<T: Into<String>> From<T> for Node {
+    fn from(value: T) -> Self {
+        Node::new(value)
+    }
+}
+
 /// Embed mode of the pipeline.
-///
-/// See also [`super::pipeline::Pipeline::with_embed_mode`].
 #[derive(Copy, Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum EmbedMode {
     #[default]
@@ -246,5 +281,16 @@ mod tests {
     fn field_name_tests(embedded_field: &EmbeddedField, expected: [&str; 2]) {
         assert_eq!(embedded_field.field_name(), expected[0]);
         assert_eq!(embedded_field.sparse_field_name(), expected[1]);
+    }
+
+    #[test]
+    fn test_debugging_node_with_utf8_char_boundary() {
+        let node = Node::new("🦀".repeat(101));
+        // Single char
+        let _ = format!("{node:?}");
+
+        // With invalid char boundary
+        Node::new("Jürgen".repeat(100));
+        let _ = format!("{node:?}");
     }
 }

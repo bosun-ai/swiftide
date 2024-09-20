@@ -123,7 +123,7 @@ impl Redis {
     ///
     /// A `String` representing the Redis key for the node.
     fn cache_key_for_node(&self, node: &Node) -> String {
-        format!("{}:{}", self.cache_key_prefix, node.calculate_hash())
+        format!("{}:{}", self.cache_key_prefix, node.id())
     }
 
     /// Generates a key for a given node to be persisted in Redis.
@@ -131,7 +131,7 @@ impl Redis {
         if let Some(key_fn) = self.persist_key_fn {
             key_fn(node)
         } else {
-            let hash = node.calculate_hash();
+            let hash = node.id();
             Ok(format!("{}:{}", node.path.to_string_lossy(), hash))
         }
     }

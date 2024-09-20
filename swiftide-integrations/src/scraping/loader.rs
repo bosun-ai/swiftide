@@ -76,4 +76,8 @@ impl Loader for ScrapingLoader {
 
         IndexingStream::iter(rx)
     }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        self.into_stream()
+    }
 }

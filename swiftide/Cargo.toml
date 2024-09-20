@@ -14,10 +14,10 @@ homepage.workspace = true
 
 [dependencies]
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.9" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.9" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.9" }
-swiftide-query = { path = "../swiftide-query", version = "0.9" }
+swiftide-core = { path = "../swiftide-core", version = "0.12" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.12" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.12" }
+swiftide-query = { path = "../swiftide-query", version = "0.12" }
 
 [features]
 default = []
@@ -33,7 +33,7 @@ all = [
   "ollama",
 ]
 # Qdrant for storage
-qdrant = ["swiftide-integrations/qdrant"]
+qdrant = ["swiftide-integrations/qdrant", "swiftide-core/qdrant"]
 # Redis for caching and storage
 redis = ["swiftide-integrations/redis"]
 # Tree-sitter for code operations and chunking
@@ -57,6 +57,8 @@ aws-bedrock = ["swiftide-integrations/aws-bedrock"]
 lancedb = ["swiftide-integrations/lancedb"]
 # Fluvio loader
 fluvio = ["swiftide-integrations/fluvio"]
+# Parquet loader
+parquet = ["swiftide-integrations/parquet"]
 
 # Testing, internal only
 test-utils = []

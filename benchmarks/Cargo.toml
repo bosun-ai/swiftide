@@ -19,7 +19,7 @@ serde_json = { workspace = true }
 criterion = { version = "0.5.1", features = [
   "html_reports",
   "async_tokio",
-], default_features = false }
+], default-features = false }
 anyhow = { workspace = true }
 futures-util = { workspace = true }
 

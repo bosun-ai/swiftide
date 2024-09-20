@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+
 mod indexing_defaults;
 mod indexing_stream;
 pub mod indexing_traits;
@@ -41,3 +43,5 @@ pub mod prelude;
 
 #[cfg(feature = "test-utils")]
 pub mod test_utils;
+
+pub mod util;

@@ -38,6 +38,10 @@ impl Loader for Fluvio {
 
         swiftide_stream.boxed().into()
     }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        self.into_stream()
+    }
 }
 
 #[cfg(test)]
@@ -84,6 +88,7 @@ mod tests {
                 .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
                     "started successfully",
                 ))
+                .with_wait_for(testcontainers::core::WaitFor::seconds(1))
                 .with_network(NETWORK_NAME)
                 .with_container_name("sc")
                 .with_cmd("./fluvio-run sc --local /fluvio/metadata".split(' '))
@@ -96,6 +101,7 @@ mod tests {
                 .with_wait_for(testcontainers::core::WaitFor::message_on_stdout(
                     "started successfully",
                 ))
+                    .with_wait_for(testcontainers::core::WaitFor::seconds(1))
                 .with_network(NETWORK_NAME)
                 .with_container_name("spu")
                 .with_cmd(format!("./fluvio-run spu -i 5001 -p spu:{SPU_PORT1} -v spu:{SPU_PORT2} --sc-addr sc:9004 --log-base-dir /fluvio/data").split(' '))

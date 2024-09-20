@@ -35,7 +35,7 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors<'_> {
     fn try_into(self) -> Result<qdrant::PointStruct> {
         let node = self.node;
         // Calculate a unique identifier for the node.
-        let id = node.calculate_hash();
+        let id = node.id();
 
         // Extend the metadata with additional information.
         // TODO: The node is already cloned in the `NodeWithVectors` constructor.
@@ -50,8 +50,8 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors<'_> {
             .collect::<HashMap<String, Value>>()
             .into();
 
-        payload.insert("path", Value::from(node.path.to_string_lossy().to_string()));
-        payload.insert("content", Value::from(node.chunk.clone()));
+        payload.insert("path", node.path.to_string_lossy().to_string());
+        payload.insert("content", node.chunk.clone());
         payload.insert(
             "last_updated_at",
             Value::from(chrono::Utc::now().to_rfc3339()),
@@ -64,7 +64,7 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors<'_> {
             try_create_vectors(&self.vector_fields, vectors, node.sparse_vectors.clone())?;
 
         // Construct the `qdrant::PointStruct` and return it.
-        Ok(qdrant::PointStruct::new(id, vectors, payload))
+        Ok(qdrant::PointStruct::new(id.to_string(), vectors, payload))
     }
 }
 
@@ -121,8 +121,10 @@ mod tests {
 
     use crate::qdrant::indexing_node::NodeWithVectors;
 
+    static EXPECTED_UUID: &str = "d42d252d-671d-37ef-a157-8e85d0710610";
+
     #[test_case(
-        Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
+        Node { id: None, path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
             original_size: 4,
             offset: 0,
@@ -131,7 +133,7 @@ mod tests {
             ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]),
@@ -140,7 +142,7 @@ mod tests {
         "Node with single vector creates struct with unnamed vector"
     )]
     #[test_case(
-        Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
+        Node { id: None, path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
@@ -152,7 +154,7 @@ mod tests {
             ..Default::default()
         },
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
-        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1"))]),
@@ -168,7 +170,7 @@ mod tests {
         "Node with multiple vectors creates struct with named vectors"
     )]
     #[test_case(
-        Node { id: Some(1), path: "/path".into(), chunk: "data".into(),
+        Node { id: None, path: "/path".into(), chunk: "data".into(),
             vectors: Some(HashMap::from([
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Combined, vec![1.0]),
@@ -182,7 +184,7 @@ mod tests {
             ..Default::default()
         },
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(6_516_159_902_038_153_111)), payload: HashMap::from([
+        PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
             ("path".into(), Value::from("/path")),
             ("m1".into(), Value::from("mv1")),

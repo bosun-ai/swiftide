@@ -89,7 +89,7 @@ impl BatchableTransformer for Embed {
         // Embeddings vectors of every node stored in order of processed nodes.
         let mut embeddings = match self.embed_model.embed(embeddables_data).await {
             Ok(embeddngs) => VecDeque::from(embeddngs),
-            Err(err) => return IndexingStream::iter(Err(err)),
+            Err(err) => return err.into(),
         };
 
         // Iterator of nodes with embeddings vectors map.
@@ -280,5 +280,24 @@ mod tests {
                 .expect("Is OK");
             debug_assert_eq!(ingested_node, expected_node);
         }
+    }
+
+    #[tokio::test]
+    async fn test_returns_error_properly_if_embed_fails() {
+        let test_nodes = vec![Node::new("chunk")];
+        let mut model_mock = MockEmbeddingModel::new();
+        model_mock
+            .expect_embed()
+            .times(1)
+            .returning(|_| Err(anyhow::anyhow!("error")));
+        let embed = Embed::new(model_mock);
+        let mut stream = embed.batch_transform(test_nodes).await;
+        let error = stream
+            .next()
+            .await
+            .expect("IngestionStream has same length as expected_nodes")
+            .expect_err("Is Err");
+
+        assert_eq!(error.to_string(), "error");
     }
 }

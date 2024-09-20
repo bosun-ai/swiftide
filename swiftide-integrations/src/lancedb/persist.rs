@@ -3,12 +3,11 @@ use std::sync::Arc;
 use anyhow::Context as _;
 use anyhow::Result;
 use arrow_array::types::Float32Type;
-use arrow_array::types::UInt64Type;
+use arrow_array::types::UInt8Type;
 use arrow_array::types::Utf8Type;
 use arrow_array::Array;
 use arrow_array::FixedSizeListArray;
 use arrow_array::GenericByteArray;
-use arrow_array::PrimitiveArray;
 use arrow_array::RecordBatch;
 use arrow_array::RecordBatchIterator;
 use async_trait::async_trait;
@@ -138,10 +137,14 @@ impl LanceDB {
                 FieldConfig::ID => {
                     let mut row = Vec::with_capacity(nodes.len());
                     for node in nodes {
-                        let data = Some(node.calculate_hash());
+                        let data = Some(node.id().as_bytes().map(Some));
                         row.push(data);
                     }
-                    batches.push(Arc::new(PrimitiveArray::<UInt64Type>::from_iter(row)));
+                    batches.push(Arc::new(FixedSizeListArray::from_iter_primitive::<
+                        UInt8Type,
+                        _,
+                        _,
+                    >(row, 16)));
                 }
             }
         }

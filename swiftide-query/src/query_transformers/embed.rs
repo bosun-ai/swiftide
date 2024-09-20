@@ -21,7 +21,7 @@ impl Embed {
 
 #[async_trait]
 impl TransformQuery for Embed {
-    #[tracing::instrument]
+    #[tracing::instrument(skip_all)]
     async fn transform_query(
         &self,
         mut query: Query<states::Pending>,

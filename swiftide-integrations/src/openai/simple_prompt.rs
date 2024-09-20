@@ -3,7 +3,7 @@
 //! and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, SimplePrompt};
+use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
 
 use super::OpenAI;
 use anyhow::{Context as _, Result};
@@ -44,26 +44,33 @@ impl SimplePrompt for OpenAI {
 
         // Log the request for debugging purposes.
         tracing::debug!(
-            messages = serde_json::to_string_pretty(&request)?,
+            messages = debug_long_utf8(
+                serde_json::to_string_pretty(&request.messages.first())?,
+                100
+            ),
             "[SimplePrompt] Request to openai"
         );
 
         // Send the request to the OpenAI API and await the response.
-        let mut response = self.client.chat().create(request).await?;
-
-        // Log the response for debugging purposes.
-        tracing::debug!(
-            response = serde_json::to_string_pretty(&response)?,
-            "[SimplePrompt] Response from openai"
-        );
-
-        // Extract and return the content of the response, returning an error if not found.
-        response
+        let response = self
+            .client
+            .chat()
+            .create(request)
+            .await?
             .choices
             .remove(0)
             .message
             .content
             .take()
-            .context("Expected content in response")
+            .context("Expected content in response")?;
+
+        // Log the response for debugging purposes.
+        tracing::debug!(
+            response = debug_long_utf8(&response, 100),
+            "[SimplePrompt] Response from openai"
+        );
+
+        // Extract and return the content of the response, returning an error if not found.
+        Ok(response)
     }
 }

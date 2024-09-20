@@ -1,21 +1,8 @@
 use derive_builder::Builder;
 
-const DEFAULT_TOP_K: u64 = 10;
-const DEFAULT_TOP_N: u64 = 10;
-
-/// Search strategies provide a generic way for Retrievers to implement their
-/// search in various ways.
-///
-/// The strategy is also yielded to the Retriever and can contain addition configuration
 use crate::{indexing::EmbeddedField, querying};
 
-/// A very simple search where it takes the embedding on the current query
-/// and returns `top_k` documents.
-#[derive(Debug, Clone, Copy)]
-pub struct SimilaritySingleEmbedding {
-    /// Maximum number of documents to return
-    top_k: u64,
-}
+use super::{DEFAULT_TOP_K, DEFAULT_TOP_N};
 
 /// A hybrid search strategy that combines a similarity search with a
 /// keyword search / sparse search.
@@ -40,6 +27,8 @@ pub struct HybridSearch {
     #[builder(default)]
     sparse_vector_field: EmbeddedField,
 }
+
+impl querying::SearchStrategy for HybridSearch {}
 
 impl Default for HybridSearch {
     fn default() -> Self {
@@ -103,28 +92,3 @@ impl HybridSearch {
         &self.sparse_vector_field
     }
 }
-
-impl Default for SimilaritySingleEmbedding {
-    fn default() -> Self {
-        Self {
-            top_k: DEFAULT_TOP_K,
-        }
-    }
-}
-
-impl SimilaritySingleEmbedding {
-    /// Set the maximum amount of documents to be returned
-    pub fn with_top_k(&mut self, top_k: u64) -> &mut Self {
-        self.top_k = top_k;
-
-        self
-    }
-
-    /// Returns the maximum of documents to be returned
-    pub fn top_k(&self) -> u64 {
-        self.top_k
-    }
-}
-
-impl querying::SearchStrategy for SimilaritySingleEmbedding {}
-impl querying::SearchStrategy for HybridSearch {}

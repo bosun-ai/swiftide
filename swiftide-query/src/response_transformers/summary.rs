@@ -70,7 +70,7 @@ fn default_prompt() -> PromptTemplate {
 
 #[async_trait]
 impl TransformResponse for Summary {
-    #[tracing::instrument]
+    #[tracing::instrument(skip_all)]
     async fn transform_response(
         &self,
         mut query: Query<states::Retrieved>,

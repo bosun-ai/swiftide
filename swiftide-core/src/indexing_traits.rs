@@ -29,6 +29,31 @@ pub trait Transformer: Send + Sync {
     fn concurrency(&self) -> Option<usize> {
         None
     }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl Transformer for Box<dyn Transformer> {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
+        self.as_ref().transform_node(node).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        self.as_ref().concurrency()
+    }
+}
+
+#[async_trait]
+impl Transformer for &dyn Transformer {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
+        (*self).transform_node(node).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        (*self).concurrency()
+    }
 }
 
 #[async_trait]
@@ -53,6 +78,11 @@ pub trait BatchableTransformer: Send + Sync {
     fn concurrency(&self) -> Option<usize> {
         None
     }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
 }
 
 #[async_trait]
@@ -66,10 +96,70 @@ where
     }
 }
 
+#[async_trait]
+impl BatchableTransformer for Box<dyn BatchableTransformer> {
+    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+        self.as_ref().batch_transform(nodes).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        self.as_ref().concurrency()
+    }
+}
+
+#[async_trait]
+impl BatchableTransformer for &dyn BatchableTransformer {
+    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+        (*self).batch_transform(nodes).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        (*self).concurrency()
+    }
+}
+
 /// Starting point of a stream
 #[cfg_attr(feature = "test-utils", automock, doc(hidden))]
 pub trait Loader {
     fn into_stream(self) -> IndexingStream;
+
+    /// Intended for use with Box<dyn Loader>
+    ///
+    /// Only needed if you use trait objects (Box<dyn Loader>)
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    ///    self.into_stream()
+    ///  }
+    /// ```
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        unimplemented!("Please implement into_stream_boxed for your loader, it needs to be implemented on the concrete type")
+    }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+impl Loader for Box<dyn Loader> {
+    fn into_stream(self) -> IndexingStream {
+        Loader::into_stream_boxed(self)
+    }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        Loader::into_stream(*self)
+    }
+}
+
+impl Loader for &dyn Loader {
+    fn into_stream(self) -> IndexingStream {
+        Loader::into_stream_boxed(Box::new(self))
+    }
+
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        Loader::into_stream(*self)
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock, doc(hidden))]
@@ -82,6 +172,31 @@ pub trait ChunkerTransformer: Send + Sync + Debug {
     fn concurrency(&self) -> Option<usize> {
         None
     }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl ChunkerTransformer for Box<dyn ChunkerTransformer> {
+    async fn transform_node(&self, node: Node) -> IndexingStream {
+        self.as_ref().transform_node(node).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        self.as_ref().concurrency()
+    }
+}
+
+#[async_trait]
+impl ChunkerTransformer for &dyn ChunkerTransformer {
+    async fn transform_node(&self, node: Node) -> IndexingStream {
+        (*self).transform_node(node).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        (*self).concurrency()
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
@@ -93,6 +208,31 @@ pub trait ChunkerTransformer: Send + Sync + Debug {
 pub trait NodeCache: Send + Sync + Debug {
     async fn get(&self, node: &Node) -> bool;
     async fn set(&self, node: &Node);
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl NodeCache for Box<dyn NodeCache> {
+    async fn get(&self, node: &Node) -> bool {
+        self.as_ref().get(node).await
+    }
+    async fn set(&self, node: &Node) {
+        self.as_ref().set(node).await;
+    }
+}
+
+#[async_trait]
+impl NodeCache for &dyn NodeCache {
+    async fn get(&self, node: &Node) -> bool {
+        (*self).get(node).await
+    }
+    async fn set(&self, node: &Node) {
+        (*self).set(node).await;
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
@@ -101,6 +241,25 @@ pub trait NodeCache: Send + Sync + Debug {
 /// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync + Debug {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl EmbeddingModel for Box<dyn EmbeddingModel> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+        self.as_ref().embed(input).await
+    }
+}
+
+#[async_trait]
+impl EmbeddingModel for &dyn EmbeddingModel {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+        (*self).embed(input).await
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
@@ -109,6 +268,25 @@ pub trait EmbeddingModel: Send + Sync + Debug {
 /// Assumes the strings will be moved.
 pub trait SparseEmbeddingModel: Send + Sync + Debug {
     async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
+    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+        self.as_ref().sparse_embed(input).await
+    }
+}
+
+#[async_trait]
+impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
+    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+        (*self).sparse_embed(input).await
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
@@ -117,6 +295,25 @@ pub trait SparseEmbeddingModel: Send + Sync + Debug {
 pub trait SimplePrompt: Debug + Send + Sync {
     // Takes a simple prompt, prompts the llm and returns the response
     async fn prompt(&self, prompt: Prompt) -> Result<String>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl SimplePrompt for Box<dyn SimplePrompt> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+        self.as_ref().prompt(prompt).await
+    }
+}
+
+#[async_trait]
+impl SimplePrompt for &dyn SimplePrompt {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+        (*self).prompt(prompt).await
+    }
 }
 
 #[cfg_attr(feature = "test-utils", automock)]
@@ -128,6 +325,43 @@ pub trait Persist: Debug + Send + Sync {
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream;
     fn batch_size(&self) -> Option<usize> {
         None
+    }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[async_trait]
+impl Persist for Box<dyn Persist> {
+    async fn setup(&self) -> Result<()> {
+        self.as_ref().setup().await
+    }
+    async fn store(&self, node: Node) -> Result<Node> {
+        self.as_ref().store(node).await
+    }
+    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+        self.as_ref().batch_store(nodes).await
+    }
+    fn batch_size(&self) -> Option<usize> {
+        self.as_ref().batch_size()
+    }
+}
+
+#[async_trait]
+impl Persist for &dyn Persist {
+    async fn setup(&self) -> Result<()> {
+        (*self).setup().await
+    }
+    async fn store(&self, node: Node) -> Result<Node> {
+        (*self).store(node).await
+    }
+    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+        (*self).batch_store(nodes).await
+    }
+    fn batch_size(&self) -> Option<usize> {
+        (*self).batch_size()
     }
 }
 
@@ -144,7 +378,17 @@ pub trait WithBatchIndexingDefaults {
 }
 
 impl WithIndexingDefaults for dyn Transformer {}
+impl WithIndexingDefaults for Box<dyn Transformer> {
+    fn with_indexing_defaults(&mut self, indexing_defaults: IndexingDefaults) {
+        self.as_mut().with_indexing_defaults(indexing_defaults);
+    }
+}
 impl WithBatchIndexingDefaults for dyn BatchableTransformer {}
+impl WithBatchIndexingDefaults for Box<dyn BatchableTransformer> {
+    fn with_indexing_defaults(&mut self, indexing_defaults: IndexingDefaults) {
+        self.as_mut().with_indexing_defaults(indexing_defaults);
+    }
+}
 
 impl<F> WithIndexingDefaults for F where F: Fn(Node) -> Result<Node> {}
 impl<F> WithBatchIndexingDefaults for F where F: Fn(Vec<Node>) -> IndexingStream {}

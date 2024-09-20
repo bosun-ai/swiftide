@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.9" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.9" }
+swiftide-core = { path = "../swiftide-core", version = "0.12" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.12" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -34,18 +34,18 @@ async-openai = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
 ] }
-redis = { version = "0.26", features = [
+redis = { version = "0.27", features = [
   "aio",
   "tokio-comp",
   "connection-manager",
   "tokio-rustls-comp",
 ], optional = true }
-tree-sitter = { version = "0.22", optional = true }
-tree-sitter-rust = { version = "0.21", optional = true }
-tree-sitter-python = { version = "0.21", optional = true }
-tree-sitter-ruby = { version = "0.21", optional = true }
-tree-sitter-typescript = { version = "0.21", optional = true }
-tree-sitter-javascript = { version = "0.21", optional = true }
+tree-sitter = { version = "0.23", optional = true }
+tree-sitter-rust = { version = "0.23", optional = true }
+tree-sitter-python = { version = "0.23", optional = true }
+tree-sitter-ruby = { version = "0.23", optional = true }
+tree-sitter-typescript = { version = "0.23", optional = true }
+tree-sitter-javascript = { version = "0.23", optional = true }
 fastembed = { version = "4.0", optional = true }
 spider = { workspace = true, optional = true }
 htmd = { version = "0.1", optional = true }
@@ -60,7 +60,7 @@ aws-sdk-bedrockruntime = { version = "1.37", features = [
 ], optional = true }
 secrecy = { version = "0.8.0", optional = true }
 reqwest = { version = "0.12.5", optional = true, default-features = false }
-ollama-rs = { version = "0.2.0", optional = true }
+ollama-rs = { version = "0.2.1", optional = true }
 deadpool = { version = "0.12", optional = true, features = [
   "managed",
   "rt_tokio_1",
@@ -68,9 +68,21 @@ deadpool = { version = "0.12", optional = true, features = [
 fluvio = { workspace = true, optional = true }
 arrow-array = { workspace = true, optional = true }
 lancedb = { workspace = true, optional = true }
+parquet = { workspace = true, optional = true, features = [
+  "async",
+  "arrow",
+  "snap",
+] }
+arrow = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-test-utils = { path = "../swiftide-test-utils", features = [
+  "test-utils",
+] }
+temp-dir = { workspace = true }
+
+arrow = { workspace = true, features = ["test_utils"] }
 
 # Used for hacking fluv to play nice
 flv-util = "0.5.2"
@@ -87,7 +99,7 @@ default = ["rustls"]
 # Ensures rustls is used
 rustls = ["reqwest/rustls-tls-native-roots"]
 # Qdrant for storage
-qdrant = ["dep:qdrant-client"]
+qdrant = ["dep:qdrant-client", "swiftide-core/qdrant"]
 # Redis for caching and storage
 redis = ["dep:redis"]
 # Tree-sitter for code operations and chunking
@@ -118,6 +130,8 @@ aws-bedrock = [
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
+# Paruqet loader
+parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 
 [lints]
 workspace = true

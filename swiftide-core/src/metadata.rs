@@ -7,9 +7,30 @@ use std::collections::{btree_map::IntoValues, BTreeMap};
 
 use serde::Deserializer;
 
-#[derive(Debug, Clone, Default, PartialEq)]
+use crate::util::debug_long_utf8;
+
+#[derive(Clone, Default, PartialEq)]
 pub struct Metadata {
     inner: BTreeMap<String, serde_json::Value>,
+}
+
+impl std::fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_map()
+            .entries(
+                self.inner
+                    .iter()
+                    .map(|(k, v): (&String, &serde_json::Value)| {
+                        let fvalue = v.as_str().map_or_else(
+                            || debug_long_utf8(v.to_string(), 100),
+                            ToString::to_string,
+                        );
+
+                        (k, fvalue)
+                    }),
+            )
+            .finish()
+    }
 }
 
 impl Metadata {
@@ -52,6 +73,21 @@ where
 {
     fn from(items: Vec<(K, V)>) -> Self {
         let inner = items
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
+        Metadata { inner }
+    }
+}
+
+impl<K, V> From<(K, V)> for Metadata
+where
+    K: Into<String>,
+    V: Into<serde_json::Value>,
+{
+    fn from(items: (K, V)) -> Self {
+        let sliced: [(K, V); 1] = [items];
+        let inner = sliced
             .into_iter()
             .map(|(k, v)| (k.into(), v.into()))
             .collect();

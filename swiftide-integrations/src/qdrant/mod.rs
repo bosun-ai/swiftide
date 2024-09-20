@@ -53,9 +53,9 @@ pub struct Qdrant {
     #[builder(default)]
     batch_size: Option<usize>,
     #[builder(private, default = "Self::default_vectors()")]
-    vectors: HashMap<EmbeddedField, VectorConfig>,
+    pub(crate) vectors: HashMap<EmbeddedField, VectorConfig>,
     #[builder(private, default)]
-    sparse_vectors: HashMap<EmbeddedField, SparseVectorConfig>,
+    pub(crate) sparse_vectors: HashMap<EmbeddedField, SparseVectorConfig>,
 }
 
 impl Qdrant {
@@ -191,8 +191,8 @@ impl QdrantBuilder {
     /// Configures a dense vector on the collection
     ///
     /// When not configured Pipeline by default configures vector only for [`EmbeddedField::Combined`]
-    /// Default config is enough when [`swiftide::indexing::Pipeline::with_embed_mode`] is not set
-    /// or when the value is set to [`swiftide::indexing::EmbedMode::SingleWithMetadata`].
+    /// Default config is enough when `indexing::Pipeline::with_embed_mode` is not set
+    /// or when the value is set to [`swiftide_core::indexing::EmbedMode::SingleWithMetadata`].
     #[must_use]
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {

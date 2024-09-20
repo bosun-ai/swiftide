@@ -2,6 +2,135 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.2](https://github.com/bosun-ai/swiftide/releases/tag/0.12.2) - 2024-09-18
+
+### Other
+
+- [d84814e](https://github.com/bosun-ai/swiftide/commit/d84814eef1bf12e485053fb69fb658d963100789) *(uncategorized)* Fix broken documentation links and other cargo doc warnings ([#304](https://github.com/bosun-ai/swiftide/pull/304))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.1...0.12.2
+
+
+
+## [0.12.1](https://github.com/bosun-ai/swiftide/releases/tag/0.12.1) - 2024-09-16
+
+### Added
+
+- [ec227d2](https://github.com/bosun-ai/swiftide/commit/ec227d25b987b7fd63ab1b3862ef19b14632bd04) *(indexing,query)* Add concise info log with transformation name
+
+- [081a248](https://github.com/bosun-ai/swiftide/commit/081a248e67292c1800837315ec53583be5e0cb82) *(query)* Improve query performance similar to indexing in 0.12
+
+- [01cf579](https://github.com/bosun-ai/swiftide/commit/01cf579922a877bb78e0de20114ade501e5a63db) *(query)* Add query_mut for reusable query pipelines
+
+- [8029926](https://github.com/bosun-ai/swiftide/commit/80299269054eb440e55a42667a7bcc9ba6514a7b) *(query,indexing)* Add duration in log output on pipeline completion
+
+### Fixed
+
+- [d62b047](https://github.com/bosun-ai/swiftide/commit/d62b0478872e460956607f52b72470b76eb32d91) *(ci)* Update testcontainer images and fix tests
+
+- [39b6ecb](https://github.com/bosun-ai/swiftide/commit/39b6ecb6175e5233b129f94876f95182b8bfcdc3) *(core)* Truncate long strings safely when printing debug logs
+
+- [16e9c74](https://github.com/bosun-ai/swiftide/commit/16e9c7455829100b9ae82305e5a1d2568264af9f) *(openai)* Reduce debug verbosity
+
+- [6914d60](https://github.com/bosun-ai/swiftide/commit/6914d607717294467cddffa867c3d25038243fc1) *(qdrant)* Reduce debug verbosity when storing nodes
+
+- [3d13889](https://github.com/bosun-ai/swiftide/commit/3d1388973b5e2a135256ae288d47dbde0399487f) *(query)* Reduce and improve debugging verbosity
+
+- [133cf1d](https://github.com/bosun-ai/swiftide/commit/133cf1d0be09049ca3e90b45675a965bb2464cb2) *(query)* Remove verbose debug and skip self in instrumentation
+
+- [a871c61](https://github.com/bosun-ai/swiftide/commit/a871c61ad52ed181d6f9cb6a66ed07bccaadee08) *(uncategorized)* Fmt
+
+- [ce17981](https://github.com/bosun-ai/swiftide/commit/ce179819ab75460453236723c7f9a89fd61fb99a) *(uncategorized)* Clippy
+
+### Other
+
+- [214ee8d](https://github.com/bosun-ai/swiftide/commit/214ee8d2850f61c275fe5b743ba63ae8acb618ec) *(readme)* Add link to latest release post
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.0...0.12.1
+
+
+
+## [0.12.0](https://github.com/bosun-ai/swiftide/releases/tag/0.12.0) - 2024-09-13
+
+### Added
+
+- [e902cb7](https://github.com/bosun-ai/swiftide/commit/e902cb7487221d3e88f13d88532da081e6ef8611) *(query)* Add support for filters in SimilaritySingleEmbedding ([#298](https://github.com/bosun-ai/swiftide/pull/298))
+
+- [f158960](https://github.com/bosun-ai/swiftide/commit/f1589604d1e0cb42a07d5a48080e3d7ecb90ee38) *(uncategorized)* Major performance improvements ([#291](https://github.com/bosun-ai/swiftide/pull/291))
+
+### Fixed
+
+- [45d8a57](https://github.com/bosun-ai/swiftide/commit/45d8a57d1afb4f16ad76b15236308d753cf45743) *(ci)* Use llm-cov preview via nightly and improve test coverage ([#289](https://github.com/bosun-ai/swiftide/pull/289))
+
+- [501dd39](https://github.com/bosun-ai/swiftide/commit/501dd391aed6fe6bdec1a2baeba114489604f153) *(deps)* Update rust crate redis to 0.27 ([#294](https://github.com/bosun-ai/swiftide/pull/294))
+
+- [f95f806](https://github.com/bosun-ai/swiftide/commit/f95f806a0701b14a3cad5da307c27c01325a264d) *(indexing)* Debugging nodes should respect utf8 char boundaries
+
+- [f8314cc](https://github.com/bosun-ai/swiftide/commit/f8314ccdbe16ad7e6691899dd01f81a61b20180f) *(indexing)* Limit logged chunk to max 100 chars ([#292](https://github.com/bosun-ai/swiftide/pull/292))
+
+- [9464ca1](https://github.com/bosun-ai/swiftide/commit/9464ca123f08d8dfba3f1bfabb57e9af97018534) *(uncategorized)* Bad embed error propagation ([#293](https://github.com/bosun-ai/swiftide/pull/293))
+
+- [8595553](https://github.com/bosun-ai/swiftide/commit/859555334d7e4129215b9f084d9f9840fac5ce36) *(uncategorized)* Implement into_stream_boxed for all loaders
+
+### Other
+
+- [37c4bd9](https://github.com/bosun-ai/swiftide/commit/37c4bd9f9ac97646adb2c4b99b8f7bf0bee4c794) *(deps)* Update treesitter ([#296](https://github.com/bosun-ai/swiftide/pull/296))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.11.1...0.12.0
+
+
+
+## [0.11.1](https://github.com/bosun-ai/swiftide/releases/tag/0.11.1) - 2024-09-10
+
+### Fixed
+
+- [dfa546b](https://github.com/bosun-ai/swiftide/commit/dfa546b310e71a7cb78a927cc8f0ee4e2046a592) *(uncategorized)* Add missing parquet feature flag
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.11.0...0.11.1
+
+
+
+## [0.11.0](https://github.com/bosun-ai/swiftide/releases/tag/0.11.0) - 2024-09-08
+
+### Added
+
+- [bdf17ad](https://github.com/bosun-ai/swiftide/commit/bdf17adf5d3addc84aaf45ad893b816cb46431e3) *(indexing)* Parquet loader ([#279](https://github.com/bosun-ai/swiftide/pull/279))
+
+- [a98dbcb](https://github.com/bosun-ai/swiftide/commit/a98dbcb455d33f0537cea4d3614da95f1a4b6554) *(integrations)* Add ollama embeddings support ([#278](https://github.com/bosun-ai/swiftide/pull/278))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.10.0...0.11.0
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.10.0](https://github.com/bosun-ai/swiftide/releases/tag/0.10.0) - 2024-09-06
+
+BREAKING CHANGE: Indexing nodes now have their ID calculated using UUIDv3 via MD5 as the previous algorithm was unreliable and broke in 1.81. Added benefit that collision chance is even smaller. This means that when indexing again, nodes will have different IDs and upsert will not work. Backwards compatibility is non-trivial. If this is a huge issue, ping us on discord and we will look into it.
+
+### Added
+
+- [57fe4aa](https://github.com/bosun-ai/swiftide/commit/57fe4aa73b1b98dd8eac87c6440e0f2a0c66d4e8) *(indexing)* Use UUIDv3 for indexing node ids ([#277](https://github.com/bosun-ai/swiftide/pull/277))
+
+### Fixed
+
+- [5a724df](https://github.com/bosun-ai/swiftide/commit/5a724df895d35cfa606721d611afd073a23191de) *(uncategorized)* Rust 1.81 support ([#275](https://github.com/bosun-ai/swiftide/pull/275))
+
+### Other
+
+- [3711f6f](https://github.com/bosun-ai/swiftide/commit/3711f6fb2b51e97e4606b744cc963c04b44b6963) *(readme)* Fix date ([#273](https://github.com/bosun-ai/swiftide/pull/273))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.9.2...0.10.0
+
+
+
 ## [0.9.2](https://github.com/bosun-ai/swiftide/releases/tag/0.9.2) - 2024-09-04
 
 ### Added

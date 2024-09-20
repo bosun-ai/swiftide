@@ -1,10 +1,10 @@
 use anyhow::Result;
-use futures_util::{StreamExt, TryStreamExt};
+use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
     indexing::IndexingDefaults, BatchableTransformer, ChunkerTransformer, Loader, NodeCache,
     Persist, SimplePrompt, Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
 };
-use tokio::sync::mpsc;
+use tokio::{sync::mpsc, task};
 use tracing::Instrument;
 
 use std::{sync::Arc, time::Duration};
@@ -22,7 +22,6 @@ use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
 ///
-/// ```
 pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
@@ -103,7 +102,7 @@ impl Pipeline {
     /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a [`Node`]
     /// be embedded with a vector when transforming with [`crate::transformers::Embed`]
     ///
-    /// See also [`swiftide::indexing::EmbedMode`].
+    /// See also [`swiftide_core::indexing::EmbedMode`].
     ///
     /// # Arguments
     ///
@@ -145,11 +144,11 @@ impl Pipeline {
                     tracing::trace_span!("filter_cached", node_cache = ?cache, node = ?node );
                 async move {
                     if cache.get(&node).await {
-                        tracing::debug!("Node in cache, skipping");
+                        tracing::debug!(node = ?node, node_cache = cache.name(), "Node in cache, skipping");
                         Ok(None)
                     } else {
                         cache.set(&node).await;
-                        tracing::debug!("Node not in cache, passing through");
+                        tracing::debug!(node = ?node, node_cache = cache.name(), "Node not in cache, processing");
                         Ok(Some(node))
                     }
                 }
@@ -185,15 +184,17 @@ impl Pipeline {
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
-                let span = tracing::trace_span!("then", node = ?node );
+                let span = tracing::trace_span!("then", node = ?node);
 
-                async move {
-                    tracing::debug!(?node, "Transforming node");
+                task::spawn(async move {
+                    tracing::debug!(node = ?node, transformer = transformer.name(), "Transforming node");
                     transformer.transform_node(node).await
-                }
+                })
                 .instrument(span)
+                .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(concurrency)
+            .map(|x| x.and_then(|x| x))
             .boxed()
             .into();
 
@@ -230,14 +231,20 @@ impl Pipeline {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
 
-                async move {
-                    tracing::debug!(num_nodes = nodes.len(), "Batch transforming nodes");
-                    Ok(transformer.batch_transform(nodes).await)
-                }
+                tokio::spawn(async move {
+                    tracing::debug!(
+                        batch_transformer = transformer.name(),
+                        num_nodes = nodes.len(),
+                        "Batch transforming nodes"
+                    );
+                    transformer.batch_transform(nodes).await
+                })
                 .instrument(span)
+                .map_err(anyhow::Error::from)
             })
+            .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency) // First get the streams from each future
-            .try_flatten_unordered(concurrency) // Then flatten all the streams back into one
+            .try_flatten_unordered(None) // Then flatten all the streams back into one
             .boxed()
             .into();
         self
@@ -262,14 +269,16 @@ impl Pipeline {
                 let chunker = Arc::clone(&chunker);
                 let span = tracing::trace_span!("then_chunk", chunker = ?chunker, node = ?node );
 
-                async move {
-                    tracing::debug!(?node, "Chunking node");
-                    Ok(chunker.transform_node(node).await)
-                }
+                tokio::spawn(async move {
+                    tracing::debug!(chunker = chunker.name(), "Chunking node");
+                    chunker.transform_node(node).await
+                })
                 .instrument(span)
+                .map_err(anyhow::Error::from)
             })
+            .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
-            .try_flatten_unordered(concurrency)
+            .try_flatten_unordered(None)
             .boxed()
             .into();
 
@@ -303,12 +312,17 @@ impl Pipeline {
                     let storage = Arc::clone(&storage);
                     let span = tracing::trace_span!("then_store_with_batched", storage = ?storage, nodes = ?nodes );
 
-                    async move {
-                        tracing::debug!(num_nodes = nodes.len(), "Batch storing nodes");
-                        Ok(storage.batch_store(nodes).await) }.instrument(span)
+                tokio::spawn(async move {
+                        tracing::debug!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
+                        storage.batch_store(nodes).await
+                    })
+                    .instrument(span)
+                    .map_err(anyhow::Error::from)
+
                 })
+                .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
-                .try_flatten_unordered(self.concurrency)
+                .try_flatten_unordered(None)
                 .boxed().into();
         } else {
             self.stream = self
@@ -318,14 +332,16 @@ impl Pipeline {
                     let span =
                         tracing::trace_span!("then_store_with", storage = ?storage, node = ?node );
 
-                    async move {
-                        tracing::debug!(?node, "Storing node");
+                    tokio::spawn(async move {
+                        tracing::debug!(storage = storage.name(), "Storing node");
 
                         storage.store(node).await
-                    }
+                    })
+                    .err_into::<anyhow::Error>()
                     .instrument(span)
                 })
                 .try_buffer_unordered(self.concurrency)
+                .map(|x| x.and_then(|x| x))
                 .boxed()
                 .into();
         }
@@ -520,6 +536,7 @@ impl Pipeline {
             "Starting indexing pipeline with {} concurrency",
             self.concurrency
         );
+        let now = std::time::Instant::now();
         if self.storage.is_empty() {
             anyhow::bail!("No storage configured for indexing pipeline");
         }
@@ -537,7 +554,13 @@ impl Pipeline {
             total_nodes += 1;
         }
 
-        tracing::warn!("Processed {} nodes", total_nodes);
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            elapsed_in_seconds,
+            "Processed {} nodes in {} seconds",
+            total_nodes,
+            elapsed_in_seconds
+        );
         tracing::Span::current().record("total_nodes", total_nodes);
 
         Ok(())
@@ -574,6 +597,7 @@ mod tests {
             Ok(node)
         });
         transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "transformer");
 
         batch_transformer
             .expect_batch_transform()
@@ -581,6 +605,7 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|nodes| IndexingStream::iter(nodes.into_iter().map(Ok)));
         batch_transformer.expect_concurrency().returning(|| None);
+        batch_transformer.expect_name().returning(|| "transformer");
 
         chunker
             .expect_transform_node()
@@ -596,6 +621,7 @@ mod tests {
                 nodes.into()
             });
         chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "chunker");
 
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
@@ -605,6 +631,7 @@ mod tests {
             .in_sequence(&mut seq)
             .withf(|node| node.chunk.starts_with("transformed_chunk_"))
             .returning(Ok);
+        storage.expect_name().returning(|| "storage");
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
@@ -667,9 +694,11 @@ mod tests {
                 Ok(node)
             });
         transformer.expect_concurrency().returning(|| Some(3));
+        transformer.expect_name().returning(|| "transformer");
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
         storage.expect_store().times(3).returning(Ok);
+        storage.expect_name().returning(|| "storage");
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
@@ -824,5 +853,43 @@ mod tests {
                 .count(),
             2
         );
+    }
+
+    #[tokio::test]
+    async fn test_all_steps_should_work_as_dyn_box() {
+        let mut loader = MockLoader::new();
+        loader
+            .expect_into_stream_boxed()
+            .returning(|| vec![Ok(Node::default())].into());
+
+        let mut transformer = MockTransformer::new();
+        transformer.expect_transform_node().returning(Ok);
+        transformer.expect_concurrency().returning(|| None);
+
+        let mut batch_transformer = MockBatchableTransformer::new();
+        batch_transformer
+            .expect_batch_transform()
+            .returning(std::convert::Into::into);
+        batch_transformer.expect_concurrency().returning(|| None);
+        let mut chunker = MockChunkerTransformer::new();
+        chunker
+            .expect_transform_node()
+            .returning(|node| vec![node].into());
+        chunker.expect_concurrency().returning(|| None);
+
+        let mut storage = MockPersist::new();
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_store().returning(Ok);
+        storage.expect_batch_size().returning(|| None);
+
+        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader>)
+            .then(Box::new(transformer) as Box<dyn Transformer>)
+            .then_in_batch(
+                1,
+                Box::new(batch_transformer) as Box<dyn BatchableTransformer>,
+            )
+            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
+            .then_store_with(Box::new(storage) as Box<dyn Persist>);
+        pipeline.run().await.unwrap();
     }
 }

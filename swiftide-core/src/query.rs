@@ -7,7 +7,7 @@
 //! `states::Answered`: The query has been answered
 use derive_builder::Builder;
 
-use crate::{Embedding, SparseEmbedding};
+use crate::{util::debug_long_utf8, Embedding, SparseEmbedding};
 
 type Document = String;
 
@@ -18,7 +18,7 @@ type Document = String;
 /// `states::Pending`: No documents have been retrieved
 /// `states::Retrieved`: Documents have been retrieved
 /// `states::Answered`: The query has been answered
-#[derive(Clone, Default, Builder)]
+#[derive(Clone, Default, Builder, PartialEq)]
 #[builder(setter(into))]
 pub struct Query<State> {
     original: String,
@@ -39,8 +39,8 @@ pub struct Query<State> {
 impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Query")
-            .field("original", &self.original)
-            .field("current", &self.current)
+            .field("original", &debug_long_utf8(&self.original, 100))
+            .field("current", &debug_long_utf8(&self.current, 100))
             .field("state", &self.state)
             .field("transformation_history", &self.transformation_history)
             .field("embedding", &self.embedding.is_some())
@@ -81,6 +81,13 @@ impl<T: Clone> Query<T> {
 }
 
 impl Query<states::Pending> {
+    pub fn new(query: impl Into<String>) -> Self {
+        Self {
+            original: query.into(),
+            ..Default::default()
+        }
+    }
+
     /// Transforms the current query
     pub fn transformed_query(&mut self, new_query: impl Into<String>) {
         let new_query = new_query.into();
@@ -111,6 +118,10 @@ impl Query<states::Pending> {
 }
 
 impl Query<states::Retrieved> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Transforms the current response
     pub fn transformed_response(&mut self, new_response: impl Into<String>) {
         let new_response = new_response.into();
@@ -140,6 +151,10 @@ impl Query<states::Retrieved> {
 }
 
 impl Query<states::Answered> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Returns the answer of the query
     pub fn answer(&self) -> &str {
         &self.state.answer
@@ -148,6 +163,8 @@ impl Query<states::Answered> {
 
 /// States of a query
 pub mod states {
+    use crate::util::debug_long_utf8;
+
     use super::Builder;
     use super::Document;
 
@@ -155,17 +172,42 @@ pub mod states {
     /// The query is pending and has not been used
     pub struct Pending;
 
-    #[derive(Debug, Default, Clone, Builder)]
+    #[derive(Default, Clone, Builder, PartialEq)]
     #[builder(setter(into))]
     /// Documents have been retrieved
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
     }
-    #[derive(Debug, Default, Clone, Builder)]
+
+    impl std::fmt::Debug for Retrieved {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("Retrieved")
+                .field("num_documents", &self.documents.len())
+                .field(
+                    "documents",
+                    &self
+                        .documents
+                        .iter()
+                        .map(|d| debug_long_utf8(d, 100))
+                        .collect::<Vec<_>>(),
+                )
+                .finish()
+        }
+    }
+
+    #[derive(Default, Clone, Builder, PartialEq)]
     #[builder(setter(into))]
     /// The query has been answered
     pub struct Answered {
         pub(crate) answer: String,
+    }
+
+    impl std::fmt::Debug for Answered {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("Answered")
+                .field("answer", &debug_long_utf8(&self.answer, 100))
+                .finish()
+        }
     }
 }
 
@@ -180,8 +222,7 @@ impl<T: AsRef<str>> From<T> for Query<states::Pending> {
     }
 }
 
-#[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 /// Records changes to a query
 pub enum TransformationEvent {
     Transformed {
@@ -193,6 +234,34 @@ pub enum TransformationEvent {
         after: String,
         documents: Vec<Document>,
     },
+}
+
+impl std::fmt::Debug for TransformationEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransformationEvent::Transformed { before, after } => {
+                write!(
+                    f,
+                    "Transformed: {} -> {}",
+                    &debug_long_utf8(before, 100),
+                    &debug_long_utf8(after, 100)
+                )
+            }
+            TransformationEvent::Retrieved {
+                before,
+                after,
+                documents,
+            } => {
+                write!(
+                    f,
+                    "Retrieved: {} -> {}\nDocuments: {:?}",
+                    &debug_long_utf8(before, 100),
+                    &debug_long_utf8(after, 100),
+                    documents.len()
+                )
+            }
+        }
+    }
 }
 
 #[cfg(test)]

@@ -84,6 +84,10 @@ impl IndexingStream {
         }
     }
 
+    /// Creates an `IndexingStream` from an iterator of `Result<Node>`.
+    ///
+    /// WARN: Also works with Err items directly, which will result
+    /// in an _incorrect_ stream
     pub fn iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = Result<Node>> + Send + 'static,

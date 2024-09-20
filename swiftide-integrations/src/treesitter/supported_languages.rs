@@ -73,12 +73,13 @@ impl From<SupportedLanguages> for tree_sitter::Language {
     /// A `tree_sitter::Language` object corresponding to the provided `SupportedLanguages` enum value.
     fn from(val: SupportedLanguages) -> Self {
         match val {
-            SupportedLanguages::Rust => tree_sitter_rust::language(),
-            SupportedLanguages::Python => tree_sitter_python::language(),
-            SupportedLanguages::Typescript => tree_sitter_typescript::language_typescript(),
-            SupportedLanguages::Javascript => tree_sitter_javascript::language(),
-            SupportedLanguages::Ruby => tree_sitter_ruby::language(),
+            SupportedLanguages::Rust => tree_sitter_rust::LANGUAGE,
+            SupportedLanguages::Python => tree_sitter_python::LANGUAGE,
+            SupportedLanguages::Typescript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT,
+            SupportedLanguages::Javascript => tree_sitter_javascript::LANGUAGE,
+            SupportedLanguages::Ruby => tree_sitter_ruby::LANGUAGE,
         }
+        .into()
     }
 }
 

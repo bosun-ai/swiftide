@@ -32,6 +32,8 @@ jobs:
         uses: arduino/setup-protoc@v3
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v1-rust"
       - uses: r7kamura/rust-problem-matchers@v1
       - name: Check typos
         uses: crate-ci/typos@master
@@ -53,6 +55,8 @@ jobs:
         uses: arduino/setup-protoc@v3
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v1-rust"
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Test"
         run: cargo test --all-features --tests
@@ -72,6 +76,8 @@ jobs:
         uses: arduino/setup-protoc@v3
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v1-rust"
       - uses: r7kamura/rust-problem-matchers@v1
       - name: clippy
         run: cargo clippy --workspace --all-features

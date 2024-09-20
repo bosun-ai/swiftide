@@ -13,6 +13,7 @@
 //!
 //! A query pipeline is lazy and only runs when query is called.
 
+use futures_util::TryFutureExt as _;
 use std::sync::Arc;
 use swiftide_core::{
     prelude::*,
@@ -80,22 +81,19 @@ where
 {
     /// Evaluate queries with an evaluator
     #[must_use]
-    pub fn evaluate_with<T: ToOwned<Owned = impl EvaluateQuery + 'stream>>(
-        mut self,
-        evaluator: T,
-    ) -> Self {
-        self.evaluator = Some(Arc::new(Box::new(evaluator.to_owned())));
+    pub fn evaluate_with<T: EvaluateQuery + 'stream>(mut self, evaluator: T) -> Self {
+        self.evaluator = Some(Arc::new(Box::new(evaluator)));
 
         self
     }
 
     /// Transform a query into something else, see [`crate::query_transformers`]
     #[must_use]
-    pub fn then_transform_query<T: ToOwned<Owned = impl TransformQuery + 'stream>>(
+    pub fn then_transform_query<T: TransformQuery + 'stream>(
         self,
         transformer: T,
     ) -> Pipeline<'stream, S, states::Pending> {
-        let transformer = Arc::new(transformer.to_owned());
+        let transformer = Arc::new(transformer);
 
         let Pipeline {
             stream,
@@ -110,9 +108,20 @@ where
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_transform_query", query = ?query);
 
-                async move { transformer.transform_query(query).await }.instrument(span)
+                tokio::spawn(
+                    async move {
+                        tracing::debug!(
+                            query_transformer = transformer.name(),
+                            "Transforming query"
+                        );
+                        transformer.transform_query(query).await
+                    }
+                    .instrument(span),
+                )
+                .err_into::<anyhow::Error>()
             })
-            .try_buffer_unordered(default_concurrency);
+            .try_buffer_unordered(default_concurrency)
+            .map(|x| x.and_then(|x| x));
 
         Pipeline {
             stream: new_stream.boxed().into(),
@@ -150,7 +159,9 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
                 let span = tracing::trace_span!("then_retrieve", query = ?query);
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
-                async move {
+                tokio::spawn(async move {
+                    tracing::debug!(retriever = retriever.name(), "Retrieving documents");
+
                     let result = retriever.retrieve(&search_strategy, query).await?;
 
                     if let Some(evaluator) = evaluator_for_stream.as_ref() {
@@ -159,10 +170,12 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
                     } else {
                         Ok(result)
                     }
-                }
+                })
                 .instrument(span)
+                .err_into::<anyhow::Error>()
             })
-            .try_buffer_unordered(default_concurrency);
+            .try_buffer_unordered(default_concurrency)
+            .map(|x| x.and_then(|x| x));
 
         Pipeline {
             stream: new_stream.boxed().into(),
@@ -177,11 +190,11 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
 impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
     /// Transforms a retrieved query into something else
     #[must_use]
-    pub fn then_transform_response<T: ToOwned<Owned = impl TransformResponse + 'stream>>(
+    pub fn then_transform_response<T: TransformResponse + 'stream>(
         self,
         transformer: T,
     ) -> Pipeline<'stream, S, states::Retrieved> {
-        let transformer = Arc::new(transformer.to_owned());
+        let transformer = Arc::new(transformer);
         let Pipeline {
             stream,
             query_sender,
@@ -194,9 +207,18 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_transform_response", query = ?query);
-                async move { transformer.transform_response(query).await }.instrument(span)
+                tokio::spawn(async move {
+                    tracing::debug!(
+                        response_transformer = transformer.name(),
+                        "Transforming response"
+                    );
+                    transformer.transform_response(query).await
+                })
+                .instrument(span)
+                .err_into::<anyhow::Error>()
             })
-            .try_buffer_unordered(default_concurrency);
+            .try_buffer_unordered(default_concurrency)
+            .map(|x| x.and_then(|x| x));
 
         Pipeline {
             stream: new_stream.boxed().into(),
@@ -211,11 +233,11 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
 impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
     /// Generates an answer based on previous transformations
     #[must_use]
-    pub fn then_answer<T: ToOwned<Owned = impl Answer + 'stream>>(
+    pub fn then_answer<T: Answer + 'stream>(
         self,
         answerer: T,
     ) -> Pipeline<'stream, S, states::Answered> {
-        let answerer = Arc::new(answerer.to_owned());
+        let answerer = Arc::new(answerer);
         let Pipeline {
             stream,
             query_sender,
@@ -231,18 +253,23 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
                 let span = tracing::trace_span!("then_answer", query = ?query);
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
-                async move {
+                tokio::spawn(async move {
+                    tracing::debug!(answerer = answerer.name(), "Answering query");
                     let result = answerer.answer(query).await?;
+
                     if let Some(evaluator) = evaluator_for_stream.as_ref() {
                         evaluator.evaluate(result.clone().into()).await?;
                         Ok(result)
                     } else {
                         Ok(result)
                     }
-                }
+                })
                 .instrument(span)
+                .err_into::<anyhow::Error>()
             })
-            .try_buffer_unordered(default_concurrency);
+            .try_buffer_unordered(default_concurrency)
+            .map(|x| x.and_then(|x| x));
+
         Pipeline {
             stream: new_stream.boxed().into(),
             search_strategy,
@@ -263,11 +290,60 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         mut self,
         query: impl Into<Query<states::Pending>>,
     ) -> Result<Query<states::Answered>> {
+        tracing::debug!("Sending query");
+        let now = std::time::Instant::now();
+
         self.query_sender.send(Ok(query.into())).await?;
 
-        self.stream.try_next().await?.ok_or_else(|| {
+        let answer = self.stream.try_next().await?.ok_or_else(|| {
             anyhow::anyhow!("Pipeline did not receive a response from the query stream")
-        })
+        });
+
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            elapsed_in_seconds,
+            "Answered query in {} seconds",
+            elapsed_in_seconds
+        );
+
+        answer
+    }
+
+    /// Runs the pipeline with a user query, accepts `&str` as well.
+    ///
+    /// Does not consume the pipeline and requires a mutable reference. This allows
+    /// the pipeline to be reused.
+    ///
+    /// # Errors
+    ///
+    /// Errors if any of the transformations failed or no response was found
+    pub async fn query_mut(
+        &mut self,
+        query: impl Into<Query<states::Pending>>,
+    ) -> Result<Query<states::Answered>> {
+        tracing::warn!("Sending query");
+        let now = std::time::Instant::now();
+
+        self.query_sender.send(Ok(query.into())).await?;
+
+        let answer = self
+            .stream
+            .by_ref()
+            .take(1)
+            .try_next()
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Pipeline did not receive a response from the query stream")
+            });
+
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            elapsed_in_seconds,
+            "Answered query in {} seconds",
+            elapsed_in_seconds
+        );
+
+        answer
     }
 
     /// Runs the pipeline with multiple queries
@@ -280,6 +356,9 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
         self,
         queries: Vec<impl Into<Query<states::Pending>> + Clone>,
     ) -> Result<Vec<Query<states::Answered>>> {
+        tracing::warn!("Sending queries");
+        let now = std::time::Instant::now();
+
         let Pipeline {
             query_sender,
             mut stream,
@@ -299,13 +378,23 @@ impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
                 break;
             }
         }
+
+        let elapsed_in_seconds = now.elapsed().as_secs();
+        tracing::warn!(
+            num_queries = queries.len(),
+            elapsed_in_seconds,
+            "Answered all queries in {} seconds",
+            elapsed_in_seconds
+        );
         Ok(results)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use swiftide_core::querying::search_strategies;
+    use swiftide_core::{
+        querying::search_strategies, MockAnswer, MockTransformQuery, MockTransformResponse,
+    };
 
     use super::*;
 
@@ -322,6 +411,53 @@ mod test {
             .then_transform_response(Ok)
             .then_answer(move |query: Query<states::Retrieved>| Ok(query.answered("Ok")));
         let response = pipeline.query("What").await.unwrap();
+        assert_eq!(response.answer(), "Ok");
+    }
+
+    #[tokio::test]
+    async fn test_all_steps_should_accept_dyn_box() {
+        let mut query_transformer = MockTransformQuery::new();
+        query_transformer.expect_transform_query().returning(Ok);
+
+        let mut response_transformer = MockTransformResponse::new();
+        response_transformer
+            .expect_transform_response()
+            .returning(Ok);
+        let mut answer_transformer = MockAnswer::new();
+        answer_transformer
+            .expect_answer()
+            .returning(|query| Ok(query.answered("OK")));
+
+        let pipeline = Pipeline::default()
+            .then_transform_query(Box::new(query_transformer) as Box<dyn TransformQuery>)
+            .then_retrieve(
+                |_: &search_strategies::SimilaritySingleEmbedding,
+                 query: Query<states::Pending>| {
+                    Ok(query.retrieved_documents(vec![]))
+                },
+            )
+            .then_transform_response(Box::new(response_transformer) as Box<dyn TransformResponse>)
+            .then_answer(Box::new(answer_transformer) as Box<dyn Answer>);
+        let response = pipeline.query("What").await.unwrap();
+        assert_eq!(response.answer(), "OK");
+    }
+
+    #[tokio::test]
+    async fn test_reuse_with_query_mut() {
+        let mut pipeline = Pipeline::default()
+            .then_transform_query(move |query: Query<states::Pending>| Ok(query))
+            .then_retrieve(
+                move |_: &search_strategies::SimilaritySingleEmbedding,
+                      query: Query<states::Pending>| {
+                    Ok(query.retrieved_documents(vec![]))
+                },
+            )
+            .then_transform_response(Ok)
+            .then_answer(move |query: Query<states::Retrieved>| Ok(query.answered("Ok")));
+
+        let response = pipeline.query_mut("What").await.unwrap();
+        assert_eq!(response.answer(), "Ok");
+        let response = pipeline.query_mut("What").await.unwrap();
         assert_eq!(response.answer(), "Ok");
     }
 }

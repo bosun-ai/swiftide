@@ -58,7 +58,7 @@ impl Persist for Qdrant {
         let node_with_vectors = NodeWithVectors::new(&node, self.vector_fields());
         let point = node_with_vectors.try_into()?;
 
-        tracing::debug!(?point, "Storing node");
+        tracing::debug!("Storing node");
 
         self.client
             .upsert_points(
@@ -98,10 +98,10 @@ impl Persist for Qdrant {
 
         let result = self
             .client
-            .upsert_points(UpsertPointsBuilder::new(
-                self.collection_name.to_string(),
-                points,
-            ))
+            .upsert_points(
+                UpsertPointsBuilder::new(self.collection_name.to_string(), points)
+                    .wait(cfg!(debug_assertions)),
+            )
             .await;
 
         if result.is_ok() {
