@@ -169,7 +169,8 @@ pub mod indexing {
 ///       .then_store_with(qdrant.clone())
 ///       .run()
 ///       .await?;
-///    Ok(())
+///
+///   Ok(())
 /// }
 /// ```
 ///
@@ -185,7 +186,6 @@ pub mod indexing {
 /// #     integrations::{self, qdrant::Qdrant},
 /// #     query::{self, answers, query_transformers, response_transformers},
 /// # };
-///
 /// # async fn query() -> Result<(), Box<dyn std::error::Error>> {
 /// #  let openai_client = integrations::openai::OpenAI::builder()
 /// #      .default_embed_model("text-embedding-3-large")
