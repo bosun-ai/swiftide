@@ -21,7 +21,7 @@
 //!
 //! ## Querying
 //!
-//! We are working on an experimental query pipeline, which you can find in [`swiftide_query`]
+//! After running an indexing pipeline, you can use the [`query`] module to query the indexed data.
 //!
 //! ## Examples
 //!
@@ -54,7 +54,7 @@
 //! # }
 //! ```
 //!
-//! ### Experimental querying
+//! ### Querying
 //!
 //! ```no_run
 //! # use anyhow::Result;
@@ -139,30 +139,63 @@ pub mod indexing {
 ///
 /// Consider the following code that uses Swiftide to load some markdown text, chunk it, embed it, and store it in a Qdrant index:
 ///
-/// ```rust
-/// let openai_client = integrations::openai::OpenAI::builder()
-///     .default_embed_model("text-embedding-3-large")
-///     .default_prompt_model("gpt-4o")
-///     .build()?;
+/// ```no_run
+/// use swiftide::{
+///     indexing::{
+///         self,
+///         loaders::FileLoader,
+///         transformers::{ChunkMarkdown, Embed, MetadataQAText},
+///     },
+///     integrations::{self, qdrant::Qdrant},
+///     query::{self, answers, query_transformers, response_transformers},
+/// };
 ///
-/// let qdrant = Qdrant::builder()
-///     .batch_size(50)
-///     .vector_size(3072)
-///     .collection_name("swiftide-examples")
-///     .build()?;
+/// async fn index() -> Result<(), Box<dyn std::error::Error>> {
+///   let openai_client = integrations::openai::OpenAI::builder()
+///       .default_embed_model("text-embedding-3-large")
+///       .default_prompt_model("gpt-4o")
+///       .build()?;
 ///
-/// indexing::Pipeline::from_loader(FileLoader::new("README.md"))
-///     .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
-///     .then(MetadataQAText::new(openai_client.clone()))
-///     .then_in_batch(10, Embed::new(openai_client.clone()))
-///     .then_store_with(qdrant.clone())
-///     .run()
-///     .await?;
+///   let qdrant = Qdrant::builder()
+///       .batch_size(50)
+///       .vector_size(3072)
+///       .collection_name("swiftide-examples")
+///       .build()?;
+///
+///   indexing::Pipeline::from_loader(FileLoader::new("README.md"))
+///       .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
+///       .then(MetadataQAText::new(openai_client.clone()))
+///       .then_in_batch(10, Embed::new(openai_client.clone()))
+///       .then_store_with(qdrant.clone())
+///       .run()
+///       .await?;
+///    Ok(())
+/// }
 /// ```
 ///
 /// We could then define a query pipeline that uses the Qdrant index to answer questions:
 ///
-/// ```rust
+/// ```no_run
+/// # use swiftide::{
+/// #     indexing::{
+/// #         self,
+/// #         loaders::FileLoader,
+/// #         transformers::{ChunkMarkdown, Embed, MetadataQAText},
+/// #     },
+/// #     integrations::{self, qdrant::Qdrant},
+/// #     query::{self, answers, query_transformers, response_transformers},
+/// # };
+///
+/// # async fn query() -> Result<(), Box<dyn std::error::Error>> {
+/// #  let openai_client = integrations::openai::OpenAI::builder()
+/// #      .default_embed_model("text-embedding-3-large")
+/// #      .default_prompt_model("gpt-4o")
+/// #      .build()?;
+/// #  let qdrant = Qdrant::builder()
+/// #      .batch_size(50)
+/// #      .vector_size(3072)
+/// #      .collection_name("swiftide-examples")
+/// #      .build()?;
 /// // By default the search strategy is SimilaritySingleEmbedding
 /// // which takes the latest query, embeds it, and does a similarity search
 /// let pipeline = query::Pipeline::default()
@@ -183,6 +216,8 @@ pub mod indexing {
 ///     .await?;
 ///
 /// println!("{:?}", result.answer());
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// By using a query pipeline to transform queries, we can improve the quality of the answers we get from our index.
