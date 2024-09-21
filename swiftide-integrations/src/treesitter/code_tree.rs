@@ -8,7 +8,7 @@ use tree_sitter::{Parser, Query, QueryCursor, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{python, ruby, rust, typescript};
+use crate::treesitter::queries::{java, python, ruby, rust, typescript};
 
 use super::SupportedLanguages;
 
@@ -107,7 +107,7 @@ impl CodeTree<'_> {
 }
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
-    use SupportedLanguages::{Javascript, Python, Ruby, Rust, Typescript};
+    use SupportedLanguages::{Java, Javascript, Python, Ruby, Rust, Typescript};
 
     match language {
         Rust => (rust::DEFS, rust::REFS),
@@ -115,6 +115,7 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         // The univocal proof that TS is just a linter
         Typescript | Javascript => (typescript::DEFS, typescript::REFS),
         Ruby => (ruby::DEFS, ruby::REFS),
+        Java => (java::DEFS, java::REFS),
     }
 }
 

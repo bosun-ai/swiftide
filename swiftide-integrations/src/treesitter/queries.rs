@@ -206,3 +206,33 @@ pub mod rust {
                 macro: (identifier) @name)
         ";
 }
+
+// https://github.com/tree-sitter/tree-sitter-java/blob/master/queries/tags.scm
+pub mod java {
+    pub const DEFS: &str = "
+           (class_declaration
+                name: (identifier) @name) @definition.class
+
+            (method_declaration
+                name: (identifier) @name) @definition.method
+
+            (interface_declaration
+                name: (identifier) @name) @definition.interface
+
+    ";
+    pub const REFS: &str = "
+            (method_invocation
+                name: (identifier) @name
+                arguments: (argument_list) @reference.call)
+
+            (field_access
+                name: (identifier) @name) @reference.field
+
+            (type_list
+                (type_identifier) @name) @reference.implementation
+
+            (object_creation_expression
+                type: (type_identifier) @name) @reference.class
+
+            (superclass (type_identifier) @name) @reference.class";
+}

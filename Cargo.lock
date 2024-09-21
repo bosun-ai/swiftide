@@ -7571,6 +7571,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tree-sitter",
+ "tree-sitter-java",
  "tree-sitter-javascript",
  "tree-sitter-python",
  "tree-sitter-ruby",
@@ -8446,6 +8447,16 @@ dependencies = [
  "cc",
  "regex",
  "regex-syntax 0.8.4",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-java"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b38b26736e6e97421760201f7a91c859f3b0d44382d48ac18aa963828f784ebf"
+dependencies = [
+ "cc",
  "tree-sitter-language",
 ]
 
