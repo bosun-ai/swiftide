@@ -98,7 +98,7 @@ impl CodeOutliner {
 
     fn is_unneeded_node(&self, node: Node) -> bool {
         match self.language {
-            SupportedLanguages::Rust => matches!(node.kind(), "block"),
+            SupportedLanguages::Rust | SupportedLanguages::Java => matches!(node.kind(), "block"),
             SupportedLanguages::Typescript | SupportedLanguages::Javascript => {
                 matches!(node.kind(), "statement_block")
             }
@@ -118,7 +118,6 @@ impl CodeOutliner {
                 }
                 _ => false,
             },
-            SupportedLanguages::Java => matches!(node.kind(), "block"),
         }
     }
 
