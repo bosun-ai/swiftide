@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726817652775,
+  "lastUpdate": 1727004558655,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4787,6 +4787,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9cc4535aac8e43244166fa5af5f34da18b002026",
+          "message": "fix: Ignore lexicon-core warning for now and update deps (#310)",
+          "timestamp": "2024-09-22T13:23:05+02:00",
+          "tree_id": "3b66a2af8ece9bde85348f23db048e56e811a76b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9cc4535aac8e43244166fa5af5f34da18b002026"
+        },
+        "date": 1727004557498,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
