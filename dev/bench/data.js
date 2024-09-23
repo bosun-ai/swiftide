@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727101200123,
+  "lastUpdate": 1727104638039,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4913,6 +4913,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "afce14e5a06a39c53d2703d18771d327c8ea5bf1",
+          "message": "fix(ci): Avoid protoc rate limit (#315)",
+          "timestamp": "2024-09-23T17:10:49+02:00",
+          "tree_id": "279fe69bffafc2cdcdbacd7b78483f5eee5ca957",
+          "url": "https://github.com/bosun-ai/swiftide/commit/afce14e5a06a39c53d2703d18771d327c8ea5bf1"
+        },
+        "date": 1727104636729,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 165,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
