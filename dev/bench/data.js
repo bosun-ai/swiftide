@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727127234130,
+  "lastUpdate": 1727128808857,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5333,6 +5333,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0f2d7cd7d6fa989c4389c8c6f22bbe396b039e28",
+          "message": "chore: release v0.12.3 (#329)\n\n## 🤖 New release\r\n* `swiftide`: 0.12.2 -> 0.12.3 (✓ API compatible changes)\r\n* `swiftide-core`: 0.12.2 -> 0.12.3 (✓ API compatible changes)\r\n* `swiftide-indexing`: 0.12.2 -> 0.12.3 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.12.2 -> 0.12.3\r\n* `swiftide-integrations`: 0.12.2 -> 0.12.3 (✓ API compatible changes)\r\n* `swiftide-query`: 0.12.2 -> 0.12.3 (✓ API compatible changes)\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n## [0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/0.12.3) -\r\n2024-09-23\r\n\r\n### New features\r\n\r\n-\r\n[da5df22](https://github.com/bosun-ai/swiftide/commit/da5df2230da81e9fe1e6ab74150511cbe1e3d769)\r\n*(tree-sitter)* Implement Serialize and Deserialize for\r\nSupportedLanguages\r\n([#314](https://github.com/bosun-ai/swiftide/pull/314))\r\n\r\n### Bug fixes\r\n\r\n-\r\n[a756148](https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2)\r\n*(tree-sitter)* Fix javascript and improve tests\r\n([#313](https://github.com/bosun-ai/swiftide/pull/313))\r\n\r\n````text\r\nAs learned from [#309](https://github.com/bosun-ai/swiftide/pull/309), test coverage for the refs defs transformer was\r\n  not great. There _are_ more tests in code_tree. Turns out, with the\r\n  latest treesitter update, javascript broke as it was the only language\r\n  not covered at all.\r\n````\r\n\r\n### Miscellaneous\r\n\r\n-\r\n[e8e9d80](https://github.com/bosun-ai/swiftide/commit/e8e9d80f2b4fbfe7ca2818dc542ca0a907a17da5)\r\n*(docs)* Add documentation to query module\r\n([#276](https://github.com/bosun-ai/swiftide/pull/276))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.12.2...0.12.3\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).",
+          "timestamp": "2024-09-23T23:54:07+02:00",
+          "tree_id": "897bad20c78dd2ece9366077435d8454302f0a85",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0f2d7cd7d6fa989c4389c8c6f22bbe396b039e28"
+        },
+        "date": 1727128808483,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
