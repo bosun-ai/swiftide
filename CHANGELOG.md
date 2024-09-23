@@ -3,41 +3,6 @@
 All notable changes to this project will be documented in this file.
 
 
-## [unreleased]
-
-### New features
-
-- [da5df22](https://github.com/bosun-ai/swiftide/commit/da5df2230da81e9fe1e6ab74150511cbe1e3d769) *(tree-sitter)*  Implement Serialize and Deserialize for SupportedLanguages (#314) by @timonv
-
-### Bug fixes
-
-- [a756148](https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2) *(tree-sitter)*  Fix javascript and improve tests (#313) by @timonv
-
-````text
-As learned from #309, test coverage for the refs defs transformer was
-  not great. There _are_ more tests in code_tree. Turns out, with the
-  latest treesitter update, javascript broke as it was the only language
-  not covered at all.
-````
-
-- [9cc4535](https://github.com/bosun-ai/swiftide/commit/9cc4535aac8e43244166fa5af5f34da18b002026)  Ignore lexicon-core warning for now and update deps (#310) by @timonv
-
-### Miscellaneous
-
-- [afce14e](https://github.com/bosun-ai/swiftide/commit/afce14e5a06a39c53d2703d18771d327c8ea5bf1) *(ci)*  Avoid protoc rate limit (#315) by @timonv
-
-- [530dcd8](https://github.com/bosun-ai/swiftide/commit/530dcd8e7e1ab23b65b4d3cd5bd965c33ea7e375) *(ci)*  Fix concurrency conflict and trigger discord right after (#316) by @timonv
-
-- [d433d99](https://github.com/bosun-ai/swiftide/commit/d433d99e486e5e9f608c7d34b3847ef427b36d16) *(ci)*  Remove discord publish for now by @timonv
-
-- [7abd4ae](https://github.com/bosun-ai/swiftide/commit/7abd4aebc154b3e87e5c2169308b56338c412228) *(ci)*  Rework changelog configuration to be more informative
-
-### Docs
-
-- [5d52288](https://github.com/bosun-ai/swiftide/commit/5d5228803bc0e90730598eac7973443944f749e3) *(readme)*  Add blog links and update features (#312) by @timonv
-
-
-
 ## [v0.12.2](https://github.com/bosun-ai/swiftide/releases/tag/v0.12.2) - 2024-09-20
 
 ### Docs
