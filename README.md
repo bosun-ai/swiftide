@@ -97,7 +97,10 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
+- [Evaluate Swiftide pipelines with Ragas](https://bosun.ai/posts/evaluating-swiftide-with-ragas/) (2024-09-15)
 - [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
+- [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04
+
 - [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-09-02)
 - [Bring your own transformers](https://bosun.ai/posts/bring-your-own-transformers-in-swiftide/) (2024-08-13)
 - [Release - Swiftide 0.8](https://bosun.ai/posts/swiftide-0-8/) (2024-08-12)
@@ -108,7 +111,7 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Example
+## Examples
 
 Indexing a local code project, chunking into smaller pieces, enriching the nodes with metadata, and persisting into [Qdrant](https://qdrant.tech):
 
@@ -183,7 +186,7 @@ Our goal is to create a fast, extendable platform for Retrieval Augmented Genera
 | **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                                |
 | **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
-| **Splitting and chunking**                   | Markdown <br> Code (with tree-sitter)                                                                                                                                |
+| **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
 | **Storage**                                  | Qdrant <br> Redis <br> LanceDB                                                                                                                                       |
 | **Query pipeline**                           | Similarity and hybrid search, query and response transformations, and evaluation                                                                                     |
 

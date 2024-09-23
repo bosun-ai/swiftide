@@ -162,6 +162,94 @@ pub mod typescript {
         "#;
 }
 
+// https://github.com/tree-sitter/tree-sitter-javascript/blob/master/queries/tags.scm
+pub mod javascript {
+    pub const DEFS: &str = r#"
+        (
+        (method_definition
+            name: (property_identifier) @name)
+        (#not-eq? @name "constructor")
+        )
+
+        (
+        [
+            (class
+            name: (_) @name)
+            (class_declaration
+            name: (_) @name)
+        ] 
+        )
+
+        (
+        [
+            (function_expression
+            name: (identifier) @name)
+            (function_declaration
+            name: (identifier) @name)
+            (generator_function
+            name: (identifier) @name)
+            (generator_function_declaration
+            name: (identifier) @name)
+        ] 
+        )
+
+        (
+        (lexical_declaration
+            (variable_declarator
+            name: (identifier) @name
+            value: [(arrow_function) (function_expression)]) @definition.function)
+        )
+
+        (
+        (variable_declaration
+            (variable_declarator
+            name: (identifier) @name
+            value: [(arrow_function) (function_expression)]) @definition.function)
+        )
+
+        (assignment_expression
+        left: [
+            (identifier) @name
+            (member_expression
+            property: (property_identifier) @name)
+        ]
+        right: [(arrow_function) (function_expression)]
+        ) 
+
+        (pair
+        key: (property_identifier) @name
+        value: [(arrow_function) (function_expression)])
+
+        "#;
+
+    pub const REFS: &str = r#"
+        (
+        (call_expression
+            function: (identifier) @name) 
+        (#not-match? @name "^(require)$")
+        )
+
+        (call_expression
+        function: (member_expression
+            property: (property_identifier) @name)
+        arguments: (_))
+
+        (new_expression
+        constructor: (_) @name)
+
+        (export_statement value: (assignment_expression left: (identifier) @name right: ([
+        (number)
+        (string)
+        (identifier)
+        (undefined)
+        (null)
+        (new_expression)
+        (binary_expression)
+        (call_expression)
+        ]))) 
+    "#;
+}
+
 // https://github.com/tree-sitter/tree-sitter-rust/blob/master/queries/tags.scm
 pub mod rust {
     pub const DEFS: &str = "

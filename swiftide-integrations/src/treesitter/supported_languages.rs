@@ -14,19 +14,37 @@
 #[allow(unused_imports)]
 pub use std::str::FromStr as _;
 
+use serde::{Deserialize, Serialize};
+
 /// Enum representing the supported programming languages in the Swiftide project.
 ///
 /// This enum is used to map programming languages to their respective file extensions and tree-sitter language objects.
 /// The `EnumString` and `Display` macros from the `strum_macros` crate are used to provide string conversion capabilities.
 /// The `ascii_case_insensitive` attribute allows for case-insensitive string matching.
-#[derive(Debug, PartialEq, Clone, Copy, strum_macros::EnumString, strum_macros::Display)]
+#[derive(
+    Debug,
+    PartialEq,
+    Clone,
+    Copy,
+    Deserialize,
+    Serialize,
+    strum_macros::EnumString,
+    strum_macros::Display,
+    strum_macros::EnumIter,
+)]
 #[strum(ascii_case_insensitive)]
 pub enum SupportedLanguages {
+    #[serde(alias = "rust")]
     Rust,
+    #[serde(alias = "typescript")]
     Typescript,
+    #[serde(alias = "python")]
     Python,
+    #[serde(alias = "ruby")]
     Ruby,
+    #[serde(alias = "javascript")]
     Javascript,
+    #[serde(alias = "java")]
     Java,
 }
 
@@ -92,6 +110,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
 #[cfg(test)]
 mod test {
     use super::*;
+    pub use strum::IntoEnumIterator as _;
 
     /// Tests the case-insensitive string conversion for `SupportedLanguages`.
     #[test]
@@ -126,5 +145,28 @@ mod test {
             SupportedLanguages::from_str("Java"),
             Ok(SupportedLanguages::Java)
         );
+    }
+
+    #[test]
+    fn test_serialize_and_deserialize_for_supported_languages() {
+        for lang in SupportedLanguages::iter() {
+            let val = serde_json::to_string(&lang).unwrap();
+
+            assert_eq!(
+                serde_json::to_string(&lang).unwrap(),
+                format!("\"{lang}\""),
+                "Failed to serialize {lang}"
+            );
+            assert_eq!(
+                serde_json::from_str::<SupportedLanguages>(&val).unwrap(),
+                lang,
+                "Failed to deserialize {lang}"
+            );
+            assert_eq!(
+                serde_json::from_str::<SupportedLanguages>(&val.to_lowercase()).unwrap(),
+                lang,
+                "Failed to deserialize lowercase {lang}"
+            );
+        }
     }
 }

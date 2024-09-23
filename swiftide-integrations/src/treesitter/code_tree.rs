@@ -8,7 +8,7 @@ use tree_sitter::{Parser, Query, QueryCursor, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{java, python, ruby, rust, typescript};
+use crate::treesitter::queries::{java, javascript, python, ruby, rust, typescript};
 
 use super::SupportedLanguages;
 
@@ -113,7 +113,8 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Rust => (rust::DEFS, rust::REFS),
         Python => (python::DEFS, python::REFS),
         // The univocal proof that TS is just a linter
-        Typescript | Javascript => (typescript::DEFS, typescript::REFS),
+        Typescript => (typescript::DEFS, typescript::REFS),
+        Javascript => (javascript::DEFS, javascript::REFS),
         Ruby => (ruby::DEFS, ruby::REFS),
         Java => (java::DEFS, java::REFS),
     }
@@ -202,6 +203,30 @@ mod tests {
         }
         "#;
 
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.definitions, vec!["MyClass", "Test", "myMethod"]);
+        assert_eq!(result.references, vec!["log", "otherThing"]);
+    }
+
+    #[test]
+    fn test_parsing_on_javascript() {
+        let parser = CodeParser::from_language(SupportedLanguages::Javascript);
+        let code = r#"
+        function Test() {
+            console.log("Hello, JavaScript!");
+            otherThing();
+        }
+        class MyClass {
+            constructor() {
+                let local = 5;
+                this.myMethod();
+            }
+            myMethod() {
+                console.log("Hello, JavaScript!");
+            }
+        }
+        "#;
         let tree = parser.parse(code).unwrap();
         let result = tree.references_and_definitions().unwrap();
         assert_eq!(result.definitions, vec!["MyClass", "Test", "myMethod"]);
