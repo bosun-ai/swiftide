@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727126289538,
+  "lastUpdate": 1727127234130,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5273,6 +5273,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/a845b8cb8f5798f3c26908a97dce93c9c53cee29"
         },
         "date": 1727126288321,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@tinco.nl",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e8e9d80f2b4fbfe7ca2818dc542ca0a907a17da5",
+          "message": "chore(docs): Add documentation to query module (#276)",
+          "timestamp": "2024-09-23T23:27:35+02:00",
+          "tree_id": "eb9d9c991cbfe20e02136753371f74992b2d3a35",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e8e9d80f2b4fbfe7ca2818dc542ca0a907a17da5"
+        },
+        "date": 1727127233707,
         "tool": "cargo",
         "benches": [
           {
