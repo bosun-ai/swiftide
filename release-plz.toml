@@ -48,11 +48,11 @@ body = """
 {% if commit.scope %}*({{commit.scope | default(value = "uncategorized") | lower }})* {% endif %}\
 {%- if commit.breaking %} [**breaking**]{% endif %} \
 {{ commit.message | upper_first | trim }}\
-{% if commit.author %} by @{{ commit.author }}{%- endif -%}\
+{% if commit.author %} by @{{ commit.author.name }}{%- endif -%}\
 {%- if commit.links %} \
    in {% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}\
 {% endif %}
-{%- if commit.body and commit.author is not containing("[bot]") %}
+{%- if commit.body and commit.author.name is not containing("[bot]") %}
 
 ````text {#- 4 backticks escape any backticks in body #}
 {{commit.body | indent(prefix="  ") }}
