@@ -24,7 +24,6 @@ changelog_update = true
 
 [changelog]
 commit_parsers = [
-  { message = "^(feat|fix|perf|chore)\\(ci\\)", group = "<!-- 3 -->Miscellaneous" },
   { message = "^feat*", group = "<!-- 0 -->New features" },
   { message = "^fix*", group = "<!-- 1 -->Bug fixes" },
   { message = "^perf*", group = "<!-- 2 -->Performance" },
