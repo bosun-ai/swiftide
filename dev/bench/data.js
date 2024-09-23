@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727083319736,
+  "lastUpdate": 1727101200123,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4853,6 +4853,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/5d5228803bc0e90730598eac7973443944f749e3"
         },
         "date": 1727083318768,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a756148f85faa15b1a79db8ec8106f0e15e4d6a2",
+          "message": "fix(tree-sitter): Fix javascript and improve tests (#313)\n\nAs learned from #309, test coverage for the refs defs transformer was\r\nnot great. There _are_ more tests in code_tree. Turns out, with the\r\nlatest treesitter update, javascript broke as it was the only language\r\nnot covered at all.",
+          "timestamp": "2024-09-23T16:13:31+02:00",
+          "tree_id": "9b2f1e9fd3fd9300feea95d435a975e2a44bd089",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2"
+        },
+        "date": 1727101199121,
         "tool": "cargo",
         "benches": [
           {
