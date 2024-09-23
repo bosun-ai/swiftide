@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/0.12.3) - 2024-09-23
+
+### Added
+
+- [da5df22](https://github.com/bosun-ai/swiftide/commit/da5df2230da81e9fe1e6ab74150511cbe1e3d769) *(tree-sitter)* Implement Serialize and Deserialize for SupportedLanguages ([#314](https://github.com/bosun-ai/swiftide/pull/314))
+
+### Fixed
+
+- [a756148](https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2) *(tree-sitter)* Fix javascript and improve tests ([#313](https://github.com/bosun-ai/swiftide/pull/313))
+
+### Other
+
+- [5d52288](https://github.com/bosun-ai/swiftide/commit/5d5228803bc0e90730598eac7973443944f749e3) *(readme)* Add blog links and update features ([#312](https://github.com/bosun-ai/swiftide/pull/312))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.2...0.12.3
+
+
+
 ## [0.12.2](https://github.com/bosun-ai/swiftide/releases/tag/0.12.2) - 2024-09-18
 
 ### Other
