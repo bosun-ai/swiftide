@@ -40,7 +40,7 @@ body = """
 {%- if not version %}
 ## [unreleased]
 {% else -%}
-## [{{ version }}](https://github.com/bosun-ai/swiftide/releases/tag/{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+## [{{ version }}]({{ release_link }}) - {{ timestamp | date(format="%Y-%m-%d") }}
 {% endif -%}
 
 {% macro commit(commit) -%}
