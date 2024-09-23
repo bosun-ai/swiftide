@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727128808857,
+  "lastUpdate": 1727129515532,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5375,6 +5375,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "1f46b24676585834f929970f4280fe7f014807b9",
+          "message": "fix(ci): Use release-plz release link in its changelog",
+          "timestamp": "2024-09-24T00:05:33+02:00",
+          "tree_id": "10564bec5bb457897eec717e4864b90e02e42378",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1f46b24676585834f929970f4280fe7f014807b9"
+        },
+        "date": 1727129515107,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
