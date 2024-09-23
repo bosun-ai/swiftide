@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727105476592,
+  "lastUpdate": 1727123246623,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5039,6 +5039,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 4",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dd14a2e2a9ee2225154fa6860f02924845b00bbd",
+          "message": "fix(ci): Rework changelog configuration to be more informative (#318)",
+          "timestamp": "2024-09-23T22:21:17+02:00",
+          "tree_id": "f89fec8ac9da90a4581d56ebc2d667a7385475fc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dd14a2e2a9ee2225154fa6860f02924845b00bbd"
+        },
+        "date": 1727123246242,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
