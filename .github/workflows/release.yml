@@ -30,10 +30,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
-      - name: Github Releases To Discord
-        uses: sillyangel/releases-to-discord@v1.0.0
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          color: "2105893"
-          username: "Release Changelog"
-          avatar_url: "https://cdn.discordapp.com/avatars/487431320314576937/bd64361e4ba6313d561d54e78c9e7171.png"
