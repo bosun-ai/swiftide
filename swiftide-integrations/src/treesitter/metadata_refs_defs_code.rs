@@ -96,27 +96,43 @@ impl Transformer for MetadataRefsDefsCode {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
+    use test_case::test_case;
 
+    #[test_case("rust", "fn main() { println!(\"Hello, World!\"); }", "println", "main"; "rust")]
+    #[test_case("ruby", "def main; puts 'Hello, World!'; end", "puts", "main"; "ruby")]
+    #[test_case("python", "def main(): print('Hello, World!')", "print", "main"; "python")]
+    #[test_case("javascript", "function main() { console.log('Hello, World!'); }", "log", "main"; "javascript")]
+    #[test_case("typescript", "function main() { console.log('Hello, World!'); }", "log", "main"; "typescript")]
     #[tokio::test]
-    async fn test_transform_node() {
-        let transformer = MetadataRefsDefsCode::try_from_language("rust").unwrap();
-        let code = r#"
-    fn main() {
-        println!("Hello, World!");
-    }
-    "#;
-        let mut node = Node::new(code.to_string());
+    async fn assert_refs_defs_from_code(
+        lang: &str,
+        code: &str,
+        expected_references: &str,
+        expected_definitions: &str,
+    ) {
+        let transformer = MetadataRefsDefsCode::try_from_language(lang).unwrap();
+        let node = Node::new(code);
 
-        node = transformer.transform_node(node).await.unwrap();
+        let node = transformer.transform_node(node).await.unwrap();
 
-        assert_eq!(
-            node.metadata.get(NAME_REFERENCES).unwrap().as_str(),
-            "println".into()
-        );
-        assert_eq!(
-            node.metadata.get(NAME_DEFINITIONS).unwrap().as_str(),
-            "main".into()
-        );
+        let references = node
+            .metadata
+            .get(NAME_REFERENCES)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+        let definitions = node
+            .metadata
+            .get(NAME_DEFINITIONS)
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        assert_eq!(references, expected_references);
+        assert_eq!(definitions, expected_definitions);
     }
 }
