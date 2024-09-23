@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727123246623,
+  "lastUpdate": 1727123871880,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5081,6 +5081,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "fc6e259bf8accfe632ec7c88af4992319214d4e4",
+          "message": "fix(ci): Properly use author name in changelog context",
+          "timestamp": "2024-09-23T22:31:11+02:00",
+          "tree_id": "257735a70779ad76cc61f87509dc729bafe21468",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fc6e259bf8accfe632ec7c88af4992319214d4e4"
+        },
+        "date": 1727123871292,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
