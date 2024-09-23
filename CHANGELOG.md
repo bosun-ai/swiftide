@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/0.12.3) - 2024-09-23
+
+### New features
+
+- [da5df22](https://github.com/bosun-ai/swiftide/commit/da5df2230da81e9fe1e6ab74150511cbe1e3d769) *(tree-sitter)*  Implement Serialize and Deserialize for SupportedLanguages ([#314](https://github.com/bosun-ai/swiftide/pull/314))
+
+### Bug fixes
+
+- [a756148](https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2) *(tree-sitter)*  Fix javascript and improve tests ([#313](https://github.com/bosun-ai/swiftide/pull/313))
+
+````text
+As learned from [#309](https://github.com/bosun-ai/swiftide/pull/309), test coverage for the refs defs transformer was
+  not great. There _are_ more tests in code_tree. Turns out, with the
+  latest treesitter update, javascript broke as it was the only language
+  not covered at all.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.2...0.12.3
+
+
+
 
 ## [v0.12.2](https://github.com/bosun-ai/swiftide/releases/tag/v0.12.2) - 2024-09-20
 
