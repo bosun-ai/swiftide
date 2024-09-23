@@ -26,11 +26,11 @@ body = """
 {% endif -%}
 
 {% macro commit(commit) -%}
-- [{{ commit.id | truncate(length=7, end="") }}] \
+- [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/bosun-ai/swiftide/commit/" ~ commit.id }}) \
 {% if commit.scope %}*({{commit.scope | default(value = "uncategorized") | lower }})* {% endif %}{{ commit.message | upper_first | trim }}\
 {% if commit.github.username %} by @{{ commit.github.username }}{%- endif -%}\
 {%- if commit.links %} \
-    {% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}\
+   in {% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}\
 {% endif %}
 {%- if commit.breaking %} [**breaking**]{% endif %}
 {%- if commit.body and commit.github.username is not containing("[bot]") %}
