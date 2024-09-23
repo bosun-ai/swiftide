@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727104638039,
+  "lastUpdate": 1727104644834,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4955,6 +4955,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 165,
             "range": "± 4",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "530dcd8e7e1ab23b65b4d3cd5bd965c33ea7e375",
+          "message": "fix(ci): Fix concurrency conflict and trigger discord right after (#316)",
+          "timestamp": "2024-09-23T17:11:04+02:00",
+          "tree_id": "4bbc4df2d377afc12cc110ee0c57b393c55475cb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/530dcd8e7e1ab23b65b4d3cd5bd965c33ea7e375"
+        },
+        "date": 1727104643704,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
