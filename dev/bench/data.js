@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727125000360,
+  "lastUpdate": 1727125009993,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5165,6 +5165,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "36e1414b0c7668bd8e131dfe0ca55efd64fb2003",
+          "message": "fix(ci): Discord anounce (#324)\n\nShould be fixed as the default github token prevents other workflows to\r\ntrigger in the release workflow.",
+          "timestamp": "2024-09-23T22:50:45+02:00",
+          "tree_id": "dfee18072235efbb96557ab71aee4c6e4463d8f2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/36e1414b0c7668bd8e131dfe0ca55efd64fb2003"
+        },
+        "date": 1727125009591,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 165,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
