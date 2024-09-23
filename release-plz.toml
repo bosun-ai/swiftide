@@ -5,6 +5,7 @@ changelog_config = "cliff.toml"
 git_tag_name = "v{{ version }}"
 git_tag_enable = false
 git_release_enable = false
+repo_url = "https://github.com/bosun-ai/swiftide"
 
 [[package]]
 # Only release the main package on github
