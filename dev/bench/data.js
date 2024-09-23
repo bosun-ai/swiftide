@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727004558655,
+  "lastUpdate": 1727083319736,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4829,6 +4829,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5d5228803bc0e90730598eac7973443944f749e3",
+          "message": "docs(README): Add blog links and update features (#312)",
+          "timestamp": "2024-09-23T11:15:47+02:00",
+          "tree_id": "73219a094a6761df6bcd502fb30f3cd672e0f7e9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5d5228803bc0e90730598eac7973443944f749e3"
+        },
+        "date": 1727083318768,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
