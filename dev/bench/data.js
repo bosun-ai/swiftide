@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727104644834,
+  "lastUpdate": 1727105476592,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -4997,6 +4997,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "d433d99e486e5e9f608c7d34b3847ef427b36d16",
+          "message": "fix(ci): Remove discord publish for now",
+          "timestamp": "2024-09-23T17:24:43+02:00",
+          "tree_id": "0768828156ebd468c468beae469b9e060a206aad",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d433d99e486e5e9f608c7d34b3847ef427b36d16"
+        },
+        "date": 1727105475923,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 4",
             "unit": "ns/iter"
           }
         ]
