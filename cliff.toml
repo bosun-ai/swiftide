@@ -1,35 +1,18 @@
-[workspace]
-changelog_update = false
-changelog_path = "./CHANGELOG.md"
-#changelog_config = "cliff.toml"
-git_tag_name = "v{{ version }}"
-git_tag_enable = false
-git_release_enable = false
-repo_url = "https://github.com/bosun-ai/swiftide"
+[remote.github]
+owner = "bosun-ai"
+repo = "swiftide"
 
-[[package]]
-# Only release the main package on github
-name = "swiftide"
-git_tag_name = "v{{ version }}"
-git_tag_enable = true
-git_release_enable = true
-changelog_include = [
-  "swiftide-core",
-  "swiftide-indexing",
-  "swiftide-integrations",
-  "swiftide-query",
-  "swiftide-test-utils",
-]
-changelog_update = true
-
-[changelog]
+[git]
 commit_parsers = [
+  { message = "(r|R)elease", skip = true },
+  { message = "^(feat|fix|perf|chore)\\(ci\\)", group = "<!-- 3 -->Miscellaneous" },
   { message = "^feat*", group = "<!-- 0 -->New features" },
   { message = "^fix*", group = "<!-- 1 -->Bug fixes" },
   { message = "^perf*", group = "<!-- 2 -->Performance" },
   { message = "^chore*", group = "<!-- 3 -->Miscellaneous" },
 ]
 
+[changelog]
 # changelog header
 header = """
 # Changelog
@@ -40,7 +23,7 @@ body = """
 {%- if not version %}
 ## [unreleased]
 {% else -%}
-## [{{ version }}]({{ release_link }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+## [{{ version }}](https://github.com/bosun-ai/swiftide/releases/tag/{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
 {% endif -%}
 
 {% macro commit(commit) -%}
@@ -48,10 +31,11 @@ body = """
 {% if commit.scope %}*({{commit.scope | default(value = "uncategorized") | lower }})* {% endif %}\
 {%- if commit.breaking %} [**breaking**]{% endif %} \
 {{ commit.message | upper_first | trim }}\
+{% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif -%}\
 {%- if commit.links %} \
    in {% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}\
 {% endif %}
-{%- if commit.body %}
+{%- if commit.body and commit.remote.username and commit.remote.username is not containing("[bot]") %}
 
 ````text {#- 4 backticks escape any backticks in body #}
 {{commit.body | indent(prefix="  ") }}
