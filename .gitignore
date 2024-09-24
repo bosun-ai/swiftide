@@ -22,3 +22,4 @@ tmp
 .env*.local
 
 **/.fastembed_cache
+.idea/

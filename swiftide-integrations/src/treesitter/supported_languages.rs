@@ -44,6 +44,8 @@ pub enum SupportedLanguages {
     Ruby,
     #[serde(alias = "javascript")]
     Javascript,
+    #[serde(alias = "java")]
+    Java,
 }
 
 /// Static array of file extensions for Rust files.
@@ -61,6 +63,9 @@ static RUBY_EXTENSIONS: &[&str] = &["rb"];
 /// Static array of file extensions for Javascript files.
 static JAVASCRIPT_EXTENSIONS: &[&str] = &["js", "jsx"];
 
+/// Static array of file extensions for Java files.
+static JAVA_EXTENSIONS: &[&str] = &["java"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -73,6 +78,7 @@ impl SupportedLanguages {
             SupportedLanguages::Python => PYTHON_EXTENSIONS,
             SupportedLanguages::Ruby => RUBY_EXTENSIONS,
             SupportedLanguages::Javascript => JAVASCRIPT_EXTENSIONS,
+            SupportedLanguages::Java => JAVA_EXTENSIONS,
         }
     }
 }
@@ -95,6 +101,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Typescript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT,
             SupportedLanguages::Javascript => tree_sitter_javascript::LANGUAGE,
             SupportedLanguages::Ruby => tree_sitter_ruby::LANGUAGE,
+            SupportedLanguages::Java => tree_sitter_java::LANGUAGE,
         }
         .into()
     }
@@ -116,6 +123,10 @@ mod test {
             SupportedLanguages::from_str("typescript"),
             Ok(SupportedLanguages::Typescript)
         );
+        assert_eq!(
+            SupportedLanguages::from_str("java"),
+            Ok(SupportedLanguages::Java)
+        );
     }
 
     /// Tests the case-insensitive string conversion for `SupportedLanguages` with different casing.
@@ -128,6 +139,11 @@ mod test {
         assert_eq!(
             SupportedLanguages::from_str("TypeScript"),
             Ok(SupportedLanguages::Typescript)
+        );
+
+        assert_eq!(
+            SupportedLanguages::from_str("Java"),
+            Ok(SupportedLanguages::Java)
         );
     }
 

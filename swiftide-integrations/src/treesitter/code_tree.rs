@@ -8,7 +8,7 @@ use tree_sitter::{Parser, Query, QueryCursor, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{javascript, python, ruby, rust, typescript};
+use crate::treesitter::queries::{java, javascript, python, ruby, rust, typescript};
 
 use super::SupportedLanguages;
 
@@ -107,7 +107,7 @@ impl CodeTree<'_> {
 }
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
-    use SupportedLanguages::{Javascript, Python, Ruby, Rust, Typescript};
+    use SupportedLanguages::{Java, Javascript, Python, Ruby, Rust, Typescript};
 
     match language {
         Rust => (rust::DEFS, rust::REFS),
@@ -116,6 +116,7 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Typescript => (typescript::DEFS, typescript::REFS),
         Javascript => (javascript::DEFS, javascript::REFS),
         Ruby => (ruby::DEFS, ruby::REFS),
+        Java => (java::DEFS, java::REFS),
     }
 }
 
@@ -230,5 +231,53 @@ mod tests {
         let result = tree.references_and_definitions().unwrap();
         assert_eq!(result.definitions, vec!["MyClass", "Test", "myMethod"]);
         assert_eq!(result.references, vec!["log", "otherThing"]);
+    }
+
+    #[test]
+    fn test_parsing_on_java() {
+        let parser = CodeParser::from_language(SupportedLanguages::Java);
+        let code = r#"
+        public class Hello {
+            public static void main(String[] args) {
+                System.out.printf("Hello %s!%n", args[0]);
+            }
+        }
+        "#;
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.definitions, vec!["Hello", "main"]);
+        assert_eq!(result.references, vec!["printf"]);
+    }
+
+    #[test]
+    fn test_parsing_on_java_enum() {
+        let parser = CodeParser::from_language(SupportedLanguages::Java);
+        let code = r#"
+        enum Material {
+            DENIM,
+            CANVAS,
+            SPANDEX_3_PERCENT
+        }
+
+        class Person {
+
+
+          Person(string name) {
+            this.name = name;
+
+            this.pants = new Pants<Pocket>();
+          }
+
+          String getName() {
+            a = this.name;
+            b = new one.two.Three();
+            c = Material.DENIM;
+          }
+        }
+        "#;
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.definitions, vec!["Material", "Person", "getName"]);
+        assert!(result.references.is_empty());
     }
 }

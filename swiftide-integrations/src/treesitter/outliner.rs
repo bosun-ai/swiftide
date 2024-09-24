@@ -98,7 +98,7 @@ impl CodeOutliner {
 
     fn is_unneeded_node(&self, node: Node) -> bool {
         match self.language {
-            SupportedLanguages::Rust => matches!(node.kind(), "block"),
+            SupportedLanguages::Rust | SupportedLanguages::Java => matches!(node.kind(), "block"),
             SupportedLanguages::Typescript | SupportedLanguages::Javascript => {
                 matches!(node.kind(), "statement_block")
             }
@@ -296,6 +296,30 @@ class Bla {
         assert_eq!(
             summary,
             "\nimport { Context as _, Result } from 'anyhow';\n// This is a comment\nfunction main(a, b) \n\nclass Bla {\n    constructor() \n\n    ok() \n}"
+        );
+    }
+
+    #[test]
+    fn test_outline_java() {
+        let code = r#"
+import java.io.PrintStream;
+import java.util.Scanner;
+
+public class HelloWorld {
+    // This is a comment
+    public static void main(String[] args) {
+        PrintStream out = System.out;
+
+        out.println("Hello, World!");
+    }
+}
+"#;
+        let outliner = CodeOutliner::new(SupportedLanguages::Java);
+        let summary = outliner.outline(code).unwrap();
+        println!("{}", summary);
+        assert_eq!(
+            summary,
+            "\nimport java.io.PrintStream;\nimport java.util.Scanner;\n\npublic class HelloWorld {\n    // This is a comment\n    public static void main(String[] args) \n}"
         );
     }
 }
