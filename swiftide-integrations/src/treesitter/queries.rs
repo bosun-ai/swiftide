@@ -299,28 +299,26 @@ pub mod rust {
 pub mod java {
     pub const DEFS: &str = "
            (class_declaration
-                name: (identifier) @name) @definition.class
+                name: (identifier) @name)
+
+           (enum_declaration
+                name: (identifier) @name)
 
             (method_declaration
-                name: (identifier) @name) @definition.method
+                name: (identifier) @name)
 
             (interface_declaration
-                name: (identifier) @name) @definition.interface
+                name: (identifier) @name)
 
-    ";
+            (type_list
+                (type_identifier) @name)
+
+            (superclass (type_identifier) @name)";
     pub const REFS: &str = "
             (method_invocation
                 name: (identifier) @name
-                arguments: (argument_list) @reference.call)
-
-            (field_access
-                name: (identifier) @name) @reference.field
-
-            (type_list
-                (type_identifier) @name) @reference.implementation
+                arguments: (argument_list))
 
             (object_creation_expression
-                type: (type_identifier) @name) @reference.class
-
-            (superclass (type_identifier) @name) @reference.class";
+                type: (type_identifier) @name)";
 }

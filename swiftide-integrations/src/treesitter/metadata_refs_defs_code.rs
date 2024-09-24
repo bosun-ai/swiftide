@@ -105,7 +105,7 @@ mod test {
     #[test_case("python", "def main(): print('Hello, World!')", "print", "main"; "python")]
     #[test_case("javascript", "function main() { console.log('Hello, World!'); }", "log", "main"; "javascript")]
     #[test_case("typescript", "function main() { console.log('Hello, World!'); }", "log", "main"; "typescript")]
-    #[test_case("java", "public class Main { public static void main(String[] args) { System.out.println(\"Hello, World!\"); } }", "System.out", "main"; "java")]
+    #[test_case("java", "public class Main { public static void main(String[] args) { System.out.println(\"Hello, World!\"); } }", "println", "Main,main"; "java")]
     #[tokio::test]
     async fn assert_refs_defs_from_code(
         lang: &str,

@@ -232,4 +232,52 @@ mod tests {
         assert_eq!(result.definitions, vec!["MyClass", "Test", "myMethod"]);
         assert_eq!(result.references, vec!["log", "otherThing"]);
     }
+
+    #[test]
+    fn test_parsing_on_java() {
+        let parser = CodeParser::from_language(SupportedLanguages::Java);
+        let code = r#"
+        public class Hello {
+            public static void main(String[] args) {
+                System.out.printf("Hello %s!%n", args[0]);
+            }
+        }
+        "#;
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.definitions, vec!["Hello", "main"]);
+        assert_eq!(result.references, vec!["printf"]);
+    }
+
+    #[test]
+    fn test_parsing_on_java_enum() {
+        let parser = CodeParser::from_language(SupportedLanguages::Java);
+        let code = r#"
+        enum Material {
+            DENIM,
+            CANVAS,
+            SPANDEX_3_PERCENT
+        }
+
+        class Person {
+
+
+          Person(string name) {
+            this.name = name;
+
+            this.pants = new Pants<Pocket>();
+          }
+
+          String getName() {
+            a = this.name;
+            b = new one.two.Three();
+            c = Material.DENIM;
+          }
+        }
+        "#;
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.definitions, vec!["Material", "Person", "getName"]);
+        assert!(result.references.is_empty());
+    }
 }
