@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727129515532,
+  "lastUpdate": 1727176196184,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5399,6 +5399,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/1f46b24676585834f929970f4280fe7f014807b9"
         },
         "date": 1727129515107,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gciuloaica@gmail.com",
+            "name": "Gabriel Ciuloaica",
+            "username": "devsprint"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fd110c8efeb3af538d4e51d033b6df02e90e05d9",
+          "message": "feat(tree-sitter): Add support for Java 22 (#309)\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2024-09-24T13:03:46+02:00",
+          "tree_id": "106d9ec2d5da6b43883a77e4ca76e7ef82c9ec53",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9"
+        },
+        "date": 1727176195780,
         "tool": "cargo",
         "benches": [
           {
