@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727176196184,
+  "lastUpdate": 1727248574577,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5459,6 +5459,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "23b96e08b4e0f10f5faea0b193b404c9cd03f47f",
+          "message": "fix(tree-sitter): SupportedLanguages are now non-exhaustive (#331)",
+          "timestamp": "2024-09-25T09:09:53+02:00",
+          "tree_id": "e848e058f99ed4938d378051a39245fd087213c5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/23b96e08b4e0f10f5faea0b193b404c9cd03f47f"
+        },
+        "date": 1727248573557,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 164,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
