@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0](https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0) - 2024-09-25
+
+### New features
+
+- [fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9) *(tree-sitter)*  Add support for Java 22 ([#309](https://github.com/bosun-ai/swiftide/pull/309))
+
+### Bug fixes
+
+- [23b96e0](https://github.com/bosun-ai/swiftide/commit/23b96e08b4e0f10f5faea0b193b404c9cd03f47f) *(tree-sitter)*  SupportedLanguages are now non-exhaustive ([#331](https://github.com/bosun-ai/swiftide/pull/331))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.3...0.13.0
+
+
+
 ## [0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/0.12.3) - 2024-09-23
 
 ### New features
