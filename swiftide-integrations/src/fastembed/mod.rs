@@ -29,6 +29,11 @@ impl From<SparseTextEmbedding> for EmbeddingModelType {
     }
 }
 
+/// Default batch size for embedding
+///
+/// Matches the default batch size in [`fastembed`](https://docs.rs/fastembed)
+const DEFAULT_BATCH_SIZE: usize = 256;
+
 /// A wrapper around the `FastEmbed` library for text embedding.
 ///
 /// Supports a variety of fast text embedding models. The default is the `Flag Embedding` model
@@ -60,7 +65,7 @@ pub struct FastEmbed {
         default = "Arc::new(TextEmbedding::try_new(Default::default())?.into())"
     )]
     embedding_model: Arc<EmbeddingModelType>,
-    #[builder(default)]
+    #[builder(default = "Some(DEFAULT_BATCH_SIZE)")]
     batch_size: Option<usize>,
 }
 
