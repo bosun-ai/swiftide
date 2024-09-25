@@ -19,6 +19,7 @@ use swiftide_core::indexing::{EmbeddedField, Node};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
+const DEFAULT_BATCH_SIZE: usize = 50;
 
 /// A struct representing a Qdrant client with configuration options.
 ///
@@ -50,7 +51,7 @@ pub struct Qdrant {
     /// The default distance of the vectors to be stored in the collection
     vector_distance: Distance,
     /// The batch size for operations. Optional.
-    #[builder(default)]
+    #[builder(default = "Some(DEFAULT_BATCH_SIZE)")]
     batch_size: Option<usize>,
     #[builder(private, default = "Self::default_vectors()")]
     pub(crate) vectors: HashMap<EmbeddedField, VectorConfig>,
