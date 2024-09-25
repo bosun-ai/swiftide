@@ -11,6 +11,9 @@ use std::{sync::Arc, time::Duration};
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 
+/// The default batch size for batch processing.
+const DEFAULT_BATCH_SIZE: usize = 256;
+
 /// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
 ///
 /// The `Pipeline` struct orchestrates the entire file indexing process. It is designed to be flexible and
@@ -38,7 +41,7 @@ impl Default for Pipeline {
             storage: Vec::default(),
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
-            batch_size: 256, //TODO: make this configurable
+            batch_size: DEFAULT_BATCH_SIZE,
         }
     }
 }
