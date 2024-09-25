@@ -58,6 +58,7 @@ impl SparseEmbed {
     /// # Returns
     ///
     /// A new instance of `Embed`.
+    #[must_use]
     pub fn with_batch_size(mut self, batch_size: usize) -> Self {
         self.batch_size = Some(batch_size);
         self
