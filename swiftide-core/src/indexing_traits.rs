@@ -83,6 +83,11 @@ pub trait BatchableTransformer: Send + Sync {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+
+    /// Overrides the default batch size of the pipeline
+    fn batch_size(&self) -> Option<usize> {
+        None
+    }
 }
 
 #[async_trait]

@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .then(MetadataSummary::new(openai_client.clone()))
         .then(MetadataTitle::new(openai_client.clone()))
         .then(MetadataKeywords::new(openai_client.clone()))
-        .then_in_batch(10, Embed::new(openai_client.clone()))
+        .then_in_batch(Embed::new(openai_client.clone()))
         .log_all()
         .filter_errors()
         .then_store_with(

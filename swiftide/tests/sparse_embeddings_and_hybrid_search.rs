@@ -48,8 +48,8 @@ async fn test_sparse_indexing_pipeline() {
     let result =
         Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
             .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-            .then_in_batch(20, transformers::SparseEmbed::new(fastembed_sparse))
-            .then_in_batch(20, transformers::Embed::new(fastembed))
+            .then_in_batch(transformers::SparseEmbed::new(fastembed_sparse).with_batch_size(20))
+            .then_in_batch(transformers::Embed::new(fastembed).with_batch_size(20))
             .log_nodes()
             .then_store_with(
                 integrations::qdrant::Qdrant::try_from_url(&qdrant_url)

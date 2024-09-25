@@ -54,7 +54,7 @@ async fn test_indexing_pipeline() {
             .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
             .then(transformers::MetadataQACode::default())
             .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
-            .then_in_batch(1, transformers::Embed::new(openai_client.clone()))
+            .then_in_batch(transformers::Embed::new(openai_client.clone()).with_batch_size(1))
             .log_nodes()
             .then_store_with(
                 integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
@@ -184,7 +184,7 @@ async fn test_named_vectors() {
             .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
             .then(transformers::MetadataQACode::new(openai_client.clone()))
             .filter_cached(integrations::redis::Redis::try_from_url(&redis_url, "prefix").unwrap())
-            .then_in_batch(10, transformers::Embed::new(openai_client.clone()))
+            .then_in_batch(transformers::Embed::new(openai_client.clone()).with_batch_size(10))
             .then_store_with(
                 integrations::qdrant::Qdrant::try_from_url(&qdrant_url)
                     .unwrap()

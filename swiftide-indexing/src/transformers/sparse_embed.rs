@@ -14,6 +14,7 @@ use swiftide_core::{
 pub struct SparseEmbed {
     embed_model: Arc<dyn SparseEmbeddingModel>,
     concurrency: Option<usize>,
+    batch_size: Option<usize>,
 }
 
 impl std::fmt::Debug for SparseEmbed {
@@ -38,12 +39,27 @@ impl SparseEmbed {
         Self {
             embed_model: Arc::new(model),
             concurrency: None,
+            batch_size: None,
         }
     }
 
     #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
+        self
+    }
+
+    /// Sets the batch size for the transformer.
+    /// If the batch size is not set, the transformer will use the default batch size set by the pipeline
+    /// # Parameters
+    ///
+    /// * `batch_size` - The batch size to use for the transformer.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `Embed`.
+    pub fn with_batch_size(mut self, batch_size: usize) -> Self {
+        self.batch_size = Some(batch_size);
         self
     }
 }
@@ -113,6 +129,10 @@ impl BatchableTransformer for SparseEmbed {
 
     fn concurrency(&self) -> Option<usize> {
         self.concurrency
+    }
+
+    fn batch_size(&self) -> Option<usize> {
+        self.batch_size
     }
 }
 

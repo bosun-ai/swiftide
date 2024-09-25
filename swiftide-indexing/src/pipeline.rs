@@ -27,6 +27,7 @@ pub struct Pipeline {
     storage: Vec<Arc<dyn Persist>>,
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
+    batch_size: usize,
 }
 
 impl Default for Pipeline {
@@ -37,6 +38,7 @@ impl Default for Pipeline {
             storage: Vec::default(),
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
+            batch_size: 256, //TODO: make this configurable
         }
     }
 }
@@ -207,7 +209,6 @@ impl Pipeline {
     ///
     /// # Arguments
     ///
-    /// * `batch_size` - The size of the batches to be processed.
     /// * `transformer` - A transformer that implements the `BatchableTransformer` trait.
     ///
     /// # Returns
@@ -216,7 +217,6 @@ impl Pipeline {
     #[must_use]
     pub fn then_in_batch(
         mut self,
-        batch_size: usize,
         mut transformer: impl BatchableTransformer + WithBatchIndexingDefaults + 'static,
     ) -> Self {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
@@ -226,7 +226,7 @@ impl Pipeline {
         let transformer = Arc::new(transformer);
         self.stream = self
             .stream
-            .try_chunks(batch_size)
+            .try_chunks(transformer.batch_size().unwrap_or(self.batch_size))
             .map_ok(move |nodes| {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
@@ -406,6 +406,7 @@ impl Pipeline {
             storage: self.storage.clone(),
             concurrency: self.concurrency,
             indexing_defaults: self.indexing_defaults.clone(),
+            batch_size: self.batch_size,
         };
 
         let right_pipeline = Self {
@@ -413,6 +414,7 @@ impl Pipeline {
             storage: self.storage.clone(),
             concurrency: self.concurrency,
             indexing_defaults: self.indexing_defaults.clone(),
+            batch_size: self.batch_size,
         };
 
         (left_pipeline, right_pipeline)
@@ -606,6 +608,7 @@ mod tests {
             .returning(|nodes| IndexingStream::iter(nodes.into_iter().map(Ok)));
         batch_transformer.expect_concurrency().returning(|| None);
         batch_transformer.expect_name().returning(|| "transformer");
+        batch_transformer.expect_batch_size().returning(|| None);
 
         chunker
             .expect_transform_node()
@@ -635,7 +638,7 @@ mod tests {
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
-            .then_in_batch(1, batch_transformer)
+            .then_in_batch(batch_transformer)
             .then_chunk(chunker)
             .then_store_with(storage);
 
@@ -750,7 +753,7 @@ mod tests {
             .returning(|| vec![Ok(Node::default())].into());
 
         let pipeline = Pipeline::from_loader(loader)
-            .then_in_batch(10, batch_transformer)
+            .then_in_batch(batch_transformer)
             .then_store_with(storage.clone());
         pipeline.run().await.unwrap();
 
@@ -884,10 +887,7 @@ mod tests {
 
         let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader>)
             .then(Box::new(transformer) as Box<dyn Transformer>)
-            .then_in_batch(
-                1,
-                Box::new(batch_transformer) as Box<dyn BatchableTransformer>,
-            )
+            .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer>)
             .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
             .then_store_with(Box::new(storage) as Box<dyn Persist>);
         pipeline.run().await.unwrap();

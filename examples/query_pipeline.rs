@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     indexing::Pipeline::from_loader(FileLoader::new("README.md"))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
         .then(MetadataQAText::new(openai_client.clone()))
-        .then_in_batch(10, Embed::new(openai_client.clone()))
+        .then_in_batch(Embed::new(openai_client.clone()).with_batch_size(10))
         .then_store_with(qdrant.clone())
         .run()
         .await?;

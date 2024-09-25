@@ -52,7 +52,7 @@ async fn test_lancedb() {
                 .insert("filter".to_string(), "true".to_string());
             Ok(node)
         })
-        .then_in_batch(20, transformers::Embed::new(fastembed.clone()))
+        .then_in_batch(transformers::Embed::new(fastembed.clone()).with_batch_size(20))
         .log_nodes()
         .then_store_with(lancedb.clone())
         .run()

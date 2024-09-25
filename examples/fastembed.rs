@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_owned();
 
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
-        .then_in_batch(10, Embed::new(FastEmbed::builder().batch_size(10).build()?))
+        .then_in_batch(Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(
             Qdrant::try_from_url(qdrant_url)?
                 .batch_size(50)

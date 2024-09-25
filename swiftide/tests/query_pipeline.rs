@@ -38,7 +38,7 @@ async fn test_query_pipeline() {
         loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]),
     )
     .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-    .then_in_batch(1, transformers::Embed::new(fastembed.clone()))
+    .then_in_batch(transformers::Embed::new(fastembed.clone()).with_batch_size(1))
     .then_store_with(qdrant_client.clone())
     .run()
     .await
@@ -89,14 +89,8 @@ async fn test_hybrid_search_qdrant() {
         .build()
         .unwrap();
 
-    let fastembed_sparse = FastEmbed::try_default_sparse()
-        .unwrap()
-        .with_batch_size(batch_size)
-        .to_owned();
-    let fastembed = FastEmbed::try_default()
-        .unwrap()
-        .with_batch_size(batch_size)
-        .to_owned();
+    let fastembed_sparse = FastEmbed::try_default_sparse().unwrap().to_owned();
+    let fastembed = FastEmbed::try_default().unwrap().to_owned();
 
     println!("Qdrant URL: {qdrant_url}");
 
@@ -104,10 +98,9 @@ async fn test_hybrid_search_qdrant() {
         loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]),
     )
     .then_chunk(transformers::ChunkCode::try_for_language("rust").unwrap())
-    .then_in_batch(batch_size, transformers::Embed::new(fastembed.clone()))
+    .then_in_batch(transformers::Embed::new(fastembed.clone()).with_batch_size(batch_size))
     .then_in_batch(
-        batch_size,
-        transformers::SparseEmbed::new(fastembed_sparse.clone()),
+        transformers::SparseEmbed::new(fastembed_sparse.clone()).with_batch_size(batch_size),
     )
     .then_store_with(qdrant_client.clone())
     .run()
