@@ -33,6 +33,7 @@ use serde::{Deserialize, Serialize};
     strum_macros::EnumIter,
 )]
 #[strum(ascii_case_insensitive)]
+#[non_exhaustive]
 pub enum SupportedLanguages {
     #[serde(alias = "rust")]
     Rust,
