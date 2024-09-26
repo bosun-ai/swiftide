@@ -128,7 +128,7 @@ indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         )?)
         .then(MetadataQACode::default())
         .then(move |node| my_own_thing(node))
-        .then_in_batch(10, Embed::new(openai_client.clone()))
+        .then_in_batch(Embed::new(openai_client.clone()))
         .then_store_with(
             Qdrant::builder()
                 .batch_size(50)
