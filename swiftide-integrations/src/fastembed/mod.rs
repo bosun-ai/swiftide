@@ -100,11 +100,6 @@ impl FastEmbed {
             .build()
     }
 
-    pub fn with_batch_size(&mut self, batch_size: usize) -> &mut Self {
-        self.batch_size = Some(batch_size);
-        self
-    }
-
     pub fn builder() -> FastEmbedBuilder {
         FastEmbedBuilder::default()
     }

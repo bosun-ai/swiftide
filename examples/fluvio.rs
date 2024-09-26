@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     indexing::Pipeline::from_loader(loader)
-        .then_in_batch(10, Embed::new(FastEmbed::try_default().unwrap()))
+        .then_in_batch(Embed::new(FastEmbed::try_default().unwrap()).with_batch_size(10))
         .then_store_with(
             Qdrant::builder()
                 .batch_size(50)

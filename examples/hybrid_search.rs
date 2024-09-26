@@ -23,14 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ensure all batching is consistent
     let batch_size = 64;
 
-    let fastembed_sparse = FastEmbed::try_default_sparse()
-        .unwrap()
-        .with_batch_size(batch_size)
-        .to_owned();
-    let fastembed = FastEmbed::try_default()
-        .unwrap()
-        .with_batch_size(batch_size)
-        .to_owned();
+    let fastembed_sparse = FastEmbed::try_default_sparse().unwrap().to_owned();
+    let fastembed = FastEmbed::try_default().unwrap().to_owned();
 
     // Set up openai with the mini model, which is great for indexing
     let openai = openai::OpenAI::builder()
@@ -57,10 +51,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Generate metadata on the code chunks to increase our chances of finding the right code
         .then(MetadataQACode::from_client(openai.clone()).build().unwrap())
         .then_in_batch(
-            batch_size,
-            transformers::SparseEmbed::new(fastembed_sparse.clone()),
+            transformers::SparseEmbed::new(fastembed_sparse.clone()).with_batch_size(batch_size),
         )
-        .then_in_batch(batch_size, transformers::Embed::new(fastembed.clone()))
+        .then_in_batch(transformers::Embed::new(fastembed.clone()).with_batch_size(batch_size))
         .then_store_with(qdrant.clone())
         .run()
         .await?;

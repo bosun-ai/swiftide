@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "rust",
             10..2048,
         )?)
-        .then_in_batch(10, Embed::new(openai_client.clone()))
+        .then_in_batch(Embed::new(openai_client.clone()).with_batch_size(10))
         .then_store_with(
             Qdrant::builder()
                 .batch_size(50)

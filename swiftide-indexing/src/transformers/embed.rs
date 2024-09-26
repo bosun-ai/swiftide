@@ -14,12 +14,14 @@ use swiftide_core::{
 pub struct Embed {
     embed_model: Arc<dyn EmbeddingModel>,
     concurrency: Option<usize>,
+    batch_size: Option<usize>,
 }
 
 impl std::fmt::Debug for Embed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Embed")
             .field("concurrency", &self.concurrency)
+            .field("batch_size", &self.batch_size)
             .finish()
     }
 }
@@ -38,12 +40,28 @@ impl Embed {
         Self {
             embed_model: Arc::new(model),
             concurrency: None,
+            batch_size: None,
         }
     }
 
     #[must_use]
     pub fn with_concurrency(mut self, concurrency: usize) -> Self {
         self.concurrency = Some(concurrency);
+        self
+    }
+
+    /// Sets the batch size for the transformer.
+    /// If the batch size is not set, the transformer will use the default batch size set by the pipeline
+    /// # Parameters
+    ///
+    /// * `batch_size` - The batch size to use for the transformer.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `Embed`.
+    #[must_use]
+    pub fn with_batch_size(mut self, batch_size: usize) -> Self {
+        self.batch_size = Some(batch_size);
         self
     }
 }
