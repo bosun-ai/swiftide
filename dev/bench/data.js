@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727361216256,
+  "lastUpdate": 1727364920844,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5627,6 +5627,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 165,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "8a9d77207ff339cb3f7fb57bdfb884ff2aba5784",
+          "message": "docs(README): Update for new batching method",
+          "timestamp": "2024-09-26T17:28:47+02:00",
+          "tree_id": "fa372cf9e7ada2c87b16e07d5ad6570ada9d299e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8a9d77207ff339cb3f7fb57bdfb884ff2aba5784"
+        },
+        "date": 1727364919835,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
