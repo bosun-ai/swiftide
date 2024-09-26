@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727290162275,
+  "lastUpdate": 1727361216256,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5585,6 +5585,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 164,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e1b58684e02bfecae96f4e3c51104efd38a0d256",
+          "message": "fix(ci): Disable cargo cache as it gets too big (#337)",
+          "timestamp": "2024-09-26T16:27:19+02:00",
+          "tree_id": "e51429097b677be5807965680d772d79cb250e85",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e1b58684e02bfecae96f4e3c51104efd38a0d256"
+        },
+        "date": 1727361215900,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 165,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
