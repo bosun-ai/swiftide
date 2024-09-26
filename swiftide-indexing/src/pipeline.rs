@@ -208,7 +208,7 @@ impl Pipeline {
 
     /// Adds a batch transformer to the pipeline.
     ///
-    /// If the transformer has a batch size set, the pipeline will bach nodes on transformer batch size otherwise on pipeline default batch size ([`DEFAULT_BATCH_SIZE`]).
+    /// If the transformer has a batch size set, the batch size from the transformer is used, otherwise the pipeline default batch size ([`DEFAULT_BATCH_SIZE`]).
     ///
     /// # Arguments
     ///
