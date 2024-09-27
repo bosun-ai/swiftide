@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0](https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0) - 2024-09-26
+
+### New features
+
+- [7d8a57f](https://github.com/bosun-ai/swiftide/commit/7d8a57f54b2c73267dfaa3b3a32079b11d9b32bc) *(indexing)*  [**breaking**] Removed duplication of batch_size ([#336](https://github.com/bosun-ai/swiftide/pull/336))
+
+**BREAKING CHANGE**: The batch size of batch transformers when indexing is
+now configured on the batch transformer. If no batch size or default is
+configured, a configurable default is used from the pipeline. The
+default batch size is 256.
+
+---------
+
+- [fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9) *(tree-sitter)*  Add support for Java 22 ([#309](https://github.com/bosun-ai/swiftide/pull/309))
+
+### Bug fixes
+
+- [23b96e0](https://github.com/bosun-ai/swiftide/commit/23b96e08b4e0f10f5faea0b193b404c9cd03f47f) *(tree-sitter)* [**breaking**]  SupportedLanguages are now non-exhaustive ([#331](https://github.com/bosun-ai/swiftide/pull/331))
+
+**BREAKING CHANGE**: SupportedLanguages are now non-exhaustive. This means that matching on SupportedLanguages will now require a catch-all arm.
+This change was made to allow for future languages to be added without breaking changes.
+
+### Miscellaneous
+
+- [923a8f0](https://github.com/bosun-ai/swiftide/commit/923a8f0663e7d2b7138f54069f7a74c3cf6663ed) *(fastembed,qdrant)*  Better batching defaults ([#334](https://github.com/bosun-ai/swiftide/pull/334))
+
+```text
+Qdrant and FastEmbed now have a default batch size, removing the need to set it manually. The default batch size is 50 and 256 respectively.
+```
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.3...0.13.0
+
+
+
 ## [0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/0.12.3) - 2024-09-23
 
 ### New features
