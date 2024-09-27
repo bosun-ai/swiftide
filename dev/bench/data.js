@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727429325978,
+  "lastUpdate": 1727429791633,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5711,6 +5711,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 176,
             "range": "± 6",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "6a38eb5073bfceeede51eadcb86b093b334151b7",
+          "message": "fix(ci): Use github token for all protoc installs",
+          "timestamp": "2024-09-27T11:30:07+02:00",
+          "tree_id": "0d39c29c4ac10934d374f718fedebcff8d19dab4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6a38eb5073bfceeede51eadcb86b093b334151b7"
+        },
+        "date": 1727429791025,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
