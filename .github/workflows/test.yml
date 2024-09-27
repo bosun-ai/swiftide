@@ -51,6 +51,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Test"
         run: cargo test --all-features --tests
@@ -68,6 +70,8 @@ jobs:
           components: clippy,rustfmt
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: r7kamura/rust-problem-matchers@v1
       - name: clippy
         run: cargo clippy --workspace --all-features
