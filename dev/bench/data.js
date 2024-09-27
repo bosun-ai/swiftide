@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727364920844,
+  "lastUpdate": 1727429325978,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5669,6 +5669,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 177,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "068b185b20b4c9e87e5f17eebd4436dcc3fdfb2f",
+          "message": "chore: release v0.13.0 (#339)\n\n## 🤖 New release\r\n* `swiftide`: 0.12.3 -> 0.13.0 (✓ API compatible changes)\r\n* `swiftide-core`: 0.12.3 -> 0.13.0 (✓ API compatible changes)\r\n* `swiftide-indexing`: 0.12.3 -> 0.13.0 (⚠️ API breaking changes)\r\n* `swiftide-macros`: 0.12.3 -> 0.13.0\r\n* `swiftide-integrations`: 0.12.3 -> 0.13.0 (⚠️ API breaking changes)\r\n* `swiftide-query`: 0.12.3 -> 0.13.0 (✓ API compatible changes)\r\n\r\n### ⚠️ `swiftide-indexing` breaking changes\r\n\r\n```\r\n--- failure method_parameter_count_changed: pub method parameter count changed ---\r\n\r\nDescription:\r\nA publicly-visible method now takes a different number of parameters.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#fn-change-arity\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.35.0/src/lints/method_parameter_count_changed.ron\r\n\r\nFailed in:\r\n  swiftide_indexing::Pipeline::then_in_batch now takes 2 parameters instead of 3, in /tmp/.tmpKWtCli/swiftide/swiftide-indexing/src/pipeline.rs:221\r\n```\r\n\r\n### ⚠️ `swiftide-integrations` breaking changes\r\n\r\n```\r\n--- failure enum_marked_non_exhaustive: enum marked #[non_exhaustive] ---\r\n\r\nDescription:\r\nA public enum has been marked #[non_exhaustive]. Pattern-matching on it outside of its crate must now include a wildcard pattern like `_`, or it will fail to compile.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#attr-adding-non-exhaustive\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.35.0/src/lints/enum_marked_non_exhaustive.ron\r\n\r\nFailed in:\r\n  enum SupportedLanguages in /tmp/.tmpKWtCli/swiftide/swiftide-integrations/src/treesitter/supported_languages.rs:37\r\n\r\n--- failure inherent_method_missing: pub method removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible method or associated fn is no longer available under its prior name. It may have been renamed or removed entirely.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.35.0/src/lints/inherent_method_missing.ron\r\n\r\nFailed in:\r\n  FastEmbed::with_batch_size, previously in file /tmp/.tmpg5eaNs/swiftide-integrations/src/fastembed/mod.rs:98\r\n```\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.13.0](https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0)\r\n- 2024-09-26\r\n\r\n### New features\r\n\r\n-\r\n[7d8a57f](https://github.com/bosun-ai/swiftide/commit/7d8a57f54b2c73267dfaa3b3a32079b11d9b32bc)\r\n*(indexing)* [**breaking**] Removed duplication of batch_size\r\n([#336](https://github.com/bosun-ai/swiftide/pull/336))\r\n\r\n**BREAKING CHANGE**: The batch size of batch transformers when indexing\r\nis\r\nnow configured on the batch transformer. If no batch size or default is\r\nconfigured, a configurable default is used from the pipeline. The\r\ndefault batch size is 256.\r\n\r\n---------\r\n\r\n-\r\n[fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9)\r\n*(tree-sitter)* Add support for Java 22\r\n([#309](https://github.com/bosun-ai/swiftide/pull/309))\r\n\r\n### Bug fixes\r\n\r\n-\r\n[23b96e0](https://github.com/bosun-ai/swiftide/commit/23b96e08b4e0f10f5faea0b193b404c9cd03f47f)\r\n*(tree-sitter)* [**breaking**] SupportedLanguages are now non-exhaustive\r\n([#331](https://github.com/bosun-ai/swiftide/pull/331))\r\n\r\n**BREAKING CHANGE**: SupportedLanguages are now non-exhaustive. This\r\nmeans that matching on SupportedLanguages will now require a catch-all\r\narm.\r\nThis change was made to allow for future languages to be added without\r\nbreaking changes.\r\n\r\n### Miscellaneous\r\n\r\n-\r\n[923a8f0](https://github.com/bosun-ai/swiftide/commit/923a8f0663e7d2b7138f54069f7a74c3cf6663ed)\r\n*(fastembed,qdrant)* Better batching defaults\r\n([#334](https://github.com/bosun-ai/swiftide/pull/334))\r\n\r\n```text\r\nQdrant and FastEmbed now have a default batch size, removing the need to set it manually. The default batch size is 50 and 256 respectively.\r\n```\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.12.3...0.13.0\r\n\r\n\r\n\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\n---------\r\n\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2024-09-27T11:22:25+02:00",
+          "tree_id": "1f2096bed8b121fb4c7811f051a332c026715346",
+          "url": "https://github.com/bosun-ai/swiftide/commit/068b185b20b4c9e87e5f17eebd4436dcc3fdfb2f"
+        },
+        "date": 1727429324929,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
             "unit": "ns/iter"
           }
         ]
