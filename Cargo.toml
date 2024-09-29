@@ -59,6 +59,7 @@ lancedb = { version = "0.10", default-features = false }
 arrow-array = { version = "52.0", default-features = false }
 arrow = { version = "52.2" }
 parquet = { version = "52.2", default-features = false, features = ["async"] }
+redb = { version = "2.1" }
 
 # Testing
 test-log = "0.2.16"
