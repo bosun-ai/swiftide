@@ -13,8 +13,6 @@ now configured on the batch transformer. If no batch size or default is
 configured, a configurable default is used from the pipeline. The
 default batch size is 256.
 
----------
-
 - [fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9) *(tree-sitter)*  Add support for Java 22 ([#309](https://github.com/bosun-ai/swiftide/pull/309))
 
 ### Bug fixes
