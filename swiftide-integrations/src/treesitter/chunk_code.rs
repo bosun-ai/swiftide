@@ -10,8 +10,23 @@ use swiftide_core::{
 };
 
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
-/// based on the specified language and chunk size. This is a crucial step in the
-/// indexing pipeline for processing and embedding code efficiently.
+/// based on the specified language and chunk size.
+///
+/// It uses tree-sitter under the hood, and tries to split the code into smaller, meaningful
+/// chunks.
+///
+/// # Example
+///
+/// ```no_run
+/// # use swiftide_integrations::treesitter::transformers::ChunkCode;
+/// # use swiftide_integrations::treesitter::SupportedLanguages;
+/// // Chunk rust code with a maximum chunk size of 1000 bytes.
+/// ChunkCode::try_for_language_and_chunk_size(SupportedLanguages::Rust, 1000);
+///
+/// // Chunk python code with a minimum chunk size of 500 bytes and maximum chunk size of 2048.
+/// // Smaller chunks than 500 bytes will be discarded.
+/// ChunkCode::try_for_language_and_chunk_size(SupportedLanguages::Python, 500..2048);
+/// ````
 #[derive(Debug, Clone, Builder)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ChunkCode {
@@ -75,7 +90,7 @@ impl ChunkCode {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkCode {
-    /// Transforms an `Node` by splitting its code chunk into smaller pieces.
+    /// Transforms a `Node` by splitting its code chunk into smaller pieces.
     ///
     /// # Parameters
     /// - `node`: The `Node` containing the code chunk to be split.
