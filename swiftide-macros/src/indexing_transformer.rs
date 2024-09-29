@@ -1,7 +1,7 @@
 use darling::{ast::NestedMeta, Error, FromMeta};
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Fields, Ident, ItemStruct};
+use syn::{Fields, Ident, ItemStruct};
 
 #[derive(FromMeta, Default)]
 #[darling(default)]
@@ -21,11 +21,10 @@ struct DeriveOptions {
 }
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as ItemStruct);
+pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) -> TokenStream {
     let args = match parse_args(args) {
         Ok(args) => args,
-        Err(e) => return e.write_errors().into(),
+        Err(e) => return e.write_errors(),
     };
 
     let struct_name = &input.ident;
@@ -34,6 +33,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
         proc_macro2::Span::call_site(),
     );
     let vis = &input.vis;
+    let attrs = &input.attrs;
     let existing_fields =
         extract_existing_fields(input.fields).collect::<Vec<proc_macro2::TokenStream>>();
 
@@ -99,6 +99,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
 
         #derive
         #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
+        #(#attrs)*
         #vis struct #struct_name {
             #(#existing_fields)*
             #[builder(setter(custom), default)]
@@ -176,11 +177,10 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: TokenStream) -
 
         #default_prompt_fn
     }
-    .into()
 }
 
 fn parse_args(args: TokenStream) -> Result<TransformerArgs, Error> {
-    let attr_args = NestedMeta::parse_meta_list(args.into())?;
+    let attr_args = NestedMeta::parse_meta_list(args)?;
 
     TransformerArgs::from_list(&attr_args)
 }
@@ -197,4 +197,118 @@ fn extract_existing_fields(fields: Fields) -> impl Iterator<Item = proc_macro2::
             #field_vis #field_name: #field_type,
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quote::quote;
+    use syn::{parse_quote, ItemStruct};
+
+    #[test]
+    fn test_includes_doc_comments() {
+        let input: ItemStruct = parse_quote! {
+            /// This is a test struct
+            pub struct TestStruct {
+                /// This is a test field
+                pub test_field: String,
+            }
+        };
+
+        let args: TokenStream = quote!();
+        let output = indexing_transformer_impl(args, input);
+
+        let expected_output = quote! {
+            mod hidden {
+                pub use std::sync::Arc;
+                pub use anyhow::Result;
+                pub use derive_builder::Builder;
+                pub use swiftide_core::{
+                    indexing::{IndexingDefaults},
+                    prompt::{Prompt, PromptTemplate},
+                    SimplePrompt, Transformer, WithIndexingDefaults
+                };
+            }
+
+            #[derive(hidden::Builder, Debug, Clone)]
+            #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
+            /// This is a test struct
+            pub struct TestStruct {
+                /// This is a test field
+                pub test_field: String,
+                #[builder(setter(custom), default)]
+                client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
+                #[builder(default)]
+                concurrency: Option<usize>,
+                #[builder(private, default)]
+                indexing_defaults: Option<hidden::IndexingDefaults>,
+            }
+
+            impl Default for TestStruct {
+                fn default() -> Self {
+                    TestStructBuilder::default().build().unwrap()
+                }
+            }
+
+            impl TestStruct {
+                /// Creates a new builder for the transformer
+                pub fn builder() -> TestStructBuilder {
+                    TestStructBuilder::default()
+                }
+
+                /// Build a new transformer from a client
+                pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> TestStructBuilder {
+                    TestStructBuilder::default().client(client).to_owned()
+                }
+
+                /// Create a new transformer from a client
+                pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
+                    TestStructBuilder::default().client(client).build().unwrap()
+                }
+
+                /// Set the concurrency level for the transformer
+                #[must_use]
+                pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+                    self.concurrency = Some(concurrency);
+                    self
+                }
+
+                /// Prompts either the client provided to the transformer or a default client
+                /// provided on the indexing pipeline
+                ///
+                /// # Errors
+                ///
+                /// Gives an error if no (default) client is provided
+                async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String> {
+                    if let Some(client) = &self.client {
+                        return client.prompt(prompt).await
+                    };
+
+                    let Some(defaults) = &self.indexing_defaults.as_ref() else {
+                        anyhow::bail!("No client provided")
+                    };
+
+                    let Some(client) = defaults.simple_prompt() else {
+                        anyhow::bail!("No client provided")
+                    };
+                    client.prompt(prompt).await
+                }
+            }
+
+            impl TestStructBuilder {
+                pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
+                    self.client = Some(Some(hidden::Arc::new(client)));
+                    self
+                }
+            }
+
+            impl hidden::WithIndexingDefaults for TestStruct {
+                fn with_indexing_defaults(&mut self, defaults: hidden::IndexingDefaults) {
+                    self.indexing_defaults = Some(defaults);
+                }
+            }
+        };
+
+        assert_eq!(output.to_string(), expected_output.to_string());
+    }
 }
