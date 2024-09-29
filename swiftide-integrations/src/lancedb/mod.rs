@@ -23,6 +23,20 @@ Implements `Persist` and `Retrieve`.
 
 Note: For querying large tables you manually need to create an index. You can get an
 active connection via `get_connection`.
+
+# Example
+
+```no_run
+# use swiftide_integrations::lancedb::{LanceDB};
+# use swiftide_core::indexing::EmbeddedField;
+    LanceDB::builder()
+    .uri("/my/lancedb")
+    .vector_size(1536)
+    .with_vector(EmbeddedField::Combined)
+    .with_metadata("Metadata field to also store")
+    .table_name("swiftide_test")
+    .build()
+    .unwrap();
 */
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
