@@ -5,6 +5,16 @@ use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory,
 /// filtering them based on their extensions, and creating a stream of these files for further processing.
+///
+/// # Example
+///
+/// ```no_run
+/// // Create a pipeline that loads the current directory
+/// // and indexes all files with the ".rs" extension.
+/// # use swiftide_indexing as indexing;
+/// # use swiftide_indexing::loaders::FileLoader;
+/// indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]));
+/// ```
 pub struct FileLoader {
     pub(crate) path: PathBuf,
     pub(crate) extensions: Option<Vec<String>>,
