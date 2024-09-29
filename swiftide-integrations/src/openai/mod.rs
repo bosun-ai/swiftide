@@ -10,6 +10,25 @@ mod simple_prompt;
 
 /// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt models.
 /// It uses the `Builder` pattern for flexible and customizable instantiation.
+///
+/// # Example
+///
+/// ```no_run
+/// # use swiftide_integrations::openai::OpenAI;
+///
+/// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
+/// let openai = OpenAI::builder()
+///     .default_embed_model("text-embedding-3-small")
+///     .default_prompt_model("gpt-4")
+///     .build().unwrap();
+///
+/// // Create an OpenAI client with a custom api key.
+/// let openai = OpenAI::builder()
+///     .default_embed_model("text-embedding-3-small")
+///     .default_prompt_model("gpt-4")
+///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
+///     .build().unwrap();
+///```
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct OpenAI {
