@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727429791633,
+  "lastUpdate": 1727621886544,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5753,6 +5753,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 177,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1b0e691e39d3e7e0f91410f11fab1b986d148873",
+          "message": "docs(swiftide-macros): Preserve doc comments on indexing transformer (#342)",
+          "timestamp": "2024-09-29T16:52:02+02:00",
+          "tree_id": "492638bf62ec9cfc1a8dd7e7cc728e1aac6d3b16",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1b0e691e39d3e7e0f91410f11fab1b986d148873"
+        },
+        "date": 1727621886157,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
             "unit": "ns/iter"
           }
         ]
