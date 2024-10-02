@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727882001313,
+  "lastUpdate": 1727883423719,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5945,6 +5945,48 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f"
         },
         "date": 1727882000934,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8e7b8eaf0f5cab3c3e1cd0573f0e629c7d9ee0fd",
+          "message": "chore: release v0.13.1 (#344)\n\n## 🤖 New release\r\n* `swiftide`: 0.13.0 -> 0.13.1 (✓ API compatible changes)\r\n* `swiftide-core`: 0.13.0 -> 0.13.1\r\n* `swiftide-indexing`: 0.13.0 -> 0.13.1 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.13.0 -> 0.13.1\r\n* `swiftide-integrations`: 0.13.0 -> 0.13.1 (✓ API compatible changes)\r\n* `swiftide-query`: 0.13.0 -> 0.13.1\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.13.1](https://github.com/bosun-ai/swiftide/compare/v0.13.0...v0.13.1)\r\n- 2024-10-02\r\n\r\n### Bug fixes\r\n\r\n-\r\n[e6d9ec2](https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f)\r\n*(lancedb)* Should not error if table exists\r\n([#349](https://github.com/bosun-ai/swiftide/pull/349))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.13.0...0.13.1\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).",
+          "timestamp": "2024-10-02T17:30:47+02:00",
+          "tree_id": "16eb6e2f71628f711c5ce0eb652d789f57b2fa4c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8e7b8eaf0f5cab3c3e1cd0573f0e629c7d9ee0fd"
+        },
+        "date": 1727883423012,
         "tool": "cargo",
         "benches": [
           {
