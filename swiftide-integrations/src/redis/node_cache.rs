@@ -72,6 +72,29 @@ impl NodeCache for Redis {
             }
         }
     }
+
+    async fn clear(&self) -> Result<()> {
+        if self.cache_key_prefix.is_empty() {
+            return Err(anyhow::anyhow!(
+                "No cache key prefix set; not flushing cache"
+            ));
+        }
+
+        if let Some(mut cm) = self.lazy_connect().await {
+            redis::cmd("DEL")
+                .arg(format!("{}*", self.cache_key_prefix))
+                .query_async(&mut cm)
+                .await?;
+
+            Ok(())
+        } else {
+            anyhow::bail!("Failed to connect to Redis");
+        }
+    }
+
+    fn name(&self) -> &'static str {
+        "redis"
+    }
 }
 
 #[cfg(test)]

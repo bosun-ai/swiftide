@@ -14,6 +14,8 @@ use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
 
+use dyn_clone::DynClone;
+use mockall::mock;
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
 #[doc(hidden)]
@@ -204,19 +206,42 @@ impl ChunkerTransformer for &dyn ChunkerTransformer {
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
+// #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Caches nodes, typically by their path and hash
 /// Recommended to namespace on the storage
 ///
 /// For now just bool return value for easy filter
-pub trait NodeCache: Send + Sync + Debug {
+pub trait NodeCache: Send + Sync + Debug + DynClone {
     async fn get(&self, node: &Node) -> bool;
     async fn set(&self, node: &Node);
+
+    /// Optionally provide a method to clear the cache
+    async fn clear(&self) -> Result<()>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(NodeCache);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub NodeCache {}
+
+    #[async_trait]
+    impl NodeCache for NodeCache {
+        async fn get(&self, node: &Node) -> bool;
+        async fn set(&self, node: &Node);
+        async fn clear(&self) -> Result<()>;
+
+    }
+
+    impl Clone for NodeCache {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -228,6 +253,9 @@ impl NodeCache for Box<dyn NodeCache> {
     async fn set(&self, node: &Node) {
         self.as_ref().set(node).await;
     }
+    async fn clear(&self) -> Result<()> {
+        self.as_ref().clear().await
+    }
 }
 
 #[async_trait]
@@ -237,6 +265,9 @@ impl NodeCache for &dyn NodeCache {
     }
     async fn set(&self, node: &Node) {
         (*self).set(node).await;
+    }
+    async fn clear(&self) -> Result<()> {
+        (*self).clear().await
     }
 }
 

@@ -47,6 +47,7 @@ chrono = { version = "0.4" }
 indoc = { version = "2.0" }
 regex = { version = "1.10.6" }
 uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
+dyn-clone = { version = "1.0" }
 
 # Integrations
 spider = { version = "2.2" }
