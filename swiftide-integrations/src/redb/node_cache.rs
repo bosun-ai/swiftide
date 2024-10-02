@@ -49,9 +49,12 @@ impl NodeCache for Redb {
     async fn set(&self, node: &Node) {
         let write_txn = self.database.begin_write().unwrap();
 
-        let mut table = write_txn.open_table(self.table_definition()).unwrap();
+        {
+            let mut table = write_txn.open_table(self.table_definition()).unwrap();
 
-        table.insert(self.node_key(node), true).unwrap();
+            table.insert(self.node_key(node), true).unwrap();
+        }
+        write_txn.commit().unwrap();
     }
 
     /// Deletes the full cache table from the database.
@@ -59,10 +62,45 @@ impl NodeCache for Redb {
         let write_txn = self.database.begin_write().unwrap();
         let _ = write_txn.delete_table(self.table_definition());
 
+        write_txn.commit().unwrap();
+
         Ok(())
     }
 
     fn name(&self) -> &'static str {
         "redb"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use swiftide_core::indexing::Node;
+    use temp_dir::TempDir;
+
+    fn setup_redb() -> Redb {
+        let tempdir = TempDir::new().unwrap();
+        Redb::builder()
+            .database_path(tempdir.child("test_clear"))
+            .build()
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_get_set() {
+        let redb = setup_redb();
+        let node = Node::new("test_get_set");
+        assert!(!redb.get(&node).await);
+        redb.set(&node).await;
+        assert!(redb.get(&node).await);
+    }
+    #[tokio::test]
+    async fn test_clear() {
+        let redb = setup_redb();
+        let node = Node::new("test_clear");
+        redb.set(&node).await;
+        assert!(redb.get(&node).await);
+        redb.clear().await.unwrap();
+        assert!(!redb.get(&node).await);
     }
 }
