@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.1](https://github.com/bosun-ai/swiftide/compare/v0.13.0...v0.13.1) - 2024-10-02
+
+### Bug fixes
+
+- [e6d9ec2](https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f) *(lancedb)*  Should not error if table exists ([#349](https://github.com/bosun-ai/swiftide/pull/349))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.0...0.13.1
+
+
+
 ## [0.13.0](https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0) - 2024-09-26
 
 ### New features
