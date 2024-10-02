@@ -89,8 +89,8 @@ async fn test_hybrid_search_qdrant() {
         .build()
         .unwrap();
 
-    let fastembed_sparse = FastEmbed::try_default_sparse().unwrap().to_owned();
-    let fastembed = FastEmbed::try_default().unwrap().to_owned();
+    let fastembed_sparse = FastEmbed::try_default_sparse().unwrap().clone();
+    let fastembed = FastEmbed::try_default().unwrap().clone();
 
     println!("Qdrant URL: {qdrant_url}");
 
