@@ -162,10 +162,7 @@ impl LanceDB {
 
 #[cfg(test)]
 mod test {
-    use swiftide_core::{
-        indexing::{EmbeddedField},
-        Persist as _,
-    };
+    use swiftide_core::{indexing::EmbeddedField, Persist as _};
     use temp_dir::TempDir;
 
     use super::*;
