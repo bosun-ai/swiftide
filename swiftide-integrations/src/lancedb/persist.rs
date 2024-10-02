@@ -25,11 +25,19 @@ impl Persist for LanceDB {
         let conn = self.get_connection().await?;
         let schema = self.schema.clone();
 
-        conn.create_empty_table(&self.table_name, schema)
-            .execute()
-            .await
-            .map(|_| ())
-            .map_err(Into::into)
+        if let Err(err) = conn.open_table(&self.table_name).execute().await {
+            if matches!(err, lancedb::Error::TableNotFound { .. }) {
+                conn.create_empty_table(&self.table_name, schema)
+                    .execute()
+                    .await
+                    .map(|_| ())
+                    .map_err(anyhow::Error::from)?;
+            } else {
+                return Err(err.into());
+            }
+        }
+
+        Ok(())
     }
 
     #[tracing::instrument(skip_all)]
@@ -149,5 +157,41 @@ impl LanceDB {
             }
         }
         Ok(batches)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use swiftide_core::{
+        indexing::{self, EmbeddedField},
+        Persist as _,
+    };
+    use temp_dir::TempDir;
+
+    use super::*;
+
+    async fn setup() -> (TempDir, LanceDB) {
+        let tempdir = TempDir::new().unwrap();
+        let lancedb = LanceDB::builder()
+            .uri(tempdir.child("lancedb").to_str().unwrap())
+            .vector_size(384)
+            .with_metadata("filter")
+            .with_vector(EmbeddedField::Combined)
+            .table_name("swiftide_test")
+            .build()
+            .unwrap();
+        lancedb.setup().await.unwrap();
+
+        (tempdir, lancedb)
+    }
+
+    #[tokio::test]
+    async fn test_no_error_when_table_exists() {
+        let (_guard, lancedb) = setup().await;
+
+        lancedb
+            .setup()
+            .await
+            .expect("Should not error if table exists");
     }
 }
