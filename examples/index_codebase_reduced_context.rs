@@ -7,7 +7,7 @@
 //! The pipeline will:
 //! - Load all `.rs` files from the current directory
 //! - Skip any nodes previously processed; hashes are based on the path and chunk (not the
-//! metadata!)
+//!   metadata!)
 //! - Generate an outline of the symbols defined in each file to be used as context in a later step and store it in the metadata
 //! - Chunk the code into pieces of 10 to 2048 bytes
 //! - For each chunk, generate a condensed subset of the symbols outline tailored for that specific chunk and store that in the metadata

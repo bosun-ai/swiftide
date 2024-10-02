@@ -316,7 +316,7 @@ public class HelloWorld {
 "#;
         let outliner = CodeOutliner::new(SupportedLanguages::Java);
         let summary = outliner.outline(code).unwrap();
-        println!("{}", summary);
+        println!("{summary}");
         assert_eq!(
             summary,
             "\nimport java.io.PrintStream;\nimport java.util.Scanner;\n\npublic class HelloWorld {\n    // This is a comment\n    public static void main(String[] args) \n}"
