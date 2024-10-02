@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727631014297,
+  "lastUpdate": 1727882001313,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -5921,6 +5921,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 176,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e6d9ec2fe034c9d36fd730c969555c459606d42f",
+          "message": "fix(lancedb): Should not error if table exists (#349)",
+          "timestamp": "2024-10-02T17:07:03+02:00",
+          "tree_id": "2c96452e153288176744d7adf86685eee0dd3d99",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f"
+        },
+        "date": 1727882000934,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
