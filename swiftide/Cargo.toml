@@ -59,6 +59,8 @@ lancedb = ["swiftide-integrations/lancedb"]
 fluvio = ["swiftide-integrations/fluvio"]
 # Parquet loader
 parquet = ["swiftide-integrations/parquet"]
+# Redb embeddable nodecache
+redb = ["swiftide-integrations/redb"]
 
 # Testing, internal only
 test-utils = []
