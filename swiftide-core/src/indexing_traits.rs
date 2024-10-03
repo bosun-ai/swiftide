@@ -203,6 +203,7 @@ mock! {
     impl Loader for Loader {
         fn into_stream(self) -> IndexingStream;
         fn into_stream_boxed(self: Box<Self>) -> IndexingStream;
+        fn name(&self) -> &'static str;
     }
 
     impl Clone for Loader {
@@ -325,6 +326,7 @@ mock! {
         async fn get(&self, node: &Node) -> bool;
         async fn set(&self, node: &Node);
         async fn clear(&self) -> Result<()>;
+        fn name(&self) -> &'static str;
 
     }
 
