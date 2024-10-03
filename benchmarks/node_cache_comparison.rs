@@ -1,17 +1,14 @@
 use anyhow::Result;
 use criterion::{
-    async_executor::AsyncExecutor, criterion_group, criterion_main, BenchmarkId, Criterion,
+    criterion_group, criterion_main, BenchmarkId, Criterion,
 };
 use swiftide::indexing::transformers::ChunkCode;
-use swiftide::integrations::redb::Redb;
 use swiftide::{
     indexing::{
         loaders::FileLoader,
         persist::MemoryStorage,
-        transformers::{ChunkMarkdown, Embed},
         Pipeline,
     },
-    integrations::fastembed::FastEmbed,
     traits::NodeCache,
 };
 use temp_dir::TempDir;
