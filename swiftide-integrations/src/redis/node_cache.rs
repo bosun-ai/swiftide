@@ -5,6 +5,7 @@ use swiftide_core::indexing::{Node, NodeCache};
 
 use super::Redis;
 
+#[allow(dependency_on_unit_never_type_fallback)]
 #[async_trait]
 impl NodeCache for Redis {
     /// Checks if a node is present in the cache.
