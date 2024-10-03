@@ -15,6 +15,7 @@ use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
 /// # use swiftide_indexing::loaders::FileLoader;
 /// indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]));
 /// ```
+#[derive(Clone, Debug)]
 pub struct FileLoader {
     pub(crate) path: PathBuf,
     pub(crate) extensions: Option<Vec<String>>,
