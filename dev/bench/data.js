@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727883423719,
+  "lastUpdate": 1727968201175,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6005,6 +6005,48 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 176,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "06f83361c52010a451e8b775ce9c5d67057edbc5",
+          "message": "fix(indexing): Ensure `name()` returns concrete name on trait objects (#351)",
+          "timestamp": "2024-10-03T17:03:31+02:00",
+          "tree_id": "ac241d7855cc90beac52f6e7317b96a5f7fbf2f0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/06f83361c52010a451e8b775ce9c5d67057edbc5"
+        },
+        "date": 1727968200116,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
