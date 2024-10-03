@@ -92,10 +92,6 @@ impl NodeCache for Redis {
             anyhow::bail!("Failed to connect to Redis");
         }
     }
-
-    fn name(&self) -> &'static str {
-        "redis"
-    }
 }
 
 #[cfg(test)]

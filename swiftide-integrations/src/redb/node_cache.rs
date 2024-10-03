@@ -66,10 +66,6 @@ impl NodeCache for Redb {
 
         Ok(())
     }
-
-    fn name(&self) -> &'static str {
-        "redb"
-    }
 }
 
 #[cfg(test)]

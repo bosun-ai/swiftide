@@ -45,6 +45,9 @@ impl Transformer for Box<dyn Transformer> {
     fn concurrency(&self) -> Option<usize> {
         self.as_ref().concurrency()
     }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 #[async_trait]
@@ -110,6 +113,9 @@ impl BatchableTransformer for Box<dyn BatchableTransformer> {
     fn concurrency(&self) -> Option<usize> {
         self.as_ref().concurrency()
     }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 #[async_trait]
@@ -156,6 +162,9 @@ impl Loader for Box<dyn Loader> {
     fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
         Loader::into_stream(*self)
     }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 impl Loader for &dyn Loader {
@@ -192,6 +201,9 @@ impl ChunkerTransformer for Box<dyn ChunkerTransformer> {
     }
     fn concurrency(&self) -> Option<usize> {
         self.as_ref().concurrency()
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
     }
 }
 
@@ -257,6 +269,9 @@ impl NodeCache for Box<dyn NodeCache> {
     async fn clear(&self) -> Result<()> {
         self.as_ref().clear().await
     }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 #[async_trait]
@@ -290,6 +305,10 @@ impl EmbeddingModel for Box<dyn EmbeddingModel> {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         self.as_ref().embed(input).await
     }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 #[async_trait]
@@ -317,6 +336,10 @@ impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
     async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
         self.as_ref().sparse_embed(input).await
     }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 #[async_trait]
@@ -343,6 +366,10 @@ pub trait SimplePrompt: Debug + Send + Sync {
 impl SimplePrompt for Box<dyn SimplePrompt> {
     async fn prompt(&self, prompt: Prompt) -> Result<String> {
         self.as_ref().prompt(prompt).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
     }
 }
 
@@ -383,6 +410,9 @@ impl Persist for Box<dyn Persist> {
     }
     fn batch_size(&self) -> Option<usize> {
         self.as_ref().batch_size()
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
     }
 }
 
