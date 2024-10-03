@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727970700805,
+  "lastUpdate": 1727978559850,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6353,6 +6353,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241089,
             "range": "± 2930",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4b13aa7d76dfc7270870682e2f757f066a99ba4e",
+          "message": "feat(core): Add support for cloning all trait objects (#355)\n\nFor instance, if you have a `Box<dyn SimplePrompt>`, you can now clone\r\ninto an owned copy and more effectively use the available generics. This\r\nalso works for borrowed trait objects.",
+          "timestamp": "2024-10-03T19:55:08+02:00",
+          "tree_id": "2b18fdb947652181942fb26d10c9c6ce04ce0b6d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4b13aa7d76dfc7270870682e2f757f066a99ba4e"
+        },
+        "date": 1727978559429,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 167,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1260397,
+            "range": "± 884876",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 224728,
+            "range": "± 9444",
             "unit": "ns/iter"
           }
         ]
