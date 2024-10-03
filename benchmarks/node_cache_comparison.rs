@@ -1,14 +1,8 @@
 use anyhow::Result;
-use criterion::{
-    criterion_group, criterion_main, BenchmarkId, Criterion,
-};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use swiftide::indexing::transformers::ChunkCode;
 use swiftide::{
-    indexing::{
-        loaders::FileLoader,
-        persist::MemoryStorage,
-        Pipeline,
-    },
+    indexing::{loaders::FileLoader, persist::MemoryStorage, Pipeline},
     traits::NodeCache,
 };
 use temp_dir::TempDir;
