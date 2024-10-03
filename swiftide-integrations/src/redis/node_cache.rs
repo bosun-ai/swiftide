@@ -5,6 +5,7 @@ use swiftide_core::indexing::{Node, NodeCache};
 
 use super::Redis;
 
+#[allow(dependency_on_unit_never_type_fallback)]
 #[async_trait]
 impl NodeCache for Redis {
     /// Checks if a node is present in the cache.
@@ -70,6 +71,25 @@ impl NodeCache for Redis {
             if let Err(e) = result {
                 tracing::error!("Failed to set node cache: {}", e);
             }
+        }
+    }
+
+    async fn clear(&self) -> Result<()> {
+        if self.cache_key_prefix.is_empty() {
+            return Err(anyhow::anyhow!(
+                "No cache key prefix set; not flushing cache"
+            ));
+        }
+
+        if let Some(mut cm) = self.lazy_connect().await {
+            redis::cmd("DEL")
+                .arg(format!("{}*", self.cache_key_prefix))
+                .query_async(&mut cm)
+                .await?;
+
+            Ok(())
+        } else {
+            anyhow::bail!("Failed to connect to Redis");
         }
     }
 }

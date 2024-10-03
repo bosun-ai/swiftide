@@ -75,6 +75,7 @@ parquet = { workspace = true, optional = true, features = [
   "snap",
 ] }
 arrow = { workspace = true, optional = true }
+redb = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -134,6 +135,8 @@ lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 fluvio = ["dep:fluvio"]
 # Paruqet loader
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
+# Redb as an embeddable node cache
+redb = ["dep:redb"]
 
 [lints]
 workspace = true
