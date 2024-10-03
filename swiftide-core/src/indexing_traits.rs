@@ -15,11 +15,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use dyn_clone::DynClone;
-use mockall::mock;
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
 #[doc(hidden)]
-use mockall::{automock, predicate::str};
+use mockall::{automock, mock, predicate::str};
 
 #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
