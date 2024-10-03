@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn test_parsing_on_java_enum() {
         let parser = CodeParser::from_language(SupportedLanguages::Java);
-        let code = r#"
+        let code = r"
         enum Material {
             DENIM,
             CANVAS,
@@ -274,7 +274,7 @@ mod tests {
             c = Material.DENIM;
           }
         }
-        "#;
+        ";
         let tree = parser.parse(code).unwrap();
         let result = tree.references_and_definitions().unwrap();
         assert_eq!(result.definitions, vec!["Material", "Person", "getName"]);

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.1](https://github.com/bosun-ai/swiftide/compare/v0.13.0...v0.13.1) - 2024-10-02
+
+### Bug fixes
+
+- [e6d9ec2](https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f) *(lancedb)*  Should not error if table exists ([#349](https://github.com/bosun-ai/swiftide/pull/349))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.0...0.13.1
+
+
+
 ## [0.13.0](https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0) - 2024-09-26
 
 ### New features
@@ -12,8 +23,6 @@ All notable changes to this project will be documented in this file.
 now configured on the batch transformer. If no batch size or default is
 configured, a configurable default is used from the pipeline. The
 default batch size is 256.
-
----------
 
 - [fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9) *(tree-sitter)*  Add support for Java 22 ([#309](https://github.com/bosun-ai/swiftide/pull/309))
 
