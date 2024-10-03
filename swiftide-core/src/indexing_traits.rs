@@ -216,7 +216,9 @@ pub trait NodeCache: Send + Sync + Debug + DynClone {
     async fn set(&self, node: &Node);
 
     /// Optionally provide a method to clear the cache
-    async fn clear(&self) -> Result<()>;
+    async fn clear(&self) -> Result<()> {
+        unimplemented!("Clear not implemented")
+    }
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
