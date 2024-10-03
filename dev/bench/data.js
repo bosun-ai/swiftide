@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727968284121,
+  "lastUpdate": 1727970700805,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6299,6 +6299,60 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 177,
             "range": "± 28",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ed3da52cf89b2384ec6f07c610c591b3eda2fa28",
+          "message": "feat(indexing): Support Redb as embedable nodecache (#346)\n\nAdds support for Redb as an embeddable node cache, allowing full local\r\napp development without needing external services.",
+          "timestamp": "2024-10-03T17:43:35+02:00",
+          "tree_id": "9ed9d47cdaed34fb8f0de0b144431a3df4b341fc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ed3da52cf89b2384ec6f07c610c591b3eda2fa28"
+        },
+        "date": 1727970699798,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1313585,
+            "range": "± 1050871",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241089,
+            "range": "± 2930",
             "unit": "ns/iter"
           }
         ]
