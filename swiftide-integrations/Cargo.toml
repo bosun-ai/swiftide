@@ -40,7 +40,7 @@ redis = { version = "0.27", features = [
   "connection-manager",
   "tokio-rustls-comp",
 ], optional = true }
-tree-sitter = { version = "0.23", optional = true }
+tree-sitter = { version = "0.24", optional = true }
 tree-sitter-rust = { version = "0.23", optional = true }
 tree-sitter-python = { version = "0.23", optional = true }
 tree-sitter-ruby = { version = "0.23", optional = true }
