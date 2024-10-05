@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728120433934,
+  "lastUpdate": 1728124425075,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6449,6 +6449,60 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 176,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "277c6bd72263b4fad5dbb3140cb27fe17e15b957",
+          "message": "chore(deps): update rust crate futures-util to v0.3.31 (#359)",
+          "timestamp": "2024-10-05T12:26:02+02:00",
+          "tree_id": "8da5077ec825798251ee557184b3688d7ac21584",
+          "url": "https://github.com/bosun-ai/swiftide/commit/277c6bd72263b4fad5dbb3140cb27fe17e15b957"
+        },
+        "date": 1728124424655,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1275309,
+            "range": "± 928945",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 237986,
+            "range": "± 1043",
             "unit": "ns/iter"
           }
         ]
