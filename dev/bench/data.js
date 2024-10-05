@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728130186952,
+  "lastUpdate": 1728132487612,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6773,6 +6773,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 237531,
             "range": "± 1507",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0094cb8e93ff72fe382cfed7992dc879d7ea07a6",
+          "message": "chore: release v0.13.2 (#362)",
+          "timestamp": "2024-10-05T14:40:12+02:00",
+          "tree_id": "f4f1d402a7f3dd024c9427983fb5dbdde1eeb42f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0094cb8e93ff72fe382cfed7992dc879d7ea07a6"
+        },
+        "date": 1728132486483,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288929,
+            "range": "± 931499",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 238351,
+            "range": "± 2673",
             "unit": "ns/iter"
           }
         ]
