@@ -40,7 +40,6 @@ dyn_clone::clone_trait_object!(Transformer);
 
 #[cfg(feature = "test-utils")]
 mock! {
-    #[doc(hidden)]
     #[derive(Debug)]
     pub Transformer {}
 
@@ -117,7 +116,6 @@ dyn_clone::clone_trait_object!(BatchableTransformer);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub BatchableTransformer {}
 
     #[async_trait]
@@ -196,7 +194,6 @@ dyn_clone::clone_trait_object!(Loader);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub Loader {}
 
     #[async_trait]
@@ -255,7 +252,6 @@ dyn_clone::clone_trait_object!(ChunkerTransformer);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub ChunkerTransformer {}
 
     #[async_trait]
@@ -318,7 +314,6 @@ dyn_clone::clone_trait_object!(NodeCache);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub NodeCache {}
 
     #[async_trait]
@@ -381,7 +376,6 @@ dyn_clone::clone_trait_object!(EmbeddingModel);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub EmbeddingModel {}
 
     #[async_trait]
@@ -430,7 +424,6 @@ dyn_clone::clone_trait_object!(SparseEmbeddingModel);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub SparseEmbeddingModel {}
 
     #[async_trait]
@@ -479,7 +472,6 @@ dyn_clone::clone_trait_object!(SimplePrompt);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub SimplePrompt {}
 
     #[async_trait]
@@ -532,7 +524,6 @@ dyn_clone::clone_trait_object!(Persist);
 #[cfg(feature = "test-utils")]
 mock! {
     #[derive(Debug)]
-    #[doc(hidden)]
     pub Persist {}
 
     #[async_trait]

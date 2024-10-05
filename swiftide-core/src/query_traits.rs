@@ -11,7 +11,6 @@ use crate::{
 };
 
 #[cfg(feature = "test-utils")]
-#[doc(hidden)]
 use mockall::{mock, predicate::str};
 
 /// Can transform queries before retrieval
@@ -32,7 +31,6 @@ dyn_clone::clone_trait_object!(TransformQuery);
 
 #[cfg(feature = "test-utils")]
 mock! {
-    #[doc(hidden)]
     #[derive(Debug)]
     pub TransformQuery {}
 
@@ -135,7 +133,6 @@ dyn_clone::clone_trait_object!(TransformResponse);
 
 #[cfg(feature = "test-utils")]
 mock! {
-    #[doc(hidden)]
     #[derive(Debug)]
     pub TransformResponse {}
 
@@ -182,7 +179,6 @@ dyn_clone::clone_trait_object!(Answer);
 
 #[cfg(feature = "test-utils")]
 mock! {
-    #[doc(hidden)]
     #[derive(Debug)]
     pub Answer {}
 
@@ -225,7 +221,6 @@ dyn_clone::clone_trait_object!(EvaluateQuery);
 
 #[cfg(feature = "test-utils")]
 mock! {
-    #[doc(hidden)]
     #[derive(Debug)]
     pub EvaluateQuery {}
 
