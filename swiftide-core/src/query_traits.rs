@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 
 use crate::{
     query::{
@@ -10,13 +11,11 @@ use crate::{
 };
 
 #[cfg(feature = "test-utils")]
-#[doc(hidden)]
-use mockall::{automock, predicate::str};
+use mockall::{mock, predicate::str};
 
 /// Can transform queries before retrieval
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
-pub trait TransformQuery: Send + Sync {
+pub trait TransformQuery: Send + Sync + DynClone {
     async fn transform_query(
         &self,
         query: Query<states::Pending>,
@@ -28,10 +27,31 @@ pub trait TransformQuery: Send + Sync {
     }
 }
 
+dyn_clone::clone_trait_object!(TransformQuery);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub TransformQuery {}
+
+    #[async_trait]
+    impl TransformQuery for TransformQuery {
+        async fn transform_query(
+            &self,
+            query: Query<states::Pending>,
+        ) -> Result<Query<states::Pending>>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for TransformQuery {
+        fn clone(&self) -> Self;
+    }
+}
+
 #[async_trait]
 impl<F> TransformQuery for F
 where
-    F: Fn(Query<states::Pending>) -> Result<Query<states::Pending>> + Send + Sync,
+    F: Fn(Query<states::Pending>) -> Result<Query<states::Pending>> + Send + Sync + Clone,
 {
     async fn transform_query(
         &self,
@@ -56,7 +76,7 @@ pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
 /// Can retrieve documents given a SearchStrategy
 #[async_trait]
-pub trait Retrieve<S: SearchStrategy>: Send + Sync {
+pub trait Retrieve<S: SearchStrategy>: Send + Sync + DynClone {
     async fn retrieve(
         &self,
         search_strategy: &S,
@@ -68,6 +88,8 @@ pub trait Retrieve<S: SearchStrategy>: Send + Sync {
         name.split("::").last().unwrap_or(name)
     }
 }
+
+dyn_clone::clone_trait_object!(<S> Retrieve<S>);
 
 #[async_trait]
 impl<S: SearchStrategy> Retrieve<S> for Box<dyn Retrieve<S>> {
@@ -84,7 +106,7 @@ impl<S: SearchStrategy> Retrieve<S> for Box<dyn Retrieve<S>> {
 impl<S, F> Retrieve<S> for F
 where
     S: SearchStrategy,
-    F: Fn(&S, Query<states::Pending>) -> Result<Query<states::Retrieved>> + Send + Sync,
+    F: Fn(&S, Query<states::Pending>) -> Result<Query<states::Retrieved>> + Send + Sync + Clone,
 {
     async fn retrieve(
         &self,
@@ -96,9 +118,8 @@ where
 }
 
 /// Can transform a response after retrieval
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
-pub trait TransformResponse: Send + Sync {
+pub trait TransformResponse: Send + Sync + DynClone {
     async fn transform_response(&self, query: Query<Retrieved>)
         -> Result<Query<states::Retrieved>>;
 
@@ -108,10 +129,28 @@ pub trait TransformResponse: Send + Sync {
     }
 }
 
+dyn_clone::clone_trait_object!(TransformResponse);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub TransformResponse {}
+
+    #[async_trait]
+    impl TransformResponse for TransformResponse {
+        async fn transform_response(&self, query: Query<Retrieved>)
+            -> Result<Query<states::Retrieved>>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for TransformResponse {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 impl<F> TransformResponse for F
 where
-    F: Fn(Query<Retrieved>) -> Result<Query<Retrieved>> + Send + Sync,
+    F: Fn(Query<Retrieved>) -> Result<Query<Retrieved>> + Send + Sync + Clone,
 {
     async fn transform_response(&self, query: Query<Retrieved>) -> Result<Query<Retrieved>> {
         (self)(query)
@@ -126,9 +165,8 @@ impl TransformResponse for Box<dyn TransformResponse> {
 }
 
 /// Can answer the original query
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
-pub trait Answer: Send + Sync {
+pub trait Answer: Send + Sync + DynClone {
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>>;
 
     fn name(&self) -> &'static str {
@@ -137,10 +175,27 @@ pub trait Answer: Send + Sync {
     }
 }
 
+dyn_clone::clone_trait_object!(Answer);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Answer {}
+
+    #[async_trait]
+    impl Answer for Answer {
+        async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Answer {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 impl<F> Answer for F
 where
-    F: Fn(Query<Retrieved>) -> Result<Query<states::Answered>> + Send + Sync,
+    F: Fn(Query<Retrieved>) -> Result<Query<states::Answered>> + Send + Sync + Clone,
 {
     async fn answer(&self, query: Query<Retrieved>) -> Result<Query<states::Answered>> {
         (self)(query)
@@ -157,12 +212,27 @@ impl Answer for Box<dyn Answer> {
 /// Evaluates a query
 ///
 /// An evaluator needs to be able to respond to each step in the query pipeline
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
-pub trait EvaluateQuery: Send + Sync {
+pub trait EvaluateQuery: Send + Sync + DynClone {
     async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()>;
 }
 
+dyn_clone::clone_trait_object!(EvaluateQuery);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub EvaluateQuery {}
+
+    #[async_trait]
+    impl EvaluateQuery for EvaluateQuery {
+        async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()>;
+    }
+
+    impl Clone for EvaluateQuery {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 impl EvaluateQuery for Box<dyn EvaluateQuery> {
     async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()> {

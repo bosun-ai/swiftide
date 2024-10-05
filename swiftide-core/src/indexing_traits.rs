@@ -14,15 +14,15 @@ use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
 
+pub use dyn_clone::DynClone;
 /// All traits are easily mockable under tests
 #[cfg(feature = "test-utils")]
 #[doc(hidden)]
-use mockall::{automock, predicate::str};
+use mockall::{mock, predicate::str};
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Transforms single nodes into single nodes
-pub trait Transformer: Send + Sync {
+pub trait Transformer: Send + Sync + DynClone {
     async fn transform_node(&self, node: Node) -> Result<Node>;
 
     /// Overrides the default concurrency of the pipeline
@@ -33,6 +33,25 @@ pub trait Transformer: Send + Sync {
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(Transformer);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Transformer {}
+
+    #[async_trait]
+    impl Transformer for Transformer {
+        async fn transform_node(&self, node: Node) -> Result<Node>;
+        fn concurrency(&self) -> Option<usize>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Transformer {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -63,17 +82,16 @@ impl Transformer for &dyn Transformer {
 /// Use a closure as a transformer
 impl<F> Transformer for F
 where
-    F: Fn(Node) -> Result<Node> + Send + Sync,
+    F: Fn(Node) -> Result<Node> + Send + Sync + Clone,
 {
     async fn transform_node(&self, node: Node) -> Result<Node> {
         self(node)
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Transforms batched single nodes into streams of nodes
-pub trait BatchableTransformer: Send + Sync {
+pub trait BatchableTransformer: Send + Sync + DynClone {
     /// Transforms a batch of nodes into a stream of nodes
     async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream;
 
@@ -93,11 +111,30 @@ pub trait BatchableTransformer: Send + Sync {
     }
 }
 
+dyn_clone::clone_trait_object!(BatchableTransformer);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub BatchableTransformer {}
+
+    #[async_trait]
+    impl BatchableTransformer for BatchableTransformer {
+        async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream;
+        fn name(&self) -> &'static str;
+        fn batch_size(&self) -> Option<usize>;
+        fn concurrency(&self) -> Option<usize>;
+    }
+
+    impl Clone for BatchableTransformer {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 /// Use a closure as a batchable transformer
 impl<F> BatchableTransformer for F
 where
-    F: Fn(Vec<Node>) -> IndexingStream + Send + Sync,
+    F: Fn(Vec<Node>) -> IndexingStream + Send + Sync + Clone,
 {
     async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
         self(nodes)
@@ -128,8 +165,7 @@ impl BatchableTransformer for &dyn BatchableTransformer {
 }
 
 /// Starting point of a stream
-#[cfg_attr(feature = "test-utils", automock, doc(hidden))]
-pub trait Loader {
+pub trait Loader: DynClone {
     fn into_stream(self) -> IndexingStream;
 
     /// Intended for use with Box<dyn Loader>
@@ -150,6 +186,25 @@ pub trait Loader {
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(Loader);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Loader {}
+
+    #[async_trait]
+    impl Loader for Loader {
+        fn into_stream(self) -> IndexingStream;
+        fn into_stream_boxed(self: Box<Self>) -> IndexingStream;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Loader {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -176,10 +231,9 @@ impl Loader for &dyn Loader {
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock, doc(hidden))]
 #[async_trait]
 /// Turns one node into many nodes
-pub trait ChunkerTransformer: Send + Sync + Debug {
+pub trait ChunkerTransformer: Send + Sync + Debug + DynClone {
     async fn transform_node(&self, node: Node) -> IndexingStream;
 
     /// Overrides the default concurrency of the pipeline
@@ -193,6 +247,24 @@ pub trait ChunkerTransformer: Send + Sync + Debug {
     }
 }
 
+dyn_clone::clone_trait_object!(ChunkerTransformer);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub ChunkerTransformer {}
+
+    #[async_trait]
+    impl ChunkerTransformer for ChunkerTransformer {
+    async fn transform_node(&self, node: Node) -> IndexingStream;
+        fn name(&self) -> &'static str;
+        fn concurrency(&self) -> Option<usize>;
+    }
+
+    impl Clone for ChunkerTransformer {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 impl ChunkerTransformer for Box<dyn ChunkerTransformer> {
     async fn transform_node(&self, node: Node) -> IndexingStream {
@@ -216,19 +288,45 @@ impl ChunkerTransformer for &dyn ChunkerTransformer {
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
+// #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Caches nodes, typically by their path and hash
 /// Recommended to namespace on the storage
 ///
 /// For now just bool return value for easy filter
-pub trait NodeCache: Send + Sync + Debug {
+pub trait NodeCache: Send + Sync + Debug + DynClone {
     async fn get(&self, node: &Node) -> bool;
     async fn set(&self, node: &Node);
+
+    /// Optionally provide a method to clear the cache
+    async fn clear(&self) -> Result<()> {
+        unimplemented!("Clear not implemented")
+    }
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(NodeCache);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub NodeCache {}
+
+    #[async_trait]
+    impl NodeCache for NodeCache {
+        async fn get(&self, node: &Node) -> bool;
+        async fn set(&self, node: &Node);
+        async fn clear(&self) -> Result<()>;
+        fn name(&self) -> &'static str;
+
+    }
+
+    impl Clone for NodeCache {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -239,6 +337,9 @@ impl NodeCache for Box<dyn NodeCache> {
     }
     async fn set(&self, node: &Node) {
         self.as_ref().set(node).await;
+    }
+    async fn clear(&self) -> Result<()> {
+        self.as_ref().clear().await
     }
     fn name(&self) -> &'static str {
         self.as_ref().name()
@@ -253,18 +354,38 @@ impl NodeCache for &dyn NodeCache {
     async fn set(&self, node: &Node) {
         (*self).set(node).await;
     }
+    async fn clear(&self) -> Result<()> {
+        (*self).clear().await
+    }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
-pub trait EmbeddingModel: Send + Sync + Debug {
+pub trait EmbeddingModel: Send + Sync + Debug + DynClone {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(EmbeddingModel);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub EmbeddingModel {}
+
+    #[async_trait]
+    impl EmbeddingModel for EmbeddingModel {
+        async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for EmbeddingModel {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -286,16 +407,33 @@ impl EmbeddingModel for &dyn EmbeddingModel {
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
-pub trait SparseEmbeddingModel: Send + Sync + Debug {
+pub trait SparseEmbeddingModel: Send + Sync + Debug + DynClone {
     async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(SparseEmbeddingModel);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub SparseEmbeddingModel {}
+
+    #[async_trait]
+    impl SparseEmbeddingModel for SparseEmbeddingModel {
+    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for SparseEmbeddingModel {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -317,16 +455,33 @@ impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Given a string prompt, queries an LLM
-pub trait SimplePrompt: Debug + Send + Sync {
+pub trait SimplePrompt: Debug + Send + Sync + DynClone {
     // Takes a simple prompt, prompts the llm and returns the response
     async fn prompt(&self, prompt: Prompt) -> Result<String>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(SimplePrompt);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub SimplePrompt {}
+
+    #[async_trait]
+    impl SimplePrompt for SimplePrompt {
+        async fn prompt(&self, prompt: Prompt) -> Result<String>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for SimplePrompt {
+        fn clone(&self) -> Self;
     }
 }
 
@@ -348,10 +503,9 @@ impl SimplePrompt for &dyn SimplePrompt {
     }
 }
 
-#[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Persists nodes
-pub trait Persist: Debug + Send + Sync {
+pub trait Persist: Debug + Send + Sync + DynClone {
     async fn setup(&self) -> Result<()>;
     async fn store(&self, node: Node) -> Result<Node>;
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream;
@@ -362,6 +516,28 @@ pub trait Persist: Debug + Send + Sync {
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(Persist);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Persist {}
+
+    #[async_trait]
+    impl Persist for Persist {
+        async fn setup(&self) -> Result<()>;
+        async fn store(&self, node: Node) -> Result<Node>;
+        async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream;
+        fn batch_size(&self) -> Option<usize>;
+
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Persist {
+        fn clone(&self) -> Self;
     }
 }
 

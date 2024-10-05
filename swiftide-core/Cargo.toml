@@ -26,6 +26,7 @@ strum_macros = { workspace = true }
 mockall = { workspace = true, optional = true }
 lazy_static = { workspace = true }
 derive_builder = { workspace = true }
+dyn-clone = { workspace = true }
 
 tera = { version = "1.20", default-features = false }
 uuid = { workspace = true, features = ["v4", "v3"] }

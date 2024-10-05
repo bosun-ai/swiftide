@@ -18,6 +18,8 @@ pub mod openai;
 pub mod parquet;
 #[cfg(feature = "qdrant")]
 pub mod qdrant;
+#[cfg(feature = "redb")]
+pub mod redb;
 #[cfg(feature = "redis")]
 pub mod redis;
 #[cfg(feature = "scraping")]

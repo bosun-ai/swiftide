@@ -11,6 +11,7 @@ use swiftide_core::{
 /// A transformer that can generate embeddings for an `Node`
 ///
 /// This file defines the `SparseEmbed` struct and its implementation of the `BatchableTransformer` trait.
+#[derive(Clone)]
 pub struct SparseEmbed {
     embed_model: Arc<dyn SparseEmbeddingModel>,
     concurrency: Option<usize>,

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use derive_builder::Builder;
 use spider::website::Website;
 use tokio::{runtime::Handle, sync::RwLock};
@@ -7,14 +9,14 @@ use swiftide_core::{
     Loader,
 };
 
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Clone)]
 #[builder(pattern = "owned")]
 /// Scrapes a given website
 ///
 /// Under the hood uses the `spider` crate to scrape the website.
 /// For more configuration options see their documentation.
 pub struct ScrapingLoader {
-    spider_website: RwLock<Website>,
+    spider_website: Arc<RwLock<Website>>,
 }
 
 impl ScrapingLoader {
@@ -26,7 +28,7 @@ impl ScrapingLoader {
     #[allow(dead_code)]
     pub fn from_spider(spider_website: Website) -> Self {
         Self {
-            spider_website: RwLock::new(spider_website),
+            spider_website: Arc::new(RwLock::new(spider_website)),
         }
     }
 
