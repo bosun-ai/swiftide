@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728125942174,
+  "lastUpdate": 1728130186952,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6719,6 +6719,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 235054,
             "range": "± 1948",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "252f090d44b618ab28a2fafac5a552f6c9020723",
+          "message": "fix(deps): update rust crate aws-sdk-bedrockruntime to v1.52.0 (#361)",
+          "timestamp": "2024-10-05T14:02:02+02:00",
+          "tree_id": "f86d13bffe71a98c2813c3e72349e467de691123",
+          "url": "https://github.com/bosun-ai/swiftide/commit/252f090d44b618ab28a2fafac5a552f6c9020723"
+        },
+        "date": 1728130186598,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1283000,
+            "range": "± 932385",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 237531,
+            "range": "± 1507",
             "unit": "ns/iter"
           }
         ]
