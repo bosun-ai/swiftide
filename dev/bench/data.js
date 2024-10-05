@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727978559850,
+  "lastUpdate": 1728120433934,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6407,6 +6407,48 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 224728,
             "range": "± 9444",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "8237c2890df681c48117188e80cbad914b91e0fd",
+          "message": "chore(core): Mock traits for testing should not have their docs hidden",
+          "timestamp": "2024-10-05T11:19:12+02:00",
+          "tree_id": "7d2e121df74fc9c8120a5e20cc0f53b8e1115bda",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8237c2890df681c48117188e80cbad914b91e0fd"
+        },
+        "date": 1728120433493,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
             "unit": "ns/iter"
           }
         ]
