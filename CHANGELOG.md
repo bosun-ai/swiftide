@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.2](https://github.com/bosun-ai/swiftide/compare/v0.13.1...v0.13.2) - 2024-10-05
+
+### New features
+
+- [4b13aa7](https://github.com/bosun-ai/swiftide/commit/4b13aa7d76dfc7270870682e2f757f066a99ba4e) *(core)*  Add support for cloning all trait objects ([#355](https://github.com/bosun-ai/swiftide/pull/355))
+
+````text
+For instance, if you have a `Box<dyn SimplePrompt>`, you can now clone
+  into an owned copy and more effectively use the available generics. This
+  also works for borrowed trait objects.
+````
+
+- [ed3da52](https://github.com/bosun-ai/swiftide/commit/ed3da52cf89b2384ec6f07c610c591b3eda2fa28) *(indexing)*  Support Redb as embedable nodecache ([#346](https://github.com/bosun-ai/swiftide/pull/346))
+
+````text
+Adds support for Redb as an embeddable node cache, allowing full local
+  app development without needing external services.
+````
+
+### Bug fixes
+
+- [06f8336](https://github.com/bosun-ai/swiftide/commit/06f83361c52010a451e8b775ce9c5d67057edbc5) *(indexing)*  Ensure `name()` returns concrete name on trait objects ([#351](https://github.com/bosun-ai/swiftide/pull/351))
+
+### Miscellaneous
+
+- [8237c28](https://github.com/bosun-ai/swiftide/commit/8237c2890df681c48117188e80cbad914b91e0fd) *(core)*  Mock traits for testing should not have their docs hidden
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.1...0.13.2
+
+
+
 ## [0.13.1](https://github.com/bosun-ai/swiftide/compare/v0.13.0...v0.13.1) - 2024-10-02
 
 ### Bug fixes
