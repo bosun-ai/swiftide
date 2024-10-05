@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728124425075,
+  "lastUpdate": 1728124454157,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6503,6 +6503,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 237986,
             "range": "± 1043",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "eb8578a29f728ab6dfa3b629be2c30ff4bf17be3",
+          "message": "chore(deps): update sethcohen/github-releases-to-discord action to v1.15.1 (#358)",
+          "timestamp": "2024-10-05T12:26:17+02:00",
+          "tree_id": "f284ae7a73b67a21dad11a1f8363109fc823a953",
+          "url": "https://github.com/bosun-ai/swiftide/commit/eb8578a29f728ab6dfa3b629be2c30ff4bf17be3"
+        },
+        "date": 1728124453142,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1291740,
+            "range": "± 987570",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 237815,
+            "range": "± 3065",
             "unit": "ns/iter"
           }
         ]
