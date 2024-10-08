@@ -1,4 +1,6 @@
 //! `CompressCodeOutline` is a transformer that reduces the size of the outline of a the parent file of a chunk to make it more relevant to the chunk.
+use std::sync::OnceLock;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{indexing::Node, Transformer};
@@ -13,7 +15,9 @@ use swiftide_core::{indexing::Node, Transformer};
 pub struct CompressCodeOutline {}
 
 fn extract_markdown_codeblock(text: String) -> String {
-    let re = regex::Regex::new(r"(?sm)```\w*\n(.*?)```").unwrap();
+    static REGEX: OnceLock<regex::Regex> = OnceLock::new();
+
+    let re = REGEX.get_or_init(|| regex::Regex::new(r"(?sm)```\w*\n(.*?)```").unwrap());
     let captures = re.captures(text.as_str());
     captures
         .map(|c| c.get(1).unwrap().as_str().to_string())
