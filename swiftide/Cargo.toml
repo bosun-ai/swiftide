@@ -13,6 +13,8 @@ homepage.workspace = true
 [badges]
 
 [dependencies]
+document-features = "0.2.10"
+
 # Local dependencies
 swiftide-core = { path = "../swiftide-core", version = "0.13" }
 swiftide-integrations = { path = "../swiftide-integrations", version = "0.13" }
@@ -21,6 +23,8 @@ swiftide-query = { path = "../swiftide-query", version = "0.13" }
 
 [features]
 default = []
+
+
 all = [
   "qdrant",
   "redis",
@@ -32,37 +36,54 @@ all = [
   "groq",
   "ollama",
 ]
-# Qdrant for storage
+
+#! ### Integrations
+
+## Enables Qdrant for storage and retrieval
 qdrant = ["swiftide-integrations/qdrant", "swiftide-core/qdrant"]
-# Redis for caching and storage
+
+## Enables Redis as an indexing cache and storage
 redis = ["swiftide-integrations/redis"]
-# Tree-sitter for code operations and chunking
+
+## Tree-sitter for various code transformers
 tree-sitter = [
   "swiftide-integrations/tree-sitter",
   "swiftide-indexing/tree-sitter",
 ]
-# OpenAI for embedding and prompting
+
+## OpenAI for embedding and prompting
 openai = ["swiftide-integrations/openai"]
-# Groq prompting
+
+## Groq prompting
 groq = ["swiftide-integrations/groq"]
-# Ollama prompting
+
+## Ollama prompting
 ollama = ["swiftide-integrations/ollama"]
-# FastEmbed (by qdrant) for fast, local embeddings
+
+## FastEmbed (by qdrant) for fast, local, sparse and dense embeddings
 fastembed = ["swiftide-integrations/fastembed"]
-# Scraping via spider as loader and a html to markdown transformer
+
+## Scraping via spider as loader and a html to markdown transformer
 scraping = ["swiftide-integrations/scraping"]
-# AWS Bedrock for prompting
+
+## AWS Bedrock for prompting
 aws-bedrock = ["swiftide-integrations/aws-bedrock"]
-# Lancdb persistance and querying
+
+## Lancdb for persistance and querying
 lancedb = ["swiftide-integrations/lancedb"]
-# Fluvio loader
+
+## Fluvio loader
 fluvio = ["swiftide-integrations/fluvio"]
-# Parquet loader
+
+## Parquet loader
 parquet = ["swiftide-integrations/parquet"]
-# Redb embeddable nodecache
+
+## Redb embeddable nodecache
 redb = ["swiftide-integrations/redb"]
 
-# Testing, internal only
+#! ### Other features
+
+## Various testing utilities
 test-utils = ["swiftide-core/test-utils", "swiftide-test-utils/test-utils"]
 
 [dev-dependencies]
