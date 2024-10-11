@@ -80,6 +80,20 @@ parquet = ["swiftide-integrations/parquet"]
 
 ## Redb embeddable nodecache
 redb = ["swiftide-integrations/redb"]
+# In process models with mistral.rs
+mistralrs = ["swiftide-integrations/mistralrs"]
+mistralrs-cuda = ["mistralrs", "swiftide-integrations/mistralrs-cuda"]
+mistralrs-cudnn = ["mistralrs", "swiftide-integrations/mistralrs-cudnn"]
+mistralrs-metal = ["mistralrs", "swiftide-integrations/mistralrs-metal"]
+mistralrs-flash-attn = [
+  "mistralrs",
+  "swiftide-integrations/mistralrs-flash-attn",
+]
+mistralrs-accelerate = [
+  "mistralrs",
+  "swiftide-integrations/mistralrs-accelerate",
+]
+mistralrs-mkl = ["mistralrs", "swiftide-integrations/mistralrs-mkl"]
 
 #! ### Other features
 

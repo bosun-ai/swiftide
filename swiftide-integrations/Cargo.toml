@@ -77,13 +77,14 @@ parquet = { workspace = true, optional = true, features = [
 arrow = { workspace = true, optional = true }
 redb = { workspace = true, optional = true }
 
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", optional = true }
+
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 swiftide-test-utils = { path = "../swiftide-test-utils", features = [
   "test-utils",
 ] }
 temp-dir = { workspace = true }
-
 arrow = { workspace = true, features = ["test_utils"] }
 
 # Used for hacking fluv to play nice
@@ -137,6 +138,14 @@ fluvio = ["dep:fluvio"]
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+# Mistral.rs
+mistralrs = ["dep:mistralrs"]
+mistralrs-cuda = ["mistralrs?/cuda"]
+mistralrs-cudnn = ["mistralrs?/cudnn"]
+mistralrs-metal = ["mistralrs?/metal"]
+mistralrs-flash-attn = ["mistralrs-cuda", "mistralrs?/flash-attn"]
+mistralrs-accelerate = ["mistralrs?/accelerate"]
+mistralrs-mkl = ["mistralrs?/mkl"]
 
 [lints]
 workspace = true
