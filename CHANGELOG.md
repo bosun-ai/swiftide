@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.13.3](https://github.com/bosun-ai/swiftide/compare/v0.13.2...v0.13.3) - 2024-10-11
 
 ### Bug fixes
