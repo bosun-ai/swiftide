@@ -2929,9 +2929,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.23.2"
+version = "0.23.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68d0a53efe9832626f6c56dcf9826a1a119fc237a7b2715f3f68eb4f7d7244a6"
+checksum = "98d9de9759d15f0baaab479c97511d8455663a45d5204f11e08da7ae972a5e5d"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -3820,7 +3820,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
