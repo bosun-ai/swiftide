@@ -140,12 +140,6 @@ parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 redb = ["dep:redb"]
 # Mistral.rs
 mistralrs = ["dep:mistralrs"]
-mistralrs-cuda = ["mistralrs?/cuda"]
-mistralrs-cudnn = ["mistralrs?/cudnn"]
-mistralrs-metal = ["mistralrs?/metal"]
-mistralrs-flash-attn = ["mistralrs-cuda", "mistralrs?/flash-attn"]
-mistralrs-accelerate = ["mistralrs?/accelerate"]
-mistralrs-mkl = ["mistralrs?/mkl"]
 
 [lints]
 workspace = true
