@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728675764858,
+  "lastUpdate": 1728677069463,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7745,6 +7745,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245825,
             "range": "± 2419",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ef5d32e93e65c348345fc7f9266c8c013ee9b37c",
+          "message": "docs: Document feature flags in docs.rs (#388)",
+          "timestamp": "2024-10-11T21:56:26+02:00",
+          "tree_id": "81d82502f4b99e13d7f76a2b1f7dec4b9bec2783",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ef5d32e93e65c348345fc7f9266c8c013ee9b37c"
+        },
+        "date": 1728677068844,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 15",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1294693,
+            "range": "± 937445",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243656,
+            "range": "± 7821",
             "unit": "ns/iter"
           }
         ]
