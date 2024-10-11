@@ -1,5 +1,11 @@
 //! # Swiftide
 //!
+//! <div>
+//! <img src="https://github.com/bosun-ai/swiftide/raw/master/images/logo.png" height="200"
+//! width="200" style="margin: auto; display: block;" />
+//! <br />
+//! </div>
+//!
 //! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 //!
 //! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
@@ -89,11 +95,9 @@
 //!
 //! ## Feature flags
 //!
-//! Swiftide has little features enabled by default as there are some dependency heavy
-//! integrations.
-//!
-//! Either use the 'all' feature flag (not recommended), or enable the integrations that you need.
-//! Each integration has a similarly named feature flag.
+//! Swiftide has little features enabled by default, as there are some dependency heavy
+//! integrations. You need to cherry-pick the tools and integrations you want to use.
+#![doc = document_features::document_features!()]
 
 #[doc(inline)]
 pub use swiftide_core::prompt;
