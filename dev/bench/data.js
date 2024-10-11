@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728638926721,
+  "lastUpdate": 1728638938375,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7313,6 +7313,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240860,
             "range": "± 1744",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "95f78d3412951c099df33149c57817338a76553d",
+          "message": "fix(tree-sitter): Compile regex only once (#371)\n\nRegex compilation is not cheap, use a static with a oncelock instead.",
+          "timestamp": "2024-10-11T11:20:56+02:00",
+          "tree_id": "f19d70b1fa3259c1d4596f63ffb44684b9f1d5b9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/95f78d3412951c099df33149c57817338a76553d"
+        },
+        "date": 1728638937977,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1301954,
+            "range": "± 892762",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244461,
+            "range": "± 1790",
             "unit": "ns/iter"
           }
         ]
