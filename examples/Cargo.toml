@@ -22,7 +22,6 @@ swiftide = { path = "../swiftide/", features = [
   "fluvio",
   "lancedb",
   "mistralrs",
-  "mistralrs-metal",
 ] }
 tracing-subscriber = "0.3"
 serde_json = { workspace = true }
