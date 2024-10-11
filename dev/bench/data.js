@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728638942999,
+  "lastUpdate": 1728638949455,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7421,6 +7421,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246348,
             "range": "± 1603",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "29139614+renovate[bot]@users.noreply.github.com",
+            "name": "renovate[bot]",
+            "username": "renovate[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "179607ec6fbd5834983f2f45860063f05e602544",
+          "message": "chore(deps): update rust crate spider to v2.9.6 (#364)\n\nThis PR contains the following updates:\r\n\r\n| Package | Type | Update | Change |\r\n|---|---|---|---|\r\n| [spider](https://redirect.github.com/spider-rs/spider) |\r\nworkspace.dependencies | minor | `2.7.1` -> `2.9.6` |\r\n\r\n---\r\n\r\n### Release Notes\r\n\r\n<details>\r\n<summary>spider-rs/spider (spider)</summary>\r\n\r\n###\r\n[`v2.9.6`](https://redirect.github.com/spider-rs/spider/releases/tag/v2.9.6)\r\n\r\n### Whats Changed\r\n\r\n-   add XPath data extraction support `spider_utils`\r\n-   add XML return format for `spider_transformations`\r\n\r\nExample getting data via xpath.\r\n\r\n```rust\r\n    let map = QueryCSSMap::from([(\r\n        \"list\",\r\n        QueryCSSSelectSet::from([\"//*[@&#8203;class='list']\"]),\r\n    )]);\r\n    let data = css_query_select_map_streamed(\r\n        r#\"<html><body><ul class=\"list\"><li>Test</li></ul></body></html>\"#,\r\n        &build_selectors(map),\r\n    )\r\n    .await;\r\n\r\n    assert!(!data.is_empty(), \"Xpath extraction failed\");\r\n```\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v2.8.28...v2.9.6\r\n\r\n###\r\n[`v2.9.4`](https://redirect.github.com/spider-rs/spider/compare/v2.9.2...v2.9.4)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.9.2...v2.9.4)\r\n\r\n###\r\n[`v2.9.2`](https://redirect.github.com/spider-rs/spider/compare/v2.9.1...v2.9.2)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.9.1...v2.9.2)\r\n\r\n###\r\n[`v2.9.1`](https://redirect.github.com/spider-rs/spider/compare/v2.9.0...v2.9.1)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.9.0...v2.9.1)\r\n\r\n###\r\n[`v2.9.0`](https://redirect.github.com/spider-rs/spider/compare/v2.8.29...v2.9.0)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.29...v2.9.0)\r\n\r\n###\r\n[`v2.8.29`](https://redirect.github.com/spider-rs/spider/releases/tag/v2.8.29)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.28...v2.8.29)\r\n\r\nWhats Changed\r\n\r\nFix request interception remote connections. Intercept builder now uses\r\n`spider::features::chrome_common::RequestInterceptConfiguration` and\r\nadds more control.\r\n\r\n-   chrome performance improvement reducing dup events\r\n-   chore(chrome): add set extra headers\r\n-   chore(smart): add http fallback chrome smart mode request\r\n-   chore(chrome): add spoofed plugins\r\n-   chore(real-browser): add mouse movement waf\r\n-   chore(chrome): patch logs stealth mode\r\n-   chore(page): fix url join empty slash\r\n-   chore(chrome): fix return page response headers and cookies\r\n-   chore(page): add empty page validation\r\n-   chore(config): add serializable crawl configuration\r\n-   chore(retry): add check 502 notfound retry\r\n\r\n**Full Changelog**:\r\nhttps://github.com/spider-rs/spider/compare/v2.7.1...v2.8.29\r\n\r\n###\r\n[`v2.8.28`](https://redirect.github.com/spider-rs/spider/compare/v2.8.27...v2.8.28)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.27...v2.8.28)\r\n\r\n###\r\n[`v2.8.27`](https://redirect.github.com/spider-rs/spider/compare/v2.8.26...v2.8.27)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.26...v2.8.27)\r\n\r\n###\r\n[`v2.8.26`](https://redirect.github.com/spider-rs/spider/compare/v2.8.25...v2.8.26)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.25...v2.8.26)\r\n\r\n###\r\n[`v2.8.25`](https://redirect.github.com/spider-rs/spider/compare/v2.8.24...v2.8.25)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.24...v2.8.25)\r\n\r\n###\r\n[`v2.8.24`](https://redirect.github.com/spider-rs/spider/compare/v2.8.23...v2.8.24)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.23...v2.8.24)\r\n\r\n###\r\n[`v2.8.23`](https://redirect.github.com/spider-rs/spider/compare/v2.8.22...v2.8.23)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.22...v2.8.23)\r\n\r\n###\r\n[`v2.8.22`](https://redirect.github.com/spider-rs/spider/compare/v2.8.21...v2.8.22)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.21...v2.8.22)\r\n\r\n###\r\n[`v2.8.21`](https://redirect.github.com/spider-rs/spider/compare/v2.8.20...v2.8.21)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.20...v2.8.21)\r\n\r\n###\r\n[`v2.8.14`](https://redirect.github.com/spider-rs/spider/compare/v2.8.13...v2.8.14)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.13...v2.8.14)\r\n\r\n###\r\n[`v2.8.13`](https://redirect.github.com/spider-rs/spider/compare/v2.8.12...v2.8.13)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.12...v2.8.13)\r\n\r\n###\r\n[`v2.8.10`](https://redirect.github.com/spider-rs/spider/compare/v2.8.9...v2.8.10)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.9...v2.8.10)\r\n\r\n###\r\n[`v2.8.9`](https://redirect.github.com/spider-rs/spider/compare/v2.8.8...v2.8.9)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.8...v2.8.9)\r\n\r\n###\r\n[`v2.8.8`](https://redirect.github.com/spider-rs/spider/compare/v2.8.7...v2.8.8)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.7...v2.8.8)\r\n\r\n###\r\n[`v2.8.7`](https://redirect.github.com/spider-rs/spider/compare/v2.8.6...v2.8.7)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.6...v2.8.7)\r\n\r\n###\r\n[`v2.8.6`](https://redirect.github.com/spider-rs/spider/compare/v2.8.5...v2.8.6)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.5...v2.8.6)\r\n\r\n###\r\n[`v2.8.5`](https://redirect.github.com/spider-rs/spider/compare/v2.8.4...v2.8.5)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.4...v2.8.5)\r\n\r\n###\r\n[`v2.8.4`](https://redirect.github.com/spider-rs/spider/compare/v2.8.3...v2.8.4)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.3...v2.8.4)\r\n\r\n###\r\n[`v2.8.3`](https://redirect.github.com/spider-rs/spider/compare/v2.8.2...v2.8.3)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.2...v2.8.3)\r\n\r\n###\r\n[`v2.8.2`](https://redirect.github.com/spider-rs/spider/compare/v2.8.1...v2.8.2)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.1...v2.8.2)\r\n\r\n###\r\n[`v2.8.1`](https://redirect.github.com/spider-rs/spider/compare/v2.8.0...v2.8.1)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.8.0...v2.8.1)\r\n\r\n###\r\n[`v2.8.0`](https://redirect.github.com/spider-rs/spider/compare/v2.7.1...v2.8.0)\r\n\r\n[Compare\r\nSource](https://redirect.github.com/spider-rs/spider/compare/v2.7.1...v2.8.0)\r\n\r\n</details>\r\n\r\n---\r\n\r\n### Configuration\r\n\r\n📅 **Schedule**: Branch creation - At any time (no schedule defined),\r\nAutomerge - At any time (no schedule defined).\r\n\r\n🚦 **Automerge**: Disabled by config. Please merge this manually once you\r\nare satisfied.\r\n\r\n♻ **Rebasing**: Whenever PR becomes conflicted, or you tick the\r\nrebase/retry checkbox.\r\n\r\n🔕 **Ignore**: Close this PR and you won't be reminded about this update\r\nagain.\r\n\r\n---\r\n\r\n- [ ] <!-- rebase-check -->If you want to rebase/retry this PR, check\r\nthis box\r\n\r\n---\r\n\r\nThis PR was generated by [Mend Renovate](https://mend.io/renovate/).\r\nView the [repository job\r\nlog](https://developer.mend.io/github/bosun-ai/swiftide).\r\n\r\n<!--renovate-debug:eyJjcmVhdGVkSW5WZXIiOiIzOC45Ny4wIiwidXBkYXRlZEluVmVyIjoiMzguMTE0LjAiLCJ0YXJnZXRCcmFuY2giOiJtYXN0ZXIiLCJsYWJlbHMiOltdfQ==-->\r\n\r\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2024-10-11T11:21:22+02:00",
+          "tree_id": "b0682e1311314cc550281a238bb69f8afcc24f72",
+          "url": "https://github.com/bosun-ai/swiftide/commit/179607ec6fbd5834983f2f45860063f05e602544"
+        },
+        "date": 1728638948994,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1277866,
+            "range": "± 895255",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242999,
+            "range": "± 10953",
             "unit": "ns/iter"
           }
         ]
