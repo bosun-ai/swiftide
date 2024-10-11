@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.3](https://github.com/bosun-ai/swiftide/compare/v0.13.2...v0.13.3) - 2024-10-11
+
+### Bug fixes
+
+- [2647f16](https://github.com/bosun-ai/swiftide/commit/2647f16dc164eb5230d8f7c6d71e31663000cb0d) *(deps)*  Update rust crate text-splitter to 0.17 ([#366](https://github.com/bosun-ai/swiftide/pull/366))
+
+- [d74d85b](https://github.com/bosun-ai/swiftide/commit/d74d85be3bd98706349eff373c16443b9c45c4f0) *(indexing)*  Add missing `Embed::batch_size` implementation ([#378](https://github.com/bosun-ai/swiftide/pull/378))
+
+- [95f78d3](https://github.com/bosun-ai/swiftide/commit/95f78d3412951c099df33149c57817338a76553d) *(tree-sitter)*  Compile regex only once ([#371](https://github.com/bosun-ai/swiftide/pull/371))
+
+````text
+Regex compilation is not cheap, use a static with a oncelock instead.
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.2...0.13.3
+
+
+
 ## [0.13.2](https://github.com/bosun-ai/swiftide/compare/v0.13.1...v0.13.2) - 2024-10-05
 
 ### New features

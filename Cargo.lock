@@ -589,9 +589,9 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6db3286b4f52b6556ac5208fb575d035eca61a2bf40d7e75d1db2733ffc599f"
+checksum = "1b17e44510f88a904cb3102a020d7ea11929dcddadfaff756e71112cb2cb7bd0"
 dependencies = [
  "async-convert",
  "backoff",
@@ -1286,7 +1286,7 @@ dependencies = [
 
 [[package]]
 name = "benchmarks"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "criterion",
@@ -3006,7 +3006,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "fluvio",
  "qdrant-client",
@@ -4189,7 +4189,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -6717,7 +6717,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -6751,7 +6751,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e9552f850d5f0964a4e4d0bf306459ac29323ddfbae05e35a7c0d35cb0803cc5"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.79",
@@ -8268,7 +8268,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -8294,7 +8294,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8320,7 +8320,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8348,7 +8348,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "arrow",
@@ -8405,7 +8405,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-macros"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "darling 0.20.10",
  "proc-macro2",
@@ -8415,7 +8415,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8441,7 +8441,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -8880,9 +8880,9 @@ dependencies = [
 
 [[package]]
 name = "text-splitter"
-version = "0.17.0"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18de70043bbcea07a78e6228e5a406157171b23633afe7fc9fade1003bb8dae9"
+checksum = "6de8ec9ff8e9192f77add3b37ec040808a8bd6567c0616972b2a8568d7269c0d"
 dependencies = [
  "ahash",
  "auto_enums",
@@ -9937,7 +9937,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
