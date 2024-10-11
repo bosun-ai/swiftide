@@ -133,6 +133,10 @@ impl BatchableTransformer for Embed {
     fn concurrency(&self) -> Option<usize> {
         self.concurrency
     }
+
+    fn batch_size(&self) -> Option<usize> {
+        self.batch_size
+    }
 }
 
 #[cfg(test)]
