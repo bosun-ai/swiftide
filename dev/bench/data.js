@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728645346719,
+  "lastUpdate": 1728650812458,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7637,6 +7637,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245626,
             "range": "± 2491",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9c413a33dfd810056feed62769ef3301f5a78b72",
+          "message": "chore: release v0.13.3 (#384)\n\n## 🤖 New release\r\n* `swiftide`: 0.13.2 -> 0.13.3 (✓ API compatible changes)\r\n* `swiftide-core`: 0.13.2 -> 0.13.3\r\n* `swiftide-indexing`: 0.13.2 -> 0.13.3 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.13.2 -> 0.13.3\r\n* `swiftide-integrations`: 0.13.2 -> 0.13.3 (✓ API compatible changes)\r\n* `swiftide-query`: 0.13.2 -> 0.13.3\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.13.3](https://github.com/bosun-ai/swiftide/compare/v0.13.2...v0.13.3)\r\n- 2024-10-11\r\n\r\n### Bug fixes\r\n\r\n-\r\n[2647f16](https://github.com/bosun-ai/swiftide/commit/2647f16dc164eb5230d8f7c6d71e31663000cb0d)\r\n*(deps)* Update rust crate text-splitter to 0.17\r\n([#366](https://github.com/bosun-ai/swiftide/pull/366))\r\n\r\n-\r\n[d74d85b](https://github.com/bosun-ai/swiftide/commit/d74d85be3bd98706349eff373c16443b9c45c4f0)\r\n*(indexing)* Add missing `Embed::batch_size` implementation\r\n([#378](https://github.com/bosun-ai/swiftide/pull/378))\r\n\r\n-\r\n[95f78d3](https://github.com/bosun-ai/swiftide/commit/95f78d3412951c099df33149c57817338a76553d)\r\n*(tree-sitter)* Compile regex only once\r\n([#371](https://github.com/bosun-ai/swiftide/pull/371))\r\n\r\n````text\r\nRegex compilation is not cheap, use a static with a oncelock instead.\r\n````\r\n\r\n### Miscellaneous\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.toml dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.13.2...0.13.3\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).\r\n\r\n---------\r\n\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2024-10-11T14:39:01+02:00",
+          "tree_id": "ca81d76594ac009a812a70544882d9fd2f0bc6e5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9c413a33dfd810056feed62769ef3301f5a78b72"
+        },
+        "date": 1728650811385,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1269037,
+            "range": "± 897761",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243974,
+            "range": "± 4277",
             "unit": "ns/iter"
           }
         ]
