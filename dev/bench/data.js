@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728650812458,
+  "lastUpdate": 1728675764858,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7691,6 +7691,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243974,
             "range": "± 4277",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "35d9c2e98b3e7f32c9693b166bc7f842e1d99983",
+          "message": "fix(ci): Rework ci jobs to minimize resource usage (#389)",
+          "timestamp": "2024-10-11T21:34:52+02:00",
+          "tree_id": "b10f32f9e31c6b60b1273186d1a136f46fa0d26c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/35d9c2e98b3e7f32c9693b166bc7f842e1d99983"
+        },
+        "date": 1728675764378,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1283264,
+            "range": "± 943434",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245825,
+            "range": "± 2419",
             "unit": "ns/iter"
           }
         ]
