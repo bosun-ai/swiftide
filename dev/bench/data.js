@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728404465428,
+  "lastUpdate": 1728638698243,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -6989,6 +6989,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 237696,
             "range": "± 1527",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "rcjmurillo@users.noreply.github.com",
+            "name": "Ricardo Murillo",
+            "username": "rcjmurillo"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d74d85be3bd98706349eff373c16443b9c45c4f0",
+          "message": "fix(indexing): Add missing `Embed::batch_size` implementation (#378)\n\n`transformers::Embed` was missing the `Embed::batch_size` implementation\r\nfor `BatchableTransformer`, causing the pipeline to always use the\r\ndefault batch size when using this transformer.",
+          "timestamp": "2024-10-11T11:16:59+02:00",
+          "tree_id": "9ea9382cab0694d62fa8c94934b5e85d0f84d6e8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d74d85be3bd98706349eff373c16443b9c45c4f0"
+        },
+        "date": 1728638697211,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288956,
+            "range": "± 908067",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243329,
+            "range": "± 1132",
             "unit": "ns/iter"
           }
         ]
