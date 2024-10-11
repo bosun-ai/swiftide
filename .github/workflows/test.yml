@@ -20,14 +20,13 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
 
-    env:
-      RUST_LOG: DEBUG
-      RUST_BACKTRACE: 1
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+      - uses: r7kamura/rust-problem-matchers@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -39,39 +38,20 @@ jobs:
         run: cargo fmt --all --check
       - name: Lint dependencies
         uses: EmbarkStudios/cargo-deny-action@v2
+      - name: clippy
+        run: cargo clippy --all-targets --all-features
 
   test:
     name: Test
     runs-on: ubuntu-latest
-    env:
-      RUST_LOG: DEBUG
-      RUST_BACKTRACE: 1
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: r7kamura/rust-problem-matchers@v1
       - name: "Test"
-        run: cargo test --all-features --tests
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    env:
-      RUST_LOG: DEBUG
-      RUST_BACKTRACE: 1
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy,rustfmt
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: r7kamura/rust-problem-matchers@v1
-      - name: clippy
-        run: cargo clippy --all-targets --all-features
+        run: cargo test --all-features --workspace
