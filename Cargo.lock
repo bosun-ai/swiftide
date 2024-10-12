@@ -5573,7 +5573,7 @@ dependencies = [
 [[package]]
 name = "mistralrs"
 version = "0.3.1"
-source = "git+https://github.com/EricLBuehler/mistral.rs.git#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
+source = "git+https://github.com/EricLBuehler/mistral.rs.git?rev=9dfbab1#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -5592,7 +5592,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-core"
 version = "0.3.1"
-source = "git+https://github.com/EricLBuehler/mistral.rs.git#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
+source = "git+https://github.com/EricLBuehler/mistral.rs.git?rev=9dfbab1#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
 dependencies = [
  "akin",
  "anyhow",
@@ -5658,7 +5658,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-quant"
 version = "0.3.1"
-source = "git+https://github.com/EricLBuehler/mistral.rs.git#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
+source = "git+https://github.com/EricLBuehler/mistral.rs.git?rev=9dfbab1#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -5674,7 +5674,7 @@ dependencies = [
 [[package]]
 name = "mistralrs-vision"
 version = "0.3.1"
-source = "git+https://github.com/EricLBuehler/mistral.rs.git#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
+source = "git+https://github.com/EricLBuehler/mistral.rs.git?rev=9dfbab1#9dfbab1a1f3f260f130680f6c4f02f8656ea28ed"
 dependencies = [
  "candle-core",
  "image",
