@@ -1,11 +1,9 @@
 use swiftide::indexing;
-use swiftide::query::{self, states, Query, TransformationEvent};
 use swiftide::indexing::{
-        transformers::{
-            metadata_qa_code::NAME as METADATA_QA_CODE_NAME, ChunkCode, MetadataQACode,
-        },
-        EmbeddedField,
-    };
+    transformers::{metadata_qa_code::NAME as METADATA_QA_CODE_NAME, ChunkCode, MetadataQACode},
+    EmbeddedField,
+};
+use swiftide::query::{self, states, Query, TransformationEvent};
 use swiftide_indexing::{loaders, transformers, Pipeline};
 use swiftide_integrations::{fastembed::FastEmbed, lancedb::LanceDB};
 use swiftide_query::{answers, query_transformers, response_transformers};
