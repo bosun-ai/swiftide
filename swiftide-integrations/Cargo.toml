@@ -77,7 +77,7 @@ parquet = { workspace = true, optional = true, features = [
 arrow = { workspace = true, optional = true }
 redb = { workspace = true, optional = true }
 
-mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", optional = true }
+mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", rev = "9dfbab1", optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
