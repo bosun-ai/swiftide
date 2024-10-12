@@ -8271,10 +8271,8 @@ name = "swiftide"
 version = "0.13.3"
 dependencies = [
  "anyhow",
- "arrow-array",
  "async-openai",
  "insta",
- "lancedb",
  "mockall",
  "qdrant-client",
  "serde",
