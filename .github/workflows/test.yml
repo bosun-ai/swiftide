@@ -25,13 +25,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - uses: r7kamura/rust-problem-matchers@v1
       - uses: Swatinem/rust-cache@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: r7kamura/rust-problem-matchers@v1
       - name: Check typos
         uses: crate-ci/typos@master
       - name: "Rustfmt"
@@ -52,6 +50,5 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: r7kamura/rust-problem-matchers@v1
       - name: "Test"
         run: cargo test --all-features --tests
