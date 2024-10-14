@@ -34,6 +34,9 @@ exceptions = [
   { allow = [
     "Unicode-3.0",
   ], crate = "yoke-derive" },
+  { allow = [
+    "Zlib",
+  ], crate = "foldhash" },
 ]
 
 [advisories]
