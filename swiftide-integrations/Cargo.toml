@@ -34,6 +34,13 @@ async-openai = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
 ] }
+sqlx = { workspace = true, optional = true, features = [
+  "postgres",
+  "runtime-tokio",
+  "chrono",
+  "uuid"
+] }
+pgvector = { workspace = true, optional = true, features = ["sqlx"] }
 redis = { workspace = true, features = ["aio", "tokio-comp", "connection-manager", "tokio-rustls-comp"], optional = true }
 tree-sitter = { workspace = true, optional = true }
 tree-sitter-rust = { workspace = true, optional = true }
@@ -88,6 +95,8 @@ default = ["rustls"]
 rustls = ["reqwest/rustls-tls-native-roots"]
 # Qdrant for storage
 qdrant = ["dep:qdrant-client", "swiftide-core/qdrant"]
+# PgVector for storage
+pgvector = ["dep:sqlx", "dep:pgvector"]
 # Redis for caching and storage
 redis = ["dep:redis"]
 # Tree-sitter for code operations and chunking

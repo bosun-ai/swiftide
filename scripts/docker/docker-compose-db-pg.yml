@@ -1,0 +1,46 @@
+services:
+  test_env_pgvector:
+    image: ankane/pgvector:v0.5.1
+    container_name: test_env_pgvector
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-myuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mypassword}
+      POSTGRES_DB: ${POSTGRES_DB:-mydatabase}
+    ports:
+      - "5432:5432"
+    volumes:
+      - test_env_pgvector_data:/var/lib/postgresql/data
+    networks:
+      - pg-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myuser} -d ${POSTGRES_DB:-mydatabase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: test_env_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-root}
+    ports:
+      - "8080:80"
+    volumes:
+      - test_env_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - test_env_pgvector
+    networks:
+      - pg-network
+    restart: unless-stopped
+
+networks:
+  pg-network:
+    name: pg-network
+
+volumes:
+  test_env_pgvector_data:
+    name: test_env_pgvector_data
+  test_env_pgadmin_data:
+    name: test_env_pgadmin_data

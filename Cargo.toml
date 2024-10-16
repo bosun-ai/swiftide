@@ -53,6 +53,8 @@ arrow-array = { version = "52.0", default-features = false }
 arrow = { version = "52.2" }
 parquet = { version = "52.2", default-features = false, features = ["async"] }
 redb = { version = "2.2" }
+sqlx = { version = "0.8.2", features = ["postgres", "uuid"] }
+pgvector = { version = "0.4.0", features = ["sqlx"] }
 aws-config = "1.5"
 aws-credential-types = "1.2"
 aws-sdk-bedrockruntime = "1.61"
