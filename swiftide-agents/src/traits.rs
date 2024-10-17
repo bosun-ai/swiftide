@@ -49,12 +49,15 @@ pub trait AgentContext: Send + Sync + DynClone {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
 
     /// List of all messages for this agent, for the purpose of completion and logs
-    async fn message_history(&self) -> &[ChatMessage];
+    async fn conversation_history(&self) -> &[MessageHistoryRecord];
 
-    /// Receives a message and adds it to the history
-    async fn received_message(&mut self, message: &ChatMessage);
+    async fn record_message_history(&mut self, history: impl Into<MessageHistoryRecord>);
+}
 
-    async fn received_tool_call(&mut self, message: &ToolCall);
+pub enum MessageHistoryRecord {
+    ToolCall(ToolCall),
+    ChatMessage(ChatMessage),
+    ToolOutput(ToolOutput),
 }
 
 // TMP
@@ -110,5 +113,5 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 }
 
-type ChatMessage = String;
-type JsonSpec = &'static str;
+pub type ChatMessage = String;
+pub type JsonSpec = &'static str;
