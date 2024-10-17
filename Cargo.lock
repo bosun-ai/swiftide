@@ -7569,6 +7569,7 @@ dependencies = [
  "qdrant-client",
  "serde",
  "serde_json",
+ "swiftide-agents",
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
@@ -7580,6 +7581,17 @@ dependencies = [
  "testcontainers",
  "tokio",
  "wiremock",
+]
+
+[[package]]
+name = "swiftide-agents"
+version = "0.13.3"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "derive_builder",
+ "dyn-clone",
+ "swiftide-core",
 ]
 
 [[package]]

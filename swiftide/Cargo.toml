@@ -20,6 +20,7 @@ swiftide-core = { path = "../swiftide-core", version = "0.13" }
 swiftide-integrations = { path = "../swiftide-integrations", version = "0.13" }
 swiftide-indexing = { path = "../swiftide-indexing", version = "0.13" }
 swiftide-query = { path = "../swiftide-query", version = "0.13" }
+swiftide-agents = { path = "../swiftide-agents", version = "0.13", optional = true }
 
 [features]
 default = []
@@ -85,6 +86,9 @@ redb = ["swiftide-integrations/redb"]
 
 ## Various testing utilities
 test-utils = ["swiftide-core/test-utils", "swiftide-test-utils/test-utils"]
+
+#! ### Experimental
+agents = ["dep:swiftide-agents"]
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

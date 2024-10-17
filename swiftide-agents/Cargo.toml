@@ -1,0 +1,21 @@
+[package]
+name = "swiftide-agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core", version = "0.13" }
+anyhow.workspace = true
+async-trait.workspace = true
+dyn-clone.workspace = true
+derive_builder.workspace = true
+
+[lints]
+workspace = true
