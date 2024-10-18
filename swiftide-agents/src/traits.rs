@@ -2,9 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 use dyn_clone::DynClone;
-use swiftide_core::prompt::Prompt;
+use swiftide_core::{chat_completion::JsonSpec, prompt::Prompt};
 
-use crate::agent::Agent;
+use crate::{agent::Agent, agent_context::AgentContext};
 
 #[async_trait]
 pub trait Workspace: Send + Sync + DynClone {
@@ -20,12 +20,14 @@ pub trait Workspace: Send + Sync + DynClone {
     async fn teardown(self);
 }
 
+dyn_clone::clone_trait_object!(Workspace);
+
 #[async_trait]
 pub trait Tool: Send + Sync + DynClone {
     // tbd
     async fn invoke(
         &self,
-        agent_context: &dyn AgentContext,
+        agent_context: &AgentContext,
         raw_args: Option<&str>,
     ) -> Result<ToolOutput>;
 
@@ -37,28 +39,18 @@ pub trait Tool: Send + Sync + DynClone {
     fn json_spec(&self) -> JsonSpec;
 }
 
-#[async_trait]
-pub trait ChatCompletion: Send + Sync + DynClone {
-    async fn complete(&self, request: ChatCompletionRequest) -> Result<ChatCompletionResponse>;
-}
-
 /// Acts as the interface to the external world and any overlapping state
 /// NOTE: Async as expecting locks
-#[async_trait]
-pub trait AgentContext: Send + Sync + DynClone {
-    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
-
-    /// List of all messages for this agent, for the purpose of completion and logs
-    async fn conversation_history(&self) -> &[MessageHistoryRecord];
-
-    async fn record_message_history(&mut self, history: impl Into<MessageHistoryRecord>);
-}
-
-pub enum MessageHistoryRecord {
-    ToolCall(ToolCall),
-    ChatMessage(ChatMessage),
-    ToolOutput(ToolOutput),
-}
+// #[async_trait]
+// pub trait AgentContext: Send + Sync + DynClone {
+//     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
+//
+//     /// List of all messages for this agent, for the purpose of completion and logs
+//     async fn conversation_history(&self) -> &[MessageHistoryRecord];
+//
+//     // async fn record_message_history<T: ?Sized + Into<MessageHistoryRecord>>(&mut self, history: T);
+// }
+//
 
 // TMP
 pub enum Command {
@@ -77,41 +69,5 @@ pub enum CommandOutput {
 // Additionally, unlike Fluyt, handle as much as possible via tools
 //
 // Maybe this should be a struct?
-pub enum ToolOutput {
-    /// Adds the result of the toolcall to messages
-    ToolCall(ToolCall),
-    /// Stops an agent
-    Stop(Success),
-    //Raw(String),
-    //Agent(Agent),
-}
-
-/// TODO: Needs more values, i.e. OpenAI needs a reference to the original call
-pub type ToolCall = String;
 
 type Success = bool;
-
-pub struct ChatCompletionResponse {
-    pub message: String,
-
-    // Can be a better type
-    // Perhaps should be typed to actual functions already?
-    pub tool_invocations: Vec<(String, Option<String>)>,
-}
-
-#[derive(Builder, Clone)]
-#[builder(setter(into, strip_option))]
-pub struct ChatCompletionRequest<'a> {
-    system_prompt: Option<&'a Prompt>,
-    messages: &'a [ChatMessage],
-    tools_spec: Vec<JsonSpec>,
-}
-
-impl<'a> ChatCompletionRequest<'a> {
-    pub fn builder() -> ChatCompletionRequestBuilder<'a> {
-        ChatCompletionRequestBuilder::default()
-    }
-}
-
-pub type ChatMessage = String;
-pub type JsonSpec = &'static str;

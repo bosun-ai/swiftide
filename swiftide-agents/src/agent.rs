@@ -2,16 +2,19 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use swiftide_core::prompt::Prompt;
+use swiftide_core::{
+    chat_completion::{ChatCompletion, ChatCompletionRequest},
+    prompt::Prompt,
+};
 
-use crate::traits::*;
+use crate::{agent_context::AgentContext, traits::*};
 
 // Notes
 //
 // Generic over LLM instead of box dyn? Should tool support be a separate trait?
 pub struct Agent {
     name: String,
-    context: Box<dyn AgentContext>,
+    context: AgentContext,
     instructions: Prompt,
     available_tools: Vec<Box<dyn Tool>>,
     llm: Box<dyn ChatCompletion>,
@@ -37,7 +40,7 @@ impl Agent {
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
             .system_prompt(&self.instructions)
-            .messages(self.context.message_history().await)
+            .messages(self.context.conversation_history().await)
             .tools_spec(
                 self.available_tools
                     .iter()
@@ -48,7 +51,7 @@ impl Agent {
 
         let response = self.llm.complete(chat_completion_request).await?;
 
-        self.context.received_message(&response.message).await;
+        self.context.record_in_history(&response.message).await;
 
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
         for (tool_name, tool_args) in response.tool_invocations {
@@ -58,9 +61,7 @@ impl Agent {
                 .find(|tool| tool.name() == tool_name)
                 .ok_or_else(|| anyhow!("Tool {tool_name} not found"))?;
 
-            let tool_output = tool
-                .invoke(self.context.as_ref(), tool_args.as_deref())
-                .await?;
+            let tool_output = tool.invoke(&self.context, tool_args.as_deref()).await?;
 
             self.handle_tool_output(&tool_output).await?;
         }
@@ -70,7 +71,7 @@ impl Agent {
 
     async fn handle_tool_output(&mut self, tool_output: &ToolOutput) -> Result<()> {
         match tool_output {
-            ToolOutput::ToolCall(tool_call) => self.context.received_tool_call(&tool_call).await,
+            ToolOutput::ToolCall(tool_call) => self.context.record_in_history(&tool_call).await,
             ToolOutput::Stop(_) => self.should_stop = true,
         }
 
