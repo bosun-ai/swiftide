@@ -19,7 +19,7 @@
 //!     ).build().unwrap();
 //! ```
 
-use derive_builder::Builder;
+use bon::Builder;
 
 /// Re-export the fluvio config builder
 pub use fluvio::consumer::{ConsumerConfigExt, ConsumerConfigExtBuilder};

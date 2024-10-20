@@ -15,7 +15,7 @@
 //! This integration is essential for ensuring efficient node management and caching in the Swiftide system.
 
 use anyhow::{Context as _, Result};
-use derive_builder::Builder;
+use bon::Builder;
 use tokio::sync::RwLock;
 
 use swiftide_core::indexing::Node;

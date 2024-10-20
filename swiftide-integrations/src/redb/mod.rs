@@ -5,7 +5,7 @@
 use anyhow::Result;
 use std::{path::PathBuf, sync::Arc};
 
-use derive_builder::Builder;
+use bon::Builder;
 
 mod node_cache;
 

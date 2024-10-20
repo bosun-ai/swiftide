@@ -2,7 +2,7 @@
 //! It includes the `Groq` struct for managing API clients and default options for prompt models.
 //! The module is conditionally compiled based on the "groq" feature flag.
 
-use derive_builder::Builder;
+use bon::Builder;
 use std::sync::Arc;
 
 use self::config::GroqConfig;

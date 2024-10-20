@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result};
 use std::ops::Range;
 use tree_sitter::{Node, Parser};
 
-use derive_builder::Builder;
+use bon::Builder;
 
 use super::supported_languages::SupportedLanguages;
 

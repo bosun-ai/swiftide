@@ -6,7 +6,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::{error::SdkError, primitives::Blob, Client};
-use derive_builder::Builder;
+use bon::{bon, Builder};
 use serde::Serialize;
 use tokio::runtime::Handle;
 
@@ -28,12 +28,11 @@ mod simple_prompt;
 ///
 /// See the aws cli documentation for more information on how to get access to the service.
 #[derive(Debug, Builder)]
-#[builder(setter(strip_option))]
+#[builder(on(_, into))]
 pub struct AwsBedrock {
-    #[builder(setter(into))]
     /// The model id or arn of the model to use
     model_id: String,
-    #[builder(default = "self.default_client()", setter(custom))]
+    #[builder(skip = self.default_client())]
 
     /// The bedrock runtime client
     client: Arc<dyn BedrockPrompt>,
@@ -76,32 +75,28 @@ impl Clone for AwsBedrock {
     }
 }
 
+#[bon]
 impl AwsBedrock {
-    pub fn builder() -> AwsBedrockBuilder {
-        AwsBedrockBuilder::default()
-    }
-
     /// Build a new `AwsBedrock` instance with the Titan model family
     pub fn build_titan_family(model_id: impl Into<String>) -> AwsBedrockBuilder {
-        Self::builder().titan().model_id(model_id).to_owned()
+        Self::builder().titan().model_id(model_id)
     }
 
     /// Build a new `AwsBedrock` instance with the Anthropic model family
     pub fn build_anthropic_family(model_id: impl Into<String>) -> AwsBedrockBuilder {
-        Self::builder().anthropic().model_id(model_id).to_owned()
+        Self::builder().anthropic().model_id(model_id)
     }
-}
-impl AwsBedrockBuilder {
-    /// Set the model family to Anthropic
-    pub fn anthropic(&mut self) -> &mut Self {
-        self.model_family = Some(ModelFamily::Anthropic);
-        self
+
+    #[builder]
+    pub fn anthropic(mut self) -> Self {
+        let new = self.model_family(ModelFamily::Anthropic);
+        new
     }
 
     /// Set the model family to Titan
-    pub fn titan(&mut self) -> &mut Self {
-        self.model_family = Some(ModelFamily::Titan);
-        self
+    pub fn titan(mut self) -> Self {
+        let new = self.model_family(ModelFamily::Titan);
+        new
     }
 
     #[allow(clippy::unused_self)]
@@ -115,14 +110,43 @@ impl AwsBedrockBuilder {
     }
 
     /// Set the aws bedrock runtime client
-    pub fn client(&mut self, client: Client) -> &mut Self {
+    pub fn client(mut self, client: Client) -> Self {
+        self.client = Some(Arc::new(client));
+        self
+    }
+}
+impl AwsBedrockBuilder {
+    /// Set the model family to Anthropic
+    pub fn anthropic(mut self) -> Self {
+        let new = self.model_family(ModelFamily::Anthropic);
+        new.into()
+    }
+
+    /// Set the model family to Titan
+    pub fn titan(mut self) -> Self {
+        let new = self.model_family(ModelFamily::Titan);
+        new
+    }
+
+    #[allow(clippy::unused_self)]
+    fn default_config(&self) -> aws_config::SdkConfig {
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async { aws_config::from_env().load().await })
+        })
+    }
+    fn default_client(&self) -> Arc<Client> {
+        Arc::new(Client::new(&self.default_config()))
+    }
+
+    /// Set the aws bedrock runtime client
+    pub fn client(mut self, client: Client) -> Self {
         self.client = Some(Arc::new(client));
         self
     }
 
     #[cfg(test)]
     #[allow(private_bounds)]
-    pub fn test_client(&mut self, client: impl BedrockPrompt + 'static) -> &mut Self {
+    pub fn test_client(mut self, client: impl BedrockPrompt + 'static) -> Self {
         self.client = Some(Arc::new(client));
         self
     }

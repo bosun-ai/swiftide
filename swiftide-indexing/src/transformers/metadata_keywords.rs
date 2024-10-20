@@ -72,7 +72,7 @@ mod test {
             .expect_prompt()
             .returning(|_| Ok("important,keywords".to_string()));
 
-        let transformer = MetadataKeywords::builder().client(client).build().unwrap();
+        let transformer = MetadataKeywords::builder().client(client).build();
         let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();

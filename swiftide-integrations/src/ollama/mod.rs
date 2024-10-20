@@ -2,7 +2,7 @@
 //! It includes the `Ollama` struct for managing API clients and default options for embedding and prompt models.
 //! The module is conditionally compiled based on the "ollama" feature flag.
 
-use derive_builder::Builder;
+use bon::Builder;
 use std::sync::Arc;
 
 mod embed;

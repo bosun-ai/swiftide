@@ -9,6 +9,7 @@ use crate::{
     indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream, SparseEmbeddings,
 };
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use crate::prompt::Prompt;
 use anyhow::Result;
@@ -482,6 +483,12 @@ mock! {
 
     impl Clone for SimplePrompt {
         fn clone(&self) -> Self;
+    }
+
+    impl Into<Arc<dyn SimplePrompt>> for SimplePrompt {
+        fn into(self) -> Arc<dyn SimplePrompt> {
+            Arc::new(self)
+        }
     }
 }
 

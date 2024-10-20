@@ -77,7 +77,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
         quote! {
             impl Default for #struct_name {
                 fn default() -> Self {
-                    #builder_name::default().build().unwrap()
+                    #struct_name::builder().build()
                 }
             }
         }
@@ -87,7 +87,8 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
         mod hidden {
             pub use std::sync::Arc;
             pub use anyhow::Result;
-            pub use derive_builder::Builder;
+            pub use bon::Builder;
+            pub use bon;
             pub use swiftide_core::{
                 indexing::{IndexingDefaults},
                 prompt::{Prompt, PromptTemplate},
@@ -98,37 +99,36 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
         #metadata_field_name
 
         #derive
-        #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
+        #[builder(on(_, into))]
         #(#attrs)*
         #vis struct #struct_name {
             #(#existing_fields)*
-            #[builder(setter(custom), default)]
+
+            /// The client to use for prompting. If not provided, will try to use
+            /// the default client from the indexing pipeline.
+            #[builder(with = |client: impl hidden::SimplePrompt + 'static| { Some(hidden::Arc::new(client)) })]
             client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
 
             #prompt_template_struct_attr
 
-            #[builder(default)]
+            /// Optional maximum concurrency this transformer can run at. Otherwise it will default
+            /// to the indexing pipeline's concurrency
             concurrency: Option<usize>,
-            #[builder(private, default)]
+            #[builder(skip)]
             indexing_defaults: Option<hidden::IndexingDefaults>,
         }
 
         #default_impl
 
         impl #struct_name {
-            /// Creates a new builder for the transformer
-            pub fn builder() -> #builder_name {
-                #builder_name::default()
-            }
-
             /// Build a new transformer from a client
-            pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> #builder_name {
-                #builder_name::default().client(client).to_owned()
-            }
+            // pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> #builder_name {
+            //     Self::builder().client(client)
+            // }
 
             /// Create a new transformer from a client
             pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
-                #builder_name::default().client(client).build().unwrap()
+                Self::builder().client(client).build()
             }
 
             /// Set the concurrency level for the transformer
@@ -160,13 +160,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
                 };
                 client.prompt(prompt).await
             }
-        }
 
-        impl #builder_name {
-            pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
-                self.client = Some(Some(hidden::Arc::new(client)));
-                self
-            }
         }
 
         impl hidden::WithIndexingDefaults for #struct_name {
@@ -202,6 +196,7 @@ fn extract_existing_fields(fields: Fields) -> impl Iterator<Item = proc_macro2::
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::{assert_eq, assert_str_eq};
     use quote::quote;
     use syn::{parse_quote, ItemStruct};
 
@@ -222,7 +217,7 @@ mod tests {
             mod hidden {
                 pub use std::sync::Arc;
                 pub use anyhow::Result;
-                pub use derive_builder::Builder;
+                pub use bon::Builder;
                 pub use swiftide_core::{
                     indexing::{IndexingDefaults},
                     prompt::{Prompt, PromptTemplate},
@@ -231,16 +226,18 @@ mod tests {
             }
 
             #[derive(hidden::Builder, Debug, Clone)]
-            #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
+            #[builder(on(_, into))]
             /// This is a test struct
             pub struct TestStruct {
                 /// This is a test field
                 pub test_field: String,
-                #[builder(setter(custom), default)]
+                /// The client to use for prompting. If not provided, will try to use
+                /// the default client from the indexing pipeline.
                 client: Option<hidden::Arc<dyn hidden::SimplePrompt>>,
-                #[builder(default)]
+                /// Optional maximum concurrency this transformer can run at. Otherwise it will default
+                /// to the indexing pipeline's concurrency
                 concurrency: Option<usize>,
-                #[builder(private, default)]
+                #[builder(skip)]
                 indexing_defaults: Option<hidden::IndexingDefaults>,
             }
 
@@ -251,19 +248,14 @@ mod tests {
             }
 
             impl TestStruct {
-                /// Creates a new builder for the transformer
-                pub fn builder() -> TestStructBuilder {
-                    TestStructBuilder::default()
-                }
-
                 /// Build a new transformer from a client
                 pub fn from_client(client: impl hidden::SimplePrompt + 'static) -> TestStructBuilder {
-                    TestStructBuilder::default().client(client).to_owned()
+                    Self::builder().client(client).to_owned()
                 }
 
                 /// Create a new transformer from a client
                 pub fn new(client: impl hidden::SimplePrompt + 'static) -> Self {
-                    TestStructBuilder::default().client(client).build().unwrap()
+                    Self::builder().client(client).build().unwrap()
                 }
 
                 /// Set the concurrency level for the transformer
@@ -295,13 +287,6 @@ mod tests {
                 }
             }
 
-            impl TestStructBuilder {
-                pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
-                    self.client = Some(Some(hidden::Arc::new(client)));
-                    self
-                }
-            }
-
             impl hidden::WithIndexingDefaults for TestStruct {
                 fn with_indexing_defaults(&mut self, defaults: hidden::IndexingDefaults) {
                     self.indexing_defaults = Some(defaults);
@@ -309,6 +294,12 @@ mod tests {
             }
         };
 
-        assert_eq!(output.to_string(), expected_output.to_string());
+        assert_eq!(pretty_macro(&output), pretty_macro(&expected_output));
+    }
+
+    /// Pretty print a token stream for nicer comparisons
+    fn pretty_macro(item: &proc_macro2::TokenStream) -> String {
+        let file = syn::parse_file(&item.to_string()).unwrap();
+        prettyplease::unparse(&file)
     }
 }

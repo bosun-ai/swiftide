@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use derive_builder::Builder;
+use bon::Builder;
 use spider::website::Website;
 use tokio::{runtime::Handle, sync::RwLock};
 

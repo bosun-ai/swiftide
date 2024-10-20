@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use derive_builder::Builder;
+use bon::Builder;
 use fastembed::{SparseTextEmbedding, TextEmbedding};
 
 pub use swiftide_core::EmbeddingModel as _;

@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use derive_builder::Builder;
+use bon::Builder;
 use tokio::sync::RwLock;
 
 use swiftide_core::{
@@ -11,18 +11,18 @@ use swiftide_core::{
 };
 
 #[derive(Debug, Default, Builder, Clone)]
-#[builder(pattern = "owned")]
 /// A simple in-memory storage implementation.
 ///
 /// Great for experimentation and testing.
 ///
 /// By default the storage will use a zero indexed, incremental counter as the key for each node if the node id
 /// is not set.
+#[builder(on(_, into))]
 pub struct MemoryStorage {
     data: Arc<RwLock<HashMap<String, Node>>>,
-    #[builder(default)]
     batch_size: Option<usize>,
-    #[builder(default = "Arc::new(RwLock::new(0))")]
+
+    #[builder(skip = Arc::new(RwLock::new(0)))]
     node_count: Arc<RwLock<u64>>,
 }
 

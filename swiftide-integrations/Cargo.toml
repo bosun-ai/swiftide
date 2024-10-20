@@ -16,7 +16,7 @@ swiftide-macros = { path = "../swiftide-macros", version = "0.13" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-derive_builder = { workspace = true }
+bon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = ["full"] }

@@ -2,12 +2,13 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use derive_builder::Builder;
+use bon::Builder;
 use swiftide_core::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
-use text_splitter::{Characters, MarkdownSplitter};
+use text_splitter::{Characters, ChunkConfig, ChunkSizer, MarkdownSplitter};
 
-#[derive(Debug, Clone, Builder)]
-#[builder(pattern = "owned", setter(strip_option))]
+const DEFAULT_MAX_CHAR_SIZE: usize = 2056;
+
+#[derive(Clone, Builder)]
 /// A transformer that chunks markdown content into smaller pieces.
 ///
 /// The transformer will split the markdown content into smaller pieces based on the specified
@@ -17,42 +18,52 @@ use text_splitter::{Characters, MarkdownSplitter};
 ///
 /// Technically that might work with every splitter `text_splitter` provides.
 pub struct ChunkMarkdown {
-    #[builder(setter(into))]
-    chunker: Arc<MarkdownSplitter<Characters>>,
-    #[builder(default)]
-    /// The number of concurrent chunks to process.
+    /// Defaults to `None`. If you use a splitter that is resource heavy, this parameter can be
+    /// tuned.
     concurrency: Option<usize>,
+
+    /// Optional maximum number of characters per chunk.
+    ///
+    /// Defaults to [`DEFAULT_MAX_CHAR_SIZE`].
+    #[builder(default = DEFAULT_MAX_CHAR_SIZE)]
+    max_characters: usize,
+
     /// The splitter is not perfect in skipping min size nodes.
     ///
-    /// If you provide a custom chunker, you might want to set the range as well.
-    #[builder(default)]
-    range: Option<std::ops::Range<usize>>,
+    /// If you provide a custom chunker with a range, you might want to set the range as well.
+    ///
+    /// Defaults to 0..[`max_characters`]
+    #[builder(default = 0..max_characters)]
+    range: std::ops::Range<usize>,
+
+    /// The markdown splitter from [`text_splitter`]
+    ///
+    /// Defaults to a new [`MarkdownSplitter`] with the specified `max_characters`.
+    #[builder(into, default = Arc::new(MarkdownSplitter::new(range.clone())))]
+    chunker: Arc<MarkdownSplitter<Characters>>,
+}
+
+impl std::fmt::Debug for ChunkMarkdown {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChunkMarkdown")
+            .field("concurrency", &self.concurrency)
+            .field("max_characters", &self.max_characters)
+            .field("range", &self.range)
+            .finish()
+    }
 }
 
 impl ChunkMarkdown {
     /// Create a new transformer with a maximum number of characters per chunk.
     pub fn from_max_characters(max_characters: usize) -> Self {
-        Self {
-            chunker: Arc::new(MarkdownSplitter::new(max_characters)),
-            concurrency: None,
-            range: None,
-        }
+        Self::builder().max_characters(max_characters).build()
     }
 
     /// Create a new transformer with a range of characters per chunk.
     ///
     /// Chunks smaller than the range will be ignored.
     pub fn from_chunk_range(range: std::ops::Range<usize>) -> Self {
-        Self {
-            chunker: Arc::new(MarkdownSplitter::new(range.clone())),
-            concurrency: None,
-            range: Some(range),
-        }
-    }
-
-    /// Build a custom markdown chunker.
-    pub fn builder() -> ChunkMarkdownBuilder {
-        ChunkMarkdownBuilder::default()
+        Self::builder().range(range).build()
     }
 
     /// Set the number of concurrent chunks to process.
@@ -63,13 +74,13 @@ impl ChunkMarkdown {
     }
 
     fn min_size(&self) -> usize {
-        self.range.as_ref().map_or(0, |r| r.start)
+        self.range.start
     }
 }
 
 #[async_trait]
 impl ChunkerTransformer for ChunkMarkdown {
-    #[tracing::instrument(skip_all, name = "transformers.chunk_markdown")]
+    #[tracing::instrument(skip_all)]
     async fn transform_node(&self, node: Node) -> IndexingStream {
         let chunks = self
             .chunker
@@ -176,7 +187,6 @@ mod test {
             .chunker(MarkdownSplitter::new(40))
             .concurrency(10)
             .range(10..20)
-            .build()
-            .unwrap();
+            .build();
     }
 }
