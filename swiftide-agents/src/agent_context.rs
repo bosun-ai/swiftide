@@ -1,35 +1,42 @@
 //! Manages agent history and provides an
 //! interface for the external world
-use crate::traits::{self, Command, CommandOutput, ToolCall, ToolOutput, Workspace};
+use crate::traits::{self, AgentContext, Command, CommandOutput, Workspace};
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::ChatMessage;
+use swiftide_core::chat_completion::{ChatMessage, ToolCall, ToolOutput};
 
 #[derive(Clone)]
-pub struct AgentContext {
-    workspace: Box<dyn Workspace>,
-    conversation_history: Vec<MessageHistoryRecord>,
+pub struct DefaultContext {
+    // workspace: Box<dyn Workspace>,
+    conversation_history: Vec<ChatMessage>,
 }
 
-impl AgentContext {
-    pub async fn workspace(&self) -> &Box<dyn Workspace> {
-        &self.workspace
-    }
+/// Default, simple implementation of context
+///
+/// Not meant for concurrent usage.
+#[async_trait]
+impl AgentContext for DefaultContext {
+    // pub async fn workspace(&self) -> &Box<dyn Workspace> {
+    //     &self.workspace
+    // }
 
-    pub async fn conversation_history(&self) -> &[MessageHistoryRecord] {
+    async fn conversation_history(&self) -> &[ChatMessage] {
         &self.conversation_history
     }
 
-    pub async fn record_in_history(&mut self, item: impl Into<MessageHistoryRecord>) {
-        self.conversation_history.push(item.into())
+    async fn record_in_history(&mut self, item: ChatMessage) {
+        self.conversation_history.push(item.into());
+
+        // Debug assert that there is only one ChatMessage::System
+        // TODO: Properly handle this
+        debug_assert!(
+            self.conversation_history
+                .iter()
+                .filter(|msg| msg.is_system())
+                .count()
+                <= 1
+        );
     }
 
     // Need to think about changing and compressing history, while preserving actual. Tree?
-}
-
-#[derive(Clone)]
-pub enum MessageHistoryRecord {
-    ToolCall(ToolCall),
-    ChatMessage(ChatMessage),
-    ToolOutput(ToolOutput),
 }

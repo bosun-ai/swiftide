@@ -1,8 +1,8 @@
 use anyhow::{Context as _, Result};
 use async_openai::types::{
-    ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs,
-    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
+    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
+    ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
 };
 use async_trait::async_trait;
 use itertools::Itertools;
@@ -15,12 +15,7 @@ use super::OpenAI;
 
 #[async_trait]
 impl ChatCompletion for OpenAI {
-    async fn complete(
-        &self,
-        request: impl Into<ChatCompletionRequest<'_>> + Send + Sync,
-    ) -> Result<ChatCompletionResponse> {
-        let request: ChatCompletionRequest = request.into();
-
+    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
         let model = self
             .default_options
             .prompt_model
@@ -65,7 +60,7 @@ impl ChatCompletion for OpenAI {
                             .map(|tool_call| {
                                 ToolCall::builder()
                                     .id(tool_call.id.clone())
-                                    .arguments(tool_call.function.arguments.clone())
+                                    .args(tool_call.function.arguments.clone())
                                     .name(tool_call.function.name.clone())
                                     .build()
                                     .expect("Building tool call failed, should never happen")
@@ -94,21 +89,27 @@ fn message_to_openai(
                 .into(),
         ),
         ChatMessage::ToolCall(_) => None,
-        ChatMessage::ToolOuput(tool_output) => {
+        ChatMessage::ToolOutput(tool_output) => {
             // get the id and content or return None
-            let (Some(id), Some(content)) = (tool_output.tool_call_id(), tool_output.content())
+            let (Some(tool_call), Some(content)) = (tool_output.tool_call(), tool_output.content())
             else {
                 return Ok(None);
             };
 
             Some(
                 ChatCompletionRequestToolMessageArgs::default()
-                    .content(id)
-                    .tool_call_id(content)
+                    .content(content)
+                    .tool_call_id(tool_call.id())
                     .build()?
                     .into(),
             )
         }
+        ChatMessage::Assistant(msg) => Some(
+            ChatCompletionRequestAssistantMessageArgs::default()
+                .content(msg.as_str())
+                .build()?
+                .into(),
+        ),
     };
 
     Ok(openai_message)

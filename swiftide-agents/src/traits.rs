@@ -2,9 +2,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 use dyn_clone::DynClone;
-use swiftide_core::{chat_completion::JsonSpec, prompt::Prompt};
+use swiftide_core::{
+    chat_completion::{ChatMessage, JsonSpec, ToolOutput},
+    prompt::Prompt,
+};
 
-use crate::{agent::Agent, agent_context::AgentContext};
+use crate::agent::Agent;
 
 #[async_trait]
 pub trait Workspace: Send + Sync + DynClone {
@@ -27,7 +30,7 @@ pub trait Tool: Send + Sync + DynClone {
     // tbd
     async fn invoke(
         &self,
-        agent_context: &AgentContext,
+        agent_context: &dyn AgentContext,
         raw_args: Option<&str>,
     ) -> Result<ToolOutput>;
 
@@ -41,15 +44,27 @@ pub trait Tool: Send + Sync + DynClone {
 
 /// Acts as the interface to the external world and any overlapping state
 /// NOTE: Async as expecting locks
-// #[async_trait]
-// pub trait AgentContext: Send + Sync + DynClone {
-//     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
-//
-//     /// List of all messages for this agent, for the purpose of completion and logs
-//     async fn conversation_history(&self) -> &[MessageHistoryRecord];
-//
-//     // async fn record_message_history<T: ?Sized + Into<MessageHistoryRecord>>(&mut self, history: T);
-// }
+#[async_trait]
+pub trait AgentContext: Send + Sync + DynClone {
+    /// List of all messages for this agent
+    ///
+    /// Used as main source for the next completion and expects all
+    /// what you would expect in an inference conversation to be present.
+    async fn conversation_history(&self) -> &[ChatMessage];
+
+    async fn record_in_history(&mut self, item: ChatMessage);
+}
+
+dyn_clone::clone_trait_object!(AgentContext);
+#[async_trait]
+impl AgentContext for Box<dyn AgentContext> {
+    async fn conversation_history(&self) -> &[ChatMessage] {
+        self.as_ref().conversation_history().await
+    }
+    async fn record_in_history(&mut self, item: ChatMessage) {
+        self.as_mut().record_in_history(item).await
+    }
+}
 //
 
 // TMP

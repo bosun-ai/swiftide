@@ -7,10 +7,7 @@ use crate::prompt::Prompt;
 
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
-    async fn complete(
-        &self,
-        request: impl Into<ChatCompletionRequest<'_>> + Send + Sync,
-    ) -> Result<ChatCompletionResponse>;
+    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
 }
 
 #[derive(Clone, Builder)]
@@ -49,11 +46,13 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 }
 
+#[derive(Clone, strum_macros::EnumIs)]
 pub enum ChatMessage {
     System(String),
     User(String),
+    Assistant(String),
     ToolCall(ToolCall),
-    ToolOuput(ToolOutput),
+    ToolOutput(ToolOutput),
 }
 
 pub enum ChatRole {
@@ -65,9 +64,8 @@ pub enum ChatRole {
 #[derive(Clone)]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
-    ToolCall {
-        tool_call_id: String,
-        name: String,
+    Content {
+        tool_call: ToolCall,
         content: String,
     },
     /// Stops an agent
@@ -78,24 +76,16 @@ pub enum ToolOutput {
 }
 
 impl ToolOutput {
-    pub fn tool_call_id(&self) -> Option<&str> {
-        if let ToolOutput::ToolCall { tool_call_id, .. } = self {
-            Some(tool_call_id)
-        } else {
-            None
-        }
-    }
-
-    pub fn name(&self) -> Option<&str> {
-        if let ToolOutput::ToolCall { name, .. } = self {
-            Some(name)
+    pub fn tool_call(&self) -> Option<&ToolCall> {
+        if let ToolOutput::Content { tool_call, .. } = self {
+            Some(tool_call)
         } else {
             None
         }
     }
 
     pub fn content(&self) -> Option<&str> {
-        if let ToolOutput::ToolCall { content, .. } = self {
+        if let ToolOutput::Content { content, .. } = self {
             Some(content)
         } else {
             None
@@ -105,15 +95,28 @@ impl ToolOutput {
 
 /// TODO: Needs more values, i.e. OpenAI needs a reference to the original call
 #[derive(Clone, Builder)]
+#[builder(setter(into, strip_option))]
 pub struct ToolCall {
     id: String,
     name: String,
-    arguments: String,
+    args: Option<String>,
 }
 
 impl ToolCall {
     pub fn builder() -> ToolCallBuilder {
         ToolCallBuilder::default()
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn args(&self) -> Option<&str> {
+        self.args.as_deref()
     }
 }
 

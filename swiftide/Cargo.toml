@@ -88,7 +88,7 @@ redb = ["swiftide-integrations/redb"]
 test-utils = ["swiftide-core/test-utils", "swiftide-test-utils/test-utils"]
 
 #! ### Experimental
-agents = ["dep:swiftide-agents"]
+swiftide-agents = ["dep:swiftide-agents"]
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
