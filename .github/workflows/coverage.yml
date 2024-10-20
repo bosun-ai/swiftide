@@ -13,7 +13,7 @@ concurrency:
 jobs:
   test:
     name: coverage
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
