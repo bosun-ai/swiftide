@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728677069463,
+  "lastUpdate": 1729430327781,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7799,6 +7799,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243656,
             "range": "± 7821",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ab65b8f890128e8249dd2f55f2e149ae1a0b82e3",
+          "message": "chore(ci): Switch to dependabot for better grouping (#398)",
+          "timestamp": "2024-10-20T15:10:58+02:00",
+          "tree_id": "7308229cf4a47573dace025e6d46f36c1d6d8a19",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ab65b8f890128e8249dd2f55f2e149ae1a0b82e3"
+        },
+        "date": 1729430327147,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1287962,
+            "range": "± 894269",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243932,
+            "range": "± 1047",
             "unit": "ns/iter"
           }
         ]
