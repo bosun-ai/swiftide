@@ -1,4 +1,4 @@
-use derive_builder::Builder;
+use bon::Builder;
 
 use crate::{indexing::EmbeddedField, querying};
 
@@ -9,7 +9,7 @@ use super::{DEFAULT_TOP_K, DEFAULT_TOP_N};
 ///
 /// Defaults to a a maximum of 10 documents and `EmbeddedField::Combined` for the field(s).
 #[derive(Debug, Clone, Builder)]
-#[builder(setter(into))]
+#[builder(on(_, into))]
 pub struct HybridSearch {
     /// Maximum number of documents to return
     #[builder(default)]

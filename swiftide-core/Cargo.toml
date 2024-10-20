@@ -25,7 +25,7 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 mockall = { workspace = true, optional = true }
 lazy_static = { workspace = true }
-derive_builder = { workspace = true }
+bon = { workspace = true }
 dyn-clone = { workspace = true }
 
 tera = { version = "1.20", default-features = false }

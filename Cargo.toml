@@ -30,7 +30,7 @@ similar.opt-level = 3
 [workspace.dependencies]
 anyhow = { version = "1.0" }
 async-trait = { version = "0.1" }
-derive_builder = { version = "0.20" }
+bon = { version = "2.3" }
 futures-util = { version = "0.3" }
 tokio = { version = "1.38", features = ["full"] }
 tokio-stream = { version = "0.1" }
@@ -70,6 +70,8 @@ temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
 insta = { version = "1.39.0", features = ["yaml"] }
+pretty_assertions = { version = "1.4" }
+prettyplease = { version = "0.2" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -5,7 +5,7 @@ use anyhow::Result;
 use connection_pool::LanceDBConnectionPool;
 use connection_pool::LanceDBPoolManager;
 use deadpool::managed::Object;
-use derive_builder::Builder;
+use bon::Builder;
 use lancedb::arrow::arrow_schema::{DataType, Field, Schema};
 use swiftide_core::indexing::EmbeddedField;
 pub mod connection_pool;

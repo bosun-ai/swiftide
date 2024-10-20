@@ -1,7 +1,7 @@
 use anyhow::Context as _;
 use anyhow::Result;
 use deadpool::managed::Manager;
-use derive_builder::Builder;
+use bon::Builder;
 use lancedb::connection::ConnectBuilder;
 
 #[derive(Builder, Debug, Clone)]

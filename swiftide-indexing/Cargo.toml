@@ -16,7 +16,7 @@ swiftide-macros = { path = "../swiftide-macros", version = "0.13" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-derive_builder = { workspace = true }
+bon = { workspace = true }
 futures-util = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }

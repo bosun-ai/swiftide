@@ -2,11 +2,12 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use derive_builder::Builder;
+use bon::Builder;
 use swiftide_core::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
 
+const DEFAULT_MAX_CHAR_SIZE: usize = 2056;
+
 #[derive(Debug, Clone, Builder)]
-#[builder(pattern = "owned", setter(strip_option))]
 /// A transformer that chunks text content into smaller pieces.
 ///
 /// The transformer will split the text content into smaller pieces based on the specified
@@ -17,42 +18,46 @@ use swiftide_core::{indexing::IndexingStream, indexing::Node, ChunkerTransformer
 ///
 /// Technically that might work with every splitter `text_splitter` provides.
 pub struct ChunkText {
-    #[builder(setter(into))]
-    chunker: Arc<text_splitter::TextSplitter<text_splitter::Characters>>,
-    #[builder(default)]
-    /// The number of concurrent chunks to process.
+    /// The max number of concurrent chunks to process.
+    ///
+    /// Defaults to `None`. If you use a splitter that is resource heavy, this parameter can be
+    /// tuned.
     concurrency: Option<usize>,
+
+    /// Optional maximum number of characters per chunk.
+    ///
+    /// Defaults to [`DEFAULT_MAX_CHAR_SIZE`].
+    #[builder(default = DEFAULT_MAX_CHAR_SIZE)]
+    max_characters: usize,
+
     /// The splitter is not perfect in skipping min size nodes.
     ///
     /// If you provide a custom chunker, you might want to set the range as well.
-    #[builder(default)]
-    range: Option<std::ops::Range<usize>>,
+    ///
+    /// Defaults to 0..[`max_characters`]
+    #[builder(default = 0..DEFAULT_MAX_CHAR_SIZE)]
+    range: std::ops::Range<usize>,
+
+    #[builder(into, default = text_splitter::TextSplitter::new(0..DEFAULT_MAX_CHAR_SIZE))]
+    chunker: Arc<text_splitter::TextSplitter<text_splitter::Characters>>,
 }
 
 impl ChunkText {
     /// Create a new transformer with a maximum number of characters per chunk.
     pub fn from_max_characters(max_characters: usize) -> Self {
-        Self {
-            chunker: Arc::new(text_splitter::TextSplitter::new(max_characters)),
-            concurrency: None,
-            range: None,
-        }
+        Self::builder()
+            .chunker(text_splitter::TextSplitter::new(max_characters))
+            .build()
     }
 
     /// Create a new transformer with a range of characters per chunk.
     ///
     /// Chunks smaller than the range will be ignored.
     pub fn from_chunk_range(range: std::ops::Range<usize>) -> Self {
-        Self {
-            chunker: Arc::new(text_splitter::TextSplitter::new(range.clone())),
-            concurrency: None,
-            range: Some(range),
-        }
-    }
-
-    /// Build a custom text chunker.
-    pub fn builder() -> ChunkTextBuilder {
-        ChunkTextBuilder::default()
+        Self::builder()
+            .chunker(text_splitter::TextSplitter::new(range.clone()))
+            .range(range)
+            .build()
     }
 
     /// Set the number of concurrent chunks to process.
@@ -63,7 +68,7 @@ impl ChunkText {
     }
 
     fn min_size(&self) -> usize {
-        self.range.as_ref().map_or(0, |r| r.start)
+        self.range.start
     }
 }
 
@@ -170,7 +175,6 @@ mod test {
             .chunker(text_splitter::TextSplitter::new(40))
             .concurrency(10)
             .range(10..20)
-            .build()
-            .unwrap();
+            .build();
     }
 }

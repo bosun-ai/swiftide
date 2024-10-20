@@ -1,7 +1,7 @@
 //! Stream data from parquet files
 use std::path::PathBuf;
 
-use derive_builder::Builder;
+use bon::Builder;
 
 pub mod loader;
 

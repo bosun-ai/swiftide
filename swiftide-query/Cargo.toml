@@ -13,7 +13,7 @@ homepage.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-derive_builder = { workspace = true }
+bon = { workspace = true }
 futures-util = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }

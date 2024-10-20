@@ -1,7 +1,7 @@
 use anyhow::{Context as _, Result};
 use tree_sitter::{Node, Parser, TreeCursor};
 
-use derive_builder::Builder;
+use bon::Builder;
 
 use super::supported_languages::SupportedLanguages;
 

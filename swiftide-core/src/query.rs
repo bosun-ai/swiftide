@@ -5,7 +5,7 @@
 //! `states::Pending`: No documents have been retrieved
 //! `states::Retrieved`: Documents have been retrieved
 //! `states::Answered`: The query has been answered
-use derive_builder::Builder;
+use bon::Builder;
 
 use crate::{util::debug_long_utf8, Embedding, SparseEmbedding};
 
@@ -19,7 +19,7 @@ type Document = String;
 /// `states::Retrieved`: Documents have been retrieved
 /// `states::Answered`: The query has been answered
 #[derive(Clone, Default, Builder, PartialEq)]
-#[builder(setter(into))]
+#[builder(on(_, into))]
 pub struct Query<State> {
     original: String,
     #[builder(default = "self.original.clone().unwrap_or_default()")]
@@ -29,10 +29,8 @@ pub struct Query<State> {
     transformation_history: Vec<TransformationEvent>,
 
     // TODO: How would this work when doing a rollup query?
-    #[builder(default)]
     pub embedding: Option<Embedding>,
 
-    #[builder(default)]
     pub sparse_embedding: Option<SparseEmbedding>,
 }
 
@@ -49,10 +47,6 @@ impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
 }
 
 impl<T: Clone> Query<T> {
-    pub fn builder() -> QueryBuilder<T> {
-        QueryBuilder::default().clone()
-    }
-
     /// Return the query it started with
     pub fn original(&self) -> &str {
         &self.original
@@ -173,7 +167,7 @@ pub mod states {
     pub struct Pending;
 
     #[derive(Default, Clone, Builder, PartialEq)]
-    #[builder(setter(into))]
+    #[builder(on(_, into))]
     /// Documents have been retrieved
     pub struct Retrieved {
         pub(crate) documents: Vec<Document>,
@@ -196,7 +190,7 @@ pub mod states {
     }
 
     #[derive(Default, Clone, Builder, PartialEq)]
-    #[builder(setter(into))]
+    #[builder(on(_, into))]
     /// The query has been answered
     pub struct Answered {
         pub(crate) answer: String,

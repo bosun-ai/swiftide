@@ -12,7 +12,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use anyhow::{bail, Context as _, Result};
-use derive_builder::Builder;
+use bon::Builder;
 use qdrant_client::qdrant::{self, SparseVectorParamsBuilder, SparseVectorsConfigBuilder};
 
 use swiftide_core::indexing::{EmbeddedField, Node};

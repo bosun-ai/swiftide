@@ -74,7 +74,7 @@ mod test {
             .expect_prompt()
             .returning(|_| Ok("A Title".to_string()));
 
-        let transformer = MetadataTitle::builder().client(client).build().unwrap();
+        let transformer = MetadataTitle::builder().client(client).build();
         let node = Node::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
