@@ -65,7 +65,7 @@ impl Default for ChunkMarkdown {
 }
 
 impl ChunkMarkdown {
-    fn builder() -> ChunkMarkdownBuilder {
+    pub fn builder() -> ChunkMarkdownBuilder {
         ChunkMarkdownBuilder::default()
     }
 
