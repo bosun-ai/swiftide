@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729516574577,
+  "lastUpdate": 1729517520756,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8177,6 +8177,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244157,
             "range": "± 1511",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d75a775b947ce2251db61d5e30f5d695a5811f02",
+          "message": "chore: release v0.13.4 (#400)\n\n## 🤖 New release\r\n* `swiftide`: 0.13.3 -> 0.13.4 (✓ API compatible changes)\r\n* `swiftide-core`: 0.13.3 -> 0.13.4\r\n* `swiftide-indexing`: 0.13.3 -> 0.13.4 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.13.3 -> 0.13.4\r\n* `swiftide-integrations`: 0.13.3 -> 0.13.4\r\n* `swiftide-query`: 0.13.3 -> 0.13.4\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.13.4](https://github.com/bosun-ai/swiftide/compare/v0.13.3...v0.13.4)\r\n- 2024-10-21\r\n\r\n### Bug fixes\r\n\r\n-\r\n[47455fb](https://github.com/bosun-ai/swiftide/commit/47455fb04197a4b51142e2fb4c980e42ac54d11e)\r\n*(indexing)* Visibility of ChunkMarkdown builder should be public\r\n\r\n-\r\n[2b3b401](https://github.com/bosun-ai/swiftide/commit/2b3b401dcddb2cb32214850b9b4dbb0481943d38)\r\n*(indexing)* Improve splitters consistency and provide defaults\r\n([#403](https://github.com/bosun-ai/swiftide/pull/403))\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.13.3...0.13.4\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).",
+          "timestamp": "2024-10-21T15:24:07+02:00",
+          "tree_id": "225d6c55c5bcf73f4ff6a87dca0a20a8b4c3fcea",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d75a775b947ce2251db61d5e30f5d695a5811f02"
+        },
+        "date": 1729517520334,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1291107,
+            "range": "± 901917",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243725,
+            "range": "± 9449",
             "unit": "ns/iter"
           }
         ]
