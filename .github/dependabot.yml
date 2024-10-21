@@ -24,17 +24,6 @@ updates:
       aws:
         patterns:
           - "aws"
-      apache-arrow:
-        patterns:
-          - "arrow*"
-          - "lancedb*"
-          - "parquet*"
-      macros:
-        patterns:
-          - "quote"
-          - "syn"
-          - "darling"
-          - "proc-macro2"
 
   - package-ecosystem: "github-actions"
     directory: "/"
