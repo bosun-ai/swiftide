@@ -1,5 +1,5 @@
 [package]
-name = "examples"
+name = "swiftide-examples"
 publish = false
 version.workspace = true
 edition.workspace = true
