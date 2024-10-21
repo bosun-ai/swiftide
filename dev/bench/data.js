@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729517520756,
+  "lastUpdate": 1729526283998,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8231,6 +8231,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243725,
             "range": "± 9449",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "322872407b0748bb208cd96968b0a35783586860",
+          "message": "fix(ci): Remove explicit 'all' from dependabot config",
+          "timestamp": "2024-10-21T17:50:10+02:00",
+          "tree_id": "787e65abcf2d3d3daecebb5609f11d8eb0e53986",
+          "url": "https://github.com/bosun-ai/swiftide/commit/322872407b0748bb208cd96968b0a35783586860"
+        },
+        "date": 1729526283265,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1283956,
+            "range": "± 902673",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242376,
+            "range": "± 1757",
             "unit": "ns/iter"
           }
         ]
