@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729536159509,
+  "lastUpdate": 1729536339740,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8339,6 +8339,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246912,
             "range": "± 2783",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "9595c67f3012674574f2064f13fc355dc3095dd8",
+          "message": "fix(ci): Add zlib to allowed licenses",
+          "timestamp": "2024-10-21T20:37:29+02:00",
+          "tree_id": "3d5465ea183fc3e567833591b807f82441cf46f2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9595c67f3012674574f2064f13fc355dc3095dd8"
+        },
+        "date": 1729536339036,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1280696,
+            "range": "± 913285",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 246613,
+            "range": "± 1391",
             "unit": "ns/iter"
           }
         ]
