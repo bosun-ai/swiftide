@@ -9,6 +9,8 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    allow:
+      - dependency-type: "all"
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -22,17 +24,6 @@ updates:
       aws:
         patterns:
           - "aws"
-      apache-arrow:
-        patterns:
-          - "arrow*"
-          - "lancedb*"
-          - "parquet*"
-      macros:
-        patterns:
-          - "quote"
-          - "syn"
-          - "darling"
-          - "proc-macro2"
 
   - package-ecosystem: "github-actions"
     directory: "/"
