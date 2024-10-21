@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.4](https://github.com/bosun-ai/swiftide/compare/v0.13.3...v0.13.4) - 2024-10-21
+
+### Bug fixes
+
+- [47455fb](https://github.com/bosun-ai/swiftide/commit/47455fb04197a4b51142e2fb4c980e42ac54d11e) *(indexing)*  Visibility of ChunkMarkdown builder should be public
+
+- [2b3b401](https://github.com/bosun-ai/swiftide/commit/2b3b401dcddb2cb32214850b9b4dbb0481943d38) *(indexing)*  Improve splitters consistency and provide defaults ([#403](https://github.com/bosun-ai/swiftide/pull/403))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.3...0.13.4
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.13.3](https://github.com/bosun-ai/swiftide/compare/v0.13.2...v0.13.3) - 2024-10-11
 
 ### Bug fixes
