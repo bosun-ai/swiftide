@@ -16,6 +16,12 @@ anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
 derive_builder.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", version = "0.13", features = [
+  "test-utils",
+] }
 
 [lints]
 workspace = true

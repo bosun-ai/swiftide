@@ -2779,7 +2779,9 @@ dependencies = [
 name = "examples"
 version = "0.13.3"
 dependencies = [
+ "anyhow",
  "fluvio",
+ "indoc",
  "qdrant-client",
  "serde_json",
  "spider",
@@ -7592,6 +7594,7 @@ dependencies = [
  "derive_builder",
  "dyn-clone",
  "swiftide-core",
+ "tokio",
 ]
 
 [[package]]

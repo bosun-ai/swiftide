@@ -42,6 +42,8 @@ pub trait Tool: Send + Sync + DynClone {
     fn json_spec(&self) -> JsonSpec;
 }
 
+dyn_clone::clone_trait_object!(Tool);
+
 /// Acts as the interface to the external world and any overlapping state
 /// NOTE: Async as expecting locks
 #[async_trait]

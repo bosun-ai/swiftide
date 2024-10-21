@@ -5,7 +5,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::{ChatMessage, ToolCall, ToolOutput};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct DefaultContext {
     // workspace: Box<dyn Workspace>,
     conversation_history: Vec<ChatMessage>,

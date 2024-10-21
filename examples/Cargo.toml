@@ -29,6 +29,8 @@ spider = { workspace = true }
 qdrant-client = { workspace = true }
 fluvio = { workspace = true }
 temp-dir = { workspace = true }
+anyhow = { workspace = true }
+indoc = { workspace = true }
 
 [[example]]
 doc-scrape-examples = true

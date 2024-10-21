@@ -1,7 +1,9 @@
 #![allow(dead_code)]
+use crate::agent_context::DefaultContext;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use derive_builder::Builder;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolCall, ToolOutput},
     prompt::Prompt,
@@ -12,17 +14,35 @@ use crate::traits::*;
 // Notes
 //
 // Generic over LLM instead of box dyn? Should tool support be a separate trait?
+#[derive(Clone, Builder)]
 pub struct Agent {
-    name: String,
+    // name: String,
+    #[builder(default = "Box::new(DefaultContext::default())")]
     context: Box<dyn AgentContext>,
+    #[builder(setter(into))]
     instructions: Prompt,
+    #[builder(default)]
     available_tools: Vec<Box<dyn Tool>>,
+
+    #[builder(setter(custom))]
     llm: Box<dyn ChatCompletion>,
 
+    #[builder(private, default)]
     should_stop: bool,
 }
 
+impl AgentBuilder {
+    pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
+        let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone());
+        self.llm = Some(boxed);
+        self
+    }
+}
+
 impl Agent {
+    pub fn builder() -> AgentBuilder {
+        AgentBuilder::default()
+    }
     pub async fn run(&mut self) -> Result<()> {
         // LIFECYCLE: BEFORE ALL
         while !self.should_stop {
@@ -39,7 +59,6 @@ impl Agent {
     pub async fn run_once(&mut self) -> Result<()> {
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
-            .system_prompt(&self.instructions)
             .messages(self.context.conversation_history().await)
             .tools_spec(
                 self.available_tools
@@ -83,17 +102,43 @@ impl Agent {
             .find(|tool| tool.name() == tool_call.name())
             .ok_or_else(|| anyhow!("Tool not found"))?;
 
-        tool.invoke(&self.context, tool_call.args().as_deref())
-            .await
+        tool.invoke(&self.context, tool_call.args()).await
     }
 
     /// Handle any tool specific output (e.g. stop)
     async fn handle_tool_output(&mut self, tool_output: &ToolOutput) -> Result<()> {
-        match tool_output {
-            ToolOutput::Stop(_) => self.should_stop = true,
-            _ => (),
+        if let ToolOutput::Stop(_) = tool_output {
+            self.should_stop = true;
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use swiftide_core::chat_completion::MockChatCompletion;
+
+    use super::*;
+    use crate::agent_context::DefaultContext;
+
+    #[tokio::test]
+    async fn test_agent_builder_defaults() {
+        // Create a prompt
+        let prompt = "Write a poem";
+
+        let mock_llm = MockChatCompletion::new();
+
+        // Build the agent
+        let agent = Agent::builder()
+            .instructions(prompt)
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        // Check that the context is the default context
+
+        // Check that the default tools are added
+        assert!(agent.available_tools.is_empty());
     }
 }

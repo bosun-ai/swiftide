@@ -3,6 +3,9 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use dyn_clone::DynClone;
 
+#[cfg(feature = "test-utils")]
+use mockall::mock;
+
 use crate::prompt::Prompt;
 
 #[async_trait]
@@ -10,6 +13,22 @@ pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
 }
 
+dyn_clone::clone_trait_object!(ChatCompletion);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub ChatCompletion {}
+
+    #[async_trait]
+    impl ChatCompletion for ChatCompletion {
+        async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
+    }
+
+    impl Clone for ChatCompletion {
+        fn clone(&self) -> Self;
+    }
+}
 #[derive(Clone, Builder)]
 #[builder(build_fn(error = anyhow::Error))]
 pub struct ChatCompletionResponse {
@@ -28,21 +47,20 @@ impl ChatCompletionResponse {
 
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option))]
-pub struct ChatCompletionRequest<'a> {
+pub struct ChatCompletionRequest {
     // TODO: Alternatively maybe, we can also have an instruction, and build a system prompt for it
     // and add it to message if present
-    system_prompt: Option<&'a Prompt>,
-    messages: &'a [ChatMessage],
+    messages: Vec<ChatMessage>,
     tools_spec: Vec<JsonSpec>,
 }
 
-impl<'a> ChatCompletionRequest<'a> {
-    pub fn builder() -> ChatCompletionRequestBuilder<'a> {
+impl ChatCompletionRequest {
+    pub fn builder() -> ChatCompletionRequestBuilder {
         ChatCompletionRequestBuilder::default()
     }
 
     pub fn messages(&self) -> &[ChatMessage] {
-        self.messages
+        &self.messages
     }
 }
 
