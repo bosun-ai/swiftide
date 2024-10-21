@@ -39,7 +39,7 @@ jobs:
       - name: Lint dependencies
         uses: EmbarkStudios/cargo-deny-action@v2
       - name: clippy
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --all-targets --all-features --workspace
 
   test:
     name: Test
