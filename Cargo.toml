@@ -1,15 +1,7 @@
 [workspace]
-members = [
-  "swiftide",
-  "swiftide-core",
-  "swiftide-integrations",
-  "swiftide-indexing",
+members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
+default-members = ["swiftide", "swiftide-*"]
 
-  "examples",
-  "benchmarks",
-  "swiftide-test-utils",
-  "swiftide-macros",
-]
 resolver = "2"
 
 [workspace.package]
