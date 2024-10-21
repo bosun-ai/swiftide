@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729507207072,
+  "lastUpdate": 1729516220045,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8069,6 +8069,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241294,
             "range": "± 2316",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "47455fb04197a4b51142e2fb4c980e42ac54d11e",
+          "message": "fix(indexing): Visibility of ChunkMarkdown builder should be public",
+          "timestamp": "2024-10-21T15:01:46+02:00",
+          "tree_id": "3c4b4a2228006a5d64afb5e44f16cd2af0db8617",
+          "url": "https://github.com/bosun-ai/swiftide/commit/47455fb04197a4b51142e2fb4c980e42ac54d11e"
+        },
+        "date": 1729516219547,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 10",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1291212,
+            "range": "± 1297961",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242561,
+            "range": "± 1251",
             "unit": "ns/iter"
           }
         ]
