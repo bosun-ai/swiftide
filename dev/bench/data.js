@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729536339740,
+  "lastUpdate": 1729542450897,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8393,6 +8393,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246613,
             "range": "± 1391",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "471abde7b9481ad2da3d2d1da9749f7dff35466f",
+          "message": "fix(ci): Add back allow all in dependabot and fix aws pattern",
+          "timestamp": "2024-10-21T22:19:21+02:00",
+          "tree_id": "1bc712ddb9b02565ecb8900c16c60cd2a30f96f3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/471abde7b9481ad2da3d2d1da9749f7dff35466f"
+        },
+        "date": 1729542450413,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288862,
+            "range": "± 893786",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 246012,
+            "range": "± 1900",
             "unit": "ns/iter"
           }
         ]
