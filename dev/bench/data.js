@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729516220045,
+  "lastUpdate": 1729516574577,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8123,6 +8123,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242561,
             "range": "± 1251",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6345ffd82972c789370b3e53e3e79cde79329076",
+          "message": "chore: Improve workspace configuration (#404)\n\nEnsure swiftide\\* crates are always included. Additionally, these are\r\nthe default members, excluding examples and benches.",
+          "timestamp": "2024-10-21T15:08:30+02:00",
+          "tree_id": "e174858ef65cb9071620875c2dc4a4203fa1b9c0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6345ffd82972c789370b3e53e3e79cde79329076"
+        },
+        "date": 1729516574124,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1272666,
+            "range": "± 897380",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244157,
+            "range": "± 1511",
             "unit": "ns/iter"
           }
         ]
