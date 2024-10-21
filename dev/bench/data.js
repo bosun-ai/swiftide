@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729502914942,
+  "lastUpdate": 1729507207072,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8015,6 +8015,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245910,
             "range": "± 1471",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2b3b401dcddb2cb32214850b9b4dbb0481943d38",
+          "message": "fix(indexing): Improve splitters consistency and provide defaults (#403)",
+          "timestamp": "2024-10-21T12:32:25+02:00",
+          "tree_id": "33985f056128c2ab466d75104812f276adc656a8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2b3b401dcddb2cb32214850b9b4dbb0481943d38"
+        },
+        "date": 1729507206429,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1286827,
+            "range": "± 895526",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241294,
+            "range": "± 2316",
             "unit": "ns/iter"
           }
         ]
