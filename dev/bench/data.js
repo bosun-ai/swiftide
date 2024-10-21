@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729432899531,
+  "lastUpdate": 1729502914942,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -7961,6 +7961,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241055,
             "range": "± 1767",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "51730ef267439cbd55294215546b6a842c7ce12d",
+          "message": "fix(ci): Update dependabot.yml via ui (#402)\n\nHopefully fix cargo not updating",
+          "timestamp": "2024-10-21T11:20:31+02:00",
+          "tree_id": "cb956cc257ccded9bba37335ca2be3c3819f8b9c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/51730ef267439cbd55294215546b6a842c7ce12d"
+        },
+        "date": 1729502914279,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1311575,
+            "range": "± 1061769",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245910,
+            "range": "± 1471",
             "unit": "ns/iter"
           }
         ]
