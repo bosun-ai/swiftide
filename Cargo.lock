@@ -1261,7 +1261,7 @@ dependencies = [
 
 [[package]]
 name = "benchmarks"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "criterion",
@@ -2777,7 +2777,7 @@ dependencies = [
 
 [[package]]
 name = "examples"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "fluvio",
  "qdrant-client",
@@ -7557,7 +7557,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -7584,7 +7584,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7610,7 +7610,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7638,7 +7638,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "arrow",
@@ -7694,7 +7694,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-macros"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -7704,7 +7704,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7730,7 +7730,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.13.3"
+version = "0.13.4"
 dependencies = [
  "anyhow",
  "async-openai",
