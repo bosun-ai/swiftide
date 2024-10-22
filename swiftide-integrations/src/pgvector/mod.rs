@@ -35,7 +35,7 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use tokio::time::Duration;
 
-use pgv_table_types::{FieldConfig, MetadataConfig, VectorConfig};
+use pgv_table_types::{FieldConfig, MetadataConfig, PgDBConnectionPool, VectorConfig};
 
 /// Default maximum connections for the database connection pool.
 const DB_POOL_CONN_MAX: u32 = 10;

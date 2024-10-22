@@ -7,7 +7,7 @@
 //! - Bulk data preparation and SQL query generation
 //!
 use crate::pgvector::PgVector;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use pgvector as ExtPgVector;
 use regex::Regex;
 use sqlx::postgres::PgArguments;
@@ -185,9 +185,7 @@ impl PgVector {
                 FieldConfig::ID => "id UUID NOT NULL".to_string(),
                 FieldConfig::Chunk => format!("{} TEXT NOT NULL", field.field_name()),
                 FieldConfig::Metadata(_) => format!("{} JSONB", field.field_name()),
-                FieldConfig::Vector(_) => {
-                    format!("{} VECTOR({})", field.field_name(), self.vector_size)
-                }
+                FieldConfig::Vector(_) => format!("{} VECTOR({})", field.field_name(), vector_size),
             })
             .chain(std::iter::once("PRIMARY KEY (id)".to_string()))
             .collect();
@@ -266,6 +264,11 @@ impl PgVector {
             .execute(&mut *tx)
             .await
             .map_err(|e| anyhow!("Failed to store nodes: {:?}", e))?;
+
+        query.execute(&mut *tx).await.map_err(|e| {
+            tracing::error!("Failed to store nodes: {:?}", e);
+            anyhow!("Failed to store nodes: {:?}", e)
+        })?;
 
         tx.commit()
             .await

@@ -6487,6 +6487,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "portpicker"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be97d76faf1bfab666e1375477b23fde79eccf0276e9b63b92a39d676a889ba9"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8762,6 +8771,7 @@ dependencies = [
  "anyhow",
  "async-openai",
  "mockall",
+ "portpicker",
  "qdrant-client",
  "serde",
  "serde_json",

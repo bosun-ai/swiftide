@@ -11,8 +11,39 @@ use swiftide::{
         },
         EmbeddedField,
     },
-    integrations::{self, pgvector::PgVector},
+    integrations::{self, fastembed::FastEmbed, pgvector::PgVector},
+    query::{self, answers, query_transformers, response_transformers},
+    traits::SimplePrompt,
 };
+
+async fn ask_query(
+    llm_client: impl SimplePrompt + Clone + 'static,
+    embed: FastEmbed,
+    vector_store: PgVector,
+    question: String,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // By default the search strategy is SimilaritySingleEmbedding
+    // which takes the latest query, embeds it, and does a similarity search
+    //
+    // Pgvector will return an error if multiple embeddings are set
+    //
+    // The pipeline generates subquestions to increase semantic coverage, embeds these in a single
+    // embedding, retrieves the default top_k documents, summarizes them and uses that as context
+    // for the final answer.
+    let pipeline = query::Pipeline::default()
+        .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+            llm_client.clone(),
+        ))
+        .then_transform_query(query_transformers::Embed::from_client(embed))
+        .then_retrieve(vector_store.clone())
+        .then_transform_response(response_transformers::Summary::from_client(
+            llm_client.clone(),
+        ))
+        .then_answer(answers::Simple::from_client(llm_client.clone()));
+
+    let result = pipeline.query(question).await?;
+    Ok(result.answer().into())
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -71,5 +102,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     tracing::info!("PgVector Indexing test completed successfully");
+    for (i, question) in [
+            "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.",
+            "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.",
+        ]
+        .iter()
+        .enumerate()
+        {
+            let result = ask_query(
+                llm_client.clone(),
+                fastembed.clone(),
+                pgv_storage.clone(),
+                question.to_string(),
+            ).await?;
+            tracing::info!("*** Answer Q{} ***", i + 1);
+            tracing::info!("{}", result);
+            tracing::info!("===X===");
+        }
+
+    tracing::info!("PgVector Indexing & retrieval test completed successfully");
     Ok(())
 }

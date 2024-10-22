@@ -11,6 +11,7 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use swiftide_integrations as integrations;
+use temp_dir::TempDir;
 
 pub fn openai_client(
     mock_server_uri: &str,
