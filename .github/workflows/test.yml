@@ -26,7 +26,6 @@ jobs:
         with:
           components: rustfmt
       - uses: r7kamura/rust-problem-matchers@v1
-      - uses: Swatinem/rust-cache@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -47,7 +46,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
