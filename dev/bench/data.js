@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729542450897,
+  "lastUpdate": 1729623514612,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8447,6 +8447,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246012,
             "range": "± 1900",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6f9a33274223b5e10c32e8a59962d8ee601d9b98",
+          "message": "fix(ci): Remove cache fixing ci disk limits (#408)",
+          "timestamp": "2024-10-22T20:50:30+02:00",
+          "tree_id": "9d157a627238a935d02a13b646dc378c8b473a78",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6f9a33274223b5e10c32e8a59962d8ee601d9b98"
+        },
+        "date": 1729623514070,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1301899,
+            "range": "± 972604",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243593,
+            "range": "± 4992",
             "unit": "ns/iter"
           }
         ]
