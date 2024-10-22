@@ -2861,22 +2861,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "examples"
-version = "0.13.3"
-dependencies = [
- "fluvio",
- "qdrant-client",
- "serde_json",
- "spider",
- "sqlx",
- "swiftide",
- "temp-dir",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "exr"
 version = "1.73.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6431,25 +6415,7 @@ dependencies = [
 name = "pkg-config"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-name = "pkcs1"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8ffb9f10fa047879315e6625af03c164b16962a5368d724ed16323b68ace47f"
-dependencies = [
- "der",
- "pkcs8",
- "spki",
-]
-
-[[package]]
-name = "pkcs8"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f950b2377845cebe5cf8b5165cb3cc1a5e0fa5cfa3e1f7f55707d8fd82e0a7b7"
-dependencies = [
- "der",
- "spki",
-]
+checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
 name = "png"
@@ -6508,6 +6474,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90a7d5beecc52a491b54d6dd05c7a45ba1801666a5baad9fdbfc6fef8d2d206c"
 dependencies = [
  "portable-atomic",
+]
+
+[[package]]
+name = "portpicker"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be97d76faf1bfab666e1375477b23fde79eccf0276e9b63b92a39d676a889ba9"
+dependencies = [
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -8454,6 +8429,7 @@ dependencies = [
  "spider",
  "sqlx",
  "swiftide",
+ "swiftide-test-utils",
  "temp-dir",
  "tokio",
  "tracing-subscriber",
@@ -8582,11 +8558,13 @@ dependencies = [
  "anyhow",
  "async-openai",
  "mockall",
+ "portpicker",
  "qdrant-client",
  "serde",
  "serde_json",
  "swiftide-core",
  "swiftide-integrations",
+ "tempfile",
  "testcontainers",
  "tokio",
  "wiremock",

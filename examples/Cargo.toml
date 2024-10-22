@@ -30,6 +30,7 @@ qdrant-client = { workspace = true }
 fluvio = { workspace = true }
 temp-dir = { workspace = true }
 sqlx = { workspace = true }
+swiftide-test-utils = { path = "../swiftide-test-utils" }
 
 [[example]]
 doc-scrape-examples = true
