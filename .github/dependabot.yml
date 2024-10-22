@@ -23,7 +23,7 @@ updates:
           - "patch"
       aws:
         patterns:
-          - "aws"
+          - "aws*"
 
   - package-ecosystem: "github-actions"
     directory: "/"

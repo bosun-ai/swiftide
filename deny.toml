@@ -16,6 +16,7 @@ allow = [
   "Unlicense",
   "CC0-1.0",
   "zlib-acknowledgement",
+  "Zlib",
   "0BSD",
 ]
 exceptions = [
