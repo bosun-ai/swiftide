@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let embedding_model = integrations::fastembed::FastEmbed::try_default()?;
 
-    let prompt_model = integrations::mistralrs::MistralTextModel::builder()
+    let prompt_model = integrations::mistralrs::Mistralrs::builder()
         .model_name("microsoft/Phi-3.5-mini-instruct")
         .build()?;
 

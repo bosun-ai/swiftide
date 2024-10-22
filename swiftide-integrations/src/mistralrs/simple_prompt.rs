@@ -13,7 +13,9 @@ use mistralrs::{RequestBuilder, TextMessageRole};
 
 /// Prompt popular hugging face text models provided by [`mistralrs`].
 ///
-/// You can either provide a model name, or use the mistral.
+/// You can either provide a model name, or use mistral builder. Using the mistral builder allows
+/// models beyond text.
+///
 /// See [the mistral.rs github page](https://github.com/EricLBuehler/mistral.rs/) for more
 /// information and a list of supported models.
 ///
@@ -34,7 +36,7 @@ use mistralrs::{RequestBuilder, TextMessageRole};
 #[derive(Builder, Clone)]
 // #[builder(pattern = "owned")]
 #[builder(setter(into), build_fn(error = "anyhow::Error"))]
-pub struct MistralTextModel {
+pub struct Mistralrs {
     /// Internal model used. Can be overwritten via the builder.
     ///
     /// See [`::mistralrs::TextModelBuilder`].
@@ -47,13 +49,13 @@ pub struct MistralTextModel {
     model_name: Option<String>,
 }
 
-impl MistralTextModel {
-    pub fn builder() -> MistralTextModelBuilder {
-        MistralTextModelBuilder::default()
+impl Mistralrs {
+    pub fn builder() -> MistralrsBuilder {
+        MistralrsBuilder::default()
     }
 }
 
-impl MistralTextModelBuilder {
+impl MistralrsBuilder {
     fn default_from_model_name(&self) -> Result<Arc<::mistralrs::v0_4_api::Model>> {
         tokio::task::block_in_place(move || {
             tokio::runtime::Handle::current()
@@ -83,14 +85,14 @@ impl MistralTextModelBuilder {
     }
 }
 
-impl Debug for MistralTextModel {
+impl Debug for Mistralrs {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MistralPrompt").finish()
     }
 }
 
 #[async_trait]
-impl SimplePrompt for MistralTextModel {
+impl SimplePrompt for Mistralrs {
     #[tracing::instrument(skip_all)]
     async fn prompt(&self, prompt: Prompt) -> Result<String> {
         let request =

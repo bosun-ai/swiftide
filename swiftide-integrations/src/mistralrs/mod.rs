@@ -6,4 +6,4 @@
 //! information.
 mod simple_prompt;
 
-pub use simple_prompt::{MistralTextModel, MistralTextModelBuilder};
+pub use simple_prompt::{Mistralrs, MistralrsBuilder};
