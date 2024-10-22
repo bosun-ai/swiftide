@@ -41,7 +41,7 @@ uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 
 # Integrations
-spider = { version = "2.2" }
+spider = { version = "2.9" }
 async-openai = { version = "0.25" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",

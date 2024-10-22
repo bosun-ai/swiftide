@@ -1461,9 +1461,9 @@ checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
 
 [[package]]
 name = "bytes"
-version = "1.7.2"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
+checksum = "9ac0150caa2ae65ca5bd83f25c7de183dea78d4d366469f148435e2acfbad0da"
 dependencies = [
  "serde",
 ]
@@ -3833,7 +3833,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -6150,7 +6150,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -7355,9 +7355,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.9.15"
+version = "2.9.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdb9e4e49bca4c815bdc2aa58bed89a3e2c49290990345846bb3ea9b952d383a"
+checksum = "e078426f678e2c0262ed9abeed87b053f2f0114bae580fd86d73256086b8a511"
 dependencies = [
  "ahash",
  "auto_encoder",
