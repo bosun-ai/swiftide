@@ -21,13 +21,17 @@ swiftide = { path = "../swiftide/", features = [
   "ollama",
   "fluvio",
   "lancedb",
+  "pgvector",  
 ] }
 tracing-subscriber = "0.3"
+tracing = { workspace = true }
 serde_json = { workspace = true }
 spider = { workspace = true }
 qdrant-client = { workspace = true }
 fluvio = { workspace = true }
 temp-dir = { workspace = true }
+sqlx = { workspace = true }
+swiftide-test-utils = { path = "../swiftide-test-utils" }
 
 [[example]]
 doc-scrape-examples = true
@@ -91,3 +95,7 @@ path = "fluvio.rs"
 [[example]]
 name = "lancedb"
 path = "lancedb.rs"
+
+[[example]]
+name = "index-md-pgvector"
+path = "index_md_into_pgvector.rs"
