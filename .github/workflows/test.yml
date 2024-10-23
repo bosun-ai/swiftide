@@ -49,4 +49,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: "Test"
-        run: cargo test --all-features --tests -j 2
+        run: cargo test --all-features --workspace -j 2
