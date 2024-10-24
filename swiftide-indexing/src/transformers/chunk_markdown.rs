@@ -4,10 +4,12 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use derive_builder::Builder;
 use swiftide_core::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
-use text_splitter::{Characters, MarkdownSplitter};
+use text_splitter::{Characters, ChunkConfig, MarkdownSplitter};
 
-#[derive(Debug, Clone, Builder)]
-#[builder(pattern = "owned", setter(strip_option))]
+const DEFAULT_MAX_CHAR_SIZE: usize = 2056;
+
+#[derive(Clone, Builder)]
+#[builder(setter(strip_option))]
 /// A transformer that chunks markdown content into smaller pieces.
 ///
 /// The transformer will split the markdown content into smaller pieces based on the specified
@@ -17,42 +19,71 @@ use text_splitter::{Characters, MarkdownSplitter};
 ///
 /// Technically that might work with every splitter `text_splitter` provides.
 pub struct ChunkMarkdown {
-    #[builder(setter(into))]
-    chunker: Arc<MarkdownSplitter<Characters>>,
+    /// Defaults to `None`. If you use a splitter that is resource heavy, this parameter can be
+    /// tuned.
     #[builder(default)]
-    /// The number of concurrent chunks to process.
     concurrency: Option<usize>,
-    /// The splitter is not perfect in skipping min size nodes.
+
+    /// Optional maximum number of characters per chunk.
     ///
-    /// If you provide a custom chunker, you might want to set the range as well.
-    #[builder(default)]
-    range: Option<std::ops::Range<usize>>,
+    /// Defaults to [`DEFAULT_MAX_CHAR_SIZE`].
+    #[builder(default = "DEFAULT_MAX_CHAR_SIZE")]
+    max_characters: usize,
+
+    /// A range of minimum and maximum characters per chunk.
+    ///
+    /// Chunks smaller than the range min will be ignored. `max_characters` will be ignored if this
+    /// is set.
+    ///
+    /// If you provide a custom chunker with a range, you might want to set the range as well.
+    ///
+    /// Defaults to 0..[`max_characters`]
+    #[builder(default = "0..DEFAULT_MAX_CHAR_SIZE")]
+    range: std::ops::Range<usize>,
+
+    /// The markdown splitter from [`text_splitter`]
+    ///
+    /// Defaults to a new [`MarkdownSplitter`] with the specified `max_characters`.
+    #[builder(setter(into), default = "self.default_client()")]
+    chunker: Arc<MarkdownSplitter<Characters>>,
+}
+
+impl std::fmt::Debug for ChunkMarkdown {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChunkMarkdown")
+            .field("concurrency", &self.concurrency)
+            .field("max_characters", &self.max_characters)
+            .field("range", &self.range)
+            .finish()
+    }
+}
+
+impl Default for ChunkMarkdown {
+    fn default() -> Self {
+        Self::from_max_characters(DEFAULT_MAX_CHAR_SIZE)
+    }
 }
 
 impl ChunkMarkdown {
+    pub fn builder() -> ChunkMarkdownBuilder {
+        ChunkMarkdownBuilder::default()
+    }
+
     /// Create a new transformer with a maximum number of characters per chunk.
+    #[allow(clippy::missing_panics_doc)]
     pub fn from_max_characters(max_characters: usize) -> Self {
-        Self {
-            chunker: Arc::new(MarkdownSplitter::new(max_characters)),
-            concurrency: None,
-            range: None,
-        }
+        Self::builder()
+            .max_characters(max_characters)
+            .build()
+            .expect("Cannot fail")
     }
 
     /// Create a new transformer with a range of characters per chunk.
     ///
     /// Chunks smaller than the range will be ignored.
+    #[allow(clippy::missing_panics_doc)]
     pub fn from_chunk_range(range: std::ops::Range<usize>) -> Self {
-        Self {
-            chunker: Arc::new(MarkdownSplitter::new(range.clone())),
-            concurrency: None,
-            range: Some(range),
-        }
-    }
-
-    /// Build a custom markdown chunker.
-    pub fn builder() -> ChunkMarkdownBuilder {
-        ChunkMarkdownBuilder::default()
+        Self::builder().range(range).build().expect("Cannot fail")
     }
 
     /// Set the number of concurrent chunks to process.
@@ -63,13 +94,26 @@ impl ChunkMarkdown {
     }
 
     fn min_size(&self) -> usize {
-        self.range.as_ref().map_or(0, |r| r.start)
+        self.range.start
+    }
+}
+
+impl ChunkMarkdownBuilder {
+    fn default_client(&self) -> Arc<MarkdownSplitter<Characters>> {
+        let chunk_config: ChunkConfig<Characters> = self
+            .range
+            .clone()
+            .map(ChunkConfig::<Characters>::from)
+            .or_else(|| self.max_characters.map(Into::into))
+            .unwrap_or(DEFAULT_MAX_CHAR_SIZE.into());
+
+        Arc::new(MarkdownSplitter::new(chunk_config))
     }
 }
 
 #[async_trait]
 impl ChunkerTransformer for ChunkMarkdown {
-    #[tracing::instrument(skip_all, name = "transformers.chunk_markdown")]
+    #[tracing::instrument(skip_all)]
     async fn transform_node(&self, node: Node) -> IndexingStream {
         let chunks = self
             .chunker
@@ -132,8 +176,12 @@ mod test {
             .await
             .unwrap();
 
+        dbg!(&nodes.iter().map(|n| n.chunk.clone()).collect::<Vec<_>>());
         for line in MARKDOWN.lines().filter(|line| !line.trim().is_empty()) {
-            assert!(nodes.iter().any(|node| node.chunk == line.trim()));
+            nodes
+                .iter()
+                .find(|node| node.chunk == line.trim())
+                .unwrap_or_else(|| panic!("Line not found: {line}"));
         }
 
         assert_eq!(nodes.len(), 6);

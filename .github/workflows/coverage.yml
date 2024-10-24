@@ -22,7 +22,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
-      - uses: Swatinem/rust-cache@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -33,7 +32,7 @@ jobs:
           tool: cargo-llvm-cov
       - name: Generate code coverage
         run: |
-          cargo +nightly llvm-cov --workspace --all-features --lcov --output-path lcov.info
+          cargo +nightly llvm-cov --tests --all-features --lcov --output-path lcov.info
 
       - name: Coveralls
         uses: coverallsapp/github-action@v2

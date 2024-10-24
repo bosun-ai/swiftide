@@ -1,19 +1,9 @@
 [workspace]
-members = [
-  "swiftide",
-  "swiftide-core",
-  "swiftide-integrations",
-  "swiftide-indexing",
-
-  "examples",
-  "benchmarks",
-  "swiftide-test-utils",
-  "swiftide-macros", "swiftide-agents",
-]
+members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
 resolver = "2"
 
 [workspace.package]
-version = "0.13.3"
+version = "0.13.4"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
