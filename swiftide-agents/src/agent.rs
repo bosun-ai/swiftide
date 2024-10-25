@@ -8,6 +8,7 @@ use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolCall, ToolOutput},
     prompt::Prompt,
 };
+use tracing::debug;
 
 use crate::traits::*;
 
@@ -64,8 +65,13 @@ impl Agent {
     }
 
     pub async fn run(&mut self) -> Result<()> {
+        self.context
+            .record_in_history(ChatMessage::User(self.instructions.render().await?))
+            .await;
+
         // LIFECYCLE: BEFORE ALL
         while !self.should_stop {
+            debug!("Looping agent");
             // LIFECYCLE: BEFORE EACH
             self.run_once().await?;
             // LIFECYCLE: AFTER TOOL
@@ -76,7 +82,7 @@ impl Agent {
         // LIFECYCLE: AFTER ALL
     }
 
-    pub async fn run_once(&mut self) -> Result<()> {
+    async fn run_once(&mut self) -> Result<()> {
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
             .messages(self.context.conversation_history().await)
@@ -84,13 +90,15 @@ impl Agent {
                 self.tools
                     .iter()
                     .map(|tool| tool.json_spec())
-                    .collect::<Vec<_>>(),
+                    .collect::<HashSet<_>>(),
             )
             .build()?;
 
+        debug!("Calling LLM with request: {:?}", chat_completion_request);
         let response = self.llm.complete(&chat_completion_request).await?;
 
         if let Some(message) = response.message {
+            debug!("LLM returned message: {}", message);
             self.context
                 .record_in_history(ChatMessage::Assistant(message))
                 .await;
@@ -98,6 +106,7 @@ impl Agent {
 
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
         if let Some(tool_calls) = response.tool_calls {
+            debug!("LLM returned tool calls: {:?}", tool_calls);
             for tool_call in tool_calls {
                 let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
                     tracing::warn!("Tool {} not found", tool_call.name());
@@ -143,7 +152,7 @@ mod tests {
     use crate::agent_context::DefaultContext;
     use crate::test_utils::MockTool;
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_agent_builder_defaults() {
         // Create a prompt
         let prompt = "Write a poem";
@@ -180,39 +189,76 @@ mod tests {
             .unwrap();
 
         assert_eq!(agent.tools.len(), 2);
-        assert!(agent.find_tool_by_name("fake_tool").is_some());
+        assert!(agent.find_tool_by_name("mock_tool").is_some());
         assert!(agent.find_tool_by_name("stop").is_some());
     }
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_agent_tool_calling_loop() {
         let prompt = "Write a poem";
         let mut mock_llm = MockChatCompletion::new();
         let mut mock_tool = MockTool::new();
 
+        // TODO: Write better expectation management on agent loop
+        // i.e. assertion object on agent itself
         let chat_request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("Write a poem".to_string())])
             .tools_spec(
-                Agent::default_tools()
+                [Box::new(mock_tool.clone()) as Box<dyn Tool>]
                     .into_iter()
-                    .chain([mock_tool.clone().into()])
+                    .chain(Agent::default_tools())
                     .map(|tool| tool.json_spec())
-                    .collect::<Vec<_>>(),
+                    .collect::<HashSet<_>>(),
             )
             .build()
             .unwrap();
 
-        let chat_response = ChatCompletionResponse::builder()
-            .message(Some("Roses are red".to_string()))
-            .tool_calls(Some(vec![ToolCall::builder()
+        let mock_tool_response = ChatCompletionResponse::builder()
+            .message("Roses are red".to_string())
+            .tool_calls(vec![ToolCall::builder()
                 .name("mock_tool")
                 .id("1")
                 .build()
-                .unwrap()]))
+                .unwrap()])
             .build()
             .unwrap();
 
-        mock_llm.expect_complete(chat_request, Ok(chat_response));
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let chat_request = ChatCompletionRequest::builder()
+            .messages(vec![
+                ChatMessage::User("Write a poem".to_string()),
+                ChatMessage::Assistant("Roses are red".to_string()),
+                ChatMessage::ToolOutput(
+                    ToolCall::builder()
+                        .name("mock_tool")
+                        .id("1")
+                        .build()
+                        .unwrap(),
+                    ToolOutput::Content("Great!".to_string()),
+                ),
+            ])
+            .tools_spec(
+                [Box::new(mock_tool.clone()) as Box<dyn Tool>]
+                    .into_iter()
+                    .chain(Agent::default_tools())
+                    .map(|tool| tool.json_spec())
+                    .collect::<HashSet<_>>(),
+            )
+            .build()
+            .unwrap();
+
+        let stop_response = ChatCompletionResponse::builder()
+            .message("Roses are red".to_string())
+            .tool_calls(vec![ToolCall::builder()
+                .name("stop")
+                .id("1")
+                .build()
+                .unwrap()])
+            .build()
+            .unwrap();
+
+        mock_llm.expect_complete(chat_request, Ok(stop_response));
         mock_tool.expect_invoke("Great!".into(), None);
 
         let mut agent = Agent::builder()
@@ -222,6 +268,6 @@ mod tests {
             .build()
             .unwrap();
 
-        agent.run().await;
+        agent.run().await.unwrap();
     }
 }

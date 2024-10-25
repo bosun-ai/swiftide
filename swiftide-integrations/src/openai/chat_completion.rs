@@ -43,13 +43,13 @@ impl ChatCompletion for OpenAI {
             .context("Completion request to openai failed")?;
 
         ChatCompletionResponse::builder()
-            .message(
+            .maybe_message(
                 response
                     .choices
                     .first()
                     .and_then(|choice| choice.message.content.clone()),
             )
-            .tool_calls(
+            .maybe_tool_calls(
                 response
                     .choices
                     .first()

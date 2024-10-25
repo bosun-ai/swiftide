@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::chat_completion::{ChatCompletion, ChatCompletionRequest, ChatCompletionResponse};
 use anyhow::Result;
+use pretty_assertions::assert_eq;
 
 #[macro_export]
 macro_rules! assert_default_prompt_snapshot {
@@ -51,8 +52,8 @@ impl MockChatCompletion {
         request: ChatCompletionRequest,
         response: Result<ChatCompletionResponse>,
     ) {
-        self.expectations.lock().unwrap().push(request);
-        self.responses.lock().unwrap().push(response);
+        self.expectations.lock().unwrap().insert(0, request);
+        self.responses.lock().unwrap().insert(0, response);
     }
 }
 
@@ -78,13 +79,24 @@ impl ChatCompletion for MockChatCompletion {
 
 impl Drop for MockChatCompletion {
     fn drop(&mut self) {
-        let expectations = self.expectations.lock().unwrap();
-        let responses = self.responses.lock().unwrap();
-        if !expectations.is_empty() {
-            panic!("Not all expectations were met");
+        // If arc ref count > 1 early return
+        if Arc::strong_count(&self.expectations) > 1 {
+            return;
         }
-        if !responses.is_empty() {
-            panic!("Not all responses were returned");
-        }
+        let Ok(expectations) = self.expectations.lock() else {
+            return;
+        };
+        let Ok(responses) = self.responses.lock() else {
+            return;
+        };
+
+        assert!(
+            expectations.is_empty(),
+            "Not all expectations were met {expectations:?}"
+        );
+        assert!(
+            responses.is_empty(),
+            "Not all responses were returned {responses:?}"
+        );
     }
 }

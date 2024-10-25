@@ -31,6 +31,8 @@ dyn-clone = { workspace = true }
 tera = { version = "1.20", default-features = false }
 uuid = { workspace = true, features = ["v4", "v3"] }
 
+pretty_assertions = { workspace = true, optional = true }
+
 # Integrations
 qdrant-client = { workspace = true, optional = true }
 
@@ -38,7 +40,7 @@ qdrant-client = { workspace = true, optional = true }
 test-case = { workspace = true }
 
 [features]
-test-utils = ["dep:mockall"]
+test-utils = ["dep:mockall", "dep:pretty_assertions"]
 qdrant = ["dep:qdrant-client"]
 
 [lints]

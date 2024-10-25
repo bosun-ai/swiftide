@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -24,8 +26,8 @@ where
     }
 }
 
-#[derive(Clone, Builder)]
-#[builder(build_fn(error = anyhow::Error))]
+#[derive(Clone, Builder, Debug)]
+#[builder(setter(strip_option, into), build_fn(error = anyhow::Error))]
 pub struct ChatCompletionResponse {
     pub message: Option<String>,
 
@@ -41,6 +43,18 @@ impl ChatCompletionResponse {
     }
 }
 
+impl ChatCompletionResponseBuilder {
+    pub fn maybe_message<T: Into<Option<String>>>(&mut self, message: T) -> &mut Self {
+        self.message = Some(message.into());
+        self
+    }
+
+    pub fn maybe_tool_calls<T: Into<Option<Vec<ToolCall>>>>(&mut self, tool_calls: T) -> &mut Self {
+        self.tool_calls = Some(tool_calls.into());
+        self
+    }
+}
+
 #[derive(Builder, Clone, PartialEq, Debug)]
 #[builder(setter(into, strip_option))]
 pub struct ChatCompletionRequest {
@@ -48,7 +62,7 @@ pub struct ChatCompletionRequest {
     // and add it to message if present
     messages: Vec<ChatMessage>,
     #[builder(default)]
-    tools_spec: Vec<JsonSpec>,
+    tools_spec: HashSet<JsonSpec>,
 }
 
 impl ChatCompletionRequest {

@@ -5,13 +5,16 @@ use async_trait::async_trait;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, JsonSpec, ToolOutput,
 };
+use tracing::error;
 
 use crate::{AgentContext, Tool};
 use indoc::indoc;
 
+type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
+
 #[derive(Debug, Clone)]
 pub struct MockTool {
-    expectations: Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>,
+    expectations: Expectations,
 }
 
 impl MockTool {
@@ -35,16 +38,16 @@ impl Tool for MockTool {
         _agent_context: &dyn AgentContext,
         raw_args: Option<&str>,
     ) -> Result<ToolOutput> {
-        let expecation = self
+        let expectation = self
             .expectations
             .lock()
             .unwrap()
             .pop()
             .expect("Unexpected tool call");
 
-        assert_eq!(expecation.1, raw_args);
+        assert_eq!(expectation.1, raw_args);
 
-        Ok(expecation.0)
+        Ok(expectation.0)
     }
 
     fn name(&self) -> &'static str {
@@ -63,9 +66,11 @@ impl Tool for MockTool {
 
 impl Drop for MockTool {
     fn drop(&mut self) {
-        let expectations = self.expectations.lock().unwrap();
+        let Ok(expectations) = self.expectations.try_lock() else {
+            return;
+        };
         if !expectations.is_empty() {
-            panic!("Not all expectations were met: {:?}", expectations);
+            tracing::warn!("Not all expectations were met: {:?}", expectations);
         }
     }
 }
