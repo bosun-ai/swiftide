@@ -1,9 +1,8 @@
 //! Manages agent history and provides an
 //! interface for the external world
-use crate::traits::{self, AgentContext, Command, CommandOutput, Workspace};
-use anyhow::Result;
+use crate::traits::AgentContext;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{ChatMessage, ToolCall, ToolOutput};
+use swiftide_core::chat_completion::ChatMessage;
 
 #[derive(Clone, Default)]
 pub struct DefaultContext {
@@ -25,7 +24,7 @@ impl AgentContext for DefaultContext {
     }
 
     async fn record_in_history(&mut self, item: ChatMessage) {
-        self.conversation_history.push(item.into());
+        self.conversation_history.push(item);
 
         // Debug assert that there is only one ChatMessage::System
         // TODO: Properly handle this

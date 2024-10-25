@@ -2,10 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{
-    ChatCompletionRequest, ChatCompletionResponse, JsonSpec, ToolOutput,
-};
-use tracing::error;
+use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
 
 use crate::{AgentContext, Tool};
 use indoc::indoc;

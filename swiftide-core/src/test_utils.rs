@@ -39,6 +39,12 @@ pub struct MockChatCompletion {
     responses: Arc<Mutex<Vec<Result<ChatCompletionResponse>>>>,
 }
 
+impl Default for MockChatCompletion {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockChatCompletion {
     pub fn new() -> Self {
         Self {

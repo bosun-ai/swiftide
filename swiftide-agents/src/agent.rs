@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use crate::{agent_context::DefaultContext, tools::control::Stop};
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolCall, ToolOutput},
@@ -149,7 +149,7 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
-    use crate::agent_context::DefaultContext;
+
     use crate::test_utils::MockTool;
 
     #[test_log::test(tokio::test)]
@@ -196,8 +196,8 @@ mod tests {
     #[test_log::test(tokio::test)]
     async fn test_agent_tool_calling_loop() {
         let prompt = "Write a poem";
-        let mut mock_llm = MockChatCompletion::new();
-        let mut mock_tool = MockTool::new();
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new();
 
         // TODO: Write better expectation management on agent loop
         // i.e. assertion object on agent itself

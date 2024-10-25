@@ -5,11 +5,6 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use dyn_clone::DynClone;
 
-#[cfg(feature = "test-utils")]
-use mockall::mock;
-
-use crate::prompt::Prompt;
-
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
@@ -115,7 +110,7 @@ impl<T: AsRef<str>> From<T> for ToolOutput {
     }
 }
 
-/// TODO: Needs more values, i.e. OpenAI needs a reference to the original call
+/// TODO: Needs more values, i.e. `OpenAI` needs a reference to the original call
 #[derive(Clone, Debug, Builder, PartialEq)]
 #[builder(setter(into, strip_option))]
 pub struct ToolCall {

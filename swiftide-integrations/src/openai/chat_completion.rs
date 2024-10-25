@@ -1,14 +1,13 @@
 use anyhow::{Context as _, Result};
 use async_openai::types::{
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
-    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
-    ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
+    CreateChatCompletionRequestArgs,
 };
 use async_trait::async_trait;
 use itertools::Itertools;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
-    ToolOutput,
 };
 
 use super::OpenAI;
