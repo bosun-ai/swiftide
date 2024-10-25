@@ -15,20 +15,15 @@ pub trait ChatCompletion: Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(ChatCompletion);
 
-#[cfg(feature = "test-utils")]
-mock! {
-    #[derive(Debug)]
-    pub ChatCompletion {}
-
-    #[async_trait]
-    impl ChatCompletion for ChatCompletion {
-        async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
-    }
-
-    impl Clone for ChatCompletion {
-        fn clone(&self) -> Self;
+impl<'a, T: 'a> From<T> for Box<dyn ChatCompletion + 'a>
+where
+    T: ChatCompletion + Clone,
+{
+    fn from(value: T) -> Self {
+        dyn_clone::clone_box(&value)
     }
 }
+
 #[derive(Clone, Builder)]
 #[builder(build_fn(error = anyhow::Error))]
 pub struct ChatCompletionResponse {
@@ -36,6 +31,7 @@ pub struct ChatCompletionResponse {
 
     // Can be a better type
     // Perhaps should be typed to actual functions already?
+    #[builder(default)]
     pub tool_calls: Option<Vec<ToolCall>>,
 }
 
@@ -45,12 +41,13 @@ impl ChatCompletionResponse {
     }
 }
 
-#[derive(Builder, Clone)]
+#[derive(Builder, Clone, PartialEq, Debug)]
 #[builder(setter(into, strip_option))]
 pub struct ChatCompletionRequest {
     // TODO: Alternatively maybe, we can also have an instruction, and build a system prompt for it
     // and add it to message if present
     messages: Vec<ChatMessage>,
+    #[builder(default)]
     tools_spec: Vec<JsonSpec>,
 }
 
@@ -64,13 +61,13 @@ impl ChatCompletionRequest {
     }
 }
 
-#[derive(Clone, strum_macros::EnumIs)]
+#[derive(Clone, strum_macros::EnumIs, PartialEq, Debug)]
 pub enum ChatMessage {
     System(String),
     User(String),
     Assistant(String),
     ToolCall(ToolCall),
-    ToolOutput(ToolOutput),
+    ToolOutput(ToolCall, ToolOutput),
 }
 
 pub enum ChatRole {
@@ -79,44 +76,38 @@ pub enum ChatRole {
     Assistant,
 }
 
-#[derive(Clone)]
+// TODO: Naming
+#[derive(Debug, Clone, PartialEq)]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
-    Content {
-        tool_call: ToolCall,
-        content: String,
-    },
+    Content(String),
     /// Stops an agent
     ///
-    Stop(bool),
-    //Raw(String),
-    //Agent(Agent),
+    Stop,
 }
 
 impl ToolOutput {
-    pub fn tool_call(&self) -> Option<&ToolCall> {
-        if let ToolOutput::Content { tool_call, .. } = self {
-            Some(tool_call)
-        } else {
-            None
+    pub fn content(&self) -> Option<&str> {
+        match self {
+            ToolOutput::Content(s) => Some(s),
+            _ => None,
         }
     }
+}
 
-    pub fn content(&self) -> Option<&str> {
-        if let ToolOutput::Content { content, .. } = self {
-            Some(content)
-        } else {
-            None
-        }
+impl<T: AsRef<str>> From<T> for ToolOutput {
+    fn from(s: T) -> Self {
+        ToolOutput::Content(s.as_ref().to_string())
     }
 }
 
 /// TODO: Needs more values, i.e. OpenAI needs a reference to the original call
-#[derive(Clone, Builder)]
+#[derive(Clone, Debug, Builder, PartialEq)]
 #[builder(setter(into, strip_option))]
 pub struct ToolCall {
     id: String,
     name: String,
+    #[builder(default)]
     args: Option<String>,
 }
 

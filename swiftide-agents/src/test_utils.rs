@@ -1,0 +1,71 @@
+use std::sync::{Arc, Mutex};
+
+use anyhow::Result;
+use async_trait::async_trait;
+use swiftide_core::chat_completion::{
+    ChatCompletionRequest, ChatCompletionResponse, JsonSpec, ToolOutput,
+};
+
+use crate::{AgentContext, Tool};
+use indoc::indoc;
+
+#[derive(Debug, Clone)]
+pub struct MockTool {
+    expectations: Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>,
+}
+
+impl MockTool {
+    pub fn new() -> Self {
+        Self {
+            expectations: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+    pub fn expect_invoke(&self, expected_result: ToolOutput, expected_args: Option<&'static str>) {
+        self.expectations
+            .lock()
+            .unwrap()
+            .push((expected_result, expected_args));
+    }
+}
+
+#[async_trait]
+impl Tool for MockTool {
+    async fn invoke(
+        &self,
+        _agent_context: &dyn AgentContext,
+        raw_args: Option<&str>,
+    ) -> Result<ToolOutput> {
+        let expecation = self
+            .expectations
+            .lock()
+            .unwrap()
+            .pop()
+            .expect("Unexpected tool call");
+
+        assert_eq!(expecation.1, raw_args);
+
+        Ok(expecation.0)
+    }
+
+    fn name(&self) -> &'static str {
+        "mock_tool"
+    }
+
+    fn json_spec(&self) -> JsonSpec {
+        indoc! {r#"
+           {
+               "name": "mock_tool",
+               "description": "A fake tool for testing purposes",
+           } 
+        "#}
+    }
+}
+
+impl Drop for MockTool {
+    fn drop(&mut self) {
+        let expectations = self.expectations.lock().unwrap();
+        if !expectations.is_empty() {
+            panic!("Not all expectations were met: {:?}", expectations);
+        }
+    }
+}

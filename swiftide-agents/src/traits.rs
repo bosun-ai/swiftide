@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
@@ -44,6 +46,29 @@ pub trait Tool: Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(Tool);
 
+impl<'a, T: 'a> From<T> for Box<dyn Tool + 'a>
+where
+    T: Tool,
+{
+    fn from(value: T) -> Self {
+        dyn_clone::clone_box(&value)
+    }
+}
+
+/// Tools are identified and unique by name
+/// These allow comparison and lookups
+impl PartialEq for Box<dyn Tool> {
+    fn eq(&self, other: &Self) -> bool {
+        self.name() == other.name()
+    }
+}
+impl Eq for Box<dyn Tool> {}
+impl Hash for Box<dyn Tool> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name().hash(state);
+    }
+}
+
 /// Acts as the interface to the external world and any overlapping state
 /// NOTE: Async as expecting locks
 #[async_trait]
@@ -64,7 +89,7 @@ impl AgentContext for Box<dyn AgentContext> {
         self.as_ref().conversation_history().await
     }
     async fn record_in_history(&mut self, item: ChatMessage) {
-        self.as_mut().record_in_history(item).await
+        self.as_mut().record_in_history(item).await;
     }
 }
 //
@@ -81,10 +106,3 @@ pub enum CommandOutput {
     Stderr(String),
     Status(i32),
 }
-
-// Idea to have semantically usuable types that have default behaviour
-// Additionally, unlike Fluyt, handle as much as possible via tools
-//
-// Maybe this should be a struct?
-
-type Success = bool;

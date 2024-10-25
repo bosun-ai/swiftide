@@ -89,10 +89,8 @@ fn message_to_openai(
                 .into(),
         ),
         ChatMessage::ToolCall(_) => None,
-        ChatMessage::ToolOutput(tool_output) => {
-            // get the id and content or return None
-            let (Some(tool_call), Some(content)) = (tool_output.tool_call(), tool_output.content())
-            else {
+        ChatMessage::ToolOutput(tool_call, tool_output) => {
+            let Some(content) = tool_output.content() else {
                 return Ok(None);
             };
 

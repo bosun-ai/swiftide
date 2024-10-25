@@ -7590,8 +7590,12 @@ dependencies = [
  "async-trait",
  "derive_builder",
  "dyn-clone",
+ "indoc",
+ "mockall",
  "swiftide-core",
+ "test-log",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
