@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730065056052,
+  "lastUpdate": 1730068492853,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8987,6 +8987,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245826,
             "range": "± 1465",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "286a9407825097ff9f731eb302c936353c872e63",
+          "message": "chore: release v0.14.1 (#420)\n\n## 🤖 New release\r\n* `swiftide`: 0.14.0 -> 0.14.1 (✓ API compatible changes)\r\n* `swiftide-core`: 0.14.0 -> 0.14.1\r\n* `swiftide-indexing`: 0.14.0 -> 0.14.1 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.14.0 -> 0.14.1\r\n* `swiftide-integrations`: 0.14.0 -> 0.14.1\r\n* `swiftide-query`: 0.14.0 -> 0.14.1\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.14.1](https://github.com/bosun-ai/swiftide/compare/v0.14.0...v0.14.1)\r\n- 2024-10-27\r\n\r\n### Bug fixes\r\n\r\n-\r\n[5bbcd55](https://github.com/bosun-ai/swiftide/commit/5bbcd55de65d73d7908e91c96f120928edb6b388)\r\nRevert 0.14 release as mistralrs is unpublished\r\n([#417](https://github.com/bosun-ai/swiftide/pull/417))\r\n\r\n````text\r\nRevert the 0.14 release as `mistralrs` is unpublished and unfortunately\r\n  cannot be released.\r\n````\r\n\r\n### Miscellaneous\r\n\r\n-\r\n[07c2661](https://github.com/bosun-ai/swiftide/commit/07c2661b7a7cdf75cdba12fab0ca91866793f727)\r\nRe-release 0.14 without mistralrs\r\n([#419](https://github.com/bosun-ai/swiftide/pull/419))\r\n\r\n````text\r\n- **Revert \"fix: Revert 0.14 release as mistralrs is unpublished\r\n  ([#417](https://github.com/bosun-ai/swiftide/pull/417))\"**\r\n  - **Fix changelog**\r\n````\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.14.0...0.14.1\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).",
+          "timestamp": "2024-10-27T23:27:00+01:00",
+          "tree_id": "2e5791e935358566ad211b9bddf26dc87d4e62a8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/286a9407825097ff9f731eb302c936353c872e63"
+        },
+        "date": 1730068491767,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1269794,
+            "range": "± 892972",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244045,
+            "range": "± 9913",
             "unit": "ns/iter"
           }
         ]
