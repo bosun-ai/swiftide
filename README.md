@@ -174,7 +174,7 @@ Our goal is to create a fast, extendable platform for Retrieval Augmented Genera
 - Splitting and merging pipelines
 - Jinja-like templating for prompts
 - Store into multiple backends
-- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, Fluvio, LanceDB, and Treesitter
+- Integrations with OpenAI, Groq, Redis, Qdrant, Ollama, FastEmbed-rs, Fluvio, LanceDB, Mistral-rs, and Treesitter
 - Evaluate pipelines with RAGAS
 - Sparse vector support for hybrid search
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
@@ -183,7 +183,7 @@ Our goal is to create a fast, extendable platform for Retrieval Augmented Genera
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                                |
+| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models <br> Mistral-rs - Text models  |
 | **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
