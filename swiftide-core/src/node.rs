@@ -37,7 +37,7 @@ use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbeddin
 /// in the indexing pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq, Builder)]
-#[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
+#[builder(setter(into), build_fn(error = "anyhow::Error"))]
 pub struct Node {
     /// File path associated with the node.
     #[builder(default)]
@@ -110,8 +110,8 @@ impl Node {
             .path(node.path.clone())
             .chunk(node.chunk.clone())
             .metadata(node.metadata.clone())
-            .vectors(node.vectors.clone().unwrap_or_default())
-            .sparse_vectors(node.sparse_vectors.clone().unwrap_or_default())
+            .vectors(node.vectors.clone())
+            .sparse_vectors(node.sparse_vectors.clone())
             .embed_mode(node.embed_mode)
             .original_size(node.original_size)
             .offset(node.offset)
