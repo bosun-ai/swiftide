@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729670282176,
+  "lastUpdate": 1730040825870,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8555,6 +8555,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244941,
             "range": "± 2741",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "551a9cb769293e42e15bae5dca3ab677be0ee8ea",
+          "message": "fix(indexing)!: Node ID no longer memoized (#414)\n\nAs @shamb0 pointed out in #392, there is a potential issue where Node\r\nids are get cached before chunking or other transformations, breaking\r\nupserts and potentially resulting in data loss.\r\n\r\nBREAKING CHANGE: This PR reworks Nodes with a builder API and a private\r\nid. Hence, manually creating nodes no longer works. In the future, all\r\nthe fields are likely to follow the same pattern, so that we can\r\ndecouple the inner fields from the Node's implementation.",
+          "timestamp": "2024-10-27T15:45:40+01:00",
+          "tree_id": "1ce318772de6470ca3e2fb255a9cfe3dc6cb940f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/551a9cb769293e42e15bae5dca3ab677be0ee8ea"
+        },
+        "date": 1730040824788,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1299268,
+            "range": "± 1250852",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243848,
+            "range": "± 2083",
             "unit": "ns/iter"
           }
         ]
