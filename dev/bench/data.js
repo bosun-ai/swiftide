@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730061792374,
+  "lastUpdate": 1730062830891,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8825,6 +8825,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244483,
             "range": "± 5331",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5bbcd55de65d73d7908e91c96f120928edb6b388",
+          "message": "fix: Revert 0.14 release as mistralrs is unpublished (#417)\n\nRevert the 0.14 release as `mistralrs` is unpublished and unfortunately\r\ncannot be released.",
+          "timestamp": "2024-10-27T21:52:29+01:00",
+          "tree_id": "8b43bfa85f8140ae729049a03da612cd38307d69",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5bbcd55de65d73d7908e91c96f120928edb6b388"
+        },
+        "date": 1730062829787,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1258276,
+            "range": "± 895209",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245277,
+            "range": "± 1210",
             "unit": "ns/iter"
           }
         ]
