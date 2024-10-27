@@ -4,10 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [0.14.0](https://github.com/bosun-ai/swiftide/compare/v0.13.4...v0.14.0) - 2024-10-27
 
-### New features
-
-- [a866d38](https://github.com/bosun-ai/swiftide/commit/a866d38b2cbaf7154ace957472c75b99f1c9c070) *(integrations)*  Support in process hugging face models via mistralrs ([#386](https://github.com/bosun-ai/swiftide/pull/386))
-
 ### Bug fixes
 
 - [551a9cb](https://github.com/bosun-ai/swiftide/commit/551a9cb769293e42e15bae5dca3ab677be0ee8ea) *(indexing)*  [**breaking**] Node ID no longer memoized ([#414](https://github.com/bosun-ai/swiftide/pull/414))
