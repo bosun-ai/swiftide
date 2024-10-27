@@ -19,7 +19,26 @@ allow = [
   "Zlib",
   "0BSD",
 ]
-exceptions = [{ allow = ["OpenSSL"], crate = "ring" }]
+exceptions = [
+  { allow = [
+    "OpenSSL",
+  ], crate = "ring" },
+  { allow = [
+    "Unicode-3.0",
+  ], crate = "zerofrom" },
+  { allow = [
+    "Unicode-3.0",
+  ], crate = "zerofrom-derive" },
+  { allow = [
+    "Unicode-3.0",
+  ], crate = "yoke" },
+  { allow = [
+    "Unicode-3.0",
+  ], crate = "yoke-derive" },
+  { allow = [
+    "Zlib",
+  ], crate = "foldhash" },
+]
 
 [advisories]
 version = 2
