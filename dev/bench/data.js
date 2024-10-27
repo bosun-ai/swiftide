@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730062830891,
+  "lastUpdate": 1730063846063,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8879,6 +8879,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245277,
             "range": "± 1210",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cdd96828cec66d8a597ff16f8aa325d2b6cc0611",
+          "message": "fix(integrations): Revert mistralrs support (#418)\n\nUnfortunately we cannot publish unpublished crates. When mistral-rs is\r\npublished, we are happy to add support again.\r\n\r\nThis reverts commit a866d38b2cbaf7154ace957472c75b99f1c9c070.",
+          "timestamp": "2024-10-27T22:09:27+01:00",
+          "tree_id": "c1c224aadad20d3791434be44d39e454a58c5793",
+          "url": "https://github.com/bosun-ai/swiftide/commit/cdd96828cec66d8a597ff16f8aa325d2b6cc0611"
+        },
+        "date": 1730063845568,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1304427,
+            "range": "± 1331652",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249454,
+            "range": "± 1353",
             "unit": "ns/iter"
           }
         ]
