@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730044227202,
+  "lastUpdate": 1730044297665,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8663,6 +8663,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240590,
             "range": "± 2161",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a866d38b2cbaf7154ace957472c75b99f1c9c070",
+          "message": "feat(integrations): Support in process hugging face models via mistralrs (#386)",
+          "timestamp": "2024-10-27T16:43:30+01:00",
+          "tree_id": "b357e4bb3eb611f224598414a9b9da7d47bab473",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a866d38b2cbaf7154ace957472c75b99f1c9c070"
+        },
+        "date": 1730044296598,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1295462,
+            "range": "± 901766",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244276,
+            "range": "± 8486",
             "unit": "ns/iter"
           }
         ]
