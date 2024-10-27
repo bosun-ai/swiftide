@@ -1,4 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -22,13 +28,13 @@ pub struct MemoryStorage {
     data: Arc<RwLock<HashMap<String, Node>>>,
     #[builder(default)]
     batch_size: Option<usize>,
-    #[builder(default = "Arc::new(RwLock::new(0))")]
-    node_count: Arc<RwLock<u64>>,
+    #[builder(default = Arc::new(AtomicUsize::new(0)))]
+    node_count: Arc<AtomicUsize>,
 }
 
 impl MemoryStorage {
-    async fn key(&self) -> String {
-        self.node_count.read().await.to_string()
+    fn key(&self) -> String {
+        self.node_count.fetch_add(1, Ordering::Relaxed).to_string()
     }
 
     /// Retrieve a node by its key
@@ -62,10 +68,8 @@ impl Persist for MemoryStorage {
     ///
     /// If the node does not have an id, a simple counter is used as the key.
     async fn store(&self, node: Node) -> Result<Node> {
-        let key = self.key().await;
-        self.data.write().await.insert(key, node.clone());
+        self.data.write().await.insert(self.key(), node.clone());
 
-        (*self.node_count.write().await) += 1;
         Ok(node)
     }
 
@@ -74,11 +78,9 @@ impl Persist for MemoryStorage {
     /// If a node does not have an id, a simple counter is used as the key.
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
         let mut lock = self.data.write().await;
-        let mut last_key = *self.node_count.read().await;
 
         for node in &nodes {
-            lock.insert(last_key.to_string(), node.clone());
-            last_key += 1;
+            lock.insert(self.key(), node.clone());
         }
 
         IndexingStream::iter(nodes.into_iter().map(Ok))
