@@ -13,9 +13,7 @@ homepage.workspace = true
 
 [dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
-swiftide-integrations = { path = "../swiftide-integrations", features = [
-  "openai",
-] }
+swiftide-integrations = { path = "../swiftide-integrations", all-features = true }
 
 async-openai = { workspace = true }
 qdrant-client = { workspace = true, default-features = false, features = [

@@ -80,12 +80,6 @@ parquet = ["swiftide-integrations/parquet"]
 
 ## Redb embeddable nodecache
 redb = ["swiftide-integrations/redb"]
-# In process models with mistral.rs
-#
-# Mistral provides feature flags for metal, cuda, etc.
-# If those are needed, you will need to include mistralrs
-# yourself and add the features.
-mistralrs = ["swiftide-integrations/mistralrs"]
 
 #! ### Other features
 
@@ -112,6 +106,8 @@ insta = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+lancedb = { workspace = true }
+arrow-array = { workspace = true }
 
 [lints]
 workspace = true
