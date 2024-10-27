@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.14" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.14" }
+swiftide-core = { path = "../swiftide-core", version = "0.13" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.13" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
