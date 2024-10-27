@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0](https://github.com/bosun-ai/swiftide/compare/v0.13.4...v0.14.0) - 2024-10-27
+
+### New features
+
+- [a866d38](https://github.com/bosun-ai/swiftide/commit/a866d38b2cbaf7154ace957472c75b99f1c9c070) *(integrations)*  Support in process hugging face models via mistralrs ([#386](https://github.com/bosun-ai/swiftide/pull/386))
+
+### Bug fixes
+
+- [551a9cb](https://github.com/bosun-ai/swiftide/commit/551a9cb769293e42e15bae5dca3ab677be0ee8ea) *(indexing)*  [**breaking**] Node ID no longer memoized ([#414](https://github.com/bosun-ai/swiftide/pull/414))
+
+````text
+As @shamb0 pointed out in [#392](https://github.com/bosun-ai/swiftide/pull/392), there is a potential issue where Node
+  ids are get cached before chunking or other transformations, breaking
+  upserts and potentially resulting in data loss.
+````
+
+**BREAKING CHANGE**: This PR reworks Nodes with a builder API and a private
+id. Hence, manually creating nodes no longer works. In the future, all
+the fields are likely to follow the same pattern, so that we can
+decouple the inner fields from the Node's implementation.
+
+- [c091ffa](https://github.com/bosun-ai/swiftide/commit/c091ffa6be792b0bd7bb03d604e26e40b2adfda8) *(indexing)*  Use atomics for key generation in memory storage ([#415](https://github.com/bosun-ai/swiftide/pull/415))
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.4...0.14.0
+
+
+
 ## [0.13.4](https://github.com/bosun-ai/swiftide/compare/v0.13.3...v0.13.4) - 2024-10-21
 
 ### Bug fixes
