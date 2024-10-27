@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730063846063,
+  "lastUpdate": 1730065056052,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8933,6 +8933,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249454,
             "range": "± 1353",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "07c2661b7a7cdf75cdba12fab0ca91866793f727",
+          "message": "chore: Re-release 0.14 without mistralrs (#419)\n\n- **Revert \"fix: Revert 0.14 release as mistralrs is unpublished\r\n(#417)\"**\r\n- **Fix changelog**",
+          "timestamp": "2024-10-27T22:29:41+01:00",
+          "tree_id": "e91710d29f8632d381fc54b9ad7f5e24bd54e5bf",
+          "url": "https://github.com/bosun-ai/swiftide/commit/07c2661b7a7cdf75cdba12fab0ca91866793f727"
+        },
+        "date": 1730065055346,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 9",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1290562,
+            "range": "± 925749",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245826,
+            "range": "± 1465",
             "unit": "ns/iter"
           }
         ]
