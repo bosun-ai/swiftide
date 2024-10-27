@@ -23,6 +23,7 @@ use std::{
     hash::{Hash, Hasher},
     os::unix::ffi::OsStrExt,
     path::PathBuf,
+    sync::OnceLock,
 };
 
 use derive_builder::Builder;
@@ -39,9 +40,8 @@ use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbeddin
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq, Builder)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
 pub struct Node {
-    #[builder(default, private)]
-    id: CachedId,
     /// File path associated with the node.
+    #[builder(default)]
     pub path: PathBuf,
     /// Data chunk contained in the node.
     pub chunk: String,
@@ -63,29 +63,6 @@ pub struct Node {
     /// Offset of the chunk relative to the start of the input this node was originally derived from in bytes
     #[builder(default)]
     pub offset: usize,
-}
-
-/// Represents a cached identifier of a node.
-///
-/// Defaults to `None` and when cloned, the value is reset to `None`, ensuring that the identifier
-/// remains as unique as possible. Will only return `true` on equality when both are `Some`.
-#[derive(Debug, Serialize, Deserialize, Default)]
-struct CachedId(Option<uuid::Uuid>);
-
-impl Clone for CachedId {
-    fn clone(&self) -> Self {
-        Self(None)
-    }
-}
-
-impl PartialEq for CachedId {
-    fn eq(&self, other: &Self) -> bool {
-        if self.0.is_none() || other.0.is_none() {
-            return false;
-        }
-
-        self.0 == other.0
-    }
 }
 
 impl Debug for Node {
@@ -236,13 +213,10 @@ impl Node {
     /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
     /// UUID (v3).
     ///
-    /// If previously calculated, the identifier is returned directly. If not, a new identifier is
-    /// calculated without storing it.
+    /// WARN: Does not memoize the id. Use sparingly.
     pub fn id(&self) -> uuid::Uuid {
-        if let Some(id) = self.id.0 {
-            return id;
-        }
         let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
+
         uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
     }
 }
@@ -332,24 +306,5 @@ mod tests {
         // With invalid char boundary
         Node::new("Jürgen".repeat(100));
         let _ = format!("{node:?}");
-    }
-
-    #[test]
-    fn test_clone_node_resets_id() {
-        let mut original_node = Node::new("test chunk");
-        original_node.id = CachedId(Some(uuid::Uuid::new_v4()));
-
-        let cloned_node = original_node.clone();
-
-        assert_eq!(cloned_node.id.0, None);
-    }
-
-    #[test]
-    fn test_memoize_id() {
-        let node = Node::new("test chunk");
-        let id = node.id();
-
-        assert_eq!(node.id(), id);
-        assert_eq!(node.id.0, Some(id));
     }
 }

@@ -118,7 +118,7 @@ impl Qdrant {
             tracing::debug!(?sparse_vectors_config, "Adding sparse vectors config");
             collection = collection.sparse_vectors_config(sparse_vectors_config);
         }
-        tracing::warn!("Creating collection");
+        tracing::warn!("Creating collection {}", &self.collection_name);
 
         self.client.create_collection(collection).await?;
         Ok(())
