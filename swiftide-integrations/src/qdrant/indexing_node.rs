@@ -116,7 +116,7 @@ mod tests {
     use qdrant_client::qdrant::{
         vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
     };
-    use swiftide_core::indexing::{EmbeddedField, Metadata, Node};
+    use swiftide_core::indexing::{EmbeddedField, Node};
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
@@ -124,14 +124,14 @@ mod tests {
     static EXPECTED_UUID: &str = "d42d252d-671d-37ef-a157-8e85d0710610";
 
     #[test_case(
-        Node { id: None, path: "/path".into(), chunk: "data".into(),
-            vectors: Some(HashMap::from([(EmbeddedField::Chunk, vec![1.0])])),
-            original_size: 4,
-            offset: 0,
-            metadata: Metadata::from([("m1", "mv1")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::SingleWithMetadata,
-            ..Default::default()
-        },
+        Node::builder()
+            .path("/path")
+            .chunk("data")
+            .vectors([(EmbeddedField::Chunk, vec![1.0])])
+            .metadata([("m1", "mv1")])
+            .embed_mode(swiftide_core::indexing::EmbedMode::SingleWithMetadata)
+            .build().unwrap()
+        ,
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
@@ -142,17 +142,16 @@ mod tests {
         "Node with single vector creates struct with unnamed vector"
     )]
     #[test_case(
-        Node { id: None, path: "/path".into(), chunk: "data".into(),
-            vectors: Some(HashMap::from([
+        Node::builder()
+            .path("/path")
+            .chunk("data")
+            .vectors([
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![2.0])
-            ])),
-            metadata: Metadata::from([("m1", "mv1")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::PerField,
-            original_size: 4,
-            offset: 0,
-            ..Default::default()
-        },
+            ])
+            .metadata([("m1", "mv1")])
+            .embed_mode(swiftide_core::indexing::EmbedMode::PerField)
+            .build().unwrap(),
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
         PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),
@@ -170,19 +169,18 @@ mod tests {
         "Node with multiple vectors creates struct with named vectors"
     )]
     #[test_case(
-        Node { id: None, path: "/path".into(), chunk: "data".into(),
-            vectors: Some(HashMap::from([
+        Node::builder()
+            .path("/path")
+            .chunk("data")
+            .vectors([
                 (EmbeddedField::Chunk, vec![1.0]),
                 (EmbeddedField::Combined, vec![1.0]),
                 (EmbeddedField::Metadata("m1".into()), vec![1.0]),
                 (EmbeddedField::Metadata("m2".into()), vec![2.0])
-            ])),
-            metadata: Metadata::from([("m1", "mv1"), ("m2", "mv2")]),
-            embed_mode: swiftide_core::indexing::EmbedMode::Both,
-            original_size: 4,
-            offset: 0,
-            ..Default::default()
-        },
+            ])
+            .metadata([("m1", "mv1"), ("m2", "mv2")])
+            .embed_mode(swiftide_core::indexing::EmbedMode::Both)
+            .build().unwrap(),
         HashSet::from([EmbeddedField::Combined]),
         PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
             ("content".into(), Value::from("data")),

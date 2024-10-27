@@ -108,12 +108,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node {
-            id: None,
-            path: "test".into(),
-            chunk: "chunk".into(),
-            ..Default::default()
-        };
+        let node = Node::new("chunk");
 
         redis.store(node.clone()).await.unwrap();
         let stored_node = serde_json::from_str(&redis.get_node(&node).await.unwrap().unwrap());
@@ -132,18 +127,7 @@ mod tests {
             .batch_size(20)
             .build()
             .unwrap();
-        let nodes = vec![
-            Node {
-                id: None,
-                path: "test".into(),
-                ..Default::default()
-            },
-            Node {
-                id: None,
-                path: "other".into(),
-                ..Default::default()
-            },
-        ];
+        let nodes = vec![Node::new("test"), Node::new("other")];
 
         let stream = redis.batch_store(nodes).await;
         let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
@@ -167,10 +151,7 @@ mod tests {
             .persist_value_fn(|_node| Ok("hello world".to_string()))
             .build()
             .unwrap();
-        let node = Node {
-            id: None,
-            ..Default::default()
-        };
+        let node = Node::default();
 
         redis.store(node.clone()).await.unwrap();
         let stored_node = redis.get_node(&node).await.unwrap();

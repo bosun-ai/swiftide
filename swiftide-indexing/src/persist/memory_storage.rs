@@ -16,7 +16,7 @@ use swiftide_core::{
 ///
 /// Great for experimentation and testing.
 ///
-/// By default the storage will use a zero indexed, incremental counter as the key for each node if the node id
+/// The storage will use a zero indexed, incremental counter as the key for each node if the node id
 /// is not set.
 pub struct MemoryStorage {
     data: Arc<RwLock<HashMap<String, Node>>>,
@@ -27,11 +27,8 @@ pub struct MemoryStorage {
 }
 
 impl MemoryStorage {
-    async fn key(&self, node: &Node) -> String {
-        match node.id {
-            Some(id) => id.to_string(),
-            None => (*self.node_count.read().await).to_string(),
-        }
+    async fn key(&self) -> String {
+        self.node_count.read().await.to_string()
     }
 
     /// Retrieve a node by its key
@@ -65,12 +62,10 @@ impl Persist for MemoryStorage {
     ///
     /// If the node does not have an id, a simple counter is used as the key.
     async fn store(&self, node: Node) -> Result<Node> {
-        let key = self.key(&node).await;
+        let key = self.key().await;
         self.data.write().await.insert(key, node.clone());
 
-        if node.id.is_none() {
-            *self.node_count.write().await += 1;
-        }
+        (*self.node_count.write().await) += 1;
         Ok(node)
     }
 

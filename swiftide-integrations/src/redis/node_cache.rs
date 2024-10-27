@@ -118,12 +118,7 @@ mod tests {
             .expect("Could not build redis client");
         cache.reset_cache().await;
 
-        let node = Node {
-            id: None,
-            path: "test".into(),
-            chunk: "chunk".into(),
-            ..Default::default()
-        };
+        let node = Node::new("chunk");
 
         let before_cache = cache.get(&node).await;
         assert!(!before_cache);

@@ -109,13 +109,15 @@ impl ChunkerTransformer for ChunkCode {
 
             IndexingStream::iter(split.into_iter().map(move |chunk| {
                 let chunk_size = chunk.len();
-                let mut node = Node {
-                    chunk,
-                    ..node.clone()
-                };
-                node.offset = offset;
+
+                let node = Node::build_from_other(&node)
+                    .chunk(chunk)
+                    .offset(offset)
+                    .build();
+
                 offset += chunk_size;
-                Ok(node)
+
+                node
             }))
         } else {
             // Send the error downstream

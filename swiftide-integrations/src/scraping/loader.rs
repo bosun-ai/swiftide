@@ -55,15 +55,14 @@ impl Loader for ScrapingLoader {
             while let Ok(res) = spider_rx.recv().await {
                 let html = res.get_html();
                 let original_size = html.len();
-                let node = Node {
-                    chunk: html,
-                    original_size,
-                    // TODO: Probably not the best way to represent this
-                    // and will fail. Can we add more metadata too?
-                    path: res.get_url().into(),
-                    ..Default::default()
-                };
-                if tx.send(Ok(node)).is_err() {
+
+                let node = Node::builder()
+                    .chunk(html)
+                    .original_size(original_size)
+                    .path(res.get_url())
+                    .build();
+
+                if tx.send(node).is_err() {
                     break;
                 }
             }
