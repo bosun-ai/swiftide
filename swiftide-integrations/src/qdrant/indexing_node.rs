@@ -116,7 +116,7 @@ mod tests {
     use qdrant_client::qdrant::{
         vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
     };
-    use swiftide_core::indexing::{EmbeddedField, Metadata, Node};
+    use swiftide_core::indexing::{EmbeddedField, Node};
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;

@@ -23,7 +23,6 @@ use std::{
     hash::{Hash, Hasher},
     os::unix::ffi::OsStrExt,
     path::PathBuf,
-    sync::OnceLock,
 };
 
 use derive_builder::Builder;
