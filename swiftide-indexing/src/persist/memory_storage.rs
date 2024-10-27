@@ -27,7 +27,7 @@ pub struct MemoryStorage {
 }
 
 impl MemoryStorage {
-    async fn key(&self, node: &Node) -> String {
+    async fn key(&self) -> String {
         self.node_count.read().await.to_string()
     }
 
@@ -62,7 +62,7 @@ impl Persist for MemoryStorage {
     ///
     /// If the node does not have an id, a simple counter is used as the key.
     async fn store(&self, node: Node) -> Result<Node> {
-        let key = self.key(&node).await;
+        let key = self.key().await;
         self.data.write().await.insert(key, node.clone());
 
         (*self.node_count.write().await) += 1;

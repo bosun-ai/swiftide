@@ -37,7 +37,7 @@ use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbeddin
 /// in the indexing pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq, Builder)]
-#[builder(setter(into), build_fn(error = "anyhow::Error"))]
+#[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
 pub struct Node {
     /// File path associated with the node.
     #[builder(default)]
@@ -62,6 +62,24 @@ pub struct Node {
     /// Offset of the chunk relative to the start of the input this node was originally derived from in bytes
     #[builder(default)]
     pub offset: usize,
+}
+
+impl NodeBuilder {
+    pub fn maybe_sparse_vectors(
+        &mut self,
+        sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
+    ) -> &mut Self {
+        self.sparse_vectors = Some(sparse_vectors);
+        self
+    }
+
+    pub fn maybe_vectors(
+        &mut self,
+        vectors: Option<HashMap<EmbeddedField, Embedding>>,
+    ) -> &mut Self {
+        self.vectors = Some(vectors);
+        self
+    }
 }
 
 impl Debug for Node {
@@ -105,22 +123,26 @@ impl Debug for Node {
 }
 
 impl Node {
+    /// Builds a new instance of `Node`, returning a `NodeBuilder`. Copies
+    /// over the fields from the provided `Node`.
     pub fn build_from_other(node: &Node) -> NodeBuilder {
         NodeBuilder::default()
             .path(node.path.clone())
             .chunk(node.chunk.clone())
             .metadata(node.metadata.clone())
-            .vectors(node.vectors.clone())
-            .sparse_vectors(node.sparse_vectors.clone())
+            .maybe_vectors(node.vectors.clone())
+            .maybe_sparse_vectors(node.sparse_vectors.clone())
             .embed_mode(node.embed_mode)
             .original_size(node.original_size)
             .offset(node.offset)
             .to_owned()
     }
 
+    /// Creates a new instance of `NodeBuilder.`
     pub fn builder() -> NodeBuilder {
         NodeBuilder::default()
     }
+
     /// Creates a new instance of `Node` with the specified data chunk.
     ///
     /// The other fields are set to their default values.
@@ -305,5 +327,45 @@ mod tests {
         // With invalid char boundary
         Node::new("Jürgen".repeat(100));
         let _ = format!("{node:?}");
+    }
+
+    #[test]
+    fn test_build_from_other_without_vectors() {
+        let original_node = Node::new("test_chunk")
+            .with_metadata(Metadata::default())
+            .with_vectors(HashMap::new())
+            .with_sparse_vectors(HashMap::new())
+            .to_owned();
+
+        let builder = Node::build_from_other(&original_node);
+        let new_node = builder.build().unwrap();
+
+        assert_eq!(original_node, new_node);
+    }
+
+    #[test]
+    fn test_build_from_other_with_vectors() {
+        let mut vectors = HashMap::new();
+        vectors.insert(EmbeddedField::Chunk, Embedding::default());
+
+        let mut sparse_vectors = HashMap::new();
+        sparse_vectors.insert(
+            EmbeddedField::Chunk,
+            SparseEmbedding {
+                indices: vec![],
+                values: vec![],
+            },
+        );
+
+        let original_node = Node::new("test_chunk")
+            .with_metadata(Metadata::default())
+            .with_vectors(vectors.clone())
+            .with_sparse_vectors(sparse_vectors.clone())
+            .to_owned();
+
+        let builder = Node::build_from_other(&original_node);
+        let new_node = builder.build().unwrap();
+
+        assert_eq!(original_node, new_node);
     }
 }
