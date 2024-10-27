@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.1](https://github.com/bosun-ai/swiftide/compare/v0.14.0...v0.14.1) - 2024-10-27
+
+### Bug fixes
+
+- [5bbcd55](https://github.com/bosun-ai/swiftide/commit/5bbcd55de65d73d7908e91c96f120928edb6b388)  Revert 0.14 release as mistralrs is unpublished ([#417](https://github.com/bosun-ai/swiftide/pull/417))
+
+````text
+Revert the 0.14 release as `mistralrs` is unpublished and unfortunately
+  cannot be released.
+````
+
+### Miscellaneous
+
+- [07c2661](https://github.com/bosun-ai/swiftide/commit/07c2661b7a7cdf75cdba12fab0ca91866793f727)  Re-release 0.14 without mistralrs ([#419](https://github.com/bosun-ai/swiftide/pull/419))
+
+````text
+- **Revert "fix: Revert 0.14 release as mistralrs is unpublished
+  ([#417](https://github.com/bosun-ai/swiftide/pull/417))"**
+  - **Fix changelog**
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.0...0.14.1
+
+
+
 ## [0.14.0](https://github.com/bosun-ai/swiftide/compare/v0.13.4...v0.14.0) - 2024-10-27
 
 ### Bug fixes
