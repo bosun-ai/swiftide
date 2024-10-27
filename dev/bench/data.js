@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730044307173,
+  "lastUpdate": 1730061792374,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8771,6 +8771,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243708,
             "range": "± 3060",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "91196a16787f610af0037b952a902d7b05d13647",
+          "message": "chore: release v0.14.0 (#416)\n\n## 🤖 New release\r\n* `swiftide`: 0.13.4 -> 0.14.0 (✓ API compatible changes)\r\n* `swiftide-core`: 0.13.4 -> 0.14.0 (⚠️ API breaking changes)\r\n* `swiftide-indexing`: 0.13.4 -> 0.14.0 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.13.4 -> 0.14.0\r\n* `swiftide-integrations`: 0.13.4 -> 0.14.0 (✓ API compatible changes)\r\n* `swiftide-query`: 0.13.4 -> 0.14.0 (✓ API compatible changes)\r\n\r\n### ⚠️ `swiftide-core` breaking changes\r\n\r\n```\r\n--- failure inherent_method_missing: pub method removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible method or associated fn is no longer available under its prior name. It may have been renamed or removed entirely.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.36.0/src/lints/inherent_method_missing.ron\r\n\r\nFailed in:\r\n  Node::update_id, previously in file /tmp/.tmpp9ZuUf/swiftide-core/src/node.rs:204\r\n\r\n--- failure struct_pub_field_missing: pub struct's pub field removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible struct has at least one public field that is no longer available under its prior name. It may have been renamed or removed entirely.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.36.0/src/lints/struct_pub_field_missing.ron\r\n\r\nFailed in:\r\n  field id of struct Node, previously in file /tmp/.tmpp9ZuUf/swiftide-core/src/node.rs:41\r\n```\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.14.0](https://github.com/bosun-ai/swiftide/compare/v0.13.4...v0.14.0)\r\n- 2024-10-27\r\n\r\n### New features\r\n\r\n-\r\n[a866d38](https://github.com/bosun-ai/swiftide/commit/a866d38b2cbaf7154ace957472c75b99f1c9c070)\r\n*(integrations)* Support in process hugging face models via mistralrs\r\n([#386](https://github.com/bosun-ai/swiftide/pull/386))\r\n\r\n### Bug fixes\r\n\r\n-\r\n[551a9cb](https://github.com/bosun-ai/swiftide/commit/551a9cb769293e42e15bae5dca3ab677be0ee8ea)\r\n*(indexing)* [**breaking**] Node ID no longer memoized\r\n([#414](https://github.com/bosun-ai/swiftide/pull/414))\r\n\r\n````text\r\nAs @shamb0 pointed out in [#392](https://github.com/bosun-ai/swiftide/pull/392), there is a potential issue where Node\r\n  ids are get cached before chunking or other transformations, breaking\r\n  upserts and potentially resulting in data loss.\r\n````\r\n\r\n**BREAKING CHANGE**: This PR reworks Nodes with a builder API and a\r\nprivate\r\nid. Hence, manually creating nodes no longer works. In the future, all\r\nthe fields are likely to follow the same pattern, so that we can\r\ndecouple the inner fields from the Node's implementation.\r\n\r\n-\r\n[c091ffa](https://github.com/bosun-ai/swiftide/commit/c091ffa6be792b0bd7bb03d604e26e40b2adfda8)\r\n*(indexing)* Use atomics for key generation in memory storage\r\n([#415](https://github.com/bosun-ai/swiftide/pull/415))\r\n\r\n### Miscellaneous\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.toml dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.13.4...0.14.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/MarcoIeni/release-plz/).",
+          "timestamp": "2024-10-27T21:35:15+01:00",
+          "tree_id": "699e865b7e13ed7ffa6b67852f0ac1f5ed909d5e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/91196a16787f610af0037b952a902d7b05d13647"
+        },
+        "date": 1730061791972,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1272486,
+            "range": "± 895602",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244483,
+            "range": "± 5331",
             "unit": "ns/iter"
           }
         ]
