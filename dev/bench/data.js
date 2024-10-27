@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730040825870,
+  "lastUpdate": 1730044227202,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -8609,6 +8609,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243848,
             "range": "± 2083",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c091ffa6be792b0bd7bb03d604e26e40b2adfda8",
+          "message": "fix(indexing): Use atomics for key generation in memory storage (#415)",
+          "timestamp": "2024-10-27T16:42:34+01:00",
+          "tree_id": "b720bdaff0bbc6c9336bbeec49d67c8c5600d4df",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c091ffa6be792b0bd7bb03d604e26e40b2adfda8"
+        },
+        "date": 1730044226126,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1265993,
+            "range": "± 900651",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240590,
+            "range": "± 2161",
             "unit": "ns/iter"
           }
         ]
