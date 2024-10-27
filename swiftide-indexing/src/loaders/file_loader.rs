@@ -72,12 +72,12 @@ impl FileLoader {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content = std::fs::read_to_string(&entry).unwrap();
                 let original_size = content.len();
-                Node {
-                    path: entry,
-                    chunk: content,
-                    original_size,
-                    ..Default::default()
-                }
+                Node::builder()
+                    .path(entry)
+                    .chunk(content)
+                    .original_size(original_size)
+                    .build()
+                    .expect("Failed to build node")
             })
             .collect()
     }
@@ -113,12 +113,12 @@ impl Loader for FileLoader {
                 let content =
                     std::fs::read_to_string(entry.path()).context("Failed to read file")?;
                 let original_size = content.len();
-                Ok(Node {
-                    path: entry.path().into(),
-                    chunk: content,
-                    original_size,
-                    ..Default::default()
-                })
+
+                Node::builder()
+                    .path(entry.path())
+                    .chunk(content)
+                    .original_size(original_size)
+                    .build()
             });
 
         IndexingStream::iter(files)

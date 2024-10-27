@@ -44,11 +44,9 @@ impl Transformer for HtmlToMarkdownTransformer {
     /// Will Err the node if the conversion fails.
     #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]
     async fn transform_node(&self, node: Node) -> Result<Node> {
-        let chunk = self.htmd.convert(&node.chunk);
-        Ok(Node {
-            chunk: chunk?,
-            ..node
-        })
+        let chunk = self.htmd.convert(&node.chunk)?;
+
+        Node::build_from_other(&node).chunk(chunk).build()
     }
 
     fn concurrency(&self) -> Option<usize> {

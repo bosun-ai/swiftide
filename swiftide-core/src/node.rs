@@ -25,6 +25,7 @@ use std::{
     path::PathBuf,
 };
 
+use derive_builder::Builder;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -35,26 +36,56 @@ use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbeddin
 /// `Node` encapsulates all necessary information for a single unit of data being processed
 /// in the indexing pipeline. It includes fields for an identifier, file path, data chunk, optional
 /// vector representation, and metadata.
-#[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Clone, Serialize, Deserialize, PartialEq, Builder)]
+#[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
 pub struct Node {
-    /// Optional identifier for the node.
-    pub id: Option<uuid::Uuid>,
+    #[builder(default, private)]
+    id: CachedId,
     /// File path associated with the node.
     pub path: PathBuf,
     /// Data chunk contained in the node.
     pub chunk: String,
     /// Optional vector representation of embedded data.
+    #[builder(default)]
     pub vectors: Option<HashMap<EmbeddedField, Embedding>>,
     /// Optional sparse vector representation of embedded data.
+    #[builder(default)]
     pub sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
     /// Metadata associated with the node.
+    #[builder(default)]
     pub metadata: Metadata,
     /// Mode of embedding data Chunk and Metadata
+    #[builder(default)]
     pub embed_mode: EmbedMode,
     /// Size of the input this node was originally derived from in bytes
+    #[builder(default)]
     pub original_size: usize,
     /// Offset of the chunk relative to the start of the input this node was originally derived from in bytes
+    #[builder(default)]
     pub offset: usize,
+}
+
+/// Represents a cached identifier of a node.
+///
+/// Defaults to `None` and when cloned, the value is reset to `None`, ensuring that the identifier
+/// remains as unique as possible. Will only return `true` on equality when both are `Some`.
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct CachedId(Option<uuid::Uuid>);
+
+impl Clone for CachedId {
+    fn clone(&self) -> Self {
+        Self(None)
+    }
+}
+
+impl PartialEq for CachedId {
+    fn eq(&self, other: &Self) -> bool {
+        if self.0.is_none() || other.0.is_none() {
+            return false;
+        }
+
+        self.0 == other.0
+    }
 }
 
 impl Debug for Node {
@@ -64,7 +95,7 @@ impl Debug for Node {
     /// The vector field is displayed as the number of elements in the vector if present.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")
-            .field("id", &self.id)
+            .field("id", &self.id())
             .field("path", &self.path)
             .field("chunk", &debug_long_utf8(&self.chunk, 100))
             .field("metadata", &self.metadata)
@@ -98,6 +129,22 @@ impl Debug for Node {
 }
 
 impl Node {
+    pub fn build_from_other(node: &Node) -> NodeBuilder {
+        NodeBuilder::default()
+            .path(node.path.clone())
+            .chunk(node.chunk.clone())
+            .metadata(node.metadata.clone())
+            .vectors(node.vectors.clone().unwrap_or_default())
+            .sparse_vectors(node.sparse_vectors.clone().unwrap_or_default())
+            .embed_mode(node.embed_mode)
+            .original_size(node.original_size)
+            .offset(node.offset)
+            .to_owned()
+    }
+
+    pub fn builder() -> NodeBuilder {
+        NodeBuilder::default()
+    }
     /// Creates a new instance of `Node` with the specified data chunk.
     ///
     /// The other fields are set to their default values.
@@ -192,18 +239,11 @@ impl Node {
     /// If previously calculated, the identifier is returned directly. If not, a new identifier is
     /// calculated without storing it.
     pub fn id(&self) -> uuid::Uuid {
-        if let Some(id) = self.id {
+        if let Some(id) = self.id.0 {
             return id;
         }
-
         let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
         uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
-    }
-
-    /// Updates the identifier of the node.
-    pub fn update_id(&mut self) {
-        self.id = None;
-        self.id = Some(self.id());
     }
 }
 
@@ -292,5 +332,24 @@ mod tests {
         // With invalid char boundary
         Node::new("Jürgen".repeat(100));
         let _ = format!("{node:?}");
+    }
+
+    #[test]
+    fn test_clone_node_resets_id() {
+        let mut original_node = Node::new("test chunk");
+        original_node.id = CachedId(Some(uuid::Uuid::new_v4()));
+
+        let cloned_node = original_node.clone();
+
+        assert_eq!(cloned_node.id.0, None);
+    }
+
+    #[test]
+    fn test_memoize_id() {
+        let node = Node::new("test chunk");
+        let id = node.id();
+
+        assert_eq!(node.id(), id);
+        assert_eq!(node.id.0, Some(id));
     }
 }

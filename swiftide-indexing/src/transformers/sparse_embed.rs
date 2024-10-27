@@ -255,11 +255,13 @@ mod tests {
     async fn batch_transform(test_data: Vec<TestData<'_>>) {
         let test_nodes: Vec<Node> = test_data
             .iter()
-            .map(|data| Node {
-                chunk: data.chunk.into(),
-                metadata: data.metadata.clone(),
-                embed_mode: data.embed_mode,
-                ..Default::default()
+            .map(|data| {
+                Node::builder()
+                    .chunk(data.chunk)
+                    .metadata(data.metadata.clone())
+                    .embed_mode(data.embed_mode)
+                    .build()
+                    .unwrap()
             })
             .collect();
 
