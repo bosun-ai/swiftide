@@ -10,6 +10,8 @@ pub mod fluvio;
 pub mod groq;
 #[cfg(feature = "lancedb")]
 pub mod lancedb;
+#[cfg(feature = "mistralrs")]
+pub mod mistralrs;
 #[cfg(feature = "ollama")]
 pub mod ollama;
 #[cfg(feature = "openai")]
