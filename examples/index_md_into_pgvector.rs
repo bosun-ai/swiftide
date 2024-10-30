@@ -1,5 +1,5 @@
 /**
-* This example demonstrates how to use the Pgvector integration with SwiftIDE
+* This example demonstrates how to index markdown into PGVector
 */
 use std::path::PathBuf;
 use swiftide::{
