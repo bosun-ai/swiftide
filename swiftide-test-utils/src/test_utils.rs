@@ -11,7 +11,6 @@ use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use swiftide_integrations as integrations;
-use temp_dir::TempDir;
 
 pub fn openai_client(
     mock_server_uri: &str,
@@ -75,15 +74,11 @@ pub async fn start_redis() -> (ContainerAsync<GenericImage>, String) {
 
 /// Setup Postgres container.
 /// Returns container server and `server_url`.
-pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String, TempDir) {
-    // Create a temporary directory for Postgres data
-    let temp_dir = TempDir::new().expect("Failed to create temp folder");
-    let temp_data_bind_path = temp_dir.path().to_str().unwrap();
-
+pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String) {
     // Find a free port on the host for Postgres to use
     let host_port = portpicker::pick_unused_port().expect("No available free port on the host");
 
-    let postgres = testcontainers::GenericImage::new("ankane/pgvector", "v0.5.1")
+    let postgres = testcontainers::GenericImage::new("pgvector/pgvector", "pg17")
         .with_wait_for(WaitFor::message_on_stdout(
             "database system is ready to accept connections",
         ))
@@ -91,10 +86,7 @@ pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String, TempDir)
         .with_env_var("POSTGRES_USER", "myuser")
         .with_env_var("POSTGRES_PASSWORD", "mypassword")
         .with_env_var("POSTGRES_DB", "mydatabase")
-        .with_mount(Mount::bind_mount(
-            temp_data_bind_path,
-            "/var/lib/postgresql/data",
-        ))
+        .with_mount(Mount::tmpfs_mount("/var/lib/postgresql/data"))
         .start()
         .await
         .expect("Failed to start Postgres container");
@@ -105,7 +97,7 @@ pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String, TempDir)
         host_port
     );
 
-    (postgres, postgres_url, temp_dir)
+    (postgres, postgres_url)
 }
 
 /// Mock embeddings creation endpoint.

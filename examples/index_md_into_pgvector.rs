@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Test Dataset path: {:?}", test_dataset_path);
 
-    let (_pgv_db_container, pgv_db_url, _temp_dir) = swiftide_test_utils::start_postgres().await;
+    let (_pgv_db_container, pgv_db_url) = swiftide_test_utils::start_postgres().await;
 
     tracing::info!("pgv_db_url :: {:#?}", pgv_db_url);
 
