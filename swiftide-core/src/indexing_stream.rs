@@ -98,6 +98,19 @@ impl IndexingStream {
         }
     }
 
+    pub fn iter_async<I, F>(futures: I) -> Self
+    where
+        I: IntoIterator<Item = F> + Sync + Send + 'static,
+        F: std::future::Future<Output = Result<Node>> + Send + Sync + 'static,
+        <I as IntoIterator>::IntoIter: Send,
+    {
+        use futures_util::stream::{self, StreamExt};
+
+        let stream = stream::iter(futures).then(|future| future).boxed();
+
+        IndexingStream { inner: stream }
+    }
+
     pub fn from_nodes(nodes: Vec<Node>) -> Self {
         IndexingStream::iter(nodes.into_iter().map(Ok))
     }

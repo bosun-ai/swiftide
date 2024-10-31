@@ -232,6 +232,75 @@ impl Loader for &dyn Loader {
 }
 
 #[async_trait]
+pub trait AsyncLoader: DynClone + Send + Sync {
+    async fn into_stream(self) -> IndexingStream;
+
+    /// Intended for use with Box<dyn AsyncLoader>
+    ///
+    /// Only needed if you use trait objects (Box<dyn AsyncLoader>)
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    ///    self.into_stream()
+    ///  }
+    /// ```
+    async fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        unimplemented!("Please implement into_stream_boxed for your loader, it needs to be implemented on the concrete type")
+    }
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(AsyncLoader);
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub AsyncLoader {}
+
+    #[async_trait]
+    impl AsyncLoader for AsyncLoader {
+        async fn into_stream(self) -> IndexingStream;
+        async fn into_stream_boxed(self: Box<Self>) -> IndexingStream;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for AsyncLoader {
+        fn clone(&self) -> Self;
+    }
+}
+
+#[async_trait]
+impl AsyncLoader for Box<dyn AsyncLoader> {
+    async fn into_stream(self) -> IndexingStream {
+        AsyncLoader::into_stream_boxed(self).await
+    }
+
+    async fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        AsyncLoader::into_stream(*self).await
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl AsyncLoader for &dyn AsyncLoader {
+    async fn into_stream(self) -> IndexingStream {
+        AsyncLoader::into_stream_boxed(Box::new(self)).await
+    }
+
+    async fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        AsyncLoader::into_stream(*self).await
+    }
+}
+
+#[async_trait]
 /// Turns one node into many nodes
 pub trait ChunkerTransformer: Send + Sync + Debug + DynClone {
     async fn transform_node(&self, node: Node) -> IndexingStream;

@@ -1,7 +1,16 @@
 //! Load files from a directory
 use anyhow::Context as _;
+use anyhow::Result;
+use async_trait::async_trait;
+use futures_util::stream::{self, Stream};
+use futures_util::TryFutureExt as _;
+use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
+use itertools::Itertools;
 use std::path::{Path, PathBuf};
-use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
+use swiftide_core::{
+    indexing::{IndexingStream, Node},
+    AsyncLoader, Loader,
+};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory,
 /// filtering them based on their extensions, and creating a stream of these files for further processing.
@@ -90,7 +99,7 @@ impl FileLoader {
             let Some(ext) = path.extension() else {
                 return false;
             };
-            exts.iter().any(|e| e == ext.to_string_lossy().as_ref())
+            exts.iter().any(|e| e.as_str() == ext)
         })
     }
 }
@@ -112,12 +121,15 @@ impl Loader for FileLoader {
                 tracing::debug!("Reading file: {:?}", entry);
                 let content =
                     std::fs::read_to_string(entry.path()).context("Failed to read file")?;
-                let original_size = content.len();
+                let original_size = entry
+                    .metadata()
+                    .map(|m| m.len())
+                    .unwrap_or_else(|_| content.len() as u64);
 
                 Node::builder()
                     .path(entry.path())
                     .chunk(content)
-                    .original_size(original_size)
+                    .original_size(original_size as usize)
                     .build()
             });
 
@@ -125,7 +137,61 @@ impl Loader for FileLoader {
     }
 
     fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
-        self.into_stream()
+        Loader::into_stream(*self)
+    }
+}
+
+#[async_trait]
+impl AsyncLoader for FileLoader {
+    /// Converts the `FileLoader` into a stream of `Node`.
+    ///
+    /// # Returns
+    /// An `IndexingStream` representing the stream of files.
+    ///
+    /// # Errors
+    /// This method will return an error if it fails to read a file's content.
+    async fn into_stream(self) -> IndexingStream {
+        let (tx, rx) = tokio::sync::mpsc::channel::<Result<Node>>(100);
+
+        tokio::spawn(async move {
+            for entry in ignore::Walk::new(&self.path)
+                .filter_map(Result::ok)
+                .filter(|entry| entry.file_type().is_some_and(|ft| ft.is_file()))
+                .filter(move |entry| self.file_has_extension(entry.path()))
+            {
+                tracing::debug!("Reading file: {:?}", entry);
+                let Ok(content) = tokio::fs::read_to_string(entry.path()).await else {
+                    tx.send(Err(anyhow::anyhow!("Failed to read file")))
+                        .await
+                        .unwrap();
+                    continue;
+                };
+                let original_size = entry
+                    .metadata()
+                    .map(|m| m.len())
+                    .unwrap_or_else(|_| content.len() as u64);
+
+                if tx
+                    .send(
+                        Node::builder()
+                            .path(entry.path())
+                            .chunk(content)
+                            .original_size(original_size as usize)
+                            .build(),
+                    )
+                    .await
+                    .is_err()
+                {
+                    break;
+                }
+            }
+        });
+
+        rx.into()
+    }
+
+    async fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+        AsyncLoader::into_stream(*self).await
     }
 }
 
