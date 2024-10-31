@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730068492853,
+  "lastUpdate": 1730408116929,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9041,6 +9041,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244045,
             "range": "± 9913",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "39243224d739a76cf2b60204fc67819055b7bc6f",
+          "message": "fix(querying): Query pipeline is now properly send and sync when possible (#425)",
+          "timestamp": "2024-10-31T21:47:16+01:00",
+          "tree_id": "3cce39b1ad6f801858caf9d84395824a95f9779f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/39243224d739a76cf2b60204fc67819055b7bc6f"
+        },
+        "date": 1730408116359,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1292879,
+            "range": "± 964582",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245003,
+            "range": "± 1734",
             "unit": "ns/iter"
           }
         ]
