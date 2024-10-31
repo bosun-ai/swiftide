@@ -5,23 +5,21 @@
 use crate::node::Node;
 use anyhow::Result;
 use futures_util::stream::{self, Stream};
-use pin_project_lite::pin_project;
 use std::pin::Pin;
 use tokio::sync::mpsc::Receiver;
 
 pub use futures_util::StreamExt;
 
 // We need to inform the compiler that `inner` is pinned as well
-pin_project! {
-    /// An asynchronous stream of `Node` items.
-    ///
-    /// Wraps an internal stream of `Result<Node>` items.
-    ///
-    /// Streams, iterators and vectors of `Result<Node>` can be converted into an `IndexingStream`.
-    pub struct IndexingStream {
-        #[pin]
-        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Node>> + Send>>,
-    }
+/// An asynchronous stream of `Node` items.
+///
+/// Wraps an internal stream of `Result<Node>` items.
+///
+/// Streams, iterators and vectors of `Result<Node>` can be converted into an `IndexingStream`.
+#[pin_project::pin_project]
+pub struct IndexingStream {
+    #[pin]
+    pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Node>> + Send>>,
 }
 
 impl Stream for IndexingStream {

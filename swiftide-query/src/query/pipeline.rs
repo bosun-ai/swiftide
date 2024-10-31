@@ -18,17 +18,21 @@ use std::sync::Arc;
 use swiftide_core::{
     prelude::*,
     querying::{
-        search_strategies::SimilaritySingleEmbedding, states, Answer, Query, QueryStream, Retrieve,
-        SearchStrategy, TransformQuery, TransformResponse,
+        search_strategies::SimilaritySingleEmbedding, states, Answer, Query, QueryState,
+        QueryStream, Retrieve, SearchStrategy, TransformQuery, TransformResponse,
     },
     EvaluateQuery,
 };
 use tokio::sync::mpsc::Sender;
 
 /// The starting point of a query pipeline
-pub struct Pipeline<'stream, S: SearchStrategy = SimilaritySingleEmbedding, T = states::Pending> {
-    search_strategy: S,
-    stream: QueryStream<'stream, T>,
+pub struct Pipeline<
+    'stream,
+    STRATEGY: SearchStrategy = SimilaritySingleEmbedding,
+    STATE: QueryState = states::Pending,
+> {
+    search_strategy: STRATEGY,
+    stream: QueryStream<'stream, STATE>,
     query_sender: Sender<Result<Query<states::Pending>>>,
     evaluator: Option<Arc<Box<dyn EvaluateQuery>>>,
     default_concurrency: usize,
@@ -52,14 +56,14 @@ impl Default for Pipeline<'_, SimilaritySingleEmbedding> {
     }
 }
 
-impl<'a, S: SearchStrategy> Pipeline<'a, S> {
+impl<'a, STRATEGY: SearchStrategy> Pipeline<'a, STRATEGY> {
     /// Create a query pipeline from a [`SearchStrategy`]
     ///
     /// # Panics
     ///
     /// Panics if the inner stream fails to build
     #[must_use]
-    pub fn from_search_strategy(strategy: S) -> Pipeline<'a, S> {
+    pub fn from_search_strategy(strategy: STRATEGY) -> Pipeline<'a, STRATEGY> {
         let stream = QueryStream::default();
 
         Pipeline {
@@ -75,9 +79,9 @@ impl<'a, S: SearchStrategy> Pipeline<'a, S> {
     }
 }
 
-impl<'stream: 'static, S> Pipeline<'stream, S, states::Pending>
+impl<'stream: 'static, STRATEGY> Pipeline<'stream, STRATEGY, states::Pending>
 where
-    S: SearchStrategy,
+    STRATEGY: SearchStrategy,
 {
     /// Evaluate queries with an evaluator
     #[must_use]
@@ -92,7 +96,7 @@ where
     pub fn then_transform_query<T: TransformQuery + 'stream>(
         self,
         transformer: T,
-    ) -> Pipeline<'stream, S, states::Pending> {
+    ) -> Pipeline<'stream, STRATEGY, states::Pending> {
         let transformer = Arc::new(transformer);
 
         let Pipeline {
@@ -133,13 +137,15 @@ where
     }
 }
 
-impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states::Pending> {
+impl<'stream: 'static, STRATEGY: SearchStrategy + 'stream>
+    Pipeline<'stream, STRATEGY, states::Pending>
+{
     /// Executes the query based on a search query with a retriever
     #[must_use]
-    pub fn then_retrieve<T: ToOwned<Owned = impl Retrieve<S> + 'stream>>(
+    pub fn then_retrieve<T: ToOwned<Owned = impl Retrieve<STRATEGY> + 'stream>>(
         self,
         retriever: T,
-    ) -> Pipeline<'stream, S, states::Retrieved> {
+    ) -> Pipeline<'stream, STRATEGY, states::Retrieved> {
         let retriever = Arc::new(retriever.to_owned());
         let Pipeline {
             stream,
@@ -187,13 +193,13 @@ impl<'stream: 'static, S: SearchStrategy + 'stream> Pipeline<'stream, S, states:
     }
 }
 
-impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
+impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, states::Retrieved> {
     /// Transforms a retrieved query into something else
     #[must_use]
     pub fn then_transform_response<T: TransformResponse + 'stream>(
         self,
         transformer: T,
-    ) -> Pipeline<'stream, S, states::Retrieved> {
+    ) -> Pipeline<'stream, STRATEGY, states::Retrieved> {
         let transformer = Arc::new(transformer);
         let Pipeline {
             stream,
@@ -230,13 +236,13 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
     }
 }
 
-impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved> {
+impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, states::Retrieved> {
     /// Generates an answer based on previous transformations
     #[must_use]
     pub fn then_answer<T: Answer + 'stream>(
         self,
         answerer: T,
-    ) -> Pipeline<'stream, S, states::Answered> {
+    ) -> Pipeline<'stream, STRATEGY, states::Answered> {
         let answerer = Arc::new(answerer);
         let Pipeline {
             stream,
@@ -280,7 +286,7 @@ impl<'stream: 'static, S: SearchStrategy> Pipeline<'stream, S, states::Retrieved
     }
 }
 
-impl<S: SearchStrategy> Pipeline<'_, S, states::Answered> {
+impl<STRATEGY: SearchStrategy> Pipeline<'_, STRATEGY, states::Answered> {
     /// Runs the pipeline with a user query, accepts `&str` as well.
     ///
     /// # Errors

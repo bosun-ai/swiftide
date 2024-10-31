@@ -20,11 +20,11 @@ type Document = String;
 /// `states::Answered`: The query has been answered
 #[derive(Clone, Default, Builder, PartialEq)]
 #[builder(setter(into))]
-pub struct Query<State> {
+pub struct Query<STATE: QueryState> {
     original: String,
     #[builder(default = "self.original.clone().unwrap_or_default()")]
     current: String,
-    state: State,
+    state: STATE,
     #[builder(default)]
     transformation_history: Vec<TransformationEvent>,
 
@@ -36,7 +36,7 @@ pub struct Query<State> {
     pub sparse_embedding: Option<SparseEmbedding>,
 }
 
-impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
+impl<STATE: std::fmt::Debug + QueryState> std::fmt::Debug for Query<STATE> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Query")
             .field("original", &debug_long_utf8(&self.original, 100))
@@ -48,8 +48,8 @@ impl<T: std::fmt::Debug> std::fmt::Debug for Query<T> {
     }
 }
 
-impl<T: Clone> Query<T> {
-    pub fn builder() -> QueryBuilder<T> {
+impl<STATE: Clone + QueryState> Query<STATE> {
+    pub fn builder() -> QueryBuilder<STATE> {
         QueryBuilder::default().clone()
     }
 
@@ -63,7 +63,7 @@ impl<T: Clone> Query<T> {
         &self.current
     }
 
-    fn transition_to<S>(self, new_state: S) -> Query<S> {
+    fn transition_to<NEWSTATE: QueryState>(self, new_state: NEWSTATE) -> Query<NEWSTATE> {
         Query {
             state: new_state,
             original: self.original,
@@ -161,12 +161,16 @@ impl Query<states::Answered> {
     }
 }
 
+/// Marker trait for query states
+pub trait QueryState: Send + Sync {}
+
 /// States of a query
 pub mod states {
     use crate::util::debug_long_utf8;
 
     use super::Builder;
     use super::Document;
+    use super::QueryState;
 
     #[derive(Debug, Default, Clone)]
     /// The query is pending and has not been used
@@ -209,6 +213,10 @@ pub mod states {
                 .finish()
         }
     }
+
+    impl QueryState for Pending {}
+    impl QueryState for Retrieved {}
+    impl QueryState for Answered {}
 }
 
 impl<T: AsRef<str>> From<T> for Query<states::Pending> {
