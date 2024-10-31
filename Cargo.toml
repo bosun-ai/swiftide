@@ -3,7 +3,7 @@ members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
 resolver = "2"
 
 [workspace.package]
-version = "0.13.4"
+version = "0.14.1"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
@@ -22,7 +22,7 @@ anyhow = { version = "1.0" }
 async-trait = { version = "0.1" }
 derive_builder = { version = "0.20" }
 futures-util = { version = "0.3" }
-tokio = { version = "1.38", features = ["full"] }
+tokio = { version = "1.41", features = ["full"] }
 tokio-stream = { version = "0.1" }
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = { version = "1.16" }
@@ -35,12 +35,12 @@ strum_macros = { version = "0.26" }
 lazy_static = { version = "1.5.0" }
 chrono = { version = "0.4" }
 indoc = { version = "2.0" }
-regex = { version = "1.10.6" }
+regex = { version = "1.11.1" }
 uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 
 # Integrations
-spider = { version = "2.2" }
+spider = { version = "2.10" }
 async-openai = { version = "0.25" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",

@@ -16,11 +16,11 @@ homepage.workspace = true
 document-features = "0.2.10"
 
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.13" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.13" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.13" }
-swiftide-query = { path = "../swiftide-query", version = "0.13" }
-swiftide-agents = { path = "../swiftide-agents", version = "0.13", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.14" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.14" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.14" }
+swiftide-query = { path = "../swiftide-query", version = "0.14" }
+swiftide-agents = { path = "../swiftide-agents", version = "0.14", optional = true }
 
 [features]
 default = []

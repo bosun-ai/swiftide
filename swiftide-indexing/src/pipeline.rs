@@ -777,10 +777,7 @@ mod tests {
             .returning(|| {
                 vec![
                     Ok(Node::default()),
-                    Ok(Node {
-                        chunk: "skip".to_string(),
-                        ..Node::default()
-                    }),
+                    Ok(Node::new("skip")),
                     Ok(Node::default()),
                 ]
                 .into()
@@ -808,10 +805,7 @@ mod tests {
             .returning(|| {
                 vec![
                     Ok(Node::default()),
-                    Ok(Node {
-                        chunk: "will go left".to_string(),
-                        ..Node::default()
-                    }),
+                    Ok(Node::new("will go left")),
                     Ok(Node::default()),
                 ]
                 .into()

@@ -121,12 +121,11 @@ impl ChunkerTransformer for ChunkText {
             })
             .collect::<Vec<String>>();
 
-        IndexingStream::iter(chunks.into_iter().map(move |chunk| {
-            Ok(Node {
-                chunk,
-                ..node.clone()
-            })
-        }))
+        IndexingStream::iter(
+            chunks
+                .into_iter()
+                .map(move |chunk| Node::build_from_other(&node).chunk(chunk).build()),
+        )
     }
 
     fn concurrency(&self) -> Option<usize> {
@@ -151,10 +150,7 @@ mod test {
     async fn test_transforming_with_max_characters_and_trimming() {
         let chunker = ChunkText::from_max_characters(40);
 
-        let node = Node {
-            chunk: TEXT.to_string(),
-            ..Node::default()
-        };
+        let node = Node::new(TEXT.to_string());
 
         let nodes: Vec<Node> = chunker
             .transform_node(node)
@@ -175,10 +171,7 @@ mod test {
         let ranges = vec![(10..15), (20..25), (30..35), (40..45), (50..55)];
         for range in ranges {
             let chunker = ChunkText::from_chunk_range(range.clone());
-            let node = Node {
-                chunk: TEXT.to_string(),
-                ..Node::default()
-            };
+            let node = Node::new(TEXT.to_string());
             let nodes: Vec<Node> = chunker
                 .transform_node(node)
                 .await
