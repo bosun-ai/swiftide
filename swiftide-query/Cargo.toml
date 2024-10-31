@@ -18,7 +18,6 @@ futures-util = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }
 num_cpus = { workspace = true }
-pin-project-lite = { workspace = true }
 tracing = { workspace = true }
 indoc = { workspace = true }
 serde = { workspace = true }
