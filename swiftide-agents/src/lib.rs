@@ -1,5 +1,6 @@
 mod agent;
 mod agent_context;
+pub mod hooks;
 pub mod tools;
 mod traits;
 

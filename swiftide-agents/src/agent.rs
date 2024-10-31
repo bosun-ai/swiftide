@@ -1,6 +1,10 @@
 #![allow(dead_code)]
-use crate::{agent_context::DefaultContext, tools::control::Stop};
-use std::collections::HashSet;
+use crate::{
+    agent_context::DefaultContext,
+    hooks::{Hook, HookFn, HookTypes},
+    tools::control::Stop,
+};
+use std::{borrow::BorrowMut as _, collections::HashSet};
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -17,6 +21,8 @@ use crate::traits::*;
 // Generic over LLM instead of box dyn? Should tool support be a separate trait?
 #[derive(Clone, Builder)]
 pub struct Agent {
+    #[builder(default, setter(into))]
+    hooks: Vec<Hook>,
     // name: String,
     #[builder(default = "Box::new(DefaultContext::default())")]
     context: Box<dyn AgentContext>,
@@ -33,8 +39,35 @@ pub struct Agent {
 }
 
 impl AgentBuilder {
+    pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
+        let hooks = self.hooks.get_or_insert_with(Vec::new);
+        hooks.push(hook);
+
+        self
+    }
+
+    pub fn before_all(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::BeforeAll(Box::new(hook)))
+    }
+
+    pub fn before_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::BeforeEach(Box::new(hook)))
+    }
+
+    pub fn after_tool(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::AfterTool(Box::new(hook)))
+    }
+
+    pub fn after_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::AfterEach(Box::new(hook)))
+    }
+
+    pub fn after_all(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::AfterAll(Box::new(hook)))
+    }
+
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
-        let boxed: Box<dyn ChatCompletion> = llm.clone().into();
+        let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone());
 
         self.llm = Some(boxed);
         self
@@ -60,32 +93,55 @@ impl Agent {
         AgentBuilder::default()
     }
 
+    async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
+        for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
+            match hook {
+                Hook::BeforeAll(hook) => hook(&mut *self.context).await?,
+                Hook::BeforeEach(hook) => hook(&mut *self.context).await?,
+                Hook::AfterTool(hook) => hook(&mut *self.context).await?,
+                Hook::AfterEach(hook) => hook(&mut *self.context).await?,
+                Hook::AfterAll(hook) => hook(&mut *self.context).await?,
+            }
+        }
+
+        Ok(())
+    }
+
     fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
+    pub async fn history(&self) -> &[ChatMessage] {
+        self.context.completion_history().await
+    }
+
     pub async fn run(&mut self) -> Result<()> {
+        debug!("Running agent");
         self.context
             .record_in_history(ChatMessage::User(self.instructions.render().await?))
             .await;
 
-        // LIFECYCLE: BEFORE ALL
-        while !self.should_stop {
+        self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
+
+        while !self.should_stop() {
             debug!("Looping agent");
-            // LIFECYCLE: BEFORE EACH
+
+            self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
             self.run_once().await?;
-            // LIFECYCLE: AFTER TOOL
-            // LIFECYCLE: AFTER EACH
+
+            // self.invoke_hooks_matching(HookTypes::AfterTool)?;
+            self.invoke_hooks_matching(HookTypes::AfterEach).await?;
         }
 
+        self.invoke_hooks_matching(HookTypes::AfterAll).await?;
         Ok(())
-        // LIFECYCLE: AFTER ALL
     }
 
     async fn run_once(&mut self) -> Result<()> {
+        debug!("Running agent once");
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
-            .messages(self.context.conversation_history().await)
+            .messages(self.context.completion_history().await)
             .tools_spec(
                 self.tools
                     .iter()
@@ -120,7 +176,11 @@ impl Agent {
                     .record_in_history(ChatMessage::ToolOutput(tool_call, output))
                     .await;
             }
-        }
+        } else {
+            self.stop();
+        };
+
+        self.context.record_iteration().await;
 
         Ok(())
     }
@@ -135,12 +195,18 @@ impl Agent {
     /// Handle any tool specific output (e.g. stop)
     fn handle_control_tools(&mut self, output: &ToolOutput) {
         if let ToolOutput::Stop = output {
-            self.should_stop = true;
+            self.stop();
         }
     }
-}
 
-impl AgentBuilder {}
+    fn stop(&mut self) {
+        self.should_stop = true;
+    }
+
+    fn should_stop(&self) -> bool {
+        self.should_stop
+    }
+}
 
 #[cfg(test)]
 mod tests {

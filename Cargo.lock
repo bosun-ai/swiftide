@@ -7622,7 +7622,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-agents"
-version = "0.13.4"
+version = "0.14.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7631,6 +7631,8 @@ dependencies = [
  "indoc",
  "mockall",
  "pretty_assertions",
+ "strum",
+ "strum_macros",
  "swiftide-core",
  "test-log",
  "tokio",
@@ -7649,7 +7651,7 @@ dependencies = [
  "itertools 0.13.0",
  "lazy_static",
  "mockall",
- "pin-project-lite",
+ "pin-project",
  "pretty_assertions",
  "qdrant-client",
  "serde",
@@ -7786,7 +7788,6 @@ dependencies = [
  "insta",
  "mockall",
  "num_cpus",
- "pin-project-lite",
  "serde",
  "serde_json",
  "swiftide-core",

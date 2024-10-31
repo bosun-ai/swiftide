@@ -71,19 +71,31 @@ pub trait AgentContext: Send + Sync + DynClone {
     ///
     /// Used as main source for the next completion and expects all
     /// what you would expect in an inference conversation to be present.
-    async fn conversation_history(&self) -> &[ChatMessage];
+    async fn completion_history(&self) -> &[ChatMessage];
 
     async fn record_in_history(&mut self, item: ChatMessage);
+
+    async fn record_iteration(&mut self);
+
+    async fn current_chat_messages(&self) -> &[ChatMessage];
 }
 
 dyn_clone::clone_trait_object!(AgentContext);
 #[async_trait]
 impl AgentContext for Box<dyn AgentContext> {
-    async fn conversation_history(&self) -> &[ChatMessage] {
-        self.as_ref().conversation_history().await
+    async fn completion_history(&self) -> &[ChatMessage] {
+        self.as_ref().completion_history().await
     }
     async fn record_in_history(&mut self, item: ChatMessage) {
         self.as_mut().record_in_history(item).await;
+    }
+
+    async fn record_iteration(&mut self) {
+        self.as_mut().record_iteration().await;
+    }
+
+    async fn current_chat_messages(&self) -> &[ChatMessage] {
+        self.as_ref().current_chat_messages().await
     }
 }
 //

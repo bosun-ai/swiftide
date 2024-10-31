@@ -11,7 +11,7 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.13" }
+swiftide-core = { path = "../swiftide-core", version = "0.14" }
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
@@ -20,9 +20,11 @@ tokio.workspace = true
 indoc.workspace = true
 tracing.workspace = true
 pretty_assertions.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
 
 [dev-dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.13", features = [
+swiftide-core = { path = "../swiftide-core", version = "0.14", features = [
   "test-utils",
 ] }
 mockall.workspace = true

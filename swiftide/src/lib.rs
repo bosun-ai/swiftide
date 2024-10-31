@@ -117,6 +117,11 @@ pub mod traits {
     pub use swiftide_core::query_traits::*;
 }
 
+pub mod chat_completion {
+    #[doc(inline)]
+    pub use swiftide_core::chat_completion::*;
+}
+
 /// Integrations with various platforms and external services.
 pub mod integrations {
     #[doc(inline)]

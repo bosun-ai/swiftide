@@ -10,16 +10,40 @@ pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
 }
 
-dyn_clone::clone_trait_object!(ChatCompletion);
-
-impl<'a, T: 'a> From<T> for Box<dyn ChatCompletion + 'a>
-where
-    T: ChatCompletion + Clone,
-{
-    fn from(value: T) -> Self {
-        dyn_clone::clone_box(&value)
+#[async_trait]
+impl ChatCompletion for Box<dyn ChatCompletion> {
+    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+        (**self).complete(request).await
     }
 }
+
+#[async_trait]
+impl ChatCompletion for &dyn ChatCompletion {
+    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+        (**self).complete(request).await
+    }
+}
+
+#[async_trait]
+impl<T> ChatCompletion for &T
+where
+    T: ChatCompletion + Clone + 'static,
+{
+    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+        (**self).complete(request).await
+    }
+}
+
+impl<LLM> From<&LLM> for Box<dyn ChatCompletion>
+where
+    LLM: ChatCompletion + Clone + 'static,
+{
+    fn from(llm: &LLM) -> Self {
+        Box::new(llm.clone())
+    }
+}
+
+dyn_clone::clone_trait_object!(ChatCompletion);
 
 #[derive(Clone, Builder, Debug)]
 #[builder(setter(strip_option, into), build_fn(error = anyhow::Error))]
