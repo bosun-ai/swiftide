@@ -8,24 +8,22 @@ use tokio_stream::wrappers::ReceiverStream;
 
 use futures_util::stream::Stream;
 pub use futures_util::{StreamExt, TryStreamExt};
-use pin_project_lite::pin_project;
 
-use crate::querying::Query;
+use crate::{query::QueryState, querying::Query};
 
-pin_project! {
-    /// Internally used by a query pipeline
-    ///
-    /// Has a sender and receiver to initialize the stream
-    pub struct QueryStream<'stream, Q: 'stream> {
-        #[pin]
-        pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send + 'stream>>,
+/// Internally used by a query pipeline
+///
+/// Has a sender and receiver to initialize the stream
+#[pin_project::pin_project]
+pub struct QueryStream<'stream, STATE: 'stream + QueryState> {
+    #[pin]
+    pub(crate) inner: Pin<Box<dyn Stream<Item = Result<Query<STATE>>> + Send + 'stream>>,
 
-        #[pin]
-        pub sender: Option<Sender<Result<Query<Q>>>>
-    }
+    #[pin]
+    pub sender: Option<Sender<Result<Query<STATE>>>>,
 }
 
-impl<'stream, T: Send + Sync + 'stream> Default for QueryStream<'stream, T> {
+impl<'stream, STATE: QueryState + 'stream> Default for QueryStream<'stream, STATE> {
     fn default() -> Self {
         let (sender, receiver) = tokio::sync::mpsc::channel(1000);
 
@@ -36,8 +34,8 @@ impl<'stream, T: Send + Sync + 'stream> Default for QueryStream<'stream, T> {
     }
 }
 
-impl<'stream, Q: Send> Stream for QueryStream<'stream, Q> {
-    type Item = Result<Query<Q>>;
+impl<'stream, STATE: QueryState> Stream for QueryStream<'stream, STATE> {
+    type Item = Result<Query<STATE>>;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -48,10 +46,10 @@ impl<'stream, Q: Send> Stream for QueryStream<'stream, Q> {
     }
 }
 
-impl<'stream, Q> From<Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send>>>
-    for QueryStream<'stream, Q>
+impl<'stream, STATE: QueryState> From<Pin<Box<dyn Stream<Item = Result<Query<STATE>>> + Send>>>
+    for QueryStream<'stream, STATE>
 {
-    fn from(val: Pin<Box<dyn Stream<Item = Result<Query<Q>>> + Send>>) -> Self {
+    fn from(val: Pin<Box<dyn Stream<Item = Result<Query<STATE>>> + Send>>) -> Self {
         QueryStream {
             inner: val,
             sender: None,
