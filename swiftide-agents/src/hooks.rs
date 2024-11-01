@@ -36,3 +36,19 @@ impl<F> HookFn for F where
         + DynClone
 {
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Agent;
+
+    #[test]
+    fn test_hooks_compile_sync_and_async() {
+        // TODO: How to strip the Box::Pin?
+        Agent::builder()
+            .before_all(|_| Box::pin(async { Ok(()) }))
+            .before_each(|_| Box::pin(async { Ok(()) }))
+            .after_tool(|_| Box::pin(async { Ok(()) }))
+            .after_each(|_| Box::pin(async { Ok(()) }))
+            .after_all(|_| Box::pin(async { Ok(()) }));
+    }
+}
