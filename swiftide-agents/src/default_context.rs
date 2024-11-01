@@ -8,6 +8,7 @@ use swiftide_core::chat_completion::ChatMessage;
 pub struct DefaultContext {
     // workspace: Box<dyn Workspace>,
     conversation_history: Vec<ChatMessage>,
+    should_stop: bool,
     iterations: usize,
     iteration_ptr: usize,
     this_iteration_ptr: usize,
@@ -53,6 +54,14 @@ impl AgentContext for DefaultContext {
 
     async fn current_chat_messages(&self) -> &[ChatMessage] {
         &self.conversation_history[self.iteration_ptr..]
+    }
+
+    fn should_stop(&self) -> bool {
+        self.should_stop
+    }
+
+    fn stop(&mut self) {
+        self.should_stop = true;
     }
 }
 

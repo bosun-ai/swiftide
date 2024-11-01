@@ -12,7 +12,7 @@ use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolCall, ToolOutput},
     prompt::Prompt,
 };
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::traits::*;
 
@@ -32,9 +32,6 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
 
     #[builder(setter(custom))]
     llm: Box<dyn ChatCompletion>,
-
-    #[builder(private, default)]
-    should_stop: bool,
 }
 
 impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
@@ -125,14 +122,18 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 
         self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
 
-        while !self.should_stop() {
+        while !self.context.should_stop() {
             debug!("Looping agent");
 
             self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
             self.run_once().await?;
 
-            // self.invoke_hooks_matching(HookTypes::AfterTool)?;
             self.invoke_hooks_matching(HookTypes::AfterEach).await?;
+
+            if self.context.current_chat_messages().await.is_empty() {
+                warn!("No new messages for LLM, stopping agent");
+                self.context.stop();
+            }
         }
 
         self.invoke_hooks_matching(HookTypes::AfterAll).await?;
@@ -141,6 +142,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 
     async fn run_once(&mut self) -> Result<()> {
         debug!("Running agent once");
+
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
             .messages(self.context.completion_history().await)
@@ -178,8 +180,6 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                     .record_in_history(ChatMessage::ToolOutput(tool_call, output))
                     .await;
             }
-        } else {
-            self.stop();
         };
 
         self.context.record_iteration().await;
@@ -197,16 +197,8 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     /// Handle any tool specific output (e.g. stop)
     fn handle_control_tools(&mut self, output: &ToolOutput) {
         if let ToolOutput::Stop = output {
-            self.stop();
+            self.context.stop();
         }
-    }
-
-    fn stop(&mut self) {
-        self.should_stop = true;
-    }
-
-    fn should_stop(&self) -> bool {
-        self.should_stop
     }
 }
 

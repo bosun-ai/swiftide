@@ -78,6 +78,10 @@ pub trait AgentContext: Send + Sync + DynClone {
     async fn record_iteration(&mut self);
 
     async fn current_chat_messages(&self) -> &[ChatMessage];
+
+    fn stop(&mut self);
+
+    fn should_stop(&self) -> bool;
 }
 
 dyn_clone::clone_trait_object!(AgentContext);
@@ -96,6 +100,14 @@ impl AgentContext for Box<dyn AgentContext> {
 
     async fn current_chat_messages(&self) -> &[ChatMessage] {
         self.as_ref().current_chat_messages().await
+    }
+
+    fn stop(&mut self) {
+        self.as_mut().stop();
+    }
+
+    fn should_stop(&self) -> bool {
+        self.as_ref().should_stop()
     }
 }
 //
