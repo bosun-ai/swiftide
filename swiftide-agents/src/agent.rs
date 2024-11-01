@@ -20,15 +20,14 @@ use crate::traits::*;
 //
 // Generic over LLM instead of box dyn? Should tool support be a separate trait?
 #[derive(Clone, Builder)]
-pub struct Agent {
+pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
     #[builder(default, setter(into))]
     hooks: Vec<Hook>,
     // name: String,
-    #[builder(default = "Box::new(DefaultContext::default())")]
-    context: Box<dyn AgentContext>,
+    context: CONTEXT,
     #[builder(setter(into))]
     instructions: Prompt,
-    #[builder(default = "Agent::default_tools()", setter(custom))]
+    #[builder(default = Agent::<CONTEXT>::default_tools(), setter(custom))]
     tools: HashSet<Box<dyn Tool>>,
 
     #[builder(setter(custom))]
@@ -38,7 +37,7 @@ pub struct Agent {
     should_stop: bool,
 }
 
-impl AgentBuilder {
+impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
         hooks.push(hook);
@@ -81,26 +80,29 @@ impl AgentBuilder {
             tools
                 .into_iter()
                 .map(Into::into)
-                .chain(Agent::default_tools())
+                .chain(Agent::<CONTEXT>::default_tools())
                 .collect(),
         );
         self
     }
 }
 
-impl Agent {
-    pub fn builder() -> AgentBuilder {
+impl Agent<DefaultContext> {
+    pub fn builder() -> AgentBuilder<DefaultContext> {
         AgentBuilder::default()
+            .context(DefaultContext::default())
+            .to_owned()
     }
-
+}
+impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
         for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
             match hook {
-                Hook::BeforeAll(hook) => hook(&mut *self.context).await?,
-                Hook::BeforeEach(hook) => hook(&mut *self.context).await?,
-                Hook::AfterTool(hook) => hook(&mut *self.context).await?,
-                Hook::AfterEach(hook) => hook(&mut *self.context).await?,
-                Hook::AfterAll(hook) => hook(&mut *self.context).await?,
+                Hook::BeforeAll(hook) => hook(&mut self.context).await?,
+                Hook::BeforeEach(hook) => hook(&mut self.context).await?,
+                Hook::AfterTool(hook) => hook(&mut self.context).await?,
+                Hook::AfterEach(hook) => hook(&mut self.context).await?,
+                Hook::AfterAll(hook) => hook(&mut self.context).await?,
             }
         }
 
@@ -272,7 +274,7 @@ mod tests {
             .tools_spec(
                 [Box::new(mock_tool.clone()) as Box<dyn Tool>]
                     .into_iter()
-                    .chain(Agent::default_tools())
+                    .chain(Agent::<DefaultContext>::default_tools())
                     .map(|tool| tool.json_spec())
                     .collect::<HashSet<_>>(),
             )
@@ -307,7 +309,7 @@ mod tests {
             .tools_spec(
                 [Box::new(mock_tool.clone()) as Box<dyn Tool>]
                     .into_iter()
-                    .chain(Agent::default_tools())
+                    .chain(Agent::<DefaultContext>::default_tools())
                     .map(|tool| tool.json_spec())
                     .collect::<HashSet<_>>(),
             )
