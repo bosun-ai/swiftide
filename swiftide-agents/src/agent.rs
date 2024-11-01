@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::{
-    agent_context::DefaultContext,
+    default_context::DefaultContext,
     hooks::{Hook, HookFn, HookTypes},
     tools::control::Stop,
 };
