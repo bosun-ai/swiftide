@@ -7749,6 +7749,8 @@ name = "swiftide-macros"
 version = "0.14.1"
 dependencies = [
  "darling",
+ "pretty_assertions",
+ "prettyplease",
  "proc-macro2",
  "quote",
  "syn 2.0.82",

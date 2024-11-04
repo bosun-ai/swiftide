@@ -3,6 +3,8 @@
 use proc_macro::TokenStream;
 
 mod indexing_transformer;
+#[cfg(test)]
+mod test_utils;
 mod tool;
 use indexing_transformer::indexing_transformer_impl;
 use syn::{parse_macro_input, ItemFn, ItemStruct};
