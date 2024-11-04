@@ -41,7 +41,7 @@ uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 
 # Integrations
-spider = { version = "2.10" }
+spider = { version = "2.11" }
 async-openai = { version = "0.25" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
@@ -51,7 +51,7 @@ lancedb = { version = "0.11", default-features = false }
 arrow-array = { version = "52.0", default-features = false }
 arrow = { version = "52.2" }
 parquet = { version = "52.2", default-features = false, features = ["async"] }
-redb = { version = "2.1" }
+redb = { version = "2.2" }
 
 # Testing
 test-log = "0.2.16"
@@ -60,7 +60,7 @@ mockall = "0.13.0"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
-insta = { version = "1.39.0", features = ["yaml"] }
+insta = { version = "1.41.1", features = ["yaml"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
