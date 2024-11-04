@@ -2,6 +2,7 @@ use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{token::Pub, Field, Fields, Ident, ItemFn, ItemStruct, Token};
+use wrapped::wrapped_fn_sig;
 
 mod args;
 mod wrapped;
@@ -33,16 +34,33 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
 
     let tool_args = args::build_tool_args(&input).unwrap_or_else(syn::Error::into_compile_error);
     let wrapped_fn = wrapped::wrap_tool_fn(&input).unwrap_or_else(syn::Error::into_compile_error);
+    let args_struct = args::args_struct_name(&input);
+    let wrapped_fn_sig = wrapped_fn_sig(&input);
+
+    // Perf
+    // Getting tool name multiple times
 
     // Building the args struct
     quote! {
         #tool_args
 
         #wrapped_fn
-        // The args
-        // new wrapper function that takes parsed args and calls old function
-        // old function
-        // Tool impl
+
+        impl Tool for #wrapped_fn_sig {
+            // TODO: Trait has dyn instead of generic
+            // Multiple possible solutions, need to try what works
+            async fn invoke(&self, agent_context: &impl AgentContext, raw_args: Option<&str>) -> Result<ToolOutput> {
+                if let Some(args) = raw_args {
+                    let args: #args_struct = args.parse();
+                    return self.call(agent_context, args).await
+                }
+
+                self.call(agent_context)
+            }
+
+            // JSON SPEC
+            // NAME
+        }
     }
 }
 

@@ -38,6 +38,14 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
     })
 }
 
+pub(crate) fn wrapped_fn_sig(input: &ItemFn) -> TokenStream {
+    let struct_name = args_struct_name(input);
+
+    quote! {
+        Fn(&impl AgentContext, #struct_name<'_>) -> Result<ToolOutput>
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::assert_ts_eq;
