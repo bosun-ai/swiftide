@@ -33,9 +33,10 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
     };
 
     let tool_args = args::build_tool_args(&input).unwrap_or_else(syn::Error::into_compile_error);
-    let wrapped_fn = wrapped::wrap_tool_fn(&input).unwrap_or_else(syn::Error::into_compile_error);
     let args_struct = args::args_struct_name(&input);
-    let wrapped_fn_sig = wrapped_fn_sig(&input);
+
+    let wrapped_fn = wrapped::wrap_tool_fn(&input).unwrap_or_else(syn::Error::into_compile_error);
+    let wrapped_fn_sig = wrapped::wrapped_fn_sig(&input);
 
     // Perf
     // Getting tool name multiple times
