@@ -1,4 +1,3 @@
-use args::build_tool_args;
 use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -32,11 +31,14 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
         Err(e) => return e.write_errors(),
     };
 
-    let tool_args = build_tool_args(&input).unwrap_or_else(syn::Error::into_compile_error);
+    let tool_args = args::build_tool_args(&input).unwrap_or_else(syn::Error::into_compile_error);
+    let wrapped_fn = wrapped::wrap_tool_fn(&input).unwrap_or_else(syn::Error::into_compile_error);
 
     // Building the args struct
     quote! {
         #tool_args
+
+        #wrapped_fn
         // The args
         // new wrapper function that takes parsed args and calls old function
         // old function

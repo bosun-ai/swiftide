@@ -29,8 +29,6 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
 
     let fn_args = fn_args.iter();
 
-    let return_type = &input.sig.output;
-
     Ok(quote! {
         pub async fn #fn_name(context: &impl AgentContext, args: #struct_name<'_>) -> Result<ToolOutput> {
             #underscored_fn_name(context, #(#arg_names),*).await

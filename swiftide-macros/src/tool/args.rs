@@ -109,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_tool() {
+    fn test_simple_tool_with_lifetime() {
         let input: ItemFn = parse_quote! {
             pub async fn search_code(context: &impl AgentContext, code_query: &str) -> Result<ToolOutput> {
                 return Ok("hello".into())
@@ -127,5 +127,25 @@ mod tests {
         assert_ts_eq!(&output, &expected);
     }
 
+    #[test]
+    fn test_simple_tool_without_lifetime() {
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &impl AgentContext, code_query: String) -> Result<ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = build_tool_args(&input).unwrap();
+
+        let expected = quote! {
+            struct SearchCodeArgs {
+                pub code_query: String,
+            }
+        };
+
+        assert_ts_eq!(&output, &expected);
+    }
+
     // TODO: Handle no arguments
+    // TODO: Should it only allow &str as arg types?
 }
