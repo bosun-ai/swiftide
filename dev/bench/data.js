@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730408116929,
+  "lastUpdate": 1730727157930,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9095,6 +9095,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245003,
             "range": "± 1734",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4a800cf8e189bdba24b4090177ba9e33cf92e74a",
+          "message": "chore: Updated ignored advisories in deny.toml (#431)\n\nFixes #428",
+          "timestamp": "2024-11-04T14:24:48+01:00",
+          "tree_id": "bcb3dea58f45ba150f483d4aaceb5c1a72626176",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4a800cf8e189bdba24b4090177ba9e33cf92e74a"
+        },
+        "date": 1730727157429,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1268219,
+            "range": "± 960837",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242628,
+            "range": "± 2742",
             "unit": "ns/iter"
           }
         ]
