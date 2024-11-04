@@ -5,6 +5,7 @@ use quote::quote;
 use syn::{token::Pub, Field, Fields, Ident, ItemFn, ItemStruct, Token};
 
 mod args;
+mod wrapped;
 
 #[derive(FromMeta, Default)]
 #[darling(default)]

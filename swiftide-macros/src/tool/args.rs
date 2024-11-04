@@ -5,32 +5,7 @@ use syn::{
     PatType, Token, Type, TypeReference,
 };
 
-pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
-    validate_first_argument_is_agent_context(input)?;
-
-    let args = &input.sig.inputs;
-    let mut struct_fields = Vec::new();
-
-    let mut has_lifetime = false;
-
-    for arg in args.iter().skip(1) {
-        if let syn::FnArg::Typed(PatType { pat, ty, .. }) = arg {
-            if let syn::Pat::Ident(ident) = &**pat {
-                // Check if the type is a reference and needs a lifetime
-                if let Type::Reference(TypeReference { lifetime, elem, .. }) = &**ty {
-                    // Add a lifetime if it’s specified; otherwise, use `'a` if `has_lifetime` is true
-                    has_lifetime = true;
-
-                    let lifetime: Lifetime = syn::parse_str("'a").unwrap();
-                    struct_fields.push(quote! { #ident: &#lifetime #elem });
-                } else {
-                    // If no reference type, just use the type as-is
-                    struct_fields.push(quote! { #ident: #ty });
-                }
-            }
-        }
-    }
-
+pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {
     let struct_name_str = input
         .sig
         .ident
@@ -47,7 +22,36 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
         })
         .collect::<String>()
         + "Args";
-    let struct_name = Ident::new(&struct_name_str, input.sig.ident.span());
+    Ident::new(&struct_name_str, input.sig.ident.span())
+}
+
+pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
+    validate_first_argument_is_agent_context(input)?;
+
+    let args = &input.sig.inputs;
+    let mut struct_fields = Vec::new();
+
+    let mut has_lifetime = false;
+
+    for arg in args.iter().skip(1) {
+        if let syn::FnArg::Typed(PatType { pat, ty, .. }) = arg {
+            if let syn::Pat::Ident(ident) = &**pat {
+                // Check if the type is a reference and needs a lifetime
+                if let Type::Reference(TypeReference { elem, .. }) = &**ty {
+                    // Add a lifetime if it’s specified; otherwise, use `'a` if `has_lifetime` is true
+                    has_lifetime = true;
+
+                    let lifetime: Lifetime = syn::parse_str("'a").unwrap();
+                    struct_fields.push(quote! { #ident: &#lifetime #elem });
+                } else {
+                    // If no reference type, just use the type as-is
+                    struct_fields.push(quote! { #ident: #ty });
+                }
+            }
+        }
+    }
+
+    let struct_name = args_struct_name(input);
 
     if has_lifetime {
         Ok(quote! {
@@ -122,4 +126,6 @@ mod tests {
 
         assert_ts_eq!(&output, &expected);
     }
+
+    // TODO: Handle no arguments
 }
