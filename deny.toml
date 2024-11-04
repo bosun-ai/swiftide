@@ -23,7 +23,10 @@ exceptions = [{ allow = ["OpenSSL"], crate = "ring" }]
 
 [advisories]
 version = 2
-ignore = ["RUSTSEC-2023-0086"]
+ignore = [
+  { id = "RUSTSEC-2023-0086", reason = "Ignore a security adivisory on lexical-core" },
+  { id = "dotenv", reason = "Dotenv is used by spider" },
+]
 
 [bans]
 multiple-versions = "allow"
