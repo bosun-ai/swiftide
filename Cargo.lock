@@ -7585,7 +7585,6 @@ dependencies = [
  "async-openai",
  "document-features",
  "insta",
- "lancedb",
  "mockall",
  "qdrant-client",
  "serde",

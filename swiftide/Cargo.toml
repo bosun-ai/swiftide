@@ -106,7 +106,6 @@ insta = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-lancedb = { workspace = true }
 arrow-array = { workspace = true }
 
 [lints]
