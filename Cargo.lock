@@ -1268,11 +1268,9 @@ dependencies = [
  "futures-util",
  "serde_json",
  "swiftide",
- "swiftide-test-utils",
  "temp-dir",
  "testcontainers",
  "tokio",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -7584,7 +7582,6 @@ dependencies = [
  "arrow-array",
  "async-openai",
  "document-features",
- "insta",
  "mockall",
  "qdrant-client",
  "serde",
@@ -7595,7 +7592,6 @@ dependencies = [
  "swiftide-query",
  "swiftide-test-utils",
  "temp-dir",
- "test-case",
  "test-log",
  "testcontainers",
  "tokio",
@@ -7751,14 +7747,9 @@ dependencies = [
  "serde",
  "serde_json",
  "swiftide-core",
- "temp-dir",
- "test-case",
- "test-log",
- "testcontainers",
  "tokio",
  "tokio-stream",
  "tracing",
- "wiremock",
 ]
 
 [[package]]
@@ -7767,16 +7758,12 @@ version = "0.14.1"
 dependencies = [
  "anyhow",
  "async-openai",
- "insta",
  "mockall",
  "qdrant-client",
  "serde",
  "serde_json",
  "swiftide-core",
  "swiftide-integrations",
- "temp-dir",
- "test-case",
- "test-log",
  "testcontainers",
  "tokio",
  "wiremock",
