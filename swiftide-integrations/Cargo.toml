@@ -34,38 +34,24 @@ async-openai = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
 ] }
-redis = { version = "0.27", features = [
-  "aio",
-  "tokio-comp",
-  "connection-manager",
-  "tokio-rustls-comp",
-], optional = true }
-tree-sitter = { version = "0.23", optional = true }
-tree-sitter-rust = { version = "0.23", optional = true }
-tree-sitter-python = { version = "0.23", optional = true }
-tree-sitter-ruby = { version = "0.23", optional = true }
-tree-sitter-typescript = { version = "0.23", optional = true }
-tree-sitter-javascript = { version = "0.23", optional = true }
-tree-sitter-java = { version = "0.23", optional = true }
-fastembed = { version = "4.0", optional = true }
+redis = { workspace = true, features = ["aio", "tokio-comp", "connection-manager", "tokio-rustls-comp"], optional = true }
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-ruby = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
+tree-sitter-javascript = { workspace = true, optional = true }
+tree-sitter-java = { workspace = true, optional = true }
+fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true }
-htmd = { version = "0.1", optional = true }
-aws-config = { version = "1.5", features = [
-  "behavior-version-latest",
-], optional = true }
-aws-credential-types = { version = "1.2", features = [
-  "hardcoded-credentials",
-], optional = true }
-aws-sdk-bedrockruntime = { version = "1.37", features = [
-  "behavior-version-latest",
-], optional = true }
-secrecy = { version = "0.8.0", optional = true }
-reqwest = { version = "0.12.5", optional = true, default-features = false }
-ollama-rs = { version = "0.2.1", optional = true }
-deadpool = { version = "0.12", optional = true, features = [
-  "managed",
-  "rt_tokio_1",
-] }
+htmd = { workspace = true, optional = true }
+aws-config = { workspace = true, features = ["behavior-version-latest"], optional = true }
+aws-credential-types = { workspace = true, features = ["hardcoded-credentials"], optional = true }
+aws-sdk-bedrockruntime = { workspace = true, features = ["behavior-version-latest"], optional = true }
+secrecy = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+ollama-rs = { workspace = true, optional = true }
+deadpool = { workspace = true, features = ["managed", "rt_tokio_1"], optional = true }
 fluvio = { workspace = true, optional = true }
 arrow-array = { workspace = true, optional = true }
 lancedb = { workspace = true, optional = true }
@@ -87,7 +73,7 @@ temp-dir = { workspace = true }
 arrow = { workspace = true, features = ["test_utils"] }
 
 # Used for hacking fluv to play nice
-flv-util = "0.5.2"
+flv-util = { workspace = true }
 
 mockall = { workspace = true }
 test-log = { workspace = true }

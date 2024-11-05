@@ -13,7 +13,7 @@ homepage.workspace = true
 [badges]
 
 [dependencies]
-document-features = "0.2.10"
+document-features = { workspace = true }
 
 # Local dependencies
 swiftide-core = { path = "../swiftide-core", version = "0.14" }
@@ -101,12 +101,9 @@ testcontainers = { workspace = true }
 mockall = { workspace = true }
 temp-dir = { workspace = true }
 wiremock = { workspace = true }
-test-case = { workspace = true }
-insta = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-lancedb = { workspace = true }
 arrow-array = { workspace = true }
 
 [lints]

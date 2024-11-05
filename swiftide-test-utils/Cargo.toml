@@ -21,13 +21,9 @@ qdrant-client = { workspace = true, default-features = false, features = [
 ] }
 
 anyhow = { workspace = true }
-test-log = { workspace = true }
 testcontainers = { workspace = true }
 mockall = { workspace = true }
-temp-dir = { workspace = true }
 wiremock = { workspace = true }
-test-case = { workspace = true }
-insta = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

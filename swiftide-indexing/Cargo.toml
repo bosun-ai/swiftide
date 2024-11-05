@@ -29,8 +29,8 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 indoc = { workspace = true }
 
-ignore = "0.4"
-text-splitter = { version = "0.17", features = ["markdown"] }
+ignore = { workspace = true }
+text-splitter = { workspace = true, features = ["markdown"] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
