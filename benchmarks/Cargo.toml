@@ -17,12 +17,9 @@ swiftide = { path = "../swiftide", features = ["all", "redb", "test-utils"] }
 swiftide-test-utils = { path = "../swiftide-test-utils", features = [
   "test-utils",
 ] }
-tracing-subscriber = "0.3"
+tracing-subscriber = { workspace = true }
 serde_json = { workspace = true }
-criterion = { version = "0.5.1", features = [
-  "html_reports",
-  "async_tokio",
-], default-features = false }
+criterion = { workspace = true, features = ["html_reports", "async_tokio"] }
 anyhow = { workspace = true }
 futures-util = { workspace = true }
 testcontainers = { workspace = true, features = ["blocking"] }

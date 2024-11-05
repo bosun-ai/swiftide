@@ -28,7 +28,7 @@ derive_builder = { workspace = true }
 dyn-clone = { workspace = true }
 pin-project = { workspace = true }
 
-tera = { version = "1.20", default-features = false }
+tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }
 
 # Integrations
