@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730727157930,
+  "lastUpdate": 1730804061975,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9149,6 +9149,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242628,
             "range": "± 2742",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "52198f7fe76376a42c1fec8945bda4bf3e6971d4",
+          "message": "chore: Improve local dev build speed (#434)\n\n- **Tokio on rt-multi-thread only**\r\n- **Remove manual checks from lancedb integration test**\r\n- **Ensure all deps in workspace manifest**\r\n- **Remove unused deps**\r\n- **Remove examples and benchmarks from default members**",
+          "timestamp": "2024-11-05T11:46:39+01:00",
+          "tree_id": "b6a09a26a2c2891880257ddd4c35562335945b2c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/52198f7fe76376a42c1fec8945bda4bf3e6971d4"
+        },
+        "date": 1730804060823,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1275467,
+            "range": "± 906570",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244256,
+            "range": "± 1489",
             "unit": "ns/iter"
           }
         ]
