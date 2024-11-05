@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1730804061975,
+  "lastUpdate": 1730819147558,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9203,6 +9203,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244256,
             "range": "± 1489",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "dbd648fd7263c5f9e01a3694517222556a20f9ad",
+          "message": "chore: Update deny.toml",
+          "timestamp": "2024-11-05T15:57:58+01:00",
+          "tree_id": "2a5e5a81e3dc54d624f2856e031fbab3edb1120f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dbd648fd7263c5f9e01a3694517222556a20f9ad"
+        },
+        "date": 1730819146954,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1277023,
+            "range": "± 901117",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245495,
+            "range": "± 2841",
             "unit": "ns/iter"
           }
         ]
