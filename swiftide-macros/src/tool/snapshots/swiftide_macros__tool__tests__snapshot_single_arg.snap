@@ -43,6 +43,6 @@ impl hidden::Tool for SearchCode {
         "search_code"
     }
     fn json_spec(&self) -> hidden::JsonSpec {
-        "{\"description\":\"Hello world tool\",\"name\":\"search_code\",\"parameters\":{\"my param\":{\"description\":\"my param description\",\"type\":\"string\"}}}"
+        "{\"description\":\"Hello world tool\",\"name\":\"search_code\",\"parameters\":{\"code_query\":{\"description\":\"my param description\",\"type\":\"string\"}}}"
     }
 }

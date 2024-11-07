@@ -2,7 +2,7 @@ use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde::ser::SerializeMap as _;
-use syn::{FnArg, ItemFn, Pat, PatType};
+use syn::{spanned::Spanned, FnArg, ItemFn, Pat, PatType};
 
 mod args;
 mod json_spec;
@@ -43,11 +43,14 @@ impl serde::Serialize for ParamOptions {
 }
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn tool_impl(args: TokenStream, input: &ItemFn) -> TokenStream {
-    let args = match parse_args(args) {
+pub(crate) fn tool_impl(input_args: TokenStream, input: &ItemFn) -> TokenStream {
+    let args = match parse_args(input_args.clone()) {
         Ok(args) => args,
         Err(e) => return e.write_errors(),
     };
+    let fn_name = &input.sig.ident;
+    let fn_args = &input.sig.inputs;
+    let tool_name = fn_name.to_string();
 
     let tool_args = args::build_tool_args(input).unwrap_or_else(syn::Error::into_compile_error);
     let args_struct = args::args_struct_name(input);
@@ -55,10 +58,16 @@ pub(crate) fn tool_impl(args: TokenStream, input: &ItemFn) -> TokenStream {
 
     let wrapped_fn = wrapped::wrap_tool_fn(input);
 
-    let fn_name = &input.sig.ident;
-    let fn_args = &input.sig.inputs;
-    let tool_name = fn_name.to_string();
     let json_spec = json_spec::json_spec(&tool_name, &args);
+
+    let mut found_spec_arg_names = args
+        .param
+        .iter()
+        .map(|param| param.name.clone())
+        .collect::<Vec<_>>();
+    found_spec_arg_names.sort();
+
+    let mut seen_arg_names = vec![];
 
     let arg_names = fn_args
         .iter()
@@ -66,6 +75,8 @@ pub(crate) fn tool_impl(args: TokenStream, input: &ItemFn) -> TokenStream {
         .filter_map(|arg| {
             if let FnArg::Typed(PatType { pat, .. }) = arg {
                 if let Pat::Ident(ident) = &**pat {
+                    seen_arg_names.push(ident.ident.to_string());
+
                     Some(quote! { args.#ident })
                 } else {
                     None
@@ -75,6 +86,41 @@ pub(crate) fn tool_impl(args: TokenStream, input: &ItemFn) -> TokenStream {
             }
         })
         .collect::<Vec<_>>();
+    seen_arg_names.sort();
+
+    if found_spec_arg_names != seen_arg_names {
+        let missing_args = found_spec_arg_names
+            .iter()
+            .filter(|name| !seen_arg_names.contains(name))
+            .collect::<Vec<_>>();
+
+        let missing_params = seen_arg_names
+            .iter()
+            .filter(|name| !found_spec_arg_names.contains(name))
+            .collect::<Vec<_>>();
+
+        let mut messages = vec![];
+        if !missing_args.is_empty() {
+            messages.push(format!(
+                "The following parameters are missing from the function signature: {missing_args:?}"
+            ));
+        }
+
+        if !missing_params.is_empty() {
+            messages.push(format!(
+                "The following parameters are missing from the spec: {missing_params:?}"
+            ));
+        }
+
+        return syn::Error::new(
+            input_args.span(),
+            format!(
+                "Arguments in spec and in function do not match:\n {}",
+                messages.join(", ")
+            ),
+        )
+        .into_compile_error();
+    }
 
     let invoke_body = if arg_names.is_empty() {
         quote! {
@@ -141,7 +187,7 @@ mod tests {
         let args = quote! {
             description = "Hello world tool",
             param(
-                name = "my param",
+                name = "code_query",
                 description = "my param description"
             )
         };
