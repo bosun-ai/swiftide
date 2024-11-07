@@ -38,5 +38,5 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 ///
 pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemFn);
-    tool_impl(args.into(), &input).into()
+    tool_impl(&args.into(), &input).into()
 }

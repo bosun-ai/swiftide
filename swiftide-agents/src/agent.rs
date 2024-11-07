@@ -4,12 +4,12 @@ use crate::{
     hooks::{Hook, HookFn, HookTypes},
     tools::control::Stop,
 };
-use std::{borrow::BorrowMut as _, collections::HashSet};
+use std::collections::HashSet;
 
 use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
-    chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolCall, ToolOutput},
+    chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolOutput},
     prompt::Prompt,
     AgentContext, Tool,
 };
@@ -113,6 +113,11 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         self.context.completion_history().await
     }
 
+    /// Runs the agent
+    ///
+    /// # Errors
+    ///
+    /// Any error that occurs during the agent's execution is returned.
     pub async fn run(&mut self) -> Result<()> {
         debug!("Running agent");
         self.context
@@ -204,7 +209,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 #[cfg(test)]
 mod tests {
 
-    use swiftide_core::chat_completion::ChatCompletionResponse;
+    use swiftide_core::chat_completion::{ChatCompletionResponse, ToolCall};
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;

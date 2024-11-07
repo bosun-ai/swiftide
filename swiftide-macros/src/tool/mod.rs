@@ -43,7 +43,7 @@ impl serde::Serialize for ParamOptions {
 }
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn tool_impl(input_args: TokenStream, input: &ItemFn) -> TokenStream {
+pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream {
     let args = match parse_args(input_args.clone()) {
         Ok(args) => args,
         Err(e) => return e.write_errors(),
@@ -197,7 +197,7 @@ mod tests {
             }
         };
 
-        let output = tool_impl(args, &input);
+        let output = tool_impl(&args, &input);
 
         insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
     }

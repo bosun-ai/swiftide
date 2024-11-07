@@ -111,6 +111,7 @@ pub enum ChatRole {
 
 // TODO: Naming
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
     Content(String),

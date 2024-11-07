@@ -1,3 +1,4 @@
+#![allow(clippy::missing_panics_doc)]
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
