@@ -5,6 +5,7 @@ use serde::ser::SerializeMap as _;
 use syn::{token::Pub, Field, Fields, FnArg, Ident, ItemFn, ItemStruct, Pat, PatType, Token};
 
 mod args;
+mod json_spec;
 mod wrapped;
 
 #[derive(FromMeta, Default)]
@@ -57,19 +58,37 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
     let fn_name = &input.sig.ident;
     let fn_args = &input.sig.inputs;
     let tool_name = fn_name.to_string();
-    let json_spec = json_spec(&tool_name, &args).unwrap();
+    let json_spec = json_spec::json_spec(&tool_name, &args);
 
-    let arg_names = fn_args.iter().skip(1).filter_map(|arg| {
-        if let FnArg::Typed(PatType { pat, .. }) = arg {
-            if let Pat::Ident(ident) = &**pat {
-                Some(quote! { args.#ident })
+    let arg_names = fn_args
+        .iter()
+        .skip(1)
+        .filter_map(|arg| {
+            if let FnArg::Typed(PatType { pat, .. }) = arg {
+                if let Pat::Ident(ident) = &**pat {
+                    Some(quote! { args.#ident })
+                } else {
+                    None
+                }
             } else {
                 None
             }
-        } else {
-            None
+        })
+        .collect::<Vec<_>>();
+
+    let invoke_body = if arg_names.is_empty() {
+        quote! {
+            return self.#fn_name(agent_context).await;
         }
-    });
+    } else {
+        quote! {
+            let Some(args) = raw_args
+            else { hidden::bail!("No arguments provided for {}", #tool_name) };
+
+            let args: #args_struct = serde_json::from_str(&args)?;
+            return self.#fn_name(agent_context, #(#arg_names).*).await;
+        }
+    };
 
     quote! {
         mod hidden {
@@ -87,13 +106,7 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
         impl hidden::Tool for #tool_struct {
             // TODO: Handle no arguments
             async fn invoke(&self, agent_context: &dyn hidden::AgentContext, raw_args: Option<&str>) -> hidden::Result<hidden::ToolOutput> {
-                let Some(args) = raw_args
-                 else { hidden::bail!("No arguments provided for {}", #tool_name) };
-
-                let args: #args_struct = serde_json::from_str(&args)?;
-                return self.#fn_name(agent_context, #(#arg_names).*).await;
-
-
+                #invoke_body
             }
 
             fn name(&self) -> &'static str {
@@ -111,30 +124,6 @@ fn parse_args(args: TokenStream) -> Result<ToolArgs, Error> {
     let attr_args = NestedMeta::parse_meta_list(args)?;
 
     ToolArgs::from_list(&attr_args)
-}
-
-fn serialize_params(params: &[ParamOptions]) -> serde_json::Value {
-    let mut map = serde_json::Map::new();
-    for param in params {
-        map.insert(
-            param.name.clone(),
-            serde_json::json!({
-                "type": "string",
-                "description": param.description,
-            }),
-        );
-    }
-    serde_json::Value::Object(map)
-}
-
-fn json_spec(tool_name: &str, args: &ToolArgs) -> syn::parse::Result<String> {
-    serde_json::to_string_pretty(&serde_json::json!(
-        {
-            "name": tool_name,
-            "description": args.description,
-            "parameters": serialize_params(&args.param),
-    }))
-    .map_err(|e| syn::Error::new(proc_macro2::Span::call_site(), e))
 }
 
 #[cfg(test)]

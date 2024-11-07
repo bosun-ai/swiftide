@@ -53,6 +53,9 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
 
     let struct_name = args_struct_name(input);
 
+    if struct_fields.is_empty() {
+        return Ok(quote! {});
+    }
     if has_lifetime {
         Ok(quote! {
             #[derive(serde::Serialize, serde::Deserialize)]
@@ -147,6 +150,18 @@ mod tests {
             }
         };
 
+        assert_ts_eq!(&output, &expected);
+    }
+
+    #[test]
+    fn test_no_arguments() {
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn AgentContext) -> Result<ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+        let output = build_tool_args(&input).unwrap();
+        let expected = quote! {};
         assert_ts_eq!(&output, &expected);
     }
 
