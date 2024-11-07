@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens as _};
 use syn::{
-    parse::Result, token::Pub, Error, Field, Fields, FnArg, Ident, ItemFn, ItemStruct, Lifetime,
-    PatType, Token, Type, TypeReference,
+    parse::Result, Error, FnArg, Ident, ItemFn, Lifetime,
+    PatType, Type, TypeReference,
 };
 
 pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {

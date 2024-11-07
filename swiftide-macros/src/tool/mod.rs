@@ -2,7 +2,7 @@ use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde::ser::SerializeMap as _;
-use syn::{token::Pub, Field, Fields, FnArg, Ident, ItemFn, ItemStruct, Pat, PatType, Token};
+use syn::{FnArg, ItemFn, Pat, PatType};
 
 mod args;
 mod json_spec;

@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens as _};
+use quote::quote;
 use syn::{
-    parse::Result, token::Pub, Error, Field, Fields, FnArg, Ident, ItemFn, ItemStruct, Lifetime,
-    Pat, PatType, Token, Type, TypeReference,
+    parse::Result, FnArg, Ident, ItemFn,
+    Pat, PatType,
 };
 
 use super::args::args_struct_name;
@@ -31,10 +31,10 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
     let fn_args = &input.sig.inputs;
     let fn_body = &input.block;
     let fn_output = &input.sig.output;
-    let underscored_fn_name = Ident::new(&format!("_{}", fn_name), fn_name.span());
+    let underscored_fn_name = Ident::new(&format!("_{fn_name}"), fn_name.span());
 
-    let struct_name = struct_name(&input);
-    let args_struct_name = args_struct_name(&input);
+    let struct_name = struct_name(input);
+    let args_struct_name = args_struct_name(input);
 
     let arg_names = fn_args.iter().skip(1).filter_map(|arg| {
         if let FnArg::Typed(PatType { pat, .. }) = arg {
