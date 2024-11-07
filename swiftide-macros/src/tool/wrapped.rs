@@ -7,13 +7,34 @@ use syn::{
 
 use super::args::args_struct_name;
 
+pub(crate) fn struct_name(input: &ItemFn) -> Ident {
+    let struct_name_str = input
+        .sig
+        .ident
+        .to_string()
+        .split('_') // Split by underscores
+        .map(|s| {
+            let mut chars = s.chars();
+            chars
+                .next()
+                .map(|c| c.to_ascii_uppercase())
+                .into_iter()
+                .collect::<String>()
+                + chars.as_str()
+        })
+        .collect::<String>();
+    Ident::new(&struct_name_str, input.sig.ident.span())
+}
+
 pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
     let fn_name = &input.sig.ident;
     let fn_args = &input.sig.inputs;
     let fn_body = &input.block;
+    let fn_output = &input.sig.output;
     let underscored_fn_name = Ident::new(&format!("_{}", fn_name), fn_name.span());
 
-    let struct_name = args_struct_name(input);
+    let struct_name = struct_name(&input);
+    let args_struct_name = args_struct_name(&input);
 
     let arg_names = fn_args.iter().skip(1).filter_map(|arg| {
         if let FnArg::Typed(PatType { pat, .. }) = arg {
@@ -30,20 +51,18 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
     let fn_args = fn_args.iter();
 
     Ok(quote! {
-        pub async fn #fn_name(context: &impl AgentContext, args: #struct_name<'_>) -> Result<ToolOutput> {
-            #underscored_fn_name(context, #(#arg_names),*).await
+        #[derive(Clone)]
+        struct #struct_name {}
+
+        pub fn #fn_name() -> #struct_name {
+            #struct_name {}
         }
 
-        async fn #underscored_fn_name(#(#fn_args),*) -> Result<ToolOutput> #fn_body
+        impl #struct_name {
+            pub async fn #fn_name(&self, #(#fn_args),*) #fn_output #fn_body
+        }
+
     })
-}
-
-pub(crate) fn wrapped_fn_sig(input: &ItemFn) -> TokenStream {
-    let struct_name = args_struct_name(input);
-
-    quote! {
-        Fn(&impl AgentContext, #struct_name<'_>) -> Result<ToolOutput>
-    }
 }
 
 #[cfg(test)]
@@ -57,7 +76,7 @@ mod tests {
     #[test]
     fn test_wrap_tool_fn() {
         let input: ItemFn = parse_quote! {
-            pub async fn search_code(context: &impl AgentContext, code_query: &str) -> Result<ToolOutput> {
+            pub async fn search_code(context: &dyn hidden::AgentContext, code_query: &str) -> hidden::Result<hidden::ToolOutput> {
                 return Ok("hello".into())
             }
         };
@@ -65,14 +84,19 @@ mod tests {
         let output = wrap_tool_fn(&input).unwrap();
 
         let expected = quote! {
-            pub async fn search_code(context: &impl AgentContext, args: SearchCodeArgs<'_>) -> Result<ToolOutput> {
-                _search_code(context, args.code_query).await
+            #[derive(Clone)]
+            struct SearchCode {}
+
+            pub fn search_code() -> SearchCode {
+                SearchCode {}
             }
 
-            async fn _search_code(context: &impl AgentContext, code_query: &str) -> Result<ToolOutput> {
-                return Ok("hello".into())
-            }
+            impl SearchCode {
+                pub async fn search_code(&self, context: &dyn hidden::AgentContext, code_query: &str) -> hidden::Result<hidden::ToolOutput> {
+                    return Ok("hello".into())
+                }
 
+            }
         };
 
         assert_ts_eq!(&output, &expected);

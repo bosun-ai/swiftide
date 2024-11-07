@@ -19,9 +19,24 @@ syn = { version = "2.0", features = ["full"] }
 darling = "0.20"
 proc-macro2 = "1.0"
 
+# Macro dependencies
+anyhow.workspace = true
+async-trait.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
 [dev-dependencies]
 pretty_assertions.workspace = true
+trybuild = "1.0"
 prettyplease = "0.2.25"
+swiftide-core = { path = "../swiftide-core/", version = "*" }
+swiftide-agents = { path = "../swiftide-agents/", version = "*" }
+insta.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+# TODO: Clean up feature flag
+default = ["swiftide-agents"]
+swiftide-agents = ["dep:serde", "dep:serde_json"]

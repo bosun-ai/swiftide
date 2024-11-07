@@ -55,12 +55,14 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
 
     if has_lifetime {
         Ok(quote! {
+            #[derive(serde::Serialize, serde::Deserialize)]
             struct #struct_name<'a> {
                 pub #(#struct_fields),*
             }
         })
     } else {
         Ok(quote! {
+            #[derive(serde::Serialize, serde::Deserialize)]
             struct #struct_name {
                 pub #(#struct_fields),*
             }
@@ -70,8 +72,8 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
 
 fn validate_first_argument_is_agent_context(input_fn: &ItemFn) -> Result<()> {
     // let first_arg = input_fn.sig.inputs.first();
-    let expected_first_arg = quote! { &impl AgentContext };
-    let error_msg = "The first argument must be `&impl AgentContext`";
+    let expected_first_arg = quote! { &dyn AgentContext };
+    let error_msg = "The first argument must be `&dyn AgentContext`";
 
     if let Some(FnArg::Typed(first_arg)) = input_fn.sig.inputs.first() {
         if first_arg.ty.to_token_stream().to_string() != expected_first_arg.to_string() {
@@ -104,14 +106,14 @@ mod tests {
 
         assert_eq!(
             output.to_string(),
-            "The first argument must be `&impl AgentContext`"
+            "The first argument must be `&dyn AgentContext`"
         );
     }
 
     #[test]
     fn test_simple_tool_with_lifetime() {
         let input: ItemFn = parse_quote! {
-            pub async fn search_code(context: &impl AgentContext, code_query: &str) -> Result<ToolOutput> {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
                 return Ok("hello".into())
             }
         };
@@ -119,6 +121,7 @@ mod tests {
         let output = build_tool_args(&input).unwrap();
 
         let expected = quote! {
+            #[derive(serde::Serialize, serde::Deserialize)]
             struct SearchCodeArgs<'a> {
                 pub code_query: &'a str,
             }
@@ -130,7 +133,7 @@ mod tests {
     #[test]
     fn test_simple_tool_without_lifetime() {
         let input: ItemFn = parse_quote! {
-            pub async fn search_code(context: &impl AgentContext, code_query: String) -> Result<ToolOutput> {
+            pub async fn search_code(context: &dyn AgentContext, code_query: String) -> Result<ToolOutput> {
                 return Ok("hello".into())
             }
         };
@@ -138,6 +141,7 @@ mod tests {
         let output = build_tool_args(&input).unwrap();
 
         let expected = quote! {
+            #[derive(serde::Serialize, serde::Deserialize)]
             struct SearchCodeArgs {
                 pub code_query: String,
             }

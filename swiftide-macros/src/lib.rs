@@ -18,7 +18,7 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 }
 
 #[proc_macro_attribute]
-pub fn took(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemFn);
     tool_impl(args.into(), input).into()
 }

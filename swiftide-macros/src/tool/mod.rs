@@ -1,8 +1,8 @@
 use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{token::Pub, Field, Fields, Ident, ItemFn, ItemStruct, Token};
-use wrapped::wrapped_fn_sig;
+use serde::ser::SerializeMap as _;
+use syn::{token::Pub, Field, Fields, FnArg, Ident, ItemFn, ItemStruct, Pat, PatType, Token};
 
 mod args;
 mod wrapped;
@@ -10,7 +10,6 @@ mod wrapped;
 #[derive(FromMeta, Default)]
 #[darling(default)]
 struct ToolArgs {
-    name: String,
     description: String,
 
     #[darling(multiple)]
@@ -25,6 +24,23 @@ struct ParamOptions {
     // TODO: I.e. openai also supports enums instead of strings as arg type
 }
 
+impl serde::Serialize for ParamOptions {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry(
+            &self.name,
+            &serde_json::json!({
+                "type": "string",
+                "description": self.description
+            }),
+        )?;
+        map.end()
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
     let args = match parse_args(args) {
@@ -34,33 +50,59 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
 
     let tool_args = args::build_tool_args(&input).unwrap_or_else(syn::Error::into_compile_error);
     let args_struct = args::args_struct_name(&input);
+    let tool_struct = wrapped::struct_name(&input);
 
     let wrapped_fn = wrapped::wrap_tool_fn(&input).unwrap_or_else(syn::Error::into_compile_error);
-    let wrapped_fn_sig = wrapped::wrapped_fn_sig(&input);
 
-    // Perf
-    // Getting tool name multiple times
+    let fn_name = &input.sig.ident;
+    let fn_args = &input.sig.inputs;
+    let tool_name = fn_name.to_string();
+    let json_spec = json_spec(&tool_name, &args).unwrap();
 
-    // Building the args struct
+    let arg_names = fn_args.iter().skip(1).filter_map(|arg| {
+        if let FnArg::Typed(PatType { pat, .. }) = arg {
+            if let Pat::Ident(ident) = &**pat {
+                Some(quote! { args.#ident })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    });
+
     quote! {
+        mod hidden {
+            pub use swiftide_agents::{Tool, AgentContext};
+            pub use anyhow::{bail, Result};
+            pub use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
+            pub use async_trait::async_trait;
+        }
+
         #tool_args
 
         #wrapped_fn
 
-        impl Tool for #wrapped_fn_sig {
-            // TODO: Trait has dyn instead of generic
-            // Multiple possible solutions, need to try what works
-            async fn invoke(&self, agent_context: &impl AgentContext, raw_args: Option<&str>) -> Result<ToolOutput> {
-                if let Some(args) = raw_args {
-                    let args: #args_struct = args.parse();
-                    return self.call(agent_context, args).await
-                }
+        #[hidden::async_trait]
+        impl hidden::Tool for #tool_struct {
+            // TODO: Handle no arguments
+            async fn invoke(&self, agent_context: &dyn hidden::AgentContext, raw_args: Option<&str>) -> hidden::Result<hidden::ToolOutput> {
+                let Some(args) = raw_args
+                 else { hidden::bail!("No arguments provided for {}", #tool_name) };
 
-                self.call(agent_context)
+                let args: #args_struct = serde_json::from_str(&args)?;
+                return self.#fn_name(agent_context, #(#arg_names).*).await;
+
+
             }
 
-            // JSON SPEC
-            // NAME
+            fn name(&self) -> &'static str {
+                #tool_name
+            }
+
+            fn json_spec(&self) -> hidden::JsonSpec {
+                #json_spec
+            }
         }
     }
 }
@@ -71,38 +113,53 @@ fn parse_args(args: TokenStream) -> Result<ToolArgs, Error> {
     ToolArgs::from_list(&attr_args)
 }
 
+fn serialize_params(params: &[ParamOptions]) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    for param in params {
+        map.insert(
+            param.name.clone(),
+            serde_json::json!({
+                "type": "string",
+                "description": param.description,
+            }),
+        );
+    }
+    serde_json::Value::Object(map)
+}
+
+fn json_spec(tool_name: &str, args: &ToolArgs) -> syn::parse::Result<String> {
+    serde_json::to_string_pretty(&serde_json::json!(
+        {
+            "name": tool_name,
+            "description": args.description,
+            "parameters": serialize_params(&args.param),
+    }))
+    .map_err(|e| syn::Error::new(proc_macro2::Span::call_site(), e))
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::assert_ts_eq;
-
     use super::*;
     use quote::quote;
     use syn::{parse_quote, ItemFn};
 
-    // #[test]
-    // fn test_simple_tool() {
-    //     let args = quote! {
-    //         name = "Hello world",
-    //         description = "Hello world tool",
-    //         param(
-    //             name = "name",
-    //             description = "Your name"
-    //         )
-    //     };
-    //     let input: ItemFn = parse_quote! {
-    //         pub async fn search_code(context: &impl AgentContext, code_query: &str) -> Result<ToolOutput> {
-    //             return Ok("hello".into())
-    //         }
-    //     };
-    //
-    //     let output = tool_impl(args, input);
-    //
-    //     let expected = quote! {
-    //         struct HelloWorld {
-    //             pub code_query: &str,
-    //         }
-    //     };
-    //
-    //     assert_ts_eq!(&output, &expected);
-    // }
+    #[test]
+    fn test_snapshot_single_arg() {
+        let args = quote! {
+            description = "Hello world tool",
+            param(
+                name = "my param",
+                description = "my param description"
+            )
+        };
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = tool_impl(args, input);
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
 }
