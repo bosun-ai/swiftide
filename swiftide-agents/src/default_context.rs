@@ -1,8 +1,8 @@
 //! Manages agent history and provides an
 //! interface for the external world
-use crate::traits::AgentContext;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
+use swiftide_core::AgentContext;
 
 #[derive(Clone, Default)]
 pub struct DefaultContext {

@@ -4,8 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
 
-use crate::{AgentContext, Tool};
 use indoc::indoc;
+use swiftide_core::{AgentContext, Tool};
 
 type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
 

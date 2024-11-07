@@ -1,9 +1,9 @@
 use std::hash::Hash;
 
+use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
-use swiftide_core::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
 
 #[async_trait]
 pub trait Workspace: Send + Sync + DynClone {

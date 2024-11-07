@@ -11,10 +11,9 @@ use derive_builder::Builder;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolCall, ToolOutput},
     prompt::Prompt,
+    AgentContext, Tool,
 };
 use tracing::{debug, warn};
-
-use crate::traits::*;
 
 // Notes
 //

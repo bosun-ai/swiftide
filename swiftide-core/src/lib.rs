@@ -1,5 +1,6 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
+pub mod agent_traits;
 pub mod chat_completion;
 mod indexing_defaults;
 mod indexing_stream;
@@ -17,6 +18,7 @@ pub use type_aliases::*;
 mod metadata;
 mod query_evaluation;
 
+pub use crate::agent_traits::*;
 /// All traits are available from the root
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;

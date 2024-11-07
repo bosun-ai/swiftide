@@ -1,9 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens as _};
-use syn::{
-    parse::Result, Error, FnArg, Ident, ItemFn, Lifetime,
-    PatType, Type, TypeReference,
-};
+use syn::{parse::Result, Error, FnArg, Ident, ItemFn, Lifetime, PatType, Type, TypeReference};
 
 pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {
     let struct_name_str = input
@@ -74,7 +71,6 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
 }
 
 fn validate_first_argument_is_agent_context(input_fn: &ItemFn) -> Result<()> {
-    // let first_arg = input_fn.sig.inputs.first();
     let expected_first_arg = quote! { &dyn AgentContext };
     let error_msg = "The first argument must be `&dyn AgentContext`";
 

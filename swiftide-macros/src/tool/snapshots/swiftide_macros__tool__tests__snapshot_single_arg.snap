@@ -3,17 +3,17 @@ source: swiftide-macros/src/tool/mod.rs
 expression: "crate::test_utils::pretty_macro_output(&output)"
 ---
 mod hidden {
-    pub use swiftide_agents::{Tool, AgentContext};
-    pub use anyhow::{bail, Result};
-    pub use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
-    pub use async_trait::async_trait;
+    pub use ::anyhow::{bail, Result};
+    pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput};
+    pub use ::swiftide_core::{Tool, AgentContext};
+    pub use ::async_trait::async_trait;
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 struct SearchCodeArgs<'a> {
     pub code_query: &'a str,
 }
-#[derive(Clone)]
-struct SearchCode {}
+#[derive(Clone, Default)]
+pub struct SearchCode {}
 pub fn search_code() -> SearchCode {
     SearchCode {}
 }

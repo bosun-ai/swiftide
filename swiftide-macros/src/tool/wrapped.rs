@@ -1,11 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{
-    parse::Result, FnArg, Ident, ItemFn,
-    Pat, PatType,
-};
-
-use super::args::args_struct_name;
+use syn::{Ident, ItemFn};
 
 pub(crate) fn struct_name(input: &ItemFn) -> Ident {
     let struct_name_str = input
@@ -26,33 +21,19 @@ pub(crate) fn struct_name(input: &ItemFn) -> Ident {
     Ident::new(&struct_name_str, input.sig.ident.span())
 }
 
-pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
+pub(crate) fn wrap_tool_fn(input: &ItemFn) -> TokenStream {
     let fn_name = &input.sig.ident;
     let fn_args = &input.sig.inputs;
     let fn_body = &input.block;
     let fn_output = &input.sig.output;
-    let underscored_fn_name = Ident::new(&format!("_{fn_name}"), fn_name.span());
 
     let struct_name = struct_name(input);
-    let args_struct_name = args_struct_name(input);
-
-    let arg_names = fn_args.iter().skip(1).filter_map(|arg| {
-        if let FnArg::Typed(PatType { pat, .. }) = arg {
-            if let Pat::Ident(ident) = &**pat {
-                Some(quote! { args.#ident })
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    });
 
     let fn_args = fn_args.iter();
 
-    Ok(quote! {
-        #[derive(Clone)]
-        struct #struct_name {}
+    quote! {
+        #[derive(Clone, Default)]
+        pub struct #struct_name {}
 
         pub fn #fn_name() -> #struct_name {
             #struct_name {}
@@ -62,7 +43,7 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> Result<TokenStream> {
             pub async fn #fn_name(&self, #(#fn_args),*) #fn_output #fn_body
         }
 
-    })
+    }
 }
 
 #[cfg(test)]
@@ -81,11 +62,11 @@ mod tests {
             }
         };
 
-        let output = wrap_tool_fn(&input).unwrap();
+        let output = wrap_tool_fn(&input);
 
         let expected = quote! {
-            #[derive(Clone)]
-            struct SearchCode {}
+            #[derive(Clone, Default)]
+            pub struct SearchCode {}
 
             pub fn search_code() -> SearchCode {
                 SearchCode {}
@@ -102,8 +83,3 @@ mod tests {
         assert_ts_eq!(&output, &expected);
     }
 }
-// test cases
-// support async only
-// allow no args
-// work with and without lifetime on args
-// Asserts always returns a tool output result

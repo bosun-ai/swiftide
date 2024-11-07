@@ -18,7 +18,25 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 }
 
 #[proc_macro_attribute]
+/// Creates a tool from an async function.
+///
+/// # Example
+/// ```ignore
+/// #[tool(description = "Searches code", param(name = "code_query", description = "The code query"))]
+/// pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
+///    Ok("hello".into())
+/// }
+///
+/// // The tool can then be used with agents:
+/// Agent::builder().tools([search_code()])
+///
+/// // Or
+///
+/// Agent::builder().tools([SearchCode::default()])
+///
+/// ```
+///
 pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemFn);
-    tool_impl(args.into(), input).into()
+    tool_impl(args.into(), &input).into()
 }

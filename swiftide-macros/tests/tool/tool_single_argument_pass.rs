@@ -1,6 +1,6 @@
 use anyhow::Result;
-use swiftide_agents::AgentContext;
 use swiftide_core::chat_completion::ToolOutput;
+use swiftide_core::AgentContext;
 
 #[swiftide_macros::tool(
     description = "My first tool",

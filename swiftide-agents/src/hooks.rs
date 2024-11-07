@@ -1,8 +1,8 @@
 use anyhow::Result;
 use std::{future::Future, pin::Pin};
 
-use crate::AgentContext;
 use dyn_clone::DynClone;
+use swiftide_core::AgentContext;
 
 // pub type HookFn = Box<dyn Fn(&mut dyn AgentContext) -> Result<()>>;
 //

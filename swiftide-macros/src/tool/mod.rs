@@ -43,17 +43,17 @@ impl serde::Serialize for ParamOptions {
 }
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
+pub(crate) fn tool_impl(args: TokenStream, input: &ItemFn) -> TokenStream {
     let args = match parse_args(args) {
         Ok(args) => args,
         Err(e) => return e.write_errors(),
     };
 
-    let tool_args = args::build_tool_args(&input).unwrap_or_else(syn::Error::into_compile_error);
-    let args_struct = args::args_struct_name(&input);
-    let tool_struct = wrapped::struct_name(&input);
+    let tool_args = args::build_tool_args(input).unwrap_or_else(syn::Error::into_compile_error);
+    let args_struct = args::args_struct_name(input);
+    let tool_struct = wrapped::struct_name(input);
 
-    let wrapped_fn = wrapped::wrap_tool_fn(&input).unwrap_or_else(syn::Error::into_compile_error);
+    let wrapped_fn = wrapped::wrap_tool_fn(input);
 
     let fn_name = &input.sig.ident;
     let fn_args = &input.sig.inputs;
@@ -90,12 +90,16 @@ pub(crate) fn tool_impl(args: TokenStream, input: ItemFn) -> TokenStream {
         }
     };
 
+    let imports = quote! {
+            pub use ::anyhow::{bail, Result};
+            pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput };
+            pub use ::swiftide_core::{Tool, AgentContext};
+            pub use ::async_trait::async_trait;
+    };
+
     quote! {
         mod hidden {
-            pub use swiftide_agents::{Tool, AgentContext};
-            pub use anyhow::{bail, Result};
-            pub use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
-            pub use async_trait::async_trait;
+            #imports
         }
 
         #tool_args
@@ -147,7 +151,7 @@ mod tests {
             }
         };
 
-        let output = tool_impl(args, input);
+        let output = tool_impl(args, &input);
 
         insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
     }
