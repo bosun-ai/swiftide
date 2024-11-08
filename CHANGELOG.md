@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.2](https://github.com/bosun-ai/swiftide/compare/v0.14.1...v0.14.2) - 2024-11-08
+
+### Bug fixes
+
+- [3924322](https://github.com/bosun-ai/swiftide/commit/39243224d739a76cf2b60204fc67819055b7bc6f) *(querying)*  Query pipeline is now properly send and sync when possible ([#425](https://github.com/bosun-ai/swiftide/pull/425))
+
+### Miscellaneous
+
+- [52198f7](https://github.com/bosun-ai/swiftide/commit/52198f7fe76376a42c1fec8945bda4bf3e6971d4)  Improve local dev build speed ([#434](https://github.com/bosun-ai/swiftide/pull/434))
+
+````text
+- **Tokio on rt-multi-thread only**
+  - **Remove manual checks from lancedb integration test**
+  - **Ensure all deps in workspace manifest**
+  - **Remove unused deps**
+  - **Remove examples and benchmarks from default members**
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.1...0.14.2
+
+
+
 ## [0.14.1](https://github.com/bosun-ai/swiftide/compare/v0.14.0...v0.14.1) - 2024-10-27
 
 ### Bug fixes
