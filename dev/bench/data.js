@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1731059210322,
+  "lastUpdate": 1731063530979,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9365,6 +9365,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245654,
             "range": "± 2758",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8b10632723f4f918638e2a3249bb4f60fdae197a",
+          "message": "chore(deps): bump thiserror from 1.0.65 to 1.0.68 (#440)\n\nBumps [thiserror](https://github.com/dtolnay/thiserror) from 1.0.65 to\r\n1.0.68.\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/dtolnay/thiserror/releases\">thiserror's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>1.0.68</h2>\r\n<ul>\r\n<li>Handle incomplete expressions more robustly in format arguments,\r\nsuch as while code is being typed (<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/341\">#341</a>,\r\n<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/344\">#344</a>)</li>\r\n</ul>\r\n<h2>1.0.67</h2>\r\n<ul>\r\n<li>Improve expression syntax support inside format arguments (<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/335\">#335</a>,\r\n<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/337\">#337</a>,\r\n<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/339\">#339</a>,\r\n<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/340\">#340</a>)</li>\r\n</ul>\r\n<h2>1.0.66</h2>\r\n<ul>\r\n<li>Improve compile error on malformed format attribute (<a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/327\">#327</a>)</li>\r\n</ul>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/8d06fb554905b054d44a353bea9c92d0bbeb0bdf\"><code>8d06fb5</code></a>\r\nRelease 1.0.68</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/372fd8a71afefe23b128a5bb5ad502abbce3e845\"><code>372fd8a</code></a>\r\nMerge pull request <a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/344\">#344</a>\r\nfrom dtolnay/binop</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/08f89925bf0df7a3fe758129e4dbea1097c48bce\"><code>08f8992</code></a>\r\nDisregard equality binop in fallback parser</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/d2a823d2ae25dab21311b1572b6c50d20cf11646\"><code>d2a823d</code></a>\r\nMerge pull request <a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/343\">#343</a>\r\nfrom dtolnay/unnamed</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/b3bf7a6f69d58c2bfc01a9137fb7b239c88d1ec3\"><code>b3bf7a6</code></a>\r\nAdd logic to determine whether unnamed fmt arguments are present</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/490f9c017b7434c7ac1f1f8ee14fd062a7293d8a\"><code>490f9c0</code></a>\r\nMerge pull request <a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/342\">#342</a>\r\nfrom dtolnay/synfull</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/7daf1b169d4daed1f2d2765b36726a0ddc29c01c\"><code>7daf1b1</code></a>\r\nDefer is_syn_full() call until first expression</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/c92ac9940b5a40b0c43a7f9c92d2e45c0a883c93\"><code>c92ac99</code></a>\r\nMerge pull request <a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/341\">#341</a>\r\nfrom dtolnay/parsescan</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/40a53f7f338e8cca0a3e589d01a19457c4794cc0\"><code>40a53f7</code></a>\r\nInterleave Expr parsing and scanning better</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/925f2dde771de0be96f9e6402f8bf5d06f523ebc\"><code>925f2dd</code></a>\r\nRelease 1.0.67</li>\r\n<li>Additional commits viewable in <a\r\nhref=\"https://github.com/dtolnay/thiserror/compare/1.0.65...1.0.68\">compare\r\nview</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\n\r\n[![Dependabot compatibility\r\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=thiserror&package-manager=cargo&previous-version=1.0.65&new-version=1.0.68)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\r\n\r\nDependabot will resolve any conflicts with this PR as long as you don't\r\nalter it yourself. You can also trigger a rebase manually by commenting\r\n`@dependabot rebase`.\r\n\r\n[//]: # (dependabot-automerge-start)\r\n[//]: # (dependabot-automerge-end)\r\n\r\n---\r\n\r\n<details>\r\n<summary>Dependabot commands and options</summary>\r\n<br />\r\n\r\nYou can trigger Dependabot actions by commenting on this PR:\r\n- `@dependabot rebase` will rebase this PR\r\n- `@dependabot recreate` will recreate this PR, overwriting any edits\r\nthat have been made to it\r\n- `@dependabot merge` will merge this PR after your CI passes on it\r\n- `@dependabot squash and merge` will squash and merge this PR after\r\nyour CI passes on it\r\n- `@dependabot cancel merge` will cancel a previously requested merge\r\nand block automerging\r\n- `@dependabot reopen` will reopen this PR if it is closed\r\n- `@dependabot close` will close this PR and stop Dependabot recreating\r\nit. You can achieve the same result by closing it manually\r\n- `@dependabot show <dependency name> ignore conditions` will show all\r\nof the ignore conditions of the specified dependency\r\n- `@dependabot ignore this major version` will close this PR and stop\r\nDependabot creating any more for this major version (unless you reopen\r\nthe PR or upgrade to it yourself)\r\n- `@dependabot ignore this minor version` will close this PR and stop\r\nDependabot creating any more for this minor version (unless you reopen\r\nthe PR or upgrade to it yourself)\r\n- `@dependabot ignore this dependency` will close this PR and stop\r\nDependabot creating any more for this dependency (unless you reopen the\r\nPR or upgrade to it yourself)\r\n\r\n\r\n</details>\r\n\r\nSigned-off-by: dependabot[bot] <support@github.com>\r\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2024-11-08T11:51:00+01:00",
+          "tree_id": "4ee7f7166418b259e1a68fc3bfc7c165da1e09fb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8b10632723f4f918638e2a3249bb4f60fdae197a"
+        },
+        "date": 1731063530555,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 175,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1271993,
+            "range": "± 908041",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242889,
+            "range": "± 2484",
             "unit": "ns/iter"
           }
         ]
