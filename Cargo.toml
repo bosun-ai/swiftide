@@ -42,7 +42,7 @@ uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 
 # Integrations
-spider = { version = "2.12" }
+spider = { version = "2.13" }
 async-openai = { version = "0.25" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
@@ -55,7 +55,7 @@ parquet = { version = "52.2", default-features = false, features = ["async"] }
 redb = { version = "2.2" }
 aws-config = "1.5"
 aws-credential-types = "1.2"
-aws-sdk-bedrockruntime = "1.37"
+aws-sdk-bedrockruntime = "1.61"
 criterion = { version = "0.5.1", default-features = false }
 darling = "0.20"
 deadpool = "0.12"
