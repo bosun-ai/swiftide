@@ -73,7 +73,7 @@ pub trait AgentContext: Send + Sync + DynClone {
     /// what you would expect in an inference conversation to be present.
     async fn completion_history(&self) -> &[ChatMessage];
 
-    async fn record_in_history(&mut self, item: ChatMessage);
+    async fn add_message(&mut self, item: ChatMessage);
 
     async fn record_iteration(&mut self);
 
@@ -90,8 +90,8 @@ impl AgentContext for Box<dyn AgentContext> {
     async fn completion_history(&self) -> &[ChatMessage] {
         self.as_ref().completion_history().await
     }
-    async fn record_in_history(&mut self, item: ChatMessage) {
-        self.as_mut().record_in_history(item).await;
+    async fn add_message(&mut self, item: ChatMessage) {
+        self.as_mut().add_message(item).await;
     }
 
     async fn record_iteration(&mut self) {

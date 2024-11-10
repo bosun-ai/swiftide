@@ -121,7 +121,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     pub async fn run(&mut self) -> Result<()> {
         debug!("Running agent");
         self.context
-            .record_in_history(ChatMessage::User(self.instructions.render().await?))
+            .add_message(ChatMessage::User(self.instructions.render().await?))
             .await;
 
         self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
@@ -168,7 +168,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         if let Some(message) = response.message {
             debug!("LLM returned message: {}", message);
             self.context
-                .record_in_history(ChatMessage::Assistant(message))
+                .add_message(ChatMessage::Assistant(message))
                 .await;
         }
 
@@ -185,7 +185,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 self.handle_control_tools(&output);
 
                 self.context
-                    .record_in_history(ChatMessage::ToolOutput(tool_call, output))
+                    .add_message(ChatMessage::ToolOutput(tool_call, output))
                     .await;
             }
         };

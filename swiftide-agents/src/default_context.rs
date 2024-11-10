@@ -27,7 +27,7 @@ impl AgentContext for DefaultContext {
         &self.conversation_history
     }
 
-    async fn record_in_history(&mut self, item: ChatMessage) {
+    async fn add_message(&mut self, item: ChatMessage) {
         self.this_iteration_ptr += 1;
 
         self.conversation_history.push(item);
@@ -75,11 +75,9 @@ mod tests {
         let mut context = DefaultContext::default();
 
         // Record initial chat messages
+        context.add_message(ChatMessage::User("Hello".into())).await;
         context
-            .record_in_history(ChatMessage::User("Hello".into()))
-            .await;
-        context
-            .record_in_history(ChatMessage::Assistant("Hi there!".into()))
+            .add_message(ChatMessage::Assistant("Hi there!".into()))
             .await;
 
         assert_eq!(context.current_chat_messages().await.len(), 2);
@@ -91,10 +89,10 @@ mod tests {
 
         // Record more chat messages
         context
-            .record_in_history(ChatMessage::User("How are you?".into()))
+            .add_message(ChatMessage::User("How are you?".into()))
             .await;
         context
-            .record_in_history(ChatMessage::Assistant("I'm good, thanks!".into()))
+            .add_message(ChatMessage::Assistant("I'm good, thanks!".into()))
             .await;
 
         let current_messages = context.current_chat_messages().await;
