@@ -1,12 +1,12 @@
 //! Manages agent history and provides an
 //! interface for the external world
+use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::AgentContext;
 
 #[derive(Clone, Default)]
 pub struct DefaultContext {
-    // workspace: Box<dyn Workspace>,
     conversation_history: Vec<ChatMessage>,
     should_stop: bool,
     iterations: usize,
@@ -19,10 +19,6 @@ pub struct DefaultContext {
 /// Not meant for concurrent usage.
 #[async_trait]
 impl AgentContext for DefaultContext {
-    // pub async fn workspace(&self) -> &Box<dyn Workspace> {
-    //     &self.workspace
-    // }
-
     async fn completion_history(&self) -> &[ChatMessage] {
         &self.conversation_history
     }

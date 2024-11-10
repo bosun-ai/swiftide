@@ -112,6 +112,8 @@ pub mod agents {
 /// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {
     #[doc(inline)]
+    pub use swiftide_core::agent_traits::*;
+    #[doc(inline)]
     pub use swiftide_core::indexing_traits::*;
     #[doc(inline)]
     pub use swiftide_core::query_traits::*;
