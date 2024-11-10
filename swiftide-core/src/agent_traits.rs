@@ -16,12 +16,19 @@ pub trait ToolExecutor: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }
 
+#[non_exhaustive]
 pub enum Command {
     Shell(String),
 }
 
 pub enum Output {
     Text(String),
+}
+
+impl From<String> for Output {
+    fn from(value: String) -> Self {
+        Output::Text(value)
+    }
 }
 
 // dyn_clone::clone_trait_object!(Workspace);
@@ -71,7 +78,7 @@ impl Hash for Box<dyn Tool> {
 /// Acts as the interface to the external world and any overlapping state
 /// NOTE: Async as expecting locks
 #[async_trait]
-pub trait AgentContext<EXECUTOR: ToolExecutor = ()>: Send + Sync {
+pub trait AgentContext: Send + Sync {
     /// List of all messages for this agent
     ///
     /// Used as main source for the next completion and expects all

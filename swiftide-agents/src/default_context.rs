@@ -3,22 +3,49 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
-use swiftide_core::AgentContext;
+use swiftide_core::{AgentContext, ToolExecutor};
 
-#[derive(Clone, Default)]
-pub struct DefaultContext {
+#[derive(Clone)]
+pub struct DefaultContext<EXECUTOR: ToolExecutor = ()> {
     conversation_history: Vec<ChatMessage>,
     should_stop: bool,
     iterations: usize,
     iteration_ptr: usize,
     this_iteration_ptr: usize,
+    tool_executor: EXECUTOR,
+}
+
+// impl Default for DefaultContext<()> {
+//     fn default() -> Self {
+//         DefaultContext {
+//             conversation_history: Vec::new(),
+//             should_stop: false,
+//             iterations: 0,
+//             iteration_ptr: 0,
+//             this_iteration_ptr: 0,
+//             tool_executor: (),
+//         }
+//     }
+// }
+
+impl<T: ToolExecutor + Default> Default for DefaultContext<T> {
+    fn default() -> Self {
+        DefaultContext {
+            conversation_history: Vec::new(),
+            should_stop: false,
+            iterations: 0,
+            iteration_ptr: 0,
+            this_iteration_ptr: 0,
+            tool_executor: T::default(),
+        }
+    }
 }
 
 /// Default, simple implementation of context
 ///
 /// Not meant for concurrent usage.
 #[async_trait]
-impl AgentContext for DefaultContext {
+impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
     async fn completion_history(&self) -> &[ChatMessage] {
         &self.conversation_history
     }
@@ -68,7 +95,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_iteration_tracking() {
-        let mut context = DefaultContext::default();
+        let mut context = DefaultContext::<()>::default();
 
         // Record initial chat messages
         context.add_message(ChatMessage::User("Hello".into())).await;
@@ -104,5 +131,16 @@ mod tests {
         );
         // Record the second iteration
         context.record_iteration().await;
+    }
+}
+
+impl<T: ToolExecutor> DefaultContext<T> {
+    fn from_executor<EXECUTOR: ToolExecutor + Default>(
+        executor: EXECUTOR,
+    ) -> DefaultContext<EXECUTOR> {
+        DefaultContext {
+            tool_executor: executor,
+            ..Default::default()
+        }
     }
 }
