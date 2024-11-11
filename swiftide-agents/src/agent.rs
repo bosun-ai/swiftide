@@ -178,16 +178,16 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         debug!("Calling LLM with request: {:?}", chat_completion_request);
         let response = self.llm.complete(&chat_completion_request).await?;
 
-        /// Mark the iteration as complete
-        /// Any new messages at this point (i.e. from tools or hooks) will trigger another loop
-        self.context.record_iteration().await;
-
         if let Some(message) = response.message {
             debug!("LLM returned message: {}", message);
             self.context
                 .add_message(ChatMessage::Assistant(message))
                 .await;
         }
+
+        /// Mark the iteration as complete
+        /// Any new messages at this point (i.e. from tools or hooks) will trigger another loop
+        self.context.record_iteration().await;
 
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
         if let Some(tool_calls) = response.tool_calls {
