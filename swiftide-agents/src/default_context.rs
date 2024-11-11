@@ -88,6 +88,19 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
     }
 }
 
+impl<T: ToolExecutor> DefaultContext<T> {
+    pub fn from_executor(executor: T) -> DefaultContext<T> {
+        DefaultContext {
+            tool_executor: executor,
+            conversation_history: Vec::new(),
+            should_stop: false,
+            iterations: 0,
+            iteration_ptr: 0,
+            this_iteration_ptr: 0,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,16 +144,5 @@ mod tests {
         );
         // Record the second iteration
         context.record_iteration().await;
-    }
-}
-
-impl<T: ToolExecutor> DefaultContext<T> {
-    fn from_executor<EXECUTOR: ToolExecutor + Default>(
-        executor: EXECUTOR,
-    ) -> DefaultContext<EXECUTOR> {
-        DefaultContext {
-            tool_executor: executor,
-            ..Default::default()
-        }
     }
 }

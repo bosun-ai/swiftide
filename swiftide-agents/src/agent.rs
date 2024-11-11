@@ -23,6 +23,7 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
     #[builder(default, setter(into))]
     hooks: Vec<Hook>,
     // name: String,
+    #[builder(setter(custom))]
     context: CONTEXT,
     #[builder(setter(into))]
     instructions: Prompt,
@@ -34,6 +35,21 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
 }
 
 impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
+    pub fn context<C: AgentContext>(&mut self, context: C) -> AgentBuilder<C>
+    where
+        Self: Clone,
+    {
+        let new = AgentBuilder {
+            context: Some(context),
+            hooks: self.hooks.clone(),
+            instructions: self.instructions.clone(),
+            tools: self.tools.clone(),
+            llm: self.llm.clone(),
+        };
+
+        new
+    }
+
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
         hooks.push(hook);
@@ -85,8 +101,9 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
 
 impl Agent<DefaultContext> {
     pub fn builder() -> AgentBuilder<DefaultContext> {
-        AgentBuilder::default()
-            .context(DefaultContext::default())
+        let context: DefaultContext<()> = DefaultContext::default();
+        AgentBuilder::<DefaultContext>::default()
+            .context(context)
             .to_owned()
     }
 }
@@ -307,7 +324,7 @@ mod tests {
             .tools_spec(
                 [Box::new(mock_tool.clone()) as Box<dyn Tool>]
                     .into_iter()
-                    .chain(Agent::<DefaultContext>::default_tools())
+                    .chain(Agent::<DefaultContext<()>>::default_tools())
                     .map(|tool| tool.json_spec())
                     .collect::<HashSet<_>>(),
             )
