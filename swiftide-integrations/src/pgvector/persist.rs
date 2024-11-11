@@ -13,7 +13,10 @@ use swiftide_core::{
 impl Persist for PgVector {
     #[tracing::instrument(skip_all)]
     async fn setup(&self) -> Result<()> {
-        let mut tx = self.connection_pool.get_pool()?.begin().await?;
+        // Get or initialize the connection pool
+        let pool = self.pool_get_or_initialize().await?;
+
+        let mut tx = pool.begin().await?;
 
         // Create extension
         let sql = "CREATE EXTENSION IF NOT EXISTS vector";
@@ -48,50 +51,24 @@ impl Persist for PgVector {
     }
 
     fn batch_size(&self) -> Option<usize> {
-        self.batch_size
+        Some(self.batch_size)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::pgvector::PgVector;
+    use crate::pgvector::fixtures::TestContext;
+    use std::collections::HashSet;
     use swiftide_core::{indexing::EmbeddedField, Persist};
-    use testcontainers::{ContainerAsync, GenericImage};
-
-    struct TestContext {
-        pgv_storage: PgVector,
-        _pgv_db_container: ContainerAsync<GenericImage>,
-    }
-
-    impl TestContext {
-        /// Set up the test context, initializing `PostgreSQL` and `PgVector` storage
-        async fn setup() -> Result<Self, Box<dyn std::error::Error>> {
-            // Start PostgreSQL container and obtain the connection URL
-            let (pgv_db_container, pgv_db_url) = swiftide_test_utils::start_postgres().await;
-
-            // Configure and build PgVector storage
-            let pgv_storage = PgVector::builder()
-                .try_connect_to_pool(pgv_db_url, Some(10))
-                .await?
-                .vector_size(384)
-                .with_vector(EmbeddedField::Combined)
-                .with_metadata("filter")
-                .table_name("swiftide_pgvector_test".to_string())
-                .build()?;
-
-            // Set up PgVector storage (create the table if not exists)
-            pgv_storage.setup().await?;
-
-            Ok(Self {
-                pgv_storage,
-                _pgv_db_container: pgv_db_container,
-            })
-        }
-    }
 
     #[test_log::test(tokio::test)]
     async fn test_persist_setup_no_error_when_table_exists() {
-        let test_context = TestContext::setup().await.expect("Test setup failed");
+        let test_context = TestContext::setup_with_cfg(
+            vec!["filter"].into(),
+            HashSet::from([EmbeddedField::Combined]),
+        )
+        .await
+        .expect("Test setup failed");
 
         test_context
             .pgv_storage

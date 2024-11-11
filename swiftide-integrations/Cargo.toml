@@ -27,7 +27,7 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 regex = { workspace = true }
 futures-util = { workspace = true }
-
+once_cell = { workspace = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }

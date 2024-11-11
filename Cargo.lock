@@ -8432,6 +8432,7 @@ dependencies = [
  "swiftide-test-utils",
  "temp-dir",
  "tokio",
+ "tracing",
  "tracing-subscriber",
 ]
 
@@ -8489,6 +8490,7 @@ dependencies = [
  "lancedb",
  "mockall",
  "ollama-rs",
+ "once_cell",
  "parquet",
  "pgvector",
  "qdrant-client",

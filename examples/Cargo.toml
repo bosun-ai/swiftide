@@ -31,6 +31,7 @@ fluvio = { workspace = true }
 temp-dir = { workspace = true }
 sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
+tracing = { workspace = true }
 
 [[example]]
 doc-scrape-examples = true

@@ -4,81 +4,17 @@
 //! with `PostgreSQL`'s required data format.
 
 use crate::pgvector::PgVector;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
+// use once_cell::sync::OnceCell;
 use pgvector as ExtPgVector;
 use regex::Regex;
 use sqlx::postgres::PgArguments;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::collections::BTreeMap;
-use std::sync::Arc;
+// use std::sync::Arc;
 use swiftide_core::indexing::{EmbeddedField, Node};
-use tokio::time::{sleep, Duration};
-
-#[derive(Clone)]
-pub struct PgDBConnectionPool(Arc<Option<PgPool>>);
-
-impl Default for PgDBConnectionPool {
-    fn default() -> Self {
-        Self(Arc::new(None))
-    }
-}
-
-impl PgDBConnectionPool {
-    /// Attempts to connect to the database with retries.
-    async fn connect_with_retry(
-        database_url: impl AsRef<str>,
-        max_retries: u32,
-        pool_options: &PgPoolOptions,
-    ) -> Result<PgPool, sqlx::Error> {
-        for attempt in 1..=max_retries {
-            match pool_options.clone().connect(database_url.as_ref()).await {
-                Ok(pool) => {
-                    return Ok(pool);
-                }
-                Err(_err) if attempt < max_retries => {
-                    sleep(Duration::from_secs(2)).await;
-                }
-                Err(err) => return Err(err),
-            }
-        }
-        unreachable!()
-    }
-
-    /// Connects to the database using the provided URL and sets the connection pool.
-    pub async fn try_connect_to_url(
-        mut self,
-        database_url: impl AsRef<str>,
-        connection_max: Option<u32>,
-    ) -> Result<Self> {
-        let pool_options = PgPoolOptions::new().max_connections(connection_max.unwrap_or(10));
-
-        let pool = Self::connect_with_retry(database_url, 10, &pool_options)
-            .await
-            .context("Failed to connect to the database")?;
-
-        self.0 = Arc::new(Some(pool));
-
-        Ok(self)
-    }
-
-    /// Retrieves the connection pool, returning an error if the pool is not initialized.
-    pub fn get_pool(&self) -> Result<PgPool> {
-        self.0
-            .as_ref()
-            .clone()
-            .ok_or_else(|| anyhow!("Database connection pool is not initialized"))
-    }
-
-    /// Returns the connection status of the pool.
-    pub fn connection_status(&self) -> &'static str {
-        match self.0.as_ref() {
-            Some(pool) if !pool.is_closed() => "Open",
-            Some(_) => "Closed",
-            None => "Not initialized",
-        }
-    }
-}
+use tokio::time::sleep;
 
 #[derive(Clone, Debug)]
 pub struct VectorConfig {
@@ -172,10 +108,6 @@ impl PgVector {
             return Err(anyhow::anyhow!("Invalid table name"));
         }
 
-        let vector_size = self
-            .vector_size
-            .ok_or_else(|| anyhow!("vector_size must be configured"))?;
-
         let columns: Vec<String> = self
             .fields
             .iter()
@@ -183,7 +115,9 @@ impl PgVector {
                 FieldConfig::ID => "id UUID NOT NULL".to_string(),
                 FieldConfig::Chunk => format!("{} TEXT NOT NULL", field.field_name()),
                 FieldConfig::Metadata(_) => format!("{} JSONB", field.field_name()),
-                FieldConfig::Vector(_) => format!("{} VECTOR({})", field.field_name(), vector_size),
+                FieldConfig::Vector(_) => {
+                    format!("{} VECTOR({})", field.field_name(), self.vector_size)
+                }
             })
             .chain(std::iter::once("PRIMARY KEY (id)".to_string()))
             .collect();
@@ -244,7 +178,7 @@ impl PgVector {
     /// - Any of the SQL queries fail to execute due to schema mismatch, constraint violations, or connectivity issues.
     /// - Committing the transaction fails.
     pub async fn store_nodes(&self, nodes: &[Node]) -> Result<()> {
-        let pool = self.connection_pool.get_pool()?;
+        let pool = self.pool_get_or_initialize().await?;
 
         let mut tx = pool.begin().await?;
         let bulk_data = self.prepare_bulk_data(nodes)?;
@@ -468,6 +402,59 @@ impl PgVector {
         ];
 
         RESERVED_KEYWORDS.contains(&word.to_uppercase().as_str())
+    }
+}
+
+impl PgVector {
+    async fn create_pool(&self) -> Result<PgPool> {
+        let pool_options = PgPoolOptions::new().max_connections(self.db_max_connections);
+
+        for attempt in 1..=self.db_max_retry {
+            match pool_options.clone().connect(self.db_url.as_ref()).await {
+                Ok(pool) => {
+                    tracing::info!("Successfully established database connection");
+                    return Ok(pool);
+                }
+                Err(err) if attempt < self.db_max_retry => {
+                    tracing::warn!(
+                        error = %err,
+                        attempt = attempt,
+                        max_retries = self.db_max_retry,
+                        "Database connection attempt failed, retrying..."
+                    );
+                    sleep(self.db_conn_retry_delay).await;
+                }
+                Err(err) => {
+                    return Err(anyhow!(err).context("Failed to establish database connection"));
+                }
+            }
+        }
+
+        Err(anyhow!(
+            "Max connection retries ({}) exceeded",
+            self.db_max_retry
+        ))
+    }
+
+    /// Returns a reference to the `PgPool` if it is already initialized,
+    /// or creates and initializes it if it is not.
+    ///
+    /// # Errors
+    /// This function will return an error if pool creation fails.    
+    pub async fn pool_get_or_initialize(&self) -> Result<&PgPool> {
+        if let Some(pool) = self.connection_pool.get() {
+            return Ok(pool);
+        }
+
+        let pool = self.create_pool().await?;
+        self.connection_pool
+            .set(pool)
+            .map_err(|_| anyhow!("Pool already initialized"))?;
+
+        // Re-check if the pool was set successfully, otherwise return an error
+        self.connection_pool
+            .get()
+            .ok_or_else(|| anyhow!("Failed to retrieve connection pool after setting it"))
     }
 }
 

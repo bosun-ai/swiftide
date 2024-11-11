@@ -11,39 +11,8 @@ use swiftide::{
         },
         EmbeddedField,
     },
-    integrations::{self, fastembed::FastEmbed, pgvector::PgVector},
-    query::{self, answers, query_transformers, response_transformers},
-    traits::SimplePrompt,
+    integrations::{self, pgvector::PgVector},
 };
-
-async fn ask_query(
-    llm_client: impl SimplePrompt + Clone + 'static,
-    embed: FastEmbed,
-    vector_store: PgVector,
-    question: String,
-) -> Result<String, Box<dyn std::error::Error>> {
-    // By default the search strategy is SimilaritySingleEmbedding
-    // which takes the latest query, embeds it, and does a similarity search
-    //
-    // Pgvector will return an error if multiple embeddings are set
-    //
-    // The pipeline generates subquestions to increase semantic coverage, embeds these in a single
-    // embedding, retrieves the default top_k documents, summarizes them and uses that as context
-    // for the final answer.
-    let pipeline = query::Pipeline::default()
-        .then_transform_query(query_transformers::GenerateSubquestions::from_client(
-            llm_client.clone(),
-        ))
-        .then_transform_query(query_transformers::Embed::from_client(embed))
-        .then_retrieve(vector_store.clone())
-        .then_transform_response(response_transformers::Summary::from_client(
-            llm_client.clone(),
-        ))
-        .then_answer(answers::Simple::from_client(llm_client.clone()));
-
-    let result = pipeline.query(question).await?;
-    Ok(result.answer().into())
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -72,9 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Configure Pgvector with a default vector size, a single embedding
     // and in addition to embedding the text metadata, also store it in a field
     let pgv_storage = PgVector::builder()
-        .try_connect_to_pool(pgv_db_url, Some(10))
-        .await
-        .expect("Failed to connect to postgres server")
+        .db_url(pgv_db_url)
         .vector_size(384)
         .with_vector(EmbeddedField::Combined)
         .with_metadata(METADATA_QA_TEXT_NAME)
@@ -87,9 +54,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let drop_table_sql = "DROP TABLE IF EXISTS swiftide_pgvector_test";
     let drop_index_sql = "DROP INDEX IF EXISTS swiftide_pgvector_test_embedding_idx";
 
-    if let Ok(pool) = pgv_storage.get_pool() {
-        sqlx::query(drop_table_sql).execute(&pool).await?;
-        sqlx::query(drop_index_sql).execute(&pool).await?;
+    if let Ok(pool) = pgv_storage.get_pool().await {
+        sqlx::query(drop_table_sql).execute(pool).await?;
+        sqlx::query(drop_index_sql).execute(pool).await?;
     } else {
         return Err("Failed to get database connection pool".into());
     }
@@ -103,24 +70,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run()
         .await?;
 
-    for (i, question) in [
-            "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.",
-            "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.",
-        ]
-        .iter()
-        .enumerate()
-        {
-            let result = ask_query(
-                llm_client.clone(),
-                fastembed.clone(),
-                pgv_storage.clone(),
-                question.to_string(),
-            ).await?;
-            tracing::info!("*** Answer Q{} ***", i + 1);
-            tracing::info!("{}", result);
-            tracing::info!("===X===");
-        }
-
-    tracing::info!("PgVector Indexing & retrieval test completed successfully");
+    tracing::info!("PgVector Indexing test completed successfully");
     Ok(())
 }
