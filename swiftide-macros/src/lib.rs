@@ -7,8 +7,8 @@ mod indexing_transformer;
 mod test_utils;
 mod tool;
 use indexing_transformer::indexing_transformer_impl;
-use syn::{parse_macro_input, ItemFn, ItemStruct};
-use tool::tool_impl;
+use syn::{parse_macro_input, DeriveInput, ItemFn, ItemStruct};
+use tool::{tool_derive_impl, tool_impl};
 
 /// Generates boilerplate for an indexing transformer.
 #[proc_macro_attribute]
@@ -39,4 +39,17 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemFn);
     tool_impl(&args.into(), &input).into()
+}
+
+#[proc_macro_derive(Tool, attributes(tool))]
+pub fn derive_tool(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let macro_result = tool_derive_impl(input);
+
+    if let Err(err) = &macro_result {
+        err.clone().into_compile_error();
+    }
+
+    macro_result.unwrap().into()
 }

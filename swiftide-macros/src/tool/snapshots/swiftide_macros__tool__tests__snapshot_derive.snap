@@ -1,0 +1,20 @@
+---
+source: swiftide-macros/src/tool/mod.rs
+expression: "crate::test_utils::pretty_macro_output(&output)"
+---
+#[async_trait::async_trait]
+impl swiftide::traits::Tool for HelloDerive {
+    async fn invoke(
+        &self,
+        agent_context: &dyn swiftide::traits::AgentContext,
+        raw_args: Option<&str>,
+    ) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+        return self.hello_derive(agent_context).await;
+    }
+    fn name(&self) -> &'static str {
+        "hello_derive"
+    }
+    fn json_spec(&self) -> swiftide::chat_completion::JsonSpec {
+        "{\"description\":\"Hello derive\",\"name\":\"hello_derive\"}"
+    }
+}

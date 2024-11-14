@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_wrap_tool_fn() {
         let input: ItemFn = parse_quote! {
-            pub async fn search_code(context: &dyn hidden::AgentContext, code_query: &str) -> hidden::Result<hidden::ToolOutput> {
+            pub async fn search_code(context: &dyn swiftide::traits::AgentContext, code_query: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
                 return Ok("hello".into())
             }
         };
@@ -73,7 +73,7 @@ mod tests {
             }
 
             impl SearchCode {
-                pub async fn search_code(&self, context: &dyn hidden::AgentContext, code_query: &str) -> hidden::Result<hidden::ToolOutput> {
+                pub async fn search_code(&self, context: &dyn swiftide::traits::AgentContext, code_query: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
                     return Ok("hello".into())
                 }
 

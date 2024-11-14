@@ -18,6 +18,7 @@ quote = "1.0"
 syn = { version = "2.0", features = ["full"] }
 darling = "0.20"
 proc-macro2 = "1.0"
+convert_case = "0.6.0"
 
 # Macro dependencies
 anyhow.workspace = true
@@ -29,9 +30,9 @@ serde_json = { workspace = true, optional = true }
 pretty_assertions.workspace = true
 trybuild = "1.0"
 prettyplease = "0.2.25"
-swiftide-core = { path = "../swiftide-core/", version = "*" }
-swiftide-agents = { path = "../swiftide-agents/", version = "*" }
 insta.workspace = true
+swiftide-core = { path = "../swiftide-core/", version = "*" }
+swiftide = { path = "../swiftide/", version = "*" }
 
 [lints]
 workspace = true

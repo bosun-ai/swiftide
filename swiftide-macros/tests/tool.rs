@@ -6,3 +6,9 @@ fn test_tool() {
     t.compile_fail("tests/tool/tool_missing_arg_fail.rs");
     t.compile_fail("tests/tool/tool_missing_parameter_fail.rs");
 }
+
+#[test]
+fn test_tool_derive() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/tool/tool_derive_pass.rs");
+}

@@ -4,9 +4,9 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
 ---
 mod hidden {
     pub use ::anyhow::{bail, Result};
-    pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput};
-    pub use ::swiftide_core::{Tool, AgentContext};
     pub use ::async_trait::async_trait;
+    pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput};
+    pub use ::swiftide_core::{AgentContext, Tool};
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 struct SearchCodeArgs<'a> {

@@ -1786,6 +1786,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "cookie"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7751,6 +7760,7 @@ version = "0.14.1"
 dependencies = [
  "anyhow",
  "async-trait",
+ "convert_case",
  "darling",
  "insta",
  "pretty_assertions",
@@ -7759,7 +7769,7 @@ dependencies = [
  "quote",
  "serde",
  "serde_json",
- "swiftide-agents",
+ "swiftide",
  "swiftide-core",
  "syn 2.0.82",
  "trybuild",

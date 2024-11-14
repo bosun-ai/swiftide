@@ -1,14 +1,15 @@
-use darling::{ast::NestedMeta, Error, FromMeta};
+use convert_case::{Case, Casing as _};
+use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use serde::ser::SerializeMap as _;
-use syn::{spanned::Spanned, FnArg, ItemFn, Pat, PatType};
+use syn::{parse::ParseStream, spanned::Spanned, DeriveInput, FnArg, ItemFn, Pat, PatType};
 
 mod args;
 mod json_spec;
 mod wrapped;
 
-#[derive(FromMeta, Default)]
+#[derive(FromMeta, Default, Debug)]
 #[darling(default)]
 struct ToolArgs {
     description: String,
@@ -136,17 +137,10 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
         }
     };
 
-    let imports = quote! {
-            pub use ::anyhow::{bail, Result};
-            pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput };
-            pub use ::swiftide_core::{Tool, AgentContext};
-            pub use ::async_trait::async_trait;
-    };
+    let imports = imports();
 
     quote! {
-        mod hidden {
-            #imports
-        }
+        #imports
 
         #tool_args
 
@@ -154,7 +148,6 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
 
         #[hidden::async_trait]
         impl hidden::Tool for #tool_struct {
-            // TODO: Handle no arguments
             async fn invoke(&self, agent_context: &dyn hidden::AgentContext, raw_args: Option<&str>) -> hidden::Result<hidden::ToolOutput> {
                 #invoke_body
             }
@@ -168,6 +161,90 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
             }
         }
     }
+}
+
+fn imports() -> TokenStream {
+    let imports = quote! {
+        mod hidden {
+            pub use ::anyhow::{bail, Result};
+            pub use ::async_trait::async_trait;
+            pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput};
+            pub use ::swiftide_core::{AgentContext, Tool};
+        }
+    };
+    imports
+}
+
+#[derive(FromDeriveInput)]
+#[darling(attributes(tool), supports(struct_named))]
+struct ToolDerive {
+    ident: syn::Ident,
+    attrs: Vec<syn::Attribute>,
+    #[darling(flatten)]
+    tool: ToolArgs,
+}
+pub(crate) fn tool_derive_impl(input: DeriveInput) -> syn::Result<TokenStream> {
+    let parsed: ToolDerive = ToolDerive::from_derive_input(&input)?;
+    let struct_ident = &parsed.ident;
+
+    // Build the args struct
+    let args_struct_name = syn::Ident::new(&format!("{struct_ident}Args"), struct_ident.span());
+    let args_struct_fields = parsed
+        .tool
+        .param
+        .iter()
+        .map(|p| {
+            let field_name = syn::Ident::new(&p.name, struct_ident.span());
+            quote! { pub #field_name: String }
+        })
+        .collect::<Vec<_>>();
+
+    let tool_args = if args_struct_fields.is_empty() {
+        quote! {}
+    } else {
+        quote! {
+            #[derive(serde::Serialize, serde::Deserialize, Debug)]
+            pub struct #args_struct_name {
+                #(#args_struct_fields),*
+            }
+        }
+    };
+
+    // Build the trait impl
+    let expected_fn_name = struct_ident.to_string().to_case(Case::Snake);
+    let expected_fn_ident = syn::Ident::new(&expected_fn_name, struct_ident.span());
+    let invoke_body = if args_struct_fields.is_empty() {
+        quote! { return self.#expected_fn_ident(agent_context).await }
+    } else {
+        quote! {
+            let Some(args) = raw_args
+            else { anyhow::bail!("No arguments provided for {}", #expected_fn_name) };
+
+            let args: #args_struct_name = serde_json::from_str(&args)?;
+            return self.#expected_fn_ident(agent_context, args).await;
+        }
+    };
+
+    let json_spec = json_spec::json_spec(&expected_fn_name, &parsed.tool);
+
+    Ok(quote! {
+        #tool_args
+
+        #[async_trait::async_trait]
+        impl swiftide::traits::Tool for #struct_ident {
+            async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+                #invoke_body
+            }
+
+            fn name(&self) -> &'static str {
+                #expected_fn_name
+            }
+
+            fn json_spec(&self) -> swiftide::chat_completion::JsonSpec {
+                #json_spec
+            }
+        }
+    })
 }
 
 fn parse_args(args: TokenStream) -> Result<ToolArgs, Error> {
@@ -198,6 +275,34 @@ mod tests {
         };
 
         let output = tool_impl(&args, &input);
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
+    fn test_snapshot_derive() {
+        let input: DeriveInput = parse_quote! {
+            #[tool(description="Hello derive")]
+            pub struct HelloDerive {
+                my_thing: String
+            }
+        };
+
+        let output = tool_derive_impl(input).unwrap();
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
+    fn test_snapshot_derive_with_args() {
+        let input: DeriveInput = parse_quote! {
+            #[tool(description="Hello derive", param(name="test", description="test param"))]
+            pub struct HelloDerive {
+                my_thing: String
+            }
+        };
+
+        let output = tool_derive_impl(input).unwrap();
 
         insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
     }
