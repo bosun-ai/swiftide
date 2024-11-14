@@ -3,7 +3,7 @@ use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use serde::ser::SerializeMap as _;
-use syn::{parse::ParseStream, spanned::Spanned, DeriveInput, FnArg, ItemFn, Pat, PatType};
+use syn::{spanned::Spanned, DeriveInput, FnArg, ItemFn, Pat, PatType};
 
 mod args;
 mod json_spec;

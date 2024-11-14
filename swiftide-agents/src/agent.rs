@@ -39,15 +39,15 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
     where
         Self: Clone,
     {
-        let new = AgentBuilder {
+        
+
+        AgentBuilder {
             context: Some(context),
             hooks: self.hooks.clone(),
             instructions: self.instructions.clone(),
             tools: self.tools.clone(),
             llm: self.llm.clone(),
-        };
-
-        new
+        }
     }
 
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
@@ -103,8 +103,7 @@ impl Agent<DefaultContext> {
     pub fn builder() -> AgentBuilder<DefaultContext> {
         let context: DefaultContext<()> = DefaultContext::default();
         AgentBuilder::<DefaultContext>::default()
-            .context(context)
-            .to_owned()
+            .context(context).clone()
     }
 }
 impl<CONTEXT: AgentContext> Agent<CONTEXT> {
