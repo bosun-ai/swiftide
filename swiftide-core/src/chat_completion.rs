@@ -114,7 +114,7 @@ pub enum ChatRole {
 #[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
-    Content(String),
+    Text(String),
     /// Stops an agent
     ///
     Stop,
@@ -123,7 +123,7 @@ pub enum ToolOutput {
 impl ToolOutput {
     pub fn content(&self) -> Option<&str> {
         match self {
-            ToolOutput::Content(s) => Some(s),
+            ToolOutput::Text(s) => Some(s),
             _ => None,
         }
     }
@@ -131,7 +131,7 @@ impl ToolOutput {
 
 impl<T: AsRef<str>> From<T> for ToolOutput {
     fn from(s: T) -> Self {
-        ToolOutput::Content(s.as_ref().to_string())
+        ToolOutput::Text(s.as_ref().to_string())
     }
 }
 

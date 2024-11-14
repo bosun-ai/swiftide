@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::{AgentContext, ToolExecutor};
 
+// TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
 pub struct DefaultContext<EXECUTOR: ToolExecutor = ()> {
     conversation_history: Vec<ChatMessage>,

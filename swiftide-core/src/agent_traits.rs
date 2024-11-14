@@ -31,6 +31,14 @@ impl From<String> for Output {
     }
 }
 
+impl From<Output> for ToolOutput {
+    fn from(value: Output) -> Self {
+        match value {
+            Output::Text(value) => ToolOutput::Text(value),
+        }
+    }
+}
+
 // dyn_clone::clone_trait_object!(Workspace);
 
 #[async_trait]

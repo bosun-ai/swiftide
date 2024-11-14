@@ -318,7 +318,7 @@ mod tests {
                         .id("1")
                         .build()
                         .unwrap(),
-                    ToolOutput::Content("Great!".to_string()),
+                    ToolOutput::Text("Great!".to_string()),
                 ),
             ])
             .tools_spec(
