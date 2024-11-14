@@ -10,7 +10,6 @@ mod json_spec;
 mod wrapped;
 
 #[derive(FromMeta, Default, Debug)]
-#[darling(default)]
 struct ToolArgs {
     description: String,
 

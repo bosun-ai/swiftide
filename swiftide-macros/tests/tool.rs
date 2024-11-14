@@ -11,4 +11,5 @@ fn test_tool() {
 fn test_tool_derive() {
     let t = trybuild::TestCases::new();
     t.pass("tests/tool/tool_derive_pass.rs");
+    t.compile_fail("tests/tool/tool_derive_missing_description.rs");
 }
