@@ -7625,6 +7625,7 @@ dependencies = [
  "strum_macros",
  "swiftide-core",
  "swiftide-macros",
+ "temp-dir",
  "test-log",
  "tokio",
  "tracing",

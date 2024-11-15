@@ -1,14 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use serde_json::json;
 use swiftide_core::{chat_completion::ToolOutput, AgentContext, Tool};
-use swiftide_macros::tool;
 
-// #[tool(description = "When you have completed, or cannot complete, your task, call this")]
-// async fn stop(_agent_context: &dyn AgentContext) -> Result<ToolOutput> {
-//     Ok(ToolOutput::Stop)
-// }
-
+// TODO: Cannot use macros in our own crates because of import shenanigans
 #[derive(Clone, Debug, Default)]
 pub struct Stop {}
 

@@ -1,12 +1,15 @@
 //! Manages agent history and provides an
 //! interface for the external world
+use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
-use swiftide_core::{AgentContext, ToolExecutor};
+use swiftide_core::{AgentContext, Command, Output, ToolExecutor};
+
+use crate::tools::local_executor::LocalExecutor;
 
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
-pub struct DefaultContext<EXECUTOR: ToolExecutor = ()> {
+pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
     conversation_history: Vec<ChatMessage>,
     should_stop: bool,
     iterations: usize,
@@ -15,20 +18,7 @@ pub struct DefaultContext<EXECUTOR: ToolExecutor = ()> {
     tool_executor: EXECUTOR,
 }
 
-// impl Default for DefaultContext<()> {
-//     fn default() -> Self {
-//         DefaultContext {
-//             conversation_history: Vec::new(),
-//             should_stop: false,
-//             iterations: 0,
-//             iteration_ptr: 0,
-//             this_iteration_ptr: 0,
-//             tool_executor: (),
-//         }
-//     }
-// }
-
-impl<T: ToolExecutor + Default> Default for DefaultContext<T> {
+impl Default for DefaultContext<LocalExecutor> {
     fn default() -> Self {
         DefaultContext {
             conversation_history: Vec::new(),
@@ -36,7 +26,7 @@ impl<T: ToolExecutor + Default> Default for DefaultContext<T> {
             iterations: 0,
             iteration_ptr: 0,
             this_iteration_ptr: 0,
-            tool_executor: T::default(),
+            tool_executor: LocalExecutor::default(),
         }
     }
 }
@@ -86,6 +76,10 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
     fn stop(&mut self) {
         self.should_stop = true;
     }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
+        self.tool_executor.exec_cmd(cmd).await
+    }
 }
 
 impl<T: ToolExecutor> DefaultContext<T> {
@@ -108,7 +102,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_iteration_tracking() {
-        let mut context = DefaultContext::<()>::default();
+        let mut context = DefaultContext::default();
 
         // Record initial chat messages
         context.add_message(ChatMessage::User("Hello".into())).await;

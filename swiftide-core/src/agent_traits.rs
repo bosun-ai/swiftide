@@ -17,12 +17,29 @@ pub trait ToolExecutor: Send + Sync {
 }
 
 #[non_exhaustive]
+#[derive(Debug, Clone)]
 pub enum Command {
     Shell(String),
 }
 
+#[derive(Debug, Clone)]
 pub enum Output {
     Text(String),
+    Shell {
+        stdout: String,
+        stderr: String,
+        status: i32,
+        success: bool,
+    },
+}
+
+impl std::fmt::Display for Output {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Output::Text(value) => write!(f, "{value}"),
+            Output::Shell { stdout, .. } => write!(f, "{stdout}"),
+        }
+    }
 }
 
 impl From<String> for Output {
@@ -35,6 +52,18 @@ impl From<Output> for ToolOutput {
     fn from(value: Output) -> Self {
         match value {
             Output::Text(value) => ToolOutput::Text(value),
+            Output::Shell {
+                stdout,
+                stderr,
+                success,
+                ..
+            } => {
+                if success {
+                    ToolOutput::Text(stdout)
+                } else {
+                    ToolOutput::Text(stderr)
+                }
+            }
         }
     }
 }
@@ -103,16 +132,7 @@ pub trait AgentContext: Send + Sync {
 
     fn should_stop(&self) -> bool;
 
-    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
-        anyhow::bail!("Command execution not implemented");
-    }
-}
-
-#[async_trait]
-impl ToolExecutor for () {
-    async fn exec_cmd(&self, _cmd: &Command) -> Result<Output> {
-        anyhow::bail!("No tool executor provided");
-    }
+    async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }
 
 // dyn_clone::clone_trait_object!(AgentContext);

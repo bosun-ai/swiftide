@@ -39,8 +39,6 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
     where
         Self: Clone,
     {
-        
-
         AgentBuilder {
             context: Some(context),
             hooks: self.hooks.clone(),
@@ -101,9 +99,10 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
 
 impl Agent<DefaultContext> {
     pub fn builder() -> AgentBuilder<DefaultContext> {
-        let context: DefaultContext<()> = DefaultContext::default();
+        let context = DefaultContext::default();
         AgentBuilder::<DefaultContext>::default()
-            .context(context).clone()
+            .context(context)
+            .clone()
     }
 }
 impl<CONTEXT: AgentContext> Agent<CONTEXT> {
@@ -184,8 +183,8 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 .await;
         }
 
-        /// Mark the iteration as complete
-        /// Any new messages at this point (i.e. from tools or hooks) will trigger another loop
+        // Mark the iteration as complete
+        // Any new messages at this point (i.e. from tools or hooks) will trigger another loop
         self.context.record_iteration().await;
 
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
@@ -323,7 +322,7 @@ mod tests {
             .tools_spec(
                 [Box::new(mock_tool.clone()) as Box<dyn Tool>]
                     .into_iter()
-                    .chain(Agent::<DefaultContext<()>>::default_tools())
+                    .chain(Agent::<DefaultContext>::default_tools())
                     .map(|tool| tool.json_spec())
                     .collect::<HashSet<_>>(),
             )
