@@ -1,84 +1,37 @@
 //! Manages agent history and provides an
 //! interface for the external world
+use std::borrow::Borrow as _;
+use std::ops::Deref;
+use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicI8, AtomicUsize, Ordering};
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::{AgentContext, Command, Output, ToolExecutor};
+use tokio::sync::{Mutex, RwLock, RwLockReadGuard};
 
 use crate::tools::local_executor::LocalExecutor;
 
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
 pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
-    conversation_history: Vec<ChatMessage>,
-    should_stop: bool,
-    iterations: usize,
-    iteration_ptr: usize,
-    this_iteration_ptr: usize,
+    completion_history: Vec<ChatMessage>,
+    should_stop: Arc<AtomicBool>,
+    /// Index in the conversation history where the next completion will start
+    completions_ptr: Arc<AtomicUsize>,
     tool_executor: EXECUTOR,
 }
 
 impl Default for DefaultContext<LocalExecutor> {
     fn default() -> Self {
         DefaultContext {
-            conversation_history: Vec::new(),
-            should_stop: false,
-            iterations: 0,
-            iteration_ptr: 0,
-            this_iteration_ptr: 0,
+            completion_history: Vec::new(),
+            should_stop: Arc::new(AtomicBool::new(false)),
+            completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: LocalExecutor::default(),
         }
-    }
-}
-
-/// Default, simple implementation of context
-///
-/// Not meant for concurrent usage.
-#[async_trait]
-impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
-    async fn completion_history(&self) -> &[ChatMessage] {
-        &self.conversation_history
-    }
-
-    async fn add_message(&mut self, item: ChatMessage) {
-        self.this_iteration_ptr += 1;
-
-        self.conversation_history.push(item);
-
-        // Debug assert that there is only one ChatMessage::System
-        // TODO: Properly handle this
-        debug_assert!(
-            self.conversation_history
-                .iter()
-                .filter(|msg| msg.is_system())
-                .count()
-                <= 1
-        );
-    }
-
-    /// Records the current iteration
-    ///
-    /// Keeps a pointer of where the current iteration starts
-    async fn record_iteration(&mut self) {
-        self.iterations += 1;
-        self.iteration_ptr += self.this_iteration_ptr;
-        self.this_iteration_ptr = 0;
-    }
-
-    async fn current_chat_messages(&self) -> &[ChatMessage] {
-        &self.conversation_history[self.iteration_ptr..]
-    }
-
-    fn should_stop(&self) -> bool {
-        self.should_stop
-    }
-
-    fn stop(&mut self) {
-        self.should_stop = true;
-    }
-
-    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
-        self.tool_executor.exec_cmd(cmd).await
     }
 }
 
@@ -86,12 +39,57 @@ impl<T: ToolExecutor> DefaultContext<T> {
     pub fn from_executor(executor: T) -> DefaultContext<T> {
         DefaultContext {
             tool_executor: executor,
-            conversation_history: Vec::new(),
-            should_stop: false,
-            iterations: 0,
-            iteration_ptr: 0,
-            this_iteration_ptr: 0,
+            completion_history: Vec::new(),
+            should_stop: Arc::new(AtomicBool::new(false)),
+            completions_ptr: Arc::new(AtomicUsize::new(0)),
         }
+    }
+}
+/// Default, simple implementation of context
+///
+/// Not meant for concurrent usage.
+#[async_trait]
+impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
+    // TODO: Kinda looks like an iterator now
+    async fn next_completion(&self) -> Option<&[ChatMessage]> {
+        let current = self.completions_ptr.load(Ordering::SeqCst);
+
+        let history = &self.completion_history;
+        let is_last_message_assistant = history.last().is_some_and(ChatMessage::is_assistant);
+
+        if history[current..].is_empty()
+            || is_last_message_assistant
+            || self.should_stop.load(Ordering::SeqCst)
+        {
+            None
+        } else {
+            self.completions_ptr.store(history.len(), Ordering::SeqCst);
+            Some(history)
+        }
+    }
+
+    async fn add_messages(&mut self, messages: Vec<ChatMessage>) {
+        for item in messages {
+            self.completion_history.push(item);
+        }
+
+        // Debug assert that there is only one ChatMessage::System
+        // TODO: Properly handle this
+        debug_assert!(
+            self.completion_history
+                .iter()
+                .filter(|msg| msg.is_system())
+                .count()
+                <= 1
+        );
+    }
+
+    fn stop(&self) {
+        self.should_stop.store(true, Ordering::SeqCst);
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
+        self.tool_executor.exec_cmd(cmd).await
     }
 }
 
@@ -105,38 +103,42 @@ mod tests {
         let mut context = DefaultContext::default();
 
         // Record initial chat messages
-        context.add_message(ChatMessage::User("Hello".into())).await;
         context
-            .add_message(ChatMessage::Assistant("Hi there!".into()))
+            .add_messages(vec![
+                ChatMessage::System("You are awesome".into()),
+                ChatMessage::User("Hello".into()),
+            ])
             .await;
 
-        assert_eq!(context.current_chat_messages().await.len(), 2);
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 2);
+        assert!(context.next_completion().await.is_none());
 
-        // Record the first iteration
-        context.record_iteration().await;
-
-        assert_eq!(context.current_chat_messages().await.len(), 0);
-
-        // Record more chat messages
         context
-            .add_message(ChatMessage::User("How are you?".into()))
-            .await;
-        context
-            .add_message(ChatMessage::Assistant("I'm good, thanks!".into()))
+            .add_messages(vec![
+                ChatMessage::Assistant("Hey?".into()),
+                ChatMessage::User("How are you?".into()),
+            ])
             .await;
 
-        let current_messages = context.current_chat_messages().await;
-        assert_eq!(current_messages.len(), 2);
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 4);
+        assert!(context.next_completion().await.is_none());
 
-        assert_eq!(
-            current_messages[0],
-            ChatMessage::User("How are you?".to_string())
-        );
-        assert_eq!(
-            current_messages[1],
-            ChatMessage::Assistant("I'm good, thanks!".to_string())
-        );
-        // Record the second iteration
-        context.record_iteration().await;
+        // If the last message is from the assistant, we should not get any more completions
+        context
+            .add_messages(vec![ChatMessage::Assistant("I am fine".into())])
+            .await;
+
+        assert!(context.next_completion().await.is_none());
+
+        // If there are messages, but the context is stopped, we should not get any more completions
+        context
+            .add_messages(vec![ChatMessage::User("I am fine".into())])
+            .await;
+
+        context.stop();
+
+        assert!(context.next_completion().await.is_none());
     }
 }

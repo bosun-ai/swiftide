@@ -124,47 +124,69 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
-    pub async fn history(&self) -> &[ChatMessage] {
-        self.context.completion_history().await
-    }
+    // pub async fn history(&self) -> &[ChatMessage] {
+    //     self.context.completion_history().await
+    // }
 
     /// Runs the agent
     ///
     /// # Errors
     ///
     /// Any error that occurs during the agent's execution is returned.
+    // pub async fn run(&mut self) -> Result<()> {
+    //     debug!("Running agent");
+    //     self.context
+    //         .add_message(ChatMessage::User(self.instructions.render().await?))
+    //         .await;
+    //
+    //     self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
+    //
+    //     while !self.context.should_stop() {
+    //         debug!("Looping agent");
+    //
+    //         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
+    //         self.run_once().await?;
+    //
+    //         self.invoke_hooks_matching(HookTypes::AfterEach).await?;
+    //
+    //         if self.context.current_chat_messages().await.is_empty() {
+    //             warn!("No new messages for LLM, stopping agent");
+    //             self.context.stop();
+    //         }
+    //     }
+    //
+    //     self.invoke_hooks_matching(HookTypes::AfterAll).await?;
+    //     Ok(())
+    // }
+
     pub async fn run(&mut self) -> Result<()> {
-        debug!("Running agent");
-        self.context
-            .add_message(ChatMessage::User(self.instructions.render().await?))
-            .await;
+        while let Some(messages) = self.context.next_completion().await {
+            let new_messages = self.run_completions(&messages).await?;
 
-        self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
-
-        while !self.context.should_stop() {
-            debug!("Looping agent");
-
-            self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
-            self.run_once().await?;
-
-            self.invoke_hooks_matching(HookTypes::AfterEach).await?;
-
-            if self.context.current_chat_messages().await.is_empty() {
-                warn!("No new messages for LLM, stopping agent");
-                self.context.stop();
-            }
+            self.context.add_messages(new_messages).await;
         }
 
-        self.invoke_hooks_matching(HookTypes::AfterAll).await?;
         Ok(())
     }
 
-    async fn run_once(&mut self) -> Result<()> {
+    pub async fn run_once(&mut self) -> Result<()> {
+        let Some(messages) = self.context.next_completion().await else {
+            tracing::warn!("No new messages");
+            return Ok(());
+        };
+
+        let new_messages = self.run_completions(&messages).await?;
+        self.context.add_messages(new_messages).await;
+
+        Ok(())
+    }
+
+    async fn run_completions(&self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
         debug!("Running agent once");
 
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
-            .messages(self.context.completion_history().await)
+            .messages(messages)
             .tools_spec(
                 self.tools
                     .iter()
@@ -176,16 +198,18 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         debug!("Calling LLM with request: {:?}", chat_completion_request);
         let response = self.llm.complete(&chat_completion_request).await?;
 
+        let mut new_messages = vec![];
         if let Some(message) = response.message {
             debug!("LLM returned message: {}", message);
-            self.context
-                .add_message(ChatMessage::Assistant(message))
-                .await;
+            // self.context
+            //     .add_message(ChatMessage::Assistant(message))
+            //     .await;
+            new_messages.push(ChatMessage::Assistant(message));
         }
 
         // Mark the iteration as complete
         // Any new messages at this point (i.e. from tools or hooks) will trigger another loop
-        self.context.record_iteration().await;
+        // self.context.record_iteration().await;
 
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
         if let Some(tool_calls) = response.tool_calls {
@@ -199,13 +223,14 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 
                 self.handle_control_tools(&output);
 
-                self.context
-                    .add_message(ChatMessage::ToolOutput(tool_call, output))
-                    .await;
+                new_messages.push(ChatMessage::ToolOutput(tool_call, output));
+                // self.context
+                //     .add_message(ChatMessage::ToolOutput(tool_call, output))
+                //     .await;
             }
         };
 
-        Ok(())
+        Ok(new_messages)
     }
 
     fn find_tool_by_name(&self, tool_name: &str) -> Option<&dyn Tool> {
@@ -215,8 +240,8 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             .map(|boxed| &**boxed)
     }
 
-    /// Handle any tool specific output (e.g. stop)
-    fn handle_control_tools(&mut self, output: &ToolOutput) {
+    // Handle any tool specific output (e.g. stop)
+    fn handle_control_tools(&self, output: &ToolOutput) {
         if let ToolOutput::Stop = output {
             self.context.stop();
         }

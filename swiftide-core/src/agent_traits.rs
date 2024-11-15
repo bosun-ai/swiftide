@@ -133,17 +133,17 @@ pub trait AgentContext: Send + Sync {
     ///
     /// Used as main source for the next completion and expects all
     /// what you would expect in an inference conversation to be present.
-    async fn completion_history(&self) -> &[ChatMessage];
+    async fn next_completion(&self) -> Option<&[ChatMessage]>;
+    async fn add_messages(&mut self, item: Vec<ChatMessage>);
 
-    async fn add_message(&mut self, item: ChatMessage);
+    /// Agent marks a completion as being done
+    // async fn record_completion(&self);
+    //
+    // async fn current_chat_messages(&self) -> &[ChatMessage];
 
-    async fn record_iteration(&mut self);
+    fn stop(&self);
 
-    async fn current_chat_messages(&self) -> &[ChatMessage];
-
-    fn stop(&mut self);
-
-    fn should_stop(&self) -> bool;
+    // fn should_stop(&self) -> bool;
 
     async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }
