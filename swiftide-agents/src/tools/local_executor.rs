@@ -1,8 +1,9 @@
 //! Local executor for running tools on the local machine.
 //!
 //! By default will use the current directory as the working directory.
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 use swiftide_core::{Command, Output, ToolExecutor};
@@ -31,28 +32,15 @@ impl LocalExecutor {
     pub fn builder() -> LocalExecutorBuilder {
         LocalExecutorBuilder::default()
     }
-}
 
-#[async_trait]
-impl ToolExecutor for LocalExecutor {
-    #[tracing::instrument(skip_self)]
-    async fn exec_cmd(
-        &self,
-        cmd: &swiftide_core::Command,
-    ) -> anyhow::Result<swiftide_core::Output> {
-        let Command::Shell(cmd) = cmd else {
-            anyhow::bail!("Unsupported command type: {cmd:?}");
-        };
-
-        // NOTE: Might need splitting the cmd on spaces and quoting/escaping
+    async fn exec_shell(&self, cmd: &str) -> Result<Output> {
         let output = tokio::process::Command::new("sh")
             .arg("-c")
-            .arg(&**cmd)
+            .arg(cmd)
             .current_dir(&self.workdir)
             .output()
             .await?;
 
-        // TODO: Expand on tool output so it can be programatically dealt with
         let stdout = String::from_utf8(output.stdout)?;
         let stderr = String::from_utf8(output.stderr)?;
         let status = output.status.code().unwrap_or(-1);
@@ -64,6 +52,32 @@ impl ToolExecutor for LocalExecutor {
             status,
             success,
         })
+    }
+
+    async fn exec_read_file(&self, path: &Path) -> Result<Output> {
+        // TODO: Decide how to handle errors
+        let output = tokio::fs::read(path).await?;
+
+        Ok(Output::Text(String::from_utf8(output)?))
+    }
+
+    async fn exec_write_file(&self, path: &Path, content: &str) -> Result<Output> {
+        // TODO: Decide how to handle errors
+        tokio::fs::write(path, content).await?;
+
+        Ok(Output::Ok)
+    }
+}
+#[async_trait]
+impl ToolExecutor for LocalExecutor {
+    #[tracing::instrument(skip_self)]
+    async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::Output> {
+        match cmd {
+            Command::Shell(cmd) => __self.exec_shell(cmd).await,
+            Command::ReadFile(path) => __self.exec_read_file(path).await,
+            Command::WriteFile(path, content) => __self.exec_write_file(path, content).await,
+            _ => unimplemented!("Unsupported command: {cmd:?}"),
+        }
     }
 }
 
@@ -158,20 +172,10 @@ mod tests {
 
         // Execute the write command
         let output = executor.exec_cmd(&write_cmd).await?;
-        let Output::Shell {
-            stdout,
-            stderr,
-            status,
-            success,
-        } = output
-        else {
+        let Output::Shell { stderr, .. } = output else {
             panic!("Expected Output::Shell, got {output:?}")
         };
 
-        dbg!(&stdout);
-        dbg!(&stderr);
-        dbg!(&status);
-        dbg!(&success);
         assert!(stderr.is_empty());
 
         // Write a shell command to read the file's content
@@ -182,6 +186,46 @@ mod tests {
 
         // Verify that the content read from the file matches the expected content
         assert_eq!(output.to_string(), format!("{file_content}\n"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_write_and_read_file_commands() -> anyhow::Result<()> {
+        // Create a temporary directory
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        // Instantiate LocalExecutor with the temporary directory as workdir
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+        };
+
+        // Define the file path and content
+        let file_path = temp_path.join("test_file.txt");
+        let file_content = "Hello, world!";
+
+        // Create a write command
+        let write_cmd = Command::WriteFile(file_path.clone(), file_content.to_string());
+
+        // Execute the write command
+        executor.exec_cmd(&write_cmd).await?;
+
+        // Verify that the file was created successfully
+        assert!(file_path.exists());
+
+        // Create a read command
+        let read_cmd = Command::ReadFile(file_path.clone());
+
+        // Execute the read command
+        let output = executor.exec_cmd(&read_cmd).await?;
+
+        // Verify that the content read from the file matches the expected content
+        if let Output::Text(content) = output {
+            assert_eq!(content, file_content);
+        } else {
+            panic!("Expected Output::Text, got {output:?}");
+        }
 
         Ok(())
     }

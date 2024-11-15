@@ -115,6 +115,7 @@ pub enum ChatRole {
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
     Text(String),
+    Ok,
     /// Stops an agent
     ///
     Stop,

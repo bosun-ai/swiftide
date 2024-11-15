@@ -1,4 +1,7 @@
-use std::hash::Hash;
+use std::{
+    hash::Hash,
+    path::{Path, PathBuf},
+};
 
 use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
 use anyhow::Result;
@@ -16,15 +19,23 @@ pub trait ToolExecutor: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }
 
+/// Commands that can be executed by the executor
+/// TODO: Borrow it all?
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Command {
     Shell(String),
+    ReadFile(PathBuf),
+    WriteFile(PathBuf, String),
 }
 
 #[derive(Debug, Clone)]
 pub enum Output {
+    /// Infallible text output
     Text(String),
+    /// Empty infallible output
+    Ok,
+    /// Output from a shell command
     Shell {
         stdout: String,
         stderr: String,
@@ -38,6 +49,7 @@ impl std::fmt::Display for Output {
         match self {
             Output::Text(value) => write!(f, "{value}"),
             Output::Shell { stdout, .. } => write!(f, "{stdout}"),
+            Output::Ok => write!(f, "Ok"),
         }
     }
 }
@@ -52,6 +64,7 @@ impl From<Output> for ToolOutput {
     fn from(value: Output) -> Self {
         match value {
             Output::Text(value) => ToolOutput::Text(value),
+            Output::Ok => ToolOutput::Ok,
             Output::Shell {
                 stdout,
                 stderr,
