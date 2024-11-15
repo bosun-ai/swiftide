@@ -23,6 +23,8 @@ tracing.workspace = true
 pretty_assertions.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", version = "0.14", features = [

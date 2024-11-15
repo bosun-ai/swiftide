@@ -82,4 +82,33 @@ mod tests {
 
         assert_ts_eq!(&output, &expected);
     }
+
+    #[test]
+    fn test_wrap_multiple_args() {
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn swiftide::traits::AgentContext, code_query: &str, other_arg: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = wrap_tool_fn(&input);
+
+        let expected = quote! {
+            #[derive(Clone, Default)]
+            pub struct SearchCode {}
+
+            pub fn search_code() -> SearchCode {
+                SearchCode {}
+            }
+
+            impl SearchCode {
+                pub async fn search_code(&self, context: &dyn swiftide::traits::AgentContext, code_query: &str, other_arg: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+                    return Ok("hello".into())
+                }
+
+            }
+        };
+
+        assert_ts_eq!(&output, &expected);
+    }
 }

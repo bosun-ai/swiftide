@@ -8,6 +8,7 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
 )]
 struct SearchCodeArgs<'a> {
     pub code_query: &'a str,
+    pub other: &'a str,
 }
 #[derive(Clone, Default)]
 pub struct SearchCode {}
@@ -19,6 +20,7 @@ impl SearchCode {
         &self,
         context: &dyn AgentContext,
         code_query: &str,
+        other: &str,
     ) -> Result<ToolOutput> {
         return Ok("hello".into());
     }
@@ -36,12 +38,12 @@ impl ::swiftide::traits::Tool for SearchCode {
             )
         };
         let args: SearchCodeArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
-        return self.search_code(agent_context, args.code_query).await;
+        return self.search_code(agent_context, args.code_query, args.other).await;
     }
     fn name(&self) -> &'static str {
         "search_code"
     }
     fn json_spec(&self) -> ::swiftide::chat_completion::JsonSpec {
-        "{\"description\":\"Hello world tool\",\"name\":\"search_code\",\"parameters\":{\"code_query\":{\"description\":\"my param description\",\"type\":\"string\"}}}"
+        "{\"description\":\"Hello world tool\",\"name\":\"search_code\",\"parameters\":{\"code_query\":{\"description\":\"my param description\",\"type\":\"string\"},\"other\":{\"description\":\"my param description\",\"type\":\"string\"}}}"
     }
 }

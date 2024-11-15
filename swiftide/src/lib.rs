@@ -250,3 +250,12 @@ pub mod query {
 #[doc(hidden)]
 #[cfg(feature = "test-utils")]
 pub mod test_utils;
+
+/// Re-exports for macros
+#[doc(hidden)]
+pub mod reexports {
+    pub use ::anyhow;
+    pub use ::async_trait;
+    pub use ::serde;
+    pub use ::serde_json;
+}

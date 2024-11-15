@@ -22,6 +22,12 @@ swiftide-indexing = { path = "../swiftide-indexing", version = "0.14" }
 swiftide-query = { path = "../swiftide-query", version = "0.14" }
 swiftide-agents = { path = "../swiftide-agents", version = "0.14", optional = true }
 
+# Re-exports for macros and ease of use
+anyhow.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
 [features]
 default = []
 

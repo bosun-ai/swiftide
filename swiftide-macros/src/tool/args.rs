@@ -39,10 +39,10 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
                     has_lifetime = true;
 
                     let lifetime: Lifetime = syn::parse_str("'a").unwrap();
-                    struct_fields.push(quote! { #ident: &#lifetime #elem });
+                    struct_fields.push(quote! { pub #ident: &#lifetime #elem });
                 } else {
                     // If no reference type, just use the type as-is
-                    struct_fields.push(quote! { #ident: #ty });
+                    struct_fields.push(quote! { pub #ident: #ty });
                 }
             }
         }
@@ -55,16 +55,16 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
     }
     if has_lifetime {
         Ok(quote! {
-            #[derive(serde::Serialize, serde::Deserialize)]
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize)]
             struct #struct_name<'a> {
-                pub #(#struct_fields),*
+                #(#struct_fields),*
             }
         })
     } else {
         Ok(quote! {
-            #[derive(serde::Serialize, serde::Deserialize)]
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize)]
             struct #struct_name {
-                pub #(#struct_fields),*
+                #(#struct_fields),*
             }
         })
     }
@@ -110,6 +110,27 @@ mod tests {
     }
 
     #[test]
+    fn test_agent_multiple_args() {
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &str, other: &str) -> Result<ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = build_tool_args(&input).unwrap();
+
+        let expected = quote! {
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize)]
+            struct SearchCodeArgs<'a> {
+                pub code_query: &'a str,
+                pub other: &'a str
+            }
+        };
+
+        assert_ts_eq!(&output, &expected);
+    }
+
+    #[test]
     fn test_simple_tool_with_lifetime() {
         let input: ItemFn = parse_quote! {
             pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
@@ -120,7 +141,7 @@ mod tests {
         let output = build_tool_args(&input).unwrap();
 
         let expected = quote! {
-            #[derive(serde::Serialize, serde::Deserialize)]
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize)]
             struct SearchCodeArgs<'a> {
                 pub code_query: &'a str,
             }
@@ -140,7 +161,7 @@ mod tests {
         let output = build_tool_args(&input).unwrap();
 
         let expected = quote! {
-            #[derive(serde::Serialize, serde::Deserialize)]
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize)]
             struct SearchCodeArgs {
                 pub code_query: String,
             }

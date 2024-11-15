@@ -129,25 +129,21 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
     } else {
         quote! {
             let Some(args) = raw_args
-            else { hidden::bail!("No arguments provided for {}", #tool_name) };
+            else { ::swiftide::reexports::anyhow::bail!("No arguments provided for {}", #tool_name) };
 
-            let args: #args_struct = serde_json::from_str(&args)?;
-            return self.#fn_name(agent_context, #(#arg_names).*).await;
+            let args: #args_struct = ::swiftide::reexports::serde_json::from_str(&args)?;
+            return self.#fn_name(agent_context, #(#arg_names),*).await;
         }
     };
 
-    let imports = imports();
-
     quote! {
-        #imports
-
         #tool_args
 
         #wrapped_fn
 
-        #[hidden::async_trait]
-        impl hidden::Tool for #tool_struct {
-            async fn invoke(&self, agent_context: &dyn hidden::AgentContext, raw_args: Option<&str>) -> hidden::Result<hidden::ToolOutput> {
+        #[::swiftide::reexports::async_trait::async_trait]
+        impl ::swiftide::traits::Tool for #tool_struct {
+            async fn invoke(&self, agent_context: &dyn ::swiftide::traits::AgentContext, raw_args: Option<&str>) -> ::swiftide::reexports::anyhow::Result<::swiftide::chat_completion::ToolOutput> {
                 #invoke_body
             }
 
@@ -155,23 +151,11 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
                 #tool_name
             }
 
-            fn json_spec(&self) -> hidden::JsonSpec {
+            fn json_spec(&self) -> ::swiftide::chat_completion::JsonSpec {
                 #json_spec
             }
         }
     }
-}
-
-fn imports() -> TokenStream {
-    let imports = quote! {
-        mod hidden {
-            pub use ::anyhow::{bail, Result};
-            pub use ::async_trait::async_trait;
-            pub use ::swiftide_core::chat_completion::{JsonSpec, ToolOutput};
-            pub use ::swiftide_core::{AgentContext, Tool};
-        }
-    };
-    imports
 }
 
 #[derive(FromDeriveInput)]
@@ -202,7 +186,7 @@ pub(crate) fn tool_derive_impl(input: DeriveInput) -> syn::Result<TokenStream> {
         quote! {}
     } else {
         quote! {
-            #[derive(serde::Serialize, serde::Deserialize, Debug)]
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize, Debug)]
             pub struct #args_struct_name {
                 #(#args_struct_fields),*
             }
@@ -219,7 +203,7 @@ pub(crate) fn tool_derive_impl(input: DeriveInput) -> syn::Result<TokenStream> {
             let Some(args) = raw_args
             else { anyhow::bail!("No arguments provided for {}", #expected_fn_name) };
 
-            let args: #args_struct_name = serde_json::from_str(&args)?;
+            let args: #args_struct_name = ::swiftide::reexports::serde_json::from_str(&args)?;
             return self.#expected_fn_ident(agent_context, args).await;
         }
     };
@@ -269,6 +253,30 @@ mod tests {
         };
         let input: ItemFn = parse_quote! {
             pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = tool_impl(&args, &input);
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
+    fn test_snapshot_multiple_args() {
+        let args = quote! {
+            description = "Hello world tool",
+            param(
+                name = "code_query",
+                description = "my param description"
+            ),
+            param(
+                name = "other",
+                description = "my param description"
+            )
+        };
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &str, other: &str) -> Result<ToolOutput> {
                 return Ok("hello".into())
             }
         };

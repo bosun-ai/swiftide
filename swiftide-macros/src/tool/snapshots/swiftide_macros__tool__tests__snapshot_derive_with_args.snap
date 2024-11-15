@@ -2,7 +2,11 @@
 source: swiftide-macros/src/tool/mod.rs
 expression: "crate::test_utils::pretty_macro_output(&output)"
 ---
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(
+    ::swiftide::reexports::serde::Serialize,
+    ::swiftide::reexports::serde::Deserialize,
+    Debug
+)]
 pub struct HelloDeriveArgs {
     pub test: String,
 }
@@ -16,7 +20,7 @@ impl swiftide::traits::Tool for HelloDerive {
         let Some(args) = raw_args else {
             anyhow::bail!("No arguments provided for {}", "hello_derive")
         };
-        let args: HelloDeriveArgs = serde_json::from_str(&args)?;
+        let args: HelloDeriveArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
         return self.hello_derive(agent_context, args).await;
     }
     fn name(&self) -> &'static str {
