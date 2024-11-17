@@ -10,10 +10,9 @@ use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolOutput},
-    prompt::Prompt,
     AgentContext, Tool,
 };
-use tracing::{debug, warn};
+use tracing::debug;
 
 // Notes
 //

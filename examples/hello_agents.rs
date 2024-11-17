@@ -1,5 +1,4 @@
 use anyhow::Result;
-use indoc::indoc;
 use swiftide::agents;
 
 #[tokio::main]

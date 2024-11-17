@@ -1,6 +1,6 @@
 use std::{
     hash::Hash,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};

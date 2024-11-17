@@ -6,7 +6,6 @@ use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
 
 use indoc::indoc;
 use swiftide_core::{AgentContext, Tool};
-use tracing::debug;
 
 type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
 

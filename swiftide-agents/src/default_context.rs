@@ -1,16 +1,12 @@
 //! Manages agent history and provides an
 //! interface for the external world
-use std::borrow::Borrow as _;
-use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::atomic::{AtomicBool, AtomicI64, AtomicI8, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::{AgentContext, Command, Output, ToolExecutor};
-use tokio::sync::{Mutex, RwLock, RwLockReadGuard};
 
 use crate::tools::local_executor::LocalExecutor;
 
