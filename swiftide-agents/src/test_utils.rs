@@ -6,6 +6,7 @@ use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
 
 use indoc::indoc;
 use swiftide_core::{AgentContext, Tool};
+use tracing::debug;
 
 type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
 
@@ -63,11 +64,17 @@ impl Tool for MockTool {
 
 impl Drop for MockTool {
     fn drop(&mut self) {
-        let Ok(expectations) = self.expectations.try_lock() else {
+        // Mock still borrowed elsewhere and expectations still be invoked
+        if Arc::strong_count(&self.expectations) > 1 {
             return;
-        };
-        if !expectations.is_empty() {
-            tracing::warn!("Not all expectations were met: {:?}", expectations);
+        }
+        if self.expectations.lock().unwrap().is_empty() {
+            tracing::debug!("[MockTool] All expectations were met");
+        } else {
+            panic!(
+                "[MockTool] Not all expectations were met: {:?}",
+                *self.expectations.lock().unwrap()
+            );
         }
     }
 }

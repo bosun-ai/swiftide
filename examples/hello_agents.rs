@@ -13,15 +13,8 @@ async fn main() -> Result<()> {
 
     agents::Agent::builder()
         .llm(&openai)
-        .instructions(indoc! {"
-        Respond to each question. Create a plan first.
-
-        * Where is the Eifelltower?
-        * Why are bananas crooked?
-        * What is the meaning of life? 
-    "})
         .build()?
-        .run()
+        .run("What is the meaning of life?")
         .await?;
 
     Ok(())

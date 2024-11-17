@@ -25,8 +25,6 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
     // name: String,
     #[builder(setter(custom))]
     context: CONTEXT,
-    #[builder(setter(into))]
-    instructions: Prompt,
     #[builder(default = Agent::<CONTEXT>::default_tools(), setter(custom))]
     tools: HashSet<Box<dyn Tool>>,
 
@@ -42,7 +40,6 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
         AgentBuilder {
             context: Some(context),
             hooks: self.hooks.clone(),
-            instructions: self.instructions.clone(),
             tools: self.tools.clone(),
             llm: self.llm.clone(),
         }
@@ -159,30 +156,42 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     //     Ok(())
     // }
 
-    pub async fn run(&mut self) -> Result<()> {
+    pub async fn run(&mut self, query: impl Into<String>) -> Result<()> {
+        self.context
+            .add_messages(vec![ChatMessage::User(query.into())])
+            .await;
+
         while let Some(messages) = self.context.next_completion().await {
-            let new_messages = self.run_completions(&messages).await?;
+            let new_messages = self.run_completions(messages).await?;
 
             self.context.add_messages(new_messages).await;
         }
+        tracing::warn!("No new messages, stopping agent");
 
         Ok(())
     }
 
-    pub async fn run_once(&mut self) -> Result<()> {
+    pub async fn run_once(&mut self, query: impl Into<String>) -> Result<()> {
+        self.context
+            .add_messages(vec![ChatMessage::User(query.into())])
+            .await;
+
         let Some(messages) = self.context.next_completion().await else {
             tracing::warn!("No new messages");
             return Ok(());
         };
 
-        let new_messages = self.run_completions(&messages).await?;
+        let new_messages = self.run_completions(messages).await?;
         self.context.add_messages(new_messages).await;
 
         Ok(())
     }
 
     async fn run_completions(&self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
-        debug!("Running agent once");
+        debug!(
+            "Running completion for agent with {} messages",
+            messages.len()
+        );
 
         // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
@@ -219,6 +228,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                     tracing::warn!("Tool {} not found", tool_call.name());
                     continue;
                 };
+                tracing::debug!("Calling tool: {}", tool_call.name());
                 let output = tool.invoke(&self.context, tool_call.args()).await?;
 
                 self.handle_control_tools(&output);
@@ -261,15 +271,10 @@ mod tests {
     #[test_log::test(tokio::test)]
     async fn test_agent_builder_defaults() {
         // Create a prompt
-        let prompt = "Write a poem";
         let mock_llm = MockChatCompletion::new();
 
         // Build the agent
-        let agent = Agent::builder()
-            .instructions(prompt)
-            .llm(&mock_llm)
-            .build()
-            .unwrap();
+        let agent = Agent::builder().llm(&mock_llm).build().unwrap();
 
         // Check that the context is the default context
 
@@ -278,7 +283,6 @@ mod tests {
 
         // Check it does not allow duplicates
         let agent = Agent::builder()
-            .instructions(prompt)
             .tools([Stop::default(), Stop::default()])
             .llm(&mock_llm)
             .build()
@@ -288,7 +292,6 @@ mod tests {
 
         // It should include the default tool if a different tool is provided
         let agent = Agent::builder()
-            .instructions(prompt)
             .tools([MockTool::new()])
             .llm(&mock_llm)
             .build()
@@ -368,12 +371,12 @@ mod tests {
         mock_tool.expect_invoke("Great!".into(), None);
 
         let mut agent = Agent::builder()
-            .instructions(prompt)
             .tools([mock_tool])
             .llm(&mock_llm)
             .build()
             .unwrap();
 
-        agent.run().await.unwrap();
+        agent.run(prompt).await.unwrap();
+        assert!(false);
     }
 }

@@ -60,6 +60,14 @@ impl ChatCompletionResponse {
     pub fn builder() -> ChatCompletionResponseBuilder {
         ChatCompletionResponseBuilder::default()
     }
+
+    pub fn message(&self) -> Option<&str> {
+        self.message.as_deref()
+    }
+
+    pub fn tool_calls(&self) -> Option<&[ToolCall]> {
+        self.tool_calls.as_deref()
+    }
 }
 
 impl ChatCompletionResponseBuilder {
@@ -103,6 +111,18 @@ pub enum ChatMessage {
     ToolOutput(ToolCall, ToolOutput),
 }
 
+impl std::fmt::Display for ChatMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ChatMessage::System(s) => write!(f, "System: \"{s}\""),
+            ChatMessage::User(s) => write!(f, "User: \"{s}\""),
+            ChatMessage::Assistant(s) => write!(f, "Assistant: \"{s}\""),
+            ChatMessage::ToolCall(tc) => write!(f, "ToolCall: \"{tc}\""),
+            ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
+        }
+    }
+}
+
 pub enum ChatRole {
     System,
     User,
@@ -110,7 +130,7 @@ pub enum ChatRole {
 }
 
 // TODO: Naming
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, strum_macros::Display)]
 #[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
@@ -144,6 +164,18 @@ pub struct ToolCall {
     name: String,
     #[builder(default)]
     args: Option<String>,
+}
+
+impl std::fmt::Display for ToolCall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{id}#{name} {args}",
+            id = self.id,
+            name = self.name,
+            args = self.args.as_deref().unwrap_or("")
+        )
+    }
 }
 
 impl ToolCall {

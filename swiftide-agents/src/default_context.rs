@@ -96,7 +96,7 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swiftide_core::chat_completion::ChatMessage;
+    use swiftide_core::chat_completion::{ChatMessage, ToolCall};
 
     #[tokio::test]
     async fn test_iteration_tracking() {
@@ -139,6 +139,41 @@ mod tests {
 
         context.stop();
 
+        assert!(context.next_completion().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_should_complete_after_tool_call() {
+        let mut context = DefaultContext::default();
+        // Record initial chat messages
+        context
+            .add_messages(vec![
+                ChatMessage::System("You are awesome".into()),
+                ChatMessage::User("Hello".into()),
+            ])
+            .await;
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 2);
+        assert!(context.next_completion().await.is_none());
+
+        let tool_call = ToolCall::builder().id("1").name("test").build().unwrap();
+
+        context
+            .add_messages(vec![
+                ChatMessage::Assistant("Hey?".into()),
+                ChatMessage::ToolOutput(tool_call, "Hoi".into()),
+            ])
+            .await;
+
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 4);
+
+        assert!(context.next_completion().await.is_none());
+
+        // If the last message is from the assistant, we should not get any more completions
+        context
+            .add_messages(vec![ChatMessage::Assistant("I am fine".into())])
+            .await;
         assert!(context.next_completion().await.is_none());
     }
 }

@@ -34,10 +34,12 @@ macro_rules! assert_default_prompt_snapshot {
     };
 }
 
+type Expectations = Arc<Mutex<Vec<(ChatCompletionRequest, Result<ChatCompletionResponse>)>>>;
+
 #[derive(Clone)]
 pub struct MockChatCompletion {
-    expectations: Arc<Mutex<Vec<ChatCompletionRequest>>>,
-    responses: Arc<Mutex<Vec<Result<ChatCompletionResponse>>>>,
+    expectations: Expectations,
+    received_expectations: Expectations,
 }
 
 impl Default for MockChatCompletion {
@@ -50,7 +52,7 @@ impl MockChatCompletion {
     pub fn new() -> Self {
         Self {
             expectations: Arc::new(Mutex::new(Vec::new())),
-            responses: Arc::new(Mutex::new(Vec::new())),
+            received_expectations: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -59,51 +61,101 @@ impl MockChatCompletion {
         request: ChatCompletionRequest,
         response: Result<ChatCompletionResponse>,
     ) {
-        self.expectations.lock().unwrap().insert(0, request);
-        self.responses.lock().unwrap().insert(0, response);
+        let mut mutex = self.expectations.lock().unwrap();
+
+        mutex.insert(0, (request, response));
     }
 }
 
 #[async_trait]
 impl ChatCompletion for MockChatCompletion {
     async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
-        let mut expectations = self.expectations.lock().unwrap();
-        let mut responses = self.responses.lock().unwrap();
+        let (expected_request, response) = self
+            .expectations
+            .lock()
+            .unwrap()
+            .pop()
+            .expect("Received completion request, but no expectations are set");
 
-        if let Some(expected_request) = expectations.pop() {
-            assert_eq!(&expected_request, request, "Unexpected request");
-        } else {
-            panic!("No more expectations set for complete");
-        }
+        assert_eq!(&expected_request, request, "Unexpected request {request:?}");
 
-        if let Some(response) = responses.pop() {
-            response
+        if let Ok(response) = response {
+            self.received_expectations
+                .lock()
+                .unwrap()
+                .push((expected_request, Ok(response.clone())));
+
+            Ok(response)
         } else {
-            panic!("No more responses set for complete");
+            let err = response.unwrap_err();
+            self.received_expectations
+                .lock()
+                .unwrap()
+                .push((expected_request, Err(anyhow::anyhow!(err.to_string()))));
+
+            Err(err)
         }
     }
 }
 
 impl Drop for MockChatCompletion {
     fn drop(&mut self) {
-        // If arc ref count > 1 early return
-        if Arc::strong_count(&self.expectations) > 1 {
+        // We are still cloned, so do not check assertions yet
+        if Arc::strong_count(&self.received_expectations) > 1 {
             return;
         }
-        let Ok(expectations) = self.expectations.lock() else {
-            return;
-        };
-        let Ok(responses) = self.responses.lock() else {
-            return;
-        };
+        if self.expectations.lock().unwrap().is_empty() {
+            let num_received = self.received_expectations.lock().unwrap().len();
+            tracing::debug!("[MockChatCompletion] All {num_received} expectations were met");
+        } else {
+            let received = self
+                .received_expectations
+                .lock()
+                .unwrap()
+                .iter()
+                .map(pretty_expectation)
+                .collect::<Vec<_>>()
+                .join("---\n");
 
-        assert!(
-            expectations.is_empty(),
-            "Not all expectations were met {expectations:?}"
-        );
-        assert!(
-            responses.is_empty(),
-            "Not all responses were returned {responses:?}"
-        );
+            let pending = self
+                .expectations
+                .lock()
+                .unwrap()
+                .iter()
+                .map(pretty_expectation)
+                .collect::<Vec<_>>()
+                .join("---\n");
+
+            panic!("[MockChatCompletion] Not all expectations were met\n received:\n{received}\n\npending:\n{pending}");
+        }
     }
+}
+
+fn pretty_expectation(
+    expectation: &(ChatCompletionRequest, Result<ChatCompletionResponse>),
+) -> String {
+    let mut output = String::new();
+
+    let request = &expectation.0;
+    for message in request.messages() {
+        output.push_str(&format!(" {message}\n"));
+    }
+
+    output.push_str(" =>\n");
+
+    let response_result = &expectation.1;
+
+    if let Ok(response) = response_result {
+        if let Some(message) = response.message() {
+            output.push_str(&format!(" {message}\n"));
+        }
+
+        if let Some(tool_calls) = response.tool_calls() {
+            for tool_call in tool_calls {
+                output.push_str(&format!(" {tool_call}\n"));
+            }
+        }
+    }
+
+    output
 }
