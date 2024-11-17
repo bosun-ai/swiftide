@@ -1,7 +1,4 @@
-use std::{
-    hash::Hash,
-    path::PathBuf,
-};
+use std::{hash::Hash, path::PathBuf};
 
 use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
 use anyhow::Result;
@@ -132,14 +129,15 @@ pub trait AgentContext: Send + Sync {
     /// List of all messages for this agent
     ///
     /// Used as main source for the next completion and expects all
-    /// what you would expect in an inference conversation to be present.
-    async fn next_completion(&self) -> Option<&[ChatMessage]>;
-    async fn add_messages(&mut self, item: Vec<ChatMessage>);
+    /// messages to be returned if new messages are present.
+    ///
+    /// Once this method has been called, there should not be new messages
+    ///
+    /// Returns an owned copy of the current completion
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>>;
 
-    /// Agent marks a completion as being done
-    // async fn record_completion(&self);
-    //
-    // async fn current_chat_messages(&self) -> &[ChatMessage];
+    /// Add a message to the history
+    async fn add_messages(&mut self, item: Vec<ChatMessage>);
 
     fn stop(&self);
 
@@ -147,34 +145,3 @@ pub trait AgentContext: Send + Sync {
 
     async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }
-
-// dyn_clone::clone_trait_object!(AgentContext);
-// #[async_trait]
-// impl<WORKSPACE: Workspace + Clone> AgentContext<WORKSPACE> for Box<dyn AgentContext<WORKSPACE>> {
-//     async fn completion_history(&self) -> &[ChatMessage] {
-//         self.as_ref().completion_history().await
-//     }
-//     async fn add_message(&mut self, item: ChatMessage) {
-//         self.as_mut().add_message(item).await;
-//     }
-//
-//     async fn record_iteration(&mut self) {
-//         self.as_mut().record_iteration().await;
-//     }
-//
-//     async fn current_chat_messages(&self) -> &[ChatMessage] {
-//         self.as_ref().current_chat_messages().await
-//     }
-//
-//     fn stop(&mut self) {
-//         self.as_mut().stop();
-//     }
-//
-//     fn should_stop(&self) -> bool {
-//         self.as_ref().should_stop()
-//     }
-//
-//     async fn exec_cmd(&self, cmd: &WORKSPACE::Command) -> Result<WORKSPACE::Output> {
-//         self.as_ref().exec_cmd(cmd).await
-//     }
-// }

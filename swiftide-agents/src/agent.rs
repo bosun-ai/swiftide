@@ -161,7 +161,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             .await;
 
         while let Some(messages) = self.context.next_completion().await {
-            let new_messages = self.run_completions(messages).await?;
+            let new_messages = self.run_completions(&messages).await?;
 
             self.context.add_messages(new_messages).await;
         }
@@ -180,7 +180,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             return Ok(());
         };
 
-        let new_messages = self.run_completions(messages).await?;
+        let new_messages = self.run_completions(&messages).await?;
         self.context.add_messages(new_messages).await;
 
         Ok(())
@@ -376,6 +376,5 @@ mod tests {
             .unwrap();
 
         agent.run(prompt).await.unwrap();
-        assert!(false);
     }
 }

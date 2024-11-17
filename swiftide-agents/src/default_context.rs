@@ -47,7 +47,7 @@ impl<T: ToolExecutor> DefaultContext<T> {
 #[async_trait]
 impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
     // TODO: Kinda looks like an iterator now
-    async fn next_completion(&self) -> Option<&[ChatMessage]> {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
         let history = &self.completion_history;
@@ -60,7 +60,7 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
             None
         } else {
             self.completions_ptr.store(history.len(), Ordering::SeqCst);
-            Some(history)
+            Some(history.clone())
         }
     }
 
