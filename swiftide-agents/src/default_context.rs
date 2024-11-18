@@ -65,9 +65,13 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         }
     }
 
+    async fn history(&self) -> Vec<ChatMessage> {
+        self.completion_history.lock().await.clone()
+    }
+
     async fn add_messages(&self, messages: &[ChatMessage]) {
         for item in messages {
-            self.completion_history.lock().await.push(item.clone());
+            self.add_message(item).await;
         }
 
         // Debug assert that there is only one ChatMessage::System
@@ -81,6 +85,10 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
                 .count()
                 <= 1
         );
+    }
+
+    async fn add_message(&self, item: &ChatMessage) {
+        self.completion_history.lock().await.push(item.clone());
     }
 
     fn stop(&self) {

@@ -29,6 +29,7 @@ use tracing::debug;
 //          NOTE: Makes async maybe easier? No cast from generic to dyn
 // - [\] Ensure hooks can take both regular functions _and_ closures
 //          NOTE: Partially works with explicit return of impl
+// - [ ] Add back history to context
 
 // Notes
 //
