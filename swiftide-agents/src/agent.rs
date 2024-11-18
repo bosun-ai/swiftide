@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::{
     default_context::DefaultContext,
-    hooks::{Hook, HookFn, HookTypes},
+    hooks::{Hook, HookFn, HookTypes, ToolHookFn},
     state,
     tools::control::Stop,
 };
@@ -86,16 +86,12 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
         self.add_hook(Hook::BeforeEach(Box::new(hook)))
     }
 
-    pub fn after_tool(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+    pub fn after_tool(&mut self, hook: impl ToolHookFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterTool(Box::new(hook)))
     }
 
     pub fn after_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterEach(Box::new(hook)))
-    }
-
-    pub fn after_all(&mut self, hook: impl HookFn + 'static) -> &mut Self {
-        self.add_hook(Hook::AfterAll(Box::new(hook)))
     }
 
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
@@ -218,6 +214,16 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 
                 let output = tool.invoke(&*self.context, tool_call.args()).await?;
 
+                for hook in self
+                    .hooks
+                    .iter()
+                    .filter(|h| HookTypes::AfterTool == (*h).into())
+                {
+                    if let Hook::AfterTool(hook) = hook {
+                        hook(&*self.context, &tool_call, &output).await?;
+                    }
+                }
+
                 self.handle_control_tools(&output);
 
                 new_messages.push(ChatMessage::ToolOutput(tool_call, output));
@@ -234,11 +240,10 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             match hook {
                 Hook::BeforeAll(hook) => hook(&*self.context).await?,
                 Hook::BeforeEach(hook) => hook(&*self.context).await?,
-                Hook::AfterTool(hook) => hook(&*self.context).await?,
                 Hook::AfterEach(hook) => hook(&*self.context).await?,
-                // Is this even possible without a definition of done and always being able to
-                Hook::AfterAll(hook) => hook(&*self.context).await?,
-                // continue?
+                Hook::AfterTool(..) => {
+                    debug_assert!(false, "Should not be called here");
+                }
             }
         }
 
@@ -259,41 +264,6 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         }
     }
 }
-
-// pub async fn history(&self) -> &[ChatMessage] {
-//     self.context.completion_history().await
-// }
-
-/// Runs the agent
-///
-/// # Errors
-///
-/// Any error that occurs during the agent's execution is returned.
-// pub async fn run(&mut self) -> Result<()> {
-//     debug!("Running agent");
-//     self.context
-//         .add_message(ChatMessage::User(self.instructions.render().await?))
-//         .await;
-//
-//     self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
-//
-//     while !self.context.should_stop() {
-//         debug!("Looping agent");
-//
-//         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
-//         self.run_once().await?;
-//
-//         self.invoke_hooks_matching(HookTypes::AfterEach).await?;
-//
-//         if self.context.current_chat_messages().await.is_empty() {
-//             warn!("No new messages for LLM, stopping agent");
-//             self.context.stop();
-//         }
-//     }
-//
-//     self.invoke_hooks_matching(HookTypes::AfterAll).await?;
-//     Ok(())
-// }
 
 #[cfg(test)]
 mod tests {
@@ -447,7 +417,7 @@ mod tests {
         let mock_after_each = MockHook::new().expect_calls(2).to_owned();
 
         // Once for mock tool and once for stop
-        // let mock_after_tool = MockHook::new().expect_calls(2);
+        let mock_after_tool = MockHook::new().expect_calls(2).to_owned();
 
         let prompt = "Write a poem";
         let mock_llm = MockChatCompletion::new();
@@ -489,6 +459,7 @@ mod tests {
             .before_all(mock_before_all.hook_fn())
             .before_each(mock_before_each.hook_fn())
             .after_each(mock_after_each.hook_fn())
+            .after_tool(mock_after_tool.tool_hook_fn())
             .build()
             .unwrap();
 
