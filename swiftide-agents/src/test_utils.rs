@@ -34,6 +34,13 @@ macro_rules! user {
 }
 
 #[macro_export]
+macro_rules! system {
+    ($message:expr) => {
+        ChatMessage::System($message.to_string())
+    };
+}
+
+#[macro_export]
 macro_rules! assistant {
     ($message:expr) => {
         ChatMessage::Assistant($message.to_string())

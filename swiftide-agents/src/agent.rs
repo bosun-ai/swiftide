@@ -12,6 +12,7 @@ use derive_builder::Builder;
 use dyn_clone::DynClone;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolOutput},
+    prompt::Prompt,
     AgentContext, Tool,
 };
 use tracing::debug;
@@ -45,6 +46,9 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
 
     #[builder(setter(custom))]
     pub(crate) llm: Box<dyn ChatCompletion>,
+
+    #[builder(setter(strip_option, into), default)]
+    pub(crate) system_prompt: Option<Prompt>,
 
     #[builder(private, default = state::State::default())]
     pub(crate) state: state::State,
@@ -86,6 +90,7 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
             tools,
             llm,
             state,
+            system_prompt,
             ..
         } = self.clone();
 
@@ -96,6 +101,7 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
             tools,
             llm,
             state,
+            system_prompt,
         }
     }
 
@@ -183,12 +189,18 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             anyhow::bail!("Agent is already running");
         }
 
-        if let Some(query) = maybe_query {
-            self.context.add_messages(&[ChatMessage::User(query)]).await;
+        if self.state.is_pending() {
+            if let Some(system_prompt) = &self.system_prompt {
+                self.context
+                    .add_messages(&[ChatMessage::System(system_prompt.render().await?)])
+                    .await;
+            }
+
+            self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
         }
 
-        if self.state.is_pending() {
-            self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
+        if let Some(query) = maybe_query {
+            self.context.add_messages(&[ChatMessage::User(query)]).await;
         }
 
         while let Some(messages) = self.context.next_completion().await {
@@ -315,7 +327,7 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
-    use crate::{assistant, chat_request, chat_response, tool_output, user};
+    use crate::{assistant, chat_request, chat_response, system, tool_output, user};
 
     use crate::test_utils::{MockHook, MockTool};
 
@@ -405,6 +417,7 @@ mod tests {
         let mock_tool = MockTool::new();
 
         let chat_request = chat_request! {
+            system!("My system prompt"),
             user!("Write a poem");
 
             tools = [mock_tool.clone()]
@@ -421,6 +434,7 @@ mod tests {
 
         let mut agent = Agent::builder()
             .tools([mock_tool])
+            .system_prompt("My system prompt")
             .llm(&mock_llm)
             .build()
             .unwrap();
