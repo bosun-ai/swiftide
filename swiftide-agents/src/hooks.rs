@@ -8,7 +8,7 @@ use swiftide_core::AgentContext;
 //
 // dyn_clone::clone_trait_object!(HookFn);
 pub trait HookFn:
-    for<'a> Fn(&'a mut dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -28,9 +28,7 @@ pub enum Hook {
 }
 
 impl<F> HookFn for F where
-    F: for<'a> Fn(
-            &'a mut dyn AgentContext,
-        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    F: for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone

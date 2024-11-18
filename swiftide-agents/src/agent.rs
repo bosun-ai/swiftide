@@ -5,7 +5,7 @@ use crate::{
     state,
     tools::control::Stop,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -37,8 +37,8 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
     pub(crate) hooks: Vec<Hook>,
     // name: String,
     #[builder(setter(custom))]
-    pub(crate) context: CONTEXT,
-    #[builder(default = Agent::< CONTEXT>::default_tools(), setter(custom))]
+    pub(crate) context: Arc<CONTEXT>,
+    #[builder(default = Agent::<CONTEXT>::default_tools(), setter(custom))]
     pub(crate) tools: HashSet<Box<dyn Tool>>,
 
     #[builder(setter(custom))]
@@ -63,7 +63,7 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
 
         // Rust is silly that you can't just forward self without context
         AgentBuilder::<C> {
-            context: Some(context),
+            context: Some(Arc::new(context)),
             hooks,
             tools,
             llm,
@@ -208,13 +208,15 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
         if let Some(tool_calls) = response.tool_calls {
             debug!("LLM returned tool calls: {:?}", tool_calls);
+
             for tool_call in tool_calls {
                 let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
                     tracing::warn!("Tool {} not found", tool_call.name());
                     continue;
                 };
                 tracing::debug!("Calling tool: {}", tool_call.name());
-                let output = tool.invoke(&self.context, tool_call.args()).await?;
+
+                let output = tool.invoke(&*self.context, tool_call.args()).await?;
 
                 self.handle_control_tools(&output);
 
@@ -230,12 +232,12 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
         for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
             match hook {
-                Hook::BeforeAll(hook) => hook(&mut self.context).await?,
-                Hook::BeforeEach(hook) => hook(&mut self.context).await?,
-                Hook::AfterTool(hook) => hook(&mut self.context).await?,
-                Hook::AfterEach(hook) => hook(&mut self.context).await?,
+                Hook::BeforeAll(hook) => hook(&*self.context).await?,
+                Hook::BeforeEach(hook) => hook(&*self.context).await?,
+                Hook::AfterTool(hook) => hook(&*self.context).await?,
+                Hook::AfterEach(hook) => hook(&*self.context).await?,
                 // Is this even possible without a definition of done and always being able to
-                Hook::AfterAll(hook) => hook(&mut self.context).await?,
+                Hook::AfterAll(hook) => hook(&*self.context).await?,
                 // continue?
             }
         }

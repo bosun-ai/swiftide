@@ -7,13 +7,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::{AgentContext, Command, Output, ToolExecutor};
+use tokio::sync::Mutex;
 
 use crate::tools::local_executor::LocalExecutor;
 
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
 pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
-    completion_history: Vec<ChatMessage>,
+    completion_history: Arc<Mutex<Vec<ChatMessage>>>,
     should_stop: Arc<AtomicBool>,
     /// Index in the conversation history where the next completion will start
     completions_ptr: Arc<AtomicUsize>,
@@ -23,7 +24,7 @@ pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
 impl Default for DefaultContext<LocalExecutor> {
     fn default() -> Self {
         DefaultContext {
-            completion_history: Vec::new(),
+            completion_history: Arc::new(Mutex::new(Vec::new())),
             should_stop: Arc::new(AtomicBool::new(false)),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: LocalExecutor::default(),
@@ -35,7 +36,7 @@ impl<T: ToolExecutor> DefaultContext<T> {
     pub fn from_executor(executor: T) -> DefaultContext<T> {
         DefaultContext {
             tool_executor: executor,
-            completion_history: Vec::new(),
+            completion_history: Arc::new(Mutex::new(Vec::new())),
             should_stop: Arc::new(AtomicBool::new(false)),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
         }
@@ -50,7 +51,7 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
-        let history = &self.completion_history;
+        let history = self.completion_history.lock().await;
         let is_last_message_assistant = history.last().is_some_and(ChatMessage::is_assistant);
 
         if history[current..].is_empty()
@@ -64,15 +65,17 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         }
     }
 
-    async fn add_messages(&mut self, messages: &[ChatMessage]) {
+    async fn add_messages(&self, messages: &[ChatMessage]) {
         for item in messages {
-            self.completion_history.push(item.clone());
+            self.completion_history.lock().await.push(item.clone());
         }
 
         // Debug assert that there is only one ChatMessage::System
         // TODO: Properly handle this
         debug_assert!(
             self.completion_history
+                .lock()
+                .await
                 .iter()
                 .filter(|msg| msg.is_system())
                 .count()

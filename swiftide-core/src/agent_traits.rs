@@ -1,4 +1,4 @@
-use std::{hash::Hash, path::PathBuf};
+use std::{hash::Hash, path::PathBuf, sync::Arc};
 
 use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
 use anyhow::Result;
@@ -138,7 +138,7 @@ pub trait AgentContext: Send + Sync {
     async fn next_completion(&self) -> Option<Vec<ChatMessage>>;
 
     /// Add a message to the history
-    async fn add_messages(&mut self, item: &[ChatMessage]);
+    async fn add_messages(&self, item: &[ChatMessage]);
 
     /// Instruct the context to no longer return new completions
     fn stop(&self);
