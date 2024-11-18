@@ -24,7 +24,7 @@ pub trait ToolHookFn:
     for<'a> Fn(
         &'a dyn AgentContext,
         &ToolCall,
-        &ToolOutput,
+        &mut ToolOutput,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
@@ -56,7 +56,7 @@ impl<F> ToolHookFn for F where
     F: for<'a> Fn(
             &'a dyn AgentContext,
             &ToolCall,
-            &ToolOutput,
+            &mut ToolOutput,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync

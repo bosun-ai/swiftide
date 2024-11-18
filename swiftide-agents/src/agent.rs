@@ -264,7 +264,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 };
                 tracing::info!("Calling tool `{}`", tool_call.name());
 
-                let output = tool.invoke(&*self.context, tool_call.args()).await?;
+                let mut output = tool.invoke(&*self.context, tool_call.args()).await?;
 
                 for hook in self
                     .hooks
@@ -273,7 +273,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 {
                     if let Hook::AfterTool(hook) = hook {
                         tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                        hook(&*self.context, &tool_call, &output).await?;
+                        hook(&*self.context, &tool_call, &mut output).await?;
                     }
                 }
 
