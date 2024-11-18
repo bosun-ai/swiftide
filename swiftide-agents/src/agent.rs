@@ -18,9 +18,8 @@ use tracing::debug;
 
 // TODO:
 // - [x] After calling run or run once cannot call run again
-// - [ ] Cannot call continue if agent has not called run (state machine?)
+// - [x] Cannot call continue if agent has not called run (state machine?)
 //       ... Or should we simplify it, and allow it for now?
-// - [ ] Continue is what should happen
 // - [ ] Agent should support a system prompt
 // - [x] Hooks should  called at each correct point
 // - [ ] Errors should all be thiserror and not anyhow
@@ -29,7 +28,7 @@ use tracing::debug;
 //          NOTE: Makes async maybe easier? No cast from generic to dyn
 // - [\] Ensure hooks can take both regular functions _and_ closures
 //          NOTE: Partially works with explicit return of impl
-// - [ ] Add back history to context
+// - [x] Add back history to context
 
 // Notes
 //
@@ -49,6 +48,32 @@ pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
 
     #[builder(private, default = state::State::default())]
     pub(crate) state: state::State,
+}
+
+impl<CONTEXT: AgentContext> std::fmt::Debug for Agent<CONTEXT> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Agent")
+            //display hooks as a list of type: number of hooks
+            .field(
+                "hooks",
+                &self
+                    .hooks
+                    .iter()
+                    .map(|hook| hook.to_string())
+                    .collect::<Vec<_>>(),
+            )
+            .field(
+                "tools",
+                &self
+                    .tools
+                    .iter()
+                    .map(|tool| tool.name())
+                    .collect::<Vec<_>>(),
+            )
+            .field("llm", &"Box<dyn ChatCompletion>")
+            .field("state", &self.state)
+            .finish()
+    }
 }
 
 impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
@@ -133,18 +158,22 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
-    pub async fn query(&mut self, query: impl Into<String>) -> Result<()> {
+    #[tracing::instrument]
+    pub async fn query(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), false).await
     }
 
-    pub async fn query_once(&mut self, query: impl Into<String>) -> Result<()> {
+    #[tracing::instrument]
+    pub async fn query_once(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), true).await
     }
 
+    #[tracing::instrument]
     pub async fn run(&mut self) -> Result<()> {
         self.run_agent(None, false).await
     }
 
+    #[tracing::instrument]
     pub async fn run_once(&mut self) -> Result<()> {
         self.run_agent(None, true).await
     }
@@ -221,7 +250,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                     tracing::warn!("Tool {} not found", tool_call.name());
                     continue;
                 };
-                tracing::debug!("Calling tool: {}", tool_call.name());
+                tracing::info!("Calling tool `{}`", tool_call.name());
 
                 let output = tool.invoke(&*self.context, tool_call.args()).await?;
 
@@ -231,6 +260,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                     .filter(|h| HookTypes::AfterTool == (*h).into())
                 {
                     if let Hook::AfterTool(hook) = hook {
+                        tracing::info!("Calling {} hook", HookTypes::AfterTool);
                         hook(&*self.context, &tool_call, &output).await?;
                     }
                 }
@@ -247,6 +277,8 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     }
 
     async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
+        tracing::info!("Invoking {hook_type} hooks");
+
         for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
             match hook {
                 Hook::BeforeAll(hook) => hook(&*self.context).await?,

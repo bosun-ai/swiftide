@@ -34,8 +34,8 @@ pub trait ToolHookFn:
 
 dyn_clone::clone_trait_object!(ToolHookFn);
 
-#[derive(Clone, strum_macros::EnumDiscriminants)]
-#[strum_discriminants(name(HookTypes))]
+#[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
+#[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
 pub enum Hook {
     BeforeAll(Box<dyn HookFn>),
     BeforeEach(Box<dyn HookFn>),
