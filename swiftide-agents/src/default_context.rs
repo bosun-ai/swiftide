@@ -64,9 +64,9 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         }
     }
 
-    async fn add_messages(&mut self, messages: Vec<ChatMessage>) {
+    async fn add_messages(&mut self, messages: &[ChatMessage]) {
         for item in messages {
-            self.completion_history.push(item);
+            self.completion_history.push(item.clone());
         }
 
         // Debug assert that there is only one ChatMessage::System
@@ -100,7 +100,7 @@ mod tests {
 
         // Record initial chat messages
         context
-            .add_messages(vec![
+            .add_messages(&[
                 ChatMessage::System("You are awesome".into()),
                 ChatMessage::User("Hello".into()),
             ])
@@ -111,7 +111,7 @@ mod tests {
         assert!(context.next_completion().await.is_none());
 
         context
-            .add_messages(vec![
+            .add_messages(&[
                 ChatMessage::Assistant("Hey?".into()),
                 ChatMessage::User("How are you?".into()),
             ])
@@ -123,14 +123,14 @@ mod tests {
 
         // If the last message is from the assistant, we should not get any more completions
         context
-            .add_messages(vec![ChatMessage::Assistant("I am fine".into())])
+            .add_messages(&[ChatMessage::Assistant("I am fine".into())])
             .await;
 
         assert!(context.next_completion().await.is_none());
 
         // If there are messages, but the context is stopped, we should not get any more completions
         context
-            .add_messages(vec![ChatMessage::User("I am fine".into())])
+            .add_messages(&[ChatMessage::User("I am fine".into())])
             .await;
 
         context.stop();
@@ -143,7 +143,7 @@ mod tests {
         let mut context = DefaultContext::default();
         // Record initial chat messages
         context
-            .add_messages(vec![
+            .add_messages(&[
                 ChatMessage::System("You are awesome".into()),
                 ChatMessage::User("Hello".into()),
             ])
@@ -155,7 +155,7 @@ mod tests {
         let tool_call = ToolCall::builder().id("1").name("test").build().unwrap();
 
         context
-            .add_messages(vec![
+            .add_messages(&[
                 ChatMessage::Assistant("Hey?".into()),
                 ChatMessage::ToolOutput(tool_call, "Hoi".into()),
             ])
@@ -168,7 +168,7 @@ mod tests {
 
         // If the last message is from the assistant, we should not get any more completions
         context
-            .add_messages(vec![ChatMessage::Assistant("I am fine".into())])
+            .add_messages(&[ChatMessage::Assistant("I am fine".into())])
             .await;
         assert!(context.next_completion().await.is_none());
     }

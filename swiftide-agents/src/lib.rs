@@ -1,6 +1,7 @@
 mod agent;
 mod default_context;
 pub mod hooks;
+mod state;
 pub mod tools;
 
 pub use agent::Agent;

@@ -2,17 +2,31 @@
 use crate::{
     default_context::DefaultContext,
     hooks::{Hook, HookFn, HookTypes},
+    state,
     tools::control::Stop,
 };
 use std::collections::HashSet;
 
 use anyhow::Result;
 use derive_builder::Builder;
+use dyn_clone::DynClone;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolOutput},
     AgentContext, Tool,
 };
 use tracing::debug;
+
+// TODO:
+// - [ ] After calling run or run once cannot call run again
+// - [ ] Cannot call continue if agent has not called run (state machine?)
+//       ... Or should we simplify it, and allow it for now?
+// - [ ] Continue is what should happen
+// - [ ] Agent should support a system prompt
+// - [ ] Hooks should  called at each correct point
+// - [ ] Errors should all be thiserror and not anyhow
+// - [ ] Improve tracing and logging (need to check when running it)
+// - [ ] Consider making tools generic over context instead
+// - [ ] Ensure hooks can take both regular functions _and_ closures
 
 // Notes
 //
@@ -20,15 +34,18 @@ use tracing::debug;
 #[derive(Clone, Builder)]
 pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
     #[builder(default, setter(into))]
-    hooks: Vec<Hook>,
+    pub(crate) hooks: Vec<Hook>,
     // name: String,
     #[builder(setter(custom))]
-    context: CONTEXT,
-    #[builder(default = Agent::<CONTEXT>::default_tools(), setter(custom))]
-    tools: HashSet<Box<dyn Tool>>,
+    pub(crate) context: CONTEXT,
+    #[builder(default = Agent::< CONTEXT>::default_tools(), setter(custom))]
+    pub(crate) tools: HashSet<Box<dyn Tool>>,
 
     #[builder(setter(custom))]
-    llm: Box<dyn ChatCompletion>,
+    pub(crate) llm: Box<dyn ChatCompletion>,
+
+    #[builder(private, default = state::State::default())]
+    pub(crate) state: state::State,
 }
 
 impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
@@ -36,11 +53,21 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
     where
         Self: Clone,
     {
-        AgentBuilder {
+        let AgentBuilder {
+            hooks,
+            tools,
+            llm,
+            state,
+            ..
+        } = self.clone();
+
+        // Rust is silly that you can't just forward self without context
+        AgentBuilder::<C> {
             context: Some(context),
-            hooks: self.hooks.clone(),
-            tools: self.tools.clone(),
-            llm: self.llm.clone(),
+            hooks,
+            tools,
+            llm,
+            state,
         }
     }
 
@@ -101,98 +128,63 @@ impl Agent<DefaultContext> {
             .clone()
     }
 }
+
 impl<CONTEXT: AgentContext> Agent<CONTEXT> {
-    async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
-        for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
-            match hook {
-                Hook::BeforeAll(hook) => hook(&mut self.context).await?,
-                Hook::BeforeEach(hook) => hook(&mut self.context).await?,
-                Hook::AfterTool(hook) => hook(&mut self.context).await?,
-                Hook::AfterEach(hook) => hook(&mut self.context).await?,
-                Hook::AfterAll(hook) => hook(&mut self.context).await?,
-            }
-        }
-
-        Ok(())
-    }
-
     fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
-    // pub async fn history(&self) -> &[ChatMessage] {
-    //     self.context.completion_history().await
-    // }
+    pub async fn query(&mut self, query: impl Into<String>) -> Result<()> {
+        self.run_agent(Some(query.into()), false).await
+    }
 
-    /// Runs the agent
-    ///
-    /// # Errors
-    ///
-    /// Any error that occurs during the agent's execution is returned.
-    // pub async fn run(&mut self) -> Result<()> {
-    //     debug!("Running agent");
-    //     self.context
-    //         .add_message(ChatMessage::User(self.instructions.render().await?))
-    //         .await;
-    //
-    //     self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
-    //
-    //     while !self.context.should_stop() {
-    //         debug!("Looping agent");
-    //
-    //         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
-    //         self.run_once().await?;
-    //
-    //         self.invoke_hooks_matching(HookTypes::AfterEach).await?;
-    //
-    //         if self.context.current_chat_messages().await.is_empty() {
-    //             warn!("No new messages for LLM, stopping agent");
-    //             self.context.stop();
-    //         }
-    //     }
-    //
-    //     self.invoke_hooks_matching(HookTypes::AfterAll).await?;
-    //     Ok(())
-    // }
+    pub async fn query_once(&mut self, query: impl Into<String>) -> Result<()> {
+        self.run_agent(Some(query.into()), true).await
+    }
 
-    pub async fn run(&mut self, query: impl Into<String>) -> Result<()> {
-        self.context
-            .add_messages(vec![ChatMessage::User(query.into())])
-            .await;
+    async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
+        if self.state.is_running() {
+            anyhow::bail!("Agent is already running");
+        }
+
+        if let Some(query) = maybe_query {
+            self.context.add_messages(&[ChatMessage::User(query)]).await;
+        }
+
+        if self.state.is_pending() {
+            self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
+        }
 
         while let Some(messages) = self.context.next_completion().await {
-            let new_messages = self.run_completions(&messages).await?;
+            self.state = state::State::Running;
 
-            self.context.add_messages(new_messages).await;
+            let new_messages = match self.run_completions(&messages).await {
+                Ok(messages) => messages,
+                Err(e) => {
+                    self.state = state::State::Stopped;
+                    return Err(e);
+                }
+            };
+
+            self.context.add_messages(&new_messages).await;
+            if just_once {
+                break;
+            }
         }
-        tracing::warn!("No new messages, stopping agent");
+
+        self.state = state::State::Stopped;
 
         Ok(())
     }
 
-    pub async fn run_once(&mut self, query: impl Into<String>) -> Result<()> {
-        self.context
-            .add_messages(vec![ChatMessage::User(query.into())])
-            .await;
+    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
+        self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
 
-        let Some(messages) = self.context.next_completion().await else {
-            tracing::warn!("No new messages");
-            return Ok(());
-        };
-
-        let new_messages = self.run_completions(&messages).await?;
-        self.context.add_messages(new_messages).await;
-
-        Ok(())
-    }
-
-    async fn run_completions(&self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
         debug!(
             "Running completion for agent with {} messages",
             messages.len()
         );
 
-        // TODO: Since control flow is now via tools, tools should always include them
         let chat_completion_request = ChatCompletionRequest::builder()
             .messages(messages)
             .tools_spec(
@@ -209,15 +201,9 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         let mut new_messages = vec![];
         if let Some(message) = response.message {
             debug!("LLM returned message: {}", message);
-            // self.context
-            //     .add_message(ChatMessage::Assistant(message))
-            //     .await;
+
             new_messages.push(ChatMessage::Assistant(message));
         }
-
-        // Mark the iteration as complete
-        // Any new messages at this point (i.e. from tools or hooks) will trigger another loop
-        // self.context.record_iteration().await;
 
         // TODO: We can and should run tools in parallel or at least in a tokio spawn
         if let Some(tool_calls) = response.tool_calls {
@@ -233,13 +219,28 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 self.handle_control_tools(&output);
 
                 new_messages.push(ChatMessage::ToolOutput(tool_call, output));
-                // self.context
-                //     .add_message(ChatMessage::ToolOutput(tool_call, output))
-                //     .await;
             }
         };
 
+        self.invoke_hooks_matching(HookTypes::AfterEach).await?;
+
         Ok(new_messages)
+    }
+
+    async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
+        for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
+            match hook {
+                Hook::BeforeAll(hook) => hook(&mut self.context).await?,
+                Hook::BeforeEach(hook) => hook(&mut self.context).await?,
+                Hook::AfterTool(hook) => hook(&mut self.context).await?,
+                Hook::AfterEach(hook) => hook(&mut self.context).await?,
+                // Is this even possible without a definition of done and always being able to
+                Hook::AfterAll(hook) => hook(&mut self.context).await?,
+                // continue?
+            }
+        }
+
+        Ok(())
     }
 
     fn find_tool_by_name(&self, tool_name: &str) -> Option<&dyn Tool> {
@@ -257,6 +258,41 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
     }
 }
 
+// pub async fn history(&self) -> &[ChatMessage] {
+//     self.context.completion_history().await
+// }
+
+/// Runs the agent
+///
+/// # Errors
+///
+/// Any error that occurs during the agent's execution is returned.
+// pub async fn run(&mut self) -> Result<()> {
+//     debug!("Running agent");
+//     self.context
+//         .add_message(ChatMessage::User(self.instructions.render().await?))
+//         .await;
+//
+//     self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
+//
+//     while !self.context.should_stop() {
+//         debug!("Looping agent");
+//
+//         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
+//         self.run_once().await?;
+//
+//         self.invoke_hooks_matching(HookTypes::AfterEach).await?;
+//
+//         if self.context.current_chat_messages().await.is_empty() {
+//             warn!("No new messages for LLM, stopping agent");
+//             self.context.stop();
+//         }
+//     }
+//
+//     self.invoke_hooks_matching(HookTypes::AfterAll).await?;
+//     Ok(())
+// }
+
 #[cfg(test)]
 mod tests {
 
@@ -266,7 +302,7 @@ mod tests {
     use super::*;
     use crate::{assistant, chat_request, chat_response, tool_output, user};
 
-    use crate::test_utils::MockTool;
+    use crate::test_utils::{MockHook, MockTool};
 
     #[test_log::test(tokio::test)]
     async fn test_agent_builder_defaults() {
@@ -344,6 +380,116 @@ mod tests {
             .build()
             .unwrap();
 
-        agent.run(prompt).await.unwrap();
+        agent.query(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_tool_run_once() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new();
+
+        let chat_request = chat_request! {
+            user!("Write a poem");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
+
+        mock_tool.expect_invoke("Great!".into(), None);
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_state_machine() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+
+        let chat_request = chat_request! {
+            user!("Write a poem");
+            tools = []
+        };
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = []
+        };
+
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+        let mut agent = Agent::builder().llm(&mock_llm).build().unwrap();
+
+        // Agent has never run and is pending
+        assert!(agent.state.is_pending());
+        agent.query_once(prompt).await.unwrap();
+
+        // Agent is stopped, there might be more messages
+        assert!(agent.state.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_hooks() {
+        let mock_before_all = MockHook::new().expect_calls(1).to_owned();
+        let mock_before_each = MockHook::new().expect_calls(2).to_owned();
+        let mock_after_each = MockHook::new().expect_calls(2).to_owned();
+
+        // Once for mock tool and once for stop
+        // let mock_after_tool = MockHook::new().expect_calls(2);
+
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new();
+
+        let chat_request = chat_request! {
+            user!("Write a poem");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
+
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let chat_request = chat_request! {
+            user!("Write a poem"),
+            assistant!("Roses are red"),
+            tool_output!("mock_tool", "Great!");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let stop_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["stop"]
+        };
+
+        mock_llm.expect_complete(chat_request, Ok(stop_response));
+        mock_tool.expect_invoke("Great!".into(), None);
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .before_all(mock_before_all.hook_fn())
+            .before_each(mock_before_each.hook_fn())
+            .after_each(mock_after_each.hook_fn())
+            .build()
+            .unwrap();
+
+        agent.query(prompt).await.unwrap();
     }
 }

@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     agents::Agent::builder()
         .llm(&openai)
         .build()?
-        .run("What is the meaning of life?")
+        .query("What is the meaning of life?")
         .await?;
 
     Ok(())

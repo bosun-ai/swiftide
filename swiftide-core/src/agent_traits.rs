@@ -138,7 +138,7 @@ pub trait AgentContext: Send + Sync {
     async fn next_completion(&self) -> Option<Vec<ChatMessage>>;
 
     /// Add a message to the history
-    async fn add_messages(&mut self, item: Vec<ChatMessage>);
+    async fn add_messages(&mut self, item: &[ChatMessage]);
 
     /// Instruct the context to no longer return new completions
     fn stop(&self);

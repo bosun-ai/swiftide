@@ -7,6 +7,8 @@ use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
 use indoc::indoc;
 use swiftide_core::{AgentContext, Tool};
 
+use crate::hooks::HookFn;
+
 #[macro_export]
 macro_rules! chat_request {
     ($($message:expr),+; tools = [$($tool:expr),*]) => {
@@ -136,5 +138,55 @@ impl Drop for MockTool {
                 *self.expectations.lock().unwrap()
             );
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MockHook {
+    called: Arc<Mutex<usize>>,
+    expected_calls: usize,
+}
+
+impl MockHook {
+    pub fn new() -> Self {
+        Self {
+            called: Arc::new(Mutex::new(0)),
+            expected_calls: 0,
+        }
+    }
+
+    pub fn expect_calls(&mut self, expected_calls: usize) -> &mut Self {
+        self.expected_calls = expected_calls;
+        self
+    }
+
+    pub fn hook_fn(&self) -> impl HookFn {
+        let called = Arc::clone(&self.called);
+        move |_: &mut dyn AgentContext| {
+            let called = Arc::clone(&called);
+            Box::pin(async move {
+                let mut called = called.lock().unwrap();
+                *called += 1;
+                Ok(())
+            })
+        }
+    }
+}
+
+impl Drop for MockHook {
+    fn drop(&mut self) {
+        if Arc::strong_count(&self.called) > 1 {
+            return;
+        }
+        let Ok(called) = self.called.lock() else {
+            return;
+        };
+
+        assert!(
+            *called == self.expected_calls,
+            "[MockHook] was called {} times but expected {}",
+            *called,
+            self.expected_calls
+        );
     }
 }
