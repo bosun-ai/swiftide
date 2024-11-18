@@ -17,16 +17,18 @@ use swiftide_core::{
 use tracing::debug;
 
 // TODO:
-// - [ ] After calling run or run once cannot call run again
+// - [x] After calling run or run once cannot call run again
 // - [ ] Cannot call continue if agent has not called run (state machine?)
 //       ... Or should we simplify it, and allow it for now?
 // - [ ] Continue is what should happen
 // - [ ] Agent should support a system prompt
-// - [ ] Hooks should  called at each correct point
+// - [x] Hooks should  called at each correct point
 // - [ ] Errors should all be thiserror and not anyhow
 // - [ ] Improve tracing and logging (need to check when running it)
 // - [ ] Consider making tools generic over context instead
-// - [ ] Ensure hooks can take both regular functions _and_ closures
+//          NOTE: Makes async maybe easier? No cast from generic to dyn
+// - [\] Ensure hooks can take both regular functions _and_ closures
+//          NOTE: Partially works with explicit return of impl
 
 // Notes
 //
@@ -136,6 +138,14 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 
     pub async fn query_once(&mut self, query: impl Into<String>) -> Result<()> {
         self.run_agent(Some(query.into()), true).await
+    }
+
+    pub async fn run(&mut self) -> Result<()> {
+        self.run_agent(None, false).await
+    }
+
+    pub async fn run_once(&mut self) -> Result<()> {
+        self.run_agent(None, true).await
     }
 
     async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
