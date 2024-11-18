@@ -264,6 +264,7 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
+    use crate::{assistant, chat_request, chat_response, tool_output, user};
 
     use crate::test_utils::MockTool;
 
@@ -307,64 +308,32 @@ mod tests {
         let mock_llm = MockChatCompletion::new();
         let mock_tool = MockTool::new();
 
-        // TODO: Write better expectation management on agent loop
-        // i.e. assertion object on agent itself
-        let chat_request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("Write a poem".to_string())])
-            .tools_spec(
-                [Box::new(mock_tool.clone()) as Box<dyn Tool>]
-                    .into_iter()
-                    .chain(Agent::<DefaultContext>::default_tools())
-                    .map(|tool| tool.json_spec())
-                    .collect::<HashSet<_>>(),
-            )
-            .build()
-            .unwrap();
+        let chat_request = chat_request! {
+            user!("Write a poem");
 
-        let mock_tool_response = ChatCompletionResponse::builder()
-            .message("Roses are red".to_string())
-            .tool_calls(vec![ToolCall::builder()
-                .name("mock_tool")
-                .id("1")
-                .build()
-                .unwrap()])
-            .build()
-            .unwrap();
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
 
         mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
 
-        let chat_request = ChatCompletionRequest::builder()
-            .messages(vec![
-                ChatMessage::User("Write a poem".to_string()),
-                ChatMessage::Assistant("Roses are red".to_string()),
-                ChatMessage::ToolOutput(
-                    ToolCall::builder()
-                        .name("mock_tool")
-                        .id("1")
-                        .build()
-                        .unwrap(),
-                    ToolOutput::Text("Great!".to_string()),
-                ),
-            ])
-            .tools_spec(
-                [Box::new(mock_tool.clone()) as Box<dyn Tool>]
-                    .into_iter()
-                    .chain(Agent::<DefaultContext>::default_tools())
-                    .map(|tool| tool.json_spec())
-                    .collect::<HashSet<_>>(),
-            )
-            .build()
-            .unwrap();
+        let chat_request = chat_request! {
+            user!("Write a poem"),
+            assistant!("Roses are red"),
+            tool_output!("mock_tool", "Great!");
 
-        let stop_response = ChatCompletionResponse::builder()
-            .message("Roses are red".to_string())
-            .tool_calls(vec![ToolCall::builder()
-                .name("stop")
-                .id("1")
-                .build()
-                .unwrap()])
-            .build()
-            .unwrap();
+            tools = [mock_tool.clone()]
+        };
+
+        let stop_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["stop"]
+        };
 
         mock_llm.expect_complete(chat_request, Ok(stop_response));
         mock_tool.expect_invoke("Great!".into(), None);

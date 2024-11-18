@@ -70,14 +70,20 @@ impl MockChatCompletion {
 #[async_trait]
 impl ChatCompletion for MockChatCompletion {
     async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
-        let (expected_request, response) = self
-            .expectations
-            .lock()
-            .unwrap()
-            .pop()
-            .expect("Received completion request, but no expectations are set");
+        let (expected_request, response) =
+            self.expectations.lock().unwrap().pop().unwrap_or_else(|| {
+                panic!(
+                    "Received completion request, but no expectations are set\n {}",
+                    pretty_request(request)
+                )
+            });
 
-        assert_eq!(&expected_request, request, "Unexpected request {request:?}");
+        assert_eq!(
+            &expected_request,
+            request,
+            "Unexpected request {}",
+            pretty_request(request)
+        );
 
         if let Ok(response) = response {
             self.received_expectations
@@ -104,23 +110,24 @@ impl Drop for MockChatCompletion {
         if Arc::strong_count(&self.received_expectations) > 1 {
             return;
         }
-        if self.expectations.lock().unwrap().is_empty() {
-            let num_received = self.received_expectations.lock().unwrap().len();
+        let Ok(expectations) = self.expectations.lock() else {
+            return;
+        };
+        let Ok(received) = self.received_expectations.lock() else {
+            return;
+        };
+
+        if expectations.is_empty() {
+            let num_received = received.len();
             tracing::debug!("[MockChatCompletion] All {num_received} expectations were met");
         } else {
-            let received = self
-                .received_expectations
-                .lock()
-                .unwrap()
+            let received = received
                 .iter()
                 .map(pretty_expectation)
                 .collect::<Vec<_>>()
                 .join("---\n");
 
-            let pending = self
-                .expectations
-                .lock()
-                .unwrap()
+            let pending = expectations
                 .iter()
                 .map(pretty_expectation)
                 .collect::<Vec<_>>()
@@ -137,25 +144,37 @@ fn pretty_expectation(
     let mut output = String::new();
 
     let request = &expectation.0;
-    for message in request.messages() {
-        output.push_str(&format!(" {message}\n"));
-    }
+    output.push_str("Request:\n");
+    output.push_str(&pretty_request(request));
 
     output.push_str(" =>\n");
 
     let response_result = &expectation.1;
 
     if let Ok(response) = response_result {
-        if let Some(message) = response.message() {
-            output.push_str(&format!(" {message}\n"));
-        }
-
-        if let Some(tool_calls) = response.tool_calls() {
-            for tool_call in tool_calls {
-                output.push_str(&format!(" {tool_call}\n"));
-            }
-        }
+        output += &pretty_response(response);
     }
 
+    output
+}
+
+fn pretty_request(request: &ChatCompletionRequest) -> String {
+    let mut output = String::new();
+    for message in request.messages() {
+        output.push_str(&format!(" {message}\n"));
+    }
+    output
+}
+
+fn pretty_response(response: &ChatCompletionResponse) -> String {
+    let mut output = String::new();
+    if let Some(message) = response.message() {
+        output.push_str(&format!(" {message}\n"));
+    }
+    if let Some(tool_calls) = response.tool_calls() {
+        for tool_call in tool_calls {
+            output.push_str(&format!(" {tool_call}\n"));
+        }
+    }
     output
 }

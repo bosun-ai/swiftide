@@ -133,15 +133,16 @@ pub trait AgentContext: Send + Sync {
     ///
     /// Once this method has been called, there should not be new messages
     ///
-    /// Returns an owned copy of the current completion
+    /// TODO: Figure out a nice way to return a reference instead while still supporting i.e.
+    /// mutexes
     async fn next_completion(&self) -> Option<Vec<ChatMessage>>;
 
     /// Add a message to the history
     async fn add_messages(&mut self, item: Vec<ChatMessage>);
 
+    /// Instruct the context to no longer return new completions
     fn stop(&self);
 
-    // fn should_stop(&self) -> bool;
-
+    /// Execute a command if the context supports it
     async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }

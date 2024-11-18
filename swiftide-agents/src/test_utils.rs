@@ -7,6 +7,67 @@ use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
 use indoc::indoc;
 use swiftide_core::{AgentContext, Tool};
 
+#[macro_export]
+macro_rules! chat_request {
+    ($($message:expr),+; tools = [$($tool:expr),*]) => {
+        ChatCompletionRequest::builder()
+            .messages(vec![$($message),*])
+            .tools_spec(
+                vec![$(Box::new($tool) as Box<dyn Tool>),*]
+                    .into_iter()
+                    .chain(Agent::<DefaultContext>::default_tools())
+                    .map(|tool| tool.json_spec())
+                    .collect::<HashSet<_>>(),
+            )
+            .build()
+            .unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! user {
+    ($message:expr) => {
+        ChatMessage::User($message.to_string())
+    };
+}
+
+#[macro_export]
+macro_rules! assistant {
+    ($message:expr) => {
+        ChatMessage::Assistant($message.to_string())
+    };
+}
+
+#[macro_export]
+macro_rules! tool_output {
+    ($tool_name:expr, $message:expr) => {{
+        ChatMessage::ToolOutput(
+            ToolCall::builder()
+                .name($tool_name)
+                .id("1")
+                .build()
+                .unwrap(),
+            ToolOutput::Text($message.to_string()),
+        )
+    }};
+}
+
+#[macro_export]
+macro_rules! chat_response {
+    ($message:expr; tool_calls = [$($tool_name:expr),*]) => {{
+
+        let tool_calls = vec![
+            $(ToolCall::builder().name($tool_name).id("1").build().unwrap()),*
+        ];
+
+        ChatCompletionResponse::builder()
+            .message($message)
+            .tool_calls(tool_calls)
+            .build()
+            .unwrap()
+    }};
+}
+
 type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
 
 #[derive(Debug, Clone)]
