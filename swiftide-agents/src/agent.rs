@@ -63,7 +63,7 @@ impl<CONTEXT: AgentContext> std::fmt::Debug for Agent<CONTEXT> {
                 &self
                     .hooks
                     .iter()
-                    .map(|hook| hook.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>(),
             )
             .field(
