@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1731072648547,
+  "lastUpdate": 1732034233468,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9473,6 +9473,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 247138,
             "range": "± 1476",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d865496e05069ec132886bc8fee150ea48dd9ea6",
+          "message": "chore(deps): Update async-openai, fluvio and lancedb (#450)",
+          "timestamp": "2024-11-19T17:29:03+01:00",
+          "tree_id": "bee80d1a79dbbb2a9a5dd3e528c9121da3b1c0df",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d865496e05069ec132886bc8fee150ea48dd9ea6"
+        },
+        "date": 1732034232773,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288375,
+            "range": "± 1127430",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 246540,
+            "range": "± 2482",
             "unit": "ns/iter"
           }
         ]
