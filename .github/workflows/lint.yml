@@ -9,7 +9,6 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-lint
-  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -30,7 +29,6 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: r7kamura/rust-problem-matchers@v1
       - name: Check typos
         uses: crate-ci/typos@master
       - name: "Rustfmt"
