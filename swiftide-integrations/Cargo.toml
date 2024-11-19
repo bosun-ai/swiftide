@@ -37,10 +37,15 @@ sqlx = { workspace = true, optional = true, features = [
   "postgres",
   "runtime-tokio",
   "chrono",
-  "uuid"
+  "uuid",
 ] }
 pgvector = { workspace = true, optional = true, features = ["sqlx"] }
-redis = { workspace = true, features = ["aio", "tokio-comp", "connection-manager", "tokio-rustls-comp"], optional = true }
+redis = { workspace = true, features = [
+  "aio",
+  "tokio-comp",
+  "connection-manager",
+  "tokio-rustls-comp",
+], optional = true }
 tree-sitter = { workspace = true, optional = true }
 tree-sitter-rust = { workspace = true, optional = true }
 tree-sitter-python = { workspace = true, optional = true }
@@ -51,13 +56,22 @@ tree-sitter-java = { workspace = true, optional = true }
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true }
 htmd = { workspace = true, optional = true }
-aws-config = { workspace = true, features = ["behavior-version-latest"], optional = true }
-aws-credential-types = { workspace = true, features = ["hardcoded-credentials"], optional = true }
-aws-sdk-bedrockruntime = { workspace = true, features = ["behavior-version-latest"], optional = true }
+aws-config = { workspace = true, features = [
+  "behavior-version-latest",
+], optional = true }
+aws-credential-types = { workspace = true, features = [
+  "hardcoded-credentials",
+], optional = true }
+aws-sdk-bedrockruntime = { workspace = true, features = [
+  "behavior-version-latest",
+], optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 ollama-rs = { workspace = true, optional = true }
-deadpool = { workspace = true, features = ["managed", "rt_tokio_1"], optional = true }
+deadpool = { workspace = true, features = [
+  "managed",
+  "rt_tokio_1",
+], optional = true }
 fluvio = { workspace = true, optional = true }
 arrow-array = { workspace = true, optional = true }
 lancedb = { workspace = true, optional = true }
