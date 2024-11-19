@@ -26,6 +26,7 @@ version = 2
 ignore = [
   { id = "RUSTSEC-2023-0086", reason = "Ignore a security adivisory on lexical-core" },
   { id = "RUSTSEC-2021-0141", reason = "Dotenv is used by spider" },
+  { id = "RUSTSEC-2024-0384", reason = "Instant is unmaintained" },
 ]
 
 [bans]
