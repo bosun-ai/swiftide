@@ -27,7 +27,6 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 regex = { workspace = true }
 futures-util = { workspace = true }
-once_cell = { workspace = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
@@ -88,6 +87,7 @@ testcontainers = { workspace = true }
 test-case = { workspace = true }
 indoc = { workspace = true }
 insta = { workspace = true }
+
 
 [features]
 default = ["rustls"]

@@ -3,7 +3,7 @@
 
 use serde_json::json;
 use testcontainers::{
-    core::{wait::HttpWaitStrategy, IntoContainerPort, Mount, WaitFor},
+    core::{wait::HttpWaitStrategy, IntoContainerPort, WaitFor},
     runners::AsyncRunner,
     ContainerAsync, GenericImage, ImageExt,
 };
@@ -75,23 +75,20 @@ pub async fn start_redis() -> (ContainerAsync<GenericImage>, String) {
 /// Setup Postgres container.
 /// Returns container server and `server_url`.
 pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String) {
-    // Find a free port on the host for Postgres to use
-    let host_port = portpicker::pick_unused_port().expect("No available free port on the host");
-
     let postgres = testcontainers::GenericImage::new("pgvector/pgvector", "pg17")
         .with_wait_for(WaitFor::message_on_stdout(
             "database system is ready to accept connections",
         ))
-        .with_mapped_port(host_port, 5432.tcp())
+        .with_exposed_port(5432.tcp())
         .with_env_var("POSTGRES_USER", "myuser")
         .with_env_var("POSTGRES_PASSWORD", "mypassword")
         .with_env_var("POSTGRES_DB", "mydatabase")
-        .with_mount(Mount::tmpfs_mount("/var/lib/postgresql/data"))
         .start()
         .await
         .expect("Failed to start Postgres container");
 
     // Construct the connection URL using the dynamically assigned port
+    let host_port = postgres.get_host_port_ipv4(5432).await.unwrap();
     let postgres_url = format!(
         "postgresql://myuser:mypassword@127.0.0.1:{}/mydatabase",
         host_port

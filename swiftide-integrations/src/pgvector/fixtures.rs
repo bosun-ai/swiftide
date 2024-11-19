@@ -1,4 +1,43 @@
-//! This module implements common types and helper utilities for unit tests related to the pgvector
+//! Test fixtures and utilities for pgvector integration testing.
+//!
+//! Provides test infrastructure and helper types to verify vector storage and retrieval:
+//! - Mock data generation for different embedding modes
+//! - Test containers for `PostgreSQL` with pgvector extension
+//! - Common test scenarios and assertions
+//!
+//! # Examples
+//!
+//! ```rust
+//! use swiftide_integrations::pgvector::fixtures::{TestContext, PgVectorTestData};
+//! use swiftide_core::indexing::{EmbedMode, EmbeddedField};
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! // Initialize test context with PostgreSQL container
+//! let context = TestContext::setup_with_cfg(
+//!     Some(vec!["category", "priority"]),
+//!     vec![EmbeddedField::Combined].into_iter().collect()
+//! ).await?;
+//!
+//! // Create test data for different embedding modes
+//! let test_data = PgVectorTestData {
+//!     embed_mode: EmbedMode::SingleWithMetadata,
+//!     chunk: "test content",
+//!     metadata: None,
+//!     vectors: vec![PgVectorTestData::create_test_vector(
+//!         EmbeddedField::Combined,
+//!         1.0
+//!     )],
+//! };
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! The module supports testing for:
+//! - Single embedding with/without metadata
+//! - Per-field embeddings
+//! - Combined embedding modes
+//! - Different vector configurations
+//! - Various metadata scenarios
 use crate::pgvector::PgVector;
 use std::collections::HashSet;
 use swiftide_core::{
@@ -7,11 +46,36 @@ use swiftide_core::{
 };
 use testcontainers::{ContainerAsync, GenericImage};
 
+/// Test data structure for pgvector integration testing.
+///
+/// Provides a flexible structure to test different embedding modes and configurations,
+/// including metadata handling and vector generation.
+///
+/// # Examples
+///
+/// ```rust
+/// use swiftide_integrations::pgvector::fixtures::PgVectorTestData;
+/// use swiftide_core::indexing::{EmbedMode, EmbeddedField};
+///
+/// let test_data = PgVectorTestData {
+///     embed_mode: EmbedMode::SingleWithMetadata,
+///     chunk: "test content",
+///     metadata: None,
+///     vectors: vec![PgVectorTestData::create_test_vector(
+///         EmbeddedField::Combined,
+///         1.0
+///     )],
+/// };
+/// ```
 #[derive(Clone)]
 pub(crate) struct PgVectorTestData<'a> {
+    /// Embedding mode for the test case
     pub embed_mode: indexing::EmbedMode,
+    /// Test content chunk
     pub chunk: &'a str,
+    /// Optional metadata for testing metadata handling
     pub metadata: Option<indexing::Metadata>,
+    /// Vector embeddings with their corresponding fields
     pub vectors: Vec<(indexing::EmbeddedField, Vec<f32>)>,
 }
 
@@ -42,8 +106,32 @@ impl<'a> PgVectorTestData<'a> {
     }
 }
 
+/// Test context managing `PostgreSQL` container and pgvector storage.
+///
+/// Handles the lifecycle of test containers and provides configured storage
+/// instances for testing.
+///
+/// # Examples
+///
+/// ```rust
+/// # use swiftide_integrations::pgvector::fixtures::TestContext;
+/// # use swiftide_core::indexing::EmbeddedField;
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// // Setup test context with specific configuration
+/// let context = TestContext::setup_with_cfg(
+///     Some(vec!["category"]),
+///     vec![EmbeddedField::Combined].into_iter().collect()
+/// ).await?;
+///
+/// // Use context for testing
+/// context.pgv_storage.setup().await?;
+/// # Ok(())
+/// # }
+/// ```
 pub(crate) struct TestContext {
+    /// Configured pgvector storage instance
     pub(crate) pgv_storage: PgVector,
+    /// Container instance running `PostgreSQL` with pgvector
     _pgv_db_container: ContainerAsync<GenericImage>,
 }
 

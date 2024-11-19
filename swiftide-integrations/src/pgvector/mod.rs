@@ -1,8 +1,27 @@
-//! This module integrates with the pgvector database, providing functionalities to create and manage vector collections,
-//! store data, and optimize indexing for efficient searches.
+//! Integration module for `PostgreSQL` vector database (pgvector) operations.
 //!
-//! pgvector is utilized in both the `indexing::Pipeline` and `query::Pipeline` modules.
-
+//! This module provides a client interface for vector similarity search operations using pgvector,
+//! supporting:
+//! - Vector collection management with configurable schemas
+//! - Efficient vector storage and indexing
+//! - Connection pooling with automatic retries
+//! - Batch operations for optimized performance
+//!
+//! The functionality is primarily used through the [`PgVector`] client, which implements
+//! the [`Persist`] trait for seamless integration with indexing and query pipelines.
+//!
+//! # Example
+//! ```rust
+//! # use swiftide_integrations::pgvector::PgVector;
+//! # async fn example() -> anyhow::Result<()> {
+//! let client = PgVector::builder()
+//!     .db_url("postgresql://localhost:5432/vectors")
+//!     .vector_size(384)
+//!     .build()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 #[cfg(test)]
 mod fixtures;
 
@@ -10,10 +29,10 @@ mod persist;
 mod pgv_table_types;
 use anyhow::Result;
 use derive_builder::Builder;
-use once_cell::sync::OnceCell;
 use sqlx::PgPool;
 use std::fmt;
 use std::sync::Arc;
+use std::sync::OnceLock;
 use tokio::time::Duration;
 
 use pgv_table_types::{FieldConfig, MetadataConfig, VectorConfig};
@@ -70,8 +89,12 @@ pub struct PgVector {
     db_conn_retry_delay: Duration,
 
     /// Lazy-initialized database connection pool.
-    #[builder(default = "Arc::new(OnceCell::new())")]
-    connection_pool: Arc<OnceCell<PgPool>>,
+    #[builder(default = "Arc::new(OnceLock::new())")]
+    connection_pool: Arc<OnceLock<PgPool>>,
+
+    /// SQL statement used for executing bulk insert.
+    #[builder(default = "Arc::new(OnceLock::new())")]
+    sql_stmt_bulk_insert: Arc<OnceLock<String>>,
 }
 
 impl fmt::Debug for PgVector {

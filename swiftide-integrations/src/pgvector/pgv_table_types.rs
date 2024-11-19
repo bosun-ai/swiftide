@@ -1,21 +1,25 @@
-//! This module provides functionality to convert a `Node` into a `PostgreSQL` table schema.
-//! This conversion is crucial for storing data in `PostgreSQL`, enabling efficient vector similarity searches
-//! through the `pgvector` extension. The module also handles metadata augmentation and ensures compatibility
-//! with `PostgreSQL`'s required data format.
-
+//! `PostgreSQL` table schema and type conversion utilities for vector storage.
+//!
+//! Provides schema configuration and data type conversion functionality:
+//! - Table schema generation with vector and metadata columns
+//! - Field configuration for different vector embedding types
+//! - HNSW index creation for similarity search optimization
+//! - Bulk data preparation and SQL query generation
+//!
 use crate::pgvector::PgVector;
 use anyhow::{anyhow, Result};
-// use once_cell::sync::OnceCell;
 use pgvector as ExtPgVector;
 use regex::Regex;
 use sqlx::postgres::PgArguments;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
-use std::collections::BTreeMap;
-// use std::sync::Arc;
 use swiftide_core::indexing::{EmbeddedField, Node};
 use tokio::time::sleep;
 
+/// Configuration for vector embedding columns in the `PostgreSQL` table.
+///
+/// This struct defines how vector embeddings are stored and managed in the database,
+/// mapping Swiftide's embedded fields to `PostgreSQL` vector columns.
 #[derive(Clone, Debug)]
 pub struct VectorConfig {
     embedded_field: EmbeddedField,
@@ -40,6 +44,10 @@ impl From<EmbeddedField> for VectorConfig {
     }
 }
 
+/// Configuration for metadata fields in the `PostgreSQL` table.
+///
+/// Handles the mapping and storage of metadata fields, ensuring proper column naming
+/// and type conversion for `PostgreSQL` compatibility.
 #[derive(Clone, Debug)]
 pub struct MetadataConfig {
     field: String,
@@ -62,11 +70,19 @@ impl<T: AsRef<str>> From<T> for MetadataConfig {
     }
 }
 
+/// Field configuration types supported in the `PostgreSQL` table schema.
+///
+/// Represents different field types that can be configured in the table schema,
+/// including vector embeddings, metadata, and system fields.
 #[derive(Clone, Debug)]
 pub enum FieldConfig {
+    /// `Vector` - Vector embedding field configuration
     Vector(VectorConfig),
+    /// `Metadata` - Metadata field configuration
     Metadata(MetadataConfig),
+    /// `Chunk` - Text content storage field
     Chunk,
+    /// `ID` - Primary key field
     ID,
 }
 
@@ -81,13 +97,67 @@ impl FieldConfig {
     }
 }
 
-/// Structure to hold collected values for bulk upsert
-#[derive(Default)]
-struct BulkUpsertData {
+/// Internal structure for managing bulk upsert operations.
+///
+/// Collects and organizes data for efficient bulk insertions and updates,
+/// grouping related fields for UNNEST-based operations.
+struct BulkUpsertData<'a> {
     ids: Vec<sqlx::types::Uuid>,
-    chunks: Vec<String>,
-    metadata_fields: BTreeMap<String, Vec<serde_json::Value>>,
-    vector_fields: BTreeMap<String, Vec<ExtPgVector::Vector>>,
+    chunks: Vec<&'a str>,
+    metadata_fields: Vec<Vec<serde_json::Value>>,
+    vector_fields: Vec<Vec<ExtPgVector::Vector>>,
+    field_mapping: FieldMapping<'a>,
+}
+
+struct FieldMapping<'a> {
+    metadata_names: Vec<&'a str>,
+    vector_names: Vec<&'a str>,
+}
+
+impl<'a> BulkUpsertData<'a> {
+    fn new(fields: &'a [FieldConfig], size: usize) -> Self {
+        let (metadata_names, vector_names): (Vec<&str>, Vec<&str>) = (
+            fields
+                .iter()
+                .filter_map(|field| match field {
+                    FieldConfig::Metadata(config) => Some(config.field.as_str()),
+                    _ => None,
+                })
+                .collect(),
+            fields
+                .iter()
+                .filter_map(|field| match field {
+                    FieldConfig::Vector(config) => Some(config.field.as_str()),
+                    _ => None,
+                })
+                .collect(),
+        );
+
+        Self {
+            ids: Vec::with_capacity(size),
+            chunks: Vec::with_capacity(size),
+            metadata_fields: vec![Vec::with_capacity(size); metadata_names.len()],
+            vector_fields: vec![Vec::with_capacity(size); vector_names.len()],
+            field_mapping: FieldMapping {
+                metadata_names,
+                vector_names,
+            },
+        }
+    }
+
+    fn get_metadata_index(&self, field: &str) -> Option<usize> {
+        self.field_mapping
+            .metadata_names
+            .iter()
+            .position(|&name| name == field)
+    }
+
+    fn get_vector_index(&self, field: &str) -> Option<usize> {
+        self.field_mapping
+            .vector_names
+            .iter()
+            .position(|&name| name == field)
+    }
 }
 
 impl PgVector {
@@ -182,9 +252,15 @@ impl PgVector {
 
         let mut tx = pool.begin().await?;
         let bulk_data = self.prepare_bulk_data(nodes)?;
-        let sql = self.generate_unnest_upsert_sql()?;
 
-        let query = self.bind_bulk_data_to_query(sqlx::query(&sql), &bulk_data)?;
+        let sql = self
+            .sql_stmt_bulk_insert
+            .get()
+            .ok_or_else(|| anyhow!("SQL bulk insert statement not set"))?;
+
+        tracing::info!("Sql statement :: {:#?}", sql);
+
+        let query = self.bind_bulk_data_to_query(sqlx::query(sql), &bulk_data)?;
 
         query
             .execute(&mut *tx)
@@ -198,30 +274,32 @@ impl PgVector {
 
     /// Prepares data from nodes into vectors for bulk processing.
     #[allow(clippy::implicit_clone)]
-    fn prepare_bulk_data(&self, nodes: &[Node]) -> Result<BulkUpsertData> {
-        let mut bulk_data = BulkUpsertData::default();
+    fn prepare_bulk_data<'a>(&'a self, nodes: &'a [Node]) -> Result<BulkUpsertData<'a>> {
+        let mut bulk_data = BulkUpsertData::new(&self.fields, nodes.len());
 
         for node in nodes {
             bulk_data.ids.push(node.id());
-            bulk_data.chunks.push(node.chunk.clone());
+            bulk_data.chunks.push(node.chunk.as_str());
 
             for field in &self.fields {
                 match field {
                     FieldConfig::Metadata(config) => {
-                        let value = node.metadata.get(&config.original_field).ok_or_else(|| {
-                            anyhow!("Metadata field {} not found", config.original_field)
-                        })?;
+                        let idx = bulk_data
+                            .get_metadata_index(config.field.as_str())
+                            .ok_or_else(|| anyhow!("Invalid metadata field"))?;
 
-                        let entry = bulk_data
-                            .metadata_fields
-                            .entry(config.field.clone())
-                            .or_default();
+                        let value = node
+                            .metadata
+                            .get(&config.original_field)
+                            .ok_or_else(|| anyhow!("Missing metadata field"))?;
 
-                        let mut metadata_map = BTreeMap::new();
-                        metadata_map.insert(config.original_field.clone(), value.clone());
-                        entry.push(serde_json::to_value(metadata_map)?);
+                        bulk_data.metadata_fields[idx].push(value.clone());
                     }
                     FieldConfig::Vector(config) => {
+                        let idx = bulk_data
+                            .get_vector_index(config.field.as_str())
+                            .ok_or_else(|| anyhow!("Invalid vector field"))?;
+
                         let data = node
                             .vectors
                             .as_ref()
@@ -229,13 +307,9 @@ impl PgVector {
                             .map(|v| v.to_vec())
                             .unwrap_or_default();
 
-                        bulk_data
-                            .vector_fields
-                            .entry(config.field.clone())
-                            .or_default()
-                            .push(ExtPgVector::Vector::from(data));
+                        bulk_data.vector_fields[idx].push(ExtPgVector::Vector::from(data));
                     }
-                    _ => continue, // ID and Chunk already handled
+                    _ => continue,
                 }
             }
         }
@@ -252,7 +326,7 @@ impl PgVector {
     /// # Errors
     ///
     /// Returns an error if `self.fields` is empty, as no valid SQL can be generated.
-    fn generate_unnest_upsert_sql(&self) -> Result<String> {
+    pub(crate) fn generate_unnest_upsert_sql(&self) -> Result<String> {
         if self.fields.is_empty() {
             return Err(anyhow!("Cannot generate upsert SQL with empty fields"));
         }
@@ -319,24 +393,24 @@ impl PgVector {
             query = match field {
                 FieldConfig::ID => query.bind(&bulk_data.ids),
                 FieldConfig::Chunk => query.bind(&bulk_data.chunks),
+                FieldConfig::Vector(config) => {
+                    let idx = bulk_data
+                        .get_vector_index(config.field.as_str())
+                        .ok_or_else(|| {
+                            anyhow!("Vector field {} not found in bulk data", config.field)
+                        })?;
+                    query.bind(&bulk_data.vector_fields[idx])
+                }
                 FieldConfig::Metadata(config) => {
-                    let values = bulk_data
-                        .metadata_fields
-                        .get(&config.field)
+                    let idx = bulk_data
+                        .get_metadata_index(config.field.as_str())
                         .ok_or_else(|| {
                             anyhow!("Metadata field {} not found in bulk data", config.field)
                         })?;
-                    query.bind(values)
-                }
-                FieldConfig::Vector(config) => {
-                    let vectors = bulk_data.vector_fields.get(&config.field).ok_or_else(|| {
-                        anyhow!("Vector field {} not found in bulk data", config.field)
-                    })?;
-                    query.bind(vectors)
+                    query.bind(&bulk_data.metadata_fields[idx])
                 }
             };
         }
-
         Ok(query)
     }
 
@@ -364,9 +438,29 @@ impl PgVector {
 
 impl PgVector {
     pub(crate) fn normalize_field_name(field: &str) -> String {
-        field
-            .to_lowercase()
-            .replace(|c: char| !c.is_alphanumeric(), "_")
+        // Define the special characters as an array
+        let special_chars: [char; 4] = ['(', '[', '{', '<'];
+
+        // First split by special characters and take the first part
+        let base_text = field
+            .split(|c| special_chars.contains(&c))
+            .next()
+            .unwrap_or(field)
+            .trim();
+
+        // Split by whitespace, take up to 3 words, convert to lowercase
+        let normalized = base_text
+            .split_whitespace()
+            .take(3)
+            .collect::<Vec<&str>>()
+            .join("_")
+            .to_lowercase();
+
+        // Ensure the result only contains alphanumeric chars and underscores
+        normalized
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '_')
+            .collect()
     }
 
     pub(crate) fn is_valid_identifier(identifier: &str) -> bool {
@@ -440,7 +534,7 @@ impl PgVector {
     /// or creates and initializes it if it is not.
     ///
     /// # Errors
-    /// This function will return an error if pool creation fails.    
+    /// This function will return an error if pool creation fails.
     pub async fn pool_get_or_initialize(&self) -> Result<&PgPool> {
         if let Some(pool) = self.connection_pool.get() {
             return Ok(pool);

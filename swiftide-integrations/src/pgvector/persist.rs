@@ -1,8 +1,14 @@
-//! This module implements the `Persist` trait for the `PgVector` struct.
-//! It provides methods for setting up storage, saving individual nodes, and batch-storing multiple nodes.
-//! This integration enables the Swiftide project to use `PgVector` as a storage backend.
+//! Storage persistence implementation for vector embeddings.
+//!
+//! Implements the [`Persist`] trait for [`PgVector`], providing vector storage capabilities:
+//! - Database schema initialization and setup
+//! - Single-node storage operations
+//! - Optimized batch storage with configurable batch sizes
+//!
+//! The implementation ensures thread-safe concurrent access and handles
+//! connection management automatically.
 use crate::pgvector::PgVector;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use swiftide_core::{
     indexing::{IndexingStream, Node},
@@ -15,6 +21,14 @@ impl Persist for PgVector {
     async fn setup(&self) -> Result<()> {
         // Get or initialize the connection pool
         let pool = self.pool_get_or_initialize().await?;
+
+        if self.sql_stmt_bulk_insert.get().is_none() {
+            let sql = self.generate_unnest_upsert_sql()?;
+
+            self.sql_stmt_bulk_insert
+                .set(sql)
+                .map_err(|_| anyhow!("SQL bulk store statement is already set"))?;
+        }
 
         let mut tx = pool.begin().await?;
 
