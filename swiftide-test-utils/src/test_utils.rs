@@ -3,7 +3,9 @@
 
 use serde_json::json;
 use testcontainers::{
-    core::wait::HttpWaitStrategy, runners::AsyncRunner as _, ContainerAsync, GenericImage,
+    core::{wait::HttpWaitStrategy, IntoContainerPort, WaitFor},
+    runners::AsyncRunner,
+    ContainerAsync, GenericImage, ImageExt,
 };
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -68,6 +70,31 @@ pub async fn start_redis() -> (ContainerAsync<GenericImage>, String) {
         port = redis.get_host_port_ipv4(6379).await.unwrap()
     );
     (redis, redis_url)
+}
+
+/// Setup Postgres container.
+/// Returns container server and `server_url`.
+pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String) {
+    let postgres = testcontainers::GenericImage::new("pgvector/pgvector", "pg17")
+        .with_wait_for(WaitFor::message_on_stdout(
+            "database system is ready to accept connections",
+        ))
+        .with_exposed_port(5432.tcp())
+        .with_env_var("POSTGRES_USER", "myuser")
+        .with_env_var("POSTGRES_PASSWORD", "mypassword")
+        .with_env_var("POSTGRES_DB", "mydatabase")
+        .start()
+        .await
+        .expect("Failed to start Postgres container");
+
+    // Construct the connection URL using the dynamically assigned port
+    let host_port = postgres.get_host_port_ipv4(5432).await.unwrap();
+    let postgres_url = format!(
+        "postgresql://myuser:mypassword@127.0.0.1:{}/mydatabase",
+        host_port
+    );
+
+    (postgres, postgres_url)
 }
 
 /// Mock embeddings creation endpoint.

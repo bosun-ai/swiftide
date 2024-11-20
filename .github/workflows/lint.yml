@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-lint
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: r7kamura/rust-problem-matchers@v1
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check typos
+        uses: crate-ci/typos@master
+      - name: "Rustfmt"
+        run: cargo fmt --all --check
+      - name: Lint dependencies
+        uses: EmbarkStudios/cargo-deny-action@v2
+      - name: clippy
+        run: cargo clippy --all-targets --all-features --workspace
