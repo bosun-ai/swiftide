@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1732034233468,
+  "lastUpdate": 1732097181119,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9527,6 +9527,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246540,
             "range": "± 2482",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "r.raajey@gmail.com",
+            "name": "RK",
+            "username": "shamb0"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1774b84f00a83fe69af4a2b6a6daf397d4d9b32d",
+          "message": "feat(integrations): Add PGVector support for indexing (#392)",
+          "timestamp": "2024-11-20T10:58:12+01:00",
+          "tree_id": "a756400f0a9540bfce2852c19c9df8fde78c4239",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1774b84f00a83fe69af4a2b6a6daf397d4d9b32d"
+        },
+        "date": 1732097180644,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1289754,
+            "range": "± 947488",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244730,
+            "range": "± 2483",
             "unit": "ns/iter"
           }
         ]
