@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.3](https://github.com/bosun-ai/swiftide/compare/v0.14.2...v0.14.3) - 2024-11-20
+
+### New features
+
+- [1774b84](https://github.com/bosun-ai/swiftide/commit/1774b84f00a83fe69af4a2b6a6daf397d4d9b32d) *(integrations)*  Add PGVector support for indexing ([#392](https://github.com/bosun-ai/swiftide/pull/392))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.2...0.14.3
+
+
+
 ## [0.14.2](https://github.com/bosun-ai/swiftide/compare/v0.14.1...v0.14.2) - 2024-11-08
 
 ### Bug fixes
