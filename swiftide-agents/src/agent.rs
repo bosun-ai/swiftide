@@ -184,6 +184,10 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         self.run_agent(None, true).await
     }
 
+    pub async fn history(&self) -> Vec<ChatMessage> {
+        self.context.history().await
+    }
+
     async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
         if self.state.is_running() {
             anyhow::bail!("Agent is already running");
