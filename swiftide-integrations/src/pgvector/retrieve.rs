@@ -1,4 +1,4 @@
-use crate::pgvector::{PgVector, PgVectorBuilder};
+use crate::pgvector::{pgv_table_types::VectorConfig, PgVector, PgVectorBuilder};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use pgvector::Vector;
