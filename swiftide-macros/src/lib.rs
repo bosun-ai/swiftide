@@ -45,7 +45,7 @@ pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn derive_tool(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
-    match tool_derive_impl(input) {
+    match tool_derive_impl(&input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.into_compile_error().into(),
     }

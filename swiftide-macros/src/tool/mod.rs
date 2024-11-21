@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing as _};
 use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 use serde::ser::SerializeMap as _;
 use syn::{spanned::Spanned, DeriveInput, FnArg, ItemFn, Pat, PatType};
 
@@ -162,12 +162,14 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
 #[darling(attributes(tool), supports(struct_named))]
 struct ToolDerive {
     ident: syn::Ident,
+    #[allow(dead_code)]
     attrs: Vec<syn::Attribute>,
     #[darling(flatten)]
     tool: ToolArgs,
 }
-pub(crate) fn tool_derive_impl(input: DeriveInput) -> syn::Result<TokenStream> {
-    let parsed: ToolDerive = ToolDerive::from_derive_input(&input)?;
+
+pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
+    let parsed: ToolDerive = ToolDerive::from_derive_input(input)?;
     let struct_ident = &parsed.ident;
 
     // Build the args struct
@@ -295,7 +297,7 @@ mod tests {
             }
         };
 
-        let output = tool_derive_impl(input).unwrap();
+        let output = tool_derive_impl(&input).unwrap();
 
         insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
     }
@@ -309,7 +311,7 @@ mod tests {
             }
         };
 
-        let output = tool_derive_impl(input).unwrap();
+        let output = tool_derive_impl(&input).unwrap();
 
         insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
     }
