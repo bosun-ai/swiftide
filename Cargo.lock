@@ -575,7 +575,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -1374,7 +1374,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "serde_urlencoded",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-util",
  "tower-service",
@@ -3039,7 +3039,7 @@ dependencies = [
  "semver",
  "serde",
  "siphasher 1.0.1",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "toml",
  "tracing",
@@ -3054,7 +3054,7 @@ dependencies = [
  "bytes",
  "fluvio-types",
  "serde",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -3079,7 +3079,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_yaml",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "toml",
  "tracing",
 ]
@@ -3101,7 +3101,7 @@ dependencies = [
  "futures-util",
  "pin-project",
  "socket2 0.5.7",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tracing",
  "ws_stream_wasm",
 ]
@@ -3124,7 +3124,7 @@ dependencies = [
  "flv-util",
  "once_cell",
  "semver",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio-util",
  "tracing",
 ]
@@ -3154,7 +3154,7 @@ dependencies = [
  "fluvio-stream-model",
  "paste",
  "static_assertions",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tracing",
 ]
 
@@ -3167,7 +3167,7 @@ dependencies = [
  "eyre",
  "fluvio-protocol",
  "fluvio-smartmodule-derive",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tracing",
 ]
 
@@ -3202,7 +3202,7 @@ dependencies = [
  "once_cell",
  "pin-project",
  "semver",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-util",
  "tracing",
@@ -3273,7 +3273,7 @@ checksum = "1a5892e3a0f8f4962386137ab3a39cc82568d2c662aed8e55deb13a9c0f1a06b"
 dependencies = [
  "event-listener 5.3.1",
  "serde",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "toml",
  "tracing",
 ]
@@ -3752,7 +3752,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_json",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "ureq",
 ]
 
@@ -3773,7 +3773,7 @@ dependencies = [
  "ipnet",
  "once_cell",
  "rand 0.8.5",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tinyvec",
  "tokio",
  "tracing",
@@ -3796,7 +3796,7 @@ dependencies = [
  "rand 0.8.5",
  "resolv-conf",
  "smallvec",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
 ]
@@ -5242,7 +5242,7 @@ dependencies = [
  "memchr",
  "mime",
  "selectors 0.22.0",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -5519,7 +5519,7 @@ dependencies = [
  "skeptic",
  "smallvec",
  "tagptr",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "triomphe",
  "uuid",
 ]
@@ -6127,7 +6127,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879952a81a83930934cbf1786752d6dedc3b1f29e8f8fb2ad1d0a36f377cf442"
 dependencies = [
  "memchr",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "ucd-trie",
 ]
 
@@ -6693,7 +6693,7 @@ dependencies = [
  "prost-types 0.13.3",
  "serde",
  "serde_json",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tonic",
 ]
 
@@ -6939,7 +6939,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "simd_helpers",
  "system-deps",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "v_frame",
  "wasm-bindgen",
 ]
@@ -7079,7 +7079,7 @@ checksum = "ba009ff324d1fc1b900bd1fdb31564febe58a8ccc8a6fdbb93b543d33b13ca43"
 dependencies = [
  "getrandom 0.2.15",
  "libredox",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -7201,7 +7201,7 @@ dependencies = [
  "nom",
  "pin-project-lite",
  "reqwest",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -8066,7 +8066,7 @@ dependencies = [
  "sha2",
  "smallvec",
  "sqlformat",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -8151,7 +8151,7 @@ dependencies = [
  "smallvec",
  "sqlx-core",
  "stringprep",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tracing",
  "uuid",
  "whoami",
@@ -8191,7 +8191,7 @@ dependencies = [
  "smallvec",
  "sqlx-core",
  "stringprep",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tracing",
  "uuid",
  "whoami",
@@ -8690,7 +8690,7 @@ dependencies = [
  "tantivy-stacker",
  "tantivy-tokenizer-api",
  "tempfile",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "time",
  "uuid",
  "winapi",
@@ -8938,7 +8938,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tokio-tar",
@@ -8960,7 +8960,7 @@ dependencies = [
  "pulldown-cmark 0.12.2",
  "regex",
  "strum",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "unicode-segmentation",
 ]
 
@@ -8972,11 +8972,11 @@ checksum = "8eaa81235c7058867fa8c0e7314f33dcce9c215f535d1913822a2b3f5e289f3c"
 
 [[package]]
 name = "thiserror"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02dd99dc800bbb97186339685293e1cc5d9df1f8fae2d0aecd9ff1c77efea892"
+checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
 dependencies = [
- "thiserror-impl 1.0.68",
+ "thiserror-impl 1.0.69",
 ]
 
 [[package]]
@@ -8990,9 +8990,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7c61ec9a6f64d2793d8a45faba21efbe3ced62a886d44c36a009b2b519b4c7e"
+checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9142,7 +9142,7 @@ dependencies = [
  "serde",
  "serde_json",
  "spm_precompiled",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "unicode-normalization-alignments",
  "unicode-segmentation",
  "unicode_categories",
@@ -10278,7 +10278,7 @@ dependencies = [
  "pharos",
  "rustc_version",
  "send_wrapper",
- "thiserror 1.0.68",
+ "thiserror 1.0.69",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
