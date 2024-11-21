@@ -107,7 +107,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_iteration_tracking() {
-        let mut context = DefaultContext::default();
+        let context = DefaultContext::default();
 
         // Record initial chat messages
         context
@@ -151,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_should_complete_after_tool_call() {
-        let mut context = DefaultContext::default();
+        let context = DefaultContext::default();
         // Record initial chat messages
         context
             .add_messages(&[

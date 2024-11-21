@@ -1,4 +1,4 @@
-use std::{hash::Hash, path::PathBuf, sync::Arc};
+use std::{hash::Hash, path::PathBuf};
 
 use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
 use anyhow::Result;

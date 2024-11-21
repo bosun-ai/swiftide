@@ -9,7 +9,6 @@ use std::{collections::HashSet, sync::Arc};
 
 use anyhow::Result;
 use derive_builder::Builder;
-use dyn_clone::DynClone;
 use swiftide_core::{
     chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolOutput},
     prompt::Prompt,
