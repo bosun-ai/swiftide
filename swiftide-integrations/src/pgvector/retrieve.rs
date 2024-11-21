@@ -1,4 +1,4 @@
-use crate::pgvector::{PgVector, PgVectorBuilder};
+use crate::pgvector::{pgv_table_types::VectorConfig, PgVector, PgVectorBuilder};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use pgvector::Vector;
@@ -24,20 +24,36 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
         search_strategy: &SimilaritySingleEmbedding<String>,
         query_state: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
-        let embedding = query_state
-            .embedding
-            .as_ref()
-            .ok_or_else(|| anyhow!("No embedding for query"))?;
-        let embedding = Vector::from(embedding.clone());
+        let (vector_column_name, embedding) = match (
+            query_state.embedding.as_ref(),
+            query_state.adv_embedding.as_ref(),
+        ) {
+            (Some(embed), None) => {
+                let vector_column_name = self.get_vector_column_name()?;
+                let embedding = Vector::from(embed.clone());
+                (vector_column_name, embedding)
+            }
+            (None, Some(adv_embed)) => {
+                let vector_column_name = VectorConfig::from(adv_embed.embedded_field.clone()).field;
+                let embedding = Vector::from(adv_embed.field_value.clone());
+                (vector_column_name, embedding)
+            }
+            (None, None) => {
+                return Err(anyhow!("No embedding found in query state"));
+            }
+            (Some(_), Some(_)) => {
+                return Err(anyhow!(
+                    "Both regular and advanced embeddings found. Please provide only one type."
+                ));
+            }
+        };
 
-        // let pool = self.connection_pool.get_pool().await?;
-        let pool = self.connection_pool.get_pool()?;
+        let pool = self.pool_get_or_initialize().await?;
 
         let default_columns: Vec<_> = PgVectorBuilder::default_fields()
             .iter()
             .map(|f| f.field_name().to_string())
             .collect();
-        let vector_column_name = self.get_vector_column_name()?;
 
         // Start building the SQL query
         let mut sql = format!(
@@ -83,7 +99,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
         let data: Vec<VectorSearchResult> = sqlx::query_as(&sql)
             .bind(embedding)
             .bind(top_k)
-            .fetch_all(&pool)
+            .fetch_all(pool)
             .await?;
 
         let docs = data.into_iter().map(|r| r.chunk).collect();
@@ -110,66 +126,23 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
 
 #[cfg(test)]
 mod tests {
-    use crate::pgvector::PgVector;
+    use crate::pgvector::fixtures::TestContext;
     use futures_util::TryStreamExt;
+    use std::collections::HashSet;
     use swiftide_core::{indexing, indexing::EmbeddedField, Persist};
     use swiftide_core::{
         querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
         Retrieve,
     };
-    use temp_dir::TempDir;
-    use testcontainers::{ContainerAsync, GenericImage};
-
-    struct TestContext {
-        pgv_storage: PgVector,
-        _temp_dir: TempDir,
-        _pgv_db_container: ContainerAsync<GenericImage>,
-    }
-
-    impl TestContext {
-        /// Set up the test context, initializing `PostgreSQL` and `PgVector` storage
-        async fn setup() -> Result<Self, Box<dyn std::error::Error>> {
-            // Start PostgreSQL container and obtain the connection URL
-            let (pgv_db_container, pgv_db_url, temp_dir) =
-                swiftide_test_utils::start_postgres().await;
-
-            tracing::info!("Postgres database URL: {:#?}", pgv_db_url);
-
-            // Configure and build PgVector storage
-            let pgv_storage = PgVector::builder()
-                .try_connect_to_pool(pgv_db_url, Some(10))
-                .await
-                .map_err(|err| {
-                    tracing::error!("Failed to connect to Postgres server: {}", err);
-                    err
-                })?
-                .vector_size(384)
-                .with_vector(EmbeddedField::Combined)
-                .with_metadata("filter")
-                .table_name("swiftide_pgvector_test".to_string())
-                .build()
-                .map_err(|err| {
-                    tracing::error!("Failed to build PgVector: {}", err);
-                    err
-                })?;
-
-            // Set up PgVector storage (create the table if not exists)
-            pgv_storage.setup().await.map_err(|err| {
-                tracing::error!("PgVector setup failed: {}", err);
-                err
-            })?;
-
-            Ok(Self {
-                pgv_storage,
-                _temp_dir: temp_dir,
-                _pgv_db_container: pgv_db_container,
-            })
-        }
-    }
 
     #[test_log::test(tokio::test)]
     async fn test_retrieve_multiple_docs_and_filter() {
-        let test_context = TestContext::setup().await.expect("Test setup failed");
+        let test_context = TestContext::setup_with_cfg(
+            vec!["filter"].into(),
+            HashSet::from([EmbeddedField::Combined]),
+        )
+        .await
+        .expect("Test setup failed");
 
         let nodes = vec![
             indexing::Node::new("test_query1").with_metadata(("filter", "true")),

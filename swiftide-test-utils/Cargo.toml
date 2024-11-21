@@ -27,8 +27,6 @@ wiremock = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-tempfile = { workspace = true }
-portpicker = { workspace = true }
 
 [features]
 default = ["test-utils"]

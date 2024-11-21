@@ -77,6 +77,8 @@ pub(crate) struct PgVectorTestData<'a> {
     pub metadata: Option<indexing::Metadata>,
     /// Vector embeddings with their corresponding fields
     pub vectors: Vec<(indexing::EmbeddedField, Vec<f32>)>,
+    pub expected_in_results: bool,
+    pub use_adv_embedding_query: bool,
 }
 
 impl<'a> PgVectorTestData<'a> {

@@ -93,6 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     tracing::info!("Starting indexing pipeline");
+
     indexing::Pipeline::from_loader(FileLoader::new(test_dataset_path).with_extensions(&["md"]))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
         .then(MetadataQAText::new(llm_client.clone()))
@@ -101,7 +102,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run()
         .await?;
 
-    tracing::info!("PgVector Indexing test completed successfully");
+    tracing::info!("PgVector Indexing completed successfully");
+
     for (i, question) in [
             "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.",
             "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.",
@@ -121,5 +123,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
     tracing::info!("PgVector Indexing & retrieval test completed successfully");
+
     Ok(())
 }
