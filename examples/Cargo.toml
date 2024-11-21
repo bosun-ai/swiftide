@@ -23,7 +23,7 @@ swiftide = { path = "../swiftide/", features = [
   "lancedb",
   "swiftide-agents",
 ] }
-tracing-subscriber = "0.3"
+tracing-subscriber = { workspace = true }
 serde_json = { workspace = true }
 spider = { workspace = true }
 qdrant-client = { workspace = true }
@@ -31,6 +31,9 @@ fluvio = { workspace = true }
 temp-dir = { workspace = true }
 anyhow = { workspace = true }
 indoc = { workspace = true }
+sqlx = { workspace = true }
+swiftide-test-utils = { path = "../swiftide-test-utils" }
+tracing = { workspace = true }
 
 [[example]]
 doc-scrape-examples = true
@@ -98,3 +101,7 @@ path = "lancedb.rs"
 [[example]]
 name = "hello-agents"
 path = "hello_agents.rs"
+
+[[example]]
+name = "index-md-pgvector"
+path = "index_md_into_pgvector.rs"

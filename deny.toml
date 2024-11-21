@@ -10,7 +10,6 @@ allow = [
   "ISC",
   "MIT",
   "Unicode-DFS-2016",
-  "WTFPL",
   "MPL-2.0",
   "Apache-2.0 WITH LLVM-exception",
   "Unlicense",
@@ -18,12 +17,17 @@ allow = [
   "zlib-acknowledgement",
   "Zlib",
   "0BSD",
+  "Unicode-3.0",
 ]
 exceptions = [{ allow = ["OpenSSL"], crate = "ring" }]
 
 [advisories]
 version = 2
-ignore = ["RUSTSEC-2023-0086"]
+ignore = [
+  { id = "RUSTSEC-2023-0086", reason = "Ignore a security adivisory on lexical-core" },
+  { id = "RUSTSEC-2021-0141", reason = "Dotenv is used by spider" },
+  { id = "RUSTSEC-2024-0384", reason = "Instant is unmaintained" },
+]
 
 [bans]
 multiple-versions = "allow"

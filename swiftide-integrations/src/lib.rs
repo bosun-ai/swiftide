@@ -16,6 +16,8 @@ pub mod ollama;
 pub mod openai;
 #[cfg(feature = "parquet")]
 pub mod parquet;
+#[cfg(feature = "pgvector")]
+pub mod pgvector;
 #[cfg(feature = "qdrant")]
 pub mod qdrant;
 #[cfg(feature = "redb")]
