@@ -16,6 +16,13 @@ pub trait ToolExecutor: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
 }
 
+#[async_trait]
+impl<T: ToolExecutor> ToolExecutor for &T {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
+        (*self).exec_cmd(cmd).await
+    }
+}
+
 /// Commands that can be executed by the executor
 /// TODO: Borrow it all?
 #[non_exhaustive]
@@ -26,6 +33,19 @@ pub enum Command {
     WriteFile(PathBuf, String),
 }
 
+impl Command {
+    pub fn shell<S: Into<String>>(cmd: S) -> Self {
+        Command::Shell(cmd.into())
+    }
+
+    pub fn read_file<P: Into<PathBuf>>(path: P) -> Self {
+        Command::ReadFile(path.into())
+    }
+
+    pub fn write_file<P: Into<PathBuf>, S: Into<String>>(path: P, content: S) -> Self {
+        Command::WriteFile(path.into(), content.into())
+    }
+}
 #[derive(Debug, Clone)]
 pub enum Output {
     /// Infallible text output
@@ -45,7 +65,9 @@ impl std::fmt::Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Output::Text(value) => write!(f, "{value}"),
-            Output::Shell { stdout, .. } => write!(f, "{stdout}"),
+            Output::Shell { stdout, stderr, .. } => {
+                write!(f, "{stdout}{stderr}")
+            }
             Output::Ok => write!(f, "Ok"),
         }
     }
