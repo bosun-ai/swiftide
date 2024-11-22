@@ -2,10 +2,10 @@ use std::collections::HashSet;
 
 use anyhow::{Context as _, Result};
 use async_openai::types::{
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
-    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs, ChatCompletionTool,
-    ChatCompletionToolArgs, ChatCompletionToolType, CreateChatCompletionRequestArgs,
-    FunctionObjectArgs,
+    ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
+    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
+    ChatCompletionRequestUserMessageArgs, ChatCompletionTool, ChatCompletionToolArgs,
+    ChatCompletionToolType, CreateChatCompletionRequestArgs, FunctionCall, FunctionObjectArgs,
 };
 use async_trait::async_trait;
 use itertools::Itertools;
@@ -127,7 +127,19 @@ fn message_to_openai(
                 .build()?
                 .into(),
         ),
-        ChatMessage::ToolCall(_) => None,
+        ChatMessage::ToolCall(tool_call) => Some(
+            ChatCompletionRequestAssistantMessageArgs::default()
+                .tool_calls(vec![ChatCompletionMessageToolCall {
+                    id: tool_call.id().to_string(),
+                    r#type: ChatCompletionToolType::Function,
+                    function: FunctionCall {
+                        name: tool_call.name().to_string(),
+                        arguments: tool_call.args().unwrap_or_default().to_string(),
+                    },
+                }])
+                .build()?
+                .into(),
+        ),
         ChatMessage::ToolOutput(tool_call, tool_output) => {
             let Some(content) = tool_output.content() else {
                 return Ok(None);
