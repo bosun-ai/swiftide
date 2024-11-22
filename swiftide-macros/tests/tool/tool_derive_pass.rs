@@ -49,4 +49,16 @@ impl MyToolNoArgs {
     }
 }
 
+#[derive(Clone, Tool)]
+#[tool(description = "Hello tool")]
+struct MyToolLifetime<'a> {
+    test: &'a str,
+}
+
+impl MyToolLifetime<'_> {
+    async fn my_tool_lifetime(&self, agent_context: &dyn AgentContext) -> Result<ToolOutput> {
+        Ok(format!("Hello world").into())
+    }
+}
+
 fn main() {}

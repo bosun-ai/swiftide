@@ -222,11 +222,23 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     let json_spec = json_spec::json_spec(&expected_fn_name, &parsed.tool);
 
+    let struct_lifetimes = input
+        .generics
+        .lifetimes()
+        .map(|l| &l.lifetime)
+        .collect::<Vec<_>>();
+
+    let struct_lifetime = if struct_lifetimes.is_empty() {
+        quote! {}
+    } else {
+        quote! { <#(#struct_lifetimes),*> }
+    };
+
     Ok(quote! {
         #tool_args
 
         #[async_trait::async_trait]
-        impl swiftide::traits::Tool for #struct_ident {
+        impl #struct_lifetime swiftide::traits::Tool for #struct_ident #struct_lifetime {
             async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
                 #invoke_body
             }
@@ -318,6 +330,20 @@ mod tests {
             #[tool(description="Hello derive", param(name="test", description="test param"))]
             pub struct HelloDerive {
                 my_thing: String
+            }
+        };
+
+        let output = tool_derive_impl(&input).unwrap();
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
+    fn test_snapshot_derive_with_lifetime() {
+        let input: DeriveInput = parse_quote! {
+            #[tool(description="Hello derive", param(name="test", description="test param"))]
+            pub struct HelloDerive<'a> {
+                my_thing: &'a str,
             }
         };
 
