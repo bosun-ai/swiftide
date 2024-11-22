@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
+use swiftide_core::chat_completion::{ToolOutput, ToolSpec};
 
 use indoc::indoc;
 use swiftide_core::{AgentContext, Tool};
@@ -18,7 +18,7 @@ macro_rules! chat_request {
                 vec![$(Box::new($tool) as Box<dyn Tool>),*]
                     .into_iter()
                     .chain(Agent::<DefaultContext>::default_tools())
-                    .map(|tool| tool.json_spec())
+                    .map(|tool| tool.tool_spec())
                     .collect::<HashSet<_>>(),
             )
             .build()
@@ -121,13 +121,12 @@ impl Tool for MockTool {
         "mock_tool"
     }
 
-    fn json_spec(&self) -> JsonSpec {
-        indoc! {r#"
-           {
-               "name": "mock_tool",
-               "description": "A fake tool for testing purposes",
-           } 
-        "#}
+    fn tool_spec(&self) -> ToolSpec {
+        ToolSpec::builder()
+            .name("mock_tool")
+            .description("A fake tool for testing purposes")
+            .build()
+            .unwrap()
     }
 }
 

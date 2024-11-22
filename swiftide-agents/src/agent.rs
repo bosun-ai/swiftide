@@ -241,7 +241,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             .tools_spec(
                 self.tools
                     .iter()
-                    .map(|tool| tool.json_spec())
+                    .map(|tool| tool.tool_spec())
                     .collect::<HashSet<_>>(),
             )
             .build()?;

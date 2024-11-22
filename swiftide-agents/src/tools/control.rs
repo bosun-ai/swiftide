@@ -1,6 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{chat_completion::ToolOutput, AgentContext, Tool};
+use swiftide_core::{
+    chat_completion::{ToolOutput, ToolSpec},
+    AgentContext, Tool,
+};
 
 // TODO: Cannot use macros in our own crates because of import shenanigans
 #[derive(Clone, Debug, Default)]
@@ -20,12 +23,11 @@ impl Tool for Stop {
         "stop"
     }
 
-    fn json_spec(&self) -> swiftide_core::chat_completion::JsonSpec {
-        r#"
-        {
-            "name": "stop",
-            "description": "When you have completed, or cannot complete, your task, call this",
-        }
-        "#
+    fn tool_spec(&self) -> ToolSpec {
+        ToolSpec::builder()
+            .name("stop")
+            .description("When you have completed, or cannot complete, your task, call this")
+            .build()
+            .unwrap()
     }
 }

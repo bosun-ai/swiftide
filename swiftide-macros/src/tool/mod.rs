@@ -6,7 +6,7 @@ use serde::ser::SerializeMap as _;
 use syn::{spanned::Spanned, DeriveInput, FnArg, ItemFn, Pat, PatType};
 
 mod args;
-mod json_spec;
+mod tool_spec;
 mod wrapped;
 
 #[derive(FromMeta, Default, Debug)]
@@ -58,7 +58,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
 
     let wrapped_fn = wrapped::wrap_tool_fn(input);
 
-    let json_spec = json_spec::json_spec(&tool_name, &args);
+    let tool_spec = tool_spec::tool_spec(&tool_name, &args);
 
     let mut found_spec_arg_names = args
         .param
@@ -151,8 +151,8 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
                 #tool_name
             }
 
-            fn json_spec(&self) -> ::swiftide::chat_completion::JsonSpec {
-                #json_spec
+            fn tool_spec(&self) -> ::swiftide::chat_completion::ToolSpec {
+                #tool_spec
             }
         }
     }
@@ -220,7 +220,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     };
 
-    let json_spec = json_spec::json_spec(&expected_fn_name, &parsed.tool);
+    let tool_spec = tool_spec::tool_spec(&expected_fn_name, &parsed.tool);
 
     let struct_lifetimes = input
         .generics
@@ -248,8 +248,8 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 #expected_fn_name
             }
 
-            fn json_spec(&self) -> swiftide::chat_completion::JsonSpec {
-                #json_spec
+            fn tool_spec(&self) -> swiftide::chat_completion::ToolSpec {
+                #tool_spec
             }
         }
     })

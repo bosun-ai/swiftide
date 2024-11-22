@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
 use dyn_clone::DynClone;
+use serde::ser::SerializeMap as _;
 
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
@@ -89,7 +90,7 @@ pub struct ChatCompletionRequest {
     // and add it to message if present
     messages: Vec<ChatMessage>,
     #[builder(default)]
-    tools_spec: HashSet<JsonSpec>,
+    tools_spec: HashSet<ToolSpec>,
 }
 
 impl ChatCompletionRequest {
@@ -196,4 +197,95 @@ impl ToolCall {
     }
 }
 
-pub type JsonSpec = &'static str;
+// Example jsonspec for a tool
+// {
+//     "type": "function",
+//     "function": {
+//         "name": "get_delivery_date",
+//         "description": "Get the delivery date for a customer's order. Call this whenever you need to know the delivery date, for example when a customer asks 'Where is my package'",
+//         "parameters": {
+//             "type": "object",
+//             "properties": {
+//                 "order_id": {
+//                     "type": "string",
+//                     "description": "The customer's order ID.",
+//                 },
+//             },
+//             "required": ["order_id"],
+//             "additionalProperties": False,
+//         },
+//     }
+// }
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder)]
+pub struct ToolSpec {
+    pub name: &'static str,
+    pub description: &'static str,
+
+    pub parameters: Vec<ParamSpec>,
+}
+
+impl ToolSpec {
+    pub fn builder() -> ToolSpecBuilder {
+        ToolSpecBuilder::default()
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Builder)]
+pub struct ParamSpec {
+    pub name: &'static str,
+    pub description: &'static str,
+}
+
+impl ParamSpec {
+    pub fn builder() -> ParamSpecBuilder {
+        ParamSpecBuilder::default()
+    }
+}
+
+/*
+Returns a serialized json spec
+
+i.e. given a `PrameterSpec { name: "order_id", description: "The customer's order ID." }`
+
+```json
+{
+"order_id": {
+     "type": "string",
+     "description": "The customer's order ID."
+}
+}
+```
+
+*/
+impl serde::Serialize for ParamSpec {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Use a hashmap to serialize
+        let mut map = serializer.serialize_map(Some(1))?;
+        let child_values = std::collections::HashMap::<&str, &str>::from_iter(vec![
+            ("type", "string"),
+            ("description", self.description),
+        ]);
+
+        map.serialize_entry(self.name, &child_values)?;
+        map.end()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_parameter_spec_serialize() {
+        let spec = ParamSpec {
+            name: "order_id",
+            description: "The customer's order ID.",
+        };
+        let serialized = serde_json::to_string(&spec).unwrap();
+        let expected = r#"{"order_id":{"type":"string","description":"The customer's order ID."}}"#;
+        assert_eq!(serialized, expected);
+    }
+}

@@ -14,7 +14,11 @@ impl swiftide::traits::Tool for HelloDerive {
     fn name(&self) -> &'static str {
         "hello_derive"
     }
-    fn json_spec(&self) -> swiftide::chat_completion::JsonSpec {
-        "{\"description\":\"Hello derive\",\"name\":\"hello_derive\"}"
+    fn tool_spec(&self) -> swiftide::chat_completion::ToolSpec {
+        swiftide::chat_completion::ToolSpec::builder()
+            .name("hello_derive")
+            .description("Hello derive")
+            .build()
+            .unwrap()
     }
 }

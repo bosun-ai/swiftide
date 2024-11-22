@@ -1,6 +1,6 @@
 use std::{hash::Hash, path::PathBuf};
 
-use crate::chat_completion::{ChatMessage, JsonSpec, ToolOutput};
+use crate::chat_completion::{ChatMessage, ToolOutput, ToolSpec};
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
@@ -113,10 +113,7 @@ pub trait Tool: Send + Sync + DynClone {
 
     fn name(&self) -> &'static str;
 
-    // Ideas:
-    // Typed instead of string
-    // LLMs have different requirements, validators?
-    fn json_spec(&self) -> JsonSpec;
+    fn tool_spec(&self) -> ToolSpec;
 
     fn boxed<'a>(self) -> Box<dyn Tool + 'a>
     where
