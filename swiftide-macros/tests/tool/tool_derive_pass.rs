@@ -13,13 +13,27 @@ struct MyTool {
 }
 
 impl MyTool {
-    async fn my_tool(
+    async fn my_tool(&self, agent_context: &dyn AgentContext, test: &str) -> Result<ToolOutput> {
+        Ok(format!("Hello {test}").into())
+    }
+}
+
+#[derive(Clone, Tool)]
+#[tool(
+    description = "Hello tool",
+    param(name = "test", description = "My param"),
+    param(name = "other", description = "My other param")
+)]
+struct MyToolMultiParams {}
+
+impl MyToolMultiParams {
+    async fn my_tool_multi_params(
         &self,
         agent_context: &dyn AgentContext,
-        args: MyToolArgs,
+        test: &str,
+        other: &str,
     ) -> Result<ToolOutput> {
-        let arg = args.test;
-        Ok(format!("Hello {arg}").into())
+        Ok(format!("Hello {test} {other}").into())
     }
 }
 

@@ -21,7 +21,7 @@ impl swiftide::traits::Tool for HelloDerive {
             anyhow::bail!("No arguments provided for {}", "hello_derive")
         };
         let args: HelloDeriveArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
-        return self.hello_derive(agent_context, args).await;
+        return self.hello_derive(agent_context, &args.test).await;
     }
     fn name(&self) -> &'static str {
         "hello_derive"

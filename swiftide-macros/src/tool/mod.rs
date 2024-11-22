@@ -195,10 +195,20 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     };
 
+    let arg_names = parsed
+        .tool
+        .param
+        .iter()
+        .map(|param| {
+            let field_name = syn::Ident::new(&param.name, struct_ident.span());
+            quote! { args.#field_name}
+        })
+        .collect::<Vec<_>>();
+
     // Build the trait impl
     let expected_fn_name = struct_ident.to_string().to_case(Case::Snake);
     let expected_fn_ident = syn::Ident::new(&expected_fn_name, struct_ident.span());
-    let invoke_body = if args_struct_fields.is_empty() {
+    let invoke_body = if arg_names.is_empty() {
         quote! { return self.#expected_fn_ident(agent_context).await }
     } else {
         quote! {
@@ -206,7 +216,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             else { anyhow::bail!("No arguments provided for {}", #expected_fn_name) };
 
             let args: #args_struct_name = ::swiftide::reexports::serde_json::from_str(&args)?;
-            return self.#expected_fn_ident(agent_context, args).await;
+            return self.#expected_fn_ident(agent_context, #(&#arg_names),*).await;
         }
     };
 
