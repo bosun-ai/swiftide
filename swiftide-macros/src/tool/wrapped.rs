@@ -35,8 +35,10 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> TokenStream {
         #[derive(Clone, Default)]
         pub struct #struct_name {}
 
-        pub fn #fn_name() -> #struct_name {
-            #struct_name {}
+        /// Create a new instance of the tool as a boxed trait object
+        /// NOTE: Maybe we should have a separate `boxed` method for this?
+        pub fn #fn_name() -> Box<dyn ::swiftide::traits::Tool> {
+            Box::new(#struct_name {})
         }
 
         impl #struct_name {

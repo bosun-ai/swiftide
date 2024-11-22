@@ -117,16 +117,24 @@ pub trait Tool: Send + Sync + DynClone {
     // Typed instead of string
     // LLMs have different requirements, validators?
     fn json_spec(&self) -> JsonSpec;
+
+    fn boxed<'a>(self) -> Box<dyn Tool + 'a>
+    where
+        Self: Sized + 'a,
+    {
+        Box::new(self)
+    }
 }
 
 dyn_clone::clone_trait_object!(Tool);
 
-impl<'a, T: 'a> From<T> for Box<dyn Tool + 'a>
+impl<T> From<T> for Box<dyn Tool + '_>
 where
-    T: Tool,
+    for<'b> T: Tool + 'b,
 {
     fn from(value: T) -> Self {
-        dyn_clone::clone_box(&value)
+        // dyn_clone::clone_box(&value)
+        Box::new(value)
     }
 }
 

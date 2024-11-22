@@ -134,10 +134,10 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
         self
     }
 
-    pub fn tools<TOOL: Into<Box<dyn Tool>>, I: IntoIterator<Item = TOOL>>(
-        &mut self,
-        tools: I,
-    ) -> &mut Self {
+    pub fn tools<TOOL, I: IntoIterator<Item = TOOL>>(&mut self, tools: I) -> &mut Self
+    where
+        TOOL: Into<Box<dyn Tool>>,
+    {
         self.tools = Some(
             tools
                 .into_iter()

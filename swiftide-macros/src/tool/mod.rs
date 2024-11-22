@@ -237,6 +237,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     Ok(quote! {
         #tool_args
 
+
         #[async_trait::async_trait]
         impl #struct_lifetime swiftide::traits::Tool for #struct_ident #struct_lifetime {
             async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
