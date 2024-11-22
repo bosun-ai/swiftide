@@ -472,12 +472,12 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     async fn test_agent_hooks() {
-        let mock_before_all = MockHook::new().expect_calls(1).to_owned();
-        let mock_before_each = MockHook::new().expect_calls(2).to_owned();
-        let mock_after_each = MockHook::new().expect_calls(2).to_owned();
+        let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
+        let mock_before_each = MockHook::new("before_each").expect_calls(2).to_owned();
+        let mock_after_each = MockHook::new("after_each").expect_calls(2).to_owned();
 
         // Once for mock tool and once for stop
-        let mock_after_tool = MockHook::new().expect_calls(2).to_owned();
+        let mock_after_tool = MockHook::new("after_tool").expect_calls(2).to_owned();
 
         let prompt = "Write a poem";
         let mock_llm = MockChatCompletion::new();

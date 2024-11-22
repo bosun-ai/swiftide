@@ -149,13 +149,15 @@ impl Drop for MockTool {
 
 #[derive(Debug, Clone)]
 pub struct MockHook {
+    name: &'static str,
     called: Arc<Mutex<usize>>,
     expected_calls: usize,
 }
 
 impl MockHook {
-    pub fn new() -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
+            name,
             called: Arc::new(Mutex::new(0)),
             expected_calls: 0,
         }
@@ -200,11 +202,17 @@ impl Drop for MockHook {
             return;
         };
 
-        assert!(
-            *called == self.expected_calls,
-            "[MockHook] was called {} times but expected {}",
-            *called,
-            self.expected_calls
-        );
+        if *called == self.expected_calls {
+            tracing::debug!(
+                "[MockHook] `{}` all expectations met; called {} times",
+                self.name,
+                *called
+            );
+        } else {
+            panic!(
+                "[MockHook] `{}` was called {} times but expected {}",
+                self.name, *called, self.expected_calls
+            )
+        }
     }
 }

@@ -1,13 +1,17 @@
+use std::collections::HashSet;
+
 use anyhow::{Context as _, Result};
 use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
-    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs,
+    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs, ChatCompletionTool,
+    ChatCompletionToolArgs, ChatCompletionToolType, CreateChatCompletionRequestArgs,
+    FunctionObjectArgs,
 };
 use async_trait::async_trait;
 use itertools::Itertools;
+use serde_json::json;
 use swiftide_core::chat_completion::{
-    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
 };
 
 use super::OpenAI;
@@ -32,6 +36,13 @@ impl ChatCompletion for OpenAI {
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(messages)
+            .tools(
+                request
+                    .tools_spec()
+                    .iter()
+                    .map(tools_to_openai)
+                    .collect::<Result<Vec<_>>>()?,
+            )
             .build()?;
 
         let response = self
@@ -69,6 +80,35 @@ impl ChatCompletion for OpenAI {
             )
             .build()
     }
+}
+
+// TODO: Maybe just into the whole thing? Types are not in this crate
+
+fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
+    let mut properties = serde_json::Map::new();
+
+    for param in &spec.parameters {
+        properties.insert(
+            param.name.to_string(),
+            json!({
+                "type": "string",
+                "description": param.description,
+            }),
+        );
+    }
+
+    ChatCompletionToolArgs::default()
+        .r#type(ChatCompletionToolType::Function)
+        .function(FunctionObjectArgs::default()
+            .name(spec.name)
+            .description(spec.description)
+            .parameters(json!({
+                "type": "object",
+                "properties": properties,
+                "required": spec.parameters.iter().filter(|param| param.required).map(|param| param.name).collect_vec(),
+                "additionalProperties": false,
+            })).build()?).build()
+        .map_err(anyhow::Error::from)
 }
 
 fn message_to_openai(
