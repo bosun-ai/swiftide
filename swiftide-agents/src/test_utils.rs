@@ -62,6 +62,19 @@ macro_rules! tool_output {
 }
 
 #[macro_export]
+macro_rules! tool_call {
+    ($tool_name:expr) => {{
+        ChatMessage::ToolCall(
+            ToolCall::builder()
+                .name($tool_name)
+                .id("1")
+                .build()
+                .unwrap(),
+        )
+    }};
+}
+
+#[macro_export]
 macro_rules! chat_response {
     ($message:expr; tool_calls = [$($tool_name:expr),*]) => {{
 

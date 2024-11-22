@@ -246,7 +246,15 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             )
             .build()?;
 
-        debug!("Calling LLM with request: {:?}", chat_completion_request);
+        debug!(
+            "Calling LLM with request: {}",
+            chat_completion_request
+                .messages()
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
         let response = self.llm.complete(&chat_completion_request).await?;
 
         let mut new_messages = vec![];
@@ -282,6 +290,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
 
                 self.handle_control_tools(&output);
 
+                new_messages.push(ChatMessage::ToolCall(tool_call.clone()));
                 new_messages.push(ChatMessage::ToolOutput(tool_call, output));
             }
         };
@@ -330,7 +339,7 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
-    use crate::{assistant, chat_request, chat_response, system, tool_output, user};
+    use crate::{assistant, chat_request, chat_response, system, tool_call, tool_output, user};
 
     use crate::test_utils::{MockHook, MockTool};
 
@@ -391,6 +400,7 @@ mod tests {
         let chat_request = chat_request! {
             user!("Write a poem"),
             assistant!("Roses are red"),
+            tool_call!("mock_tool"),
             tool_output!("mock_tool", "Great!");
 
             tools = [mock_tool.clone()]
@@ -500,6 +510,7 @@ mod tests {
         let chat_request = chat_request! {
             user!("Write a poem"),
             assistant!("Roses are red"),
+            tool_call!("mock_tool"),
             tool_output!("mock_tool", "Great!");
 
             tools = [mock_tool.clone()]
