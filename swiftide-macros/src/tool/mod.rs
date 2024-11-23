@@ -129,7 +129,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
     } else {
         quote! {
             let Some(args) = raw_args
-            else { ::swiftide::reexports::anyhow::bail!("No arguments provided for {}", #tool_name) };
+            else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #tool_name))) };
 
             let args: #args_struct = ::swiftide::reexports::serde_json::from_str(&args)?;
             return self.#fn_name(agent_context, #(#arg_names),*).await;
@@ -143,7 +143,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
 
         #[::swiftide::reexports::async_trait::async_trait]
         impl ::swiftide::chat_completion::Tool for #tool_struct {
-            async fn invoke(&self, agent_context: &dyn ::swiftide::traits::AgentContext, raw_args: Option<&str>) -> ::swiftide::reexports::anyhow::Result<::swiftide::chat_completion::ToolOutput> {
+            async fn invoke(&self, agent_context: &dyn ::swiftide::traits::AgentContext, raw_args: Option<&str>) -> ::std::result::Result<::swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                 #invoke_body
             }
 
@@ -213,7 +213,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     } else {
         quote! {
             let Some(args) = raw_args
-            else { anyhow::bail!("No arguments provided for {}", #expected_fn_name) };
+            else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #expected_fn_name))) };
 
             let args: #args_struct_name = ::swiftide::reexports::serde_json::from_str(&args)?;
             return self.#expected_fn_ident(agent_context, #(&#arg_names),*).await;
@@ -240,7 +240,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         #[async_trait::async_trait]
         impl #struct_lifetime swiftide::chat_completion::Tool for #struct_ident #struct_lifetime {
-            async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+            async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                 #invoke_body
             }
 
@@ -277,7 +277,7 @@ mod tests {
             )
         };
         let input: ItemFn = parse_quote! {
-            pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput, ToolError> {
                 return Ok("hello".into())
             }
         };

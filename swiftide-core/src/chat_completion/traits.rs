@@ -1,4 +1,3 @@
-use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
@@ -6,24 +5,35 @@ use crate::{AgentContext, Output};
 
 use super::{
     chat_completion_request::ChatCompletionRequest,
-    chat_completion_response::ChatCompletionResponse, ToolOutput, ToolSpec,
+    chat_completion_response::ChatCompletionResponse,
+    errors::{ChatCompletionError, ToolError},
+    ToolOutput, ToolSpec,
 };
 
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
-    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse>;
+    async fn complete(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ChatCompletionError>;
 }
 
 #[async_trait]
 impl ChatCompletion for Box<dyn ChatCompletion> {
-    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+    async fn complete(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
         (**self).complete(request).await
     }
 }
 
 #[async_trait]
 impl ChatCompletion for &dyn ChatCompletion {
-    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+    async fn complete(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
         (**self).complete(request).await
     }
 }
@@ -33,7 +43,10 @@ impl<T> ChatCompletion for &T
 where
     T: ChatCompletion + Clone + 'static,
 {
-    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+    async fn complete(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
         (**self).complete(request).await
     }
 }
@@ -77,7 +90,7 @@ pub trait Tool: Send + Sync + DynClone {
         &self,
         agent_context: &dyn AgentContext,
         raw_args: Option<&str>,
-    ) -> Result<ToolOutput>;
+    ) -> Result<ToolOutput, ToolError>;
 
     fn name(&self) -> &'static str;
 

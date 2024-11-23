@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{Tool, ToolOutput, ToolSpec};
+use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec};
 
 use indoc::indoc;
 use swiftide_core::AgentContext;
@@ -117,7 +117,7 @@ impl Tool for MockTool {
         &self,
         _agent_context: &dyn AgentContext,
         raw_args: Option<&str>,
-    ) -> Result<ToolOutput> {
+    ) -> std::result::Result<ToolOutput, ToolError> {
         let expectation = self
             .expectations
             .lock()

@@ -1,9 +1,8 @@
-use std::{hash::Hash, path::PathBuf};
+use std::path::PathBuf;
 
-use crate::chat_completion::{ChatMessage, ToolOutput, ToolSpec};
+use crate::chat_completion::ChatMessage;
 use anyhow::Result;
 use async_trait::async_trait;
-use dyn_clone::DynClone;
 
 #[async_trait]
 pub trait ToolExecutor: Send + Sync {

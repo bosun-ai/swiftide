@@ -9,14 +9,18 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+    errors::ChatCompletionError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
+    ChatMessage, ToolCall, ToolSpec,
 };
 
 use super::OpenAI;
 
 #[async_trait]
 impl ChatCompletion for OpenAI {
-    async fn complete(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse> {
+    async fn complete(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
         let model = self
             .default_options
             .prompt_model
@@ -41,14 +45,15 @@ impl ChatCompletion for OpenAI {
                     .map(tools_to_openai)
                     .collect::<Result<Vec<_>>>()?,
             )
-            .build()?;
+            .build()
+            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
         let response = self
             .client
             .chat()
             .create(request)
             .await
-            .context("Completion request to openai failed")?;
+            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
         ChatCompletionResponse::builder()
             .maybe_message(
@@ -71,12 +76,13 @@ impl ChatCompletion for OpenAI {
                                     .args(tool_call.function.arguments.clone())
                                     .name(tool_call.function.name.clone())
                                     .build()
-                                    .expect("Building tool call failed, should never happen")
+                                    .expect("infallible")
                             })
                             .collect_vec()
                     }),
             )
             .build()
+            .map_err(ChatCompletionError::from)
     }
 }
 

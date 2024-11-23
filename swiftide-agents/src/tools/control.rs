@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{
-    chat_completion::{Tool, ToolOutput, ToolSpec},
+    chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec},
     AgentContext,
 };
 
@@ -15,7 +15,7 @@ impl Tool for Stop {
         &self,
         _agent_context: &dyn AgentContext,
         _raw_args: Option<&str>,
-    ) -> Result<ToolOutput> {
+    ) -> Result<ToolOutput, ToolError> {
         Ok(ToolOutput::Stop)
     }
 

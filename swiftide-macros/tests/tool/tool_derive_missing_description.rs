@@ -1,5 +1,4 @@
-use anyhow::Result;
-use swiftide::chat_completion::ToolOutput;
+use swiftide::chat_completion::{errors::ToolError, ToolOutput};
 use swiftide::traits::AgentContext;
 use swiftide_macros::Tool;
 
@@ -9,7 +8,10 @@ struct MyToolNoArgs {
 }
 
 impl MyToolNoArgs {
-    async fn my_tool_no_args(&self, agent_context: &dyn AgentContext) -> Result<ToolOutput> {
+    async fn my_tool_no_args(
+        &self,
+        _agent_context: &dyn AgentContext,
+    ) -> Result<ToolOutput, ToolError> {
         Ok(format!("Hello world").into())
     }
 }

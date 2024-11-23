@@ -4,15 +4,27 @@ use super::ToolCall;
 
 #[derive(Error, Debug)]
 pub enum ToolError {
+    /// I.e. the llm calls the tool with the wrong arguments
     #[error("arguments for tool failed to parse")]
-    WrongArguments(ToolCall, serde_json::Error),
+    WrongArguments(#[from] serde_json::Error),
 
-    #[error("tool call missing arguments")]
-    MissingArguments(ToolCall),
+    /// Tool requires arguments but none were provided
+    #[error("no arguments provided for tool {0}")]
+    MissingArguments(String),
 
     #[error("tool call failed")]
-    ToolFailed(ToolCall, anyhow::Error),
+    ToolFailed(String),
 
-    #[error("unknown tool error")]
-    Unknown(ToolCall, anyhow::Error),
+    #[error(transparent)]
+    Unknown(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum ChatCompletionError {
+    /// Underlying errors by the llm
+    #[error("llm returned an error: {0}")]
+    LLM(Box<dyn std::error::Error + Send + Sync>),
+
+    #[error(transparent)]
+    Unknown(#[from] anyhow::Error),
 }

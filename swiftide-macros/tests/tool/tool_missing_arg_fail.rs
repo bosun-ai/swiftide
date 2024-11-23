@@ -6,7 +6,7 @@ async fn basic_tool(
     _agent_context: &dyn AgentContext,
     msg: &str,
     other: &str,
-) -> Result<ToolOutput> {
+) -> Result<ToolOutput, ToolError> {
     Ok(format!("Hello {msg}").into())
 }
 

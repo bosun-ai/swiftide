@@ -1,5 +1,4 @@
-use anyhow::Result;
-use swiftide::chat_completion::ToolOutput;
+use swiftide::chat_completion::{errors::ToolError, ToolOutput};
 use swiftide::traits::AgentContext;
 
 #[swiftide_macros::tool(
@@ -11,7 +10,7 @@ async fn basic_tool(
     _agent_context: &dyn AgentContext,
     msg: &str,
     other: &str,
-) -> Result<ToolOutput> {
+) -> Result<ToolOutput, ToolError> {
     Ok(format!("Hello {msg}").into())
 }
 

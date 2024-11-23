@@ -1,5 +1,4 @@
-use anyhow::Result;
-use swiftide::chat_completion::ToolOutput;
+use swiftide::chat_completion::{errors::ToolError, ToolOutput};
 use swiftide::traits::AgentContext;
 use swiftide_macros::Tool;
 
@@ -13,7 +12,11 @@ struct MyTool {
 }
 
 impl MyTool {
-    async fn my_tool(&self, agent_context: &dyn AgentContext, test: &str) -> Result<ToolOutput> {
+    async fn my_tool(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &str,
+    ) -> Result<ToolOutput, ToolError> {
         Ok(format!("Hello {test}").into())
     }
 }
@@ -32,7 +35,7 @@ impl MyToolMultiParams {
         agent_context: &dyn AgentContext,
         test: &str,
         other: &str,
-    ) -> Result<ToolOutput> {
+    ) -> Result<ToolOutput, ToolError> {
         Ok(format!("Hello {test} {other}").into())
     }
 }
@@ -44,7 +47,10 @@ struct MyToolNoArgs {
 }
 
 impl MyToolNoArgs {
-    async fn my_tool_no_args(&self, agent_context: &dyn AgentContext) -> Result<ToolOutput> {
+    async fn my_tool_no_args(
+        &self,
+        agent_context: &dyn AgentContext,
+    ) -> Result<ToolOutput, ToolError> {
         Ok(format!("Hello world").into())
     }
 }
@@ -56,7 +62,10 @@ struct MyToolLifetime<'a> {
 }
 
 impl MyToolLifetime<'_> {
-    async fn my_tool_lifetime(&self, agent_context: &dyn AgentContext) -> Result<ToolOutput> {
+    async fn my_tool_lifetime(
+        &self,
+        agent_context: &dyn AgentContext,
+    ) -> Result<ToolOutput, ToolError> {
         Ok(format!("Hello world").into())
     }
 }

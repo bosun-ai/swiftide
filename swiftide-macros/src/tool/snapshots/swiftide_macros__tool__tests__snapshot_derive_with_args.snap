@@ -16,9 +16,16 @@ impl swiftide::chat_completion::Tool for HelloDerive {
         &self,
         agent_context: &dyn swiftide::traits::AgentContext,
         raw_args: Option<&str>,
-    ) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+    ) -> std::result::Result<
+        swiftide::chat_completion::ToolOutput,
+        ::swiftide::chat_completion::errors::ToolError,
+    > {
         let Some(args) = raw_args else {
-            anyhow::bail!("No arguments provided for {}", "hello_derive")
+            return Err(
+                ::swiftide::chat_completion::errors::ToolError::MissingArguments(
+                    format!("No arguments provided for {}", "hello_derive"),
+                ),
+            )
         };
         let args: HelloDeriveArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
         return self.hello_derive(agent_context, &args.test).await;
