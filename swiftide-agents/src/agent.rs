@@ -20,7 +20,7 @@ use tracing::debug;
 // - [x] After calling run or run once cannot call run again
 // - [x] Cannot call continue if agent has not called run (state machine?)
 //       ... Or should we simplify it, and allow it for now?
-// - [ ] Agent should support a system prompt
+// - [x] Agent should support a system prompt
 // - [x] Hooks should  called at each correct point
 // - [ ] Errors should all be thiserror and not anyhow
 // - [ ] Improve tracing and logging (need to check when running it)
@@ -276,6 +276,11 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 tracing::info!("Calling tool `{}`", tool_call.name());
 
                 let mut output = tool.invoke(&*self.context, tool_call.args()).await?;
+                tracing::debug!(
+                    "Tool output from `{}`: {:?}",
+                    tool_call.name(),
+                    output.to_string()
+                );
 
                 for hook in self
                     .hooks
