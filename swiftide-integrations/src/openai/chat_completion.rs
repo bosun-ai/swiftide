@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use anyhow::{Context as _, Result};
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
