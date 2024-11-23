@@ -2,9 +2,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
+use crate::{AgentContext, Output};
+
 use super::{
     chat_completion_request::ChatCompletionRequest,
-    chat_completion_response::ChatCompletionResponse,
+    chat_completion_response::ChatCompletionResponse, ToolOutput, ToolSpec,
 };
 
 #[async_trait]
@@ -46,3 +48,71 @@ where
 }
 
 dyn_clone::clone_trait_object!(ChatCompletion);
+
+impl From<Output> for ToolOutput {
+    fn from(value: Output) -> Self {
+        match value {
+            Output::Text(value) => ToolOutput::Text(value),
+            Output::Ok => ToolOutput::Ok,
+            Output::Shell {
+                stdout,
+                stderr,
+                success,
+                ..
+            } => {
+                if success {
+                    ToolOutput::Text(stdout)
+                } else {
+                    ToolOutput::Text(stderr)
+                }
+            }
+        }
+    }
+}
+
+#[async_trait]
+pub trait Tool: Send + Sync + DynClone {
+    // tbd
+    async fn invoke(
+        &self,
+        agent_context: &dyn AgentContext,
+        raw_args: Option<&str>,
+    ) -> Result<ToolOutput>;
+
+    fn name(&self) -> &'static str;
+
+    fn tool_spec(&self) -> ToolSpec;
+
+    fn boxed<'a>(self) -> Box<dyn Tool + 'a>
+    where
+        Self: Sized + 'a,
+    {
+        Box::new(self)
+    }
+}
+
+dyn_clone::clone_trait_object!(Tool);
+
+impl<T> From<T> for Box<dyn Tool + '_>
+where
+    for<'b> T: Tool + 'b,
+{
+    fn from(value: T) -> Self {
+        // dyn_clone::clone_box(&value)
+        Box::new(value)
+    }
+}
+
+/// Tools are identified and unique by name
+/// These allow comparison and lookups
+impl PartialEq for Box<dyn Tool> {
+    fn eq(&self, other: &Self) -> bool {
+        self.name() == other.name()
+    }
+}
+impl Eq for Box<dyn Tool> {}
+impl std::hash::Hash for Box<dyn Tool> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name().hash(state);
+    }
+}

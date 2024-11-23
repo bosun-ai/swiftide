@@ -2,10 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{ToolOutput, ToolSpec};
+use swiftide_core::chat_completion::{Tool, ToolOutput, ToolSpec};
 
 use indoc::indoc;
-use swiftide_core::{AgentContext, Tool};
+use swiftide_core::AgentContext;
 
 use crate::hooks::{HookFn, ToolHookFn};
 

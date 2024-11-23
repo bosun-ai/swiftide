@@ -3,7 +3,7 @@ source: swiftide-macros/src/tool/mod.rs
 expression: "crate::test_utils::pretty_macro_output(&output)"
 ---
 #[async_trait::async_trait]
-impl swiftide::traits::Tool for HelloDerive {
+impl swiftide::chat_completion::Tool for HelloDerive {
     async fn invoke(
         &self,
         agent_context: &dyn swiftide::traits::AgentContext,

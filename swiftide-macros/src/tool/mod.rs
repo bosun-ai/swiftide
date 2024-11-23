@@ -142,7 +142,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
         #wrapped_fn
 
         #[::swiftide::reexports::async_trait::async_trait]
-        impl ::swiftide::traits::Tool for #tool_struct {
+        impl ::swiftide::chat_completion::Tool for #tool_struct {
             async fn invoke(&self, agent_context: &dyn ::swiftide::traits::AgentContext, raw_args: Option<&str>) -> ::swiftide::reexports::anyhow::Result<::swiftide::chat_completion::ToolOutput> {
                 #invoke_body
             }
@@ -239,7 +239,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
 
         #[async_trait::async_trait]
-        impl #struct_lifetime swiftide::traits::Tool for #struct_ident #struct_lifetime {
+        impl #struct_lifetime swiftide::chat_completion::Tool for #struct_ident #struct_lifetime {
             async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
                 #invoke_body
             }

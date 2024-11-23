@@ -10,9 +10,9 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
-    chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, ToolOutput},
+    chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolOutput},
     prompt::Prompt,
-    AgentContext, Tool,
+    AgentContext,
 };
 use tracing::debug;
 

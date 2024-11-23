@@ -7,8 +7,11 @@
 mod chat_completion_request;
 mod chat_completion_response;
 mod chat_message;
+mod errors;
 mod tools;
-mod traits;
+
+// Re-exported in the root per convention
+pub(crate) mod traits;
 
 pub use chat_completion_request::*;
 pub use chat_completion_response::*;

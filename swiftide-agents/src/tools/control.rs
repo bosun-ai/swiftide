@@ -1,8 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{
-    chat_completion::{ToolOutput, ToolSpec},
-    AgentContext, Tool,
+    chat_completion::{Tool, ToolOutput, ToolSpec},
+    AgentContext,
 };
 
 // TODO: Cannot use macros in our own crates because of import shenanigans

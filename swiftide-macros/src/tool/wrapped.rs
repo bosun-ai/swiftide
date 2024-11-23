@@ -37,7 +37,7 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> TokenStream {
 
         /// Create a new instance of the tool as a boxed trait object
         /// NOTE: Maybe we should have a separate `boxed` method for this?
-        pub fn #fn_name() -> Box<dyn ::swiftide::traits::Tool> {
+        pub fn #fn_name() -> Box<dyn ::swiftide::chat_completion::Tool> {
             Box::new(#struct_name {})
         }
 

@@ -27,6 +27,7 @@ lazy_static = { workspace = true }
 derive_builder = { workspace = true }
 dyn-clone = { workspace = true }
 pin-project = { workspace = true }
+thiserror = { workspace = true }
 
 tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }

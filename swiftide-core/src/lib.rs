@@ -18,8 +18,9 @@ pub use type_aliases::*;
 mod metadata;
 mod query_evaluation;
 
-pub use crate::agent_traits::*;
 /// All traits are available from the root
+pub use crate::agent_traits::*;
+pub use crate::chat_completion::traits::*;
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
 

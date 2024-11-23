@@ -13,7 +13,7 @@ struct SearchCodeArgs<'a> {
 pub struct SearchCode {}
 /// Create a new instance of the tool as a boxed trait object
 /// NOTE: Maybe we should have a separate `boxed` method for this?
-pub fn search_code() -> Box<dyn ::swiftide::traits::Tool> {
+pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
     Box::new(SearchCode {})
 }
 impl SearchCode {
@@ -26,7 +26,7 @@ impl SearchCode {
     }
 }
 #[::swiftide::reexports::async_trait::async_trait]
-impl ::swiftide::traits::Tool for SearchCode {
+impl ::swiftide::chat_completion::Tool for SearchCode {
     async fn invoke(
         &self,
         agent_context: &dyn ::swiftide::traits::AgentContext,
