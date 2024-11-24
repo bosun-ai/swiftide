@@ -10,10 +10,13 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
-    chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolOutput},
+    chat_completion::{
+        errors::ToolError, ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolOutput,
+    },
     prompt::Prompt,
     AgentContext,
 };
+use tokio::task::JoinHandle;
 use tracing::debug;
 
 // TODO:
@@ -34,7 +37,7 @@ use tracing::debug;
 //
 // Generic over LLM instead of box dyn? Should tool support be a separate trait?
 #[derive(Clone, Builder)]
-pub struct Agent<CONTEXT: AgentContext = DefaultContext> {
+pub struct Agent<CONTEXT: AgentContext + 'static = DefaultContext> {
     #[builder(default, setter(into))]
     pub(crate) hooks: Vec<Hook>,
     // name: String,
@@ -158,7 +161,7 @@ impl Agent<DefaultContext> {
     }
 }
 
-impl<CONTEXT: AgentContext> Agent<CONTEXT> {
+impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
     fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
@@ -228,7 +231,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         Ok(())
     }
 
-    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
+    async fn run_completions(&self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
 
         debug!(
@@ -264,10 +267,10 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
             new_messages.push(ChatMessage::Assistant(message));
         }
 
-        // TODO: We can and should run tools in parallel or at least in a tokio spawn
         if let Some(tool_calls) = response.tool_calls {
             debug!("LLM returned tool calls: {:?}", tool_calls);
 
+            let mut handles = vec![];
             for tool_call in tool_calls {
                 let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
                     tracing::warn!("Tool {} not found", tool_call.name());
@@ -275,7 +278,22 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
                 };
                 tracing::info!("Calling tool `{}`", tool_call.name());
 
-                let mut output = tool.invoke(&*self.context, tool_call.args()).await?;
+                let tool_args = tool_call.args().map(String::from);
+                let context: Arc<dyn AgentContext> = Arc::<CONTEXT>::clone(&self.context);
+
+                let handle: JoinHandle<Result<ToolOutput, ToolError>> = tokio::spawn(async move {
+                    let context = &*context;
+
+                    let output = tool.invoke(context, tool_args.as_deref()).await?;
+
+                    Ok(output)
+                });
+                handles.push((handle, tool_call));
+            }
+
+            for (handle, tool_call) in handles {
+                let mut output = handle.await??;
+
                 tracing::debug!(
                     "Tool output from `{}`: {:?}",
                     tool_call.name(),
@@ -305,7 +323,7 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         Ok(new_messages)
     }
 
-    async fn invoke_hooks_matching(&mut self, hook_type: HookTypes) -> Result<()> {
+    async fn invoke_hooks_matching(&self, hook_type: HookTypes) -> Result<()> {
         tracing::info!("Invoking {hook_type} hooks");
 
         for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
@@ -322,11 +340,11 @@ impl<CONTEXT: AgentContext> Agent<CONTEXT> {
         Ok(())
     }
 
-    fn find_tool_by_name(&self, tool_name: &str) -> Option<&dyn Tool> {
+    fn find_tool_by_name(&self, tool_name: &str) -> Option<Box<dyn Tool>> {
         self.tools
             .iter()
             .find(|tool| tool.name() == tool_name)
-            .map(|boxed| &**boxed)
+            .cloned()
     }
 
     // Handle any tool specific output (e.g. stop)
