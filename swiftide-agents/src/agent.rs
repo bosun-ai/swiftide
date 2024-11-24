@@ -37,13 +37,13 @@ use tracing::debug;
 //
 // Generic over LLM instead of box dyn? Should tool support be a separate trait?
 #[derive(Clone, Builder)]
-pub struct Agent<CONTEXT: AgentContext + 'static = DefaultContext> {
+pub struct Agent {
     #[builder(default, setter(into))]
     pub(crate) hooks: Vec<Hook>,
     // name: String,
-    #[builder(setter(custom))]
-    pub(crate) context: Arc<CONTEXT>,
-    #[builder(default = Agent::<CONTEXT>::default_tools(), setter(custom))]
+    #[builder(setter(custom), default = Arc::new(DefaultContext::default()))]
+    pub(crate) context: Arc<dyn AgentContext>,
+    #[builder(default = Agent::default_tools(), setter(custom))]
     pub(crate) tools: HashSet<Box<dyn Tool>>,
 
     #[builder(setter(custom))]
@@ -56,7 +56,7 @@ pub struct Agent<CONTEXT: AgentContext + 'static = DefaultContext> {
     pub(crate) state: state::State,
 }
 
-impl<CONTEXT: AgentContext> std::fmt::Debug for Agent<CONTEXT> {
+impl std::fmt::Debug for Agent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Agent")
             //display hooks as a list of type: number of hooks
@@ -82,30 +82,30 @@ impl<CONTEXT: AgentContext> std::fmt::Debug for Agent<CONTEXT> {
     }
 }
 
-impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
-    pub fn context<C: AgentContext>(&mut self, context: C) -> AgentBuilder<C>
-    where
-        Self: Clone,
-    {
-        let AgentBuilder {
-            hooks,
-            tools,
-            llm,
-            state,
-            system_prompt,
-            ..
-        } = self.clone();
-
-        // Rust is silly that you can't just forward self without context
-        AgentBuilder::<C> {
-            context: Some(Arc::new(context)),
-            hooks,
-            tools,
-            llm,
-            state,
-            system_prompt,
-        }
-    }
+impl AgentBuilder {
+    // pub fn context(&mut self, context: impl Into<Box<dyn AgentContext>>) -> AgentBuilder<C>
+    // where
+    //     Self: Clone,
+    // {
+    //     let AgentBuilder {
+    //         hooks,
+    //         tools,
+    //         llm,
+    //         state,
+    //         system_prompt,
+    //         ..
+    //     } = self.clone();
+    //
+    //     // Rust is silly that you can't just forward self without context
+    //     AgentBuilder::<C> {
+    //         context: Some(Arc::new(context)),
+    //         hooks,
+    //         tools,
+    //         llm,
+    //         state,
+    //         system_prompt,
+    //     }
+    // }
 
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
@@ -149,23 +149,20 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
             tools
                 .into_iter()
                 .map(Into::into)
-                .chain(Agent::<CONTEXT>::default_tools())
+                .chain(Agent::default_tools())
                 .collect(),
         );
         self
     }
 }
 
-impl Agent<DefaultContext> {
-    pub fn builder() -> AgentBuilder<DefaultContext> {
-        let context = DefaultContext::default();
-        AgentBuilder::<DefaultContext>::default()
-            .context(context)
-            .clone()
+impl Agent {
+    pub fn builder() -> AgentBuilder {
+        AgentBuilder::default()
     }
 }
 
-impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
+impl Agent {
     fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
@@ -281,7 +278,7 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
                 tracing::info!("Calling tool `{}`", tool_call.name());
 
                 let tool_args = tool_call.args().map(String::from);
-                let context: Arc<dyn AgentContext> = Arc::<CONTEXT>::clone(&self.context);
+                let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
                 self.add_message(ChatMessage::ToolCall(tool_call.clone()))
                     .await?;

@@ -17,7 +17,7 @@ macro_rules! chat_request {
             .tools_spec(
                 vec![$(Box::new($tool) as Box<dyn Tool>),*]
                     .into_iter()
-                    .chain(Agent::<DefaultContext>::default_tools())
+                    .chain(Agent::default_tools())
                     .map(|tool| tool.tool_spec())
                     .collect::<HashSet<_>>(),
             )
