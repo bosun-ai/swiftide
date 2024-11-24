@@ -290,13 +290,7 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
             }
 
             for (handle, tool_call) in handles {
-                let mut output = handle.await??;
-
-                tracing::debug!(
-                    "Tool output from `{}`: {:?}",
-                    tool_call.name(),
-                    output.to_string()
-                );
+                let mut output = handle.await?;
 
                 for hook in self.hooks_by_type(HookTypes::AfterTool) {
                     if let Hook::AfterTool(hook) = hook {
@@ -304,6 +298,8 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
                         hook(&*self.context, &tool_call, &mut output).await?;
                     }
                 }
+
+                let output = output?;
 
                 self.handle_control_tools(&output);
 

@@ -3,7 +3,7 @@ use std::{future::Future, pin::Pin};
 
 use dyn_clone::DynClone;
 use swiftide_core::{
-    chat_completion::{ToolCall, ToolOutput},
+    chat_completion::{errors::ToolError, ToolCall, ToolOutput},
     AgentContext,
 };
 
@@ -24,7 +24,7 @@ pub trait ToolHookFn:
     for<'a> Fn(
         &'a dyn AgentContext,
         &ToolCall,
-        &mut ToolOutput,
+        &mut Result<ToolOutput, ToolError>,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
@@ -56,7 +56,7 @@ impl<F> ToolHookFn for F where
     F: for<'a> Fn(
             &'a dyn AgentContext,
             &ToolCall,
-            &mut ToolOutput,
+            &mut Result<ToolOutput, ToolError>,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
