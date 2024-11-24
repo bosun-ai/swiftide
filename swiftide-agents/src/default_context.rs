@@ -18,6 +18,10 @@ pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
     should_stop: Arc<AtomicBool>,
     /// Index in the conversation history where the next completion will start
     completions_ptr: Arc<AtomicUsize>,
+
+    /// Index in the conversation history where the current completion started
+    /// Allows for retrieving only new messages since the last completion
+    current_completions_ptr: Arc<AtomicUsize>,
     tool_executor: EXECUTOR,
 }
 
@@ -27,6 +31,7 @@ impl Default for DefaultContext<LocalExecutor> {
             completion_history: Arc::new(Mutex::new(Vec::new())),
             should_stop: Arc::new(AtomicBool::new(false)),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
+            current_completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: LocalExecutor::default(),
         }
     }
@@ -39,6 +44,7 @@ impl<T: ToolExecutor> DefaultContext<T> {
             completion_history: Arc::new(Mutex::new(Vec::new())),
             should_stop: Arc::new(AtomicBool::new(false)),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
+            current_completions_ptr: Arc::new(AtomicUsize::new(0)),
         }
     }
 }
@@ -60,9 +66,21 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         {
             None
         } else {
-            self.completions_ptr.store(history.len(), Ordering::SeqCst);
+            let previous = self.completions_ptr.swap(history.len(), Ordering::SeqCst);
+            self.current_completions_ptr
+                .store(previous, Ordering::SeqCst);
+
             Some(history.clone())
         }
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        let current = self.current_completions_ptr.load(Ordering::SeqCst);
+        let end = self.completions_ptr.load(Ordering::SeqCst);
+
+        let history = self.completion_history.lock().await;
+
+        history[current..end].to_vec()
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
@@ -76,6 +94,11 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
 
         // Debug assert that there is only one ChatMessage::System
         // TODO: Properly handle this
+    }
+
+    async fn add_message(&self, item: &ChatMessage) {
+        self.completion_history.lock().await.push(item.clone());
+
         debug_assert!(
             self.completion_history
                 .lock()
@@ -85,10 +108,6 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
                 .count()
                 <= 1
         );
-    }
-
-    async fn add_message(&self, item: &ChatMessage) {
-        self.completion_history.lock().await.push(item.clone());
     }
 
     fn stop(&self) {
@@ -161,6 +180,7 @@ mod tests {
             .await;
         let messages = context.next_completion().await.unwrap();
         assert_eq!(messages.len(), 2);
+        assert_eq!(context.current_new_messages().await.len(), 2);
         assert!(context.next_completion().await.is_none());
 
         let tool_call = ToolCall::builder().id("1").name("test").build().unwrap();
@@ -173,6 +193,7 @@ mod tests {
             .await;
 
         let messages = context.next_completion().await.unwrap();
+        assert_eq!(context.current_new_messages().await.len(), 2);
         assert_eq!(messages.len(), 4);
 
         assert!(context.next_completion().await.is_none());

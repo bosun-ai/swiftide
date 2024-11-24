@@ -3,7 +3,7 @@ use std::{future::Future, pin::Pin};
 
 use dyn_clone::DynClone;
 use swiftide_core::{
-    chat_completion::{errors::ToolError, ToolCall, ToolOutput},
+    chat_completion::{errors::ToolError, ChatMessage, ToolCall, ToolOutput},
     AgentContext,
 };
 
@@ -34,12 +34,26 @@ pub trait ToolHookFn:
 
 dyn_clone::clone_trait_object!(ToolHookFn);
 
+pub trait MessageHookFn:
+    for<'a> Fn(
+        &'a dyn AgentContext,
+        &ChatMessage,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(MessageHookFn);
+
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
 pub enum Hook {
     BeforeAll(Box<dyn HookFn>),
     BeforeEach(Box<dyn HookFn>),
     AfterTool(Box<dyn ToolHookFn>),
+    OnNewMessage(Box<dyn MessageHookFn>),
     AfterEach(Box<dyn HookFn>),
     // AfterAll(Box<dyn HookFn>),
 }
@@ -57,6 +71,17 @@ impl<F> ToolHookFn for F where
             &'a dyn AgentContext,
             &ToolCall,
             &mut Result<ToolOutput, ToolError>,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+
+impl<F> MessageHookFn for F where
+    F: for<'a> Fn(
+            &'a dyn AgentContext,
+            &ChatMessage,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync

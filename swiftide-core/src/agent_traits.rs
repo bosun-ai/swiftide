@@ -93,6 +93,9 @@ pub trait AgentContext: Send + Sync {
     /// mutexes
     async fn next_completion(&self) -> Option<Vec<ChatMessage>>;
 
+    /// Lists only the new messages after calling `new_completion`
+    async fn current_new_messages(&self) -> Vec<ChatMessage>;
+
     /// Add messages for the next completion
     async fn add_messages(&self, item: &[ChatMessage]);
 

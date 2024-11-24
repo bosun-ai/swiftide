@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::{
     default_context::DefaultContext,
-    hooks::{Hook, HookFn, HookTypes, ToolHookFn},
+    hooks::{Hook, HookFn, HookTypes, MessageHookFn, ToolHookFn},
     state,
     tools::control::Stop,
 };
@@ -130,6 +130,10 @@ impl<CONTEXT: AgentContext> AgentBuilder<CONTEXT> {
         self.add_hook(Hook::AfterEach(Box::new(hook)))
     }
 
+    pub fn on_new_message(&mut self, hook: impl MessageHookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::OnNewMessage(Box::new(hook)))
+    }
+
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
         let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone());
 
@@ -206,21 +210,19 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
         }
 
         if let Some(query) = maybe_query {
-            self.context.add_messages(&[ChatMessage::User(query)]).await;
+            self.context.add_message(&ChatMessage::User(query)).await;
         }
 
         while let Some(messages) = self.context.next_completion().await {
             self.state = state::State::Running;
 
-            let new_messages = match self.run_completions(&messages).await {
-                Ok(messages) => messages,
-                Err(e) => {
-                    self.state = state::State::Stopped;
-                    return Err(e);
-                }
-            };
+            let result = self.run_completions(&messages).await;
 
-            self.context.add_messages(&new_messages).await;
+            if result.is_err() {
+                self.state = state::State::Stopped;
+                return result;
+            }
+
             if just_once {
                 break;
             }
@@ -231,7 +233,7 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
         Ok(())
     }
 
-    async fn run_completions(&self, messages: &[ChatMessage]) -> Result<Vec<ChatMessage>> {
+    async fn run_completions(&self, messages: &[ChatMessage]) -> Result<()> {
         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
 
         debug!(
@@ -260,11 +262,11 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
         );
         let response = self.llm.complete(&chat_completion_request).await?;
 
-        let mut new_messages = vec![];
+        // let mut new_messages = vec![];
         if let Some(message) = response.message {
             debug!("LLM returned message: {}", message);
 
-            new_messages.push(ChatMessage::Assistant(message));
+            self.add_message(ChatMessage::Assistant(message)).await?;
         }
 
         if let Some(tool_calls) = response.tool_calls {
@@ -281,6 +283,8 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
                 let tool_args = tool_call.args().map(String::from);
                 let context: Arc<dyn AgentContext> = Arc::<CONTEXT>::clone(&self.context);
 
+                self.add_message(ChatMessage::ToolCall(tool_call.clone()))
+                    .await?;
                 let handle: JoinHandle<Result<ToolOutput, ToolError>> = tokio::spawn(async move {
                     let output = tool.invoke(&*context, tool_args.as_deref()).await?;
 
@@ -303,14 +307,14 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
 
                 self.handle_control_tools(&output);
 
-                new_messages.push(ChatMessage::ToolCall(tool_call.clone()));
-                new_messages.push(ChatMessage::ToolOutput(tool_call, output));
+                self.add_message(ChatMessage::ToolOutput(tool_call, output))
+                    .await?;
             }
         };
 
         self.invoke_hooks_matching(HookTypes::AfterEach).await?;
 
-        Ok(new_messages)
+        Ok(())
     }
 
     fn hooks_by_type(&self, hook_type: HookTypes) -> Vec<&Hook> {
@@ -328,7 +332,7 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
                 Hook::BeforeAll(hook) => hook(&*self.context).await?,
                 Hook::BeforeEach(hook) => hook(&*self.context).await?,
                 Hook::AfterEach(hook) => hook(&*self.context).await?,
-                Hook::AfterTool(..) => {
+                Hook::AfterTool(..) | Hook::OnNewMessage(..) => {
                     debug_assert!(false, "Should not be called here");
                 }
             }
@@ -349,6 +353,16 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
         if let ToolOutput::Stop = output {
             self.context.stop();
         }
+    }
+
+    async fn add_message(&self, message: ChatMessage) -> Result<()> {
+        for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
+            if let Hook::OnNewMessage(hook) = hook {
+                hook(&*self.context, &message).await?;
+            }
+        }
+        self.context.add_message(&message).await;
+        Ok(())
     }
 }
 
@@ -505,6 +519,7 @@ mod tests {
         let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
         let mock_before_each = MockHook::new("before_each").expect_calls(2).to_owned();
         let mock_after_each = MockHook::new("after_each").expect_calls(2).to_owned();
+        let mock_on_message = MockHook::new("on_message").expect_calls(6).to_owned();
 
         // Once for mock tool and once for stop
         let mock_after_tool = MockHook::new("after_tool").expect_calls(2).to_owned();
@@ -551,6 +566,7 @@ mod tests {
             .before_each(mock_before_each.hook_fn())
             .after_each(mock_after_each.hook_fn())
             .after_tool(mock_after_tool.tool_hook_fn())
+            .on_new_message(mock_on_message.message_hook_fn())
             .build()
             .unwrap();
 
