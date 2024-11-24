@@ -282,9 +282,7 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
                 let context: Arc<dyn AgentContext> = Arc::<CONTEXT>::clone(&self.context);
 
                 let handle: JoinHandle<Result<ToolOutput, ToolError>> = tokio::spawn(async move {
-                    let context = &*context;
-
-                    let output = tool.invoke(context, tool_args.as_deref()).await?;
+                    let output = tool.invoke(&*context, tool_args.as_deref()).await?;
 
                     Ok(output)
                 });
@@ -300,11 +298,7 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
                     output.to_string()
                 );
 
-                for hook in self
-                    .hooks
-                    .iter()
-                    .filter(|h| HookTypes::AfterTool == (*h).into())
-                {
+                for hook in self.hooks_by_type(HookTypes::AfterTool) {
                     if let Hook::AfterTool(hook) = hook {
                         tracing::info!("Calling {} hook", HookTypes::AfterTool);
                         hook(&*self.context, &tool_call, &mut output).await?;
@@ -323,10 +317,17 @@ impl<CONTEXT: AgentContext + 'static> Agent<CONTEXT> {
         Ok(new_messages)
     }
 
+    fn hooks_by_type(&self, hook_type: HookTypes) -> Vec<&Hook> {
+        self.hooks
+            .iter()
+            .filter(|h| hook_type == (*h).into())
+            .collect()
+    }
+
     async fn invoke_hooks_matching(&self, hook_type: HookTypes) -> Result<()> {
         tracing::info!("Invoking {hook_type} hooks");
 
-        for hook in self.hooks.iter().filter(|h| hook_type == (*h).into()) {
+        for hook in self.hooks_by_type(hook_type) {
             match hook {
                 Hook::BeforeAll(hook) => hook(&*self.context).await?,
                 Hook::BeforeEach(hook) => hook(&*self.context).await?,
