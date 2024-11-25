@@ -16,7 +16,7 @@
 {# Constraints are hard limitations that an agent must follow -#}
 
 * Think step by step
-* Try to get to a working solution of the task as fast as possible
+* Think before you act; respond with your thoughts before calling tools
 * Do not make up any assumptions, use tools to get the information you need
 * Use the provided tools to interact with the system and accomplish the task
 * If you are stuck, or otherwise cannot complete the task, respond with your thoughts and call `stop`.
