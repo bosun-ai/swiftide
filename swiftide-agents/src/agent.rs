@@ -365,7 +365,12 @@ impl Agent {
     async fn add_message(&self, message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
             if let Hook::OnNewMessage(hook) = hook {
-                hook(&*self.context, &message).await?;
+                if let Err(err) = hook(&*self.context, &message).await {
+                    tracing::error!(
+                        "Error in {hooktype} hook: {err}",
+                        hooktype = HookTypes::OnNewMessage,
+                    );
+                }
             }
         }
         self.context.add_message(&message).await;
