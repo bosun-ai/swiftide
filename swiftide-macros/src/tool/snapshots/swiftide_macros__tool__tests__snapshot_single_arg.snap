@@ -6,8 +6,8 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
     ::swiftide::reexports::serde::Serialize,
     ::swiftide::reexports::serde::Deserialize
 )]
-struct SearchCodeArgs<'a> {
-    pub code_query: &'a str,
+struct SearchCodeArgs {
+    pub code_query: String,
 }
 #[derive(Clone, Default)]
 pub struct SearchCode {}
@@ -41,7 +41,7 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
             )
         };
         let args: SearchCodeArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
-        return self.search_code(agent_context, args.code_query).await;
+        return self.search_code(agent_context, &args.code_query).await;
     }
     fn name(&self) -> &'static str {
         "search_code"

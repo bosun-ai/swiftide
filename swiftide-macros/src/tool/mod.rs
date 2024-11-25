@@ -73,11 +73,16 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
         .iter()
         .skip(1)
         .filter_map(|arg| {
-            if let FnArg::Typed(PatType { pat, .. }) = arg {
+            if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
                 if let Pat::Ident(ident) = &**pat {
                     seen_arg_names.push(ident.ident.to_string());
 
-                    Some(quote! { args.#ident })
+                    /// If the argument is a reference, we need to referance the quote as well
+                    if let syn::Type::Reference(_) = &**ty {
+                        return Some(quote! { &args.#ident });
+                    } else {
+                        return Some(quote! { args.#ident });
+                    }
                 } else {
                     None
                 }
