@@ -428,14 +428,12 @@ mod tests {
                 let mut query = Query::<states::Pending>::new("test_query");
                 query.embedding = Some(vector.clone());
 
-                let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
-                search_strategy.with_top_k(nodes.len() as u64);
-
-                let result = test_context
-                    .pgv_storage
-                    .retrieve(&search_strategy, query)
-                    .await
-                    .expect("Retrieval should succeed");
+                    test_context
+                        .pgv_storage
+                        .retrieve(&search_strategy, query)
+                        .await
+                        .expect("Retrieval should succeed")
+                };
 
                 if test_case.expected_in_results {
                     assert!(
