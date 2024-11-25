@@ -408,7 +408,7 @@ mod tests {
 
         // It should include the default tool if a different tool is provided
         let agent = Agent::builder()
-            .tools([MockTool::new()])
+            .tools([MockTool::new("mock_tool")])
             .llm(&mock_llm)
             .build()
             .unwrap();
@@ -422,7 +422,7 @@ mod tests {
     async fn test_agent_tool_calling_loop() {
         let prompt = "Write a poem";
         let mock_llm = MockChatCompletion::new();
-        let mock_tool = MockTool::new();
+        let mock_tool = MockTool::new("mock_tool");
 
         let chat_request = chat_request! {
             user!("Write a poem");
@@ -469,7 +469,7 @@ mod tests {
     async fn test_agent_tool_run_once() {
         let prompt = "Write a poem";
         let mock_llm = MockChatCompletion::new();
-        let mock_tool = MockTool::new();
+        let mock_tool = MockTool::default();
 
         let chat_request = chat_request! {
             system!("My system prompt"),
@@ -495,6 +495,118 @@ mod tests {
             .unwrap();
 
         agent.query_once(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test(flavor = "multi_thread"))]
+    async fn test_multiple_tool_calls() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("mock_tool1");
+        let mock_tool2 = MockTool::new("mock_tool2");
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem");
+
+
+
+            tools = [mock_tool.clone(), mock_tool2.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+
+            tool_calls = ["mock_tool1", "mock_tool2"]
+
+        };
+
+        dbg!(&chat_request);
+        mock_tool.expect_invoke("Great!".into(), None);
+        mock_tool2.expect_invoke("Great!".into(), None);
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem"),
+            assistant!("Roses are red"),
+            tool_call!("mock_tool1"),
+            tool_call!("mock_tool2"),
+            tool_output!("mock_tool1", "Great!"),
+            tool_output!("mock_tool2", "Great!");
+
+            tools = [mock_tool.clone(), mock_tool2.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Ok!";
+
+            tool_calls = ["stop"]
+
+        };
+
+        mock_llm.expect_complete(chat_request, Ok(mock_tool_response));
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool, mock_tool2])
+            .system_prompt("My system prompt")
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        agent.query(prompt).await.unwrap();
+    }
+
+    async fn test_multiple_identical_tool_calls() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::default();
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem"),
+            tool_call!("mock_tool"),
+            tool_call!("mock_tool");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool", "mock_tool"]
+
+        };
+
+        mock_tool.expect_invoke("Great!".into(), None);
+        mock_tool.expect_invoke("Great!".into(), None);
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem"),
+            assistant!("Roses are red"),
+            tool_call!("mock_tool"),
+            tool_call!("mock_tool"),
+            tool_output!("mock_tool", "Great!"),
+            tool_output!("mock_tool", "Great!");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Ok!";
+
+            tool_calls = ["stop"]
+
+        };
+
+        mock_llm.expect_complete(chat_request, Ok(mock_tool_response));
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .system_prompt("My system prompt")
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+        agent.query(prompt).await.unwrap();
     }
 
     #[test_log::test(tokio::test)]
@@ -538,7 +650,7 @@ mod tests {
 
         let prompt = "Write a poem";
         let mock_llm = MockChatCompletion::new();
-        let mock_tool = MockTool::new();
+        let mock_tool = MockTool::default();
 
         let chat_request = chat_request! {
             user!("Write a poem");

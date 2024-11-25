@@ -86,8 +86,18 @@ impl ChatCompletion for MockChatCompletion {
         assert_eq!(
             &expected_request,
             request,
-            "Unexpected request {}",
-            pretty_request(request)
+            "Unexpected request\n: {}\nRemaining expectations:\n{}",
+            pretty_request(request),
+            pretty_expectation(&(expected_request.clone(), response))
+                + "---\n"
+                + &self
+                    .expectations
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .map(pretty_expectation)
+                    .collect::<Vec<_>>()
+                    .join("---\n")
         );
 
         if let Ok(response) = response {

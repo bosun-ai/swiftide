@@ -95,12 +95,17 @@ type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
 #[derive(Debug, Clone)]
 pub struct MockTool {
     expectations: Expectations,
+    name: &'static str,
 }
 
 impl MockTool {
-    pub fn new() -> Self {
+    pub fn default() -> Self {
+        Self::new("mock_tool")
+    }
+    pub fn new(name: &'static str) -> Self {
         Self {
             expectations: Arc::new(Mutex::new(Vec::new())),
+            name,
         }
     }
     pub fn expect_invoke(&self, expected_result: ToolOutput, expected_args: Option<&'static str>) {
@@ -123,7 +128,7 @@ impl Tool for MockTool {
             .lock()
             .unwrap()
             .pop()
-            .expect("Unexpected tool call");
+            .expect(format!("[MockTool] No expectations left for `{}`", self.name).as_str());
 
         assert_eq!(expectation.1, raw_args);
 
@@ -131,12 +136,12 @@ impl Tool for MockTool {
     }
 
     fn name(&self) -> &'static str {
-        "mock_tool"
+        self.name
     }
 
     fn tool_spec(&self) -> ToolSpec {
         ToolSpec::builder()
-            .name("mock_tool")
+            .name(self.name())
             .description("A fake tool for testing purposes")
             .build()
             .unwrap()
@@ -149,11 +154,16 @@ impl Drop for MockTool {
         if Arc::strong_count(&self.expectations) > 1 {
             return;
         }
+        if self.expectations.lock().is_err() {
+            return;
+        }
+
+        let name = self.name;
         if self.expectations.lock().unwrap().is_empty() {
-            tracing::debug!("[MockTool] All expectations were met");
+            tracing::debug!("[MockTool] All expectations were met for `{name}`");
         } else {
             panic!(
-                "[MockTool] Not all expectations were met: {:?}",
+                "[MockTool] Not all expectations were met for `{name}: {:?}",
                 *self.expectations.lock().unwrap()
             );
         }
