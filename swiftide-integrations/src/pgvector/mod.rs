@@ -189,8 +189,11 @@ mod tests {
     use std::collections::HashSet;
     use swiftide_core::{
         indexing::{self, EmbedMode, EmbeddedField},
-        querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
-        AdvanceEmbedding, Persist, Retrieve,
+        querying::{
+            search_strategies::{HybridSearch, SimilaritySingleEmbedding},
+            states, Query,
+        },
+        Persist, Retrieve,
     };
     use test_case::test_case;
 
@@ -326,7 +329,7 @@ mod tests {
                 metadata: None,
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.0)],
                 expected_in_results: true,
-                use_adv_embedding_query: false,
+                use_hybrid_search: false,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::SingleWithMetadata,
@@ -334,7 +337,7 @@ mod tests {
                 metadata: None,
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.1)],
                 expected_in_results: true,
-                use_adv_embedding_query: false,
+                use_hybrid_search: false,
             }
         ],
         HashSet::from([EmbeddedField::Combined])
@@ -351,7 +354,7 @@ mod tests {
                 ].into()),
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.2)],
                 expected_in_results: true,
-                use_adv_embedding_query: false,
+                use_hybrid_search: false,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::SingleWithMetadata,
@@ -362,7 +365,7 @@ mod tests {
                 ].into()),
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.3)],
                 expected_in_results: true,
-                use_adv_embedding_query: false,
+                use_hybrid_search: false,
             }
         ],
         HashSet::from([EmbeddedField::Combined])
@@ -380,7 +383,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.2),
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::PerField,
@@ -392,7 +395,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.3),
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             }
         ],
         HashSet::from([
@@ -417,7 +420,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.2),
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::PerField,
@@ -432,7 +435,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.3),
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             }
         ],
         HashSet::from([
@@ -453,7 +456,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 3.1)
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::Both,
@@ -464,7 +467,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 3.3)
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             }
         ],
         HashSet::from([EmbeddedField::Combined, EmbeddedField::Chunk])
@@ -488,7 +491,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Metadata("tag".into()), 3.8)
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::Both,
@@ -506,7 +509,7 @@ mod tests {
                     PgVectorTestData::create_test_vector(EmbeddedField::Metadata("tag".into()), 4.3)
                 ],
                 expected_in_results: true,
-                use_adv_embedding_query: true,
+                use_hybrid_search: true,
             }
         ],
         HashSet::from([
@@ -578,27 +581,31 @@ mod tests {
             );
 
             // 3. Test vector similarity search
-            for (index, (field, vector)) in test_case.vectors.iter().enumerate() {
-                tracing::warn!("Enter :: {:#?}!", index);
+            for (field, vector) in test_case.vectors.iter() {
                 let mut query = Query::<states::Pending>::new("test_query");
+                query.embedding = Some(vector.clone());
 
-                if test_case.use_adv_embedding_query {
-                    query.adv_embedding = Some(AdvanceEmbedding {
-                        embedded_field: field.clone(),
-                        field_value: vector.clone(),
-                    });
+                let result = if test_case.use_hybrid_search {
+                    let mut search_strategy = HybridSearch::default();
+                    search_strategy
+                        .with_dense_vector_field(field.clone())
+                        .with_top_n(nodes.len() as u64);
+
+                    test_context
+                        .pgv_storage
+                        .retrieve(&search_strategy, query)
+                        .await
+                        .expect("Retrieval should succeed")
                 } else {
-                    query.embedding = Some(vector.clone());
-                }
+                    let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
+                    search_strategy.with_top_k(nodes.len() as u64);
 
-                let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
-                search_strategy.with_top_k(nodes.len() as u64);
-
-                let result = test_context
-                    .pgv_storage
-                    .retrieve(&search_strategy, query)
-                    .await
-                    .expect("Retrieval should succeed");
+                    test_context
+                        .pgv_storage
+                        .retrieve(&search_strategy, query)
+                        .await
+                        .expect("Retrieval should succeed")
+                };
 
                 if test_case.expected_in_results {
                     assert!(
@@ -606,7 +613,6 @@ mod tests {
                         "Document should be found in results for field {field}",
                     );
                 }
-                tracing::warn!("Exit :: {:#?}!", index);
             }
         }
     }

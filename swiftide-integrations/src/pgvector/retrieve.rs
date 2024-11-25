@@ -4,7 +4,10 @@ use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{HybridSearch, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -24,29 +27,13 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
         search_strategy: &SimilaritySingleEmbedding<String>,
         query_state: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
-        let (vector_column_name, embedding) = match (
-            query_state.embedding.as_ref(),
-            query_state.adv_embedding.as_ref(),
-        ) {
-            (Some(embed), None) => {
-                let vector_column_name = self.get_vector_column_name()?;
-                let embedding = Vector::from(embed.clone());
-                (vector_column_name, embedding)
-            }
-            (None, Some(adv_embed)) => {
-                let vector_column_name = VectorConfig::from(adv_embed.embedded_field.clone()).field;
-                let embedding = Vector::from(adv_embed.field_value.clone());
-                (vector_column_name, embedding)
-            }
-            (None, None) => {
-                return Err(anyhow!("No embedding found in query state"));
-            }
-            (Some(_), Some(_)) => {
-                return Err(anyhow!(
-                    "Both regular and advanced embeddings found. Please provide only one type."
-                ));
-            }
+        let embedding = if let Some(embedding) = query_state.embedding.as_ref() {
+            Vector::from(embedding.clone())
+        } else {
+            return Err(anyhow::Error::msg("Missing embedding in query state"));
         };
+
+        let vector_column_name = self.get_vector_column_name()?;
 
         let pool = self.pool_get_or_initialize().await?;
 
@@ -121,6 +108,60 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
             query,
         )
         .await
+    }
+}
+
+#[async_trait]
+impl Retrieve<HybridSearch> for PgVector {
+    #[tracing::instrument]
+    async fn retrieve(
+        &self,
+        search_strategy: &HybridSearch,
+        query_state: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let embedding = if let Some(embedding) = query_state.embedding.as_ref() {
+            Vector::from(embedding.clone())
+        } else {
+            return Err(anyhow::Error::msg("Missing embedding in query state"));
+        };
+
+        let vector_column_name =
+            VectorConfig::from(search_strategy.dense_vector_field().clone()).field;
+
+        let pool = self.pool_get_or_initialize().await?;
+
+        let default_columns: Vec<_> = PgVectorBuilder::default_fields()
+            .iter()
+            .map(|f| f.field_name().to_string())
+            .collect();
+
+        // Start building the SQL query
+        let mut sql = format!(
+            "SELECT {} FROM {}",
+            default_columns.join(", "),
+            self.table_name
+        );
+
+        // Add the ORDER BY clause for vector similarity search
+        sql.push_str(&format!(
+            " ORDER BY {} <=> $1 LIMIT $2",
+            &vector_column_name
+        ));
+
+        tracing::debug!("Running retrieve with SQL: {}", sql);
+
+        let top_k = i32::try_from(search_strategy.top_k())
+            .map_err(|_| anyhow!("Failed to convert top_k to i32"))?;
+
+        let data: Vec<VectorSearchResult> = sqlx::query_as(&sql)
+            .bind(embedding)
+            .bind(top_k)
+            .fetch_all(pool)
+            .await?;
+
+        let docs = data.into_iter().map(|r| r.chunk).collect();
+
+        Ok(query_state.retrieved_documents(docs))
     }
 }
 

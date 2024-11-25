@@ -199,8 +199,6 @@ impl PgVector {
             columns.join(",\n  ")
         );
 
-        tracing::info!("Sql statement :: {:#?}", sql);
-
         Ok(sql)
     }
 
@@ -260,8 +258,6 @@ impl PgVector {
             .sql_stmt_bulk_insert
             .get()
             .ok_or_else(|| anyhow!("SQL bulk insert statement not set"))?;
-
-        tracing::info!("Sql statement :: {:#?}", sql);
 
         let query = self.bind_bulk_data_to_query(sqlx::query(sql), &bulk_data)?;
 
@@ -437,7 +433,9 @@ impl PgVector {
         match vector_fields.as_slice() {
             [field] => Ok(field.field_name().to_string()),
             [] => Err(anyhow!("No vector field configured in schema")),
-            _ => Err(anyhow!("Multiple vector fields configured in schema")),
+            _ => Err(anyhow!(
+                "Multiple vector fields configured in schema use HybridSearch strategy"
+            )),
         }
     }
 }
@@ -563,7 +561,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
     fn test_valid_identifiers() {
         assert!(PgVector::is_valid_identifier("valid_name"));
         assert!(PgVector::is_valid_identifier("_valid_name"));
@@ -572,7 +569,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_invalid_identifiers() {
         assert!(!PgVector::is_valid_identifier("")); // Empty string
         assert!(!PgVector::is_valid_identifier(&"a".repeat(64))); // Too long

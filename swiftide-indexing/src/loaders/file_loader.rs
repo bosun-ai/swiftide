@@ -109,7 +109,7 @@ impl Loader for FileLoader {
             .filter(|entry| entry.file_type().is_some_and(|ft| ft.is_file()))
             .filter(move |entry| self.file_has_extension(entry.path()))
             .map(|entry| {
-                tracing::info!("Reading file: {:?}", entry);
+                tracing::debug!("Reading file: {:?}", entry);
                 let content =
                     std::fs::read_to_string(entry.path()).context("Failed to read file")?;
                 let original_size = content.len();

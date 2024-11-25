@@ -7,7 +7,7 @@
 //! `states::Answered`: The query has been answered
 use derive_builder::Builder;
 
-use crate::{util::debug_long_utf8, AdvanceEmbedding, Embedding, SparseEmbedding};
+use crate::{util::debug_long_utf8, Embedding, SparseEmbedding};
 
 type Document = String;
 
@@ -34,9 +34,6 @@ pub struct Query<STATE: QueryState> {
 
     #[builder(default)]
     pub sparse_embedding: Option<SparseEmbedding>,
-
-    #[builder(default)]
-    pub adv_embedding: Option<AdvanceEmbedding>,
 }
 
 impl<STATE: std::fmt::Debug + QueryState> std::fmt::Debug for Query<STATE> {
@@ -47,7 +44,6 @@ impl<STATE: std::fmt::Debug + QueryState> std::fmt::Debug for Query<STATE> {
             .field("state", &self.state)
             .field("transformation_history", &self.transformation_history)
             .field("embedding", &self.embedding.is_some())
-            .field("adv_embedding", &self.adv_embedding.is_some())
             .finish()
     }
 }
@@ -75,7 +71,6 @@ impl<STATE: Clone + QueryState> Query<STATE> {
             transformation_history: self.transformation_history,
             embedding: self.embedding,
             sparse_embedding: self.sparse_embedding,
-            adv_embedding: self.adv_embedding,
         }
     }
 
