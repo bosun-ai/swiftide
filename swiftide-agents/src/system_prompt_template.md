@@ -1,6 +1,8 @@
+{% if role -%}
 # Your role
 
 {{role}}
+{% endif -%}
 
 # Guidelines you need to follow
 {# Guidelines provide soft rules and best practices to complete a task well -#}

@@ -3,6 +3,7 @@ use crate::{
     default_context::DefaultContext,
     hooks::{Hook, HookFn, HookTypes, MessageHookFn, ToolHookFn},
     state,
+    system_prompt::SystemPrompt,
     tools::control::Stop,
 };
 use std::{collections::HashSet, sync::Arc};
@@ -49,7 +50,26 @@ pub struct Agent {
     #[builder(setter(custom))]
     pub(crate) llm: Box<dyn ChatCompletion>,
 
-    #[builder(setter(strip_option, into), default)]
+    /// System prompt for the agent when it starts
+    ///
+    /// Some agents profit significantly from a tailored prompt. But it is not always needed.
+    ///
+    /// See [`SystemPrompt`] for an opiniated, customizable system prompt.
+    ///
+    /// Swiftide provides a default system prompt for all agents.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use swiftide_agents::system_prompt::SystemPrompt;
+    /// # use swiftide_agents::Agent;
+    /// Agent::builder()
+    ///     .system_prompt(
+    ///         SystemPrompt::builder().role("You are an expert engineer")
+    ///         .build().unwrap())
+    ///     .build().unwrap();
+    /// ```
+    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default().into()))]
     pub(crate) system_prompt: Option<Prompt>,
 
     #[builder(private, default = state::State::default())]
@@ -88,6 +108,12 @@ impl AgentBuilder {
         Self: Clone,
     {
         self.context = Some(Arc::new(context));
+        self
+    }
+
+    pub fn no_system_prompt(&mut self) -> &mut Self {
+        self.system_prompt = Some(None);
+
         self
     }
 
@@ -187,7 +213,6 @@ impl Agent {
                     .add_messages(&[ChatMessage::System(system_prompt.render().await?)])
                     .await;
             }
-
             self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
         }
 
@@ -433,6 +458,7 @@ mod tests {
         let mut agent = Agent::builder()
             .tools([mock_tool])
             .llm(&mock_llm)
+            .no_system_prompt()
             .build()
             .unwrap();
 
@@ -486,7 +512,11 @@ mod tests {
         };
 
         mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
-        let mut agent = Agent::builder().llm(&mock_llm).build().unwrap();
+        let mut agent = Agent::builder()
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
 
         // Agent has never run and is pending
         assert!(agent.state.is_pending());
@@ -544,6 +574,7 @@ mod tests {
         let mut agent = Agent::builder()
             .tools([mock_tool])
             .llm(&mock_llm)
+            .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
             .before_each(mock_before_each.hook_fn())
             .after_each(mock_after_each.hook_fn())

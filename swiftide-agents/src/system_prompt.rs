@@ -13,10 +13,10 @@ use derive_builder::Builder;
 use swiftide_core::prompt::{Prompt, PromptTemplate};
 
 #[derive(Clone, Debug, Builder)]
-#[builder(setter(into))]
+#[builder(setter(into, strip_option))]
 pub struct SystemPrompt {
-    /// The role the agent is expected to fulfil. This is required.
-    role: String,
+    /// The role the agent is expected to fulfil.
+    role: Option<String>,
 
     /// Additional guidelines for the agent to follow
     #[builder(default, setter(custom))]
@@ -33,6 +33,17 @@ pub struct SystemPrompt {
 impl SystemPrompt {
     pub fn builder() -> SystemPromptBuilder {
         SystemPromptBuilder::default()
+    }
+}
+
+impl Default for SystemPrompt {
+    fn default() -> Self {
+        SystemPrompt {
+            role: None,
+            guidelines: Vec::new(),
+            constraints: Vec::new(),
+            template: default_prompt_template(),
+        }
     }
 }
 
