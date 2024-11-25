@@ -43,8 +43,21 @@ macro_rules! system {
 #[macro_export]
 macro_rules! assistant {
     ($message:expr) => {
-        ChatMessage::Assistant($message.to_string())
+        ChatMessage::Assistant(Some($message.to_string()), None)
     };
+    ($message:expr, [$($tool_call_name:expr),*]) => {{
+        let tool_calls = vec![
+            $(
+            ToolCall::builder()
+                .name($tool_call_name)
+                .id("1")
+                .build()
+                .unwrap()
+            ),*
+        ];
+
+        ChatMessage::Assistant(Some($message.to_string()), Some(tool_calls))
+    }};
 }
 
 #[macro_export]
@@ -57,19 +70,6 @@ macro_rules! tool_output {
                 .build()
                 .unwrap(),
             ToolOutput::Text($message.to_string()),
-        )
-    }};
-}
-
-#[macro_export]
-macro_rules! tool_call {
-    ($tool_name:expr) => {{
-        ChatMessage::ToolCall(
-            ToolCall::builder()
-                .name($tool_name)
-                .id("1")
-                .build()
-                .unwrap(),
         )
     }};
 }

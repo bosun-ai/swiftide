@@ -4,8 +4,7 @@ use super::tools::{ToolCall, ToolOutput};
 pub enum ChatMessage {
     System(String),
     User(String),
-    Assistant(String),
-    ToolCall(ToolCall),
+    Assistant(Option<String>, Option<Vec<ToolCall>>),
     ToolOutput(ToolCall, ToolOutput),
 }
 
@@ -14,8 +13,17 @@ impl std::fmt::Display for ChatMessage {
         match self {
             ChatMessage::System(s) => write!(f, "System: \"{s}\""),
             ChatMessage::User(s) => write!(f, "User: \"{s}\""),
-            ChatMessage::Assistant(s) => write!(f, "Assistant: \"{s}\""),
-            ChatMessage::ToolCall(tc) => write!(f, "ToolCall: \"{tc}\""),
+            ChatMessage::Assistant(message, tool_calls) => write!(
+                f,
+                "Assistant: \"{}\", tools: {}",
+                message.as_deref().unwrap_or("None"),
+                tool_calls.as_deref().map_or("None".to_string(), |tc| {
+                    tc.iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
+            ),
             ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
         }
     }

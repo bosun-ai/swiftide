@@ -121,8 +121,10 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
 
 #[cfg(test)]
 mod tests {
+    use crate::{assistant, tool_output, user};
+
     use super::*;
-    use swiftide_core::chat_completion::{ChatMessage, ToolCall};
+    use swiftide_core::chat_completion::{ChatMessage, ToolCall, ToolOutput};
 
     #[tokio::test]
     async fn test_iteration_tracking() {
@@ -141,10 +143,7 @@ mod tests {
         assert!(context.next_completion().await.is_none());
 
         context
-            .add_messages(&[
-                ChatMessage::Assistant("Hey?".into()),
-                ChatMessage::User("How are you?".into()),
-            ])
+            .add_messages(&[assistant!("Hey?"), user!("How are you?")])
             .await;
 
         let messages = context.next_completion().await.unwrap();
@@ -152,9 +151,7 @@ mod tests {
         assert!(context.next_completion().await.is_none());
 
         // If the last message is from the assistant, we should not get any more completions
-        context
-            .add_messages(&[ChatMessage::Assistant("I am fine".into())])
-            .await;
+        context.add_messages(&[assistant!("I am fine")]).await;
 
         assert!(context.next_completion().await.is_none());
 
@@ -186,10 +183,7 @@ mod tests {
         let tool_call = ToolCall::builder().id("1").name("test").build().unwrap();
 
         context
-            .add_messages(&[
-                ChatMessage::Assistant("Hey?".into()),
-                ChatMessage::ToolOutput(tool_call, "Hoi".into()),
-            ])
+            .add_messages(&[assistant!("Hey?", ["test"]), tool_output!("test", "Hoi")])
             .await;
 
         let messages = context.next_completion().await.unwrap();
@@ -199,9 +193,7 @@ mod tests {
         assert!(context.next_completion().await.is_none());
 
         // If the last message is from the assistant, we should not get any more completions
-        context
-            .add_messages(&[ChatMessage::Assistant("I am fine".into())])
-            .await;
+        context.add_messages(&[assistant!("I am fine")]).await;
         assert!(context.next_completion().await.is_none());
     }
 }

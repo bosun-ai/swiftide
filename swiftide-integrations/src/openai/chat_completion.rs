@@ -17,6 +17,7 @@ use super::OpenAI;
 
 #[async_trait]
 impl ChatCompletion for OpenAI {
+    #[tracing::instrument(skip_all)]
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
@@ -31,7 +32,6 @@ impl ChatCompletion for OpenAI {
             .messages()
             .iter()
             .map(message_to_openai)
-            .filter_map_ok(|msg| msg)
             .collect::<Result<Vec<_>>>()?;
 
         // Build the request to be sent to the OpenAI API.
@@ -45,8 +45,12 @@ impl ChatCompletion for OpenAI {
                     .map(tools_to_openai)
                     .collect::<Result<Vec<_>>>()?,
             )
+            .tool_choice("auto")
+            .parallel_tool_calls(true)
             .build()
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+
+        tracing::debug!(request = ?request, "Sending request to OpenAI");
 
         let response = self
             .client
@@ -54,6 +58,8 @@ impl ChatCompletion for OpenAI {
             .create(request)
             .await
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+
+        tracing::debug!(response = ?response, "Received response from OpenAI");
 
         ChatCompletionResponse::builder()
             .maybe_message(
@@ -117,52 +123,55 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
 
 fn message_to_openai(
     message: &ChatMessage,
-) -> Result<Option<async_openai::types::ChatCompletionRequestMessage>> {
+) -> Result<async_openai::types::ChatCompletionRequestMessage> {
     let openai_message = match message {
-        ChatMessage::User(msg) => Some(
-            ChatCompletionRequestUserMessageArgs::default()
-                .content(msg.as_str())
-                .build()?
-                .into(),
-        ),
-        ChatMessage::System(msg) => Some(
-            ChatCompletionRequestSystemMessageArgs::default()
-                .content(msg.as_str())
-                .build()?
-                .into(),
-        ),
-        ChatMessage::ToolCall(tool_call) => Some(
-            ChatCompletionRequestAssistantMessageArgs::default()
-                .tool_calls(vec![ChatCompletionMessageToolCall {
-                    id: tool_call.id().to_string(),
-                    r#type: ChatCompletionToolType::Function,
-                    function: FunctionCall {
-                        name: tool_call.name().to_string(),
-                        arguments: tool_call.args().unwrap_or_default().to_string(),
-                    },
-                }])
-                .build()?
-                .into(),
-        ),
+        ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
+            .content(msg.as_str())
+            .build()?
+            .into(),
+        ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
+            .content(msg.as_str())
+            .build()?
+            .into(),
         ChatMessage::ToolOutput(tool_call, tool_output) => {
             let Some(content) = tool_output.content() else {
-                return Ok(None);
-            };
-
-            Some(
-                ChatCompletionRequestToolMessageArgs::default()
-                    .content(content)
+                return Ok(ChatCompletionRequestToolMessageArgs::default()
                     .tool_call_id(tool_call.id())
                     .build()?
-                    .into(),
-            )
-        }
-        ChatMessage::Assistant(msg) => Some(
-            ChatCompletionRequestAssistantMessageArgs::default()
-                .content(msg.as_str())
+                    .into());
+            };
+
+            ChatCompletionRequestToolMessageArgs::default()
+                .content(content)
+                .tool_call_id(tool_call.id())
                 .build()?
-                .into(),
-        ),
+                .into()
+        }
+        ChatMessage::Assistant(msg, tool_calls) => {
+            let mut builder = ChatCompletionRequestAssistantMessageArgs::default();
+
+            if let Some(msg) = msg {
+                builder.content(msg.as_str());
+            }
+
+            if let Some(tool_calls) = tool_calls {
+                builder.tool_calls(
+                    tool_calls
+                        .iter()
+                        .map(|tool_call| ChatCompletionMessageToolCall {
+                            id: tool_call.id().to_string(),
+                            r#type: ChatCompletionToolType::Function,
+                            function: FunctionCall {
+                                name: tool_call.name().to_string(),
+                                arguments: tool_call.args().unwrap_or_default().to_string(),
+                            },
+                        })
+                        .collect::<Vec<_>>(),
+                );
+            }
+
+            builder.build()?.into()
+        }
     };
 
     Ok(openai_message)

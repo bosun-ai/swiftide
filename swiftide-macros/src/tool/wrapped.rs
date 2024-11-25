@@ -35,8 +35,6 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> TokenStream {
         #[derive(Clone, Default)]
         pub struct #struct_name {}
 
-        /// Create a new instance of the tool as a boxed trait object
-        /// NOTE: Maybe we should have a separate `boxed` method for this?
         pub fn #fn_name() -> Box<dyn ::swiftide::chat_completion::Tool> {
             Box::new(#struct_name {})
         }
@@ -70,12 +68,12 @@ mod tests {
             #[derive(Clone, Default)]
             pub struct SearchCode {}
 
-            pub fn search_code() -> SearchCode {
-                SearchCode {}
+            pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
+                Box::new(SearchCode {})
             }
 
             impl SearchCode {
-                pub async fn search_code(&self, context: &dyn swiftide::traits::AgentContext, code_query: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+                pub async fn search_code(&self, context: &dyn swiftide::traits::AgentContext, code_query: &str) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                     return Ok("hello".into())
                 }
 
@@ -88,7 +86,7 @@ mod tests {
     #[test]
     fn test_wrap_multiple_args() {
         let input: ItemFn = parse_quote! {
-            pub async fn search_code(context: &dyn swiftide::traits::AgentContext, code_query: &str, other_arg: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+            pub async fn search_code(context: &dyn swiftide::traits::AgentContext, code_query: &str, other_arg: &str) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                 return Ok("hello".into())
             }
         };
@@ -99,12 +97,12 @@ mod tests {
             #[derive(Clone, Default)]
             pub struct SearchCode {}
 
-            pub fn search_code() -> SearchCode {
-                SearchCode {}
+            pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
+                Box::new(SearchCode {})
             }
 
             impl SearchCode {
-                pub async fn search_code(&self, context: &dyn swiftide::traits::AgentContext, code_query: &str, other_arg: &str) -> anyhow::Result<swiftide::chat_completion::ToolOutput> {
+                pub async fn search_code(&self, context: &dyn swiftide::traits::AgentContext, code_query: &str, other_arg: &str) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                     return Ok("hello".into())
                 }
 
