@@ -2,6 +2,7 @@ mod agent;
 mod default_context;
 pub mod hooks;
 mod state;
+pub mod system_prompt;
 pub mod tools;
 
 pub use agent::Agent;

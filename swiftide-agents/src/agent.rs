@@ -83,29 +83,13 @@ impl std::fmt::Debug for Agent {
 }
 
 impl AgentBuilder {
-    // pub fn context(&mut self, context: impl Into<Box<dyn AgentContext>>) -> AgentBuilder<C>
-    // where
-    //     Self: Clone,
-    // {
-    //     let AgentBuilder {
-    //         hooks,
-    //         tools,
-    //         llm,
-    //         state,
-    //         system_prompt,
-    //         ..
-    //     } = self.clone();
-    //
-    //     // Rust is silly that you can't just forward self without context
-    //     AgentBuilder::<C> {
-    //         context: Some(Arc::new(context)),
-    //         hooks,
-    //         tools,
-    //         llm,
-    //         state,
-    //         system_prompt,
-    //     }
-    // }
+    pub fn context(&mut self, context: impl AgentContext + 'static) -> &mut AgentBuilder
+    where
+        Self: Clone,
+    {
+        self.context = Some(Arc::new(context));
+        self
+    }
 
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
@@ -191,6 +175,7 @@ impl Agent {
         self.context.history().await
     }
 
+    // TODO: Inner mutability instead?
     async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
         if self.state.is_running() {
             anyhow::bail!("Agent is already running");

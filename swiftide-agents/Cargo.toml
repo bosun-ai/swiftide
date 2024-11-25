@@ -33,6 +33,7 @@ swiftide-core = { path = "../swiftide-core", version = "0.14", features = [
 mockall.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
+insta.workspace = true
 
 [lints]
 workspace = true
