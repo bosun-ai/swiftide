@@ -213,7 +213,7 @@ impl Agent {
                     .add_messages(&[ChatMessage::System(system_prompt.render().await?)])
                     .await;
             }
-            let span = tracing::trace_span!("hook", "otel.name" = "hook.BeforeAll");
+            let span = tracing::info_span!("hook", "otel.name" = "hook.BeforeAll");
             self.invoke_hooks_matching(HookTypes::BeforeAll)
                 .instrument(span)
                 .await?;
