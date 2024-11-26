@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1732104830746,
+  "lastUpdate": 1732640354722,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9635,6 +9635,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246158,
             "range": "± 2604",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9337c8fff5385df4e851f1bd94b55ba60122ed95",
+          "message": "chore(deps): bump thiserror from 1.0.68 to 1.0.69 (#444)\n\nBumps [thiserror](https://github.com/dtolnay/thiserror) from 1.0.68 to\r\n1.0.69.\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/dtolnay/thiserror/releases\">thiserror's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>1.0.69</h2>\r\n<ul>\r\n<li>Backport 2.0.2 fixes</li>\r\n</ul>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/41938bd3a03a70d34ed8e53d99c89c770c7c9c41\"><code>41938bd</code></a>\r\nRelease 1.0.69</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/9d6506e8609930759946925f768eb4fd8dd2e4c1\"><code>9d6506e</code></a>\r\nMerge pull request <a\r\nhref=\"https://redirect.github.com/dtolnay/thiserror/issues/382\">#382</a>\r\nfrom dtolnay/hang</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/591a44d9a37b0326e808df7ef38a6a101badab17\"><code>591a44d</code></a>\r\nFix fallback fmt expression parser hang</li>\r\n<li><a\r\nhref=\"https://github.com/dtolnay/thiserror/commit/5b36e375c2f6b0a8189134f34b7c8f5ca3ec28d1\"><code>5b36e37</code></a>\r\nAdd ui test of invalid expression syntax in display attribute</li>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/dtolnay/thiserror/compare/1.0.68...1.0.69\">compare\r\nview</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\n\r\n[![Dependabot compatibility\r\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=thiserror&package-manager=cargo&previous-version=1.0.68&new-version=1.0.69)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\r\n\r\nDependabot will resolve any conflicts with this PR as long as you don't\r\nalter it yourself. You can also trigger a rebase manually by commenting\r\n`@dependabot rebase`.\r\n\r\n[//]: # (dependabot-automerge-start)\r\n[//]: # (dependabot-automerge-end)\r\n\r\n---\r\n\r\n<details>\r\n<summary>Dependabot commands and options</summary>\r\n<br />\r\n\r\nYou can trigger Dependabot actions by commenting on this PR:\r\n- `@dependabot rebase` will rebase this PR\r\n- `@dependabot recreate` will recreate this PR, overwriting any edits\r\nthat have been made to it\r\n- `@dependabot merge` will merge this PR after your CI passes on it\r\n- `@dependabot squash and merge` will squash and merge this PR after\r\nyour CI passes on it\r\n- `@dependabot cancel merge` will cancel a previously requested merge\r\nand block automerging\r\n- `@dependabot reopen` will reopen this PR if it is closed\r\n- `@dependabot close` will close this PR and stop Dependabot recreating\r\nit. You can achieve the same result by closing it manually\r\n- `@dependabot show <dependency name> ignore conditions` will show all\r\nof the ignore conditions of the specified dependency\r\n- `@dependabot ignore this major version` will close this PR and stop\r\nDependabot creating any more for this major version (unless you reopen\r\nthe PR or upgrade to it yourself)\r\n- `@dependabot ignore this minor version` will close this PR and stop\r\nDependabot creating any more for this minor version (unless you reopen\r\nthe PR or upgrade to it yourself)\r\n- `@dependabot ignore this dependency` will close this PR and stop\r\nDependabot creating any more for this dependency (unless you reopen the\r\nPR or upgrade to it yourself)\r\n\r\n\r\n</details>\r\n\r\nSigned-off-by: dependabot[bot] <support@github.com>\r\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2024-11-26T17:50:49+01:00",
+          "tree_id": "f4dac99ad8b336bc8eb5826a4b36ceb56db94ded",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9337c8fff5385df4e851f1bd94b55ba60122ed95"
+        },
+        "date": 1732640354021,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1302177,
+            "range": "± 989303",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245560,
+            "range": "± 2115",
             "unit": "ns/iter"
           }
         ]
