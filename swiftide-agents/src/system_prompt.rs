@@ -16,6 +16,7 @@ use swiftide_core::prompt::{Prompt, PromptTemplate};
 #[builder(setter(into, strip_option))]
 pub struct SystemPrompt {
     /// The role the agent is expected to fulfil.
+    #[builder(default)]
     role: Option<String>,
 
     /// Additional guidelines for the agent to follow

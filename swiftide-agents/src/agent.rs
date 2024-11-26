@@ -18,7 +18,7 @@ use swiftide_core::{
     AgentContext,
 };
 use tokio::task::JoinHandle;
-use tracing::debug;
+use tracing::{debug, Instrument};
 
 // TODO:
 // - [x] After calling run or run once cannot call run again
@@ -177,22 +177,22 @@ impl Agent {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self), name = "agent.query")]
     pub async fn query(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), false).await
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self), name = "agent.query_once")]
     pub async fn query_once(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), true).await
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self), name = "agent.run")]
     pub async fn run(&mut self) -> Result<()> {
         self.run_agent(None, false).await
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self), name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<()> {
         self.run_agent(None, true).await
     }
@@ -213,7 +213,10 @@ impl Agent {
                     .add_messages(&[ChatMessage::System(system_prompt.render().await?)])
                     .await;
             }
-            self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
+            let span = tracing::trace_span!("hook", "otel.name" = "hook.BeforeAll");
+            self.invoke_hooks_matching(HookTypes::BeforeAll)
+                .instrument(span)
+                .await?;
         }
 
         if let Some(query) = maybe_query {
@@ -240,6 +243,7 @@ impl Agent {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn run_completions(&self, messages: &[ChatMessage]) -> Result<()> {
         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
 
@@ -290,11 +294,18 @@ impl Agent {
                 let tool_args = tool_call.args().map(String::from);
                 let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
-                let handle: JoinHandle<Result<ToolOutput, ToolError>> = tokio::spawn(async move {
+                let tool_name = tool.name().to_string();
+                let tool_span =
+                    tracing::info_span!("tool", "otel.name" = format!("tool.{}", &tool_name));
+                let handle = tokio::spawn(async move {
                     let output = tool.invoke(&*context, tool_args.as_deref()).await?;
 
+                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name, "Completed tool call");
+
                     Ok(output)
-                });
+                })
+                .instrument(tool_span);
+
                 handles.push((handle, tool_call));
             }
 
@@ -303,8 +314,14 @@ impl Agent {
 
                 for hook in self.hooks_by_type(HookTypes::AfterTool) {
                     if let Hook::AfterTool(hook) = hook {
+                        let span = tracing::info_span!(
+                            "hook",
+                            "otel.name" = format!("hook.{}", HookTypes::AfterTool)
+                        );
                         tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                        hook(&*self.context, &tool_call, &mut output).await?;
+                        hook(&*self.context, &tool_call, &mut output)
+                            .instrument(span)
+                            .await?;
                     }
                 }
 
@@ -333,10 +350,11 @@ impl Agent {
         tracing::info!("Invoking {hook_type} hooks");
 
         for hook in self.hooks_by_type(hook_type) {
+            let span = tracing::info_span!("hook", "otel.name" = format!("hook.{}", hook_type));
             match hook {
-                Hook::BeforeAll(hook) => hook(&*self.context).await?,
-                Hook::BeforeEach(hook) => hook(&*self.context).await?,
-                Hook::AfterEach(hook) => hook(&*self.context).await?,
+                Hook::BeforeAll(hook) => hook(&*self.context).instrument(span).await?,
+                Hook::BeforeEach(hook) => hook(&*self.context).instrument(span).await?,
+                Hook::AfterEach(hook) => hook(&*self.context).instrument(span).await?,
                 Hook::AfterTool(..) | Hook::OnNewMessage(..) => {
                     debug_assert!(false, "Should not be called here");
                 }
@@ -360,6 +378,7 @@ impl Agent {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     async fn add_message(&self, message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
             if let Hook::OnNewMessage(hook) = hook {
