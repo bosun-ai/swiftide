@@ -177,22 +177,22 @@ impl Agent {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
-    #[tracing::instrument(skip(self), name = "agent.query")]
+    #[tracing::instrument(skip_all, name = "agent.query")]
     pub async fn query(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), false).await
     }
 
-    #[tracing::instrument(skip(self), name = "agent.query_once")]
+    #[tracing::instrument(skip_all, name = "agent.query_once")]
     pub async fn query_once(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), true).await
     }
 
-    #[tracing::instrument(skip(self), name = "agent.run")]
+    #[tracing::instrument(skip_all, name = "agent.run")]
     pub async fn run(&mut self) -> Result<()> {
         self.run_agent(None, false).await
     }
 
-    #[tracing::instrument(skip(self), name = "agent.run_once")]
+    #[tracing::instrument(skip_all, name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<()> {
         self.run_agent(None, true).await
     }
@@ -213,10 +213,7 @@ impl Agent {
                     .add_messages(&[ChatMessage::System(system_prompt.render().await?)])
                     .await;
             }
-            let span = tracing::info_span!("hook", "otel.name" = "hook.BeforeAll");
-            self.invoke_hooks_matching(HookTypes::BeforeAll)
-                .instrument(span)
-                .await?;
+            self.invoke_hooks_matching(HookTypes::BeforeAll).await?;
         }
 
         if let Some(query) = maybe_query {
@@ -243,7 +240,7 @@ impl Agent {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip_all)]
     async fn run_completions(&self, messages: &[ChatMessage]) -> Result<()> {
         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
 
@@ -303,8 +300,7 @@ impl Agent {
                     tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name, "Completed tool call");
 
                     Ok(output)
-                })
-                .instrument(tool_span);
+                }.instrument(tool_span));
 
                 handles.push((handle, tool_call));
             }
@@ -351,6 +347,7 @@ impl Agent {
 
         for hook in self.hooks_by_type(hook_type) {
             let span = tracing::info_span!("hook", "otel.name" = format!("hook.{}", hook_type));
+
             match hook {
                 Hook::BeforeAll(hook) => hook(&*self.context).instrument(span).await?,
                 Hook::BeforeEach(hook) => hook(&*self.context).instrument(span).await?,
@@ -378,11 +375,15 @@ impl Agent {
         }
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip_all, fields(message = message.to_string()))]
     async fn add_message(&self, message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
             if let Hook::OnNewMessage(hook) = hook {
-                if let Err(err) = hook(&*self.context, &message).await {
+                let span = tracing::info_span!(
+                    "hook",
+                    "otel.name" = format!("hook.{}", HookTypes::OnNewMessage)
+                );
+                if let Err(err) = hook(&*self.context, &message).instrument(span).await {
                     tracing::error!(
                         "Error in {hooktype} hook: {err}",
                         hooktype = HookTypes::OnNewMessage,

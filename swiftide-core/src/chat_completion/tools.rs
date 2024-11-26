@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-#[derive(Debug, Clone, PartialEq, strum_macros::Display)]
+#[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
@@ -23,6 +23,16 @@ impl ToolOutput {
 impl<T: AsRef<str>> From<T> for ToolOutput {
     fn from(s: T) -> Self {
         ToolOutput::Text(s.as_ref().to_string())
+    }
+}
+
+impl std::fmt::Display for ToolOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ToolOutput::Text(value) => write!(f, "{value}"),
+            ToolOutput::Ok => write!(f, "Ok"),
+            ToolOutput::Stop => write!(f, "Stop"),
+        }
     }
 }
 
