@@ -77,7 +77,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
                 if let Pat::Ident(ident) = &**pat {
                     seen_arg_names.push(ident.ident.to_string());
 
-                    // If the argument is a reference, we need to referance the quote as well
+                    // If the argument is a reference, we need to reference the quote as well
                     if let syn::Type::Reference(_) = &**ty {
                         Some(quote! { &args.#ident })
                     } else {
