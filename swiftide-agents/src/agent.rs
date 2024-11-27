@@ -11,42 +11,35 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
-    chat_completion::{
-        errors::ToolError, ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolOutput,
-    },
+    chat_completion::{ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolOutput},
     prompt::Prompt,
     AgentContext,
 };
-use tokio::task::JoinHandle;
 use tracing::{debug, Instrument};
 
-// TODO:
-// - [x] After calling run or run once cannot call run again
-// - [x] Cannot call continue if agent has not called run (state machine?)
-//       ... Or should we simplify it, and allow it for now?
-// - [x] Agent should support a system prompt
-// - [x] Hooks should  called at each correct point
-// - [ ] Errors should all be thiserror and not anyhow
-// - [ ] Improve tracing and logging (need to check when running it)
-// - [ ] Consider making tools generic over context instead
-//          NOTE: Makes async maybe easier? No cast from generic to dyn
-// - [\] Ensure hooks can take both regular functions _and_ closures
-//          NOTE: Partially works with explicit return of impl
-// - [x] Add back history to context
-
-// Notes
-//
-// Generic over LLM instead of box dyn? Should tool support be a separate trait?
+/// Agents are the main interface for building agentic systems.
+///
+/// Construct agents by calling the builder, setting an llm, configure hooks, tools and other
+/// customizations.
+///
+/// # Important defaults
+///
+/// - The default context is the `DefaultContext`, executing tools locally with the `LocalExecutor`.
+/// - A default `stop` tool is provided for agents to explicitly stop if needed
+/// - The default `SystemPrompt` instructs the agent with chain of thought and some common safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
 #[derive(Clone, Builder)]
 pub struct Agent {
+    /// Hooks are functions that are called at specific points in the agent's lifecycle.
     #[builder(default, setter(into))]
     pub(crate) hooks: Vec<Hook>,
-    // name: String,
+    /// The context in which the agent operates, by default this is the `DefaultContext`.
     #[builder(setter(custom), default = Arc::new(DefaultContext::default()))]
     pub(crate) context: Arc<dyn AgentContext>,
+    /// Tools the agent can use
     #[builder(default = Agent::default_tools(), setter(custom))]
     pub(crate) tools: HashSet<Box<dyn Tool>>,
 
+    /// The language model that the agent uses for completion.
     #[builder(setter(custom))]
     pub(crate) llm: Box<dyn ChatCompletion>,
 
@@ -72,6 +65,7 @@ pub struct Agent {
     #[builder(setter(into, strip_option), default = Some(SystemPrompt::default().into()))]
     pub(crate) system_prompt: Option<Prompt>,
 
+    /// Initial state of the agent
     #[builder(private, default = state::State::default())]
     pub(crate) state: state::State,
 }
@@ -103,6 +97,7 @@ impl std::fmt::Debug for Agent {
 }
 
 impl AgentBuilder {
+    /// The context in which the agent operates, by default this is the `DefaultContext`.
     pub fn context(&mut self, context: impl AgentContext + 'static) -> &mut AgentBuilder
     where
         Self: Clone,
@@ -111,12 +106,14 @@ impl AgentBuilder {
         self
     }
 
+    /// Disable the system prompt.
     pub fn no_system_prompt(&mut self) -> &mut Self {
         self.system_prompt = Some(None);
 
         self
     }
 
+    /// Add a hook to the agent.
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
         hooks.push(hook);
@@ -124,30 +121,43 @@ impl AgentBuilder {
         self
     }
 
+    /// Add a hook that runs once, before all completions. Even if the agent is paused and resumed,
+    /// before all will not trigger again.
     pub fn before_all(&mut self, hook: impl HookFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeAll(Box::new(hook)))
     }
 
+    /// Add a hook that runs before each completion.
     pub fn before_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeEach(Box::new(hook)))
     }
 
+    /// Add a hook that runs after each tool. The `Result<ToolOutput, ToolError>` is provided
+    /// as mut, so the tool output can be fully modified.
+    ///
+    /// The `ToolOutput` also references the original `ToolCall`, allowing you to match at runtime
+    /// what tool to interact with.
     pub fn after_tool(&mut self, hook: impl AfterToolFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterTool(Box::new(hook)))
     }
 
+    /// Add a hook that runs before each tool. Yields an immutable reference to the `ToolCall`.
     pub fn before_tool(&mut self, hook: impl BeforeToolFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeTool(Box::new(hook)))
     }
 
+    /// Add a hook that runs after each completion, when all tool calls are finished.
     pub fn after_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterEach(Box::new(hook)))
     }
 
+    /// Add a hook that runs when a new message is added to the context. Note that each tool adds a
+    /// separate message.
     pub fn on_new_message(&mut self, hook: impl MessageHookFn + 'static) -> &mut Self {
         self.add_hook(Hook::OnNewMessage(Box::new(hook)))
     }
 
+    /// Set the LLM for the agent. An LLM must implement the `ChatCompletion` trait.
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
         let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone());
 
@@ -155,6 +165,10 @@ impl AgentBuilder {
         self
     }
 
+    /// Define the available tools for the agent. Tools must implement the `Tool` trait.
+    ///
+    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive macro](`swiftide_macros::Tool`)
+    /// for easy ways to create (many) tools.
     pub fn tools<TOOL, I: IntoIterator<Item = TOOL>>(&mut self, tools: I) -> &mut Self
     where
         TOOL: Into<Box<dyn Tool>>,
@@ -171,41 +185,49 @@ impl AgentBuilder {
 }
 
 impl Agent {
+    /// Build a new agent
     pub fn builder() -> AgentBuilder {
         AgentBuilder::default()
     }
 }
 
 impl Agent {
+    /// Default tools for the agent that it always includes
     fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
+    /// Run the agent with a user message. The agent will loop completions, make tool calls, until
+    /// no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.query")]
     pub async fn query(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), false).await
     }
 
+    /// Run the agent with a user message once.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
     pub async fn query_once(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
         self.run_agent(Some(query.into()), true).await
     }
 
+    /// Run the agent with without user message. The agent will loop completions, make tool calls, until
+    /// no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.run")]
     pub async fn run(&mut self) -> Result<()> {
         self.run_agent(None, false).await
     }
 
+    /// Run the agent with without user message. The agent will loop completions, make tool calls, until
     #[tracing::instrument(skip_all, name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<()> {
         self.run_agent(None, true).await
     }
 
+    /// Retrieve the message history of the agent
     pub async fn history(&self) -> Vec<ChatMessage> {
         self.context.history().await
     }
 
-    // TODO: Inner mutability instead?
     async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
         if self.state.is_running() {
             anyhow::bail!("Agent is already running");

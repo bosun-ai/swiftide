@@ -7,8 +7,6 @@ use super::tools::ToolCall;
 pub struct ChatCompletionResponse {
     pub message: Option<String>,
 
-    // Can be a better type
-    // Perhaps should be typed to actual functions already?
     #[builder(default)]
     pub tool_calls: Option<Vec<ToolCall>>,
 }

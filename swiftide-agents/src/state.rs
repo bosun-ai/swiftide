@@ -1,7 +1,7 @@
-
+//! Internal state of the agent
 
 #[derive(Clone, Copy, Debug, Default, strum_macros::EnumDiscriminants, strum_macros::EnumIs)]
-pub enum State {
+pub(crate) enum State {
     #[default]
     Pending,
     Running,

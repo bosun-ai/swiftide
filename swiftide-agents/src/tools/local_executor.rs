@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{Command, Output, ToolExecutor};
+use swiftide_core::{Command, CommandOutput, ToolExecutor};
 
 #[derive(Debug, Clone, Builder)]
 pub struct LocalExecutor {
@@ -33,7 +33,7 @@ impl LocalExecutor {
         LocalExecutorBuilder::default()
     }
 
-    async fn exec_shell(&self, cmd: &str) -> Result<Output> {
+    async fn exec_shell(&self, cmd: &str) -> Result<CommandOutput> {
         let output = tokio::process::Command::new("sh")
             .arg("-c")
             .arg(cmd)
@@ -46,7 +46,7 @@ impl LocalExecutor {
         let status = output.status.code().unwrap_or(-1);
         let success = output.status.success();
 
-        Ok(Output::Shell {
+        Ok(CommandOutput::Shell {
             stdout,
             stderr,
             status,
@@ -54,24 +54,23 @@ impl LocalExecutor {
         })
     }
 
-    async fn exec_read_file(&self, path: &Path) -> Result<Output> {
-        // TODO: Decide how to handle errors
+    async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput> {
         let output = tokio::fs::read(path).await?;
 
-        Ok(Output::Text(String::from_utf8(output)?))
+        Ok(CommandOutput::Text(String::from_utf8(output)?))
     }
 
-    async fn exec_write_file(&self, path: &Path, content: &str) -> Result<Output> {
-        // TODO: Decide how to handle errors
+    async fn exec_write_file(&self, path: &Path, content: &str) -> Result<CommandOutput> {
         tokio::fs::write(path, content).await?;
 
-        Ok(Output::Ok)
+        Ok(CommandOutput::Ok)
     }
 }
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
+    /// Execute a `Command` on the local machine
     #[tracing::instrument(skip_self)]
-    async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::Output> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput> {
         match cmd {
             Command::Shell(cmd) => __self.exec_shell(cmd).await,
             Command::ReadFile(path) => __self.exec_read_file(path).await,
@@ -172,7 +171,7 @@ mod tests {
 
         // Execute the write command
         let output = executor.exec_cmd(&write_cmd).await?;
-        let Output::Shell { stderr, .. } = output else {
+        let CommandOutput::Shell { stderr, .. } = output else {
             panic!("Expected Output::Shell, got {output:?}")
         };
 
@@ -221,7 +220,7 @@ mod tests {
         let output = executor.exec_cmd(&read_cmd).await?;
 
         // Verify that the content read from the file matches the expected content
-        if let Output::Text(content) = output {
+        if let CommandOutput::Text(content) = output {
             assert_eq!(content, file_content);
         } else {
             panic!("Expected Output::Text, got {output:?}");

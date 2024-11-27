@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
-use crate::{AgentContext, Output};
+use crate::{AgentContext, CommandOutput};
 
 use super::{
     chat_completion_request::ChatCompletionRequest,
@@ -62,12 +62,12 @@ where
 
 dyn_clone::clone_trait_object!(ChatCompletion);
 
-impl From<Output> for ToolOutput {
-    fn from(value: Output) -> Self {
+impl From<CommandOutput> for ToolOutput {
+    fn from(value: CommandOutput) -> Self {
         match value {
-            Output::Text(value) => ToolOutput::Text(value),
-            Output::Ok => ToolOutput::Ok,
-            Output::Shell {
+            CommandOutput::Text(value) => ToolOutput::Text(value),
+            CommandOutput::Ok => ToolOutput::Ok,
+            CommandOutput::Shell {
                 stdout,
                 stderr,
                 success,

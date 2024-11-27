@@ -1,3 +1,8 @@
+//! Hooks are functions that are called at specific points in the agent lifecycle.
+//!
+//!
+//! Since rust does not have async closures, hooks have to return a boxed, pinned async block
+//! themselves.
 use anyhow::Result;
 use std::{future::Future, pin::Pin};
 
@@ -7,9 +12,7 @@ use swiftide_core::{
     AgentContext,
 };
 
-// pub type HookFn = Box<dyn Fn(&mut dyn AgentContext) -> Result<()>>;
-//
-// dyn_clone::clone_trait_object!(HookFn);
+/// Hooks that are call on before each, after each and before all
 pub trait HookFn:
     for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
@@ -20,6 +23,7 @@ pub trait HookFn:
 
 dyn_clone::clone_trait_object!(HookFn);
 
+/// Hooks that are called after each tool
 pub trait AfterToolFn:
     for<'a> Fn(
         &'a dyn AgentContext,
@@ -34,6 +38,7 @@ pub trait AfterToolFn:
 
 dyn_clone::clone_trait_object!(AfterToolFn);
 
+/// Hooks that are called before each tool
 pub trait BeforeToolFn:
     for<'a> Fn(
         &'a dyn AgentContext,
@@ -47,7 +52,7 @@ pub trait BeforeToolFn:
 
 dyn_clone::clone_trait_object!(BeforeToolFn);
 
-// TODO: Should message be mut?
+/// Hooks that are called when a new message is added to the `AgentContext`
 pub trait MessageHookFn:
     for<'a> Fn(
         &'a dyn AgentContext,
@@ -61,6 +66,7 @@ pub trait MessageHookFn:
 
 dyn_clone::clone_trait_object!(MessageHookFn);
 
+/// Wrapper around the different types of hooks
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
 pub enum Hook {
@@ -70,7 +76,6 @@ pub enum Hook {
     AfterTool(Box<dyn AfterToolFn>),
     OnNewMessage(Box<dyn MessageHookFn>),
     AfterEach(Box<dyn HookFn>),
-    // AfterAll(Box<dyn HookFn>),
 }
 
 impl<F> HookFn for F where
@@ -120,7 +125,6 @@ mod tests {
 
     #[test]
     fn test_hooks_compile_sync_and_async() {
-        // TODO: How to strip the Box::Pin?
         Agent::builder()
             .before_all(|_| Box::pin(async { Ok(()) }))
             .before_each(|_| Box::pin(async { Ok(()) }))

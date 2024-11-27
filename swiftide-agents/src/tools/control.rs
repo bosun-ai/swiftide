@@ -1,3 +1,4 @@
+//! Control tools manage control flow during agent's lifecycle.
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{

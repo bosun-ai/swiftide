@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-use super::ToolCall;
-
 #[derive(Error, Debug)]
 pub enum ToolError {
     /// I.e. the llm calls the tool with the wrong arguments

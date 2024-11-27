@@ -4,26 +4,20 @@ use crate::chat_completion::ChatMessage;
 use anyhow::Result;
 use async_trait::async_trait;
 
+/// A tool executor that can be used within an `AgentContext`
 #[async_trait]
 pub trait ToolExecutor: Send + Sync {
-    // type Command: Send + Sync;
-    // type Output: Send + Sync;
-
-    // tbd if associated type makes sense
-    // Pro: Flexible and up to executor to decide how it communicates and works
-    // Con: Tools are not interchangeable if the executor uses different types.
-    async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
 }
 
 #[async_trait]
 impl<T: ToolExecutor> ToolExecutor for &T {
-    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
         (*self).exec_cmd(cmd).await
     }
 }
 
 /// Commands that can be executed by the executor
-/// TODO: Borrow it all?
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Command {
@@ -45,8 +39,10 @@ impl Command {
         Command::WriteFile(path.into(), content.into())
     }
 }
+
+/// Output from a `Command`
 #[derive(Debug, Clone)]
-pub enum Output {
+pub enum CommandOutput {
     /// Infallible text output
     Text(String),
     /// Empty infallible output
@@ -60,26 +56,25 @@ pub enum Output {
     },
 }
 
-impl std::fmt::Display for Output {
+impl std::fmt::Display for CommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Output::Text(value) => write!(f, "{value}"),
-            Output::Shell { stdout, stderr, .. } => {
+            CommandOutput::Text(value) => write!(f, "{value}"),
+            CommandOutput::Shell { stdout, stderr, .. } => {
                 write!(f, "{stdout}{stderr}")
             }
-            Output::Ok => write!(f, "Ok"),
+            CommandOutput::Ok => write!(f, "Ok"),
         }
     }
 }
 
-impl From<String> for Output {
+impl From<String> for CommandOutput {
     fn from(value: String) -> Self {
-        Output::Text(value)
+        CommandOutput::Text(value)
     }
 }
 
-/// Acts as the interface to the external world and any overlapping state
-/// NOTE: Async as expecting locks
+/// Acts as the interface to the external world and manages messages for completion
 #[async_trait]
 pub trait AgentContext: Send + Sync {
     /// List of all messages for this agent
@@ -106,7 +101,7 @@ pub trait AgentContext: Send + Sync {
     fn stop(&self);
 
     /// Execute a command if the context supports it
-    async fn exec_cmd(&self, cmd: &Command) -> Result<Output>;
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
 
     async fn history(&self) -> Vec<ChatMessage>;
 }

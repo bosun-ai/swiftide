@@ -1,12 +1,15 @@
-//! Manages agent history and provides an
-//! interface for the external world
+//! Manages agent history and provides an interface for the external world
+//!
+//! This is the default for agents. It is fully async and shareable between agents.
+//!
+//! By default uses the `LocalExecutor` for tool execution.
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
-use swiftide_core::{AgentContext, Command, Output, ToolExecutor};
+use swiftide_core::{AgentContext, Command, CommandOutput, ToolExecutor};
 use tokio::sync::Mutex;
 
 use crate::tools::local_executor::LocalExecutor;
@@ -38,6 +41,7 @@ impl Default for DefaultContext<LocalExecutor> {
 }
 
 impl<T: ToolExecutor> DefaultContext<T> {
+    /// Create a new context with a custom executor
     pub fn from_executor(executor: T) -> DefaultContext<T> {
         DefaultContext {
             tool_executor: executor,
@@ -48,12 +52,8 @@ impl<T: ToolExecutor> DefaultContext<T> {
         }
     }
 }
-/// Default, simple implementation of context
-///
-/// Not meant for concurrent usage.
 #[async_trait]
 impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
-    // TODO: Kinda looks like an iterator now
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
@@ -91,9 +91,6 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         for item in messages {
             self.add_message(item).await;
         }
-
-        // Debug assert that there is only one ChatMessage::System
-        // TODO: Properly handle this
     }
 
     async fn add_message(&self, item: &ChatMessage) {
@@ -114,7 +111,7 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         self.should_stop.store(true, Ordering::SeqCst);
     }
 
-    async fn exec_cmd(&self, cmd: &Command) -> Result<Output> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
         self.tool_executor.exec_cmd(cmd).await
     }
 }
@@ -179,8 +176,6 @@ mod tests {
         assert_eq!(messages.len(), 2);
         assert_eq!(context.current_new_messages().await.len(), 2);
         assert!(context.next_completion().await.is_none());
-
-        let tool_call = ToolCall::builder().id("1").name("test").build().unwrap();
 
         context
             .add_messages(&[assistant!("Hey?", ["test"]), tool_output!("test", "Hoi")])

@@ -23,7 +23,8 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 /// # Example
 /// ```ignore
 /// #[tool(description = "Searches code", param(name = "code_query", description = "The code query"))]
-/// pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput> {
+/// pub async fn search_code(context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput,
+/// ToolError> {
 ///    Ok("hello".into())
 /// }
 ///
@@ -41,6 +42,27 @@ pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     tool_impl(&args.into(), &input).into()
 }
 
+/// Derive tool on a struct. The macro expects a snake case method on the struct that takes the
+/// equally named params as `&str` arguments.
+///
+/// Useful if your structs have internal state and you want to use it in your tool.
+///
+/// # Example
+/// ```ignore
+/// #[derive(Clone, Tool)]
+/// #[tool(description = "Searches code", param(name = "code_query", description = "The code query"))]
+/// pub struct SearchCode {
+///   search_command: String
+/// }
+///
+/// impl SearchCode {
+///   pub async fn search_code(&self, context: &dyn AgentContext, code_query: &str) -> Result<ToolOutput, ToolError> {
+///     context.exec_cmd(&self.search_command.into()).await.map(Into::into)
+///   }
+/// }
+///
+/// ```
+///
 #[proc_macro_derive(Tool, attributes(tool))]
 pub fn derive_tool(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

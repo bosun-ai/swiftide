@@ -1,5 +1,6 @@
 use derive_builder::Builder;
 
+/// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum ToolOutput {
@@ -36,7 +37,7 @@ impl std::fmt::Display for ToolOutput {
     }
 }
 
-/// TODO: Needs more values, i.e. `OpenAI` needs a reference to the original call
+/// A tool call that can be executed by the executor
 #[derive(Clone, Debug, Builder, PartialEq)]
 #[builder(setter(into, strip_option))]
 pub struct ToolCall {
@@ -77,6 +78,8 @@ impl ToolCall {
 }
 
 /// A typed tool specification intended to be usable for multiple LLMs
+///
+/// i.e. the json spec `OpenAI` uses to define their tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder)]
 pub struct ToolSpec {
     pub name: &'static str,
