@@ -8438,6 +8438,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "swiftide-core",
+ "swiftide-integrations",
  "swiftide-macros",
  "temp-dir",
  "test-log",

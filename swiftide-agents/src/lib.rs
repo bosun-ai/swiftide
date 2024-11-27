@@ -13,22 +13,27 @@ Swiftide agents are a flexible way to build fast and reliable AI agents.
 # Example
 
 ```no_run
+# use swiftide_agents::Agent;
+# use swiftide_integrations as integrations;
 # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-let openai = swiftide::integrations::openai::OpenAI::builder()
+let openai = integrations::openai::OpenAI::builder()
     .default_prompt_model("gpt-4o-mini")
     .build()?;
 
-swiftide::agents::Agent::builder()
+Agent::builder()
     .llm(&openai)
     .before_each(move |_|
         Box::pin(async move {
                 println!("Before each tool");
+                Ok(())
             })
     )
     .build()?
     .query("What is the meaning of life?")
     .await?;
-#}
+# return Ok(());
+
+# }
 ```
 
 Agents run in a loop as long as they have new messages to process.

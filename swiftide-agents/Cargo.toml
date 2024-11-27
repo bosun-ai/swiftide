@@ -30,6 +30,9 @@ serde_json.workspace = true
 swiftide-core = { path = "../swiftide-core", version = "0.14", features = [
   "test-utils",
 ] }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.14", features = [
+  "openai",
+] }
 mockall.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
