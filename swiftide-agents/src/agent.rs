@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::{
     default_context::DefaultContext,
-    hooks::{Hook, HookFn, HookTypes, MessageHookFn, ToolHookFn},
+    hooks::{AfterToolFn, BeforeToolFn, Hook, HookFn, HookTypes, MessageHookFn},
     state,
     system_prompt::SystemPrompt,
     tools::control::Stop,
@@ -132,8 +132,12 @@ impl AgentBuilder {
         self.add_hook(Hook::BeforeEach(Box::new(hook)))
     }
 
-    pub fn after_tool(&mut self, hook: impl ToolHookFn + 'static) -> &mut Self {
+    pub fn after_tool(&mut self, hook: impl AfterToolFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterTool(Box::new(hook)))
+    }
+
+    pub fn before_tool(&mut self, hook: impl BeforeToolFn + 'static) -> &mut Self {
+        self.add_hook(Hook::BeforeTool(Box::new(hook)))
     }
 
     pub fn after_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
@@ -294,6 +298,18 @@ impl Agent {
                 let tool_name = tool.name().to_string();
                 let tool_span =
                     tracing::info_span!("tool", "otel.name" = format!("tool.{}", &tool_name));
+
+                for hook in self.hooks_by_type(HookTypes::BeforeTool) {
+                    if let Hook::BeforeTool(hook) = hook {
+                        let span = tracing::info_span!(
+                            "hook",
+                            "otel.name" = format!("hook.{}", HookTypes::BeforeTool)
+                        );
+                        tracing::info!("Calling {} hook", HookTypes::BeforeTool);
+                        hook(&*self.context, &tool_call).instrument(span).await?;
+                    }
+                }
+
                 let handle = tokio::spawn(async move {
                     let output = tool.invoke(&*context, tool_args.as_deref()).await?;
 
@@ -352,7 +368,7 @@ impl Agent {
                 Hook::BeforeAll(hook) => hook(&*self.context).instrument(span).await?,
                 Hook::BeforeEach(hook) => hook(&*self.context).instrument(span).await?,
                 Hook::AfterEach(hook) => hook(&*self.context).instrument(span).await?,
-                Hook::AfterTool(..) | Hook::OnNewMessage(..) => {
+                Hook::AfterTool(..) | Hook::OnNewMessage(..) | Hook::BeforeTool(..) => {
                     debug_assert!(false, "Should not be called here");
                 }
             }
@@ -613,6 +629,7 @@ mod tests {
         let mock_on_message = MockHook::new("on_message").expect_calls(4).to_owned();
 
         // Once for mock tool and once for stop
+        let mock_before_tool = MockHook::new("before_tool").expect_calls(2).to_owned();
         let mock_after_tool = MockHook::new("after_tool").expect_calls(2).to_owned();
 
         let prompt = "Write a poem";
@@ -655,8 +672,9 @@ mod tests {
             .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
             .before_each(mock_before_each.hook_fn())
+            .before_tool(mock_before_tool.before_tool_fn())
             .after_each(mock_after_each.hook_fn())
-            .after_tool(mock_after_tool.tool_hook_fn())
+            .after_tool(mock_after_tool.after_tool_fn())
             .on_new_message(mock_on_message.message_hook_fn())
             .build()
             .unwrap();

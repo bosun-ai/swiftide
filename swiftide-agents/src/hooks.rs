@@ -20,7 +20,7 @@ pub trait HookFn:
 
 dyn_clone::clone_trait_object!(HookFn);
 
-pub trait ToolHookFn:
+pub trait AfterToolFn:
     for<'a> Fn(
         &'a dyn AgentContext,
         &ToolCall,
@@ -32,8 +32,22 @@ pub trait ToolHookFn:
 {
 }
 
-dyn_clone::clone_trait_object!(ToolHookFn);
+dyn_clone::clone_trait_object!(AfterToolFn);
 
+pub trait BeforeToolFn:
+    for<'a> Fn(
+        &'a dyn AgentContext,
+        &ToolCall,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(BeforeToolFn);
+
+// TODO: Should message be mut?
 pub trait MessageHookFn:
     for<'a> Fn(
         &'a dyn AgentContext,
@@ -52,7 +66,8 @@ dyn_clone::clone_trait_object!(MessageHookFn);
 pub enum Hook {
     BeforeAll(Box<dyn HookFn>),
     BeforeEach(Box<dyn HookFn>),
-    AfterTool(Box<dyn ToolHookFn>),
+    BeforeTool(Box<dyn BeforeToolFn>),
+    AfterTool(Box<dyn AfterToolFn>),
     OnNewMessage(Box<dyn MessageHookFn>),
     AfterEach(Box<dyn HookFn>),
     // AfterAll(Box<dyn HookFn>),
@@ -66,7 +81,17 @@ impl<F> HookFn for F where
 {
 }
 
-impl<F> ToolHookFn for F where
+impl<F> BeforeToolFn for F where
+    F: for<'a> Fn(
+            &'a dyn AgentContext,
+            &ToolCall,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+impl<F> AfterToolFn for F where
     F: for<'a> Fn(
             &'a dyn AgentContext,
             &ToolCall,
@@ -99,6 +124,7 @@ mod tests {
         Agent::builder()
             .before_all(|_| Box::pin(async { Ok(()) }))
             .before_each(|_| Box::pin(async { Ok(()) }))
+            .before_tool(|_, _| Box::pin(async { Ok(()) }))
             .after_tool(|_, _, _| Box::pin(async { Ok(()) }))
             .after_each(|_| Box::pin(async { Ok(()) }));
     }
