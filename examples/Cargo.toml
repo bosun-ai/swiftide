@@ -21,6 +21,7 @@ swiftide = { path = "../swiftide/", features = [
   "ollama",
   "fluvio",
   "lancedb",
+  "pgvector",
   "swiftide-agents",
 ] }
 tracing-subscriber = { workspace = true }
