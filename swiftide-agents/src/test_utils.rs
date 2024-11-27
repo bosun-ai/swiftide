@@ -1,10 +1,8 @@
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec};
 
-use indoc::indoc;
 use swiftide_core::AgentContext;
 
 use crate::hooks::{AfterToolFn, BeforeToolFn, HookFn, MessageHookFn};
@@ -128,7 +126,7 @@ impl Tool for MockTool {
             .lock()
             .unwrap()
             .pop()
-            .expect(format!("[MockTool] No expectations left for `{}`", self.name).as_str());
+            .unwrap_or_else(|| panic!("[MockTool] No expectations left for `{}`", self.name));
 
         assert_eq!(expectation.1, raw_args);
 

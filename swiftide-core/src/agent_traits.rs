@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
 use crate::chat_completion::ChatMessage;
 use anyhow::Result;

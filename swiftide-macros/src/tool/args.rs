@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens as _};
-use syn::{parse::Result, Error, FnArg, Ident, ItemFn, Lifetime, PatType, Type, TypeReference};
+use syn::{parse::Result, Error, FnArg, Ident, ItemFn, PatType};
 
 pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {
     let struct_name_str = input
@@ -29,7 +29,7 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
     let mut struct_fields = Vec::new();
 
     for arg in args.iter().skip(1) {
-        if let syn::FnArg::Typed(PatType { pat, ty, .. }) = arg {
+        if let syn::FnArg::Typed(PatType { pat, .. }) = arg {
             if let syn::Pat::Ident(ident) = &**pat {
                 struct_fields.push(quote! { pub #ident: String });
             }
