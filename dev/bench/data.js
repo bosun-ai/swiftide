@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1732640354722,
+  "lastUpdate": 1732715830750,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9689,6 +9689,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245560,
             "range": "± 2115",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f7f5ecbc866e5266c195df597d45b288a4055fba",
+          "message": "chore(deps): Cargo update (#464)",
+          "timestamp": "2024-11-27T14:48:41+01:00",
+          "tree_id": "cb6cd549d350ae0d295183afc1ad951c0faaf5ea",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f7f5ecbc866e5266c195df597d45b288a4055fba"
+        },
+        "date": 1732715829679,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 10",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1279617,
+            "range": "± 917959",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 246075,
+            "range": "± 5229",
             "unit": "ns/iter"
           }
         ]
