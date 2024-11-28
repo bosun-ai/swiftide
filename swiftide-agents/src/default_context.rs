@@ -18,7 +18,6 @@ use crate::tools::local_executor::LocalExecutor;
 #[derive(Clone)]
 pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
     completion_history: Arc<Mutex<Vec<ChatMessage>>>,
-    should_stop: Arc<AtomicBool>,
     /// Index in the conversation history where the next completion will start
     completions_ptr: Arc<AtomicUsize>,
 
@@ -32,7 +31,6 @@ impl Default for DefaultContext<LocalExecutor> {
     fn default() -> Self {
         DefaultContext {
             completion_history: Arc::new(Mutex::new(Vec::new())),
-            should_stop: Arc::new(AtomicBool::new(false)),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: LocalExecutor::default(),
@@ -46,7 +44,6 @@ impl<T: ToolExecutor> DefaultContext<T> {
         DefaultContext {
             tool_executor: executor,
             completion_history: Arc::new(Mutex::new(Vec::new())),
-            should_stop: Arc::new(AtomicBool::new(false)),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
         }
@@ -60,10 +57,7 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         let history = self.completion_history.lock().await;
         let is_last_message_assistant = history.last().is_some_and(ChatMessage::is_assistant);
 
-        if history[current..].is_empty()
-            || is_last_message_assistant
-            || self.should_stop.load(Ordering::SeqCst)
-        {
+        if history[current..].is_empty() || is_last_message_assistant {
             None
         } else {
             let previous = self.completions_ptr.swap(history.len(), Ordering::SeqCst);
@@ -107,10 +101,6 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         );
     }
 
-    fn stop(&self) {
-        self.should_stop.store(true, Ordering::SeqCst);
-    }
-
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
         self.tool_executor.exec_cmd(cmd).await
     }
@@ -149,15 +139,6 @@ mod tests {
 
         // If the last message is from the assistant, we should not get any more completions
         context.add_messages(&[assistant!("I am fine")]).await;
-
-        assert!(context.next_completion().await.is_none());
-
-        // If there are messages, but the context is stopped, we should not get any more completions
-        context
-            .add_messages(&[ChatMessage::User("I am fine".into())])
-            .await;
-
-        context.stop();
 
         assert!(context.next_completion().await.is_none());
     }

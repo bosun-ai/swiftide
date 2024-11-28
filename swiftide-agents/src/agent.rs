@@ -251,23 +251,23 @@ impl Agent {
 
             let result = self.run_completions(&messages).await;
 
-            if result.is_err() {
-                self.state = state::State::Stopped;
-                return result;
+            if result.is_err() || just_once {
+                self.stop();
             }
 
-            if just_once {
+            if self.state.is_stopped() {
                 break;
             }
         }
 
-        self.state = state::State::Stopped;
+        // If there are no new messages, ensure we update our state
+        self.stop();
 
         Ok(())
     }
 
     #[tracing::instrument(skip_all)]
-    async fn run_completions(&self, messages: &[ChatMessage]) -> Result<()> {
+    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<()> {
         self.invoke_hooks_matching(HookTypes::BeforeEach).await?;
 
         debug!(
@@ -407,9 +407,9 @@ impl Agent {
     }
 
     // Handle any tool specific output (e.g. stop)
-    fn handle_control_tools(&self, output: &ToolOutput) {
+    fn handle_control_tools(&mut self, output: &ToolOutput) {
         if let ToolOutput::Stop = output {
-            self.context.stop();
+            self.stop();
         }
     }
 
@@ -431,6 +431,10 @@ impl Agent {
         }
         self.context.add_message(&message).await;
         Ok(())
+    }
+
+    pub fn stop(&mut self) {
+        self.state = state::State::Stopped;
     }
 }
 

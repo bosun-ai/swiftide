@@ -97,9 +97,6 @@ pub trait AgentContext: Send + Sync {
     /// Add messages for the next completion
     async fn add_message(&self, item: &ChatMessage);
 
-    /// Instruct the context to no longer return new completions
-    fn stop(&self);
-
     /// Execute a command if the context supports it
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
 
