@@ -6,9 +6,10 @@ use derive_builder::Builder;
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
     Text(String),
-    Ok,
+
+    /// Indicates that the toolcall failed, but can be handled by the llm
+    Fail(String),
     /// Stops an agent
-    ///
     Stop,
 }
 
@@ -31,7 +32,7 @@ impl std::fmt::Display for ToolOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ToolOutput::Text(value) => write!(f, "{value}"),
-            ToolOutput::Ok => write!(f, "Ok"),
+            ToolOutput::Fail(value) => write!(f, "Tool call failed: {value}"),
             ToolOutput::Stop => write!(f, "Stop"),
         }
     }
