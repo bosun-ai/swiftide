@@ -251,11 +251,13 @@ impl Agent {
 
             let result = self.run_completions(&messages).await;
 
-            if result.is_err() || just_once {
+            if let Err(err) = result {
                 self.stop();
+                tracing::error!(error = ?err, "Agent stopped with error {err}");
+                return Err(err);
             }
 
-            if self.state.is_stopped() {
+            if just_once || self.state.is_stopped() {
                 break;
             }
         }
@@ -333,7 +335,7 @@ impl Agent {
                 }
 
                 let handle = tokio::spawn(async move {
-                    let output = tool.invoke(&*context, tool_args.as_deref()).await?;
+                    let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
                     tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name, "Completed tool call");
 
