@@ -73,10 +73,11 @@ impl From<CommandOutput> for ToolOutput {
                 success,
                 ..
             } => {
+                let output = stdout + &stderr;
                 if success {
-                    ToolOutput::Text(stdout)
+                    ToolOutput::Text(output)
                 } else {
-                    ToolOutput::Fail(stderr)
+                    ToolOutput::Fail(output)
                 }
             }
         }
