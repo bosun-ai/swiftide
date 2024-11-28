@@ -3980,7 +3980,7 @@ dependencies = [
  "httpdate",
  "itoa 1.0.14",
  "pin-project-lite",
- "socket2 0.5.7",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -5799,7 +5799,7 @@ dependencies = [
  "md-5",
  "parking_lot 0.12.3",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.36.2",
  "rand 0.8.5",
  "reqwest",
  "ring",
@@ -6594,7 +6594,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -6748,6 +6748,16 @@ name = "quick-xml"
 version = "0.36.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.37.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f22f29bdff3987b4d8632ef95fd6424ec7e4e0a57e2f4fc63e489e75357f6a03"
 dependencies = [
  "memchr",
  "serde",
@@ -7944,13 +7954,12 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.13.71"
+version = "2.13.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef8a456a45812306d9df12633216b0c159a683bccb0fd0565b1047d3b91d7fea"
+checksum = "780e069cd0a834a5f9f7ea4c0c6dd1b7f17a6cc5feb1b41c4761262a94fa45a9"
 dependencies = [
  "ahash",
  "auto_encoder",
- "backoff",
  "bytes",
  "case_insensitive_string",
  "cssparser 0.31.2",
@@ -7964,7 +7973,7 @@ dependencies = [
  "percent-encoding",
  "phf 0.11.2",
  "phf_codegen 0.11.2",
- "quick-xml",
+ "quick-xml 0.37.1",
  "regex",
  "reqwest",
  "selectors 0.25.0",
@@ -9397,9 +9406,9 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tracing"
-version = "0.1.40"
+version = "0.1.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3523ab5a71916ccf420eebdf5521fcef02141234bbc0b8a49f2fdc4544364ef"
+checksum = "784e0ac535deb450455cbfa28a6f0df145ea1bb7ae51b821cf5e7927fdcfbdd0"
 dependencies = [
  "log",
  "pin-project-lite",
