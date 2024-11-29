@@ -55,9 +55,8 @@ impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
         let history = self.completion_history.lock().await;
-        let is_last_message_assistant = history.last().is_some_and(ChatMessage::is_assistant);
 
-        if history[current..].is_empty() || is_last_message_assistant {
+        if history[current..].is_empty() {
             None
         } else {
             let previous = self.completions_ptr.swap(history.len(), Ordering::SeqCst);
@@ -137,10 +136,10 @@ mod tests {
         assert_eq!(messages.len(), 4);
         assert!(context.next_completion().await.is_none());
 
-        // If the last message is from the assistant, we should not get any more completions
-        context.add_messages(&[assistant!("I am fine")]).await;
-
-        assert!(context.next_completion().await.is_none());
+        // // If the last message is from the assistant, we should not get any more completions
+        // context.add_messages(&[assistant!("I am fine")]).await;
+        //
+        // assert!(context.next_completion().await.is_none());
     }
 
     #[tokio::test]
