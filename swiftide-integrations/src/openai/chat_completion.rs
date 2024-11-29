@@ -50,7 +50,10 @@ impl ChatCompletion for OpenAI {
             .build()
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
-        tracing::debug!(request = ?request, "Sending request to OpenAI");
+        tracing::debug!(
+            request = serde_json::to_string_pretty(&request).expect("infallible"),
+            "Sending request to OpenAI"
+        );
 
         let response = self
             .client
@@ -59,7 +62,10 @@ impl ChatCompletion for OpenAI {
             .await
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
-        tracing::debug!(response = ?response, "Received response from OpenAI");
+        tracing::debug!(
+            response = serde_json::to_string_pretty(&response).expect("infallible"),
+            "Received response from OpenAI"
+        );
 
         ChatCompletionResponse::builder()
             .maybe_message(
@@ -158,13 +164,20 @@ fn message_to_openai(
                 builder.tool_calls(
                     tool_calls
                         .iter()
-                        .map(|tool_call| ChatCompletionMessageToolCall {
-                            id: tool_call.id().to_string(),
-                            r#type: ChatCompletionToolType::Function,
-                            function: FunctionCall {
-                                name: tool_call.name().to_string(),
-                                arguments: tool_call.args().unwrap_or_default().to_string(),
-                            },
+                        .map(|tool_call| {
+                            let mut truncated_args =
+                                tool_call.args().unwrap_or_default().to_string();
+
+                            truncated_args.truncate(100);
+
+                            ChatCompletionMessageToolCall {
+                                id: tool_call.id().to_string(),
+                                r#type: ChatCompletionToolType::Function,
+                                function: FunctionCall {
+                                    name: tool_call.name().to_string(),
+                                    arguments: truncated_args,
+                                },
+                            }
                         })
                         .collect::<Vec<_>>(),
                 );

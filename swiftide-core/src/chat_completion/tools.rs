@@ -16,7 +16,7 @@ pub enum ToolOutput {
 impl ToolOutput {
     pub fn content(&self) -> Option<&str> {
         match self {
-            ToolOutput::Text(s) => Some(s),
+            ToolOutput::Fail(s) | ToolOutput::Text(s) => Some(s),
             _ => None,
         }
     }
