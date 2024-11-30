@@ -434,7 +434,7 @@ impl PgVector {
             [field] => Ok(field.field_name().to_string()),
             [] => Err(anyhow!("No vector field configured in schema")),
             _ => Err(anyhow!(
-                "Multiple vector fields configured in schema use HybridSearch strategy"
+                "Search strategy for multiple vector fields in the schema is not yet implemented"
             )),
         }
     }
