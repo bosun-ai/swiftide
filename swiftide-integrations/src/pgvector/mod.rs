@@ -189,10 +189,7 @@ mod tests {
     use std::collections::HashSet;
     use swiftide_core::{
         indexing::{self, EmbedMode, EmbeddedField},
-        querying::{
-            search_strategies::{HybridSearch, SimilaritySingleEmbedding},
-            states, Query,
-        },
+        querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
         Persist, Retrieve,
     };
     use test_case::test_case;
@@ -329,7 +326,6 @@ mod tests {
                 metadata: None,
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.0)],
                 expected_in_results: true,
-                use_hybrid_search: false,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::SingleWithMetadata,
@@ -337,7 +333,6 @@ mod tests {
                 metadata: None,
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.1)],
                 expected_in_results: true,
-                use_hybrid_search: false,
             }
         ],
         HashSet::from([EmbeddedField::Combined])
@@ -354,7 +349,6 @@ mod tests {
                 ].into()),
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.2)],
                 expected_in_results: true,
-                use_hybrid_search: false,
             },
             PgVectorTestData {
                 embed_mode: EmbedMode::SingleWithMetadata,
@@ -365,161 +359,10 @@ mod tests {
                 ].into()),
                 vectors: vec![PgVectorTestData::create_test_vector(EmbeddedField::Combined, 1.3)],
                 expected_in_results: true,
-                use_hybrid_search: false,
             }
         ],
         HashSet::from([EmbeddedField::Combined])
         ; "SingleWithMetadata mode with metadata")]
-    #[test_case(
-        // PerField - No Metadata
-        vec![
-            PgVectorTestData {
-                embed_mode: EmbedMode::PerField,
-                chunk: "per_field_no_meta_1",
-                metadata: None,
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 1.2),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("category".into()), 2.2),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.2),
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            },
-            PgVectorTestData {
-                embed_mode: EmbedMode::PerField,
-                chunk: "per_field_no_meta_2",
-                metadata: None,
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 1.3),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("category".into()), 2.3),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.3),
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            }
-        ],
-        HashSet::from([
-            EmbeddedField::Chunk,
-            EmbeddedField::Metadata("category".into()),
-            EmbeddedField::Metadata("priority".into()),
-        ])
-        ; "PerField mode without metadata")]
-    #[test_case(
-        // PerField - With Metadata
-        vec![
-            PgVectorTestData {
-                embed_mode: EmbedMode::PerField,
-                chunk: "single_with_meta_1",
-                metadata: Some(vec![
-                    ("category", "A"),
-                    ("priority", "high")
-                ].into()),
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 1.2),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("category".into()), 2.2),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.2),
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            },
-            PgVectorTestData {
-                embed_mode: EmbedMode::PerField,
-                chunk: "single_with_meta_2",
-                metadata: Some(vec![
-                    ("category", "B"),
-                    ("priority", "low")
-                ].into()),
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 1.3),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("category".into()), 2.3),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.3),
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            }
-        ],
-        HashSet::from([
-            EmbeddedField::Chunk,
-            EmbeddedField::Metadata("category".into()),
-            EmbeddedField::Metadata("priority".into()),
-        ])
-        ; "PerField mode with metadata")]
-    #[test_case(
-        // Both - No Metadata
-        vec![
-            PgVectorTestData {
-                embed_mode: EmbedMode::Both,
-                chunk: "both_no_meta_1",
-                metadata: None,
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Combined, 3.0),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 3.1)
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            },
-            PgVectorTestData {
-                embed_mode: EmbedMode::Both,
-                chunk: "both_no_meta_2",
-                metadata: None,
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Combined, 3.2),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 3.3)
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            }
-        ],
-        HashSet::from([EmbeddedField::Combined, EmbeddedField::Chunk])
-        ; "Both mode without metadata")]
-    #[test_case(
-        // Both - With Metadata
-        vec![
-            PgVectorTestData {
-                embed_mode: EmbedMode::Both,
-                chunk: "both_with_meta_1",
-                metadata: Some(vec![
-                    ("category", "P"),
-                    ("priority", "urgent"),
-                    ("tag", "test1")
-                ].into()),
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Combined, 3.4),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 3.5),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("category".into()), 3.6),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 3.7),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("tag".into()), 3.8)
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            },
-            PgVectorTestData {
-                embed_mode: EmbedMode::Both,
-                chunk: "both_with_meta_2",
-                metadata: Some(vec![
-                    ("category", "Q"),
-                    ("priority", "low"),
-                    ("tag", "test2")
-                ].into()),
-                vectors: vec![
-                    PgVectorTestData::create_test_vector(EmbeddedField::Combined, 3.9),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Chunk, 4.0),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("category".into()), 4.1),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("priority".into()), 4.2),
-                    PgVectorTestData::create_test_vector(EmbeddedField::Metadata("tag".into()), 4.3)
-                ],
-                expected_in_results: true,
-                use_hybrid_search: true,
-            }
-        ],
-        HashSet::from([
-            EmbeddedField::Combined,
-            EmbeddedField::Chunk,
-            EmbeddedField::Metadata("category".into()),
-            EmbeddedField::Metadata("priority".into()),
-            EmbeddedField::Metadata("tag".into()),
-        ])
-        ; "Both mode with metadata")]
     #[test_log::test(tokio::test)]
     async fn test_persist_nodes(
         test_cases: Vec<PgVectorTestData<'_>>,
@@ -581,31 +424,18 @@ mod tests {
             );
 
             // 3. Test vector similarity search
-            for (field, vector) in test_case.vectors.iter() {
+            for (field, vector) in &test_case.vectors {
                 let mut query = Query::<states::Pending>::new("test_query");
                 query.embedding = Some(vector.clone());
 
-                let result = if test_case.use_hybrid_search {
-                    let mut search_strategy = HybridSearch::default();
-                    search_strategy
-                        .with_dense_vector_field(field.clone())
-                        .with_top_n(nodes.len() as u64);
+                let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
+                search_strategy.with_top_k(nodes.len() as u64);
 
-                    test_context
-                        .pgv_storage
-                        .retrieve(&search_strategy, query)
-                        .await
-                        .expect("Retrieval should succeed")
-                } else {
-                    let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
-                    search_strategy.with_top_k(nodes.len() as u64);
-
-                    test_context
-                        .pgv_storage
-                        .retrieve(&search_strategy, query)
-                        .await
-                        .expect("Retrieval should succeed")
-                };
+                let result = test_context
+                    .pgv_storage
+                    .retrieve(&search_strategy, query)
+                    .await
+                    .expect("Retrieval should succeed");
 
                 if test_case.expected_in_results {
                     assert!(

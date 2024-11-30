@@ -20,8 +20,8 @@ async fn ask_query(
     llm_client: impl SimplePrompt + Clone + 'static,
     embed: FastEmbed,
     vector_store: PgVector,
-    question: String,
-) -> Result<String, Box<dyn std::error::Error>> {
+    questions: Vec<String>,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     // By default the search strategy is SimilaritySingleEmbedding
     // which takes the latest query, embeds it, and does a similarity search
     //
@@ -41,8 +41,14 @@ async fn ask_query(
         ))
         .then_answer(answers::Simple::from_client(llm_client.clone()));
 
-    let result = pipeline.query(question).await?;
-    Ok(result.answer().into())
+    let results: Vec<String> = pipeline
+        .query_all(questions)
+        .await?
+        .iter()
+        .map(|result| result.answer().to_string())
+        .collect();
+
+    Ok(results)
 }
 
 #[tokio::main]
@@ -104,23 +110,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("PgVector Indexing completed successfully");
 
-    for (i, question) in [
-            "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.",
-            "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.",
-        ]
-        .iter()
-        .enumerate()
-        {
-            let result = ask_query(
-                llm_client.clone(),
-                fastembed.clone(),
-                pgv_storage.clone(),
-                question.to_string(),
-            ).await?;
-            tracing::info!("*** Answer Q{} ***", i + 1);
-            tracing::info!("{}", result);
-            tracing::info!("===X===");
-        }
+    let questions: Vec<String> = vec![
+            "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.".into(),
+            "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.".into(),
+        ];
+
+    ask_query(
+        llm_client.clone(),
+        fastembed.clone(),
+        pgv_storage.clone(),
+        questions,
+    )
+    .await?
+    .iter()
+    .enumerate()
+    .for_each(|(i, result)| {
+        tracing::info!("*** Answer Q{} ***", i + 1);
+        tracing::info!("{}", result);
+        tracing::info!("===X===");
+    });
 
     tracing::info!("PgVector Indexing & retrieval test completed successfully");
 
