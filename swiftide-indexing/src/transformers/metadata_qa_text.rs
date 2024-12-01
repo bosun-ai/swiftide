@@ -1,13 +1,12 @@
 //! Generates questions and answers from a given text chunk and adds them as metadata.
+//! This module defines the `MetadataQAText` struct and its associated methods,
+//! which are used for generating metadata in the form of questions and answers
+//! from a given text. It interacts with a client (e.g., `OpenAI`) to generate
+//! these questions and answers based on the text chunk in an `Node`.
 
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{indexing::Node, Transformer};
-
-/// This module defines the `MetadataQAText` struct and its associated methods,
-/// which are used for generating metadata in the form of questions and answers
-/// from a given text. It interacts with a client (e.g., `OpenAI`) to generate
-/// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataQAText` is responsible for generating questions and answers
 /// from a given text chunk. It uses a templated prompt to interact with a client

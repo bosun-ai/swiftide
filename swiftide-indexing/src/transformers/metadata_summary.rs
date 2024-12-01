@@ -1,13 +1,12 @@
 //! Generate a summary and adds it as metadata
+//! This module defines the `MetadataSummary` struct and its associated methods,
+//! which are used for generating metadata in the form of a summary
+//! for a given text. It interacts with a client (e.g., `OpenAI`) to generate
+//! the summary based on the text chunk in an `Node`.
 
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{indexing::Node, Transformer};
-
-/// This module defines the `MetadataSummary` struct and its associated methods,
-/// which are used for generating metadata in the form of a summary
-/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
-/// the summary based on the text chunk in an `Node`.
 
 /// `MetadataSummary` is responsible for generating a summary
 /// for a given text chunk. It uses a templated prompt to interact with a client
