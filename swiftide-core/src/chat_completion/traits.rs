@@ -66,7 +66,7 @@ impl From<CommandOutput> for ToolOutput {
     fn from(value: CommandOutput) -> Self {
         match value {
             CommandOutput::Text(value) => ToolOutput::Text(value),
-            CommandOutput::Ok => ToolOutput::Text("Tool successfuly completed".to_string()),
+            CommandOutput::Ok => ToolOutput::Text("Tool successfully completed".to_string()),
             CommandOutput::Shell {
                 stdout,
                 stderr,
