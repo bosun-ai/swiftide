@@ -116,7 +116,7 @@ async fn test_pgvector_indexing() {
 
     let docs: Vec<_> = data.into_iter().map(|r| r.chunk).collect();
 
-    println!("retrived docs: {docs:#?}");
+    println!("Retrieved documents for debugging: {docs:#?}");
 
     assert_eq!(docs[0], "fn main() { println!(\"Hello, World!\"); }");
 }
