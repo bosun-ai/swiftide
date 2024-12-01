@@ -34,7 +34,7 @@ impl<'stream, STATE: QueryState + 'stream> Default for QueryStream<'stream, STAT
     }
 }
 
-impl<'stream, STATE: QueryState> Stream for QueryStream<'stream, STATE> {
+impl<STATE: QueryState> Stream for QueryStream<'_, STATE> {
     type Item = Result<Query<STATE>>;
 
     fn poll_next(
@@ -46,8 +46,8 @@ impl<'stream, STATE: QueryState> Stream for QueryStream<'stream, STATE> {
     }
 }
 
-impl<'stream, STATE: QueryState> From<Pin<Box<dyn Stream<Item = Result<Query<STATE>>> + Send>>>
-    for QueryStream<'stream, STATE>
+impl<STATE: QueryState> From<Pin<Box<dyn Stream<Item = Result<Query<STATE>>> + Send>>>
+    for QueryStream<'_, STATE>
 {
     fn from(val: Pin<Box<dyn Stream<Item = Result<Query<STATE>>> + Send>>) -> Self {
         QueryStream {
