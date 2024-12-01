@@ -3,7 +3,7 @@
 //! This is the default for agents. It is fully async and shareable between agents.
 //!
 //! By default uses the `LocalExecutor` for tool execution.
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use anyhow::Result;
