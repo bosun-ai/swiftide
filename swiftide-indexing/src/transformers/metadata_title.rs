@@ -1,13 +1,11 @@
 //! Generate a title and adds it as metadata
-
+//! This module defines the `MetadataTitle` struct and its associated methods,
+//! which are used for generating metadata in the form of a title
+//! for a given text. It interacts with a client (e.g., `OpenAI`) to generate
+//! these questions and answers based on the text chunk in an `Node`.
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{indexing::Node, Transformer};
-
-/// This module defines the `MetadataTitle` struct and its associated methods,
-/// which are used for generating metadata in the form of a title
-/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
-/// these questions and answers based on the text chunk in an `Node`.
 
 /// `MetadataTitle` is responsible for generating a title
 /// for a given text chunk. It uses a templated prompt to interact with a client

@@ -33,8 +33,8 @@ pub struct AwsBedrock {
     #[builder(setter(into))]
     /// The model id or arn of the model to use
     model_id: String,
-    #[builder(default = "self.default_client()", setter(custom))]
 
+    #[builder(default = self.default_client(), setter(custom))]
     /// The bedrock runtime client
     client: Arc<dyn BedrockPrompt>,
     #[builder(default)]

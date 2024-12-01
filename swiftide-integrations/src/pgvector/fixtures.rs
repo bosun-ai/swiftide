@@ -79,7 +79,7 @@ pub(crate) struct PgVectorTestData<'a> {
     pub vectors: Vec<(indexing::EmbeddedField, Vec<f32>)>,
 }
 
-impl<'a> PgVectorTestData<'a> {
+impl PgVectorTestData<'_> {
     pub(crate) fn to_node(&self) -> indexing::Node {
         // Create the initial builder
         let mut base_builder = indexing::Node::builder();

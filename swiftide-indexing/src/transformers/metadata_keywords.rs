@@ -1,12 +1,11 @@
 //! Extract keywords from a node and add them as metadata
+//! This module defines the `MetadataKeywords` struct and its associated methods,
+//! which are used for generating metadata in the form of keywords
+//! for a given text. It interacts with a client (e.g., `OpenAI`) to generate
+//! the keywords based on the text chunk in a `Node`.
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{indexing::Node, Transformer};
-
-/// This module defines the `MetadataKeywords` struct and its associated methods,
-/// which are used for generating metadata in the form of keywords
-/// for a given text. It interacts with a client (e.g., `OpenAI`) to generate
-/// the keywords based on the text chunk in a `Node`.
 
 /// `MetadataKeywords` is responsible for generating keywords
 /// for a given text chunk. It uses a templated prompt to interact with a client
