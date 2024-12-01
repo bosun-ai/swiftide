@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1732825612592,
+  "lastUpdate": 1733058196614,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9785,6 +9785,60 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 176,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5",
+          "message": "chore: Clippy and deps fixes for 1.83 (#467)",
+          "timestamp": "2024-12-01T13:54:57+01:00",
+          "tree_id": "c6947189e009ece970d95741514ab6d1427ded36",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5"
+        },
+        "date": 1733058196042,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1287263,
+            "range": "± 978727",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244900,
+            "range": "± 3322",
             "unit": "ns/iter"
           }
         ]
