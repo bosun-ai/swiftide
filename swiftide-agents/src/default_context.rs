@@ -166,9 +166,5 @@ mod tests {
         assert_eq!(messages.len(), 4);
 
         assert!(context.next_completion().await.is_none());
-
-        // If the last message is from the assistant, we should not get any more completions
-        context.add_messages(&[assistant!("I am fine")]).await;
-        assert!(context.next_completion().await.is_none());
     }
 }

@@ -3,7 +3,7 @@ use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde::ser::SerializeMap as _;
-use syn::{spanned::Spanned, DeriveInput, FnArg, ItemFn, Pat, PatType};
+use syn::{spanned::Spanned, DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
 
 mod args;
 mod tool_spec;
@@ -141,7 +141,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
         }
     };
 
-    let boxed_from = boxed_from(tool_struct.clone());
+    let boxed_from = boxed_from(&tool_struct, &[]);
 
     quote! {
         #tool_args
@@ -243,7 +243,8 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         quote! { <#(#struct_lifetimes),*> }
     };
 
-    let boxed_from = boxed_from(struct_ident.clone());
+    // Arg should be, if empty None, else Some(&args)
+    let boxed_from = boxed_from(struct_ident, &struct_lifetimes);
     Ok(quote! {
         #tool_args
 
@@ -273,10 +274,15 @@ fn parse_args(args: TokenStream) -> Result<ToolArgs, Error> {
     ToolArgs::from_list(&attr_args)
 }
 
-fn boxed_from(val: syn::Ident) -> TokenStream {
+fn boxed_from(struct_ident: &syn::Ident, lifetimes: &[&Lifetime]) -> TokenStream {
+    if !lifetimes.is_empty() {
+        // TODO: Implement for existing lifetimes
+        return quote! {};
+    }
+
     quote! {
-        impl From<#val> for Box<dyn ::swiftide::chat_completion::Tool> {
-            fn from(val: #val) -> Self {
+        impl<'TOOLBOXED> From<#struct_ident> for Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED> {
+            fn from(val: #struct_ident) -> Self {
                 Box::new(val)
             }
         }
