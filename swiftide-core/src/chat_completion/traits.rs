@@ -105,17 +105,34 @@ pub trait Tool: Send + Sync + DynClone {
     }
 }
 
-dyn_clone::clone_trait_object!(Tool);
-
-impl<T> From<T> for Box<dyn Tool + '_>
-where
-    for<'b> T: Tool + 'b,
-{
-    fn from(value: T) -> Self {
-        // dyn_clone::clone_box(&value)
-        Box::new(value)
+#[async_trait]
+impl Tool for Box<dyn Tool> {
+    async fn invoke(
+        &self,
+        agent_context: &dyn AgentContext,
+        raw_args: Option<&str>,
+    ) -> Result<ToolOutput, ToolError> {
+        (**self).invoke(agent_context, raw_args).await
+    }
+    fn name(&self) -> &'static str {
+        (**self).name()
+    }
+    fn tool_spec(&self) -> ToolSpec {
+        (**self).tool_spec()
     }
 }
+
+dyn_clone::clone_trait_object!(Tool);
+
+// impl<T> From<T> for Box<dyn Tool + '_>
+// where
+//     for<'b> T: Tool + 'b,
+// {
+//     fn from(value: T) -> Self {
+//         // dyn_clone::clone_box(&value)
+//         Box::new(value)
+//     }
+// }
 
 /// Tools are identified and unique by name
 /// These allow comparison and lookups

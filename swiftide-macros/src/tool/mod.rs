@@ -141,6 +141,8 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
         }
     };
 
+    let boxed_from = boxed_from(tool_struct.clone());
+
     quote! {
         #tool_args
 
@@ -160,6 +162,8 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
                 #tool_spec
             }
         }
+
+        #boxed_from
     }
 }
 
@@ -239,6 +243,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         quote! { <#(#struct_lifetimes),*> }
     };
 
+    let boxed_from = boxed_from(struct_ident.clone());
     Ok(quote! {
         #tool_args
 
@@ -257,6 +262,8 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 #tool_spec
             }
         }
+
+        #boxed_from
     })
 }
 
@@ -264,6 +271,16 @@ fn parse_args(args: TokenStream) -> Result<ToolArgs, Error> {
     let attr_args = NestedMeta::parse_meta_list(args)?;
 
     ToolArgs::from_list(&attr_args)
+}
+
+fn boxed_from(val: syn::Ident) -> TokenStream {
+    quote! {
+        impl From<#val> for Box<dyn ::swiftide::chat_completion::Tool> {
+            fn from(val: #val) -> Self {
+                Box::new(val)
+            }
+        }
+    }
 }
 
 #[cfg(test)]

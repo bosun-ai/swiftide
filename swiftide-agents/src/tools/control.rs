@@ -32,3 +32,9 @@ impl Tool for Stop {
             .unwrap()
     }
 }
+
+impl From<Stop> for Box<dyn Tool> {
+    fn from(val: Stop) -> Self {
+        Box::new(val)
+    }
+}

@@ -146,6 +146,12 @@ impl Tool for MockTool {
     }
 }
 
+impl From<MockTool> for Box<dyn Tool> {
+    fn from(val: MockTool) -> Self {
+        Box::new(val)
+    }
+}
+
 impl Drop for MockTool {
     fn drop(&mut self) {
         // Mock still borrowed elsewhere and expectations still be invoked

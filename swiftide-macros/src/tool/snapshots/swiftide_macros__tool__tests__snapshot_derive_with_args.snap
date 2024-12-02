@@ -47,3 +47,8 @@ impl swiftide::chat_completion::Tool for HelloDerive {
             .unwrap()
     }
 }
+impl From<HelloDerive> for Box<dyn ::swiftide::chat_completion::Tool> {
+    fn from(val: HelloDerive) -> Self {
+        Box::new(val)
+    }
+}
