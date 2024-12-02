@@ -28,3 +28,24 @@ impl std::fmt::Display for ChatMessage {
         }
     }
 }
+
+impl ChatMessage {
+    pub fn new_system(message: impl Into<String>) -> Self {
+        ChatMessage::System(message.into())
+    }
+
+    pub fn new_user(message: impl Into<String>) -> Self {
+        ChatMessage::User(message.into())
+    }
+
+    pub fn new_assistant(
+        message: Option<impl Into<String>>,
+        tool_calls: Option<Vec<ToolCall>>,
+    ) -> Self {
+        ChatMessage::Assistant(message.map(Into::into), tool_calls)
+    }
+
+    pub fn new_tool_output(tool_call: impl Into<ToolCall>, output: impl Into<ToolOutput>) -> Self {
+        ChatMessage::ToolOutput(tool_call.into(), output.into())
+    }
+}
