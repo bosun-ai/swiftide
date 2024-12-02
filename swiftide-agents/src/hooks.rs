@@ -3,6 +3,26 @@
 //!
 //! Since rust does not have async closures, hooks have to return a boxed, pinned async block
 //! themselves.
+//!
+//! Rust has a long outstanding issue where it captures outer lifetimes when returning an impl
+//! that also has lifetimes, see [this issue](https://github.com/rust-lang/rust/issues/42940)
+//!
+//! This can happen if you write a method like `fn return_hook(&self) -> impl HookFn`, where the
+//! owner also has a lifetime.
+//! The trick is to set an explicit lifetime on self, and hook, where self must outlive the hook.
+//!
+//! # Example
+//!
+//! ```ignore
+//! struct SomeHook<'thing> {}
+//!
+//! impl<'thing> SomeHook<'thing> {
+//!    fn return_hook<'tool>(&'thing self) -> impl HookFn + 'tool where 'thing: 'tool {
+//!     move |_: &dyn AgentContext| {
+//!      Box::pin(async move {{ Ok(())}})
+//!     }
+//!   }
+//!}
 use anyhow::Result;
 use std::{future::Future, pin::Pin};
 
@@ -24,12 +44,13 @@ pub trait HookFn:
 dyn_clone::clone_trait_object!(HookFn);
 
 /// Hooks that are called after each tool
+///
 pub trait AfterToolFn:
-    for<'a> Fn(
-        &'a dyn AgentContext,
+    for<'tool> Fn(
+        &'tool dyn AgentContext,
         &ToolCall,
-        &mut Result<ToolOutput, ToolError>,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        &'tool mut Result<ToolOutput, ToolError>,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'tool>>
     + Send
     + Sync
     + DynClone
@@ -97,11 +118,11 @@ impl<F> BeforeToolFn for F where
 {
 }
 impl<F> AfterToolFn for F where
-    F: for<'a> Fn(
-            &'a dyn AgentContext,
+    F: for<'tool> Fn(
+            &'tool dyn AgentContext,
             &ToolCall,
-            &mut Result<ToolOutput, ToolError>,
-        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+            &'tool mut Result<ToolOutput, ToolError>,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'tool>>
         + Send
         + Sync
         + DynClone
