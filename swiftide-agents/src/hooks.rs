@@ -4,6 +4,20 @@
 //! Since rust does not have async closures, hooks have to return a boxed, pinned async block
 //! themselves.
 //!
+//! # Example
+//!
+//! ```no_run
+//! # use swiftide_core::{AgentContext, chat_completion::ChatMessage};
+//! # fn test() {
+//! # let mut agent = swiftide_agents::Agent::builder();
+//! agent.before_all(move |context: &dyn AgentContext| {
+//!     Box::pin(async move {
+//!         context.add_message(&ChatMessage::new_user("Hello, world")).await;
+//!         Ok(())
+//!     })
+//!});
+//!# }
+//!```
 //! Rust has a long outstanding issue where it captures outer lifetimes when returning an impl
 //! that also has lifetimes, see [this issue](https://github.com/rust-lang/rust/issues/42940)
 //!
@@ -13,8 +27,12 @@
 //!
 //! # Example
 //!
-//! ```ignore
-//! struct SomeHook<'thing> {}
+//! ```no_run
+//! # use swiftide_core::{AgentContext};
+//! # use swiftide_agents::hooks::HookFn;
+//! struct SomeHook<'thing> {
+//!    thing: &'thing str
+//! }
 //!
 //! impl<'thing> SomeHook<'thing> {
 //!    fn return_hook<'tool>(&'thing self) -> impl HookFn + 'tool where 'thing: 'tool {
