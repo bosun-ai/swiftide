@@ -16,7 +16,7 @@ use crate::tools::local_executor::LocalExecutor;
 
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
-pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
+pub struct DefaultContext {
     completion_history: Arc<Mutex<Vec<ChatMessage>>>,
     /// Index in the conversation history where the next completion will start
     completions_ptr: Arc<AtomicUsize>,
@@ -24,25 +24,27 @@ pub struct DefaultContext<EXECUTOR: ToolExecutor = LocalExecutor> {
     /// Index in the conversation history where the current completion started
     /// Allows for retrieving only new messages since the last completion
     current_completions_ptr: Arc<AtomicUsize>,
-    tool_executor: EXECUTOR,
+
+    /// The executor used to run tools. I.e. local, remote, docker
+    tool_executor: Arc<dyn ToolExecutor>,
 }
 
-impl Default for DefaultContext<LocalExecutor> {
+impl Default for DefaultContext {
     fn default() -> Self {
         DefaultContext {
             completion_history: Arc::new(Mutex::new(Vec::new())),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
-            tool_executor: LocalExecutor::default(),
+            tool_executor: Arc::new(LocalExecutor::default()),
         }
     }
 }
 
-impl<T: ToolExecutor> DefaultContext<T> {
+impl DefaultContext {
     /// Create a new context with a custom executor
-    pub fn from_executor(executor: T) -> DefaultContext<T> {
+    pub fn from_executor<T: Into<Arc<dyn ToolExecutor>>>(executor: T) -> DefaultContext {
         DefaultContext {
-            tool_executor: executor,
+            tool_executor: executor.into(),
             completion_history: Arc::new(Mutex::new(Vec::new())),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
@@ -50,7 +52,7 @@ impl<T: ToolExecutor> DefaultContext<T> {
     }
 }
 #[async_trait]
-impl<EXECUTOR: ToolExecutor> AgentContext for DefaultContext<EXECUTOR> {
+impl AgentContext for DefaultContext {
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
