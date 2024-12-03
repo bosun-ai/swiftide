@@ -63,9 +63,9 @@ dependencies = [
 
 [[package]]
 name = "allocator-api2"
-version = "0.2.20"
+version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45862d1c77f2228b9e10bc609d5bc203d86ebc9b87ad8d5d5167a6c9abf739d9"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "android-tzdata"
@@ -860,9 +860,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-bedrockruntime"
-version = "1.61.0"
+version = "1.62.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30652d08e84639fa570b696070e974d3153724701f81f89112e90986c811c39d"
+checksum = "fa1d54e1253e3739bfa6d60df813a093b916971fc423aa90fee9ca607438a177"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -7954,9 +7954,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.13.88"
+version = "2.13.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee515a7c7e80094f417dd6a533be88811fb4a008f899838e50901d36d487d630"
+checksum = "3c33f4eca6b239a3801d5e2a69383c9df01d6c80dff6a26c9e397f1536c6da9d"
 dependencies = [
  "ahash",
  "auto_encoder",
@@ -9573,9 +9573,9 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
 name = "ua_generator"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abb6278d04b350875180a99b024830d33d0ba3da9de724835f90a97faf1f0d19"
+checksum = "cb9e7f96eb1e6efa36d78c6f12968f4162226c4c85c81762e5e611aad920f054"
 dependencies = [
  "dotenv",
  "fastrand 2.2.0",
@@ -10044,7 +10044,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
