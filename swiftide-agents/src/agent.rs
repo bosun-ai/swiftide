@@ -87,7 +87,7 @@ impl std::fmt::Debug for Agent {
                 &self
                     .tools
                     .iter()
-                    .map(|tool| tool.name())
+                    .map(swiftide_core::Tool::name)
                     .collect::<Vec<_>>(),
             )
             .field("llm", &"Box<dyn ChatCompletion>")
@@ -282,7 +282,7 @@ impl Agent {
             .tools_spec(
                 self.tools
                     .iter()
-                    .map(|tool| tool.tool_spec())
+                    .map(swiftide_core::Tool::tool_spec)
                     .collect::<HashSet<_>>(),
             )
             .build()?;
@@ -416,14 +416,14 @@ impl Agent {
     }
 
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
-    async fn add_message(&self, message: ChatMessage) -> Result<()> {
+    async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
             if let Hook::OnNewMessage(hook) = hook {
                 let span = tracing::info_span!(
                     "hook",
                     "otel.name" = format!("hook.{}", HookTypes::OnNewMessage)
                 );
-                if let Err(err) = hook(&*self.context, &message).instrument(span).await {
+                if let Err(err) = hook(&*self.context, &mut message).instrument(span).await {
                     tracing::error!(
                         "Error in {hooktype} hook: {err}",
                         hooktype = HookTypes::OnNewMessage,

@@ -95,7 +95,7 @@ dyn_clone::clone_trait_object!(BeforeToolFn);
 pub trait MessageHookFn:
     for<'a> Fn(
         &'a dyn AgentContext,
-        &ChatMessage,
+        &mut ChatMessage,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
@@ -150,7 +150,7 @@ impl<F> AfterToolFn for F where
 impl<F> MessageHookFn for F where
     F: for<'a> Fn(
             &'a dyn AgentContext,
-            &ChatMessage,
+            &mut ChatMessage,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
