@@ -61,6 +61,9 @@ impl LocalExecutor {
     }
 
     async fn exec_write_file(&self, path: &Path, content: &str) -> Result<CommandOutput> {
+        if let Some(parent) = path.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
+        }
         tokio::fs::write(path, content).await?;
 
         Ok(CommandOutput::Ok)
