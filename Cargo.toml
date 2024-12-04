@@ -24,7 +24,7 @@ anyhow = { version = "1.0" }
 async-trait = { version = "0.1" }
 derive_builder = { version = "0.20" }
 futures-util = { version = "0.3" }
-tokio = { version = "1.41", features = ["rt-multi-thread"] }
+tokio = { version = "1.42", features = ["rt-multi-thread"] }
 tokio-stream = { version = "0.1" }
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = { version = "1.16" }
@@ -42,7 +42,7 @@ uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 
 # Integrations
-spider = { version = "2.13" }
+spider = { version = "2.16" }
 async-openai = { version = "0.26" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
