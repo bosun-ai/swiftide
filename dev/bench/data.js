@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733058196614,
+  "lastUpdate": 1733304318022,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9839,6 +9839,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244900,
             "range": "± 3322",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "r.raajey@gmail.com",
+            "name": "RK",
+            "username": "shamb0"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3751f49201c71398144a8913a4443f452534def2",
+          "message": "feat(query): Add support for single embedding retrieval with PGVector (#406)",
+          "timestamp": "2024-12-04T10:16:55+01:00",
+          "tree_id": "99c19af530ff56c9734e23687b90a171b567c860",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3751f49201c71398144a8913a4443f452534def2"
+        },
+        "date": 1733304317575,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1262287,
+            "range": "± 893287",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244839,
+            "range": "± 9253",
             "unit": "ns/iter"
           }
         ]
