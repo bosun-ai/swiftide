@@ -11,8 +11,45 @@ use swiftide::{
         },
         EmbeddedField,
     },
-    integrations::{self, pgvector::PgVector},
+    integrations::{self, fastembed::FastEmbed, pgvector::PgVector},
+    query::{self, answers, query_transformers, response_transformers},
+    traits::SimplePrompt,
 };
+
+async fn ask_query(
+    llm_client: impl SimplePrompt + Clone + 'static,
+    embed: FastEmbed,
+    vector_store: PgVector,
+    questions: Vec<String>,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    // By default the search strategy is SimilaritySingleEmbedding
+    // which takes the latest query, embeds it, and does a similarity search
+    //
+    // Pgvector will return an error if multiple embeddings are set
+    //
+    // The pipeline generates subquestions to increase semantic coverage, embeds these in a single
+    // embedding, retrieves the default top_k documents, summarizes them and uses that as context
+    // for the final answer.
+    let pipeline = query::Pipeline::default()
+        .then_transform_query(query_transformers::GenerateSubquestions::from_client(
+            llm_client.clone(),
+        ))
+        .then_transform_query(query_transformers::Embed::from_client(embed))
+        .then_retrieve(vector_store.clone())
+        .then_transform_response(response_transformers::Summary::from_client(
+            llm_client.clone(),
+        ))
+        .then_answer(answers::Simple::from_client(llm_client.clone()));
+
+    let results: Vec<String> = pipeline
+        .query_all(questions)
+        .await?
+        .iter()
+        .map(|result| result.answer().to_string())
+        .collect();
+
+    Ok(results)
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -62,6 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     tracing::info!("Starting indexing pipeline");
+
     indexing::Pipeline::from_loader(FileLoader::new(test_dataset_path).with_extensions(&["md"]))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
         .then(MetadataQAText::new(llm_client.clone()))
@@ -70,6 +108,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .run()
         .await?;
 
-    tracing::info!("PgVector Indexing test completed successfully");
+    tracing::info!("PgVector Indexing completed successfully");
+
+    let questions: Vec<String> = vec![
+            "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.".into(),
+            "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.".into(),
+        ];
+
+    ask_query(
+        llm_client.clone(),
+        fastembed.clone(),
+        pgv_storage.clone(),
+        questions,
+    )
+    .await?
+    .iter()
+    .enumerate()
+    .for_each(|(i, result)| {
+        tracing::info!("*** Answer Q{} ***", i + 1);
+        tracing::info!("{}", result);
+        tracing::info!("===X===");
+    });
+
+    tracing::info!("PgVector Indexing & retrieval test completed successfully");
+
     Ok(())
 }

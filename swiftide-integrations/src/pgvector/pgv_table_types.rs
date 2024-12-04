@@ -13,6 +13,7 @@ use regex::Regex;
 use sqlx::postgres::PgArguments;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use std::collections::BTreeMap;
 use swiftide_core::indexing::{EmbeddedField, Node};
 use tokio::time::sleep;
 
@@ -23,7 +24,7 @@ use tokio::time::sleep;
 #[derive(Clone, Debug)]
 pub struct VectorConfig {
     embedded_field: EmbeddedField,
-    field: String,
+    pub(crate) field: String,
 }
 
 impl VectorConfig {
@@ -75,7 +76,7 @@ impl<T: AsRef<str>> From<T> for MetadataConfig {
 /// Represents different field types that can be configured in the table schema,
 /// including vector embeddings, metadata, and system fields.
 #[derive(Clone, Debug)]
-pub enum FieldConfig {
+pub(crate) enum FieldConfig {
     /// `Vector` - Vector embedding field configuration
     Vector(VectorConfig),
     /// `Metadata` - Metadata field configuration
@@ -258,8 +259,6 @@ impl PgVector {
             .get()
             .ok_or_else(|| anyhow!("SQL bulk insert statement not set"))?;
 
-        tracing::info!("Sql statement :: {:#?}", sql);
-
         let query = self.bind_bulk_data_to_query(sqlx::query(sql), &bulk_data)?;
 
         query
@@ -293,7 +292,10 @@ impl PgVector {
                             .get(&config.original_field)
                             .ok_or_else(|| anyhow!("Missing metadata field"))?;
 
-                        bulk_data.metadata_fields[idx].push(value.clone());
+                        let mut metadata_map = BTreeMap::new();
+                        metadata_map.insert(config.original_field.clone(), value.clone());
+
+                        bulk_data.metadata_fields[idx].push(serde_json::to_value(metadata_map)?);
                     }
                     FieldConfig::Vector(config) => {
                         let idx = bulk_data
@@ -431,7 +433,9 @@ impl PgVector {
         match vector_fields.as_slice() {
             [field] => Ok(field.field_name().to_string()),
             [] => Err(anyhow!("No vector field configured in schema")),
-            _ => Err(anyhow!("Multiple vector fields configured in schema")),
+            _ => Err(anyhow!(
+                "Search strategy for multiple vector fields in the schema is not yet implemented"
+            )),
         }
     }
 }
