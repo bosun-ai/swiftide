@@ -54,10 +54,7 @@ arrow-array = { version = "52.2", default-features = false }
 arrow = { version = "52.2", default-features = false }
 parquet = { version = "52.2", default-features = false, features = ["async"] }
 redb = { version = "2.2" }
-sqlx = { version = "0.8.2", features = [
-  "postgres",
-  "uuid",
-], default-features = false }
+sqlx = { version = "0.8.2", features = ["postgres", "uuid"] }
 aws-config = "1.5"
 pgvector = { version = "0.4.0", features = ["sqlx"], default-features = false }
 aws-credential-types = "1.2"
@@ -87,6 +84,7 @@ tree-sitter-python = "0.23"
 tree-sitter-ruby = "0.23"
 tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"
+
 
 # Testing
 test-log = "0.2.16"

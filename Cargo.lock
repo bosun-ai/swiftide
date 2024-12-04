@@ -8424,6 +8424,7 @@ dependencies = [
  "qdrant-client",
  "serde",
  "serde_json",
+ "sqlx",
  "swiftide-agents",
  "swiftide-core",
  "swiftide-indexing",

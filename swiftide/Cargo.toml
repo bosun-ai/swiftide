@@ -119,6 +119,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 arrow-array = { workspace = true }
+sqlx = { workspace = true }
 
 [lints]
 workspace = true
