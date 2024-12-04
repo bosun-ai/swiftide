@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733304318022,
+  "lastUpdate": 1733345050761,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9893,6 +9893,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244839,
             "range": "± 9253",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6781315b65695eb211d26a90d469818f29625830",
+          "message": "fix(ci): Reduce pipeline resource usage for build consistency (#473)",
+          "timestamp": "2024-12-04T21:35:44+01:00",
+          "tree_id": "962d4bdb41788d25b5467587d8ed9c70bd358864",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6781315b65695eb211d26a90d469818f29625830"
+        },
+        "date": 1733345050305,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1283097,
+            "range": "± 933539",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243712,
+            "range": "± 12649",
             "unit": "ns/iter"
           }
         ]
