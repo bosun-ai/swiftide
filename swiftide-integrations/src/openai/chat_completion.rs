@@ -30,7 +30,7 @@ impl ChatCompletion for OpenAI {
 
         let messages = request
             .messages()
-            .iter()
+            .into_iter()
             .map(message_to_openai)
             .collect::<Result<Vec<_>>>()?;
 
@@ -136,6 +136,10 @@ fn message_to_openai(
             .build()?
             .into(),
         ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
+            .content(msg.as_str())
+            .build()?
+            .into(),
+        ChatMessage::Summary(msg) => ChatCompletionRequestAssistantMessageArgs::default()
             .content(msg.as_str())
             .build()?
             .into(),

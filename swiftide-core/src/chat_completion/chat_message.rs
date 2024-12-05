@@ -6,6 +6,10 @@ pub enum ChatMessage {
     User(String),
     Assistant(Option<String>, Option<Vec<ToolCall>>),
     ToolOutput(ToolCall, ToolOutput),
+
+    // A summary of the chat. If encountered all previous messages are ignored, except the system
+    // prompt
+    Summary(String),
 }
 
 impl std::fmt::Display for ChatMessage {
@@ -25,6 +29,7 @@ impl std::fmt::Display for ChatMessage {
                 })
             ),
             ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
+            ChatMessage::Summary(s) => write!(f, "Summary: \"{s}\""),
         }
     }
 }
