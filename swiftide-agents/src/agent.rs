@@ -237,6 +237,7 @@ impl Agent {
         if self.state.is_running() {
             anyhow::bail!("Agent is already running");
         }
+        self.state = state::State::Running;
 
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
@@ -261,8 +262,6 @@ impl Agent {
         }
 
         while let Some(messages) = self.context.next_completion().await {
-            self.state = state::State::Running;
-
             let result = self.run_completions(&messages).await;
 
             if let Err(err) = result {
@@ -362,10 +361,6 @@ impl Agent {
             let tool_args = tool_call.args().map(String::from);
             let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
-            let tool_name = tool.name().to_string();
-            let tool_span =
-                tracing::info_span!("tool", "otel.name" = format!("tool.{}", &tool_name));
-
             for hook in self.hooks_by_type(HookTypes::BeforeTool) {
                 if let Hook::BeforeTool(hook) = hook {
                     let span = tracing::info_span!(
@@ -377,10 +372,13 @@ impl Agent {
                 }
             }
 
+            let tool_span =
+                tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool.name()));
+
             let handle = tokio::spawn(async move {
                     let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
-                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name, "Completed tool call");
+                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name(), "Completed tool call");
 
                     Ok(output)
                 }.instrument(tool_span));
@@ -406,9 +404,7 @@ impl Agent {
             }
 
             let output = output?;
-
             self.handle_control_tools(&output);
-
             self.add_message(ChatMessage::ToolOutput(tool_call, output))
                 .await?;
         }
