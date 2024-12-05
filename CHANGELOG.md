@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4) - 2024-12-05
+
+### New features
+
+- [3751f49](https://github.com/bosun-ai/swiftide/commit/3751f49201c71398144a8913a4443f452534def2) *(query)*  Add support for single embedding retrieval with PGVector ([#406](https://github.com/bosun-ai/swiftide/pull/406))
+
+### Miscellaneous
+
+- [5ce4d21](https://github.com/bosun-ai/swiftide/commit/5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5)  Clippy and deps fixes for 1.83 ([#467](https://github.com/bosun-ai/swiftide/pull/467))
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.3...0.14.4
+
+
+
 ## [0.14.3](https://github.com/bosun-ai/swiftide/compare/v0.14.2...v0.14.3) - 2024-11-20
 
 ### New features
