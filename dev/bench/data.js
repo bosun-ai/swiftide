@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733345050761,
+  "lastUpdate": 1733396647127,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -9947,6 +9947,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243712,
             "range": "± 12649",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e154b8bf39ce9628d434080eb9fda3df9cc27cd8",
+          "message": "fix(ci): Clear disk space before starting workflows (#476)",
+          "timestamp": "2024-12-05T11:55:04+01:00",
+          "tree_id": "d899226cf21f6048eeedf3fee50debdb904ad606",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e154b8bf39ce9628d434080eb9fda3df9cc27cd8"
+        },
+        "date": 1733396646577,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1327998,
+            "range": "± 2280317",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251348,
+            "range": "± 5663",
             "unit": "ns/iter"
           }
         ]
