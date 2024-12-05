@@ -30,7 +30,7 @@ impl ChatCompletion for OpenAI {
 
         let messages = request
             .messages()
-            .into_iter()
+            .iter()
             .map(message_to_openai)
             .collect::<Result<Vec<_>>>()?;
 
