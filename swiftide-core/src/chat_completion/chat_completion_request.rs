@@ -31,3 +31,12 @@ impl ChatCompletionRequest {
         &self.tools_spec
     }
 }
+
+impl From<Vec<ChatMessage>> for ChatCompletionRequest {
+    fn from(messages: Vec<ChatMessage>) -> Self {
+        ChatCompletionRequest {
+            messages,
+            tools_spec: HashSet::new(),
+        }
+    }
+}
