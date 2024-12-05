@@ -3,6 +3,10 @@
 //! This is the default for agents. It is fully async and shareable between agents.
 //!
 //! By default uses the `LocalExecutor` for tool execution.
+//!
+//! If chat messages include a `ChatMessage::Summary`, all previous messages are ignored except the
+//! system prompt. This is useful for maintaining focus in long conversations or managing token
+//! limits.
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -65,7 +69,7 @@ impl AgentContext for DefaultContext {
             self.current_completions_ptr
                 .store(previous, Ordering::SeqCst);
 
-            Some(history.clone())
+            Some(filter_messages_before_summary(history.clone()))
         }
     }
 
@@ -75,7 +79,7 @@ impl AgentContext for DefaultContext {
 
         let history = self.completion_history.lock().await;
 
-        history[current..end].to_vec()
+        filter_messages_before_summary(history[current..end].to_vec())
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
@@ -105,6 +109,27 @@ impl AgentContext for DefaultContext {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
         self.tool_executor.exec_cmd(cmd).await
     }
+}
+
+fn filter_messages_before_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage> {
+    let mut summary_found = false;
+    let mut messages = messages
+        .into_iter()
+        .rev()
+        .filter(|m| {
+            if summary_found {
+                return matches!(m, ChatMessage::System(_));
+            }
+            if let ChatMessage::Summary(_) = m {
+                summary_found = true;
+            }
+            true
+        })
+        .collect::<Vec<_>>();
+
+    messages.reverse();
+
+    messages
 }
 
 #[cfg(test)]
@@ -166,6 +191,35 @@ mod tests {
         let messages = context.next_completion().await.unwrap();
         assert_eq!(context.current_new_messages().await.len(), 2);
         assert_eq!(messages.len(), 4);
+
+        assert!(context.next_completion().await.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_filters_messages_before_summary() {
+        let messages = vec![
+            ChatMessage::System("System message".into()),
+            ChatMessage::User("Hello".into()),
+            ChatMessage::Assistant(Some("Hello there".into()), None),
+            ChatMessage::Summary("Summary message".into()),
+            ChatMessage::User("This should be ignored".into()),
+        ];
+        let context = DefaultContext::default();
+        // Record initial chat messages
+        context.add_messages(&messages).await;
+
+        let new_messages = context.next_completion().await.unwrap();
+
+        assert_eq!(new_messages.len(), 3);
+        assert!(matches!(new_messages[0], ChatMessage::System(_)));
+        assert!(matches!(new_messages[1], ChatMessage::Summary(_)));
+        assert!(matches!(new_messages[2], ChatMessage::User(_)));
+
+        let current_new_messages = context.current_new_messages().await;
+        assert_eq!(current_new_messages.len(), 3);
+        assert!(matches!(current_new_messages[0], ChatMessage::System(_)));
+        assert!(matches!(current_new_messages[1], ChatMessage::Summary(_)));
+        assert!(matches!(current_new_messages[2], ChatMessage::User(_)));
 
         assert!(context.next_completion().await.is_none());
     }
