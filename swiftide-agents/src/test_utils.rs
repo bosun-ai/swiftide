@@ -5,7 +5,9 @@ use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSp
 
 use swiftide_core::AgentContext;
 
-use crate::hooks::{AfterToolFn, BeforeToolFn, HookFn, MessageHookFn};
+use crate::hooks::{
+    AfterCompletionFn, AfterToolFn, BeforeCompletionFn, BeforeToolFn, HookFn, MessageHookFn,
+};
 
 #[macro_export]
 macro_rules! chat_request {
@@ -198,6 +200,30 @@ impl MockHook {
     pub fn hook_fn(&self) -> impl HookFn {
         let called = Arc::clone(&self.called);
         move |_: &dyn AgentContext| {
+            let called = Arc::clone(&called);
+            Box::pin(async move {
+                let mut called = called.lock().unwrap();
+                *called += 1;
+                Ok(())
+            })
+        }
+    }
+
+    pub fn before_completion_fn(&self) -> impl BeforeCompletionFn {
+        let called = Arc::clone(&self.called);
+        move |_: &dyn AgentContext, _| {
+            let called = Arc::clone(&called);
+            Box::pin(async move {
+                let mut called = called.lock().unwrap();
+                *called += 1;
+                Ok(())
+            })
+        }
+    }
+
+    pub fn after_completion_fn(&self) -> impl AfterCompletionFn {
+        let called = Arc::clone(&self.called);
+        move |_: &dyn AgentContext, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();

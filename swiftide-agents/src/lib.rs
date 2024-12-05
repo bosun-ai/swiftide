@@ -22,7 +22,7 @@ let openai = integrations::openai::OpenAI::builder()
 
 Agent::builder()
     .llm(&openai)
-    .before_each(move |_|
+    .before_completion(move |_,_|
         Box::pin(async move {
                 println!("Before each tool");
                 Ok(())
