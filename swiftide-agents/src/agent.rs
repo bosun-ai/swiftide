@@ -447,6 +447,7 @@ impl Agent {
     // Handle any tool specific output (e.g. stop)
     fn handle_control_tools(&mut self, output: &ToolOutput) {
         if let ToolOutput::Stop = output {
+            tracing::warn!("Stop tool called, stopping agent");
             self.stop();
         }
     }
@@ -483,7 +484,7 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
-    use crate::{assistant, chat_request, chat_response, system, tool_output, user};
+    use crate::{assistant, chat_request, chat_response, summary, system, tool_output, user};
 
     use crate::test_utils::{MockHook, MockTool};
 
@@ -683,6 +684,65 @@ mod tests {
 
         // Agent is stopped, there might be more messages
         assert!(agent.state.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_summary() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = []
+
+        };
+
+        let expected_chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem");
+
+            tools = []
+        };
+
+        mock_llm.expect_complete(expected_chat_request, Ok(mock_tool_response.clone()));
+
+        let mut agent = Agent::builder()
+            .system_prompt("My system prompt")
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+
+        agent
+            .context
+            .add_message(ChatMessage::new_summary("Summary"))
+            .await;
+
+        let expected_chat_request = chat_request! {
+            system!("My system prompt"),
+            summary!("Summary"),
+            user!("Write another poem");
+            tools = []
+        };
+        mock_llm.expect_complete(expected_chat_request, Ok(mock_tool_response.clone()));
+
+        agent.query_once("Write another poem").await.unwrap();
+
+        agent
+            .context
+            .add_message(ChatMessage::new_summary("Summary 2"))
+            .await;
+
+        let expected_chat_request = chat_request! {
+            system!("My system prompt"),
+            summary!("Summary 2"),
+            user!("Write a third poem");
+            tools = []
+        };
+        mock_llm.expect_complete(expected_chat_request, Ok(mock_tool_response));
+
+        agent.query_once("Write a third poem").await.unwrap();
     }
 
     #[test_log::test(tokio::test)]

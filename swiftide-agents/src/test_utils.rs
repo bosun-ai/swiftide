@@ -6,8 +6,7 @@ use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSp
 use swiftide_core::AgentContext;
 
 use crate::hooks::{
-    AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
-    MessageHookFn,
+    AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn, MessageHookFn,
 };
 
 #[macro_export]
@@ -38,6 +37,13 @@ macro_rules! user {
 macro_rules! system {
     ($message:expr) => {
         ChatMessage::System($message.to_string())
+    };
+}
+
+#[macro_export]
+macro_rules! summary {
+    ($message:expr) => {
+        ChatMessage::Summary($message.to_string())
     };
 }
 

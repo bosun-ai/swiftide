@@ -35,18 +35,25 @@ impl ChatCompletion for OpenAI {
             .collect::<Result<Vec<_>>>()?;
 
         // Build the request to be sent to the OpenAI API.
-        let request = CreateChatCompletionRequestArgs::default()
+        let mut openai_request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(messages)
-            .tools(
-                request
-                    .tools_spec()
-                    .iter()
-                    .map(tools_to_openai)
-                    .collect::<Result<Vec<_>>>()?,
-            )
-            .tool_choice("auto")
-            .parallel_tool_calls(true)
+            .to_owned();
+
+        if !request.tools_spec.is_empty() {
+            openai_request
+                .tools(
+                    request
+                        .tools_spec()
+                        .iter()
+                        .map(tools_to_openai)
+                        .collect::<Result<Vec<_>>>()?,
+                )
+                .tool_choice("auto")
+                .parallel_tool_calls(true);
+        }
+
+        let request = openai_request
             .build()
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
@@ -169,20 +176,13 @@ fn message_to_openai(
                 builder.tool_calls(
                     tool_calls
                         .iter()
-                        .map(|tool_call| {
-                            let mut truncated_args =
-                                tool_call.args().unwrap_or_default().to_string();
-
-                            truncated_args.truncate(100);
-
-                            ChatCompletionMessageToolCall {
-                                id: tool_call.id().to_string(),
-                                r#type: ChatCompletionToolType::Function,
-                                function: FunctionCall {
-                                    name: tool_call.name().to_string(),
-                                    arguments: truncated_args,
-                                },
-                            }
+                        .map(|tool_call| ChatCompletionMessageToolCall {
+                            id: tool_call.id().to_string(),
+                            r#type: ChatCompletionToolType::Function,
+                            function: FunctionCall {
+                                name: tool_call.name().to_string(),
+                                arguments: tool_call.args().unwrap_or_default().to_string(),
+                            },
                         })
                         .collect::<Vec<_>>(),
                 );

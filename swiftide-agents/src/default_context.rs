@@ -222,4 +222,71 @@ mod tests {
 
         assert!(context.next_completion().await.is_none());
     }
+
+    #[tokio::test]
+    async fn test_filters_messages_before_summary_with_assistant_last() {
+        let messages = vec![
+            ChatMessage::System("System message".into()),
+            ChatMessage::User("Hello".into()),
+            ChatMessage::Assistant(Some("Hello there".into()), None),
+        ];
+        let context = DefaultContext::default();
+        // Record initial chat messages
+        context.add_messages(messages).await;
+
+        let new_messages = context.next_completion().await.unwrap();
+
+        assert_eq!(new_messages.len(), 3);
+        assert!(matches!(new_messages[0], ChatMessage::System(_)));
+        assert!(matches!(new_messages[1], ChatMessage::User(_)));
+        assert!(matches!(new_messages[2], ChatMessage::Assistant(_, _)));
+
+        context
+            .add_message(ChatMessage::Summary("Summary message 1".into()))
+            .await;
+
+        let new_messages = context.next_completion().await.unwrap();
+        dbg!(&new_messages);
+        assert_eq!(new_messages.len(), 2);
+        assert!(matches!(new_messages[0], ChatMessage::System(_)));
+        assert_eq!(
+            new_messages[1],
+            ChatMessage::Summary("Summary message 1".into())
+        );
+
+        assert!(context.next_completion().await.is_none());
+
+        let messages = vec![
+            ChatMessage::User("Hello again".into()),
+            ChatMessage::Assistant(Some("Hello there again".into()), None),
+        ];
+
+        context.add_messages(messages).await;
+
+        let new_messages = context.next_completion().await.unwrap();
+
+        assert!(matches!(new_messages[0], ChatMessage::System(_)));
+        assert_eq!(
+            new_messages[1],
+            ChatMessage::Summary("Summary message 1".into())
+        );
+        assert_eq!(new_messages[2], ChatMessage::User("Hello again".into()));
+        assert_eq!(
+            new_messages[3],
+            ChatMessage::Assistant(Some("Hello there again".to_string()), None)
+        );
+
+        context
+            .add_message(ChatMessage::Summary("Summary message 2".into()))
+            .await;
+
+        let new_messages = context.next_completion().await.unwrap();
+        assert_eq!(new_messages.len(), 2);
+
+        assert!(matches!(new_messages[0], ChatMessage::System(_)));
+        assert_eq!(
+            new_messages[1],
+            ChatMessage::Summary("Summary message 2".into())
+        );
+    }
 }
