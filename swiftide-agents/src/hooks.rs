@@ -12,7 +12,7 @@
 //! # let mut agent = swiftide_agents::Agent::builder();
 //! agent.before_all(move |context: &dyn AgentContext| {
 //!     Box::pin(async move {
-//!         context.add_message(&ChatMessage::new_user("Hello, world")).await;
+//!         context.add_message(ChatMessage::new_user("Hello, world")).await;
 //!         Ok(())
 //!     })
 //!});
@@ -29,13 +29,13 @@
 //!
 //! ```no_run
 //! # use swiftide_core::{AgentContext};
-//! # use swiftide_agents::hooks::HookFn;
+//! # use swiftide_agents::hooks::BeforeAllFn;
 //! struct SomeHook<'thing> {
 //!    thing: &'thing str
 //! }
 //!
 //! impl<'thing> SomeHook<'thing> {
-//!    fn return_hook<'tool>(&'thing self) -> impl HookFn + 'tool where 'thing: 'tool {
+//!    fn return_hook<'tool>(&'thing self) -> impl BeforeAllFn + 'tool where 'thing: 'tool {
 //!     move |_: &dyn AgentContext| {
 //!      Box::pin(async move {{ Ok(())}})
 //!     }
@@ -53,7 +53,7 @@ use swiftide_core::{
     AgentContext,
 };
 
-pub trait HookFn:
+pub trait BeforeAllFn:
     for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
@@ -61,7 +61,17 @@ pub trait HookFn:
 {
 }
 
-dyn_clone::clone_trait_object!(HookFn);
+dyn_clone::clone_trait_object!(BeforeAllFn);
+
+pub trait AfterEachFn:
+    for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(AfterEachFn);
 
 pub trait BeforeCompletionFn:
     for<'a> Fn(
@@ -138,7 +148,7 @@ dyn_clone::clone_trait_object!(MessageHookFn);
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
 pub enum Hook {
     /// Runs only once for the agent when it starts
-    BeforeAll(Box<dyn HookFn>),
+    BeforeAll(Box<dyn BeforeAllFn>),
     /// Runs before every completion, yielding a mutable reference to the completion request
     BeforeCompletion(Box<dyn BeforeCompletionFn>),
     /// Runs after every completion, yielding a mutable reference to the completion response
@@ -148,13 +158,21 @@ pub enum Hook {
     /// Runs after every tool call, yielding a reference to the tool call and a mutable result
     AfterTool(Box<dyn AfterToolFn>),
     /// Runs after all tools have completed and a single completion has been made
-    AfterEach(Box<dyn HookFn>),
+    AfterEach(Box<dyn AfterEachFn>),
     /// Runs when a new message is added to the `AgentContext`, yielding a mutable reference to the
     /// message. This is only triggered when the message is added by the agent.
     OnNewMessage(Box<dyn MessageHookFn>),
 }
 
-impl<F> HookFn for F where
+impl<F> BeforeAllFn for F where
+    F: for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+
+impl<F> AfterEachFn for F where
     F: for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync

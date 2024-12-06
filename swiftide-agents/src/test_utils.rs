@@ -6,7 +6,8 @@ use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSp
 use swiftide_core::AgentContext;
 
 use crate::hooks::{
-    AfterCompletionFn, AfterToolFn, BeforeCompletionFn, BeforeToolFn, HookFn, MessageHookFn,
+    AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
+    MessageHookFn,
 };
 
 #[macro_export]
@@ -197,7 +198,7 @@ impl MockHook {
         self
     }
 
-    pub fn hook_fn(&self) -> impl HookFn {
+    pub fn hook_fn(&self) -> impl BeforeAllFn {
         let called = Arc::clone(&self.called);
         move |_: &dyn AgentContext| {
             let called = Arc::clone(&called);

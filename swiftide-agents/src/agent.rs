@@ -2,8 +2,8 @@
 use crate::{
     default_context::DefaultContext,
     hooks::{
-        AfterCompletionFn, AfterToolFn, BeforeCompletionFn, BeforeToolFn, Hook, HookFn, HookTypes,
-        MessageHookFn,
+        AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
+        Hook, HookTypes, MessageHookFn,
     },
     state,
     system_prompt::SystemPrompt,
@@ -128,7 +128,7 @@ impl AgentBuilder {
 
     /// Add a hook that runs once, before all completions. Even if the agent is paused and resumed,
     /// before all will not trigger again.
-    pub fn before_all(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+    pub fn before_all(&mut self, hook: impl BeforeAllFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeAll(Box::new(hook)))
     }
 
@@ -158,7 +158,7 @@ impl AgentBuilder {
 
     /// Add a hook that runs after each completion, after tool invocations, right before a new loop
     /// might start
-    pub fn after_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+    pub fn after_each(&mut self, hook: impl AfterEachFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterEach(Box::new(hook)))
     }
 
