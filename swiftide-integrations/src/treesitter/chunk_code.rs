@@ -1,5 +1,5 @@
 //! Chunk code using tree-sitter
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use derive_builder::Builder;
 
@@ -121,7 +121,9 @@ impl ChunkerTransformer for ChunkCode {
             }))
         } else {
             // Send the error downstream
-            IndexingStream::iter(vec![Err(split_result.unwrap_err())])
+            IndexingStream::iter(vec![Err(split_result
+                .with_context(|| format!("Failed to chunk {}", node.path.display()))
+                .unwrap_err())])
         }
     }
 
