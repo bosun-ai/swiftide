@@ -69,7 +69,7 @@ impl AgentContext for DefaultContext {
             self.current_completions_ptr
                 .store(previous, Ordering::SeqCst);
 
-            Some(filter_messages_before_summary(history.clone()))
+            Some(filter_messages_since_summary(history.clone()))
         }
     }
 
@@ -79,31 +79,21 @@ impl AgentContext for DefaultContext {
 
         let history = self.completion_history.lock().await;
 
-        filter_messages_before_summary(history[current..end].to_vec())
+        filter_messages_since_summary(history[current..end].to_vec())
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
         self.completion_history.lock().await.clone()
     }
 
-    async fn add_messages(&self, messages: &[ChatMessage]) {
+    async fn add_messages(&self, messages: Vec<ChatMessage>) {
         for item in messages {
             self.add_message(item).await;
         }
     }
 
-    async fn add_message(&self, item: &ChatMessage) {
-        self.completion_history.lock().await.push(item.clone());
-
-        debug_assert!(
-            self.completion_history
-                .lock()
-                .await
-                .iter()
-                .filter(|msg| msg.is_system())
-                .count()
-                <= 1
-        );
+    async fn add_message(&self, item: ChatMessage) {
+        self.completion_history.lock().await.push(item);
     }
 
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
@@ -111,7 +101,7 @@ impl AgentContext for DefaultContext {
     }
 }
 
-fn filter_messages_before_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage> {
+fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage> {
     let mut summary_found = false;
     let mut messages = messages
         .into_iter()
@@ -145,7 +135,7 @@ mod tests {
 
         // Record initial chat messages
         context
-            .add_messages(&[
+            .add_messages(vec![
                 ChatMessage::System("You are awesome".into()),
                 ChatMessage::User("Hello".into()),
             ])
@@ -156,7 +146,7 @@ mod tests {
         assert!(context.next_completion().await.is_none());
 
         context
-            .add_messages(&[assistant!("Hey?"), user!("How are you?")])
+            .add_messages(vec![assistant!("Hey?"), user!("How are you?")])
             .await;
 
         let messages = context.next_completion().await.unwrap();
@@ -174,7 +164,7 @@ mod tests {
         let context = DefaultContext::default();
         // Record initial chat messages
         context
-            .add_messages(&[
+            .add_messages(vec![
                 ChatMessage::System("You are awesome".into()),
                 ChatMessage::User("Hello".into()),
             ])
@@ -185,7 +175,10 @@ mod tests {
         assert!(context.next_completion().await.is_none());
 
         context
-            .add_messages(&[assistant!("Hey?", ["test"]), tool_output!("test", "Hoi")])
+            .add_messages(vec![
+                assistant!("Hey?", ["test"]),
+                tool_output!("test", "Hoi"),
+            ])
             .await;
 
         let messages = context.next_completion().await.unwrap();
@@ -206,7 +199,7 @@ mod tests {
         ];
         let context = DefaultContext::default();
         // Record initial chat messages
-        context.add_messages(&messages).await;
+        context.add_messages(messages).await;
 
         let new_messages = context.next_completion().await.unwrap();
 

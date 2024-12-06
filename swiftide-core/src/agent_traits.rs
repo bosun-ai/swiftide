@@ -92,10 +92,10 @@ pub trait AgentContext: Send + Sync {
     async fn current_new_messages(&self) -> Vec<ChatMessage>;
 
     /// Add messages for the next completion
-    async fn add_messages(&self, item: &[ChatMessage]);
+    async fn add_messages(&self, item: Vec<ChatMessage>);
 
     /// Add messages for the next completion
-    async fn add_message(&self, item: &ChatMessage);
+    async fn add_message(&self, item: ChatMessage);
 
     /// Execute a command if the context supports it
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;

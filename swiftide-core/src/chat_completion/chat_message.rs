@@ -53,4 +53,8 @@ impl ChatMessage {
     pub fn new_tool_output(tool_call: impl Into<ToolCall>, output: impl Into<ToolOutput>) -> Self {
         ChatMessage::ToolOutput(tool_call.into(), output.into())
     }
+
+    pub fn new_summary(message: impl Into<String>) -> Self {
+        ChatMessage::Summary(message.into())
+    }
 }

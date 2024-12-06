@@ -247,7 +247,7 @@ impl Agent {
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
-                    .add_messages(&[ChatMessage::System(system_prompt.render().await?)])
+                    .add_messages(vec![ChatMessage::System(system_prompt.render().await?)])
                     .await;
             }
             for hook in self.hooks_by_type(HookTypes::BeforeAll) {
@@ -265,7 +265,7 @@ impl Agent {
         self.state = state::State::Running;
 
         if let Some(query) = maybe_query {
-            self.context.add_message(&ChatMessage::User(query)).await;
+            self.context.add_message(ChatMessage::User(query)).await;
         }
 
         while let Some(messages) = self.context.next_completion().await {
@@ -467,7 +467,7 @@ impl Agent {
                 }
             }
         }
-        self.context.add_message(&message).await;
+        self.context.add_message(message).await;
         Ok(())
     }
 
