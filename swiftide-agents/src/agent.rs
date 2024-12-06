@@ -151,9 +151,15 @@ impl AgentBuilder {
         self.add_hook(Hook::BeforeTool(Box::new(hook)))
     }
 
-    /// Add a hook that runs after each completion, when all tool calls are finished.
+    /// Add a hook that runs after each completion, before tool invokation and/or new messages.
     pub fn after_completion(&mut self, hook: impl AfterCompletionFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterCompletion(Box::new(hook)))
+    }
+
+    /// Add a hook that runs after each completion, after tool invocations, right before a new loop
+    /// might start
+    pub fn after_each(&mut self, hook: impl HookFn + 'static) -> &mut Self {
+        self.add_hook(Hook::AfterEach(Box::new(hook)))
     }
 
     /// Add a hook that runs when a new message is added to the context. Note that each tool adds a
@@ -237,7 +243,6 @@ impl Agent {
         if self.state.is_running() {
             anyhow::bail!("Agent is already running");
         }
-        self.state = state::State::Running;
 
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
@@ -256,6 +261,8 @@ impl Agent {
                 }
             }
         }
+
+        self.state = state::State::Running;
 
         if let Some(query) = maybe_query {
             self.context.add_message(&ChatMessage::User(query)).await;
@@ -343,6 +350,17 @@ impl Agent {
         if let Some(tool_calls) = response.tool_calls {
             self.invoke_tools(tool_calls).await?;
         };
+
+        for hook in self.hooks_by_type(HookTypes::AfterEach) {
+            if let Hook::AfterEach(hook) = hook {
+                let span = tracing::info_span!(
+                    "hook",
+                    "otel.name" = format!("hook.{}", HookTypes::AfterEach)
+                );
+                tracing::info!("Calling {} hook", HookTypes::AfterEach);
+                hook(&*self.context).instrument(span).await?;
+            }
+        }
 
         Ok(())
     }
@@ -670,7 +688,10 @@ mod tests {
     #[test_log::test(tokio::test)]
     async fn test_agent_hooks() {
         let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
-        let mock_before_each = MockHook::new("before_each").expect_calls(2).to_owned();
+        let mock_before_completion = MockHook::new("before_completion")
+            .expect_calls(2)
+            .to_owned();
+        let mock_after_completion = MockHook::new("after_completion").expect_calls(2).to_owned();
         let mock_after_each = MockHook::new("after_each").expect_calls(2).to_owned();
         let mock_on_message = MockHook::new("on_message").expect_calls(4).to_owned();
 
@@ -717,10 +738,11 @@ mod tests {
             .llm(&mock_llm)
             .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
-            .before_completion(mock_before_each.before_completion_fn())
+            .before_completion(mock_before_completion.before_completion_fn())
             .before_tool(mock_before_tool.before_tool_fn())
-            .after_completion(mock_after_each.after_completion_fn())
+            .after_completion(mock_after_completion.after_completion_fn())
             .after_tool(mock_after_tool.after_tool_fn())
+            .after_each(mock_after_each.hook_fn())
             .on_new_message(mock_on_message.message_hook_fn())
             .build()
             .unwrap();

@@ -137,12 +137,21 @@ dyn_clone::clone_trait_object!(MessageHookFn);
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
 pub enum Hook {
+    /// Runs only once for the agent when it starts
     BeforeAll(Box<dyn HookFn>),
+    /// Runs before every completion, yielding a mutable reference to the completion request
     BeforeCompletion(Box<dyn BeforeCompletionFn>),
-    BeforeTool(Box<dyn BeforeToolFn>),
-    AfterTool(Box<dyn AfterToolFn>),
-    OnNewMessage(Box<dyn MessageHookFn>),
+    /// Runs after every completion, yielding a mutable reference to the completion response
     AfterCompletion(Box<dyn AfterCompletionFn>),
+    /// Runs before every tool call, yielding a reference to the tool call
+    BeforeTool(Box<dyn BeforeToolFn>),
+    /// Runs after every tool call, yielding a reference to the tool call and a mutable result
+    AfterTool(Box<dyn AfterToolFn>),
+    /// Runs after all tools have completed and a single completion has been made
+    AfterEach(Box<dyn HookFn>),
+    /// Runs when a new message is added to the `AgentContext`, yielding a mutable reference to the
+    /// message. This is only triggered when the message is added by the agent.
+    OnNewMessage(Box<dyn MessageHookFn>),
 }
 
 impl<F> HookFn for F where
