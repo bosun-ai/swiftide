@@ -6,7 +6,7 @@ use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSp
 use swiftide_core::AgentContext;
 
 use crate::hooks::{
-    AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
+    AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
     MessageHookFn,
 };
 

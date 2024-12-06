@@ -42,7 +42,7 @@
 //!   }
 //!}
 use anyhow::Result;
-use std::{future::Future, ops::Deref, pin::Pin};
+use std::{future::Future, pin::Pin};
 
 use dyn_clone::DynClone;
 use swiftide_core::{
