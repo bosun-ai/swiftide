@@ -56,6 +56,23 @@ pub enum CommandOutput {
     },
 }
 
+impl CommandOutput {
+    pub fn is_success(&self) -> bool {
+        match self {
+            CommandOutput::Shell { success, .. } => *success,
+            CommandOutput::Ok | CommandOutput::Text(_) => true,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            CommandOutput::Text(value) => value.is_empty(),
+            CommandOutput::Shell { stdout, stderr, .. } => stdout.is_empty() && stderr.is_empty(),
+            CommandOutput::Ok => true,
+        }
+    }
+}
+
 impl std::fmt::Display for CommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -57,6 +57,7 @@ impl DefaultContext {
 }
 #[async_trait]
 impl AgentContext for DefaultContext {
+    /// Retrieve messages for the next completion
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
@@ -73,6 +74,7 @@ impl AgentContext for DefaultContext {
         }
     }
 
+    /// Returns the messages the agent is currently completing on
     async fn current_new_messages(&self) -> Vec<ChatMessage> {
         let current = self.current_completions_ptr.load(Ordering::SeqCst);
         let end = self.completions_ptr.load(Ordering::SeqCst);
@@ -82,20 +84,24 @@ impl AgentContext for DefaultContext {
         filter_messages_since_summary(history[current..end].to_vec())
     }
 
+    /// Retrieve all messages in the conversation history
     async fn history(&self) -> Vec<ChatMessage> {
         self.completion_history.lock().await.clone()
     }
 
+    /// Add multiple messages to the conversation history
     async fn add_messages(&self, messages: Vec<ChatMessage>) {
         for item in messages {
             self.add_message(item).await;
         }
     }
 
+    /// Add a single message to the conversation history
     async fn add_message(&self, item: ChatMessage) {
         self.completion_history.lock().await.push(item);
     }
 
+    /// Execute a command in the tool executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
         self.tool_executor.exec_cmd(cmd).await
     }

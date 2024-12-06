@@ -51,6 +51,7 @@ impl ChatCompletion for OpenAI {
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
         tracing::debug!(
+            model = &model,
             request = serde_json::to_string_pretty(&request).expect("infallible"),
             "Sending request to OpenAI"
         );

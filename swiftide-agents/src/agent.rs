@@ -288,7 +288,7 @@ impl Agent {
         Ok(())
     }
 
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, err)]
     async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<()> {
         debug!(
             "Running completion for agent with {} messages",
