@@ -182,7 +182,8 @@ impl CodeSplitter {
         let root_node = tree.root_node();
 
         if root_node.has_error() {
-            anyhow::bail!("Root node has invalid syntax");
+            tracing::error!("Syntax error parsing code: {:?}", code);
+            return Ok(vec![code.to_string()]);
         }
 
         Ok(self.chunk_node(root_node, code, 0, None))
