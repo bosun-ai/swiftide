@@ -5,6 +5,7 @@
 use derive_builder::Builder;
 use std::sync::Arc;
 
+mod chat_completion;
 mod embed;
 mod simple_prompt;
 

@@ -1799,6 +1799,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "cookie"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2552,7 +2561,7 @@ version = "0.99.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
 dependencies = [
- "convert_case",
+ "convert_case 0.4.0",
  "proc-macro2",
  "quote",
  "rustc_version",
@@ -2569,6 +2578,12 @@ dependencies = [
  "quote",
  "syn 2.0.90",
 ]
+
+[[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
 
 [[package]]
 name = "digest"
@@ -6524,6 +6539,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pretty_assertions"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d"
+dependencies = [
+ "diff",
+ "yansi",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8393,12 +8418,14 @@ dependencies = [
  "anyhow",
  "arrow-array",
  "async-openai",
+ "async-trait",
  "document-features",
  "mockall",
  "qdrant-client",
  "serde",
  "serde_json",
  "sqlx",
+ "swiftide-agents",
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
@@ -8409,6 +8436,31 @@ dependencies = [
  "testcontainers",
  "tokio",
  "wiremock",
+]
+
+[[package]]
+name = "swiftide-agents"
+version = "0.14.3"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "derive_builder",
+ "dyn-clone",
+ "indoc",
+ "insta",
+ "mockall",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "swiftide-core",
+ "swiftide-integrations",
+ "swiftide-macros",
+ "temp-dir",
+ "test-log",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -8424,6 +8476,7 @@ dependencies = [
  "lazy_static",
  "mockall",
  "pin-project",
+ "pretty_assertions",
  "qdrant-client",
  "serde",
  "serde_json",
@@ -8431,6 +8484,7 @@ dependencies = [
  "strum_macros",
  "tera",
  "test-case",
+ "thiserror 2.0.3",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -8441,7 +8495,9 @@ dependencies = [
 name = "swiftide-examples"
 version = "0.14.3"
 dependencies = [
+ "anyhow",
  "fluvio",
+ "indoc",
  "qdrant-client",
  "serde_json",
  "spider",
@@ -8544,10 +8600,21 @@ dependencies = [
 name = "swiftide-macros"
 version = "0.14.3"
 dependencies = [
+ "anyhow",
+ "async-trait",
+ "convert_case 0.6.0",
  "darling",
+ "insta",
+ "pretty_assertions",
+ "prettyplease",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde_json",
+ "swiftide",
+ "swiftide-core",
  "syn 2.0.90",
+ "trybuild",
 ]
 
 [[package]]
@@ -8840,6 +8907,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
+name = "target-triple"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42a4d50cdb458045afc8131fd91b64904da29548bcb63c7236e0844936c13078"
+
+[[package]]
 name = "temp-dir"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8883,6 +8956,15 @@ dependencies = [
  "serde",
  "serde_json",
  "unic-segment",
+]
+
+[[package]]
+name = "termcolor"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
+dependencies = [
+ "winapi-util",
 ]
 
 [[package]]
@@ -9555,6 +9637,21 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "trybuild"
+version = "1.0.101"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8dcd332a5496c026f1e14b7f3d2b7bd98e509660c04239c58b0ba38a12daded4"
+dependencies = [
+ "glob",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "target-triple",
+ "termcolor",
+ "toml",
+]
 
 [[package]]
 name = "twox-hash"
@@ -10351,6 +10448,12 @@ name = "xmlparser"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
+
+[[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "yoke"
