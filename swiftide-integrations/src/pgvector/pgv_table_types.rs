@@ -441,7 +441,7 @@ impl PgVector {
 }
 
 impl PgVector {
-    pub(crate) fn normalize_field_name(field: &str) -> String {
+    pub fn normalize_field_name(field: &str) -> String {
         // Define the special characters as an array
         let special_chars: [char; 4] = ['(', '[', '{', '<'];
 
