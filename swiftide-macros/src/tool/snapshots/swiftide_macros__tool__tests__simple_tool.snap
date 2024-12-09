@@ -1,0 +1,48 @@
+---
+source: swiftide-macros/src/tool/mod.rs
+expression: "crate::test_utils::pretty_macro_output(&output)"
+---
+mod hidden {
+    pub use swiftide_agents::{Tool, AgentContext};
+    pub use anyhow::{bail, Result};
+    pub use swiftide_core::chat_completion::{JsonSpec, ToolOutput};
+    pub use async_trait::async_trait;
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SearchCodeArgs<'a> {
+    pub code_query: &'a str,
+}
+#[derive(Clone)]
+struct SearchCode {}
+pub fn search_code() -> SearchCode {
+    SearchCode {}
+}
+impl SearchCode {
+    pub async fn search_code(
+        &self,
+        context: &dyn AgentContext,
+        code_query: &str,
+    ) -> Result<ToolOutput> {
+        return Ok("hello".into());
+    }
+}
+#[hidden::async_trait]
+impl hidden::Tool for SearchCode {
+    async fn invoke(
+        &self,
+        agent_context: &dyn hidden::AgentContext,
+        raw_args: Option<&str>,
+    ) -> hidden::Result<hidden::ToolOutput> {
+        let Some(args) = raw_args else {
+            hidden::bail!("No arguments provided for {}", "search_code")
+        };
+        let args: SearchCodeArgs = serde_json::from_str(&args)?;
+        return self.search_code(agent_context, args.code_query).await;
+    }
+    fn name(&self) -> &'static str {
+        "search_code"
+    }
+    fn json_spec(&self) -> hidden::JsonSpec {
+        "{\n  \"description\": \"Hello world tool\",\n  \"name\": \"search_code\",\n  \"parameters\": {\n    \"my param\": {\n      \"description\": \"my param description\",\n      \"type\": \"string\"\n    }\n  }\n}"
+    }
+}

@@ -44,6 +44,7 @@ impl SimplePrompt for OpenAI {
 
         // Log the request for debugging purposes.
         tracing::debug!(
+            model = &model,
             messages = debug_long_utf8(
                 serde_json::to_string_pretty(&request.messages.first())?,
                 100
