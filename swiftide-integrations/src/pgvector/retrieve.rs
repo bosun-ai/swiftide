@@ -1,10 +1,14 @@
+use crate::pgvector::VectorConfig;
 use crate::pgvector::{PgVector, PgVectorBuilder};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{DynamicVectorSearch, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -105,6 +109,58 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
             query,
         )
         .await
+    }
+}
+
+#[async_trait]
+impl Retrieve<DynamicVectorSearch> for PgVector {
+    async fn retrieve(
+        &self,
+        search_strategy: &DynamicVectorSearch,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let pool = self.get_pool().await?;
+
+        // Extract embedding from query state
+        let embedding = query
+            .embedding
+            .as_ref()
+            .ok_or_else(|| anyhow!("Missing embedding in query state"))?
+            .clone();
+
+        let default_fields: Vec<_> = PgVectorBuilder::default_fields();
+
+        // let default_columns: Vec<&str> = default_fields.iter().map(|f| f.field_name()).collect();
+
+        let default_columns: Vec<&str> = default_fields
+            .iter()
+            .map(super::pgv_table_types::FieldConfig::field_name)
+            .collect();
+
+        let vector_column_name = VectorConfig::from(search_strategy.vector_field().clone()).field;
+
+        // Generate the complete SQL query using user's query generator
+        let sql =
+            search_strategy.generate_query(&self.table_name, &default_columns, &vector_column_name);
+
+        tracing::debug!("Executing custom search query: {}", sql);
+
+        let top_k = i32::try_from(search_strategy.top_k())
+            .map_err(|_| anyhow!("Failed to convert top_k to i32"))?;
+
+        // Execute the query and collect results
+        let results: Vec<VectorSearchResult> = sqlx::query_as(&sql)
+            .bind(Vector::from(embedding))
+            .bind(top_k)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| anyhow!("Failed to execute search query: {}", e))?;
+
+        // Transform results into documents
+        let documents = results.into_iter().map(|r| r.chunk).collect();
+
+        // Update query state with retrieved documents
+        Ok(query.retrieved_documents(documents))
     }
 }
 
