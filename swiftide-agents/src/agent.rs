@@ -151,7 +151,7 @@ impl AgentBuilder {
         self.add_hook(Hook::BeforeTool(Box::new(hook)))
     }
 
-    /// Add a hook that runs after each completion, before tool invokation and/or new messages.
+    /// Add a hook that runs after each completion, before tool invocation and/or new messages.
     pub fn after_completion(&mut self, hook: impl AfterCompletionFn + 'static) -> &mut Self {
         self.add_hook(Hook::AfterCompletion(Box::new(hook)))
     }
