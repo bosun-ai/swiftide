@@ -68,7 +68,9 @@ pub struct CommandOutput {
 
 impl CommandOutput {
     pub fn empty() -> Self {
-        CommandOutput { output: String::new() }
+        CommandOutput {
+            output: String::new(),
+        }
     }
 
     pub fn new(output: impl Into<String>) -> Self {
