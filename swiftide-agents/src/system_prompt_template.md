@@ -10,9 +10,9 @@
 {# Guidelines provide soft rules and best practices to complete a task well -#}
 
 - Try to understand how to complete the task well before completing it.
-  {% for item in guidelines -%}
+{% for item in guidelines -%}
 - {{item}}
-  {% endfor %}
+{% endfor %}
 
 # Constraints that must be adhered to
 
@@ -24,9 +24,9 @@
 - Use the provided tools to interact with the system and accomplish the task
 - If you are stuck, or otherwise cannot complete the task, respond with your thoughts and call `stop`.
 - If the task is completed, or otherwise cannot continue, like requiring user feedback, call `stop`.
-  {% for item in constraints -%}
+{% for item in constraints -%}
 - {{item}}
-  {% endfor %}
+{% endfor %}
 
 # Response Format
 
