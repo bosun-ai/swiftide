@@ -3,21 +3,39 @@ use std::path::PathBuf;
 use crate::chat_completion::ChatMessage;
 use anyhow::Result;
 use async_trait::async_trait;
+use thiserror::Error;
 
 /// A tool executor that can be used within an `AgentContext`
 #[async_trait]
 pub trait ToolExecutor: Send + Sync {
-    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 }
 
 #[async_trait]
 impl<T: ToolExecutor> ToolExecutor for &T {
-    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (*self).exec_cmd(cmd).await
     }
 }
 
+#[derive(Debug, Error)]
+pub enum CommandError {
+    /// The executor itself failed
+    #[error("executor error: {0:#}")]
+    ExecutorError(#[from] anyhow::Error),
+
+    /// The command failed, i.e. failing tests with stderr. This error might be handled
+    #[error("command failed: {0}")]
+    FailedWithOutput(CommandOutput),
+}
+
 /// Commands that can be executed by the executor
+/// Conceptually, `Shell` allows any kind of input, and other commands enable more optimized
+/// implementations.
+///
+/// There is an ongoing consideration to make this an associated type on the executor
+///
+/// TODO: Should be able to borrow everything?
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Command {
@@ -42,52 +60,38 @@ impl Command {
 
 /// Output from a `Command`
 #[derive(Debug, Clone)]
-pub enum CommandOutput {
-    /// Infallible text output
-    Text(String),
-    /// Empty infallible output
-    Ok,
-    /// Output from a shell command
-    Shell {
-        stdout: String,
-        stderr: String,
-        status: i32,
-        success: bool,
-    },
+pub struct CommandOutput {
+    pub output: String,
+    // status_code: i32,
+    // success: bool,
 }
 
 impl CommandOutput {
-    pub fn is_success(&self) -> bool {
-        match self {
-            CommandOutput::Shell { success, .. } => *success,
-            CommandOutput::Ok | CommandOutput::Text(_) => true,
-        }
+    pub fn empty() -> Self {
+        CommandOutput { output: "".into() }
     }
 
-    pub fn is_empty(&self) -> bool {
-        match self {
-            CommandOutput::Text(value) => value.is_empty(),
-            CommandOutput::Shell { stdout, stderr, .. } => stdout.is_empty() && stderr.is_empty(),
-            CommandOutput::Ok => true,
+    pub fn new(output: impl Into<String>) -> Self {
+        CommandOutput {
+            output: output.into(),
         }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.output.is_empty()
     }
 }
 
 impl std::fmt::Display for CommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CommandOutput::Text(value) => write!(f, "{value}"),
-            CommandOutput::Shell { stdout, stderr, .. } => {
-                write!(f, "{stdout}{stderr}")
-            }
-            CommandOutput::Ok => write!(f, "Ok"),
-        }
+        self.output.fmt(f)
     }
 }
 
-impl From<String> for CommandOutput {
-    fn from(value: String) -> Self {
-        CommandOutput::Text(value)
+impl<T: Into<String>> From<T> for CommandOutput {
+    fn from(value: T) -> Self {
+        CommandOutput {
+            output: value.into(),
+        }
     }
 }
 
@@ -115,7 +119,7 @@ pub trait AgentContext: Send + Sync {
     async fn add_message(&self, item: ChatMessage);
 
     /// Execute a command if the context supports it
-    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput>;
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
     async fn history(&self) -> Vec<ChatMessage>;
 }

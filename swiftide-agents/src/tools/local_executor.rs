@@ -3,10 +3,10 @@
 //! By default will use the current directory as the working directory.
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{Command, CommandOutput, ToolExecutor};
+use swiftide_core::{Command, CommandError, CommandOutput, ToolExecutor};
 
 #[derive(Debug, Clone, Builder)]
 pub struct LocalExecutor {
@@ -33,47 +33,54 @@ impl LocalExecutor {
         LocalExecutorBuilder::default()
     }
 
-    async fn exec_shell(&self, cmd: &str) -> Result<CommandOutput> {
+    async fn exec_shell(&self, cmd: &str) -> Result<CommandOutput, CommandError> {
         let output = tokio::process::Command::new("sh")
             .arg("-c")
             .arg(cmd)
             .current_dir(&self.workdir)
             .output()
-            .await?;
+            .await
+            .context("Executor could not run command")?;
 
-        let stdout = String::from_utf8(output.stdout)?;
-        let stderr = String::from_utf8(output.stderr)?;
-        let status = output.status.code().unwrap_or(-1);
-        let success = output.status.success();
+        let stdout = String::from_utf8(output.stdout).context("Failed to parse stdout")?;
+        let stderr = String::from_utf8(output.stderr).context("Failed to parse stderr")?;
+        let merged_output = format!("{stdout}{stderr}");
 
-        Ok(CommandOutput::Shell {
-            stdout,
-            stderr,
-            status,
-            success,
-        })
+        if output.status.success() {
+            Ok(merged_output.into())
+        } else {
+            Err(CommandError::FailedWithOutput(merged_output.into()))
+        }
     }
 
-    async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput> {
-        let output = tokio::fs::read(path).await?;
+    async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput, CommandError> {
+        let output = tokio::fs::read(path).await.context("Could not read file")?;
 
-        Ok(CommandOutput::Text(String::from_utf8(output)?))
+        Ok(String::from_utf8(output)
+            .context("Failed to parse read file output")?
+            .into())
     }
 
-    async fn exec_write_file(&self, path: &Path, content: &str) -> Result<CommandOutput> {
+    async fn exec_write_file(
+        &self,
+        path: &Path,
+        content: &str,
+    ) -> Result<CommandOutput, CommandError> {
         if let Some(parent) = path.parent() {
             let _ = tokio::fs::create_dir_all(parent).await;
         }
-        tokio::fs::write(path, content).await?;
+        tokio::fs::write(path, content)
+            .await
+            .context("Failed to write file")?;
 
-        Ok(CommandOutput::Ok)
+        Ok(CommandOutput::empty())
     }
 }
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
     /// Execute a `Command` on the local machine
     #[tracing::instrument(skip_self)]
-    async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
         match cmd {
             Command::Shell(cmd) => __self.exec_shell(cmd).await,
             Command::ReadFile(path) => __self.exec_read_file(path).await,
@@ -173,12 +180,7 @@ mod tests {
         let write_cmd = Command::Shell(format!("echo '{file_content}' > {file_path}"));
 
         // Execute the write command
-        let output = executor.exec_cmd(&write_cmd).await?;
-        let CommandOutput::Shell { stderr, .. } = output else {
-            panic!("Expected Output::Shell, got {output:?}")
-        };
-
-        assert!(stderr.is_empty());
+        executor.exec_cmd(&write_cmd).await?;
 
         // Write a shell command to read the file's content
         let read_cmd = Command::Shell(format!("cat {file_path}"));
@@ -220,14 +222,10 @@ mod tests {
         let read_cmd = Command::ReadFile(file_path.clone());
 
         // Execute the read command
-        let output = executor.exec_cmd(&read_cmd).await?;
+        let output = executor.exec_cmd(&read_cmd).await?.output;
 
         // Verify that the content read from the file matches the expected content
-        if let CommandOutput::Text(content) = output {
-            assert_eq!(content, file_content);
-        } else {
-            panic!("Expected Output::Text, got {output:?}");
-        }
+        assert_eq!(output, file_content);
 
         Ok(())
     }

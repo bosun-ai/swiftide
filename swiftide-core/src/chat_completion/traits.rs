@@ -64,23 +64,7 @@ dyn_clone::clone_trait_object!(ChatCompletion);
 
 impl From<CommandOutput> for ToolOutput {
     fn from(value: CommandOutput) -> Self {
-        match value {
-            CommandOutput::Text(value) => ToolOutput::Text(value),
-            CommandOutput::Ok => ToolOutput::Text("Tool successfully completed".to_string()),
-            CommandOutput::Shell {
-                stdout,
-                stderr,
-                success,
-                ..
-            } => {
-                let output = stdout + &stderr;
-                if success {
-                    ToolOutput::Text(output)
-                } else {
-                    ToolOutput::Fail(output)
-                }
-            }
-        }
+        ToolOutput::Text(value.output)
     }
 }
 

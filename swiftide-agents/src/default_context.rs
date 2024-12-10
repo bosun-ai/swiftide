@@ -13,7 +13,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
-use swiftide_core::{AgentContext, Command, CommandOutput, ToolExecutor};
+use swiftide_core::{AgentContext, Command, CommandError, CommandOutput, ToolExecutor};
 use tokio::sync::Mutex;
 
 use crate::tools::local_executor::LocalExecutor;
@@ -102,7 +102,7 @@ impl AgentContext for DefaultContext {
     }
 
     /// Execute a command in the tool executor
-    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         self.tool_executor.exec_cmd(cmd).await
     }
 }
