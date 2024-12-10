@@ -34,6 +34,6 @@ jobs:
           tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo tarpaulin --frozen --tests -j 1 --all-features --skip-clean --coveralls ${{ secrets.COVERALLS_REPO_TOKEN}}
+          cargo tarpaulin --frozen --tests -j 2 --all-features --skip-clean --coveralls ${{ secrets.COVERALLS_REPO_TOKEN}} --engine llvm --post-test-delay 10
       - name: Coveralls
         uses: coverallsapp/github-action@v2
