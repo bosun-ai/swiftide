@@ -31,6 +31,9 @@ pub struct DefaultContext {
 
     /// The executor used to run tools. I.e. local, remote, docker
     tool_executor: Arc<dyn ToolExecutor>,
+
+    /// Stop if last message is from the assistant
+    stop_on_assistant: bool,
 }
 
 impl Default for DefaultContext {
@@ -40,6 +43,7 @@ impl Default for DefaultContext {
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: Arc::new(LocalExecutor::default()),
+            stop_on_assistant: true,
         }
     }
 }
@@ -49,10 +53,15 @@ impl DefaultContext {
     pub fn from_executor<T: Into<Arc<dyn ToolExecutor>>>(executor: T) -> DefaultContext {
         DefaultContext {
             tool_executor: executor.into(),
-            completion_history: Arc::new(Mutex::new(Vec::new())),
-            completions_ptr: Arc::new(AtomicUsize::new(0)),
-            current_completions_ptr: Arc::new(AtomicUsize::new(0)),
+            ..Default::default()
         }
+    }
+
+    /// If set to true, the agent will stop if the last message is from the assistant (i.e. no new
+    /// tool calls, summaries or user messages)
+    pub fn with_stop_on_assistant(&mut self, stop: bool) -> &mut Self {
+        self.stop_on_assistant = stop;
+        self
     }
 }
 #[async_trait]
@@ -63,7 +72,10 @@ impl AgentContext for DefaultContext {
 
         let history = self.completion_history.lock().await;
 
-        if history[current..].is_empty() {
+        if history[current..].is_empty()
+            || (self.stop_on_assistant
+                && matches!(history.last(), Some(ChatMessage::Assistant(_, _))))
+        {
             None
         } else {
             let previous = self.completions_ptr.swap(history.len(), Ordering::SeqCst);
@@ -137,7 +149,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_iteration_tracking() {
-        let context = DefaultContext::default();
+        let mut context = DefaultContext::default();
 
         // Record initial chat messages
         context
@@ -159,10 +171,14 @@ mod tests {
         assert_eq!(messages.len(), 4);
         assert!(context.next_completion().await.is_none());
 
-        // // If the last message is from the assistant, we should not get any more completions
-        // context.add_messages(&[assistant!("I am fine")]).await;
-        //
-        // assert!(context.next_completion().await.is_none());
+        // If the last message is from the assistant, we should not get any more completions
+        context.add_messages(vec![assistant!("I am fine")]).await;
+
+        assert!(context.next_completion().await.is_none());
+
+        context.with_stop_on_assistant(false);
+
+        assert!(context.next_completion().await.is_some());
     }
 
     #[tokio::test]
@@ -230,7 +246,8 @@ mod tests {
             ChatMessage::User("Hello".into()),
             ChatMessage::Assistant(Some("Hello there".into()), None),
         ];
-        let context = DefaultContext::default();
+        let mut context = DefaultContext::default();
+        context.with_stop_on_assistant(false);
         // Record initial chat messages
         context.add_messages(messages).await;
 
