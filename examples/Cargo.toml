@@ -24,7 +24,9 @@ swiftide = { path = "../swiftide/", features = [
   "pgvector",
   "swiftide-agents",
 ] }
+swiftide-macros = { path = "../swiftide-macros", version = "*" }
 tracing-subscriber = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 spider = { workspace = true }
 qdrant-client = { workspace = true }
@@ -35,6 +37,7 @@ indoc = { workspace = true }
 sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
+
 
 [[example]]
 doc-scrape-examples = true
