@@ -1,0 +1,7 @@
+error: Missing field `description`
+ --> tests/tool/tool_derive_missing_description.rs:5:17
+  |
+5 | #[derive(Clone, Tool)]
+  |                 ^^^^
+  |
+  = note: this error originates in the derive macro `Tool` (in Nightly builds, run with -Z macro-backtrace for more info)

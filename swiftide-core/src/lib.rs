@@ -1,5 +1,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
+pub mod agent_traits;
+pub mod chat_completion;
 mod indexing_defaults;
 mod indexing_stream;
 pub mod indexing_traits;
@@ -17,6 +19,8 @@ mod metadata;
 mod query_evaluation;
 
 /// All traits are available from the root
+pub use crate::agent_traits::*;
+pub use crate::chat_completion::traits::*;
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
 

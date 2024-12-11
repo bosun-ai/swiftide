@@ -104,12 +104,24 @@ pub use swiftide_core::prompt;
 #[doc(inline)]
 pub use swiftide_core::type_aliases::*;
 
+#[cfg(feature = "swiftide-agents")]
+pub mod agents {
+    #[doc(inline)]
+    pub use swiftide_agents::*;
+}
 /// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {
+    #[doc(inline)]
+    pub use swiftide_core::agent_traits::*;
     #[doc(inline)]
     pub use swiftide_core::indexing_traits::*;
     #[doc(inline)]
     pub use swiftide_core::query_traits::*;
+}
+
+pub mod chat_completion {
+    #[doc(inline)]
+    pub use swiftide_core::chat_completion::*;
 }
 
 /// Integrations with various platforms and external services.
@@ -238,3 +250,12 @@ pub mod query {
 #[doc(hidden)]
 #[cfg(feature = "test-utils")]
 pub mod test_utils;
+
+/// Re-exports for macros
+#[doc(hidden)]
+pub mod reexports {
+    pub use ::anyhow;
+    pub use ::async_trait;
+    pub use ::serde;
+    pub use ::serde_json;
+}

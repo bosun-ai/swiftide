@@ -194,8 +194,8 @@ impl Pipeline {
                 task::spawn(async move {
                     tracing::debug!(node = ?node, transformer = transformer.name(), "Transforming node");
                     transformer.transform_node(node).await
-                })
-                .instrument(span)
+                }.instrument(span)
+                )
                 .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(concurrency)
@@ -234,15 +234,17 @@ impl Pipeline {
                 let transformer = Arc::clone(&transformer);
                 let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
 
-                tokio::spawn(async move {
-                    tracing::debug!(
-                        batch_transformer = transformer.name(),
-                        num_nodes = nodes.len(),
-                        "Batch transforming nodes"
-                    );
-                    transformer.batch_transform(nodes).await
-                })
-                .instrument(span)
+                tokio::spawn(
+                    async move {
+                        tracing::debug!(
+                            batch_transformer = transformer.name(),
+                            num_nodes = nodes.len(),
+                            "Batch transforming nodes"
+                        );
+                        transformer.batch_transform(nodes).await
+                    }
+                    .instrument(span),
+                )
                 .map_err(anyhow::Error::from)
             })
             .err_into::<anyhow::Error>()
@@ -272,11 +274,13 @@ impl Pipeline {
                 let chunker = Arc::clone(&chunker);
                 let span = tracing::trace_span!("then_chunk", chunker = ?chunker, node = ?node );
 
-                tokio::spawn(async move {
-                    tracing::debug!(chunker = chunker.name(), "Chunking node");
-                    chunker.transform_node(node).await
-                })
-                .instrument(span)
+                tokio::spawn(
+                    async move {
+                        tracing::debug!(chunker = chunker.name(), "Chunking node");
+                        chunker.transform_node(node).await
+                    }
+                    .instrument(span),
+                )
                 .map_err(anyhow::Error::from)
             })
             .err_into::<anyhow::Error>()
@@ -318,8 +322,9 @@ impl Pipeline {
                 tokio::spawn(async move {
                         tracing::debug!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
                         storage.batch_store(nodes).await
-                    })
+                    }
                     .instrument(span)
+                    )
                     .map_err(anyhow::Error::from)
 
                 })
@@ -335,13 +340,15 @@ impl Pipeline {
                     let span =
                         tracing::trace_span!("then_store_with", storage = ?storage, node = ?node );
 
-                    tokio::spawn(async move {
-                        tracing::debug!(storage = storage.name(), "Storing node");
+                    tokio::spawn(
+                        async move {
+                            tracing::debug!(storage = storage.name(), "Storing node");
 
-                        storage.store(node).await
-                    })
+                            storage.store(node).await
+                        }
+                        .instrument(span),
+                    )
                     .err_into::<anyhow::Error>()
-                    .instrument(span)
                 })
                 .try_buffer_unordered(self.concurrency)
                 .map(|x| x.and_then(|x| x))
@@ -378,31 +385,33 @@ impl Pipeline {
 
         let stream = self.stream;
         let span = tracing::trace_span!("split_by");
-        tokio::spawn(async move {
-            stream
-                .for_each(move |item| {
-                    let predicate = Arc::clone(&predicate);
-                    let left_tx = left_tx.clone();
-                    let right_tx = right_tx.clone();
-                    async move {
-                        if predicate(&item) {
-                            tracing::debug!(?item, "Sending to left stream");
-                            left_tx
-                                .send(item)
-                                .await
-                                .expect("Failed to send to left stream");
-                        } else {
-                            tracing::debug!(?item, "Sending to right stream");
-                            right_tx
-                                .send(item)
-                                .await
-                                .expect("Failed to send to right stream");
+        tokio::spawn(
+            async move {
+                stream
+                    .for_each(move |item| {
+                        let predicate = Arc::clone(&predicate);
+                        let left_tx = left_tx.clone();
+                        let right_tx = right_tx.clone();
+                        async move {
+                            if predicate(&item) {
+                                tracing::debug!(?item, "Sending to left stream");
+                                left_tx
+                                    .send(item)
+                                    .await
+                                    .expect("Failed to send to left stream");
+                            } else {
+                                tracing::debug!(?item, "Sending to right stream");
+                                right_tx
+                                    .send(item)
+                                    .await
+                                    .expect("Failed to send to right stream");
+                            }
                         }
-                    }
-                })
-                .instrument(span)
-                .await;
-        });
+                    })
+                    .await;
+            }
+            .instrument(span),
+        );
 
         let left_pipeline = Self {
             stream: left_rx.into(),

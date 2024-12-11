@@ -1,0 +1,42 @@
+[package]
+name = "swiftide-agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core", version = "0.14" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.14" }
+anyhow.workspace = true
+async-trait.workspace = true
+dyn-clone.workspace = true
+derive_builder.workspace = true
+tokio.workspace = true
+indoc.workspace = true
+tracing.workspace = true
+pretty_assertions.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", version = "0.14", features = [
+  "test-utils",
+] }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.14", features = [
+  "openai",
+] }
+mockall.workspace = true
+test-log.workspace = true
+temp-dir.workspace = true
+insta.workspace = true
+
+[lints]
+workspace = true

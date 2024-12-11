@@ -27,9 +27,12 @@ lazy_static = { workspace = true }
 derive_builder = { workspace = true }
 dyn-clone = { workspace = true }
 pin-project = { workspace = true }
+thiserror = { workspace = true }
 
 tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }
+
+pretty_assertions = { workspace = true, optional = true }
 
 # Integrations
 qdrant-client = { workspace = true, optional = true }
@@ -38,7 +41,7 @@ qdrant-client = { workspace = true, optional = true }
 test-case = { workspace = true }
 
 [features]
-test-utils = ["dep:mockall"]
+test-utils = ["dep:mockall", "dep:pretty_assertions"]
 qdrant = ["dep:qdrant-client"]
 
 [lints]

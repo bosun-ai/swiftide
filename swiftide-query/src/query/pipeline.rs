@@ -110,7 +110,7 @@ where
         let new_stream = stream
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
-                let span = tracing::trace_span!("then_transform_query", query = ?query);
+                let span = tracing::info_span!("then_transform_query", query = ?query);
 
                 tokio::spawn(
                     async move {
@@ -162,22 +162,24 @@ impl<'stream: 'static, STRATEGY: SearchStrategy + 'stream>
             .map_ok(move |query| {
                 let search_strategy = strategy_for_stream.clone();
                 let retriever = Arc::clone(&retriever);
-                let span = tracing::trace_span!("then_retrieve", query = ?query);
+                let span = tracing::info_span!("then_retrieve", query = ?query);
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
-                tokio::spawn(async move {
-                    tracing::debug!(retriever = retriever.name(), "Retrieving documents");
+                tokio::spawn(
+                    async move {
+                        tracing::debug!(retriever = retriever.name(), "Retrieving documents");
 
-                    let result = retriever.retrieve(&search_strategy, query).await?;
+                        let result = retriever.retrieve(&search_strategy, query).await?;
 
-                    if let Some(evaluator) = evaluator_for_stream.as_ref() {
-                        evaluator.evaluate(result.clone().into()).await?;
-                        Ok(result)
-                    } else {
-                        Ok(result)
+                        if let Some(evaluator) = evaluator_for_stream.as_ref() {
+                            evaluator.evaluate(result.clone().into()).await?;
+                            Ok(result)
+                        } else {
+                            Ok(result)
+                        }
                     }
-                })
-                .instrument(span)
+                    .instrument(span),
+                )
                 .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(default_concurrency)
@@ -212,15 +214,17 @@ impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, sta
         let new_stream = stream
             .map_ok(move |query| {
                 let transformer = Arc::clone(&transformer);
-                let span = tracing::trace_span!("then_transform_response", query = ?query);
-                tokio::spawn(async move {
-                    tracing::debug!(
-                        response_transformer = transformer.name(),
-                        "Transforming response"
-                    );
-                    transformer.transform_response(query).await
-                })
-                .instrument(span)
+                let span = tracing::info_span!("then_transform_response", query = ?query);
+                tokio::spawn(
+                    async move {
+                        tracing::debug!(
+                            response_transformer = transformer.name(),
+                            "Transforming response"
+                        );
+                        transformer.transform_response(query).await
+                    }
+                    .instrument(span),
+                )
                 .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(default_concurrency)
@@ -256,21 +260,23 @@ impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, sta
         let new_stream = stream
             .map_ok(move |query: Query<states::Retrieved>| {
                 let answerer = Arc::clone(&answerer);
-                let span = tracing::trace_span!("then_answer", query = ?query);
+                let span = tracing::info_span!("then_answer", query = ?query);
                 let evaluator_for_stream = evaluator_for_stream.clone();
 
-                tokio::spawn(async move {
-                    tracing::debug!(answerer = answerer.name(), "Answering query");
-                    let result = answerer.answer(query).await?;
+                tokio::spawn(
+                    async move {
+                        tracing::debug!(answerer = answerer.name(), "Answering query");
+                        let result = answerer.answer(query).await?;
 
-                    if let Some(evaluator) = evaluator_for_stream.as_ref() {
-                        evaluator.evaluate(result.clone().into()).await?;
-                        Ok(result)
-                    } else {
-                        Ok(result)
+                        if let Some(evaluator) = evaluator_for_stream.as_ref() {
+                            evaluator.evaluate(result.clone().into()).await?;
+                            Ok(result)
+                        } else {
+                            Ok(result)
+                        }
                     }
-                })
-                .instrument(span)
+                    .instrument(span),
+                )
                 .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(default_concurrency)
@@ -292,6 +298,7 @@ impl<STRATEGY: SearchStrategy> Pipeline<'_, STRATEGY, states::Answered> {
     /// # Errors
     ///
     /// Errors if any of the transformations failed or no response was found
+    #[tracing::instrument(skip_all, name = "query_pipeline.query")]
     pub async fn query(
         mut self,
         query: impl Into<Query<states::Pending>>,
@@ -323,6 +330,7 @@ impl<STRATEGY: SearchStrategy> Pipeline<'_, STRATEGY, states::Answered> {
     /// # Errors
     ///
     /// Errors if any of the transformations failed or no response was found
+    #[tracing::instrument(skip_all, name = "query_pipeline.query_mut")]
     pub async fn query_mut(
         &mut self,
         query: impl Into<Query<states::Pending>>,
@@ -358,6 +366,7 @@ impl<STRATEGY: SearchStrategy> Pipeline<'_, STRATEGY, states::Answered> {
     ///
     /// Errors if any of the transformations failed, no response was found, or the stream was
     /// closed.
+    #[tracing::instrument(skip_all, name = "query_pipeline.query_all")]
     pub async fn query_all(
         self,
         queries: Vec<impl Into<Query<states::Pending>> + Clone>,

@@ -1,7 +1,6 @@
 [workspace]
 members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
 default-members = ["swiftide", "swiftide-*"]
-
 resolver = "2"
 
 [workspace.package]
@@ -21,6 +20,7 @@ similar.opt-level = 3
 
 [workspace.dependencies]
 anyhow = { version = "1.0" }
+thiserror = "2.0.3"
 async-trait = { version = "0.1" }
 derive_builder = { version = "0.20" }
 futures-util = { version = "0.3" }
@@ -40,6 +40,7 @@ indoc = { version = "2.0" }
 regex = { version = "1.11.1" }
 uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
+convert_case = "0.6.0"
 
 # Integrations
 spider = { version = "2.13" }
@@ -92,6 +93,7 @@ mockall = "0.13.1"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
+pretty_assertions = "1.4"
 insta = { version = "1.41.1", features = ["yaml"] }
 
 

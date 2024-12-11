@@ -50,7 +50,7 @@
   <h3 align="center">Swiftide</h3>
 
   <p align="center">
-Fast, streaming indexing and query library for AI applications, written in Rust
+Fast, streaming, indexing, query, and agent library for building LLM applications in Rust.
     <br />
     <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
     <br />
@@ -75,6 +75,8 @@ Fast, streaming indexing and query library for AI applications, written in Rust
 Swiftide is a Rust native library for building LLM applications. Large language models are amazing, but need context
 to solve real problems. Swiftide allows you to ingest, transform and index large amounts of data fast, and then query that data so it it can be injected into prompts.
 This process is called Retrieval Augmented Generation.
+
+With Swiftide Agents, you have the building blocks to model and build a large variety of agents. The goal is to provide flexible building blocks, so that we can focus on experimenting and finding a model that works best, without having to constantly re-invent the underlying plumbing.
 
 With Swiftide, you can build your AI application from idea to production in a few lines of code.
 
@@ -155,13 +157,24 @@ query::Pipeline::default()
     .await?;
 ```
 
-_You can find more examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
+Running an agent that can search code:
+
+```rust
+    agents::Agent::builder()
+        .llm(&openai)
+        .tools(vec![search_code()])
+        .build()?
+        .query("In what file can I find an example of a swiftide agent?")
+        .await?;
+```
+
+_You can find more detailed examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Vision
 
-Our goal is to create a fast, extendable platform for Retrieval Augmented Generation to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create a fast, extendable platform for building LLLM applications in Rust, to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -169,6 +182,7 @@ Our goal is to create a fast, extendable platform for Retrieval Augmented Genera
 
 - Fast, modular streaming indexing pipeline with async, parallel processing
 - Experimental query pipeline
+- Experimental agent framework
 - A variety of loaders, transformers, semantic chunkers, embedders, and more
 - Bring your own transformers by extending straightforward traits or use a closure
 - Splitting and merging pipelines
