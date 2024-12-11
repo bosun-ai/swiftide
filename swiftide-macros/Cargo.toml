@@ -28,6 +28,7 @@ serde_json = { workspace = true, optional = true }
 
 [dev-dependencies]
 pretty_assertions.workspace = true
+rustversion = "1.0.18"
 trybuild = "1.0"
 prettyplease = "0.2.25"
 insta.workspace = true

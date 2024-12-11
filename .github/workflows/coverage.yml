@@ -10,13 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-coverage
   cancel-in-progress: true
 
-env:
-  TRYBUILD: overwrite
-
 jobs:
   test:
     name: coverage
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -26,15 +23,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
         with:
-          components: llvm-tools-preview rust-src
+          components: llvm-tools-preview
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install tarpaulin
+      - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-tarpaulin
+          tool: cargo-llvm-cov
       - name: Generate code coverage
         run: |
-          cargo +nightly tarpaulin --frozen --tests -j 2 --all-features --skip-clean --coveralls ${{ secrets.COVERALLS_REPO_TOKEN}} --engine llvm --post-test-delay 10
+          cargo +nightly llvm-cov --tests -j 2 --all-features --lcov --output-path lcov.info
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2

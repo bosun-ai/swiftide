@@ -1,3 +1,4 @@
+#[rustversion::attr(not(nightly), ignore)]
 #[test]
 fn test_tool() {
     let t = trybuild::TestCases::new();
@@ -8,6 +9,7 @@ fn test_tool() {
     t.compile_fail("tests/tool/tool_missing_parameter_fail.rs");
 }
 
+#[rustversion::attr(not(nightly), ignore)]
 #[test]
 fn test_tool_derive() {
     let t = trybuild::TestCases::new();
