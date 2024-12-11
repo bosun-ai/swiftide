@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4) - 2024-12-11
+
+### New features
+
+- [7211559](https://github.com/bosun-ai/swiftide/commit/7211559936d8b5e16a3b42f9c90b42a39426be8a) *(agents)*  **EXPERIMENTAL** Agents in Swiftide (#463)
+
+````text
+Agents are coming to Swiftide! We are still ironing out all the kinks,
+  while we make it ready for a proper release. You can already experiment
+  with agents, see the rustdocs for documentation, and an example in
+  `/examples`, and feel free to contact us via github or discord. Better
+  documentation, examples, and tutorials are coming soon.
+
+  Run completions in a loop, define tools with two handy macros, customize
+  the agent by hooking in on lifecycle events, and much more.
+
+  Besides documentation, expect a big release for what we build this for
+  soon! 🎉
+````
+
+- [3751f49](https://github.com/bosun-ai/swiftide/commit/3751f49201c71398144a8913a4443f452534def2) *(query)*  Add support for single embedding retrieval with PGVector (#406)
+
+### Miscellaneous
+
+- [5ce4d21](https://github.com/bosun-ai/swiftide/commit/5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5)  Clippy and deps fixes for 1.83 (#467)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.3...0.14.4
+
+
+
 ## [0.14.3](https://github.com/bosun-ai/swiftide/compare/v0.14.2...v0.14.3) - 2024-11-20
 
 ### New features
