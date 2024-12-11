@@ -16,7 +16,7 @@ env:
 jobs:
   test:
     name: coverage
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -37,6 +37,4 @@ jobs:
           tool: cargo-tarpaulin
       - name: Generate code coverage
         run: |
-          cargo +nightly tarpaulin --frozen --tests -j 2 --all-features --skip-clean --coveralls ${{ secrets.COVERALLS_REPO_TOKEN}} --engine llvm --post-test-delay 10 --workspace -e swiftide-macros
-      - name: Coveralls
-        uses: coverallsapp/github-action@v2
+          cargo +nightly tarpaulin --frozen --tests -j 2 --all-features --skip-clean --coveralls ${{ secrets.COVERALLS_REPO_TOKEN}} --engine llvm --post-test-delay 10
