@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733396647127,
+  "lastUpdate": 1733954232665,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10001,6 +10001,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251348,
             "range": "± 5663",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7211559936d8b5e16a3b42f9c90b42a39426be8a",
+          "message": "feat(agents): **EXPERIMENTAL** Agents in Swiftide (#463)\n\nAgents are coming to Swiftide! We are still ironing out all the kinks,\r\nwhile we make it ready for a proper release. You can already experiment\r\nwith agents, see the rustdocs for documentation, and an example in\r\n`/examples`, and feel free to contact us via github or discord. Better\r\ndocumentation, examples, and tutorials are coming soon.\r\n\r\nRun completions in a loop, define tools with two handy macros, customize\r\nthe agent by hooking in on lifecycle events, and much more.\r\n\r\nBesides documentation, expect a big release for what we build this for\r\nsoon! 🎉",
+          "timestamp": "2024-12-11T22:48:46+01:00",
+          "tree_id": "b95859da25f90a17ff9f9c63056687ff77eadb0b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7211559936d8b5e16a3b42f9c90b42a39426be8a"
+        },
+        "date": 1733954231530,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1258243,
+            "range": "± 902459",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241890,
+            "range": "± 4079",
             "unit": "ns/iter"
           }
         ]
