@@ -25,8 +25,8 @@ pub enum CommandError {
     ExecutorError(#[from] anyhow::Error),
 
     /// The command failed, i.e. failing tests with stderr. This error might be handled
-    #[error("command failed: {0}")]
-    FailedWithOutput(CommandOutput),
+    #[error("command failed with NonZeroExit: {0}")]
+    NonZeroExit(CommandOutput),
 }
 
 /// Commands that can be executed by the executor

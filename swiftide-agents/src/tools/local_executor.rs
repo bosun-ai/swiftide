@@ -49,7 +49,7 @@ impl LocalExecutor {
         if output.status.success() {
             Ok(merged_output.into())
         } else {
-            Err(CommandError::FailedWithOutput(merged_output.into()))
+            Err(CommandError::NonZeroExit(merged_output.into()))
         }
     }
 
