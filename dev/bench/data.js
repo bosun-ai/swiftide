@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733962093237,
+  "lastUpdate": 1733996873964,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10163,6 +10163,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242210,
             "range": "± 2568",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "c92e662e342f75d4b458f22e087836e200034980",
+          "message": "fix(macros): Use versioned workspace dev dependencies",
+          "timestamp": "2024-12-12T10:39:06+01:00",
+          "tree_id": "4d0889ff1b61be9319b06efd7b0ac7cfbe53938b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c92e662e342f75d4b458f22e087836e200034980"
+        },
+        "date": 1733996872798,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1302258,
+            "range": "± 936809",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244625,
+            "range": "± 5853",
             "unit": "ns/iter"
           }
         ]
