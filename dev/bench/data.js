@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733960282324,
+  "lastUpdate": 1733962093237,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10109,6 +10109,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242140,
             "range": "± 11316",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fa13c6292d0a373046bf7c2b8ffb7d559c0bf2df",
+          "message": "chore: release v0.14.4 (#460)\n\n## 🤖 New release\r\n* `swiftide`: 0.14.3 -> 0.14.4 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.14.3 -> 0.14.4\r\n* `swiftide-core`: 0.14.3 -> 0.14.4 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.14.3 -> 0.14.4\r\n* `swiftide-integrations`: 0.14.3 -> 0.14.4 (✓ API compatible changes)\r\n* `swiftide-indexing`: 0.14.3 -> 0.14.4 (✓ API compatible changes)\r\n* `swiftide-query`: 0.14.3 -> 0.14.4 (✓ API compatible changes)\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4)\r\n- 2024-12-11\r\n\r\n### New features\r\n\r\n-\r\n[7211559](https://github.com/bosun-ai/swiftide/commit/7211559936d8b5e16a3b42f9c90b42a39426be8a)\r\n*(agents)* **EXPERIMENTAL** Agents in Swiftide (#463)\r\n\r\n````text\r\nAgents are coming to Swiftide! We are still ironing out all the kinks,\r\n  while we make it ready for a proper release. You can already experiment\r\n  with agents, see the rustdocs for documentation, and an example in\r\n  `/examples`, and feel free to contact us via github or discord. Better\r\n  documentation, examples, and tutorials are coming soon.\r\n\r\n  Run completions in a loop, define tools with two handy macros, customize\r\n  the agent by hooking in on lifecycle events, and much more.\r\n\r\n  Besides documentation, expect a big release for what we build this for\r\n  soon! 🎉\r\n````\r\n\r\n-\r\n[3751f49](https://github.com/bosun-ai/swiftide/commit/3751f49201c71398144a8913a4443f452534def2)\r\n*(query)* Add support for single embedding retrieval with PGVector\r\n(#406)\r\n\r\n### Miscellaneous\r\n\r\n-\r\n[5ce4d21](https://github.com/bosun-ai/swiftide/commit/5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5)\r\nClippy and deps fixes for 1.83 (#467)\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.14.3...0.14.4\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2024-12-11T23:59:34Z",
+          "tree_id": "ba91d3c76f5d2d8727de776060d0ca14f30b33c1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fa13c6292d0a373046bf7c2b8ffb7d559c0bf2df"
+        },
+        "date": 1733962092093,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1268870,
+            "range": "± 923330",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242210,
+            "range": "± 2568",
             "unit": "ns/iter"
           }
         ]
