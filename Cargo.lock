@@ -7637,9 +7637,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
+checksum = "3cb6eb87a131f756572d7fb904f6e7b68633f09cca868c5df1c4b8d1a694bbba"
 dependencies = [
  "serde",
 ]
@@ -7989,9 +7989,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.21.13"
+version = "2.21.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72fb2e9d510893be9e5e034637aad0e079361da74480dc9252da7a4eaf37e328"
+checksum = "73db0f914009d8a1a3be4a033a6944218d7764beca5666e1b9925bc198f569e0"
 dependencies = [
  "ahash",
  "auto_encoder",
@@ -10661,9 +10661,9 @@ dependencies = [
 
 [[package]]
 name = "zune-jpeg"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16099418600b4d8f028622f73ff6e3deaabdff330fb9a2a131dea781ee8b0768"
+checksum = "99a5bab8d7dedf81405c4bb1f2b83ea057643d9cb28778cea9eecddeedd2e028"
 dependencies = [
  "zune-core",
 ]
