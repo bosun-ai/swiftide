@@ -1,14 +1,10 @@
-use crate::pgvector::VectorConfig;
-use crate::pgvector::{PgVector, PgVectorBuilder};
+use crate::pgvector::{PgVecCustomStrategy, PgVector, PgVectorBuilder};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
-    querying::{
-        search_strategies::{DynamicVectorSearch, SimilaritySingleEmbedding},
-        states, Query,
-    },
+    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
     Retrieve,
 };
 
@@ -113,46 +109,22 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
 }
 
 #[async_trait]
-impl Retrieve<DynamicVectorSearch> for PgVector {
+impl Retrieve<PgVecCustomStrategy> for PgVector {
     async fn retrieve(
         &self,
-        search_strategy: &DynamicVectorSearch,
+        search_strategy: &PgVecCustomStrategy,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
+        // Get the database pool
         let pool = self.get_pool().await?;
 
-        // Extract embedding from query state
-        let embedding = query
-            .embedding
-            .as_ref()
-            .ok_or_else(|| anyhow!("Missing embedding in query state"))?
-            .clone();
+        // Build the custom query using both strategy and query state
+        let mut query_builder = search_strategy.build_query(&query)?;
 
-        let default_fields: Vec<_> = PgVectorBuilder::default_fields();
-
-        // let default_columns: Vec<&str> = default_fields.iter().map(|f| f.field_name()).collect();
-
-        let default_columns: Vec<&str> = default_fields
-            .iter()
-            .map(super::pgv_table_types::FieldConfig::field_name)
-            .collect();
-
-        let vector_column_name = VectorConfig::from(search_strategy.vector_field().clone()).field;
-
-        // Generate the complete SQL query using user's query generator
-        let sql =
-            search_strategy.generate_query(&self.table_name, &default_columns, &vector_column_name);
-
-        tracing::debug!("Executing custom search query: {}", sql);
-
-        let top_k = i32::try_from(search_strategy.top_k())
-            .map_err(|_| anyhow!("Failed to convert top_k to i32"))?;
-
-        // Execute the query and collect results
-        let results: Vec<VectorSearchResult> = sqlx::query_as(&sql)
-            .bind(Vector::from(embedding))
-            .bind(top_k)
-            .fetch_all(pool)
+        // Execute the query using the builder's built-in methods
+        let results = query_builder
+            .build_query_as::<VectorSearchResult>() // Convert to a typed query
+            .fetch_all(pool) // Execute and get all results
             .await
             .map_err(|e| anyhow!("Failed to execute search query: {}", e))?;
 

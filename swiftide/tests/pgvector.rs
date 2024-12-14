@@ -4,6 +4,7 @@
 
 use temp_dir::TempDir;
 
+use anyhow::{anyhow, Result};
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide::{
     indexing::{
@@ -13,7 +14,10 @@ use swiftide::{
         },
         EmbeddedField, Pipeline,
     },
-    integrations::{self, pgvector::PgVector},
+    integrations::{
+        self,
+        pgvector::{FieldConfig, PgVecCustomStrategy, PgVector, PgVectorBuilder, VectorConfig},
+    },
     query::{
         self, answers, query_transformers, response_transformers, states, Query,
         TransformationEvent,
@@ -231,6 +235,32 @@ async fn test_pgvector_retrieve() {
     );
 }
 
+/// Tests the dynamic vector similarity search functionality using PostgreSQL.
+///
+/// This integration test verifies the complete workflow of vector similarity search:
+/// 1. Sets up a temporary test environment with a sample Rust code file
+/// 2. Configures PostgreSQL with pgvector extension for vector operations
+/// 3. Creates and populates test data using a processing pipeline:
+///    - Loads source code files
+///    - Chunks code into processable segments
+///    - Generates metadata using OpenAI
+///    - Embeds text using FastEmbed
+///    - Stores processed data in PostgreSQL
+/// 4. Implements a custom search strategy that:
+///    - Filters results based on metadata
+///    - Orders results by vector similarity
+///    - Limits the number of returned results
+/// 5. Executes a query pipeline that:
+///    - Generates and embeds the search query
+///    - Retrieves similar documents
+///    - Transforms results into a meaningful summary
+///    - Produces a final answer
+///
+/// # Implementation Notes
+/// The test uses mock servers to simulate API responses, allowing for
+/// reproducible testing without external dependencies. It demonstrates
+/// the integration between different components: document processing,
+/// vector storage, similarity search, and result transformation.
 #[test_log::test(tokio::test)]
 async fn test_pgvector_retrieve_dynamic_search() {
     // Setup temporary directory and file for testing
@@ -295,27 +325,69 @@ async fn test_pgvector_retrieve_dynamic_search() {
         .await
         .unwrap();
 
-    // Create a custom query generator with metadata filtering
-    let custom_query = |table: &str, columns: &[&str], vector_field: &str| {
-        // Build a query that combines vector similarity search with metadata filtering
-        let base_query = format!("SELECT {} FROM {}", columns.join(", "), table);
-
-        // Add metadata filter using normalized field names
-        let metadata_filter = format!(
-            " WHERE meta_{} @> '{{\"{}\": \"{}\"}}'::jsonb",
-            PgVector::normalize_field_name("filter"),
-            "filter",
-            "true"
-        );
-
-        // Add vector similarity ordering
-        format!("{base_query}{metadata_filter} ORDER BY {vector_field} <=> $1::vector LIMIT $2")
-    };
+    // First, we'll clone pgv_storage before using it in the closure
+    let pgv_storage_for_closure = pgv_storage.clone();
 
     // Configure search strategy
-    let custom_strategy = query::search_strategies::DynamicVectorSearch::new(custom_query)
+    // Create a custom query generator with metadata filtering
+    let custom_strategy = PgVecCustomStrategy(
+        query::search_strategies::CustomQuery::from_query(
+            move |strategy, query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
+                let mut builder = sqlx::QueryBuilder::new("");
+                let table: &str = pgv_storage_for_closure.get_table_name();
+
+                // Get column definitions
+                let default_fields: Vec<_> = PgVectorBuilder::default_fields();
+                let default_columns: Vec<&str> =
+                    default_fields.iter().map(FieldConfig::field_name).collect();
+
+                // Start building the query properly
+                builder.push("SELECT ");
+                builder.push(default_columns.join(", "));
+                builder.push(" FROM ");
+                builder.push(table);
+
+                // Add metadata filter
+                builder.push(" WHERE meta_");
+                builder.push(PgVector::normalize_field_name("filter"));
+                builder.push(" @> ");
+                builder.push("'{\"filter\": \"true\"}'::jsonb");
+
+                // Add vector similarity ordering
+                let vector_field = VectorConfig::from(strategy.vector_field().clone()).field;
+                builder.push(" ORDER BY ");
+                builder.push(vector_field);
+                builder.push(" <=> ");
+                // Let QueryBuilder handle the parameter placeholders
+                builder.push_bind(
+                    query_node
+                        .embedding
+                        .as_ref()
+                        .ok_or_else(|| anyhow!("Missing embedding in query state"))?
+                        .clone(),
+                );
+                builder.push("::vector");
+
+                // Add LIMIT clause
+                builder.push(" LIMIT ");
+                let top_k_i64 = i64::try_from(strategy.top_k()).map_err(|_| {
+                    anyhow!(
+                        "top_k value {} is too large for Postgres bigint",
+                        strategy.top_k()
+                    )
+                })?;
+
+                if top_k_i64 <= 0 {
+                    return Err(anyhow!("top_k must be positive, got {}", top_k_i64));
+                }
+                builder.push_bind(top_k_i64);
+
+                Ok(builder)
+            },
+        )
         .with_top_k(5)
-        .with_vector_field(EmbeddedField::Combined);
+        .with_vector_field(EmbeddedField::Combined),
+    );
 
     let query_pipeline = query::Pipeline::from_search_strategy(custom_strategy)
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(
