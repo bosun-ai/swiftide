@@ -42,7 +42,6 @@ struct VectorSearchResult {
 /// - Performs a similarity-based vector search on the database and validates the retrieved results.
 ///
 /// Ensures correctness of end-to-end data flow, including table management, vector storage, and query execution.
-#[ignore]
 #[test_log::test(tokio::test)]
 async fn test_pgvector_indexing() {
     // Setup temporary directory and file for testing
@@ -134,7 +133,6 @@ async fn test_pgvector_indexing() {
 /// a mock OpenAI client, configures `PgVector`, and executes a query
 /// to ensure the pipeline retrieves the correct data and generates
 /// an expected response.
-#[ignore]
 #[test_log::test(tokio::test)]
 async fn test_pgvector_retrieve() {
     // Setup temporary directory and file for testing
@@ -256,11 +254,11 @@ async fn test_pgvector_retrieve() {
 ///    - Transforms results into a meaningful summary
 ///    - Produces a final answer
 ///
-/// # Implementation Notes
-/// The test uses mock servers to simulate API responses, allowing for
-/// reproducible testing without external dependencies. It demonstrates
-/// the integration between different components: document processing,
-/// vector storage, similarity search, and result transformation.
+/// # Configuration Pattern
+/// The test demonstrates the recommended configuration approach:
+/// - Define search parameters as constants in the implementation scope
+/// - Pass configuration through the query generator closure
+/// - Keep the strategy struct minimal and focused on query generation    
 #[test_log::test(tokio::test)]
 async fn test_pgvector_retrieve_dynamic_search() {
     // Setup temporary directory and file for testing
@@ -331,7 +329,8 @@ async fn test_pgvector_retrieve_dynamic_search() {
     // Configure search strategy
     // Create a custom query generator with metadata filtering
     let custom_strategy = query::search_strategies::CustomStrategy::from_query(
-        move |strategy, query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
+        move |query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
+            const CUSTOM_STRATEGY_MAX_RESULTS: i64 = 5;
             let mut builder = sqlx::QueryBuilder::new("");
             let table: &str = pgv_storage_for_closure.get_table_name();
 
@@ -353,7 +352,7 @@ async fn test_pgvector_retrieve_dynamic_search() {
             builder.push("'{\"filter\": \"true\"}'::jsonb");
 
             // Add vector similarity ordering
-            let vector_field = VectorConfig::from(strategy.vector_field().clone()).field;
+            let vector_field = VectorConfig::from(EmbeddedField::Combined).field;
             builder.push(" ORDER BY ");
             builder.push(vector_field);
             builder.push(" <=> ");
@@ -369,23 +368,12 @@ async fn test_pgvector_retrieve_dynamic_search() {
 
             // Add LIMIT clause
             builder.push(" LIMIT ");
-            let top_k_i64 = i64::try_from(strategy.top_k()).map_err(|_| {
-                anyhow!(
-                    "top_k value {} is too large for Postgres bigint",
-                    strategy.top_k()
-                )
-            })?;
 
-            if top_k_i64 <= 0 {
-                return Err(anyhow!("top_k must be positive, got {}", top_k_i64));
-            }
-            builder.push_bind(top_k_i64);
+            builder.push_bind(CUSTOM_STRATEGY_MAX_RESULTS);
 
             Ok(builder)
         },
-    )
-    .with_top_k(5)
-    .with_vector_field(EmbeddedField::Combined);
+    );
 
     let query_pipeline = query::Pipeline::from_search_strategy(custom_strategy)
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(
