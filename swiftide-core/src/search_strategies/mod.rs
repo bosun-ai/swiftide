@@ -3,14 +3,14 @@
 //!
 //! The strategy is also yielded to the Retriever and can contain addition configuration
 
-mod custom_vector_search;
+mod custom_strategy;
 mod hybrid_search;
 mod similarity_single_embedding;
 
 pub(crate) const DEFAULT_TOP_K: u64 = 10;
 pub(crate) const DEFAULT_TOP_N: u64 = 10;
 
-pub use custom_vector_search::*;
+pub use custom_strategy::*;
 pub use hybrid_search::*;
 pub use similarity_single_embedding::*;
 

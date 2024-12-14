@@ -25,7 +25,6 @@
 #[cfg(test)]
 mod fixtures;
 
-mod impl_custom_stratergy;
 mod persist;
 mod pgv_table_types;
 mod retrieve;
@@ -37,7 +36,6 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use tokio::time::Duration;
 
-pub use impl_custom_stratergy::PgVecCustomStrategy;
 pub use pgv_table_types::{FieldConfig, MetadataConfig, VectorConfig};
 
 /// Default maximum connections for the database connection pool.

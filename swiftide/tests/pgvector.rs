@@ -16,7 +16,7 @@ use swiftide::{
     },
     integrations::{
         self,
-        pgvector::{FieldConfig, PgVecCustomStrategy, PgVector, PgVectorBuilder, VectorConfig},
+        pgvector::{FieldConfig, PgVector, PgVectorBuilder, VectorConfig},
     },
     query::{
         self, answers, query_transformers, response_transformers, states, Query,
@@ -330,64 +330,62 @@ async fn test_pgvector_retrieve_dynamic_search() {
 
     // Configure search strategy
     // Create a custom query generator with metadata filtering
-    let custom_strategy = PgVecCustomStrategy(
-        query::search_strategies::CustomQuery::from_query(
-            move |strategy, query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
-                let mut builder = sqlx::QueryBuilder::new("");
-                let table: &str = pgv_storage_for_closure.get_table_name();
+    let custom_strategy = query::search_strategies::CustomStrategy::from_query(
+        move |strategy, query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
+            let mut builder = sqlx::QueryBuilder::new("");
+            let table: &str = pgv_storage_for_closure.get_table_name();
 
-                // Get column definitions
-                let default_fields: Vec<_> = PgVectorBuilder::default_fields();
-                let default_columns: Vec<&str> =
-                    default_fields.iter().map(FieldConfig::field_name).collect();
+            // Get column definitions
+            let default_fields: Vec<_> = PgVectorBuilder::default_fields();
+            let default_columns: Vec<&str> =
+                default_fields.iter().map(FieldConfig::field_name).collect();
 
-                // Start building the query properly
-                builder.push("SELECT ");
-                builder.push(default_columns.join(", "));
-                builder.push(" FROM ");
-                builder.push(table);
+            // Start building the query properly
+            builder.push("SELECT ");
+            builder.push(default_columns.join(", "));
+            builder.push(" FROM ");
+            builder.push(table);
 
-                // Add metadata filter
-                builder.push(" WHERE meta_");
-                builder.push(PgVector::normalize_field_name("filter"));
-                builder.push(" @> ");
-                builder.push("'{\"filter\": \"true\"}'::jsonb");
+            // Add metadata filter
+            builder.push(" WHERE meta_");
+            builder.push(PgVector::normalize_field_name("filter"));
+            builder.push(" @> ");
+            builder.push("'{\"filter\": \"true\"}'::jsonb");
 
-                // Add vector similarity ordering
-                let vector_field = VectorConfig::from(strategy.vector_field().clone()).field;
-                builder.push(" ORDER BY ");
-                builder.push(vector_field);
-                builder.push(" <=> ");
-                // Let QueryBuilder handle the parameter placeholders
-                builder.push_bind(
-                    query_node
-                        .embedding
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("Missing embedding in query state"))?
-                        .clone(),
-                );
-                builder.push("::vector");
+            // Add vector similarity ordering
+            let vector_field = VectorConfig::from(strategy.vector_field().clone()).field;
+            builder.push(" ORDER BY ");
+            builder.push(vector_field);
+            builder.push(" <=> ");
+            // Let QueryBuilder handle the parameter placeholders
+            builder.push_bind(
+                query_node
+                    .embedding
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("Missing embedding in query state"))?
+                    .clone(),
+            );
+            builder.push("::vector");
 
-                // Add LIMIT clause
-                builder.push(" LIMIT ");
-                let top_k_i64 = i64::try_from(strategy.top_k()).map_err(|_| {
-                    anyhow!(
-                        "top_k value {} is too large for Postgres bigint",
-                        strategy.top_k()
-                    )
-                })?;
+            // Add LIMIT clause
+            builder.push(" LIMIT ");
+            let top_k_i64 = i64::try_from(strategy.top_k()).map_err(|_| {
+                anyhow!(
+                    "top_k value {} is too large for Postgres bigint",
+                    strategy.top_k()
+                )
+            })?;
 
-                if top_k_i64 <= 0 {
-                    return Err(anyhow!("top_k must be positive, got {}", top_k_i64));
-                }
-                builder.push_bind(top_k_i64);
+            if top_k_i64 <= 0 {
+                return Err(anyhow!("top_k must be positive, got {}", top_k_i64));
+            }
+            builder.push_bind(top_k_i64);
 
-                Ok(builder)
-            },
-        )
-        .with_top_k(5)
-        .with_vector_field(EmbeddedField::Combined),
-    );
+            Ok(builder)
+        },
+    )
+    .with_top_k(5)
+    .with_vector_field(EmbeddedField::Combined);
 
     let query_pipeline = query::Pipeline::from_search_strategy(custom_strategy)
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(

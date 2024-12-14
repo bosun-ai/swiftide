@@ -11,7 +11,7 @@
 
 use crate::{
     indexing::EmbeddedField,
-    querying::{states, Query},
+    querying::{self, states, Query},
 };
 use anyhow::{anyhow, Result};
 use std::marker::PhantomData;
@@ -27,12 +27,12 @@ type QueryGenerator<Q, T> = Arc<dyn Fn(&T, &Query<states::Pending>) -> Result<Q>
 ///
 /// # Examples
 /// ```
-/// let strategy = CustomQuery::from_query(|strat, query_node| {
+/// let strategy = CustomQuery::from_query(|strategy, query_node| {
 ///     // Query construction logic
 ///     Ok(provider_specific_query)
 /// });
 /// ```
-pub struct CustomQuery<Q> {
+pub struct CustomStrategy<Q> {
     /// The query generation function now returns a `Q`
     query: Option<QueryGenerator<Q, Self>>,
     /// Maximum number of results to return
@@ -43,7 +43,9 @@ pub struct CustomQuery<Q> {
     _marker: PhantomData<Q>,
 }
 
-impl<Q> Default for CustomQuery<Q> {
+impl<Q: Send + Sync + 'static> querying::SearchStrategy for CustomStrategy<Q> {}
+
+impl<Q> Default for CustomStrategy<Q> {
     fn default() -> Self {
         Self {
             query: None,
@@ -55,7 +57,7 @@ impl<Q> Default for CustomQuery<Q> {
 }
 
 // Manual Clone implementation instead of derive
-impl<Q> Clone for CustomQuery<Q> {
+impl<Q> Clone for CustomStrategy<Q> {
     fn clone(&self) -> Self {
         Self {
             query: self.query.clone(), // Arc clone is fine
@@ -66,7 +68,7 @@ impl<Q> Clone for CustomQuery<Q> {
     }
 }
 
-impl<Q: Send + Sync + 'static> CustomQuery<Q> {
+impl<Q: Send + Sync + 'static> CustomStrategy<Q> {
     /// Creates a new `CustomQuery` with a query generation function
     pub fn from_query(
         query: impl Fn(&Self, &Query<states::Pending>) -> Result<Q> + Send + Sync + 'static,

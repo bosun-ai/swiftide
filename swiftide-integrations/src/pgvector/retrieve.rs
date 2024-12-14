@@ -1,10 +1,13 @@
-use crate::pgvector::{PgVecCustomStrategy, PgVector, PgVectorBuilder};
+use crate::pgvector::{PgVector, PgVectorBuilder};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -109,10 +112,10 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
 }
 
 #[async_trait]
-impl Retrieve<PgVecCustomStrategy> for PgVector {
+impl Retrieve<CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>> for PgVector {
     async fn retrieve(
         &self,
-        search_strategy: &PgVecCustomStrategy,
+        search_strategy: &CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
         // Get the database pool
