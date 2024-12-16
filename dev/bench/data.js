@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1733996873964,
+  "lastUpdate": 1734356602475,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10217,6 +10217,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244625,
             "range": "± 5853",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d255772cc933c839e3aaaffccd343acf75dcb251",
+          "message": "refactor(agents): Rename `CommandError::FailedWithOutput` to `CommandError::NonZeroExit` (#484)\n\nBetter describes what is going on. I.e. `rg` exits with 1 if nothing is\nfound, tests generally do the same if they fail.",
+          "timestamp": "2024-12-16T14:34:00+01:00",
+          "tree_id": "887a93f4959821f69a297ba2615405c3c25d3577",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d255772cc933c839e3aaaffccd343acf75dcb251"
+        },
+        "date": 1734356601965,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1278936,
+            "range": "± 908373",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243874,
+            "range": "± 2008",
             "unit": "ns/iter"
           }
         ]
