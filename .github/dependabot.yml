@@ -9,21 +9,19 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-    allow:
-      - dependency-type: "all"
     groups:
-      dev-dependencies:
+      development:
         dependency-type: "development"
       tree-sitter:
         patterns:
           - "tree-sitter*"
+      aws:
+        patterns:
+          - "aws*"
       minor:
         update-types:
           - "minor"
           - "patch"
-      aws:
-        patterns:
-          - "aws*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
