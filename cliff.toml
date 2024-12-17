@@ -27,7 +27,9 @@ body = """
 {% endif -%}
 
 {% macro commit(commit) -%}
+{% if commit.id -%}
 - [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/bosun-ai/swiftide/commit/" ~ commit.id }}) \
+{% endif -%}
 {% if commit.scope %}*({{commit.scope | default(value = "uncategorized") | lower }})* {% endif %}\
 {%- if commit.breaking %} [**breaking**]{% endif %} \
 {{ commit.message | upper_first | trim }}\
