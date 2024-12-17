@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734429420476,
+  "lastUpdate": 1734430347243,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10325,6 +10325,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242175,
             "range": "± 2954",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "54e1c4118f6ae92300aa9e9427dc99eab3f9b1f9",
+          "message": "fix(ci): Fix misconfiguration in dependabot",
+          "timestamp": "2024-12-17T11:03:55+01:00",
+          "tree_id": "3f5bab8cc11a587b5e11ae1bb61581724e6c506c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/54e1c4118f6ae92300aa9e9427dc99eab3f9b1f9"
+        },
+        "date": 1734430346806,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1275448,
+            "range": "± 898606",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245189,
+            "range": "± 1666",
             "unit": "ns/iter"
           }
         ]
