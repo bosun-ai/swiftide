@@ -2,57 +2,83 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4) - 2024-12-11
 
-### New features
-
-- [7211559](https://github.com/bosun-ai/swiftide/commit/7211559936d8b5e16a3b42f9c90b42a39426be8a) *(agents)*  **EXPERIMENTAL** Agents in Swiftide (#463)
-
-````text
-Agents are coming to Swiftide! We are still ironing out all the kinks,
-  while we make it ready for a proper release. You can already experiment
-  with agents, see the rustdocs for documentation, and an example in
-  `/examples`, and feel free to contact us via github or discord. Better
-  documentation, examples, and tutorials are coming soon.
-
-  Run completions in a loop, define tools with two handy macros, customize
-  the agent by hooking in on lifecycle events, and much more.
-
-  Besides documentation, expect a big release for what we build this for
-  soon! 🎉
-````
-
-- [3751f49](https://github.com/bosun-ai/swiftide/commit/3751f49201c71398144a8913a4443f452534def2) *(query)*  Add support for single embedding retrieval with PGVector (#406)
+## [unreleased]
 
 ### Miscellaneous
 
-- [5ce4d21](https://github.com/bosun-ai/swiftide/commit/5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5)  Clippy and deps fixes for 1.83 (#467)
+- [54e1c41](https://github.com/bosun-ai/swiftide/commit/54e1c4118f6ae92300aa9e9427dc99eab3f9b1f9) *(ci)*  Fix misconfiguration in dependabot by @timonv
+
+- [7592d7a](https://github.com/bosun-ai/swiftide/commit/7592d7aadbc5675131550b0009d14dddc5706f77) *(ci)*  Count all packages for changelog update by @timonv
+
+- [c661532](https://github.com/bosun-ai/swiftide/commit/c66153220c7613bb1e836232422853fe8b37443f) *(ci)*  Include agents and macros in changelog by @timonv
+
+- [e15f529](https://github.com/bosun-ai/swiftide/commit/e15f5297867dcdc9935bbbc3190f1008cec73229) *(deps)*  Update lancedb to 0.14 (#489) by @timonv
+
+### Refactor
+
+- [d255772](https://github.com/bosun-ai/swiftide/commit/d255772cc933c839e3aaaffccd343acf75dcb251) *(agents)*  Rename `CommandError::FailedWithOutput` to `CommandError::NonZeroExit` (#484) by @timonv
+
+````text
+Better describes what is going on. I.e. `rg` exits with 1 if nothing is
+  found, tests generally do the same if they fail.
+````
 
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.3...0.14.4
 
-
-
-## [0.14.3](https://github.com/bosun-ai/swiftide/compare/v0.14.2...v0.14.3) - 2024-11-20
+## [v0.14.4](https://github.com/bosun-ai/swiftide/releases/tag/v0.14.4) - 2024-12-12
 
 ### New features
 
-- [1774b84](https://github.com/bosun-ai/swiftide/commit/1774b84f00a83fe69af4a2b6a6daf397d4d9b32d) *(integrations)*  Add PGVector support for indexing ([#392](https://github.com/bosun-ai/swiftide/pull/392))
-
-
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.2...0.14.3
-
-
-
-## [0.14.2](https://github.com/bosun-ai/swiftide/compare/v0.14.1...v0.14.2) - 2024-11-08
+- [3751f49](https://github.com/bosun-ai/swiftide/commit/3751f49201c71398144a8913a4443f452534def2) *(query)*  Add support for single embedding retrieval with PGVector (#406) by @shamb0
 
 ### Bug fixes
 
-- [3924322](https://github.com/bosun-ai/swiftide/commit/39243224d739a76cf2b60204fc67819055b7bc6f) *(querying)*  Query pipeline is now properly send and sync when possible ([#425](https://github.com/bosun-ai/swiftide/pull/425))
+- [c92e662](https://github.com/bosun-ai/swiftide/commit/c92e662e342f75d4b458f22e087836e200034980) *(macros)*  Use versioned workspace dev dependencies by @timonv
 
 ### Miscellaneous
 
-- [52198f7](https://github.com/bosun-ai/swiftide/commit/52198f7fe76376a42c1fec8945bda4bf3e6971d4)  Improve local dev build speed ([#434](https://github.com/bosun-ai/swiftide/pull/434))
+- [6781315](https://github.com/bosun-ai/swiftide/commit/6781315b65695eb211d26a90d469818f29625830) *(ci)*  Reduce pipeline resource usage for build consistency (#473) by @timonv
+
+- [e154b8b](https://github.com/bosun-ai/swiftide/commit/e154b8bf39ce9628d434080eb9fda3df9cc27cd8) *(ci)*  Clear disk space before starting workflows (#476) by @timonv
+
+- [f7f5ecb](https://github.com/bosun-ai/swiftide/commit/f7f5ecbc866e5266c195df597d45b288a4055fba) *(deps)*  Cargo update (#464) by @timonv
+
+- [5ce4d21](https://github.com/bosun-ai/swiftide/commit/5ce4d21725ff9b0bb7f9da8fe026075fde9fc9a5)  Clippy and deps fixes for 1.83 (#467) by @timonv
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4
+
+
+## [v0.14.3](https://github.com/bosun-ai/swiftide/releases/tag/v0.14.3) - 2024-11-20
+
+### New features
+
+- [1774b84](https://github.com/bosun-ai/swiftide/commit/1774b84f00a83fe69af4a2b6a6daf397d4d9b32d) *(integrations)*  Add PGVector support for indexing (#392) by @shamb0
+
+### Miscellaneous
+
+- [d865496](https://github.com/bosun-ai/swiftide/commit/d865496e05069ec132886bc8fee150ea48dd9ea6) *(deps)*  Update async-openai, fluvio and lancedb (#450) by @timonv
+
+### New Contributors
+* @shamb0 made their first contribution in [#392](https://github.com/bosun-ai/swiftide/pull/392)
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.14.2...v0.14.3
+
+
+## [v0.14.2](https://github.com/bosun-ai/swiftide/releases/tag/v0.14.2) - 2024-11-08
+
+### Bug fixes
+
+- [3924322](https://github.com/bosun-ai/swiftide/commit/39243224d739a76cf2b60204fc67819055b7bc6f) *(querying)*  Query pipeline is now properly send and sync when possible (#425) by @timonv
+
+### Miscellaneous
+
+- [578e326](https://github.com/bosun-ai/swiftide/commit/578e326787d39e1c2b452c80f7a53a2da5c1f51d) *(deps)*  Bump the minor group with 10 updates (#439) by @dependabot[bot]
+
+- [4a800cf](https://github.com/bosun-ai/swiftide/commit/4a800cf8e189bdba24b4090177ba9e33cf92e74a)  Updated ignored advisories in deny.toml (#431) by @timonv
+
+- [52198f7](https://github.com/bosun-ai/swiftide/commit/52198f7fe76376a42c1fec8945bda4bf3e6971d4)  Improve local dev build speed (#434) by @timonv
 
 ````text
 - **Tokio on rt-multi-thread only**
@@ -62,45 +88,24 @@ Agents are coming to Swiftide! We are still ironing out all the kinks,
   - **Remove examples and benchmarks from default members**
 ````
 
-
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.1...0.14.2
-
+- [dbd648f](https://github.com/bosun-ai/swiftide/commit/dbd648fd7263c5f9e01a3694517222556a20f9ad)  Update deny.toml by @timonv
 
 
-## [0.14.1](https://github.com/bosun-ai/swiftide/compare/v0.14.0...v0.14.1) - 2024-10-27
-
-### Bug fixes
-
-- [5bbcd55](https://github.com/bosun-ai/swiftide/commit/5bbcd55de65d73d7908e91c96f120928edb6b388)  Revert 0.14 release as mistralrs is unpublished ([#417](https://github.com/bosun-ai/swiftide/pull/417))
-
-````text
-Revert the 0.14 release as `mistralrs` is unpublished and unfortunately
-  cannot be released.
-````
-
-### Miscellaneous
-
-- [07c2661](https://github.com/bosun-ai/swiftide/commit/07c2661b7a7cdf75cdba12fab0ca91866793f727)  Re-release 0.14 without mistralrs ([#419](https://github.com/bosun-ai/swiftide/pull/419))
-
-````text
-- **Revert "fix: Revert 0.14 release as mistralrs is unpublished
-  ([#417](https://github.com/bosun-ai/swiftide/pull/417))"**
-  - **Fix changelog**
-````
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.14.1...v0.14.2
 
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.0...0.14.1
+## [v0.14.0](https://github.com/bosun-ai/swiftide/releases/tag/v0.14.0) - 2024-10-27
 
+### New features
 
-
-## [0.14.0](https://github.com/bosun-ai/swiftide/compare/v0.13.4...v0.14.0) - 2024-10-27
+- [a866d38](https://github.com/bosun-ai/swiftide/commit/a866d38b2cbaf7154ace957472c75b99f1c9c070) *(integrations)*  Support in process hugging face models via mistralrs (#386) by @timonv
 
 ### Bug fixes
 
-- [551a9cb](https://github.com/bosun-ai/swiftide/commit/551a9cb769293e42e15bae5dca3ab677be0ee8ea) *(indexing)*  [**breaking**] Node ID no longer memoized ([#414](https://github.com/bosun-ai/swiftide/pull/414))
+- [551a9cb](https://github.com/bosun-ai/swiftide/commit/551a9cb769293e42e15bae5dca3ab677be0ee8ea) *(indexing)*  [**breaking**] Node ID no longer memoized (#414) by @timonv
 
 ````text
-As @shamb0 pointed out in [#392](https://github.com/bosun-ai/swiftide/pull/392), there is a potential issue where Node
+As @shamb0 pointed out in #392, there is a potential issue where Node
   ids are get cached before chunking or other transformations, breaking
   upserts and potentially resulting in data loss.
 ````
@@ -110,42 +115,85 @@ id. Hence, manually creating nodes no longer works. In the future, all
 the fields are likely to follow the same pattern, so that we can
 decouple the inner fields from the Node's implementation.
 
-- [c091ffa](https://github.com/bosun-ai/swiftide/commit/c091ffa6be792b0bd7bb03d604e26e40b2adfda8) *(indexing)*  Use atomics for key generation in memory storage ([#415](https://github.com/bosun-ai/swiftide/pull/415))
+- [c091ffa](https://github.com/bosun-ai/swiftide/commit/c091ffa6be792b0bd7bb03d604e26e40b2adfda8) *(indexing)*  Use atomics for key generation in memory storage (#415) by @timonv
+
+- [cdd9682](https://github.com/bosun-ai/swiftide/commit/cdd96828cec66d8a597ff16f8aa325d2b6cc0611) *(integrations)*  Revert mistralrs support (#418) by @timonv
+
+````text
+Unfortunately we cannot publish unpublished crates. When mistral-rs is
+  published, we are happy to add support again.
+
+  This reverts commit a866d38b2cbaf7154ace957472c75b99f1c9c070.
+````
 
 ### Miscellaneous
 
-- Update Cargo.toml dependencies
+- [3228724](https://github.com/bosun-ai/swiftide/commit/322872407b0748bb208cd96968b0a35783586860) *(ci)*  Remove explicit 'all' from dependabot config by @timonv
+
+- [9595c67](https://github.com/bosun-ai/swiftide/commit/9595c67f3012674574f2064f13fc355dc3095dd8) *(ci)*  Add zlib to allowed licenses by @timonv
+
+- [471abde](https://github.com/bosun-ai/swiftide/commit/471abde7b9481ad2da3d2d1da9749f7dff35466f) *(ci)*  Add back allow all in dependabot and fix aws pattern by @timonv
+
+- [6f9a332](https://github.com/bosun-ai/swiftide/commit/6f9a33274223b5e10c32e8a59962d8ee601d9b98) *(ci)*  Remove cache fixing ci disk limits (#408) by @timonv
+
+- [85cfeb9](https://github.com/bosun-ai/swiftide/commit/85cfeb96ae380465db3757adfb5938b47077ddee) *(deps)*  Bump the minor group across 1 directory with 16 updates (#413) by @dependabot[bot]
+
+- [463d169](https://github.com/bosun-ai/swiftide/commit/463d169d8cbee4a98d0b9992594e2047a33e5921)  Soft update deps by @timonv
 
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.4...0.14.0
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.13.4...v0.14.0
 
 
-
-## [0.13.4](https://github.com/bosun-ai/swiftide/compare/v0.13.3...v0.13.4) - 2024-10-21
-
-### Bug fixes
-
-- [47455fb](https://github.com/bosun-ai/swiftide/commit/47455fb04197a4b51142e2fb4c980e42ac54d11e) *(indexing)*  Visibility of ChunkMarkdown builder should be public
-
-- [2b3b401](https://github.com/bosun-ai/swiftide/commit/2b3b401dcddb2cb32214850b9b4dbb0481943d38) *(indexing)*  Improve splitters consistency and provide defaults ([#403](https://github.com/bosun-ai/swiftide/pull/403))
-
-
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.3...0.13.4
-
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-## [0.13.3](https://github.com/bosun-ai/swiftide/compare/v0.13.2...v0.13.3) - 2024-10-11
+## [v0.13.4](https://github.com/bosun-ai/swiftide/releases/tag/v0.13.4) - 2024-10-21
 
 ### Bug fixes
 
-- [2647f16](https://github.com/bosun-ai/swiftide/commit/2647f16dc164eb5230d8f7c6d71e31663000cb0d) *(deps)*  Update rust crate text-splitter to 0.17 ([#366](https://github.com/bosun-ai/swiftide/pull/366))
+- [2b3b401](https://github.com/bosun-ai/swiftide/commit/2b3b401dcddb2cb32214850b9b4dbb0481943d38) *(indexing)*  Improve splitters consistency and provide defaults (#403) by @timonv
 
-- [d74d85b](https://github.com/bosun-ai/swiftide/commit/d74d85be3bd98706349eff373c16443b9c45c4f0) *(indexing)*  Add missing `Embed::batch_size` implementation ([#378](https://github.com/bosun-ai/swiftide/pull/378))
+- [47455fb](https://github.com/bosun-ai/swiftide/commit/47455fb04197a4b51142e2fb4c980e42ac54d11e) *(indexing)*  Visibility of ChunkMarkdown builder should be public by @timonv
 
-- [95f78d3](https://github.com/bosun-ai/swiftide/commit/95f78d3412951c099df33149c57817338a76553d) *(tree-sitter)*  Compile regex only once ([#371](https://github.com/bosun-ai/swiftide/pull/371))
+### Miscellaneous
+
+- [35d9c2e](https://github.com/bosun-ai/swiftide/commit/35d9c2e98b3e7f32c9693b166bc7f842e1d99983) *(ci)*  Rework ci jobs to minimize resource usage (#389) by @timonv
+
+- [ab65b8f](https://github.com/bosun-ai/swiftide/commit/ab65b8f890128e8249dd2f55f2e149ae1a0b82e3) *(ci)*  Switch to dependabot for better grouping (#398) by @timonv
+
+- [76fd2a5](https://github.com/bosun-ai/swiftide/commit/76fd2a585fecdf165ccb29a0ff89de45cb579f82) *(ci)*  Explicit allow all for dependabot by @timonv
+
+- [51730ef](https://github.com/bosun-ai/swiftide/commit/51730ef267439cbd55294215546b6a842c7ce12d) *(ci)*  Update dependabot.yml via ui (#402) by @timonv
+
+````text
+Hopefully fix cargo not updating
+````
+
+- [6345ffd](https://github.com/bosun-ai/swiftide/commit/6345ffd82972c789370b3e53e3e79cde79329076)  Improve workspace configuration (#404) by @timonv
+
+````text
+Ensure swiftide\* crates are always included. Additionally, these are
+  the default members, excluding examples and benches.
+````
+
+### Docs
+
+- [ef5d32e](https://github.com/bosun-ai/swiftide/commit/ef5d32e93e65c348345fc7f9266c8c013ee9b37c)  Document feature flags in docs.rs (#388) by @timonv
+
+### New Contributors
+* @dependabot[bot] made their first contribution in [#399](https://github.com/bosun-ai/swiftide/pull/399)
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.13.3...v0.13.4
+
+
+## [v0.13.3](https://github.com/bosun-ai/swiftide/releases/tag/v0.13.3) - 2024-10-11
+
+### Bug fixes
+
+- [88821bb](https://github.com/bosun-ai/swiftide/commit/88821bbf8537f5c4dbe3a5747e9e1e69ba8008e3) *(deps)*  Update aws-sdk-rust monorepo (#363) by @renovate[bot]
+
+- [40ac267](https://github.com/bosun-ai/swiftide/commit/40ac26710e6c9473a03b487e96370ae498a7ca91) *(deps)*  Update rust crate text-splitter to v0.17.1 (#379) by @renovate[bot]
+
+- [d74d85b](https://github.com/bosun-ai/swiftide/commit/d74d85be3bd98706349eff373c16443b9c45c4f0) *(indexing)*  Add missing `Embed::batch_size` implementation (#378) by @rcjmurillo
+
+- [95f78d3](https://github.com/bosun-ai/swiftide/commit/95f78d3412951c099df33149c57817338a76553d) *(tree-sitter)*  Compile regex only once (#371) by @timonv
 
 ````text
 Regex compilation is not cheap, use a static with a oncelock instead.
@@ -153,18 +201,19 @@ Regex compilation is not cheap, use a static with a oncelock instead.
 
 ### Miscellaneous
 
-- Update Cargo.toml dependencies
+- [9f16040](https://github.com/bosun-ai/swiftide/commit/9f160405bcc1a8cdd31e3e036b8465c83e35443a) *(deps)*  Update rust crate fluvio to v0.23.3 (#375) by @renovate[bot]
+
+### New Contributors
+* @rcjmurillo made their first contribution in [#378](https://github.com/bosun-ai/swiftide/pull/378)
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.13.2...v0.13.3
 
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.2...0.13.3
-
-
-
-## [0.13.2](https://github.com/bosun-ai/swiftide/compare/v0.13.1...v0.13.2) - 2024-10-05
+## [v0.13.2](https://github.com/bosun-ai/swiftide/releases/tag/v0.13.2) - 2024-10-05
 
 ### New features
 
-- [4b13aa7](https://github.com/bosun-ai/swiftide/commit/4b13aa7d76dfc7270870682e2f757f066a99ba4e) *(core)*  Add support for cloning all trait objects ([#355](https://github.com/bosun-ai/swiftide/pull/355))
+- [4b13aa7](https://github.com/bosun-ai/swiftide/commit/4b13aa7d76dfc7270870682e2f757f066a99ba4e) *(core)*  Add support for cloning all trait objects (#355) by @timonv
 
 ````text
 For instance, if you have a `Box<dyn SimplePrompt>`, you can now clone
@@ -172,7 +221,7 @@ For instance, if you have a `Box<dyn SimplePrompt>`, you can now clone
   also works for borrowed trait objects.
 ````
 
-- [ed3da52](https://github.com/bosun-ai/swiftide/commit/ed3da52cf89b2384ec6f07c610c591b3eda2fa28) *(indexing)*  Support Redb as embedable nodecache ([#346](https://github.com/bosun-ai/swiftide/pull/346))
+- [ed3da52](https://github.com/bosun-ai/swiftide/commit/ed3da52cf89b2384ec6f07c610c591b3eda2fa28) *(indexing)*  Support Redb as embedable nodecache (#346) by @timonv
 
 ````text
 Adds support for Redb as an embeddable node cache, allowing full local
@@ -181,87 +230,126 @@ Adds support for Redb as an embeddable node cache, allowing full local
 
 ### Bug fixes
 
-- [06f8336](https://github.com/bosun-ai/swiftide/commit/06f83361c52010a451e8b775ce9c5d67057edbc5) *(indexing)*  Ensure `name()` returns concrete name on trait objects ([#351](https://github.com/bosun-ai/swiftide/pull/351))
+- [5cef559](https://github.com/bosun-ai/swiftide/commit/5cef559a598d7886f36c6928d43dbb0bb601b193) *(deps)*  Update aws-sdk-rust monorepo (#305) by @renovate[bot]
+
+- [252f090](https://github.com/bosun-ai/swiftide/commit/252f090d44b618ab28a2fafac5a552f6c9020723) *(deps)*  Update rust crate aws-sdk-bedrockruntime to v1.52.0 (#361) by @renovate[bot]
+
+- [06f8336](https://github.com/bosun-ai/swiftide/commit/06f83361c52010a451e8b775ce9c5d67057edbc5) *(indexing)*  Ensure `name()` returns concrete name on trait objects (#351) by @timonv
 
 ### Miscellaneous
 
-- [8237c28](https://github.com/bosun-ai/swiftide/commit/8237c2890df681c48117188e80cbad914b91e0fd) *(core)*  Mock traits for testing should not have their docs hidden
+- [8237c28](https://github.com/bosun-ai/swiftide/commit/8237c2890df681c48117188e80cbad914b91e0fd) *(core)*  Mock traits for testing should not have their docs hidden by @timonv
 
-- Update Cargo.toml dependencies
+- [277c6bd](https://github.com/bosun-ai/swiftide/commit/277c6bd72263b4fad5dbb3140cb27fe17e15b957) *(deps)*  Update rust crate futures-util to v0.3.31 (#359) by @renovate[bot]
+
+- [2a251b6](https://github.com/bosun-ai/swiftide/commit/2a251b68449158e059473e9ed280c832350eaa19) *(deps)*  Update rust crate testcontainers to 0.23.0 (#335) by @renovate[bot]
+
+- [28cda6f](https://github.com/bosun-ai/swiftide/commit/28cda6fbf3299377585c8383c6d429310bdb6385) *(deps)*  Update rust crate spider to v2.7.1 (#308) by @renovate[bot]
 
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.1...0.13.2
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.13.1...v0.13.2
 
 
-
-## [0.13.1](https://github.com/bosun-ai/swiftide/compare/v0.13.0...v0.13.1) - 2024-10-02
+## [v0.13.1](https://github.com/bosun-ai/swiftide/releases/tag/v0.13.1) - 2024-10-02
 
 ### Bug fixes
 
-- [e6d9ec2](https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f) *(lancedb)*  Should not error if table exists ([#349](https://github.com/bosun-ai/swiftide/pull/349))
+- [e6d9ec2](https://github.com/bosun-ai/swiftide/commit/e6d9ec2fe034c9d36fd730c969555c459606d42f) *(lancedb)*  Should not error if table exists (#349) by @timonv
+
+### Miscellaneous
+
+- [1f57452](https://github.com/bosun-ai/swiftide/commit/1f57452235b1d723f3f84dd6301bf2661ea0cdc5) *(changelog)*  Remove line break by @timonv
+
+- [6a38eb5](https://github.com/bosun-ai/swiftide/commit/6a38eb5073bfceeede51eadcb86b093b334151b7) *(ci)*  Use github token for all protoc installs by @timonv
+
+### Docs
+
+- [1b0e691](https://github.com/bosun-ai/swiftide/commit/1b0e691e39d3e7e0f91410f11fab1b986d148873) *(swiftide-macros)*  Preserve doc comments on indexing transformer (#342) by @timonv
+
+- [432c790](https://github.com/bosun-ai/swiftide/commit/432c7906b8e65af5576c6e9bc6c16707d5fae06a)  Add more inline examples (#343) by @timonv
 
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.0...0.13.1
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.13.0...v0.13.1
 
 
-
-## [0.13.0](https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0) - 2024-09-26
+## [v0.13.0](https://github.com/bosun-ai/swiftide/releases/tag/v0.13.0) - 2024-09-27
 
 ### New features
 
-- [7d8a57f](https://github.com/bosun-ai/swiftide/commit/7d8a57f54b2c73267dfaa3b3a32079b11d9b32bc) *(indexing)*  [**breaking**] Removed duplication of batch_size ([#336](https://github.com/bosun-ai/swiftide/pull/336))
+- [7d8a57f](https://github.com/bosun-ai/swiftide/commit/7d8a57f54b2c73267dfaa3b3a32079b11d9b32bc) *(indexing)*  [**breaking**] Removed duplication of batch_size. Pipeline owns the default ba… (#336) by @devsprint
 
 **BREAKING CHANGE**: The batch size of batch transformers when indexing is
 now configured on the batch transformer. If no batch size or default is
 configured, a configurable default is used from the pipeline. The
 default batch size is 256.
 
-- [fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9) *(tree-sitter)*  Add support for Java 22 ([#309](https://github.com/bosun-ai/swiftide/pull/309))
+---------
+
+- [fd110c8](https://github.com/bosun-ai/swiftide/commit/fd110c8efeb3af538d4e51d033b6df02e90e05d9) *(tree-sitter)*  Add support for Java 22 (#309) by @devsprint
 
 ### Bug fixes
 
-- [23b96e0](https://github.com/bosun-ai/swiftide/commit/23b96e08b4e0f10f5faea0b193b404c9cd03f47f) *(tree-sitter)* [**breaking**]  SupportedLanguages are now non-exhaustive ([#331](https://github.com/bosun-ai/swiftide/pull/331))
-
-**BREAKING CHANGE**: SupportedLanguages are now non-exhaustive. This means that matching on SupportedLanguages will now require a catch-all arm.
-This change was made to allow for future languages to be added without breaking changes.
+- [23b96e0](https://github.com/bosun-ai/swiftide/commit/23b96e08b4e0f10f5faea0b193b404c9cd03f47f) *(tree-sitter)*  SupportedLanguages are now non-exhaustive (#331) by @timonv
 
 ### Miscellaneous
 
-- [923a8f0](https://github.com/bosun-ai/swiftide/commit/923a8f0663e7d2b7138f54069f7a74c3cf6663ed) *(fastembed,qdrant)*  Better batching defaults ([#334](https://github.com/bosun-ai/swiftide/pull/334))
+- [e1b5868](https://github.com/bosun-ai/swiftide/commit/e1b58684e02bfecae96f4e3c51104efd38a0d256) *(ci)*  Disable cargo cache as it gets too big (#337) by @timonv
 
-```text
-Qdrant and FastEmbed now have a default batch size, removing the need to set it manually. The default batch size is 50 and 256 respectively.
-```
+- [923a8f0](https://github.com/bosun-ai/swiftide/commit/923a8f0663e7d2b7138f54069f7a74c3cf6663ed) *(fastembed,qdrant)*  Better batching defaults (#334) by @timonv
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.3...0.13.0
+### Docs
+
+- [8a9d772](https://github.com/bosun-ai/swiftide/commit/8a9d77207ff339cb3f7fb57bdfb884ff2aba5784) *(readme)*  Update for new batching method by @timonv
+
+### New Contributors
+* @devsprint made their first contribution in [#336](https://github.com/bosun-ai/swiftide/pull/336)
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.12.3...v0.13.0
 
 
-
-## [0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/0.12.3) - 2024-09-23
+## [v0.12.3](https://github.com/bosun-ai/swiftide/releases/tag/v0.12.3) - 2024-09-23
 
 ### New features
 
-- [da5df22](https://github.com/bosun-ai/swiftide/commit/da5df2230da81e9fe1e6ab74150511cbe1e3d769) *(tree-sitter)*  Implement Serialize and Deserialize for SupportedLanguages ([#314](https://github.com/bosun-ai/swiftide/pull/314))
+- [da5df22](https://github.com/bosun-ai/swiftide/commit/da5df2230da81e9fe1e6ab74150511cbe1e3d769) *(tree-sitter)*  Implement Serialize and Deserialize for SupportedLanguages (#314) by @timonv
 
 ### Bug fixes
 
-- [a756148](https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2) *(tree-sitter)*  Fix javascript and improve tests ([#313](https://github.com/bosun-ai/swiftide/pull/313))
+- [a756148](https://github.com/bosun-ai/swiftide/commit/a756148f85faa15b1a79db8ec8106f0e15e4d6a2) *(tree-sitter)*  Fix javascript and improve tests (#313) by @timonv
 
 ````text
-As learned from [#309](https://github.com/bosun-ai/swiftide/pull/309), test coverage for the refs defs transformer was
+As learned from #309, test coverage for the refs defs transformer was
   not great. There _are_ more tests in code_tree. Turns out, with the
   latest treesitter update, javascript broke as it was the only language
   not covered at all.
 ````
 
+- [9cc4535](https://github.com/bosun-ai/swiftide/commit/9cc4535aac8e43244166fa5af5f34da18b002026)  Ignore lexicon-core warning for now and update deps (#310) by @timonv
+
 ### Miscellaneous
 
-- [e8e9d80](https://github.com/bosun-ai/swiftide/commit/e8e9d80f2b4fbfe7ca2818dc542ca0a907a17da5) *(docs)*  Add documentation to query module ([#276](https://github.com/bosun-ai/swiftide/pull/276))
+- [afce14e](https://github.com/bosun-ai/swiftide/commit/afce14e5a06a39c53d2703d18771d327c8ea5bf1) *(ci)*  Avoid protoc rate limit (#315) by @timonv
 
+- [530dcd8](https://github.com/bosun-ai/swiftide/commit/530dcd8e7e1ab23b65b4d3cd5bd965c33ea7e375) *(ci)*  Fix concurrency conflict and trigger discord right after (#316) by @timonv
 
-**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.12.2...0.12.3
+- [d433d99](https://github.com/bosun-ai/swiftide/commit/d433d99e486e5e9f608c7d34b3847ef427b36d16) *(ci)*  Remove discord publish for now by @timonv
 
+- [dd14a2e](https://github.com/bosun-ai/swiftide/commit/dd14a2e2a9ee2225154fa6860f02924845b00bbd) *(ci)*  Rework changelog configuration to be more informative (#318) by @timonv
 
+- [fc6e259](https://github.com/bosun-ai/swiftide/commit/fc6e259bf8accfe632ec7c88af4992319214d4e4) *(ci)*  Properly use author name in changelog context by @timonv
+
+- [f52b1cd](https://github.com/bosun-ai/swiftide/commit/f52b1cd18e2397ef0691baa0414f8111c888ae58) *(ci)*  Remove author name from changelog by @timonv
+
+- [e8e9d80](https://github.com/bosun-ai/swiftide/commit/e8e9d80f2b4fbfe7ca2818dc542ca0a907a17da5) *(docs)*  Add documentation to query module (#276) by @tinco
+
+### Docs
+
+- [5d52288](https://github.com/bosun-ai/swiftide/commit/5d5228803bc0e90730598eac7973443944f749e3) *(readme)*  Add blog links and update features (#312) by @timonv
+
+### New Contributors
+* @SwabbieBosun made their first contribution in [#329](https://github.com/bosun-ai/swiftide/pull/329)
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.12.2...v0.12.3
 
 
 ## [v0.12.2](https://github.com/bosun-ai/swiftide/releases/tag/v0.12.2) - 2024-09-20
@@ -1038,6 +1126,8 @@ Adds an integration with AWS Bedrock, implementing SimplePrompt for
 
 - [b014f43](https://github.com/bosun-ai/swiftide/commit/b014f43aa187881160245b4356f95afe2c6fe98c)  Improve documentation across the project (#112) by @timonv
 
+### New Contributors
+* @renovate[bot] made their first contribution in [#110](https://github.com/bosun-ai/swiftide/pull/110)
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/swiftide-v0.4.3...swiftide-v0.5.0
 
@@ -1348,6 +1438,7 @@ Pipeline now supports multiple storage backends. This makes the order of adding 
 - [a717f3d](https://github.com/bosun-ai/swiftide/commit/a717f3d5a68d9c79f9b8d85d8cb8979100dc3949)  Template links should be underscores by @timonv
 
 ### New Contributors
+* @github-actions[bot] made their first contribution in [#43](https://github.com/bosun-ai/swiftide/pull/43)
 * @bosun-ai[bot] made their first contribution in [#19](https://github.com/bosun-ai/swiftide/pull/19)
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/v0.1.0...swiftide-v0.2.0
@@ -1485,5 +1576,8 @@ Pipeline now supports multiple storage backends. This makes the order of adding 
   * fix(fluyt/models): doctest
 ````
 
+### New Contributors
+* @timonv made their first contribution
+* @tinco made their first contribution
 
 
