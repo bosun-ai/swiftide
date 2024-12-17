@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0) - 2024-12-17
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.4...0.15.0
+
+
+
 ## [0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4) - 2024-12-11
 
 ### New features
