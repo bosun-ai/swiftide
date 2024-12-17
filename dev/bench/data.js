@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734430347243,
+  "lastUpdate": 1734436258451,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10379,6 +10379,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245189,
             "range": "± 1666",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e15f5297867dcdc9935bbbc3190f1008cec73229",
+          "message": "chore(deps): Update lancedb to 0.14 (#489)",
+          "timestamp": "2024-12-17T12:42:28+01:00",
+          "tree_id": "4789ac9046401a80540f8d53717f320b6ad9f430",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e15f5297867dcdc9935bbbc3190f1008cec73229"
+        },
+        "date": 1734436257982,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288097,
+            "range": "± 1070998",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244164,
+            "range": "± 4462",
             "unit": "ns/iter"
           }
         ]
