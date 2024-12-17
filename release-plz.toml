@@ -29,6 +29,7 @@ commit_parsers = [
   { message = "^fix*", group = "<!-- 1 -->Bug fixes" },
   { message = "^perf*", group = "<!-- 2 -->Performance" },
   { message = "^chore*", group = "<!-- 3 -->Miscellaneous" },
+  { message = "^refactor*", group = "<!-- 3 -->Miscellaneous" },
 ]
 
 # changelog header
@@ -45,7 +46,9 @@ body = """
 {% endif -%}
 
 {% macro commit(commit) -%}
+{% if commit.id -%}
 - [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/bosun-ai/swiftide/commit/" ~ commit.id }}) \
+{% endif -%}
 {% if commit.scope %}*({{commit.scope | default(value = "uncategorized") | lower }})* {% endif %}\
 {%- if commit.breaking %} [**breaking**]{% endif %} \
 {{ commit.message | upper_first | trim }}\
