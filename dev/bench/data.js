@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734439574532,
+  "lastUpdate": 1734439741656,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10487,6 +10487,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244355,
             "range": "± 1564",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "c66153220c7613bb1e836232422853fe8b37443f",
+          "message": "fix(ci): Include agents and macros in changelog",
+          "timestamp": "2024-12-17T13:40:03+01:00",
+          "tree_id": "18ebfed2485f6e8d3abeeb7411e023228a0f2ef7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c66153220c7613bb1e836232422853fe8b37443f"
+        },
+        "date": 1734439740987,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1282975,
+            "range": "± 888843",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244953,
+            "range": "± 7176",
             "unit": "ns/iter"
           }
         ]
