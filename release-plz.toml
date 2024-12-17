@@ -1,6 +1,5 @@
 [workspace]
 changelog_path = "./CHANGELOG.md"
-changelog_update = false
 changelog_config = "cliff.toml"
 git_tag_name = "v{{ version }}"
 git_tag_enable = false
