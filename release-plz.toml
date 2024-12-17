@@ -18,6 +18,8 @@ changelog_include = [
   "swiftide-integrations",
   "swiftide-query",
   "swiftide-test-utils",
+  "swiftide-agents",
+  "swiftide-macros",
 ]
 changelog_update = true
 
