@@ -114,7 +114,7 @@ decouple the inner fields from the Node's implementation.
 
 ### Miscellaneous
 
-- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+- Update Cargo.toml dependencies
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.4...0.14.0
@@ -153,7 +153,7 @@ Regex compilation is not cheap, use a static with a oncelock instead.
 
 ### Miscellaneous
 
-- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+- Update Cargo.toml dependencies
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.2...0.13.3
@@ -187,7 +187,7 @@ Adds support for Redb as an embeddable node cache, allowing full local
 
 - [8237c28](https://github.com/bosun-ai/swiftide/commit/8237c2890df681c48117188e80cbad914b91e0fd) *(core)*  Mock traits for testing should not have their docs hidden
 
-- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+- Update Cargo.toml dependencies
 
 
 **Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.13.1...0.13.2
