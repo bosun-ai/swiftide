@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734451663294,
+  "lastUpdate": 1734454306872,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10595,6 +10595,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246027,
             "range": "± 2081",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "5d2ced3f53c3ac35e36e3c5a30e782e87d9db407",
+          "message": "fix(ci): Skip separate package changelog updates",
+          "timestamp": "2024-12-17T17:42:50+01:00",
+          "tree_id": "5278bd55d8e0027275fb1700786c03a27235c9cc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5d2ced3f53c3ac35e36e3c5a30e782e87d9db407"
+        },
+        "date": 1734454306332,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1294076,
+            "range": "± 1019800",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 247400,
+            "range": "± 5637",
             "unit": "ns/iter"
           }
         ]
