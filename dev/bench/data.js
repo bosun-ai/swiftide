@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734454306872,
+  "lastUpdate": 1734621603793,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10649,6 +10649,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 247400,
             "range": "± 5637",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "a4490f32651860152240dbf963d750b5acb27ca1",
+          "message": "docs(agents): Fix toplevel agent docs not showing up in rustdocs",
+          "timestamp": "2024-12-19T16:10:50+01:00",
+          "tree_id": "a32438dcbc0a4ac5a77cf05c6fee269ec5bb2342",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a4490f32651860152240dbf963d750b5acb27ca1"
+        },
+        "date": 1734621603083,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1289884,
+            "range": "± 959785",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244488,
+            "range": "± 4136",
             "unit": "ns/iter"
           }
         ]
