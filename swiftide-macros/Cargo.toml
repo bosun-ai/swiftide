@@ -32,8 +32,8 @@ rustversion = "1.0.18"
 trybuild = "1.0"
 prettyplease = "0.2.25"
 insta.workspace = true
-swiftide-core = { path = "../swiftide-core/", version = "0.14" }
-swiftide = { path = "../swiftide/", version = "0.14" }
+swiftide-core = { path = "../swiftide-core/", version = "0.15" }
+swiftide = { path = "../swiftide/", version = "0.15" }
 
 [lints]
 workspace = true

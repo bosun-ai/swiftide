@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.14" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.14" }
+swiftide-core = { path = "../swiftide-core", version = "0.15" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.15" }
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
@@ -27,10 +27,10 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.14", features = [
+swiftide-core = { path = "../swiftide-core", version = "0.15", features = [
   "test-utils",
 ] }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.14", features = [
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.15", features = [
   "openai",
 ] }
 mockall.workspace = true
