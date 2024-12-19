@@ -105,10 +105,9 @@ pub use swiftide_core::prompt;
 pub use swiftide_core::type_aliases::*;
 
 #[cfg(feature = "swiftide-agents")]
-pub mod agents {
-    #[doc(inline)]
-    pub use swiftide_agents::*;
-}
+#[doc(inline)]
+pub use swiftide_agents as agents;
+
 /// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {
     #[doc(inline)]
