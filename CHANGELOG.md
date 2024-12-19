@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0) - 2024-12-19
+
+### Miscellaneous
+
+- [d255772](https://github.com/bosun-ai/swiftide/commit/d255772cc933c839e3aaaffccd343acf75dcb251) *(agents)*  Rename `CommandError::FailedWithOutput` to `CommandError::NonZeroExit` (#484)
+
+````text
+Better describes what is going on. I.e. `rg` exits with 1 if nothing is
+  found, tests generally do the same if they fail.
+````
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.4...0.15.0
+
+
+
 ## [0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4) - 2024-12-11
 
 ### New features
