@@ -69,6 +69,10 @@ impl TransformQuery for Box<dyn TransformQuery> {
     ) -> Result<Query<states::Pending>> {
         self.as_ref().transform_query(query).await
     }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 /// A search strategy for the query pipeline
@@ -99,6 +103,10 @@ impl<S: SearchStrategy> Retrieve<S> for Box<dyn Retrieve<S>> {
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
         self.as_ref().retrieve(search_strategy, query).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
     }
 }
 
@@ -162,6 +170,10 @@ impl TransformResponse for Box<dyn TransformResponse> {
     async fn transform_response(&self, query: Query<Retrieved>) -> Result<Query<Retrieved>> {
         self.as_ref().transform_response(query).await
     }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
 }
 
 /// Can answer the original query
@@ -206,6 +218,10 @@ where
 impl Answer for Box<dyn Answer> {
     async fn answer(&self, query: Query<Retrieved>) -> Result<Query<states::Answered>> {
         self.as_ref().answer(query).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
     }
 }
 
