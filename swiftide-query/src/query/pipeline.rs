@@ -350,6 +350,8 @@ impl<STRATEGY: SearchStrategy> Pipeline<'_, STRATEGY, states::Answered> {
                 anyhow::anyhow!("Pipeline did not receive a response from the query stream")
             });
 
+        tracing::debug!(?answer, "Received an answer");
+
         let elapsed_in_seconds = now.elapsed().as_secs();
         tracing::warn!(
             elapsed_in_seconds,
