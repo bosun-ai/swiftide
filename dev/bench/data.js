@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734867475172,
+  "lastUpdate": 1734867477837,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10757,6 +10757,48 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 239244,
             "range": "± 1774",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "55dde88df888b60a7ccae5a68ba03d20bc1f57df",
+          "message": "feat(query): Debug full retrieved documents when debug mode is enabled (#495)",
+          "timestamp": "2024-12-22T12:29:55+01:00",
+          "tree_id": "84334bb8167a309e421a9aadfab9c94d66615e37",
+          "url": "https://github.com/bosun-ai/swiftide/commit/55dde88df888b60a7ccae5a68ba03d20bc1f57df"
+        },
+        "date": 1734867477366,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 6,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
