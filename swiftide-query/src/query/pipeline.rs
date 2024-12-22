@@ -114,11 +114,14 @@ where
 
                 tokio::spawn(
                     async move {
+                        let transformed_query = transformer.transform_query(query).await?;
                         tracing::debug!(
+                            transformed_query = transformed_query.current(),
                             query_transformer = transformer.name(),
-                            "Transforming query"
+                            "Transformed query"
                         );
-                        transformer.transform_query(query).await
+
+                        Ok(transformed_query)
                     }
                     .instrument(span),
                 )
@@ -167,8 +170,6 @@ impl<'stream: 'static, STRATEGY: SearchStrategy + 'stream>
 
                 tokio::spawn(
                     async move {
-                        tracing::debug!(retriever = retriever.name(), "Retrieving documents");
-
                         let result = retriever.retrieve(&search_strategy, query).await?;
 
                         tracing::debug!(documents = ?result.documents(), "Retrieved documents");
@@ -219,11 +220,14 @@ impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, sta
                 let span = tracing::info_span!("then_transform_response", query = ?query);
                 tokio::spawn(
                     async move {
+                        let transformed_query = transformer.transform_response(query).await?;
                         tracing::debug!(
+                            transformed_query = transformed_query.current(),
                             response_transformer = transformer.name(),
-                            "Transforming response"
+                            "Transformed response"
                         );
-                        transformer.transform_response(query).await
+
+                        Ok(transformed_query)
                     }
                     .instrument(span),
                 )
