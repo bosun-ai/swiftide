@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734867483958,
+  "lastUpdate": 1734868202077,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10853,6 +10853,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240629,
             "range": "± 1998",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "7779c44de3581ac865ac808637c473525d27cabb",
+          "message": "feat(query): Ensure query pipeline consistently debug logs in all other stages too",
+          "timestamp": "2024-12-22T12:38:36+01:00",
+          "tree_id": "8ff67618ec89c68cec91b61cf6d1b1948886db70",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7779c44de3581ac865ac808637c473525d27cabb"
+        },
+        "date": 1734868201573,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1271160,
+            "range": "± 927923",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240238,
+            "range": "± 1495",
             "unit": "ns/iter"
           }
         ]
