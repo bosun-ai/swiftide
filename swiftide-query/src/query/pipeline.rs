@@ -171,6 +171,8 @@ impl<'stream: 'static, STRATEGY: SearchStrategy + 'stream>
 
                         let result = retriever.retrieve(&search_strategy, query).await?;
 
+                        tracing::debug!(documents = ?result.documents(), "Retrieved documents");
+
                         if let Some(evaluator) = evaluator_for_stream.as_ref() {
                             evaluator.evaluate(result.clone().into()).await?;
                             Ok(result)
