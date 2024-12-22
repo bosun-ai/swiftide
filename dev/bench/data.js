@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734867477837,
+  "lastUpdate": 1734867483958,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10799,6 +10799,60 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 177,
             "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a1b9a2d37715420d3e2cc80d731e3713a22c7c50",
+          "message": "feat(query): Ensure concrete names for transformations are used when debugging (#496)",
+          "timestamp": "2024-12-22T12:29:39+01:00",
+          "tree_id": "1f09e5adfbd20510247f6ef12d1c9eca8a4189cf",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a1b9a2d37715420d3e2cc80d731e3713a22c7c50"
+        },
+        "date": 1734867483439,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1271098,
+            "range": "± 914918",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240629,
+            "range": "± 1998",
             "unit": "ns/iter"
           }
         ]
