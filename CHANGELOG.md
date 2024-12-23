@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0) - 2024-12-23
+
+### New features
+
+- [a1b9a2d](https://github.com/bosun-ai/swiftide/commit/a1b9a2d37715420d3e2cc80d731e3713a22c7c50) *(query)*  Ensure concrete names for transformations are used when debugging (#496)
+
+- [7779c44](https://github.com/bosun-ai/swiftide/commit/7779c44de3581ac865ac808637c473525d27cabb) *(query)*  Ensure query pipeline consistently debug logs in all other stages too
+
+- [55dde88](https://github.com/bosun-ai/swiftide/commit/55dde88df888b60a7ccae5a68ba03d20bc1f57df) *(query)*  Debug full retrieved documents when debug mode is enabled (#495)
+
+- [66031ba](https://github.com/bosun-ai/swiftide/commit/66031ba27b946add0533775423d468abb3187604) *(query)*  Log query pipeline answer on debug (#497)
+
+### Miscellaneous
+
+- [d255772](https://github.com/bosun-ai/swiftide/commit/d255772cc933c839e3aaaffccd343acf75dcb251) *(agents)*  Rename `CommandError::FailedWithOutput` to `CommandError::NonZeroExit` (#484)
+
+````text
+Better describes what is going on. I.e. `rg` exits with 1 if nothing is
+  found, tests generally do the same if they fail.
+````
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.14.4...0.15.0
+
+
+
 ## [0.14.4](https://github.com/bosun-ai/swiftide/compare/v0.14.3...v0.14.4) - 2024-12-11
 
 ### New features
