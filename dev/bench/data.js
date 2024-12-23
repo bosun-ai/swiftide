@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734954557885,
+  "lastUpdate": 1734969199303,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -10961,6 +10961,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 235994,
             "range": "± 1513",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e7ad182b8afff81b61686a3f3785e32a5d083225",
+          "message": "chore: release v0.15.0 (#498)\n\n## 🤖 New release\r\n* `swiftide`: 0.14.4 -> 0.15.0 (⚠️ API breaking changes)\r\n* `swiftide-agents`: 0.14.4 -> 0.15.0 (✓ API compatible changes)\r\n* `swiftide-core`: 0.14.4 -> 0.15.0 (⚠️ API breaking changes)\r\n* `swiftide-macros`: 0.14.4 -> 0.15.0\r\n* `swiftide-integrations`: 0.14.4 -> 0.15.0 (✓ API compatible changes)\r\n* `swiftide-indexing`: 0.14.4 -> 0.15.0\r\n* `swiftide-query`: 0.14.4 -> 0.15.0 (✓ API compatible changes)\r\n\r\n### ⚠️ `swiftide` breaking changes\r\n\r\n```\r\n--- failure module_missing: pub module removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible module cannot be imported by its prior path. A `pub use` may have been removed, or the module may have been renamed, removed, or made non-public.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/module_missing.ron\r\n\r\nFailed in:\r\n  mod swiftide::agents, previously in file /tmp/.tmpqenghN/swiftide/src/lib.rs:108\r\n```\r\n\r\n### ⚠️ `swiftide-core` breaking changes\r\n\r\n```\r\n--- failure enum_variant_added: enum variant added on exhaustive enum ---\r\n\r\nDescription:\r\nA publicly-visible enum without #[non_exhaustive] has a new variant.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#enum-variant-new\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/enum_variant_added.ron\r\n\r\nFailed in:\r\n  variant CommandError:NonZeroExit in /tmp/.tmpm3E1mt/swiftide/swiftide-core/src/agent_traits.rs:29\r\n  variant CommandError:NonZeroExit in /tmp/.tmpm3E1mt/swiftide/swiftide-core/src/agent_traits.rs:29\r\n\r\n--- failure enum_variant_missing: pub enum variant removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible enum has at least one variant that is no longer available under its prior name. It may have been renamed or removed entirely.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/enum_variant_missing.ron\r\n\r\nFailed in:\r\n  variant CommandError::FailedWithOutput, previously in file /tmp/.tmpqenghN/swiftide-core/src/agent_traits.rs:29\r\n  variant CommandError::FailedWithOutput, previously in file /tmp/.tmpqenghN/swiftide-core/src/agent_traits.rs:29\r\n```\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0)\r\n- 2024-12-23\r\n\r\n### New features\r\n\r\n-\r\n[a1b9a2d](https://github.com/bosun-ai/swiftide/commit/a1b9a2d37715420d3e2cc80d731e3713a22c7c50)\r\n*(query)* Ensure concrete names for transformations are used when\r\ndebugging (#496)\r\n\r\n-\r\n[7779c44](https://github.com/bosun-ai/swiftide/commit/7779c44de3581ac865ac808637c473525d27cabb)\r\n*(query)* Ensure query pipeline consistently debug logs in all other\r\nstages too\r\n\r\n-\r\n[55dde88](https://github.com/bosun-ai/swiftide/commit/55dde88df888b60a7ccae5a68ba03d20bc1f57df)\r\n*(query)* Debug full retrieved documents when debug mode is enabled\r\n(#495)\r\n\r\n-\r\n[66031ba](https://github.com/bosun-ai/swiftide/commit/66031ba27b946add0533775423d468abb3187604)\r\n*(query)* Log query pipeline answer on debug (#497)\r\n\r\n### Miscellaneous\r\n\r\n-\r\n[d255772](https://github.com/bosun-ai/swiftide/commit/d255772cc933c839e3aaaffccd343acf75dcb251)\r\n*(agents)* Rename `CommandError::FailedWithOutput` to\r\n`CommandError::NonZeroExit` (#484)\r\n\r\n````text\r\nBetter describes what is going on. I.e. `rg` exits with 1 if nothing is\r\n  found, tests generally do the same if they fail.\r\n````\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.toml dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.14.4...0.15.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2024-12-23T16:44:43+01:00",
+          "tree_id": "abc5d8b830617f6a13ff437f444721b8a9a0399a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e7ad182b8afff81b61686a3f3785e32a5d083225"
+        },
+        "date": 1734969198779,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1282607,
+            "range": "± 968569",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 238805,
+            "range": "± 1793",
             "unit": "ns/iter"
           }
         ]
