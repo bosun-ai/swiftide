@@ -4,7 +4,10 @@ use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -105,6 +108,34 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
             query,
         )
         .await
+    }
+}
+
+#[async_trait]
+impl Retrieve<CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>> for PgVector {
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        // Get the database pool
+        let pool = self.get_pool().await?;
+
+        // Build the custom query using both strategy and query state
+        let mut query_builder = search_strategy.build_query(&query)?;
+
+        // Execute the query using the builder's built-in methods
+        let results = query_builder
+            .build_query_as::<VectorSearchResult>() // Convert to a typed query
+            .fetch_all(pool) // Execute and get all results
+            .await
+            .map_err(|e| anyhow!("Failed to execute search query: {}", e))?;
+
+        // Transform results into documents
+        let documents = results.into_iter().map(|r| r.chunk).collect();
+
+        // Update query state with retrieved documents
+        Ok(query.retrieved_documents(documents))
     }
 }
 
