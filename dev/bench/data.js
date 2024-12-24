@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1734969199303,
+  "lastUpdate": 1735039058065,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11015,6 +11015,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 238805,
             "range": "± 1793",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "b1dbb4cf88a2cc26073b62d2ef3c4bb99316c49d",
+          "message": "fix(ci): Skip crates verification for macros",
+          "timestamp": "2024-12-24T12:08:47+01:00",
+          "tree_id": "22848e03cc2c7bb936c633dd110aa92531039780",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b1dbb4cf88a2cc26073b62d2ef3c4bb99316c49d"
+        },
+        "date": 1735039057492,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1269286,
+            "range": "± 920939",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 236210,
+            "range": "± 1693",
             "unit": "ns/iter"
           }
         ]
