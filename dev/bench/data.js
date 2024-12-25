@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735039058065,
+  "lastUpdate": 1735121962809,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11069,6 +11069,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 236210,
             "range": "± 1693",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "dc9881e48da7fb5dc744ef33b1c356b4152d00d3",
+          "message": "feat: Allow opt out of pipeline debug truncation",
+          "timestamp": "2024-12-25T11:10:27+01:00",
+          "tree_id": "aa3f892821e6d22975433744fbf873807b29927a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dc9881e48da7fb5dc744ef33b1c356b4152d00d3"
+        },
+        "date": 1735121962290,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1332916,
+            "range": "± 935264",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242339,
+            "range": "± 1932",
             "unit": "ns/iter"
           }
         ]
