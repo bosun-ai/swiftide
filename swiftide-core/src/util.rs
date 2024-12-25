@@ -11,7 +11,7 @@ pub fn safe_truncate_utf8(s: impl AsRef<str>, max_chars: usize) -> String {
 ///
 /// Enabled with the `truncate-debug` feature flag, which is enabled by default.
 ///
-/// If debugging large outputs is needed, set swiftide_core to `no-default-features`
+/// If debugging large outputs is needed, set `swiftide_core` to `no-default-features`
 ///
 /// # Example
 ///
