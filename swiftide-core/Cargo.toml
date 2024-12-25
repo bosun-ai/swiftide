@@ -41,8 +41,11 @@ qdrant-client = { workspace = true, optional = true }
 test-case = { workspace = true }
 
 [features]
+defaults = ["truncate-debug"]
 test-utils = ["dep:mockall", "dep:pretty_assertions"]
 qdrant = ["dep:qdrant-client"]
+# Truncates large debug outputs on pipeline nodes
+truncate-debug = []
 
 [lints]
 workspace = true

@@ -9,6 +9,10 @@ pub fn safe_truncate_utf8(s: impl AsRef<str>, max_chars: usize) -> String {
 
 /// Debug print a long string by truncating to n characters
 ///
+/// Enabled with the `truncate-debug` feature flag, which is enabled by default.
+///
+/// If debugging large outputs is needed, set swiftide_core to `no-default-features`
+///
 /// # Example
 ///
 /// ```
@@ -18,9 +22,13 @@ pub fn safe_truncate_utf8(s: impl AsRef<str>, max_chars: usize) -> String {
 /// assert_eq!(s, "🦀🦀🦀 (10)");
 /// ```
 pub fn debug_long_utf8(s: impl AsRef<str>, max_chars: usize) -> String {
-    let trunc = safe_truncate_utf8(&s, max_chars);
+    if cfg!(feature = "truncate-debug") {
+        let trunc = safe_truncate_utf8(&s, max_chars);
 
-    format!("{} ({})", trunc, s.as_ref().chars().count())
+        format!("{} ({})", trunc, s.as_ref().chars().count())
+    } else {
+        s.as_ref().into()
+    }
 }
 
 #[cfg(test)]
