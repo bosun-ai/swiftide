@@ -43,7 +43,7 @@ dyn-clone = { version = "1.0" }
 convert_case = "0.6.0"
 
 # Integrations
-spider = { version = "2.21" }
+spider = { version = "2.22" }
 async-openai = { version = "0.26" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
