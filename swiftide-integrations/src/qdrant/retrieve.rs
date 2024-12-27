@@ -223,7 +223,7 @@ mod tests {
         assert_eq!(
             result
                 .documents()
-                .into_iter()
+                .iter()
                 .sorted()
                 .map(ToOwned::to_owned)
                 .collect::<Vec<Document>>(),
@@ -247,7 +247,7 @@ mod tests {
         assert_eq!(
             result
                 .documents()
-                .into_iter()
+                .iter()
                 .sorted()
                 .map(ToOwned::to_owned)
                 .collect::<Vec<Document>>(),

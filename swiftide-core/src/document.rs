@@ -1,7 +1,6 @@
-use std::{borrow::Cow, fmt};
+use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use tracing::field::Visit;
 
 use crate::{metadata::Metadata, util::debug_long_utf8};
 

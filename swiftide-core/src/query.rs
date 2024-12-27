@@ -8,7 +8,7 @@
 use derive_builder::Builder;
 
 use crate::{
-    document::Document, metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbedding,
+    document::Document, util::debug_long_utf8, Embedding, SparseEmbedding,
 };
 
 /// A query is the main object going through a query pipeline

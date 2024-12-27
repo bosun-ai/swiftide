@@ -42,7 +42,6 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 
 use swiftide_core::{
-    document::Document,
     querying::{states, Query, QueryEvaluation},
     EvaluateQuery,
 };
@@ -123,7 +122,7 @@ impl EvaluationDataSet {
 
         data.contexts = query
             .documents()
-            .into_iter()
+            .iter()
             .map(|d| d.content().to_string())
             .collect::<Vec<_>>();
         Ok(())
@@ -241,7 +240,7 @@ impl FromStr for EvaluationDataSet {
 mod tests {
     use super::*;
     use std::sync::Arc;
-    use swiftide_core::querying::{states, Query, QueryEvaluation};
+    use swiftide_core::querying::{Query, QueryEvaluation};
     use tokio::sync::RwLock;
 
     #[tokio::test]

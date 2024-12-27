@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
-    document::Document,
     querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
     Retrieve,
 };

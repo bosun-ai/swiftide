@@ -1,4 +1,4 @@
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 use arrow::datatypes::SchemaRef;
 use arrow_array::StringArray;
 use async_trait::async_trait;

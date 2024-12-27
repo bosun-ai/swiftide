@@ -80,7 +80,7 @@ impl Answer for Simple {
         let context = if query.current().is_empty() {
             &query
                 .documents()
-                .into_iter()
+                .iter()
                 .map(Document::content)
                 .collect::<Vec<_>>()
                 .join("\n---\n")
