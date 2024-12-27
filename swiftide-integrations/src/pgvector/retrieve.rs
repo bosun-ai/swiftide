@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide_core::{
+    document::Document,
     querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
     Retrieve,
 };
@@ -86,7 +87,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
             .fetch_all(pool)
             .await?;
 
-        let docs = data.into_iter().map(|r| r.chunk).collect();
+        let docs = data.into_iter().map(|r| r.chunk.into()).collect();
 
         Ok(query_state.retrieved_documents(docs))
     }

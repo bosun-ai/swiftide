@@ -75,17 +75,8 @@ async fn test_lancedb() {
         result.answer(),
         "\n\nHello there, how may I assist you today?"
     );
-    let TransformationEvent::Retrieved { documents, .. } = result
-        .history()
-        .iter()
-        .find(|e| matches!(e, TransformationEvent::Retrieved { .. }))
-        .unwrap()
-    else {
-        panic!("No documents found")
-    };
-
     assert_eq!(
-        documents.first().unwrap(),
-        "fn main() { println!(\"Hello, World!\"); }"
+        result.documents().first().unwrap(),
+        &"fn main() { println!(\"Hello, World!\"); }".into()
     );
 }

@@ -1,6 +1,7 @@
-use qdrant_client::qdrant::{self, PrefetchQueryBuilder, SearchPointsBuilder};
+use qdrant_client::qdrant::{self, PrefetchQueryBuilder, ScoredPoint, SearchPointsBuilder};
 use swiftide_core::{
-    indexing::EmbeddedField,
+    document::Document,
+    indexing::{EmbeddedField, Metadata},
     prelude::{Result, *},
     querying::{
         search_strategies::{HybridSearch, SimilaritySingleEmbedding},
@@ -53,13 +54,7 @@ impl Retrieve<SimilaritySingleEmbedding<qdrant::Filter>> for Qdrant {
 
         let documents = result
             .into_iter()
-            .map(|scored_point| {
-                Ok(scored_point
-                    .payload
-                    .get("content")
-                    .context("Expected document in qdrant payload")?
-                    .to_string())
-            })
+            .map(scored_point_into_document)
             .collect::<Result<Vec<_>>>()?;
 
         Ok(query.retrieved_documents(documents))
@@ -133,20 +128,28 @@ impl Retrieve<HybridSearch> for Qdrant {
 
         let documents = result
             .into_iter()
-            .map(|scored_point| {
-                let value = scored_point
-                    .payload
-                    .get("content")
-                    .context("Expected document in qdrant payload")?;
-
-                Ok(value
-                    .as_str()
-                    .map_or_else(|| value.to_string(), ToString::to_string))
-            })
+            .map(scored_point_into_document)
             .collect::<Result<Vec<_>>>()?;
 
         Ok(query.retrieved_documents(documents))
     }
+}
+
+fn scored_point_into_document(scored_point: ScoredPoint) -> Result<Document> {
+    let content = scored_point
+        .payload
+        .get("content")
+        .context("Expected document in qdrant payload")?
+        .to_string();
+
+    let metadata: Metadata = scored_point
+        .payload
+        .into_iter()
+        .filter(|(k, _)| *k != "content")
+        .collect::<Vec<(_, _)>>()
+        .into();
+
+    Ok(Document::new(content, Some(metadata)))
 }
 
 #[cfg(test)]
@@ -218,13 +221,19 @@ mod tests {
             .unwrap();
         assert_eq!(result.documents().len(), 3);
         assert_eq!(
-            result.documents().iter().sorted().collect_vec(),
+            result
+                .documents()
+                .into_iter()
+                .sorted()
+                .map(ToOwned::to_owned)
+                .collect::<Vec<Document>>(),
             // FIXME: The extra quotes should be removed by serde (via qdrant::Value), but they are
             // not
             ["\"test_query1\"", "\"test_query2\"", "\"test_query3\""]
                 .into_iter()
                 .sorted()
-                .collect_vec()
+                .map(Into::into)
+                .collect::<Vec<Document>>()
         );
 
         let search_strategy = SimilaritySingleEmbedding::from_filter(qdrant::Filter::must([
@@ -236,10 +245,16 @@ mod tests {
             .unwrap();
         assert_eq!(result.documents().len(), 2);
         assert_eq!(
-            result.documents().iter().sorted().collect_vec(),
+            result
+                .documents()
+                .into_iter()
+                .sorted()
+                .map(ToOwned::to_owned)
+                .collect::<Vec<Document>>(),
             ["\"test_query1\"", "\"test_query2\""]
                 .into_iter()
                 .sorted()
+                .map(Into::into)
                 .collect_vec()
         );
 

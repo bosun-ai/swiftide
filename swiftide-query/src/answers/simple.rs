@@ -7,6 +7,7 @@
 //! as context instead.
 use std::sync::Arc;
 use swiftide_core::{
+    document::Document,
     indexing::SimplePrompt,
     prelude::*,
     prompt::PromptTemplate,
@@ -77,7 +78,12 @@ impl Answer for Simple {
     #[tracing::instrument(skip_all)]
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
         let context = if query.current().is_empty() {
-            &query.documents().join("\n---\n")
+            &query
+                .documents()
+                .into_iter()
+                .map(Document::content)
+                .collect::<Vec<_>>()
+                .join("\n---\n")
         } else {
             query.current()
         };

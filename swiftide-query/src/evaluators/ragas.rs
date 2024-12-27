@@ -42,6 +42,7 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 
 use swiftide_core::{
+    document::Document,
     querying::{states, Query, QueryEvaluation},
     EvaluateQuery,
 };
@@ -120,7 +121,11 @@ impl EvaluationDataSet {
             .get_mut(question)
             .ok_or_else(|| anyhow::anyhow!("Question not found"))?;
 
-        data.contexts = query.documents().to_vec();
+        data.contexts = query
+            .documents()
+            .into_iter()
+            .map(|d| d.content().to_string())
+            .collect::<Vec<_>>();
         Ok(())
     }
 
@@ -299,12 +304,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::RetrievedBuilder::default()
-                    .documents(vec!["Rust is a language".to_string()])
-                    .build()
-                    .unwrap(),
-            )
+            .documents(vec!["Rust is a language".into()])
             .build()
             .unwrap();
         let evaluation = QueryEvaluation::RetrieveDocuments(query.clone());
@@ -325,12 +325,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::AnsweredBuilder::default()
-                    .answer("A systems programming language")
-                    .build()
-                    .unwrap(),
-            )
+            .current("A systems programming language")
             .build()
             .unwrap();
         let evaluation = QueryEvaluation::AnswerQuery(query.clone());
@@ -372,12 +367,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::RetrievedBuilder::default()
-                    .documents(vec!["Rust is a language".to_string()])
-                    .build()
-                    .unwrap(),
-            )
+            .documents(vec!["Rust is a language".into()])
             .build()
             .unwrap();
         dataset
@@ -394,12 +384,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::AnsweredBuilder::default()
-                    .answer("A systems programming language")
-                    .build()
-                    .unwrap(),
-            )
+            .current("A systems programming language")
             .build()
             .unwrap();
         dataset

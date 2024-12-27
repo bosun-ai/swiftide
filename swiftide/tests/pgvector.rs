@@ -227,6 +227,6 @@ async fn test_pgvector_retrieve() {
 
     assert_eq!(
         documents.first().unwrap(),
-        "fn main() { println!(\"Hello, World!\"); }"
+        &"fn main() { println!(\"Hello, World!\"); }".into()
     );
 }

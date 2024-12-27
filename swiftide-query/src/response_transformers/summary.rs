@@ -60,7 +60,7 @@ fn default_prompt() -> PromptTemplate {
 
     {% for document in documents -%}
     ---
-    {{ document }}
+    {{ document.content }}
     ---
     {% endfor -%}
     "
