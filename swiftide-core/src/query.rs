@@ -22,6 +22,7 @@ pub struct Query<STATE: QueryState> {
     original: String,
     #[builder(default = "self.original.clone().unwrap_or_default()")]
     current: String,
+    #[builder(default = STATE::default())]
     state: STATE,
     #[builder(default)]
     transformation_history: Vec<TransformationEvent>,
@@ -169,7 +170,7 @@ impl Query<states::Answered> {
 }
 
 /// Marker trait for query states
-pub trait QueryState: Send + Sync {}
+pub trait QueryState: Send + Sync + Default {}
 /// Marker trait for query states that can still retrieve
 pub trait CanRetrieve: QueryState {}
 

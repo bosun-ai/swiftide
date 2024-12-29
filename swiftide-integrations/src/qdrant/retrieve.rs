@@ -225,15 +225,14 @@ mod tests {
                 .documents()
                 .iter()
                 .sorted()
-                .map(ToOwned::to_owned)
-                .collect::<Vec<Document>>(),
+                .map(Document::content)
+                .collect_vec(),
             // FIXME: The extra quotes should be removed by serde (via qdrant::Value), but they are
             // not
             ["\"test_query1\"", "\"test_query2\"", "\"test_query3\""]
                 .into_iter()
                 .sorted()
-                .map(Into::into)
-                .collect::<Vec<Document>>()
+                .collect_vec()
         );
 
         let search_strategy = SimilaritySingleEmbedding::from_filter(qdrant::Filter::must([
@@ -249,12 +248,11 @@ mod tests {
                 .documents()
                 .iter()
                 .sorted()
-                .map(ToOwned::to_owned)
-                .collect::<Vec<Document>>(),
+                .map(Document::content)
+                .collect_vec(),
             ["\"test_query1\"", "\"test_query2\""]
                 .into_iter()
                 .sorted()
-                .map(Into::into)
                 .collect_vec()
         );
 
