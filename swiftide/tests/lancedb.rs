@@ -33,6 +33,7 @@ async fn test_lancedb() {
         .with_vector(EmbeddedField::Combined)
         .with_metadata(METADATA_QA_CODE_NAME)
         .with_metadata("filter")
+        .with_metadata("path")
         .table_name("swiftide_test")
         .build()
         .unwrap();
@@ -41,8 +42,10 @@ async fn test_lancedb() {
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
         .then(|mut node: indexing::Node| {
+            // Add path to metadata, by default, storage will store all metadata fields
             node.metadata
-                .insert("filter".to_string(), "true".to_string());
+                .insert("path", node.path.display().to_string());
+            node.metadata.insert("filter", "true");
             Ok(node)
         })
         .then_in_batch(transformers::Embed::new(fastembed.clone()).with_batch_size(20))
@@ -75,8 +78,12 @@ async fn test_lancedb() {
         result.answer(),
         "\n\nHello there, how may I assist you today?"
     );
+
+    let retrieved_document = result.documents().first().unwrap();
+    assert_eq!(retrieved_document.content(), code);
+
     assert_eq!(
-        result.documents().first().unwrap(),
-        &"fn main() { println!(\"Hello, World!\"); }".into()
+        retrieved_document.metadata().get("path").unwrap(),
+        codefile.to_str().unwrap()
     );
 }

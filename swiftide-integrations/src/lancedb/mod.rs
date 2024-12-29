@@ -21,6 +21,8 @@ See examples for more information.
 
 Implements `Persist` and `Retrieve`.
 
+If you want to store / retrieve metadata in Lance, the columns can be defined with `with_metadata`.
+
 Note: For querying large tables you manually need to create an index. You can get an
 active connection via `get_connection`.
 

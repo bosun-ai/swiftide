@@ -6,7 +6,7 @@ use crate::{metadata::Metadata, util::debug_long_utf8};
 
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Document {
-    metadata: Option<Metadata>,
+    metadata: Metadata,
     content: String,
 }
 
@@ -58,7 +58,7 @@ impl<T: AsRef<str>> From<T> for Document {
 impl Document {
     pub fn new(content: impl Into<String>, metadata: Option<Metadata>) -> Self {
         Self {
-            metadata,
+            metadata: metadata.unwrap_or_default(),
             content: content.into(),
         }
     }
@@ -67,7 +67,7 @@ impl Document {
         &self.content
     }
 
-    pub fn metadata(&self) -> Option<&Metadata> {
-        self.metadata.as_ref()
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
     }
 }
