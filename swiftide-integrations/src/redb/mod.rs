@@ -77,8 +77,11 @@ impl Redb {
         format!("{}.{}", self.cache_key_prefix, node.id())
     }
 
-    fn table_definition(&self) -> redb::TableDefinition<String, bool> {
-        // TODO: Should this be static?
+    pub fn table_definition(&self) -> redb::TableDefinition<String, bool> {
         redb::TableDefinition::<String, bool>::new(&self.table_name)
+    }
+
+    pub fn database(&self) -> &redb::Database {
+        &self.database
     }
 }
