@@ -80,6 +80,18 @@ impl NodeBuilder {
         self.vectors = Some(vectors);
         self
     }
+
+    /// Adds a key-value pair to the metadata of the node.
+    pub fn with_metadata_value(
+        &mut self,
+        key: impl Into<String>,
+        value: impl Into<serde_json::Value>,
+    ) -> &mut Self {
+        let metadata = self.metadata.get_or_insert_with(Default::default);
+        metadata.insert(key.into(), value.into());
+
+        self
+    }
 }
 
 impl Debug for Node {

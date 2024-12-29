@@ -35,7 +35,7 @@ serde_json = { version = "1.0" }
 strum = { version = "0.26" }
 strum_macros = { version = "0.26" }
 lazy_static = { version = "1.5.0" }
-chrono = { version = "0.4" }
+chrono = { version = "0.4", features = ["serde"] }
 indoc = { version = "2.0" }
 regex = { version = "1.11.1" }
 uuid = { version = "1.10", features = ["v3", "v4", "serde"] }

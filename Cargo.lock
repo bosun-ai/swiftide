@@ -8644,6 +8644,7 @@ version = "0.15.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "chrono",
  "derive_builder",
  "futures-util",
  "ignore",
@@ -8658,6 +8659,7 @@ dependencies = [
  "strum_macros",
  "swiftide-core",
  "swiftide-macros",
+ "temp-dir",
  "test-case",
  "test-log",
  "text-splitter",
