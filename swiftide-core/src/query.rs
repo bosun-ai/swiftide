@@ -89,6 +89,11 @@ impl<STATE: Clone + QueryState> Query<STATE> {
     pub fn documents(&self) -> &[Document] {
         &self.documents
     }
+
+    /// Returns the current documents as mutable
+    pub fn documents_mut(&mut self) -> &mut Vec<Document> {
+        &mut self.documents
+    }
 }
 
 impl<STATE: Clone + CanRetrieve> Query<STATE> {
