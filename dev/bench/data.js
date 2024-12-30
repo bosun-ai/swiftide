@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735551893393,
+  "lastUpdate": 1735552240871,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11231,6 +11231,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240896,
             "range": "± 19996",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "r.raajey@gmail.com",
+            "name": "RK",
+            "username": "shamb0"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "584695e4841a3c9341e521b81e9f254270b3416e",
+          "message": "feat(query): Add custom SQL query generation for pgvector search (#478)\n\nAdds support for custom retrieval queries with the sqlx query builder for PGVector. Puts down the fundamentals for custom query building for any retriever.\r\n\r\n---------\r\n\r\nSigned-off-by: shamb0 <r.raajey@gmail.com>\r\nCo-authored-by: Swabbie (Bosun) <155570396+SwabbieBosun@users.noreply.github.com>",
+          "timestamp": "2024-12-30T10:42:11+01:00",
+          "tree_id": "9684dd2bdaa15d5f9868b24dd637f646e9428fc2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/584695e4841a3c9341e521b81e9f254270b3416e"
+        },
+        "date": 1735552240327,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1338614,
+            "range": "± 974816",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241484,
+            "range": "± 2345",
             "unit": "ns/iter"
           }
         ]
