@@ -6,6 +6,7 @@
 //! - Efficient vector storage and indexing
 //! - Connection pooling with automatic retries
 //! - Batch operations for optimized performance
+//! - Metadata included in retrieval
 //!
 //! The functionality is primarily used through the [`PgVector`] client, which implements
 //! the [`Persist`] trait for seamless integration with indexing and query pipelines.
