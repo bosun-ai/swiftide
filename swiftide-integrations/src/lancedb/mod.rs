@@ -180,8 +180,11 @@ impl LanceDBBuilder {
                         true,
                     ));
                 }
-                FieldConfig::Chunk | FieldConfig::Metadata(_) => {
+                FieldConfig::Chunk => {
                     fields.push(Field::new(field.field_name(), DataType::Utf8, false));
+                }
+                FieldConfig::Metadata(_) => {
+                    fields.push(Field::new(field.field_name(), DataType::Utf8, true));
                 }
                 FieldConfig::ID => {
                     fields.push(Field::new(
