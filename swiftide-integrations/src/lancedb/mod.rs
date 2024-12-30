@@ -121,7 +121,10 @@ impl LanceDB {
     /// Returns an error if the table cannot be opened or the connection cannot be acquired.
     pub async fn open_table(&self) -> Result<lancedb::Table> {
         let conn = self.get_connection().await?;
-        conn.open_table(&self.table_name).execute().await
+        conn.open_table(&self.table_name)
+            .execute()
+            .await
+            .context("Failed to open table")
     }
 }
 
