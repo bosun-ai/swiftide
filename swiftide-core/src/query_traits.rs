@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
@@ -75,6 +77,20 @@ impl TransformQuery for Box<dyn TransformQuery> {
     }
 }
 
+#[async_trait]
+impl TransformQuery for Arc<dyn TransformQuery> {
+    async fn transform_query(
+        &self,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Pending>> {
+        self.as_ref().transform_query(query).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
 /// A search strategy for the query pipeline
 pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
@@ -97,6 +113,21 @@ dyn_clone::clone_trait_object!(<S> Retrieve<S>);
 
 #[async_trait]
 impl<S: SearchStrategy> Retrieve<S> for Box<dyn Retrieve<S>> {
+    async fn retrieve(
+        &self,
+        search_strategy: &S,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        self.as_ref().retrieve(search_strategy, query).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl<S: SearchStrategy> Retrieve<S> for Arc<dyn Retrieve<S>> {
     async fn retrieve(
         &self,
         search_strategy: &S,
@@ -176,6 +207,17 @@ impl TransformResponse for Box<dyn TransformResponse> {
     }
 }
 
+#[async_trait]
+impl TransformResponse for Arc<dyn TransformResponse> {
+    async fn transform_response(&self, query: Query<Retrieved>) -> Result<Query<Retrieved>> {
+        self.as_ref().transform_response(query).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
 /// Can answer the original query
 #[async_trait]
 pub trait Answer: Send + Sync + DynClone {
@@ -225,6 +267,17 @@ impl Answer for Box<dyn Answer> {
     }
 }
 
+#[async_trait]
+impl Answer for Arc<dyn Answer> {
+    async fn answer(&self, query: Query<Retrieved>) -> Result<Query<states::Answered>> {
+        self.as_ref().answer(query).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
 /// Evaluates a query
 ///
 /// An evaluator needs to be able to respond to each step in the query pipeline
@@ -251,6 +304,13 @@ mock! {
 }
 #[async_trait]
 impl EvaluateQuery for Box<dyn EvaluateQuery> {
+    async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()> {
+        self.as_ref().evaluate(evaluation).await
+    }
+}
+
+#[async_trait]
+impl EvaluateQuery for Arc<dyn EvaluateQuery> {
     async fn evaluate(&self, evaluation: QueryEvaluation) -> Result<()> {
         self.as_ref().evaluate(evaluation).await
     }
