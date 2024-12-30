@@ -89,7 +89,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
             .fetch_all(pool)
             .await?;
 
-        let docs = data.into_iter().map(|r| r.chunk).collect();
+        let docs = data.into_iter().map(|r| r.chunk.into()).collect();
 
         Ok(query_state.retrieved_documents(docs))
     }

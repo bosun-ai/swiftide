@@ -8710,6 +8710,7 @@ dependencies = [
  "swiftide-macros",
  "swiftide-test-utils",
  "temp-dir",
+ "tera",
  "test-case",
  "test-log",
  "testcontainers",

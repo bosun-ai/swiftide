@@ -247,8 +247,8 @@ mod tests {
 
         assert_eq!(result.documents().len(), 2);
 
-        assert!(result.documents().contains(&"content1".to_string()));
-        assert!(result.documents().contains(&"content2".to_string()));
+        assert!(result.documents().contains(&"content1".into()));
+        assert!(result.documents().contains(&"content2".into()));
 
         // Additional test with priority filter
         let search_strategy =
@@ -260,8 +260,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.documents().len(), 2);
-        assert!(result.documents().contains(&"content1".to_string()));
-        assert!(result.documents().contains(&"content3".to_string()));
+        assert!(result.documents().contains(&"content1".into()));
+        assert!(result.documents().contains(&"content3".into()));
     }
 
     #[test_log::test(tokio::test)]
@@ -317,8 +317,8 @@ mod tests {
 
         // Verify that similar vectors are retrieved first
         assert_eq!(result.documents().len(), 2);
-        assert!(result.documents().contains(&"base_content".to_string()));
-        assert!(result.documents().contains(&"similar_content".to_string()));
+        assert!(result.documents().contains(&"base_content".into()));
+        assert!(result.documents().contains(&"similar_content".into()));
     }
 
     #[test_case(
@@ -443,7 +443,7 @@ mod tests {
 
                 if test_case.expected_in_results {
                     assert!(
-                        result.documents().contains(&test_case.chunk.to_string()),
+                        result.documents().contains(&test_case.chunk.into()),
                         "Document should be found in results for field {field}",
                     );
                 }
