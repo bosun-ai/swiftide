@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735565442927,
+  "lastUpdate": 1735580534932,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11339,6 +11339,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240809,
             "range": "± 1925",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "52e341ee9777d04f9fb07054980ba087c55c033e",
+          "message": "feat(lancedb): Public method for opening table (#514)",
+          "timestamp": "2024-12-30T18:33:30+01:00",
+          "tree_id": "ea7f89a1891b63b22aaa3e39c54b711318d35591",
+          "url": "https://github.com/bosun-ai/swiftide/commit/52e341ee9777d04f9fb07054980ba087c55c033e"
+        },
+        "date": 1735580533714,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1350332,
+            "range": "± 1012992",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241806,
+            "range": "± 3292",
             "unit": "ns/iter"
           }
         ]
