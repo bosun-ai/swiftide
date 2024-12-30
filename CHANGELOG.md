@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.1](https://github.com/bosun-ai/swiftide/compare/v0.15.0...v0.15.1) - 2024-12-30
+
+### New features
+
+- [b55bf0b](https://github.com/bosun-ai/swiftide/commit/b55bf0b318042459a6983cf725078c4da662618b) *(redb)*  Public database and table definition (#510)
+
+- [dc9881e](https://github.com/bosun-ai/swiftide/commit/dc9881e48da7fb5dc744ef33b1c356b4152d00d3)  Allow opt out of pipeline debug truncation
+
+### Miscellaneous
+
+- [1bbbb0e](https://github.com/bosun-ai/swiftide/commit/1bbbb0e548cafa527c34856bd9ac6f76aca2ab5f)  Clippy
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.15.0...0.15.1
+
+
+
 ## [0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0) - 2024-12-23
 
 ### New features
