@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735580534932,
+  "lastUpdate": 1735580546096,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11393,6 +11393,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241806,
             "range": "± 3292",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2831101daa2928b5507116d9eb907d98fb77bf50",
+          "message": "fix(lancedb): Metadata should be nullable in lancedb (#515)",
+          "timestamp": "2024-12-30T18:33:45+01:00",
+          "tree_id": "bc8a4ce61ce7d56df0c057efb0ac4e8f3d3dbc94",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2831101daa2928b5507116d9eb907d98fb77bf50"
+        },
+        "date": 1735580545585,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1348425,
+            "range": "± 912184",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 239804,
+            "range": "± 1215",
             "unit": "ns/iter"
           }
         ]
