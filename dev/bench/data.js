@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735123402945,
+  "lastUpdate": 1735551893393,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11177,6 +11177,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243121,
             "range": "± 3829",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b55bf0b318042459a6983cf725078c4da662618b",
+          "message": "feat(redb): Public database and table definition (#510)",
+          "timestamp": "2024-12-30T10:36:10+01:00",
+          "tree_id": "8339e187060ec67f750a2d32ae1bfebb91eb1da2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b55bf0b318042459a6983cf725078c4da662618b"
+        },
+        "date": 1735551892078,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 14",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 2272409,
+            "range": "± 542125",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240896,
+            "range": "± 19996",
             "unit": "ns/iter"
           }
         ]
