@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735552240871,
+  "lastUpdate": 1735565442927,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11285,6 +11285,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241484,
             "range": "± 2345",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "176378f846ddecc3ddba74f6b423338b793f29b4",
+          "message": "feat: Implement traits for all Arc dynamic dispatch (#513)\n\nIf you use i.e. a `Persist` or a `NodeCache` outside swiftide as well, and you already have it Arc'ed, now it just works.",
+          "timestamp": "2024-12-30T14:22:11+01:00",
+          "tree_id": "cf35fe05cb91bcfae33d0c50370ad124995b2dbb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/176378f846ddecc3ddba74f6b423338b793f29b4"
+        },
+        "date": 1735565442465,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1337531,
+            "range": "± 962025",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240809,
+            "range": "± 1925",
             "unit": "ns/iter"
           }
         ]
