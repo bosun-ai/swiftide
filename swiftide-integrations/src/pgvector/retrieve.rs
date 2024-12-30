@@ -132,7 +132,7 @@ impl Retrieve<CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>> for P
             .map_err(|e| anyhow!("Failed to execute search query: {}", e))?;
 
         // Transform results into documents
-        let documents = results.into_iter().map(|r| r.chunk).collect();
+        let documents = results.into_iter().map(|r| r.chunk.into()).collect();
 
         // Update query state with retrieved documents
         Ok(query.retrieved_documents(documents))
