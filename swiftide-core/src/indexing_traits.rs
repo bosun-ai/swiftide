@@ -9,6 +9,7 @@ use crate::{
     indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream, SparseEmbeddings,
 };
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use crate::prompt::Prompt;
 use anyhow::Result;
@@ -57,6 +58,19 @@ mock! {
 
 #[async_trait]
 impl Transformer for Box<dyn Transformer> {
+    async fn transform_node(&self, node: Node) -> Result<Node> {
+        self.as_ref().transform_node(node).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        self.as_ref().concurrency()
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl Transformer for Arc<dyn Transformer> {
     async fn transform_node(&self, node: Node) -> Result<Node> {
         self.as_ref().transform_node(node).await
     }
@@ -143,6 +157,19 @@ where
 
 #[async_trait]
 impl BatchableTransformer for Box<dyn BatchableTransformer> {
+    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+        self.as_ref().batch_transform(nodes).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        self.as_ref().concurrency()
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl BatchableTransformer for Arc<dyn BatchableTransformer> {
     async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
         self.as_ref().batch_transform(nodes).await
     }
@@ -279,6 +306,19 @@ impl ChunkerTransformer for Box<dyn ChunkerTransformer> {
 }
 
 #[async_trait]
+impl ChunkerTransformer for Arc<dyn ChunkerTransformer> {
+    async fn transform_node(&self, node: Node) -> IndexingStream {
+        self.as_ref().transform_node(node).await
+    }
+    fn concurrency(&self) -> Option<usize> {
+        self.as_ref().concurrency()
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
 impl ChunkerTransformer for &dyn ChunkerTransformer {
     async fn transform_node(&self, node: Node) -> IndexingStream {
         (*self).transform_node(node).await
@@ -332,6 +372,22 @@ mock! {
 
 #[async_trait]
 impl NodeCache for Box<dyn NodeCache> {
+    async fn get(&self, node: &Node) -> bool {
+        self.as_ref().get(node).await
+    }
+    async fn set(&self, node: &Node) {
+        self.as_ref().set(node).await;
+    }
+    async fn clear(&self) -> Result<()> {
+        self.as_ref().clear().await
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl NodeCache for Arc<dyn NodeCache> {
     async fn get(&self, node: &Node) -> bool {
         self.as_ref().get(node).await
     }
@@ -401,6 +457,17 @@ impl EmbeddingModel for Box<dyn EmbeddingModel> {
 }
 
 #[async_trait]
+impl EmbeddingModel for Arc<dyn EmbeddingModel> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+        self.as_ref().embed(input).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
 impl EmbeddingModel for &dyn EmbeddingModel {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         (*self).embed(input).await
@@ -439,6 +506,17 @@ mock! {
 
 #[async_trait]
 impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
+    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+        self.as_ref().sparse_embed(input).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl SparseEmbeddingModel for Arc<dyn SparseEmbeddingModel> {
     async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
         self.as_ref().sparse_embed(input).await
     }
@@ -497,6 +575,17 @@ impl SimplePrompt for Box<dyn SimplePrompt> {
 }
 
 #[async_trait]
+impl SimplePrompt for Arc<dyn SimplePrompt> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+        self.as_ref().prompt(prompt).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
 impl SimplePrompt for &dyn SimplePrompt {
     async fn prompt(&self, prompt: Prompt) -> Result<String> {
         (*self).prompt(prompt).await
@@ -543,6 +632,25 @@ mock! {
 
 #[async_trait]
 impl Persist for Box<dyn Persist> {
+    async fn setup(&self) -> Result<()> {
+        self.as_ref().setup().await
+    }
+    async fn store(&self, node: Node) -> Result<Node> {
+        self.as_ref().store(node).await
+    }
+    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+        self.as_ref().batch_store(nodes).await
+    }
+    fn batch_size(&self) -> Option<usize> {
+        self.as_ref().batch_size()
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl Persist for Arc<dyn Persist> {
     async fn setup(&self) -> Result<()> {
         self.as_ref().setup().await
     }
