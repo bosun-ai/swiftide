@@ -36,7 +36,7 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use tokio::time::Duration;
 
-use pgv_table_types::{FieldConfig, MetadataConfig, VectorConfig};
+pub use pgv_table_types::{FieldConfig, MetadataConfig, VectorConfig};
 
 /// Default maximum connections for the database connection pool.
 const DB_POOL_CONN_MAX: u32 = 10;
@@ -135,6 +135,10 @@ impl PgVector {
     pub async fn get_pool(&self) -> Result<&PgPool> {
         self.pool_get_or_initialize().await
     }
+
+    pub fn get_table_name(&self) -> &str {
+        &self.table_name
+    }
 }
 
 impl PgVectorBuilder {
@@ -177,7 +181,7 @@ impl PgVectorBuilder {
         self
     }
 
-    fn default_fields() -> Vec<FieldConfig> {
+    pub fn default_fields() -> Vec<FieldConfig> {
         vec![FieldConfig::ID, FieldConfig::Chunk]
     }
 }
