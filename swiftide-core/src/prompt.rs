@@ -10,11 +10,11 @@
 //! Transformers in Swiftide come with default prompts, and they can be customized or replaced as
 //! needed.
 //!
-//! [`PromptTemplate`] can be added with [`PromptTemplate::try_compiled_from_str`]. Prompts can also be
+//! [`Template`] can be added with [`Template::try_compiled_from_str`]. Prompts can also be
 //! created on the fly from anything that implements [`Into<String>`]. Compiled prompts are stored in
 //! an internal repository.
 //!
-//! Additionally, `PromptTemplate::String` and `PromptTemplate::Static` can be used to create
+//! Additionally, `Template::String` and `Template::Static` can be used to create
 //! templates on the fly as well.
 //!
 //! It's recommended to precompile your templates.
@@ -24,8 +24,8 @@
 //! ```
 //! #[tokio::main]
 //! # async fn main() {
-//! # use swiftide_core::prompt::PromptTemplate;
-//! let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
+//! # use swiftide_core::prompt::Template;
+//! let template = Template::try_compiled_from_str("hello {{world}}").await.unwrap();
 //! let prompt = template.to_prompt().with_context_value("world", "swiftide");
 //!
 //! assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
@@ -59,26 +59,26 @@ lazy_static! {
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
 pub struct Prompt {
-    template: PromptTemplate,
+    template: Template,
     context: Option<tera::Context>,
 }
 
-/// A `PromptTemplate` defines a template for a prompt
+/// A `Template` defines a template for a prompt
 #[derive(Clone, Debug)]
-pub enum PromptTemplate {
+pub enum Template {
     CompiledTemplate(String),
     String(String),
     Static(&'static str),
 }
 
-impl PromptTemplate {
+impl Template {
     /// Creates a reference to a template already stored in the repository
-    pub fn from_compiled_template_name(name: impl Into<String>) -> PromptTemplate {
-        PromptTemplate::CompiledTemplate(name.into())
+    pub fn from_compiled_template_name(name: impl Into<String>) -> Template {
+        Template::CompiledTemplate(name.into())
     }
 
-    pub fn from_string(template: impl Into<String>) -> PromptTemplate {
-        PromptTemplate::String(template.into())
+    pub fn from_string(template: impl Into<String>) -> Template {
+        Template::String(template.into())
     }
 
     /// Extends the prompt repository with a custom [`tera::Tera`] instance.
@@ -99,7 +99,7 @@ impl PromptTemplate {
             .context("Could not extend prompt repository with custom Tera instance")
     }
 
-    /// Compiles a template from a string and returns a `PromptTemplate` with a reference to the
+    /// Compiles a template from a string and returns a `Template` with a reference to the
     /// string.
     ///
     /// WARN: Do not use this inside a pipeline or any form of load, as it will lock the repository
@@ -109,13 +109,13 @@ impl PromptTemplate {
     /// Errors if the template fails to compile
     pub async fn try_compiled_from_str(
         template: impl AsRef<str> + Send + 'static,
-    ) -> Result<PromptTemplate> {
+    ) -> Result<Template> {
         let id = Uuid::new_v4().to_string();
         let mut lock = TEMPLATE_REPOSITORY.write().await;
         lock.add_raw_template(&id, template.as_ref())
             .context("Failed to add raw template")?;
 
-        Ok(PromptTemplate::CompiledTemplate(id))
+        Ok(Template::CompiledTemplate(id))
     }
 
     /// Renders a template with an optional `tera::Context`
@@ -126,7 +126,7 @@ impl PromptTemplate {
     /// - One-off template has errors
     /// - Context is missing that is required by the template
     pub async fn render(&self, context: &Option<tera::Context>) -> Result<String> {
-        use PromptTemplate::{CompiledTemplate, Static, String};
+        use Template::{CompiledTemplate, Static, String};
 
         let template = match self {
             CompiledTemplate(id) => {
@@ -181,15 +181,15 @@ impl PromptTemplate {
     }
 }
 
-impl From<&'static str> for PromptTemplate {
+impl From<&'static str> for Template {
     fn from(template: &'static str) -> Self {
-        PromptTemplate::Static(template)
+        Template::Static(template)
     }
 }
 
-impl From<String> for PromptTemplate {
+impl From<String> for Template {
     fn from(template: String) -> Self {
-        PromptTemplate::String(template)
+        Template::String(template)
     }
 }
 
@@ -223,7 +223,7 @@ impl Prompt {
     ///
     /// # Errors
     ///
-    /// See `PromptTemplate::render`
+    /// See `Template::render`
     pub async fn render(&self) -> Result<String> {
         self.template.render(&self.context).await
     }
@@ -232,7 +232,7 @@ impl Prompt {
 impl From<&'static str> for Prompt {
     fn from(prompt: &'static str) -> Self {
         Prompt {
-            template: PromptTemplate::Static(prompt),
+            template: Template::Static(prompt),
             context: None,
         }
     }
@@ -241,7 +241,7 @@ impl From<&'static str> for Prompt {
 impl From<String> for Prompt {
     fn from(prompt: String) -> Self {
         Prompt {
-            template: PromptTemplate::String(prompt),
+            template: Template::String(prompt),
             context: None,
         }
     }
@@ -253,7 +253,7 @@ mod test {
 
     #[tokio::test]
     async fn test_prompt() {
-        let template = PromptTemplate::try_compiled_from_str("hello {{world}}")
+        let template = Template::try_compiled_from_str("hello {{world}}")
             .await
             .unwrap();
         let prompt = template.to_prompt().with_context_value("world", "swiftide");
@@ -262,7 +262,7 @@ mod test {
 
     #[tokio::test]
     async fn test_prompt_with_node() {
-        let template = PromptTemplate::try_compiled_from_str("hello {{node.chunk}}")
+        let template = Template::try_compiled_from_str("hello {{node.chunk}}")
             .await
             .unwrap();
         let node = Node::new("test");
@@ -286,9 +286,9 @@ mod test {
             .add_raw_template("hello", "hello {{world}}")
             .unwrap();
 
-        PromptTemplate::extend(&custom_tera).await.unwrap();
+        Template::extend(&custom_tera).await.unwrap();
 
-        let prompt = PromptTemplate::from_compiled_template_name("hello")
+        let prompt = Template::from_compiled_template_name("hello")
             .to_prompt()
             .with_context_value("world", "swiftide");
 
@@ -325,7 +325,7 @@ mod test {
     async fn test_coercion_to_template() {
         let raw: &str = "hello {{world}}";
 
-        let prompt: PromptTemplate = raw.into();
+        let prompt: Template = raw.into();
         assert_eq!(
             prompt
                 .to_prompt()
@@ -336,7 +336,7 @@ mod test {
             "hello swiftide"
         );
 
-        let prompt: PromptTemplate = raw.to_string().into();
+        let prompt: Template = raw.to_string().into();
         assert_eq!(
             prompt
                 .to_prompt()

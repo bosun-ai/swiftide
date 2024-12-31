@@ -211,7 +211,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // ### Usage of Prompts in Transformers
     //
-    // Swiftide utilizes the [`PromptTemplate`] for templating prompts, making it easy to define and manage prompts within transformers.
+    // Swiftide utilizes the [`Template`] for templating prompts, making it easy to define and manage prompts within transformers.
     //
     // ```rust
     // let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();

@@ -6,7 +6,7 @@
 //! Transformers that prompt have a default prompt configured. Prompts can be customized
 //! and tailored, supporting Jinja style templating based on [tera](https://docs.rs/tera/latest/tera/).
 //!
-//!  See [`swiftide_core::prompt::Prompt`] and [`swiftide_core::prompt::PromptTemplate`]
+//!  See [`swiftide_core::prompt::Prompt`] and [`swiftide_core::prompt::Template`]
 
 pub mod chunk_markdown;
 pub mod chunk_text;

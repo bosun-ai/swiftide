@@ -10,7 +10,7 @@ use swiftide_core::{
     document::Document,
     indexing::SimplePrompt,
     prelude::*,
-    prompt::PromptTemplate,
+    prompt::Template,
     querying::{states, Query},
     Answer,
 };
@@ -27,7 +27,9 @@ pub struct Simple {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt_template: PromptTemplate,
+    prompt_template: Template,
+    #[builder(default)]
+    document_template: Option<tera::Template>,
 }
 
 impl Simple {
@@ -56,7 +58,7 @@ impl SimpleBuilder {
     }
 }
 
-fn default_prompt() -> PromptTemplate {
+fn default_prompt() -> Template {
     indoc::indoc! {"
     Answer the following question based on the context provided:
     {{ question }}
@@ -77,16 +79,16 @@ fn default_prompt() -> PromptTemplate {
 impl Answer for Simple {
     #[tracing::instrument(skip_all)]
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
-        let context = if query.current().is_empty() {
-            &query
-                .documents()
-                .iter()
-                .map(Document::content)
-                .collect::<Vec<_>>()
-                .join("\n---\n")
-        } else {
-            query.current()
-        };
+        // let context = if query.current().is_empty() {
+        //     &query
+        //         .documents()
+        //         .iter()
+        //         .map(Document::content)
+        //         .collect::<Vec<_>>()
+        //         .join("\n---\n")
+        // } else {
+        //     query.current()
+        // };
 
         let answer = self
             .client
@@ -94,7 +96,7 @@ impl Answer for Simple {
                 self.prompt_template
                     .to_prompt()
                     .with_context_value("question", query.original())
-                    .with_context_value("context", context),
+                    .with_context_value("documents", query.documents()),
             )
             .await?;
 

@@ -8761,6 +8761,7 @@ dependencies = [
  "serde",
  "serde_json",
  "swiftide-core",
+ "tera",
  "tokio",
  "tokio-stream",
  "tracing",

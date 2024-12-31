@@ -2,7 +2,7 @@ use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
-    prompt::PromptTemplate,
+    prompt::Template,
     querying::{states, Query},
     TransformResponse,
 };
@@ -12,7 +12,7 @@ pub struct Summary {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt_template: PromptTemplate,
+    prompt_template: Template,
 }
 
 impl Summary {
@@ -44,7 +44,7 @@ impl SummaryBuilder {
     }
 }
 
-fn default_prompt() -> PromptTemplate {
+fn default_prompt() -> Template {
     indoc::indoc!(
         "
     Your job is to help a query tool find the right context.
