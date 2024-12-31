@@ -22,7 +22,6 @@ use swiftide::{
     },
     query::{
         self, answers, query_transformers, response_transformers, states, Query,
-        TransformationEvent,
     },
 };
 use swiftide_test_utils::{mock_chat_completions, openai_client};
