@@ -52,7 +52,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
 
     let default_prompt_fn = match &args.default_prompt_file {
         Some(file) => quote! {
-            fn default_prompt() -> hidden::Template {
+            fn default_prompt() -> hidden::Template<'static> {
                 include_str!(#file).into()
             }
         },

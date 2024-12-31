@@ -8,15 +8,15 @@ use swiftide_core::{
 };
 
 #[derive(Debug, Clone, Builder)]
-pub struct Summary {
+pub struct Summary<'a> {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt_template: Template,
+    prompt_template: Template<'a>,
 }
 
-impl Summary {
-    pub fn builder() -> SummaryBuilder {
+impl Summary<'_> {
+    pub fn builder() -> SummaryBuilder<'static> {
         SummaryBuilder::default()
     }
 
@@ -28,7 +28,7 @@ impl Summary {
     /// # Panics
     ///
     /// Panics if the build failed
-    pub fn from_client(client: impl SimplePrompt + 'static) -> Summary {
+    pub fn from_client(client: impl SimplePrompt + 'static) -> Self {
         SummaryBuilder::default()
             .client(client)
             .to_owned()
@@ -37,14 +37,14 @@ impl Summary {
     }
 }
 
-impl SummaryBuilder {
+impl SummaryBuilder<'_> {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
         self.client = Some(Arc::new(client) as Arc<dyn SimplePrompt>);
         self
     }
 }
 
-fn default_prompt() -> Template {
+fn default_prompt() -> Template<'static> {
     indoc::indoc!(
         "
     Your job is to help a query tool find the right context.
@@ -69,7 +69,7 @@ fn default_prompt() -> Template {
 }
 
 #[async_trait]
-impl TransformResponse for Summary {
+impl<'a> TransformResponse for Summary<'a> {
     #[tracing::instrument(skip_all)]
     async fn transform_response(
         &self,
