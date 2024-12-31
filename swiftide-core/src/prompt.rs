@@ -136,14 +136,17 @@ impl PromptTemplate {
                 };
 
                 let lock = TEMPLATE_REPOSITORY.read().await;
-                let available = lock.get_template_names().collect::<Vec<_>>().join(", ");
-                tracing::debug!(id, available, "Rendering template ...");
+                tracing::debug!(
+                    id,
+                    available = ?lock.get_template_names().collect::<Vec<_>>(),
+                    "Rendering template ..."
+                );
                 let result = lock.render(id, context);
 
                 if result.is_err() {
                     tracing::error!(
                         error = result.as_ref().unwrap_err().to_string(),
-                        available,
+                        available = ?lock.get_template_names().collect::<Vec<_>>(),
                         "Error rendering template {id}"
                     );
                 }
