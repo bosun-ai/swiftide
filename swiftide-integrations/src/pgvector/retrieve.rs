@@ -29,7 +29,6 @@ impl From<VectorSearchResult> for Document {
 
 impl FromRow<'_, sqlx::postgres::PgRow> for VectorSearchResult {
     fn from_row(row: &sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
-        dbg!(&row);
         let mut metadata = Metadata::default();
 
         // Metadata fields are stored each as prefixed meta_ fields. Perhaps we should add a single
