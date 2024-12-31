@@ -8546,6 +8546,7 @@ dependencies = [
  "async-openai",
  "async-trait",
  "document-features",
+ "lancedb",
  "mockall",
  "qdrant-client",
  "serde",

@@ -4,11 +4,14 @@ use arrow_array::StringArray;
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use itertools::Itertools;
-use lancedb::query::{ExecutableQuery, QueryBase};
+use lancedb::query::{self, ExecutableQuery, QueryBase};
 use swiftide_core::{
     document::Document,
     indexing::Metadata,
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -121,6 +124,69 @@ impl Retrieve<SimilaritySingleEmbedding> for LanceDB {
             query,
         )
         .await
+    }
+}
+
+#[async_trait]
+impl Retrieve<CustomStrategy<query::VectorQuery>> for LanceDB {
+    /// Implements vector similarity search for LanceDB using a custom query strategy.
+    ///
+    /// # Type Parameters
+    /// * `VectorQuery` - LanceDB's query type for vector similarity search
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomStrategy<query::VectorQuery>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        // Build the custom query using both strategy and query state
+        let query_builder = search_strategy.build_query(&query)?;
+
+        // Execute the query using the builder's built-in methods
+        let batches = query_builder
+            .execute()
+            .await?
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        let mut documents = vec![];
+
+        for batch in batches {
+            let schema: SchemaRef = batch.schema();
+
+            for row_idx in 0..batch.num_rows() {
+                let mut metadata = Metadata::default();
+                let mut content = String::new();
+
+                for (col_idx, field) in schema.fields().iter().enumerate() {
+                    let column = batch.column(col_idx);
+
+                    if let Some(array) = column.as_any().downcast_ref::<StringArray>() {
+                        if field.name() == "chunk" {
+                            // Extract the "content" field
+                            content = array.value(row_idx).to_string();
+                        } else {
+                            // Assume other fields are part of the metadata
+                            let value = array.value(row_idx).to_string();
+                            metadata.insert(field.name().clone(), value);
+                        }
+                    } else {
+                        // Handle other array types as necessary
+                        // TODO: Can't we just downcast to serde::Value or fail?
+                    }
+                }
+
+                documents.push(Document::new(
+                    content,
+                    if metadata.is_empty() {
+                        None
+                    } else {
+                        Some(metadata)
+                    },
+                ));
+            }
+        }
+
+        Ok(query.retrieved_documents(documents))
     }
 }
 

@@ -139,7 +139,7 @@ aws-bedrock = [
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
 ]
-lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
+lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array", "dep:arrow"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
 # Paruqet loader
