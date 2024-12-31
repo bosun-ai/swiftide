@@ -1,11 +1,14 @@
 use std::fmt;
 
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
 use crate::{metadata::Metadata, util::debug_long_utf8};
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[builder(setter(into))]
 pub struct Document {
+    #[builder(default)]
     metadata: Metadata,
     content: String,
 }
@@ -61,6 +64,10 @@ impl Document {
             metadata: metadata.unwrap_or_default(),
             content: content.into(),
         }
+    }
+
+    pub fn builder() -> DocumentBuilder {
+        DocumentBuilder::default()
     }
 
     pub fn content(&self) -> &str {
