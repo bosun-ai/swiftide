@@ -2,6 +2,8 @@
 //! The tests validate the functionality of the pipeline, ensuring that data is correctly indexed
 //! and processed from temporary files, database configurations, and simulated environments.
 
+use swiftide_core::document::Document;
+use swiftide_integrations::treesitter::metadata_qa_code;
 use temp_dir::TempDir;
 
 use anyhow::{anyhow, Result};
@@ -218,19 +220,21 @@ async fn test_pgvector_retrieve() {
         result.answer(),
         "\n\nHello there, how may I assist you today?"
     );
-    let TransformationEvent::Retrieved { documents, .. } = result
-        .history()
-        .iter()
-        .find(|e| matches!(e, TransformationEvent::Retrieved { .. }))
-        .unwrap()
-    else {
-        panic!("No documents found")
-    };
 
-    assert_eq!(
-        documents.first().unwrap(),
-        &"fn main() { println!(\"Hello, World!\"); }".into()
-    );
+    let first_document = result.documents().first().unwrap();
+
+    let expected = Document::builder()
+        .content("fn main() { println!(\"Hello, World!\"); }")
+        .metadata([
+            (
+                metadata_qa_code::NAME,
+                "\n\nHello there, how may I assist you today?",
+            ),
+            ("filter", "true"),
+        ])
+        .build()
+        .unwrap();
+    assert_eq!(first_document, &expected);
 }
 
 /// Tests the dynamic vector similarity search functionality using PostgreSQL.
@@ -393,17 +397,12 @@ async fn test_pgvector_retrieve_dynamic_search() {
         "\n\nHello there, how may I assist you today?"
     );
 
-    let TransformationEvent::Retrieved { documents, .. } = result
-        .history()
-        .iter()
-        .find(|e| matches!(e, TransformationEvent::Retrieved { .. }))
-        .unwrap()
-    else {
-        panic!("No documents found")
-    };
+    let first_document = result.documents().first().unwrap();
 
-    assert_eq!(
-        documents.first().unwrap(),
-        "fn main() { println!(\"Hello, World!\"); }"
-    );
+    // The custom query explicitly skipped metadata
+    let expected = Document::builder()
+        .content("fn main() { println!(\"Hello, World!\"); }")
+        .build()
+        .unwrap();
+    assert_eq!(first_document, &expected);
 }
