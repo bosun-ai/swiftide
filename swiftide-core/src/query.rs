@@ -7,9 +7,7 @@
 //! `states::Answered`: The query has been answered
 use derive_builder::Builder;
 
-use crate::{util::debug_long_utf8, Embedding, SparseEmbedding};
-
-type Document = String;
+use crate::{document::Document, util::debug_long_utf8, Embedding, SparseEmbedding};
 
 /// A query is the main object going through a query pipeline
 ///
@@ -24,6 +22,7 @@ pub struct Query<STATE: QueryState> {
     original: String,
     #[builder(default = "self.original.clone().unwrap_or_default()")]
     current: String,
+    #[builder(default = STATE::default())]
     state: STATE,
     #[builder(default)]
     transformation_history: Vec<TransformationEvent>,
@@ -34,6 +33,12 @@ pub struct Query<STATE: QueryState> {
 
     #[builder(default)]
     pub sparse_embedding: Option<SparseEmbedding>,
+
+    /// Documents the query will operate on
+    ///
+    /// A query can retrieve multiple times, accumulating documents
+    #[builder(default)]
+    documents: Vec<Document>,
 }
 
 impl<STATE: std::fmt::Debug + QueryState> std::fmt::Debug for Query<STATE> {
@@ -71,12 +76,41 @@ impl<STATE: Clone + QueryState> Query<STATE> {
             transformation_history: self.transformation_history,
             embedding: self.embedding,
             sparse_embedding: self.sparse_embedding,
+            documents: self.documents,
         }
     }
 
     #[allow(dead_code)]
     pub fn history(&self) -> &Vec<TransformationEvent> {
         &self.transformation_history
+    }
+
+    /// Returns the current documents that will be used as context for answer generation
+    pub fn documents(&self) -> &[Document] {
+        &self.documents
+    }
+
+    /// Returns the current documents as mutable
+    pub fn documents_mut(&mut self) -> &mut Vec<Document> {
+        &mut self.documents
+    }
+}
+
+impl<STATE: Clone + CanRetrieve> Query<STATE> {
+    /// Add retrieved documents and transition to `states::Retrieved`
+    pub fn retrieved_documents(mut self, documents: Vec<Document>) -> Query<states::Retrieved> {
+        self.documents.extend(documents.clone());
+        self.transformation_history
+            .push(TransformationEvent::Retrieved {
+                before: self.current.clone(),
+                after: String::new(),
+                documents,
+            });
+
+        let state = states::Retrieved;
+
+        self.current.clear();
+        self.transition_to(state)
     }
 }
 
@@ -100,21 +134,6 @@ impl Query<states::Pending> {
 
         self.current = new_query;
     }
-
-    /// Add retrieved documents and transition to `states::Retrieved`
-    pub fn retrieved_documents(mut self, documents: Vec<Document>) -> Query<states::Retrieved> {
-        self.transformation_history
-            .push(TransformationEvent::Retrieved {
-                before: self.current.clone(),
-                after: String::new(),
-                documents: documents.clone(),
-            });
-
-        let state = states::Retrieved { documents };
-
-        self.current.clear();
-        self.transition_to(state)
-    }
 }
 
 impl Query<states::Retrieved> {
@@ -135,17 +154,11 @@ impl Query<states::Retrieved> {
         self.current = new_response;
     }
 
-    /// Returns the last retrieved documents
-    pub fn documents(&self) -> &[Document] {
-        &self.state.documents
-    }
-
     /// Transition the query to `states::Answered`
     #[must_use]
-    pub fn answered(self, answer: impl Into<String>) -> Query<states::Answered> {
-        let state = states::Answered {
-            answer: answer.into(),
-        };
+    pub fn answered(mut self, answer: impl Into<String>) -> Query<states::Answered> {
+        self.current = answer.into();
+        let state = states::Answered;
         self.transition_to(state)
     }
 }
@@ -157,66 +170,37 @@ impl Query<states::Answered> {
 
     /// Returns the answer of the query
     pub fn answer(&self) -> &str {
-        &self.state.answer
+        &self.current
     }
 }
 
 /// Marker trait for query states
-pub trait QueryState: Send + Sync {}
+pub trait QueryState: Send + Sync + Default {}
+/// Marker trait for query states that can still retrieve
+pub trait CanRetrieve: QueryState {}
 
 /// States of a query
 pub mod states {
-    use crate::util::debug_long_utf8;
+    use super::{CanRetrieve, QueryState};
 
-    use super::Builder;
-    use super::Document;
-    use super::QueryState;
-
-    #[derive(Debug, Default, Clone)]
+    #[derive(Debug, Default, Clone, PartialEq)]
     /// The query is pending and has not been used
     pub struct Pending;
 
-    #[derive(Default, Clone, Builder, PartialEq)]
-    #[builder(setter(into))]
+    #[derive(Debug, Default, Clone, PartialEq)]
     /// Documents have been retrieved
-    pub struct Retrieved {
-        pub(crate) documents: Vec<Document>,
-    }
+    pub struct Retrieved;
 
-    impl std::fmt::Debug for Retrieved {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Retrieved")
-                .field("num_documents", &self.documents.len())
-                .field(
-                    "documents",
-                    &self
-                        .documents
-                        .iter()
-                        .map(|d| debug_long_utf8(d, 100))
-                        .collect::<Vec<_>>(),
-                )
-                .finish()
-        }
-    }
-
-    #[derive(Default, Clone, Builder, PartialEq)]
-    #[builder(setter(into))]
+    #[derive(Debug, Default, Clone, PartialEq)]
     /// The query has been answered
-    pub struct Answered {
-        pub(crate) answer: String,
-    }
-
-    impl std::fmt::Debug for Answered {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("Answered")
-                .field("answer", &debug_long_utf8(&self.answer, 100))
-                .finish()
-        }
-    }
+    pub struct Answered;
 
     impl QueryState for Pending {}
     impl QueryState for Retrieved {}
     impl QueryState for Answered {}
+
+    impl CanRetrieve for Pending {}
+    impl CanRetrieve for Retrieved {}
 }
 
 impl<T: AsRef<str>> From<T> for Query<states::Pending> {
@@ -301,7 +285,7 @@ mod tests {
     #[test]
     fn test_query_retrieved_documents() {
         let query = Query::<states::Pending>::from("test query");
-        let documents = vec!["doc1".to_string(), "doc2".to_string()];
+        let documents: Vec<Document> = vec!["doc1".into(), "doc2".into()];
         let query = query.retrieved_documents(documents.clone());
         assert_eq!(query.documents(), &documents);
         assert_eq!(query.history().len(), 1);
@@ -323,7 +307,7 @@ mod tests {
     #[test]
     fn test_query_transformed_response() {
         let query = Query::<states::Pending>::from("test query");
-        let documents = vec!["doc1".to_string(), "doc2".to_string()];
+        let documents = vec!["doc1".into(), "doc2".into()];
         let mut query = query.retrieved_documents(documents.clone());
         query.transformed_response("new response");
 
@@ -342,7 +326,7 @@ mod tests {
     #[test]
     fn test_query_answered() {
         let query = Query::<states::Pending>::from("test query");
-        let documents = vec!["doc1".to_string(), "doc2".to_string()];
+        let documents = vec!["doc1".into(), "doc2".into()];
         let query = query.retrieved_documents(documents);
         let query = query.answered("the answer");
 

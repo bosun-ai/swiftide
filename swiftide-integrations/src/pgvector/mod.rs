@@ -6,6 +6,7 @@
 //! - Efficient vector storage and indexing
 //! - Connection pooling with automatic retries
 //! - Batch operations for optimized performance
+//! - Metadata included in retrieval
 //!
 //! The functionality is primarily used through the [`PgVector`] client, which implements
 //! the [`Persist`] trait for seamless integration with indexing and query pipelines.
@@ -192,6 +193,7 @@ mod tests {
     use futures_util::TryStreamExt;
     use std::collections::HashSet;
     use swiftide_core::{
+        document::Document,
         indexing::{self, EmbedMode, EmbeddedField},
         querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
         Persist, Retrieve,
@@ -247,8 +249,13 @@ mod tests {
 
         assert_eq!(result.documents().len(), 2);
 
-        assert!(result.documents().contains(&"content1".to_string()));
-        assert!(result.documents().contains(&"content2".to_string()));
+        let contents = result
+            .documents()
+            .iter()
+            .map(Document::content)
+            .collect::<Vec<_>>();
+        assert!(contents.contains(&"content1"));
+        assert!(contents.contains(&"content2"));
 
         // Additional test with priority filter
         let search_strategy =
@@ -260,8 +267,13 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.documents().len(), 2);
-        assert!(result.documents().contains(&"content1".to_string()));
-        assert!(result.documents().contains(&"content3".to_string()));
+        let contents = result
+            .documents()
+            .iter()
+            .map(Document::content)
+            .collect::<Vec<_>>();
+        assert!(contents.contains(&"content1"));
+        assert!(contents.contains(&"content3"));
     }
 
     #[test_log::test(tokio::test)]
@@ -317,8 +329,13 @@ mod tests {
 
         // Verify that similar vectors are retrieved first
         assert_eq!(result.documents().len(), 2);
-        assert!(result.documents().contains(&"base_content".to_string()));
-        assert!(result.documents().contains(&"similar_content".to_string()));
+        let contents = result
+            .documents()
+            .iter()
+            .map(Document::content)
+            .collect::<Vec<_>>();
+        assert!(contents.contains(&"base_content"));
+        assert!(contents.contains(&"similar_content"));
     }
 
     #[test_case(
@@ -443,7 +460,12 @@ mod tests {
 
                 if test_case.expected_in_results {
                     assert!(
-                        result.documents().contains(&test_case.chunk.to_string()),
+                        result
+                            .documents()
+                            .iter()
+                            .map(Document::content)
+                            .collect::<Vec<_>>()
+                            .contains(&test_case.chunk),
                         "Document should be found in results for field {field}",
                     );
                 }

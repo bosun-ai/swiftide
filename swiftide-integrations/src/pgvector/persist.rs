@@ -5,6 +5,8 @@
 //! - Single-node storage operations
 //! - Optimized batch storage with configurable batch sizes
 //!
+//! NOTE: Persisting and retrieving metadata is not supported at the moment.
+//!
 //! The implementation ensures thread-safe concurrent access and handles
 //! connection management automatically.
 use crate::pgvector::PgVector;

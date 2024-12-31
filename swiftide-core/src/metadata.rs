@@ -9,7 +9,7 @@ use serde::Deserializer;
 
 use crate::util::debug_long_utf8;
 
-#[derive(Clone, Default, PartialEq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Metadata {
     inner: BTreeMap<String, serde_json::Value>,
 }
@@ -52,6 +52,10 @@ impl Metadata {
 
     pub fn into_values(self) -> IntoValues<String, serde_json::Value> {
         self.inner.into_values()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
     }
 }
 

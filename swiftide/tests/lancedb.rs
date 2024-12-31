@@ -3,7 +3,7 @@ use swiftide::indexing::{
     transformers::{metadata_qa_code::NAME as METADATA_QA_CODE_NAME, ChunkCode, MetadataQACode},
     EmbeddedField,
 };
-use swiftide::query::{self, states, Query, TransformationEvent};
+use swiftide::query::{self, states, Query};
 use swiftide_indexing::{loaders, transformers, Pipeline};
 use swiftide_integrations::{fastembed::FastEmbed, lancedb::LanceDB};
 use swiftide_query::{answers, query_transformers, response_transformers};
@@ -33,6 +33,7 @@ async fn test_lancedb() {
         .with_vector(EmbeddedField::Combined)
         .with_metadata(METADATA_QA_CODE_NAME)
         .with_metadata("filter")
+        .with_metadata("path")
         .table_name("swiftide_test")
         .build()
         .unwrap();
@@ -41,8 +42,10 @@ async fn test_lancedb() {
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
         .then(|mut node: indexing::Node| {
+            // Add path to metadata, by default, storage will store all metadata fields
             node.metadata
-                .insert("filter".to_string(), "true".to_string());
+                .insert("path", node.path.display().to_string());
+            node.metadata.insert("filter", "true");
             Ok(node)
         })
         .then_in_batch(transformers::Embed::new(fastembed.clone()).with_batch_size(20))
@@ -75,17 +78,12 @@ async fn test_lancedb() {
         result.answer(),
         "\n\nHello there, how may I assist you today?"
     );
-    let TransformationEvent::Retrieved { documents, .. } = result
-        .history()
-        .iter()
-        .find(|e| matches!(e, TransformationEvent::Retrieved { .. }))
-        .unwrap()
-    else {
-        panic!("No documents found")
-    };
+
+    let retrieved_document = result.documents().first().unwrap();
+    assert_eq!(retrieved_document.content(), code);
 
     assert_eq!(
-        documents.first().unwrap(),
-        "fn main() { println!(\"Hello, World!\"); }"
+        retrieved_document.metadata().get("path").unwrap(),
+        codefile.to_str().unwrap()
     );
 }

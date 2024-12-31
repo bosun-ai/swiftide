@@ -120,7 +120,11 @@ impl EvaluationDataSet {
             .get_mut(question)
             .ok_or_else(|| anyhow::anyhow!("Question not found"))?;
 
-        data.contexts = query.documents().to_vec();
+        data.contexts = query
+            .documents()
+            .iter()
+            .map(|d| d.content().to_string())
+            .collect::<Vec<_>>();
         Ok(())
     }
 
@@ -236,7 +240,7 @@ impl FromStr for EvaluationDataSet {
 mod tests {
     use super::*;
     use std::sync::Arc;
-    use swiftide_core::querying::{states, Query, QueryEvaluation};
+    use swiftide_core::querying::{Query, QueryEvaluation};
     use tokio::sync::RwLock;
 
     #[tokio::test]
@@ -299,12 +303,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::RetrievedBuilder::default()
-                    .documents(vec!["Rust is a language".to_string()])
-                    .build()
-                    .unwrap(),
-            )
+            .documents(vec!["Rust is a language".into()])
             .build()
             .unwrap();
         let evaluation = QueryEvaluation::RetrieveDocuments(query.clone());
@@ -325,12 +324,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::AnsweredBuilder::default()
-                    .answer("A systems programming language")
-                    .build()
-                    .unwrap(),
-            )
+            .current("A systems programming language")
             .build()
             .unwrap();
         let evaluation = QueryEvaluation::AnswerQuery(query.clone());
@@ -372,12 +366,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::RetrievedBuilder::default()
-                    .documents(vec!["Rust is a language".to_string()])
-                    .build()
-                    .unwrap(),
-            )
+            .documents(vec!["Rust is a language".into()])
             .build()
             .unwrap();
         dataset
@@ -394,12 +383,7 @@ mod tests {
 
         let query = Query::builder()
             .original("What is Rust?")
-            .state(
-                states::AnsweredBuilder::default()
-                    .answer("A systems programming language")
-                    .build()
-                    .unwrap(),
-            )
+            .current("A systems programming language")
             .build()
             .unwrap();
         dataset

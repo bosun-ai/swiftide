@@ -1,10 +1,13 @@
-use anyhow::{Context as _, Result};
+use anyhow::Result;
+use arrow::datatypes::SchemaRef;
 use arrow_array::StringArray;
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use itertools::Itertools;
 use lancedb::query::{ExecutableQuery, QueryBase};
 use swiftide_core::{
+    document::Document,
+    indexing::Metadata,
     querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
     Retrieve,
 };
@@ -57,24 +60,49 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for LanceDB {
             query_builder = query_builder.only_if(filter);
         }
 
-        let result = query_builder
+        let batches = query_builder
             .execute()
             .await?
             .try_collect::<Vec<_>>()
             .await?;
 
-        let Some(recordbatch) = result.first() else {
-            return Ok(query.retrieved_documents(vec![]));
-        };
+        let mut documents = vec![];
 
-        let documents: Vec<String> = recordbatch
-            .column_by_name("chunk")
-            .and_then(|raw_array| raw_array.as_any().downcast_ref::<StringArray>())
-            .context("Could not cast documents to strings")?
-            .into_iter()
-            .flatten()
-            .map_into()
-            .collect();
+        for batch in batches {
+            let schema: SchemaRef = batch.schema();
+
+            for row_idx in 0..batch.num_rows() {
+                let mut metadata = Metadata::default();
+                let mut content = String::new();
+
+                for (col_idx, field) in schema.fields().iter().enumerate() {
+                    let column = batch.column(col_idx);
+
+                    if let Some(array) = column.as_any().downcast_ref::<StringArray>() {
+                        if field.name() == "chunk" {
+                            // Extract the "content" field
+                            content = array.value(row_idx).to_string();
+                        } else {
+                            // Assume other fields are part of the metadata
+                            let value = array.value(row_idx).to_string();
+                            metadata.insert(field.name().clone(), value);
+                        }
+                    } else {
+                        // Handle other array types as necessary
+                        // TODO: Can't we just downcast to serde::Value or fail?
+                    }
+                }
+
+                documents.push(Document::new(
+                    content,
+                    if metadata.is_empty() {
+                        None
+                    } else {
+                        Some(metadata)
+                    },
+                ));
+            }
+        }
 
         Ok(query.retrieved_documents(documents))
     }

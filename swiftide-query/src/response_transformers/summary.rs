@@ -60,7 +60,7 @@ fn default_prompt() -> PromptTemplate {
 
     {% for document in documents -%}
     ---
-    {{ document }}
+    {{ document.content }}
     ---
     {% endfor -%}
     "
@@ -91,7 +91,9 @@ impl TransformResponse for Summary {
 
 #[cfg(test)]
 mod test {
+    use swiftide_core::document::Document;
+
     use super::*;
 
-    assert_default_prompt_snapshot!("documents" => vec!["First document", "Second Document"]);
+    assert_default_prompt_snapshot!("documents" => vec![Document::from("First document"), Document::from("Second Document")]);
 }

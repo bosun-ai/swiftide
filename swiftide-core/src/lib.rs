@@ -12,6 +12,7 @@ pub mod query_traits;
 mod search_strategies;
 pub mod type_aliases;
 
+pub mod document;
 pub mod prompt;
 pub use type_aliases::*;
 
