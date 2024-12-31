@@ -84,7 +84,11 @@ impl Prompt {
     ///
     /// See `Template::render`
     pub async fn render(&self) -> Result<String> {
-        self.template.render(&self.context).await
+        if let Some(context) = &self.context {
+            self.template.render(context).await
+        } else {
+            self.template.render(&tera::Context::default()).await
+        }
     }
 }
 

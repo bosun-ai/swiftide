@@ -165,7 +165,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
 
         impl #builder_name {
             pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
-                self.client = Some(Some(hidden::Arc::new(client)));
+                self.client = Some(Some(hidden::Arc::new(client) as hidden::Arc<dyn hidden::SimplePrompt>));
                 self
             }
         }
@@ -299,7 +299,7 @@ mod tests {
 
             impl TestStructBuilder {
                 pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
-                    self.client = Some(Some(hidden::Arc::new(client)));
+                    self.client = Some(Some(hidden::Arc::new(client) as hidden::Arc<dyn hidden::SimplePrompt>));
                     self
                 }
             }

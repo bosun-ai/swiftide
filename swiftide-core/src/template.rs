@@ -85,16 +85,11 @@ impl Template {
     /// - Template cannot be found
     /// - One-off template has errors
     /// - Context is missing that is required by the template
-    pub async fn render(&self, context: &Option<tera::Context>) -> Result<String> {
+    pub async fn render(&self, context: &tera::Context) -> Result<String> {
         use Template::{CompiledTemplate, Static, String};
 
         let template = match self {
             CompiledTemplate(id) => {
-                let context = match &context {
-                    Some(context) => context,
-                    None => &tera::Context::default(),
-                };
-
                 let lock = TEMPLATE_REPOSITORY.read().await;
                 tracing::debug!(
                     id,
@@ -112,22 +107,10 @@ impl Template {
                 }
                 result.with_context(|| format!("Failed to render template '{id}'"))?
             }
-            String(template) => {
-                if let Some(context) = context {
-                    Tera::one_off(template, context, false)
-                        .context("Failed to render one-off template")?
-                } else {
-                    template.to_string()
-                }
-            }
-            Static(template) => {
-                if let Some(context) = context {
-                    Tera::one_off(template, context, false)
-                        .context("Failed to render one-off template")?
-                } else {
-                    (*template).to_string()
-                }
-            }
+            String(template) => Tera::one_off(template, context, false)
+                .context("Failed to render one-off template")?,
+            Static(template) => Tera::one_off(template, context, false)
+                .context("Failed to render one-off template")?,
         };
         Ok(template)
     }

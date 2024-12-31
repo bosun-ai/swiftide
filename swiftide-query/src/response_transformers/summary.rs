@@ -39,7 +39,7 @@ impl Summary {
 
 impl SummaryBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
+        self.client = Some(Arc::new(client) as Arc<dyn SimplePrompt>);
         self
     }
 }

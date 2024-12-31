@@ -1,9 +1,9 @@
 ---
 source: swiftide-query/src/answers/simple.rs
-expression: prompt.render().await.unwrap()
+expression: rendered
 ---
 Answer the following question based on the context provided:
-What is love?
+original
 
 ## Constraints
 * Do not include any information that is not in the provided context.
@@ -13,5 +13,5 @@ What is love?
 ## Context
 
 ---
-My context
+A fictional generated summary
 ---

@@ -1,10 +1,4 @@
 //! Generate an answer based on the current query
-//!
-//! For example, after retrieving documents, and those are summarized,
-//! will answer the original question with the current text in the query.
-//!
-//! If `current` on the Query is empty, it will concatenate the documents
-//! as context instead.
 use std::sync::Arc;
 use swiftide_core::{
     document::Document,
@@ -17,19 +11,20 @@ use swiftide_core::{
 
 /// Generate an answer based on the current query
 ///
-/// For example, after retrieving documents, and those are summarized,
-/// will answer the original question with the current text in the query.
+/// For most general purposes, this transformer should provide a sensible default. It takes either
+/// a transformation that has already been applied to the documents (in `Query::current`), or the documents themselves,
+/// and will then feed them as context with the _original_ question to an llm to generate an
+/// answer.
 ///
-/// If `current` on the Query is empty, it will concatenate the documents
-/// as context instead.
+/// Optionally, a custom document template can be provided to render the documents in a specific way.
 #[derive(Debug, Clone, Builder)]
 pub struct Simple {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
     prompt_template: Template,
-    #[builder(default)]
-    document_template: Option<tera::Template>,
+    #[builder(default, setter(into, strip_option))]
+    document_template: Option<Template>,
 }
 
 impl Simple {
@@ -53,7 +48,7 @@ impl Simple {
 
 impl SimpleBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
+        self.client = Some(Arc::new(client) as Arc<dyn SimplePrompt>);
         self
     }
 }
@@ -70,7 +65,9 @@ fn default_prompt() -> Template {
 
     ## Context
 
-    {{ context }}
+    ---
+    {{ documents }}
+    ---
     "}
     .into()
 }
@@ -79,25 +76,35 @@ fn default_prompt() -> Template {
 impl Answer for Simple {
     #[tracing::instrument(skip_all)]
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
-        let context = if query.current().is_empty() {
-            &query
+        let mut context = tera::Context::new();
+
+        context.insert("question", query.original());
+
+        let documents = if !query.current().is_empty() {
+            query.current().to_string()
+        } else if let Some(template) = &self.document_template {
+            let mut rendered_documents = Vec::new();
+            for document in query.documents() {
+                let rendered = template
+                    .render(&tera::Context::from_serialize(document)?)
+                    .await?;
+                rendered_documents.push(rendered);
+            }
+
+            rendered_documents.join("\n---\n")
+        } else {
+            query
                 .documents()
                 .iter()
                 .map(Document::content)
                 .collect::<Vec<_>>()
                 .join("\n---\n")
-        } else {
-            query.current()
         };
+        context.insert("documents", &documents);
 
         let answer = self
             .client
-            .prompt(
-                self.prompt_template
-                    .to_prompt()
-                    .with_context_value("question", query.original())
-                    .with_context_value("context", context),
-            )
+            .prompt(self.prompt_template.to_prompt().with_context(context))
             .await?;
 
         Ok(query.answered(answer))
@@ -106,7 +113,101 @@ impl Answer for Simple {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Mutex;
+
+    use insta::assert_snapshot;
+    use swiftide_core::{indexing::Metadata, MockSimplePrompt};
+
     use super::*;
 
-    assert_default_prompt_snapshot!("question" => "What is love?", "context" => "My context");
+    assert_default_prompt_snapshot!("question" => "What is love?", "documents" => "My context");
+
+    #[tokio::test]
+    async fn test_uses_current_if_present() {
+        let mut mock_client = MockSimplePrompt::new();
+
+        // I'll buy a beer for the first person who can think of a less insane way to do this
+        let received_prompt = Arc::new(Mutex::new(None));
+        let cloned = received_prompt.clone();
+        mock_client
+            .expect_prompt()
+            .withf(move |prompt| {
+                cloned.lock().unwrap().replace(prompt.clone());
+                true
+            })
+            .once()
+            .returning(|_| Ok(String::default()));
+
+        let documents = vec![
+            Document::new("First document", Some(Metadata::from(("some", "metadata")))),
+            Document::new(
+                "Second document",
+                Some(Metadata::from(("other", "metadata"))),
+            ),
+        ];
+        let query: Query<states::Retrieved> = Query::builder()
+            .original("original")
+            .current("A fictional generated summary")
+            .state(states::Retrieved)
+            .documents(documents)
+            .build()
+            .unwrap();
+
+        let transformer = Simple::builder().client(mock_client).build().unwrap();
+
+        transformer.answer(query).await.unwrap();
+
+        let received_prompt = received_prompt.lock().unwrap().take().unwrap();
+        let rendered = received_prompt.render().await.unwrap();
+        assert_snapshot!(rendered);
+    }
+
+    #[tokio::test]
+    async fn test_custom_document_template() {
+        let mut mock_client = MockSimplePrompt::new();
+
+        // I'll buy a beer for the first person who can think of a less insane way to do this
+        let received_prompt = Arc::new(Mutex::new(None));
+        let cloned = received_prompt.clone();
+        mock_client
+            .expect_prompt()
+            .withf(move |prompt| {
+                cloned.lock().unwrap().replace(prompt.clone());
+                true
+            })
+            .once()
+            .returning(|_| Ok(String::default()));
+
+        let documents = vec![
+            Document::new("First document", Some(Metadata::from(("some", "metadata")))),
+            Document::new(
+                "Second document",
+                Some(Metadata::from(("other", "metadata"))),
+            ),
+        ];
+        let query: Query<states::Retrieved> = Query::builder()
+            .original("original")
+            .current(String::default())
+            .state(states::Retrieved)
+            .documents(documents)
+            .build()
+            .unwrap();
+
+        let transformer = Simple::builder()
+            .client(mock_client)
+            .document_template(indoc::indoc! {"
+                {% for key, value in metadata -%}
+                    {{ key }}: {{ value }}
+                {% endfor -%}
+
+                {{ content }}"})
+            .build()
+            .unwrap();
+
+        transformer.answer(query).await.unwrap();
+
+        let received_prompt = received_prompt.lock().unwrap().take().unwrap();
+        let rendered = received_prompt.render().await.unwrap();
+        assert_snapshot!(rendered);
+    }
 }
