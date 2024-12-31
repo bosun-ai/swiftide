@@ -10,8 +10,8 @@ use swiftide_core::{
     document::Document,
     indexing::SimplePrompt,
     prelude::*,
-    prompt::Template,
     querying::{states, Query},
+    template::Template,
     Answer,
 };
 
@@ -79,16 +79,16 @@ fn default_prompt() -> Template {
 impl Answer for Simple {
     #[tracing::instrument(skip_all)]
     async fn answer(&self, query: Query<states::Retrieved>) -> Result<Query<states::Answered>> {
-        // let context = if query.current().is_empty() {
-        //     &query
-        //         .documents()
-        //         .iter()
-        //         .map(Document::content)
-        //         .collect::<Vec<_>>()
-        //         .join("\n---\n")
-        // } else {
-        //     query.current()
-        // };
+        let context = if query.current().is_empty() {
+            &query
+                .documents()
+                .iter()
+                .map(Document::content)
+                .collect::<Vec<_>>()
+                .join("\n---\n")
+        } else {
+            query.current()
+        };
 
         let answer = self
             .client
@@ -96,7 +96,7 @@ impl Answer for Simple {
                 self.prompt_template
                     .to_prompt()
                     .with_context_value("question", query.original())
-                    .with_context_value("documents", query.documents()),
+                    .with_context_value("context", context),
             )
             .await?;
 

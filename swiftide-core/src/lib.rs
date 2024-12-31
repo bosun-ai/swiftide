@@ -14,6 +14,7 @@ pub mod type_aliases;
 
 pub mod document;
 pub mod prompt;
+pub mod template;
 pub use type_aliases::*;
 
 mod metadata;

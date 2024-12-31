@@ -5,8 +5,8 @@ use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
-    prompt::Template,
     querying::{states, Query, TransformQuery},
+    template::Template,
 };
 
 #[derive(Debug, Clone, Builder)]

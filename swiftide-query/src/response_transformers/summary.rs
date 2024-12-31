@@ -2,8 +2,8 @@ use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
-    prompt::Template,
     querying::{states, Query},
+    template::Template,
     TransformResponse,
 };
 

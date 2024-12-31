@@ -24,7 +24,7 @@
 //! ```
 //! #[tokio::main]
 //! # async fn main() {
-//! # use swiftide_core::prompt::Template;
+//! # use swiftide_core::template::Template;
 //! let template = Template::try_compiled_from_str("hello {{world}}").await.unwrap();
 //! let prompt = template.to_prompt().with_context_value("world", "swiftide");
 //!
@@ -37,24 +37,7 @@ use tera::Tera;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::node::Node;
-
-lazy_static! {
-    /// Tera repository for templates
-    static ref TEMPLATE_REPOSITORY: RwLock<Tera> = {
-        let prefix = env!("CARGO_MANIFEST_DIR");
-        let path = format!("{prefix}/src/transformers/prompts/**/*.prompt.md");
-
-        match Tera::new(&path)
-        {
-            Ok(t) => RwLock::new(t),
-            Err(e) => {
-                tracing::error!("Parsing error(s): {e}");
-                ::std::process::exit(1);
-            }
-        }
-    };
-}
+use crate::{node::Node, template::Template};
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
@@ -63,135 +46,11 @@ pub struct Prompt {
     context: Option<tera::Context>,
 }
 
-/// A `Template` defines a template for a prompt
-#[derive(Clone, Debug)]
-pub enum Template {
-    CompiledTemplate(String),
-    String(String),
-    Static(&'static str),
-}
-
-impl Template {
-    /// Creates a reference to a template already stored in the repository
-    pub fn from_compiled_template_name(name: impl Into<String>) -> Template {
-        Template::CompiledTemplate(name.into())
-    }
-
-    pub fn from_string(template: impl Into<String>) -> Template {
-        Template::String(template.into())
-    }
-
-    /// Extends the prompt repository with a custom [`tera::Tera`] instance.
-    ///
-    /// If you have your own prompt templates or want to add other functionality, you can extend
-    /// the repository with your own [`tera::Tera`] instance.
-    ///
-    /// WARN: Do not use this inside a pipeline or any form of load, as it will lock the repository
-    ///
-    /// # Errors
-    ///
-    /// Errors if the repository could not be extended
-    pub async fn extend(tera: &Tera) -> Result<()> {
-        TEMPLATE_REPOSITORY
-            .write()
-            .await
-            .extend(tera)
-            .context("Could not extend prompt repository with custom Tera instance")
-    }
-
-    /// Compiles a template from a string and returns a `Template` with a reference to the
-    /// string.
-    ///
-    /// WARN: Do not use this inside a pipeline or any form of load, as it will lock the repository
-    ///
-    /// # Errors
-    ///
-    /// Errors if the template fails to compile
-    pub async fn try_compiled_from_str(
-        template: impl AsRef<str> + Send + 'static,
-    ) -> Result<Template> {
-        let id = Uuid::new_v4().to_string();
-        let mut lock = TEMPLATE_REPOSITORY.write().await;
-        lock.add_raw_template(&id, template.as_ref())
-            .context("Failed to add raw template")?;
-
-        Ok(Template::CompiledTemplate(id))
-    }
-
-    /// Renders a template with an optional `tera::Context`
-    ///
-    /// # Errors
-    ///
-    /// - Template cannot be found
-    /// - One-off template has errors
-    /// - Context is missing that is required by the template
-    pub async fn render(&self, context: &Option<tera::Context>) -> Result<String> {
-        use Template::{CompiledTemplate, Static, String};
-
-        let template = match self {
-            CompiledTemplate(id) => {
-                let context = match &context {
-                    Some(context) => context,
-                    None => &tera::Context::default(),
-                };
-
-                let lock = TEMPLATE_REPOSITORY.read().await;
-                tracing::debug!(
-                    id,
-                    available = ?lock.get_template_names().collect::<Vec<_>>(),
-                    "Rendering template ..."
-                );
-                let result = lock.render(id, context);
-
-                if result.is_err() {
-                    tracing::error!(
-                        error = result.as_ref().unwrap_err().to_string(),
-                        available = ?lock.get_template_names().collect::<Vec<_>>(),
-                        "Error rendering template {id}"
-                    );
-                }
-                result.with_context(|| format!("Failed to render template '{id}'"))?
-            }
-            String(template) => {
-                if let Some(context) = context {
-                    Tera::one_off(template, context, false)
-                        .context("Failed to render one-off template")?
-                } else {
-                    template.to_string()
-                }
-            }
-            Static(template) => {
-                if let Some(context) = context {
-                    Tera::one_off(template, context, false)
-                        .context("Failed to render one-off template")?
-                } else {
-                    (*template).to_string()
-                }
-            }
-        };
-        Ok(template)
-    }
-
-    /// Builds a Prompt from a template with an empty context
-    pub fn to_prompt(&self) -> Prompt {
-        Prompt {
-            template: self.clone(),
-            context: Some(tera::Context::default()),
-        }
-    }
-}
-
-impl From<&'static str> for Template {
-    fn from(template: &'static str) -> Self {
-        Template::Static(template)
-    }
-}
-
-impl From<String> for Template {
-    fn from(template: String) -> Self {
-        Template::String(template)
-    }
-}
+#[deprecated(
+    since = "0.16.0",
+    note = "Use `Template` instead; they serve a more general purpose"
+)]
+pub type PromptTemplate = Template;
 
 impl Prompt {
     /// Adds an `ingestion::Node` to the context of the Prompt
@@ -242,6 +101,15 @@ impl From<String> for Prompt {
     fn from(prompt: String) -> Self {
         Prompt {
             template: Template::String(prompt),
+            context: None,
+        }
+    }
+}
+
+impl From<&Template> for Prompt {
+    fn from(template: &Template) -> Self {
+        Prompt {
+            template: template.clone(),
             context: None,
         }
     }

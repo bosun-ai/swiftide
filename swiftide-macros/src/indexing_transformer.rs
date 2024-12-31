@@ -90,7 +90,8 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
             pub use derive_builder::Builder;
             pub use swiftide_core::{
                 indexing::{IndexingDefaults},
-                prompt::{Prompt, Template},
+                prompt::Prompt,
+                template::Template,
                 SimplePrompt, Transformer, WithIndexingDefaults
             };
         }
@@ -225,7 +226,8 @@ mod tests {
                 pub use derive_builder::Builder;
                 pub use swiftide_core::{
                     indexing::{IndexingDefaults},
-                    prompt::{Prompt, Template},
+                    prompt::Prompt,
+                    template::Template,
                     SimplePrompt, Transformer, WithIndexingDefaults
                 };
             }

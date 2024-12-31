@@ -10,7 +10,7 @@
 //! be provided on the agent level.
 
 use derive_builder::Builder;
-use swiftide_core::prompt::{Prompt, Template};
+use swiftide_core::{prompt::Prompt, template::Template};
 
 #[derive(Clone, Debug, Builder)]
 #[builder(setter(into, strip_option))]
@@ -26,7 +26,7 @@ pub struct SystemPrompt {
     #[builder(default, setter(custom))]
     constraints: Vec<String>,
 
-    /// The template to use
+    /// The template to use for the system prompt
     #[builder(default = default_prompt_template())]
     template: Template,
 }
