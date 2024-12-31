@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735580546096,
+  "lastUpdate": 1735645678304,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11447,6 +11447,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 239804,
             "range": "± 1215",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "235780b941a0805b69541f0f4c55c3404091baa8",
+          "message": "feat(query): Documents as first class citizens (#504)\n\nFor simple RAG, just adding the content of a retrieved document might be\r\nenough. However, in more complex use cases, you might want to add\r\nmetadata as well, as is or for conditional formatting.\r\n\r\nFor instance, when dealing with large amounts of chunked code, providing\r\nthe path goes a long way. If generated metadata is good enough, could be\r\nuseful as well.\r\n\r\nWith this retrieved Documents are treated as first class citizens,\r\nincluding any metadata as well. Additionally, this also paves the way\r\nfor multi retrieval (and multi modal).",
+          "timestamp": "2024-12-31T12:39:30+01:00",
+          "tree_id": "3263ac2d7ff90d0f58ad44fa5f91aaf3dee66048",
+          "url": "https://github.com/bosun-ai/swiftide/commit/235780b941a0805b69541f0f4c55c3404091baa8"
+        },
+        "date": 1735645677087,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1326625,
+            "range": "± 927648",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 239763,
+            "range": "± 3493",
             "unit": "ns/iter"
           }
         ]
