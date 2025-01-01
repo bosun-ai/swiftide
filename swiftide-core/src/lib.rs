@@ -35,6 +35,7 @@ pub mod indexing {
 }
 
 pub mod querying {
+    pub use crate::document::*;
     pub use crate::query::*;
     pub use crate::query_evaluation::*;
     pub use crate::query_stream::*;

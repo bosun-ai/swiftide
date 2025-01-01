@@ -102,6 +102,8 @@
 #[doc(inline)]
 pub use swiftide_core::prompt;
 #[doc(inline)]
+pub use swiftide_core::template;
+#[doc(inline)]
 pub use swiftide_core::type_aliases::*;
 
 #[cfg(feature = "swiftide-agents")]
