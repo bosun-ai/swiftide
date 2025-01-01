@@ -91,7 +91,10 @@ impl Prompt {
 impl From<&'static str> for Prompt {
     fn from(prompt: &'static str) -> Self {
         Prompt {
-            template: Template::Static(prompt),
+            template: Template::Static {
+                template: prompt,
+                initial_context: None,
+            },
             context: None,
         }
     }
@@ -100,7 +103,10 @@ impl From<&'static str> for Prompt {
 impl From<String> for Prompt {
     fn from(prompt: String) -> Self {
         Prompt {
-            template: Template::String(prompt),
+            template: Template::String {
+                template: prompt,
+                initial_context: None,
+            },
             context: None,
         }
     }
@@ -110,13 +116,15 @@ impl From<&Template> for Prompt {
     fn from(template: &Template) -> Self {
         Prompt {
             template: template.clone(),
-            context: None,
+            context: template.initial_context(),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::metadata::Metadata;
+
     use super::*;
 
     #[tokio::test]
@@ -214,5 +222,18 @@ mod test {
                 .unwrap(),
             "hello swiftide"
         );
+    }
+
+    #[tokio::test]
+    async fn test_prompt_with_context() {
+        let mut initial_context = tera::Context::new();
+        initial_context.insert("initial", "initial");
+        let template = Template::from_string("hello {{initial}} {{world}}")
+            .with_initial_context(initial_context)
+            .to_owned();
+
+        let prompt = template.to_prompt().with_context_value("world", "swiftide");
+
+        assert_eq!(prompt.render().await.unwrap(), "hello initial swiftide");
     }
 }

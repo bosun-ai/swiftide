@@ -86,7 +86,7 @@ where
     /// Evaluate queries with an evaluator
     #[must_use]
     pub fn evaluate_with<T: EvaluateQuery + 'stream>(mut self, evaluator: T) -> Self {
-        self.evaluator = Some(Arc::new(Box::new(evaluator)));
+        self.evaluator = Some(Arc::new(Box::new(evaluator) as Box<dyn EvaluateQuery>));
 
         self
     }
