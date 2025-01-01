@@ -123,7 +123,6 @@ impl From<&Template> for Prompt {
 
 #[cfg(test)]
 mod test {
-    use crate::metadata::Metadata;
 
     use super::*;
 
