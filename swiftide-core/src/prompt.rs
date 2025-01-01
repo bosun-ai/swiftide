@@ -31,16 +31,18 @@
 //! assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
 //! # }
 //! ```
-
-use anyhow::Result;
+use anyhow::{Context as _, Result};
+use lazy_static::lazy_static;
+use tera::Tera;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use crate::{node::Node, template::Template};
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
 pub struct Prompt {
-    // Should always have an owned template
-    template: Template<'static>,
+    template: Template,
     context: Option<tera::Context>,
 }
 
@@ -48,7 +50,7 @@ pub struct Prompt {
     since = "0.16.0",
     note = "Use `Template` instead; they serve a more general purpose"
 )]
-pub type PromptTemplate<'inner> = Template<'inner>;
+pub type PromptTemplate = Template;
 
 impl Prompt {
     /// Adds an `ingestion::Node` to the context of the Prompt
@@ -93,7 +95,7 @@ impl Prompt {
 impl From<&'static str> for Prompt {
     fn from(prompt: &'static str) -> Self {
         Prompt {
-            template: Template::OneOff(prompt.into()).to_owned(),
+            template: Template::Static(prompt),
             context: None,
         }
     }
@@ -102,14 +104,14 @@ impl From<&'static str> for Prompt {
 impl From<String> for Prompt {
     fn from(prompt: String) -> Self {
         Prompt {
-            template: Template::OneOff(prompt.into()).to_owned(),
+            template: Template::String(prompt),
             context: None,
         }
     }
 }
 
-impl From<&Template<'static>> for Prompt {
-    fn from(template: &Template<'static>) -> Self {
+impl From<&Template> for Prompt {
+    fn from(template: &Template) -> Self {
         Prompt {
             template: template.clone(),
             context: None,
@@ -117,19 +119,8 @@ impl From<&Template<'static>> for Prompt {
     }
 }
 
-impl From<Template<'static>> for Prompt {
-    fn from(template: Template<'static>) -> Self {
-        Prompt {
-            template,
-            context: None,
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use tera::Tera;
-
     use super::*;
 
     #[tokio::test]
@@ -169,8 +160,9 @@ mod test {
 
         Template::extend(&custom_tera).await.unwrap();
 
-        let template = Template::from_compiled_template_name("hello");
-        let prompt = template.to_prompt().with_context_value("world", "swiftide");
+        let prompt = Template::from_compiled_template_name("hello")
+            .to_prompt()
+            .with_context_value("world", "swiftide");
 
         assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
     }

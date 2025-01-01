@@ -28,7 +28,7 @@ pub struct SystemPrompt {
 
     /// The template to use for the system prompt
     #[builder(default = default_prompt_template())]
-    template: Template<'static>,
+    template: Template,
 }
 
 impl SystemPrompt {
@@ -76,7 +76,7 @@ impl SystemPromptBuilder {
     }
 }
 
-fn default_prompt_template() -> Template<'static> {
+fn default_prompt_template() -> Template {
     include_str!("system_prompt_template.md").into()
 }
 

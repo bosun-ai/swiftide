@@ -248,8 +248,6 @@ impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, sta
 
 impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, states::Retrieved> {
     /// Generates an answer based on previous transformations
-    ///
-    /// For a lot of use cases, `answers::Simple` should be sufficient
     #[must_use]
     pub fn then_answer<T: Answer + 'stream>(
         self,

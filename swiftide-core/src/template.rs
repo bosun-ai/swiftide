@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use anyhow::{Context as _, Result};
 use tokio::sync::RwLock;
 
@@ -27,24 +25,20 @@ lazy_static! {
 }
 /// A `Template` defines a template for a prompt
 #[derive(Clone, Debug)]
-pub enum Template<'inner> {
-    /// A reference to a compiled template stored in the template repository
-    /// These can also be created on the fly with `Template::try_compiled_from_str`,
-    /// or retrieved at runtime with `Template::from_compiled_template_name`
-    CompiledTemplate(Cow<'inner, str>),
-
-    /// A one-off template that is not stored in the repository
-    OneOff(Cow<'inner, str>),
+pub enum Template {
+    CompiledTemplate(String),
+    String(String),
+    Static(&'static str),
 }
 
-impl<'inner> Template<'inner> {
+impl Template {
     /// Creates a reference to a template already stored in the repository
-    pub fn from_compiled_template_name(name: impl Into<Cow<'inner, str>>) -> Template<'inner> {
+    pub fn from_compiled_template_name(name: impl Into<String>) -> Template {
         Template::CompiledTemplate(name.into())
     }
 
-    pub fn from_string(template: impl Into<Cow<'inner, str>>) -> Template<'inner> {
-        Template::OneOff(template.into())
+    pub fn from_string(template: impl Into<String>) -> Template {
+        Template::String(template.into())
     }
 
     /// Extends the prompt repository with a custom [`tera::Tera`] instance.
@@ -75,13 +69,13 @@ impl<'inner> Template<'inner> {
     /// Errors if the template fails to compile
     pub async fn try_compiled_from_str(
         template: impl AsRef<str> + Send + 'static,
-    ) -> Result<Template<'inner>> {
+    ) -> Result<Template> {
         let id = Uuid::new_v4().to_string();
         let mut lock = TEMPLATE_REPOSITORY.write().await;
         lock.add_raw_template(&id, template.as_ref())
             .context("Failed to add raw template")?;
 
-        Ok(Template::CompiledTemplate(id.into()))
+        Ok(Template::CompiledTemplate(id))
     }
 
     /// Renders a template with an optional `tera::Context`
@@ -92,13 +86,13 @@ impl<'inner> Template<'inner> {
     /// - One-off template has errors
     /// - Context is missing that is required by the template
     pub async fn render(&self, context: &tera::Context) -> Result<String> {
-        use Template::{CompiledTemplate, OneOff};
+        use Template::{CompiledTemplate, Static, String};
 
         let template = match self {
             CompiledTemplate(id) => {
                 let lock = TEMPLATE_REPOSITORY.read().await;
                 tracing::debug!(
-                    ?id,
+                    id,
                     available = ?lock.get_template_names().collect::<Vec<_>>(),
                     "Rendering template ..."
                 );
@@ -113,40 +107,28 @@ impl<'inner> Template<'inner> {
                 }
                 result.with_context(|| format!("Failed to render template '{id}'"))?
             }
-            OneOff(template) => Tera::one_off(template, context, false)
+            String(template) => Tera::one_off(template, context, false)
+                .context("Failed to render one-off template")?,
+            Static(template) => Tera::one_off(template, context, false)
                 .context("Failed to render one-off template")?,
         };
         Ok(template)
     }
-}
-
-impl Template<'_> {
-    /// Creates an owned version of the template
-    ///
-    // NOTE: std ToOwned and Clone preserve the Cow types, which is not what we want
-    pub fn to_owned(&self) -> Template<'static> {
-        match self {
-            Template::CompiledTemplate(template) => {
-                Template::CompiledTemplate(template.clone().into_owned().into())
-            }
-            Template::OneOff(template) => Template::OneOff(template.clone().into_owned().into()),
-        }
-    }
 
     /// Builds a Prompt from a template with an empty context
     pub fn to_prompt(&self) -> Prompt {
-        Prompt::from(self.to_owned())
+        self.into()
     }
 }
 
-impl<'inner> From<&'inner str> for Template<'inner> {
-    fn from(template: &'inner str) -> Self {
-        Template::OneOff(template.into())
+impl From<&'static str> for Template {
+    fn from(template: &'static str) -> Self {
+        Template::Static(template)
     }
 }
 
-impl From<String> for Template<'_> {
+impl From<String> for Template {
     fn from(template: String) -> Self {
-        Template::OneOff(template.into())
+        Template::String(template)
     }
 }
