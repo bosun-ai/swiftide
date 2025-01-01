@@ -31,11 +31,7 @@
 //! assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
 //! # }
 //! ```
-use anyhow::{Context as _, Result};
-use lazy_static::lazy_static;
-use tera::Tera;
-use tokio::sync::RwLock;
-use uuid::Uuid;
+use anyhow::Result;
 
 use crate::{node::Node, template::Template};
 
@@ -152,7 +148,7 @@ mod test {
 
     #[tokio::test]
     async fn test_extending_with_custom_repository() {
-        let mut custom_tera = Tera::new("**/some/prompts.md").unwrap();
+        let mut custom_tera = tera::Tera::new("**/some/prompts.md").unwrap();
 
         custom_tera
             .add_raw_template("hello", "hello {{world}}")
