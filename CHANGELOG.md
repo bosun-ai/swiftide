@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0](https://github.com/bosun-ai/swiftide/compare/v0.15.0...v0.16.0) - 2025-01-02
+
+### New features
+
+- [52e341e](https://github.com/bosun-ai/swiftide/commit/52e341ee9777d04f9fb07054980ba087c55c033e) *(lancedb)*  Public method for opening table (#514)
+
+- [3254bd3](https://github.com/bosun-ai/swiftide/commit/3254bd34d0eeb038c8aa6ea56ac2940b3ca81960) *(query)*  Generic templates with document rendering (#520)
+
+````text
+Reworks `PromptTemplate` to a more generic `Template`, such that they
+  can also be used elsewhere. This deprecates `PromptTemplate`.
+
+  As an example, an optional `Template` in the `Simple` answer
+  transformer, which can be used to customize the output of retrieved
+  documents. This has excellent synergy with the metadata changes in #504.
+````
+
+- [235780b](https://github.com/bosun-ai/swiftide/commit/235780b941a0805b69541f0f4c55c3404091baa8) *(query)*  Documents as first class citizens (#504)
+
+````text
+For simple RAG, just adding the content of a retrieved document might be
+  enough. However, in more complex use cases, you might want to add
+  metadata as well, as is or for conditional formatting.
+
+  For instance, when dealing with large amounts of chunked code, providing
+  the path goes a long way. If generated metadata is good enough, could be
+  useful as well.
+
+  With this retrieved Documents are treated as first class citizens,
+  including any metadata as well. Additionally, this also paves the way
+  for multi retrieval (and multi modal).
+````
+
+- [584695e](https://github.com/bosun-ai/swiftide/commit/584695e4841a3c9341e521b81e9f254270b3416e) *(query)*  Add custom SQL query generation for pgvector search (#478)
+
+````text
+Adds support for custom retrieval queries with the sqlx query builder for PGVector. Puts down the fundamentals for custom query building for any retriever.
+
+  ---------
+````
+
+- [b55bf0b](https://github.com/bosun-ai/swiftide/commit/b55bf0b318042459a6983cf725078c4da662618b) *(redb)*  Public database and table definition (#510)
+
+- [176378f](https://github.com/bosun-ai/swiftide/commit/176378f846ddecc3ddba74f6b423338b793f29b4)  Implement traits for all Arc dynamic dispatch (#513)
+
+````text
+If you use i.e. a `Persist` or a `NodeCache` outside swiftide as well, and you already have it Arc'ed, now it just works.
+````
+
+- [dc9881e](https://github.com/bosun-ai/swiftide/commit/dc9881e48da7fb5dc744ef33b1c356b4152d00d3)  Allow opt out of pipeline debug truncation
+
+### Bug fixes
+
+- [2831101](https://github.com/bosun-ai/swiftide/commit/2831101daa2928b5507116d9eb907d98fb77bf50) *(lancedb)*  Metadata should be nullable in lancedb (#515)
+
+- [c35df55](https://github.com/bosun-ai/swiftide/commit/c35df5525d4d88cfb9ada89a060e1ab512b471af) *(macros)*  Explicit box dyn cast fixing Rust Analyzer troubles (#523)
+
+### Miscellaneous
+
+- [1bbbb0e](https://github.com/bosun-ai/swiftide/commit/1bbbb0e548cafa527c34856bd9ac6f76aca2ab5f)  Clippy
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.15.0...0.16.0
+
+
+
 ## [0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0) - 2024-12-23
 
 ### New features
