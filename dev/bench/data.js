@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735645678304,
+  "lastUpdate": 1735832233767,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11501,6 +11501,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 239763,
             "range": "± 3493",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c35df5525d4d88cfb9ada89a060e1ab512b471af",
+          "message": "fix(macros): Explicit box dyn cast fixing Rust Analyzer troubles (#523)",
+          "timestamp": "2025-01-02T16:28:42+01:00",
+          "tree_id": "ba04bac3aead64e2ad8bc8f33c8aaa9e04e93756",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c35df5525d4d88cfb9ada89a060e1ab512b471af"
+        },
+        "date": 1735832233283,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1343015,
+            "range": "± 1136503",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240777,
+            "range": "± 3154",
             "unit": "ns/iter"
           }
         ]
