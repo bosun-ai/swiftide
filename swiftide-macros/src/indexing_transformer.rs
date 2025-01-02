@@ -45,14 +45,14 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
     let prompt_template_struct_attr = match &args.default_prompt_file {
         Some(_file) => quote! {
             #[builder(default = "default_prompt()")]
-            prompt_template: hidden::PromptTemplate,
+            prompt_template: hidden::Template,
         },
         None => quote! {},
     };
 
     let default_prompt_fn = match &args.default_prompt_file {
         Some(file) => quote! {
-            fn default_prompt() -> hidden::PromptTemplate {
+            fn default_prompt() -> hidden::Template {
                 include_str!(#file).into()
             }
         },
@@ -90,7 +90,8 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
             pub use derive_builder::Builder;
             pub use swiftide_core::{
                 indexing::{IndexingDefaults},
-                prompt::{Prompt, PromptTemplate},
+                prompt::Prompt,
+                template::Template,
                 SimplePrompt, Transformer, WithIndexingDefaults
             };
         }
@@ -164,7 +165,7 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
 
         impl #builder_name {
             pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
-                self.client = Some(Some(hidden::Arc::new(client)));
+                self.client = Some(Some(hidden::Arc::new(client) as hidden::Arc<dyn hidden::SimplePrompt>));
                 self
             }
         }
@@ -225,7 +226,8 @@ mod tests {
                 pub use derive_builder::Builder;
                 pub use swiftide_core::{
                     indexing::{IndexingDefaults},
-                    prompt::{Prompt, PromptTemplate},
+                    prompt::Prompt,
+                    template::Template,
                     SimplePrompt, Transformer, WithIndexingDefaults
                 };
             }
@@ -297,7 +299,7 @@ mod tests {
 
             impl TestStructBuilder {
                 pub fn client(&mut self, client: impl hidden::SimplePrompt + 'static) -> &mut Self {
-                    self.client = Some(Some(hidden::Arc::new(client)));
+                    self.client = Some(Some(hidden::Arc::new(client) as hidden::Arc<dyn hidden::SimplePrompt>));
                     self
                 }
             }

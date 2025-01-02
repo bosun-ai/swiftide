@@ -14,6 +14,7 @@ pub mod type_aliases;
 
 pub mod document;
 pub mod prompt;
+pub mod template;
 pub use type_aliases::*;
 
 mod metadata;
@@ -34,6 +35,7 @@ pub mod indexing {
 }
 
 pub mod querying {
+    pub use crate::document::*;
     pub use crate::query::*;
     pub use crate::query_evaluation::*;
     pub use crate::query_stream::*;
