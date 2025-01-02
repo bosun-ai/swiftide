@@ -22,6 +22,7 @@ tracing = { workspace = true }
 indoc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+tera = { workspace = true }
 
 # Internal
 swiftide-core = { path = "../swiftide-core", version = "0.15.0" }

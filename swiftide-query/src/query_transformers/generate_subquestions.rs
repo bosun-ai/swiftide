@@ -5,8 +5,8 @@ use std::sync::Arc;
 use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
-    prompt::PromptTemplate,
     querying::{states, Query, TransformQuery},
+    template::Template,
 };
 
 #[derive(Debug, Clone, Builder)]
@@ -14,7 +14,7 @@ pub struct GenerateSubquestions {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt_template: PromptTemplate,
+    prompt_template: Template,
     #[builder(default = "5")]
     num_questions: usize,
 }
@@ -40,12 +40,12 @@ impl GenerateSubquestions {
 
 impl GenerateSubquestionsBuilder {
     pub fn client(&mut self, client: impl SimplePrompt + 'static) -> &mut Self {
-        self.client = Some(Arc::new(client));
+        self.client = Some(Arc::new(client) as Arc<dyn SimplePrompt>);
         self
     }
 }
 
-fn default_prompt() -> PromptTemplate {
+fn default_prompt() -> Template {
     indoc::indoc!("
     Your job is to help a query tool find the right context.
 
