@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735832233767,
+  "lastUpdate": 1735832271751,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11555,6 +11555,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240777,
             "range": "± 3154",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3254bd34d0eeb038c8aa6ea56ac2940b3ca81960",
+          "message": "feat(query): Generic templates with document rendering (#520)\n\nReworks `PromptTemplate` to a more generic `Template`, such that they\r\ncan also be used elsewhere. This deprecates `PromptTemplate`.\r\n\r\nAs an example, an optional `Template` in the `Simple` answer\r\ntransformer, which can be used to customize the output of retrieved\r\ndocuments. This has excellent synergy with the metadata changes in #504.",
+          "timestamp": "2025-01-02T16:29:04+01:00",
+          "tree_id": "4993a27950e93c6edd43325288cc17cfc02960f0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3254bd34d0eeb038c8aa6ea56ac2940b3ca81960"
+        },
+        "date": 1735832270561,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1347027,
+            "range": "± 917899",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243674,
+            "range": "± 3215",
             "unit": "ns/iter"
           }
         ]
