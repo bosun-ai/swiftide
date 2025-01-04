@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735989380990,
+  "lastUpdate": 1735994517954,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11663,6 +11663,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240953,
             "range": "± 1941",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "a5f1d3012a74c7c9c787fc321b713b3525a5caff",
+          "message": "fix(agents): Remove circular dev dependency breaking build",
+          "timestamp": "2025-01-04T13:32:34+01:00",
+          "tree_id": "59a9851312d52d289dd662d9ea7766f957f29e94",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a5f1d3012a74c7c9c787fc321b713b3525a5caff"
+        },
+        "date": 1735994516775,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1351138,
+            "range": "± 960581",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241916,
+            "range": "± 2524",
             "unit": "ns/iter"
           }
         ]
