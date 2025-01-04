@@ -38,7 +38,10 @@ pub struct Agent {
     #[builder(default, setter(into))]
     pub(crate) hooks: Vec<Hook>,
     /// The context in which the agent operates, by default this is the `DefaultContext`.
-    #[builder(setter(custom), default = Arc::new(DefaultContext::default()))]
+    #[builder(
+        setter(custom),
+        default = Arc::new(DefaultContext::default()) as Arc<dyn AgentContext>
+    )]
     pub(crate) context: Arc<dyn AgentContext>,
     /// Tools the agent can use
     #[builder(default = Agent::default_tools(), setter(custom))]
@@ -107,7 +110,7 @@ impl AgentBuilder {
     where
         Self: Clone,
     {
-        self.context = Some(Arc::new(context));
+        self.context = Some(Arc::new(context) as Arc<dyn AgentContext>);
         self
     }
 
@@ -170,7 +173,7 @@ impl AgentBuilder {
 
     /// Set the LLM for the agent. An LLM must implement the `ChatCompletion` trait.
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
-        let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone());
+        let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone()) as Box<dyn ChatCompletion>;
 
         self.llm = Some(boxed);
         self

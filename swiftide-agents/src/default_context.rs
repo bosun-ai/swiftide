@@ -42,7 +42,7 @@ impl Default for DefaultContext {
             completion_history: Arc::new(Mutex::new(Vec::new())),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
-            tool_executor: Arc::new(LocalExecutor::default()),
+            tool_executor: Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>,
             stop_on_assistant: true,
         }
     }
