@@ -68,32 +68,32 @@ Fast, streaming, indexing, query, and agent library for building LLM application
 
 <!-- ABOUT THE PROJECT -->
 
-## About The Project
+## What is Swiftide?
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a Rust native library for building LLM applications. Large language models are amazing, but need context
-to solve real problems. Swiftide allows you to ingest, transform and index large amounts of data fast, and then query that data so it it can be injected into prompts.
-This process is called Retrieval Augmented Generation.
-
-With Swiftide Agents, you have the building blocks to model and build a large variety of agents. The goal is to provide flexible building blocks, so that we can focus on experimenting and finding a model that works best, without having to constantly re-invent the underlying plumbing.
-
-With Swiftide, you can build your AI application from idea to production in a few lines of code.
+Swiftide is a Rust library for building LLM applications, enabling fast data ingestion, transformation, and indexing for effective querying and prompt injection, known as Retrieval Augmented Generation. It provides flexible building blocks for creating various agents, allowing rapid development from concept to production with minimal code.
 
 <div align="center">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
 </div>
 
-While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Swiftide's goal is to offer a fully fledged retrieval augmented generation library, that is fast, easy-to-use, reliable and easy-to-extend.
-
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
 We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue or contact us on [discord](https://discord.gg/3jjXYen9UY).
 
-**Great starting points are this readme, [swiftide.rs](https://swiftide.rs), [the examples folder](https://github.com/bosun-ai/swiftide/tree/master/examples), our blog at [bosun.ai](https://bosun.ai), and in depth tutorials at [swiftide-tutorial](https://github.com/bosun-ai/swiftide-tutorial).**
-
 > [!CAUTION]
-> Swiftide is under heavy development and can have breaking changes while we work towards 1.0. Documentation here might fall short of all features, and despite our efforts be slightly outdated. Expect bugs. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you in an issue.
+> Swiftide is under heavy development and can have breaking changes. Documentation might fall short of all features, and despite our efforts be slightly outdated. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## High level features
+
+- Build fast, streaming indexing and querying pipelines
+- Easily build agents, mix and match with previously built pipelines
+- A modular and extendable API, with minimal abstractions
+- Integrations with popular LLMs and storage providers
+- Ready to use pipeline transformations
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -110,6 +110,8 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 - [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
 - [Release - Swiftide 0.6](https://bosun.ai/posts/swiftide-0-6/) (2024-07-12)
 - [Release - Swiftide 0.5](https://bosun.ai/posts/swiftide-0-5/) (2024-07-1)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
