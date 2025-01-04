@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1735832271751,
+  "lastUpdate": 1735989380990,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11609,6 +11609,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243674,
             "range": "± 3215",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e14b094b5db90fbe1d3a29745619e9bca1ca2cd9",
+          "message": "chore: release v0.16.0 (#525)\n\n## 🤖 New release\r\n* `swiftide`: 0.15.0 -> 0.16.0 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.15.0 -> 0.16.0 (✓ API compatible changes)\r\n* `swiftide-core`: 0.15.0 -> 0.16.0 (⚠️ API breaking changes)\r\n* `swiftide-macros`: 0.15.0 -> 0.16.0\r\n* `swiftide-integrations`: 0.15.0 -> 0.16.0 (✓ API compatible changes)\r\n* `swiftide-indexing`: 0.15.0 -> 0.16.0 (✓ API compatible changes)\r\n* `swiftide-query`: 0.15.0 -> 0.16.0 (✓ API compatible changes)\r\n\r\n### ⚠️ `swiftide-core` breaking changes\r\n\r\n```\r\n--- failure enum_missing: pub enum removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible enum cannot be imported by its prior path. A `pub use` may have been removed, or the enum itself may have been renamed or removed entirely.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/enum_missing.ron\r\n\r\nFailed in:\r\n  enum swiftide_core::querying::states::AnsweredBuilderError, previously in file /tmp/.tmpfXNg04/swiftide-core/src/query.rs:202\r\n  enum swiftide_core::querying::states::RetrievedBuilderError, previously in file /tmp/.tmpfXNg04/swiftide-core/src/query.rs:179\r\n\r\n--- failure struct_missing: pub struct removed or renamed ---\r\n\r\nDescription:\r\nA publicly-visible struct cannot be imported by its prior path. A `pub use` may have been removed, or the struct itself may have been renamed or removed entirely.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/struct_missing.ron\r\n\r\nFailed in:\r\n  struct swiftide_core::querying::states::RetrievedBuilder, previously in file /tmp/.tmpfXNg04/swiftide-core/src/query.rs:179\r\n  struct swiftide_core::querying::states::AnsweredBuilder, previously in file /tmp/.tmpfXNg04/swiftide-core/src/query.rs:202\r\n\r\n--- failure trait_added_supertrait: non-sealed trait added new supertraits ---\r\n\r\nDescription:\r\nA non-sealed trait added one or more supertraits, which breaks downstream implementations of the trait\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#generic-bounds-tighten\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/trait_added_supertrait.ron\r\n\r\nFailed in:\r\n  trait swiftide_core::querying::QueryState gained Default in file /tmp/.tmp5vx3MP/swiftide/swiftide-core/src/query.rs:178\r\n\r\n--- failure trait_no_longer_object_safe: trait no longer object safe ---\r\n\r\nDescription:\r\nTrait is no longer object safe, which breaks `dyn Trait` usage.\r\n        ref: https://doc.rust-lang.org/stable/reference/items/traits.html#object-safety\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/trait_no_longer_object_safe.ron\r\n\r\nFailed in:\r\n  trait QueryState in file /tmp/.tmp5vx3MP/swiftide/swiftide-core/src/query.rs:178\r\n```\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.16.0](https://github.com/bosun-ai/swiftide/compare/v0.15.0...v0.16.0)\r\n- 2025-01-02\r\n\r\n### New features\r\n\r\n-\r\n[52e341e](https://github.com/bosun-ai/swiftide/commit/52e341ee9777d04f9fb07054980ba087c55c033e)\r\n*(lancedb)* Public method for opening table (#514)\r\n\r\n-\r\n[3254bd3](https://github.com/bosun-ai/swiftide/commit/3254bd34d0eeb038c8aa6ea56ac2940b3ca81960)\r\n*(query)* Generic templates with document rendering (#520)\r\n\r\n````text\r\nReworks `PromptTemplate` to a more generic `Template`, such that they\r\n  can also be used elsewhere. This deprecates `PromptTemplate`.\r\n\r\n  As an example, an optional `Template` in the `Simple` answer\r\n  transformer, which can be used to customize the output of retrieved\r\n  documents. This has excellent synergy with the metadata changes in #504.\r\n````\r\n\r\n-\r\n[235780b](https://github.com/bosun-ai/swiftide/commit/235780b941a0805b69541f0f4c55c3404091baa8)\r\n*(query)* Documents as first class citizens (#504)\r\n\r\n````text\r\nFor simple RAG, just adding the content of a retrieved document might be\r\n  enough. However, in more complex use cases, you might want to add\r\n  metadata as well, as is or for conditional formatting.\r\n\r\n  For instance, when dealing with large amounts of chunked code, providing\r\n  the path goes a long way. If generated metadata is good enough, could be\r\n  useful as well.\r\n\r\n  With this retrieved Documents are treated as first class citizens,\r\n  including any metadata as well. Additionally, this also paves the way\r\n  for multi retrieval (and multi modal).\r\n````\r\n\r\n-\r\n[584695e](https://github.com/bosun-ai/swiftide/commit/584695e4841a3c9341e521b81e9f254270b3416e)\r\n*(query)* Add custom SQL query generation for pgvector search (#478)\r\n\r\n````text\r\nAdds support for custom retrieval queries with the sqlx query builder for PGVector. Puts down the fundamentals for custom query building for any retriever.\r\n\r\n  ---------\r\n````\r\n\r\n-\r\n[b55bf0b](https://github.com/bosun-ai/swiftide/commit/b55bf0b318042459a6983cf725078c4da662618b)\r\n*(redb)* Public database and table definition (#510)\r\n\r\n-\r\n[176378f](https://github.com/bosun-ai/swiftide/commit/176378f846ddecc3ddba74f6b423338b793f29b4)\r\nImplement traits for all Arc dynamic dispatch (#513)\r\n\r\n````text\r\nIf you use i.e. a `Persist` or a `NodeCache` outside swiftide as well, and you already have it Arc'ed, now it just works.\r\n````\r\n\r\n-\r\n[dc9881e](https://github.com/bosun-ai/swiftide/commit/dc9881e48da7fb5dc744ef33b1c356b4152d00d3)\r\nAllow opt out of pipeline debug truncation\r\n\r\n### Bug fixes\r\n\r\n-\r\n[2831101](https://github.com/bosun-ai/swiftide/commit/2831101daa2928b5507116d9eb907d98fb77bf50)\r\n*(lancedb)* Metadata should be nullable in lancedb (#515)\r\n\r\n-\r\n[c35df55](https://github.com/bosun-ai/swiftide/commit/c35df5525d4d88cfb9ada89a060e1ab512b471af)\r\n*(macros)* Explicit box dyn cast fixing Rust Analyzer troubles (#523)\r\n\r\n### Miscellaneous\r\n\r\n-\r\n[1bbbb0e](https://github.com/bosun-ai/swiftide/commit/1bbbb0e548cafa527c34856bd9ac6f76aca2ab5f)\r\nClippy\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.15.0...0.16.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-01-04T12:07:25+01:00",
+          "tree_id": "c346fdb987388d7fec9cf4fec1cc6495852a57ce",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e14b094b5db90fbe1d3a29745619e9bca1ca2cd9"
+        },
+        "date": 1735989380405,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1345954,
+            "range": "± 945498",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240953,
+            "range": "± 1941",
             "unit": "ns/iter"
           }
         ]
