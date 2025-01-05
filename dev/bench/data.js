@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1736006872016,
+  "lastUpdate": 1736085301380,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11771,6 +11771,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240728,
             "range": "± 1076",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "cc4899cf0d14b129aeac07e93f1e7c78f001c69f",
+          "message": "docs: Fix title and high level features to top",
+          "timestamp": "2025-01-05T14:46:09+01:00",
+          "tree_id": "510561d3491b413983fe93951c617424edfeed58",
+          "url": "https://github.com/bosun-ai/swiftide/commit/cc4899cf0d14b129aeac07e93f1e7c78f001c69f"
+        },
+        "date": 1736085300145,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1340891,
+            "range": "± 1016078",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240820,
+            "range": "± 1188",
             "unit": "ns/iter"
           }
         ]
