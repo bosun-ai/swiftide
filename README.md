@@ -3,9 +3,10 @@
 
 <!--toc:start-->
 
-- [About The Project](#about-the-project)
+- [What is Swiftide?](#what-is-swiftide)
+  - [High level features](#high-level-features)
 - [Latest updates on our blog :fire:](#latest-updates-on-our-blog-fire)
-- [Example](#example)
+- [Examples](#examples)
 - [Vision](#vision)
 - [Features](#features)
   - [In detail](#in-detail)
@@ -13,12 +14,15 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Usage and concepts](#usage-and-concepts)
+  - [Indexing](#indexing)
+  - [Querying](#querying)
 - [Roadmap](#roadmap)
+- [Community](#community)
 - [Contributing](#contributing)
 - [License](#license)
   <!--toc:end-->
 
-    </details>
+</details>
 
 <a name="readme-top"></a>
 
@@ -69,11 +73,21 @@ Fast, streaming, indexing, query, and agent library for building LLM application
 
 <!-- ABOUT THE PROJECT -->
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## What is Swiftide?
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
 Swiftide is a Rust library for building LLM applications, enabling fast data ingestion, transformation, and indexing for effective querying and prompt injection, known as Retrieval Augmented Generation. It provides flexible building blocks for creating various agents, allowing rapid development from concept to production with minimal code.
+
+### High level features
+
+- Build fast, streaming indexing and querying pipelines
+- Easily build agents, mix and match with previously built pipelines
+- A modular and extendable API, with minimal abstractions
+- Integrations with popular LLMs and storage providers
+- Ready to use pipeline transformations
 
 <div align="center">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
@@ -85,16 +99,6 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 > [!CAUTION]
 > Swiftide is under heavy development and can have breaking changes. Documentation might fall short of all features, and despite our efforts be slightly outdated. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## High level features
-
-- Build fast, streaming indexing and querying pipelines
-- Easily build agents, mix and match with previously built pipelines
-- A modular and extendable API, with minimal abstractions
-- Integrations with popular LLMs and storage providers
-- Ready to use pipeline transformations
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -177,7 +181,7 @@ _You can find more detailed examples in [/examples](https://github.com/bosun-ai/
 
 ## Vision
 
-Our goal is to create a fast, extendable platform for building LLLM applications in Rust, to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create a fast, extendable platform for building LLM applications in Rust, to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
