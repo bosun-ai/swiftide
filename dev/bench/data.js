@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1736085301380,
+  "lastUpdate": 1736184981680,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11825,6 +11825,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240820,
             "range": "± 1188",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d198bb0807f5d5b12a51bc76721cc945be8e65b9",
+          "message": "fix(prompts): Skip rendering prompts if no context and forward as is (#530)\n\nFixes an issue if strings suddenly include jinja style values by\r\nmistake. Bonus performance boost.",
+          "timestamp": "2025-01-06T18:27:33+01:00",
+          "tree_id": "a51af5211ad378f2f881ac72f3b4e284785958a8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d198bb0807f5d5b12a51bc76721cc945be8e65b9"
+        },
+        "date": 1736184981140,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1337929,
+            "range": "± 1031816",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240564,
+            "range": "± 995",
             "unit": "ns/iter"
           }
         ]
