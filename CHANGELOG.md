@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.1](https://github.com/bosun-ai/swiftide/compare/v0.16.0...v0.16.1) - 2025-01-06
+
+### Bug fixes
+
+- [d198bb0](https://github.com/bosun-ai/swiftide/commit/d198bb0807f5d5b12a51bc76721cc945be8e65b9) *(prompts)*  Skip rendering prompts if no context and forward as is (#530)
+
+````text
+Fixes an issue if strings suddenly include jinja style values by
+  mistake. Bonus performance boost.
+````
+
+- [4e8d59f](https://github.com/bosun-ai/swiftide/commit/4e8d59fbc0fbe72dd0f8d6a95e6e335280eb88e3) *(redb)*  Log errors and return uncached instead of panicing (#531)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.0...0.16.1
+
+
+
 ## [0.16.0](https://github.com/bosun-ai/swiftide/compare/v0.15.0...v0.16.0) - 2025-01-02
 
 ### New features
