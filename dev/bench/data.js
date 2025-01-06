@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1736184981680,
+  "lastUpdate": 1736197702295,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -11879,6 +11879,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240564,
             "range": "± 995",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4e8d59fbc0fbe72dd0f8d6a95e6e335280eb88e3",
+          "message": "fix(redb): Log errors and return uncached instead of panicing (#531)",
+          "timestamp": "2025-01-06T21:59:45+01:00",
+          "tree_id": "c282add7c3595700b3fdeb3dc3d4c8319e54e3e4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4e8d59fbc0fbe72dd0f8d6a95e6e335280eb88e3"
+        },
+        "date": 1736197701077,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1348050,
+            "range": "± 933201",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242320,
+            "range": "± 5926",
             "unit": "ns/iter"
           }
         ]
