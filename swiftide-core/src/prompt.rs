@@ -76,6 +76,8 @@ impl Prompt {
 
     /// Renders a prompt
     ///
+    /// If no context is provided, the prompt will be rendered as is.
+    ///
     /// # Errors
     ///
     /// See `Template::render`
@@ -83,7 +85,13 @@ impl Prompt {
         if let Some(context) = &self.context {
             self.template.render(context).await
         } else {
-            self.template.render(&tera::Context::default()).await
+            match &self.template {
+                Template::CompiledTemplate(_) => {
+                    self.template.render(&tera::Context::default()).await
+                }
+                Template::String(string) => Ok(string.clone()),
+                Template::Static(string) => Ok((*string).to_string()),
+            }
         }
     }
 }
@@ -214,5 +222,12 @@ mod test {
                 .unwrap(),
             "hello swiftide"
         );
+    }
+
+    #[tokio::test]
+    async fn test_assume_rendered_unless_context_methods_called() {
+        let prompt = Prompt::from("hello {{world}}");
+
+        assert_eq!(prompt.render().await.unwrap(), "hello {{world}}");
     }
 }
