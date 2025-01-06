@@ -15,6 +15,11 @@ macro_rules! unwrap_or_log {
             Ok(value) => value,
             Err(e) => {
                 tracing::error!("Error: {:#}", e);
+                debug_assert!(
+                    true,
+                    "Redb should not give errors unless in very weird situations; this is a bug: {:#}",
+                    e
+                );
                 return false;
             }
         }
