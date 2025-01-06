@@ -56,7 +56,7 @@ where
     LLM: ChatCompletion + Clone + 'static,
 {
     fn from(llm: &LLM) -> Self {
-        Box::new(llm.clone())
+        Box::new(llm.clone()) as Box<dyn ChatCompletion>
     }
 }
 
@@ -85,7 +85,7 @@ pub trait Tool: Send + Sync + DynClone {
     where
         Self: Sized + 'a,
     {
-        Box::new(self)
+        Box::new(self) as Box<dyn Tool>
     }
 }
 
