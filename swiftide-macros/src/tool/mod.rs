@@ -283,7 +283,7 @@ fn boxed_from(struct_ident: &syn::Ident, lifetimes: &[&Lifetime]) -> TokenStream
     quote! {
         impl<'TOOLBOXED> From<#struct_ident> for Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED> {
             fn from(val: #struct_ident) -> Self {
-                Box::new(val)
+                Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED>
             }
         }
     }
