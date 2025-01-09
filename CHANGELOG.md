@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.2](https://github.com/bosun-ai/swiftide/compare/v0.16.1...v0.16.2) - 2025-01-08
+
+### Bug fixes
+
+- [2226755](https://github.com/bosun-ai/swiftide/commit/2226755f367d9006870a2dea2063655a7901d427)  Explicit cast on tools to Box<dyn> to make analyzer happy (#536)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.1...0.16.2
+
+
+
 ## [0.16.1](https://github.com/bosun-ai/swiftide/compare/v0.16.0...v0.16.1) - 2025-01-06
 
 ### Bug fixes
