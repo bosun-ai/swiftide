@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.3](https://github.com/bosun-ai/swiftide/compare/v0.16.2...v0.16.3) - 2025-01-10
+
+### New features
+
+- [b66bd79](https://github.com/bosun-ai/swiftide/commit/b66bd79070772d7e1bfe10a22531ccfd6501fc2a) *(fastembed)*  Add support for jina v2 code (#541)
+
+````text
+Add support for jina v2 code in fastembed.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.2...0.16.3
+
+
+
 ## [0.16.2](https://github.com/bosun-ai/swiftide/compare/v0.16.1...v0.16.2) - 2025-01-08
 
 ### Bug fixes
