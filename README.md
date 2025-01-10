@@ -104,6 +104,9 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
+- [Releasing kwaak with kwaak](https://bosun.ai/posts/releasing-kwaak-with-kwaak/)
+- [Release - Swiftide 0.16](https://bosun.ai/posts/swiftide-0-16/)
+- [Rust in LLM based tools for performance](https://bosun.ai/posts/rust-for-genai-performance/)
 - [Evaluate Swiftide pipelines with Ragas](https://bosun.ai/posts/evaluating-swiftide-with-ragas/) (2024-09-15)
 - [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
 - [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04
