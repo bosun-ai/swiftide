@@ -366,11 +366,11 @@ impl PgVector {
             .join(", ");
 
         Ok(format!(
-            r#"
+            r"
             INSERT INTO {} ({})
             SELECT {}
             FROM UNNEST({}) AS t({})
-            ON CONFLICT (id) DO UPDATE SET {}"#,
+            ON CONFLICT (id) DO UPDATE SET {}",
             self.table_name,
             columns.join(", "),
             columns.join(", "),
