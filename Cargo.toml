@@ -20,11 +20,11 @@ similar.opt-level = 3
 
 [workspace.dependencies]
 anyhow = { version = "1.0" }
-thiserror = "2.0.9"
+thiserror = "2.0.11"
 async-trait = { version = "0.1" }
 derive_builder = { version = "0.20" }
 futures-util = { version = "0.3" }
-tokio = { version = "1.41", features = ["rt-multi-thread"] }
+tokio = { version = "1.43", features = ["rt-multi-thread"] }
 tokio-stream = { version = "0.1" }
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = { version = "1.16" }
@@ -38,12 +38,12 @@ lazy_static = { version = "1.5.0" }
 chrono = { version = "0.4" }
 indoc = { version = "2.0" }
 regex = { version = "1.11.1" }
-uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
+uuid = { version = "1.11", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 convert_case = "0.6.0"
 
 # Integrations
-spider = { version = "2.21" }
+spider = { version = "2.24" }
 async-openai = { version = "0.26" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
@@ -53,8 +53,8 @@ lancedb = { version = "0.14", default-features = false }
 arrow-array = { version = "53.3", default-features = false }
 arrow = { version = "53.3", default-features = false }
 parquet = { version = "53.3", default-features = false, features = ["async"] }
-redb = { version = "2.3" }
-sqlx = { version = "0.8.2", features = ["postgres", "uuid"] }
+redb = { version = "2.4" }
+sqlx = { version = "0.8.3", features = ["postgres", "uuid"] }
 aws-config = "1.5"
 pgvector = { version = "0.4.0", features = ["sqlx"], default-features = false }
 aws-credential-types = "1.2"
@@ -94,7 +94,7 @@ temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
 pretty_assertions = "1.4"
-insta = { version = "1.41.1", features = ["yaml"] }
+insta = { version = "1.42.0", features = ["yaml"] }
 
 
 [workspace.lints.rust]
