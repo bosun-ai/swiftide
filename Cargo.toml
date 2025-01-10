@@ -63,7 +63,7 @@ criterion = { version = "0.5.1", default-features = false }
 darling = "0.20"
 deadpool = "0.12"
 document-features = "0.2.10"
-fastembed = "4.1"
+fastembed = "4.4"
 flv-util = "0.5.2"
 htmd = "0.1"
 ignore = "0.4"
