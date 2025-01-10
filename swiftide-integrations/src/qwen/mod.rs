@@ -1,7 +1,4 @@
-use std::{
-    fmt::Display,
-    sync::Arc,
-};
+use std::{fmt::Display, sync::Arc};
 
 use config::QwenConfig;
 use derive_builder::Builder;
@@ -62,6 +59,19 @@ impl Display for QwenEmbedding {
     }
 }
 
+impl From<&String> for QwenEmbedding {
+    fn from(value: &String) -> Self {
+        match value.as_str() {
+            "text-embedding-v1" => QwenEmbedding::TextEmbeddingV1,
+            "text-embedding-v2" => QwenEmbedding::TextEmbeddingV2,
+            "text-embedding-v3" => QwenEmbedding::TextEmbeddingV3,
+            "text-embedding-async-v1" => QwenEmbedding::TextEmbeddingAsyncV1,
+            "text-embedding-async-v2" => QwenEmbedding::TextEmbeddingAsyncV2,
+            _ => panic!("Invalid embedding model"),
+        }
+    }
+}
+
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct Qwen {
@@ -94,7 +104,7 @@ pub struct Options {
     #[builder(default)]
     pub embed_model: Option<String>,
     #[builder(default)]
-    pub dimensions:u16,
+    pub dimensions: u16,
 }
 
 impl Options {
@@ -154,7 +164,7 @@ impl QwenBuilder {
         } else {
             self.default_options = Some(Options {
                 prompt_model: Some(model.to_string()),
-                ..Default::default()                
+                ..Default::default()
             });
         }
         self
@@ -166,7 +176,45 @@ impl QwenBuilder {
         } else {
             self.default_options = Some(Options {
                 embed_model: Some(model.to_string()),
-                ..Default::default()                
+                ..Default::default()
+            });
+        }
+        self
+    }
+
+    pub fn default_dimensions(&mut self, dimensions: u16) -> &mut Self {
+        if let Some(options) = self.default_options.as_mut() {
+            if let Some(model) = &options.embed_model {
+                let embed_model: QwenEmbedding = model.into();
+                match embed_model {
+                    QwenEmbedding::TextEmbeddingV1 => assert_eq!(
+                        dimensions, 1536,
+                        "Dimensions must be 1536 for this embedding model"
+                    ),
+                    QwenEmbedding::TextEmbeddingV2 => assert_eq!(
+                        dimensions, 1536,
+                        "Dimensions must be 1536 for this embedding model"
+                    ),
+                    QwenEmbedding::TextEmbeddingV3 => assert!(
+                        matches!(dimensions, 1024 | 768 | 512),
+                        "Dimensions must be one of [1024, 768, 512] for TextEmbeddingV3"
+                    ),
+                    QwenEmbedding::TextEmbeddingAsyncV1 => assert_eq!(
+                        dimensions, 1536,
+                        "Dimensions must be 1536 for this embedding model"
+                    ),
+                    QwenEmbedding::TextEmbeddingAsyncV2 => assert_eq!(
+                        dimensions, 1536,
+                        "Dimensions must be 1536 for this embedding model"
+                    ),
+                }
+            }
+
+            options.dimensions = dimensions;
+        } else {
+            self.default_options = Some(Options {
+                dimensions,
+                ..Default::default()
             });
         }
         self
@@ -179,16 +227,21 @@ mod test {
     #[test]
     fn test_default_prompt_model() {
         let openai = Qwen::builder()
-            
             .default_prompt_model(&QwenModel::Long)
             .build()
             .unwrap();
-        assert_eq!(openai.default_options.prompt_model, Some(QwenModel::Long.to_string()));
+        assert_eq!(
+            openai.default_options.prompt_model,
+            Some(QwenModel::Long.to_string())
+        );
 
         let openai = Qwen::builder()
             .default_prompt_model(&QwenModel::Turbo)
             .build()
             .unwrap();
-        assert_eq!(openai.default_options.prompt_model, Some(QwenModel::Turbo.to_string()));
+        assert_eq!(
+            openai.default_options.prompt_model,
+            Some(QwenModel::Turbo.to_string())
+        );
     }
 }

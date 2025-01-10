@@ -109,3 +109,7 @@ path = "hello_agents.rs"
 [[example]]
 name = "index-md-pgvector"
 path = "index_md_into_pgvector.rs"
+
+[[example]]
+name = "qwen"
+path = "qwen.rs"

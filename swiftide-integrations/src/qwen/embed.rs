@@ -9,6 +9,7 @@ use super::Qwen;
 #[async_trait]
 impl EmbeddingModel for Qwen {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+        
         let model = self
             .default_options
             .embed_model
@@ -23,15 +24,15 @@ impl EmbeddingModel for Qwen {
         tracing::debug!(
             num_chunks = input.len(),
             model = &model,
-            "[Embed] Request to openai"
+            "[Embed] Request to qwen"
         );
         let response = self
             .client
             .embeddings()
             .create(request)
             .await
-            .context("Request to OpenAI Failed")?;
-
+            ?;
+        
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");
 
