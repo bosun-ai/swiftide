@@ -104,7 +104,7 @@ insta = { workspace = true }
 
 
 [features]
-default = ["rustls"]
+default = ["rustls","qwen"]
 # Ensures rustls is used
 rustls = ["reqwest/rustls-tls-native-roots"]
 # Qdrant for storage
@@ -131,6 +131,8 @@ groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 ollama = ["dep:ollama-rs"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
+# Qwen prompting
+qwen = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Scraping via spider as loader and a html to markdown transformer
 scraping = ["dep:spider", "dep:htmd"]
 # AWS Bedrock for prompting

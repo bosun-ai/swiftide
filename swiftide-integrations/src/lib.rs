@@ -28,3 +28,5 @@ pub mod redis;
 pub mod scraping;
 #[cfg(feature = "tree-sitter")]
 pub mod treesitter;
+#[cfg(feature = "qwen")]
+pub mod qwen;
