@@ -2,7 +2,6 @@ use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 
-use ollama_rs::generation::embeddings::request::GenerateEmbeddingsRequest;
 use swiftide_core::{EmbeddingModel, Embeddings};
 
 use super::Ollama;

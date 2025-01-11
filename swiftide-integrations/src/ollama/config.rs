@@ -1,5 +1,5 @@
-use reqwest::header::{HeaderMap, AUTHORIZATION};
-use secrecy::{ExposeSecret as _, Secret};
+use reqwest::header::HeaderMap;
+use secrecy::Secret;
 use serde::Deserialize;
 
 const OLLAMA_API_BASE: &str = "http://localhost:11434";
