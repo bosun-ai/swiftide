@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1736546617746,
+  "lastUpdate": 1736631995236,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12257,6 +12257,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243966,
             "range": "± 19325",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c9194845faa12b8a0fcecdd65f8ec9d3d221ba08",
+          "message": "feat: Ollama via async-openai with chatcompletion support (#545)\n\nAdds support for chatcompletions (agents) for ollama. SimplePrompt and embeddings now use async-openai underneath.\r\n\r\nCopy pasted as I expect some differences in the future.",
+          "timestamp": "2025-01-11T22:37:55+01:00",
+          "tree_id": "ed19bd2c0170c3714d9996e49b03de16b4a31ea3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c9194845faa12b8a0fcecdd65f8ec9d3d221ba08"
+        },
+        "date": 1736631994130,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1331691,
+            "range": "± 935414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240405,
+            "range": "± 1708",
             "unit": "ns/iter"
           }
         ]
