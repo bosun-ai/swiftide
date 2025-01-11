@@ -44,7 +44,7 @@ convert_case = "0.6.0"
 
 # Integrations
 spider = { version = "2.21" }
-async-openai = { version = "0.26" }
+async-openai = { version = "0.26.0" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
 ] }
@@ -67,7 +67,6 @@ fastembed = "4.4"
 flv-util = "0.5.2"
 htmd = "0.1"
 ignore = "0.4"
-ollama-rs = "0.2.2"
 proc-macro2 = "1.0"
 quote = "1.0"
 redis = "0.27"
