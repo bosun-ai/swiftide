@@ -5941,21 +5941,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ollama-rs"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "763afb01db2dced00e656cc2cdcd875659fc3fac4c449e6337a4f04f9e3d9efc"
-dependencies = [
- "async-stream",
- "async-trait",
- "log",
- "reqwest",
- "serde",
- "serde_json",
- "url",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8690,7 +8675,6 @@ dependencies = [
  "itertools 0.13.0",
  "lancedb",
  "mockall",
- "ollama-rs",
  "parquet",
  "pgvector",
  "qdrant-client",

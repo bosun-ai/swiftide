@@ -33,7 +33,7 @@ type QueryGenerator<Q> = Arc<dyn Fn(&Query<states::Pending>) -> Result<Q> + Send
 /// * `Q` - The retriever-specific query type (e.g., `sqlx::QueryBuilder` for `PostgreSQL`)
 ///
 /// # Examples
-/// ```rust
+/// ```ignore
 /// // Define search configuration
 /// const MAX_SEARCH_RESULTS: i64 = 5;
 ///

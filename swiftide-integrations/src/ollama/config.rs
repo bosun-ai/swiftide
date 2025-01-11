@@ -2,13 +2,21 @@ use reqwest::header::HeaderMap;
 use secrecy::Secret;
 use serde::Deserialize;
 
-const OLLAMA_API_BASE: &str = "http://localhost:11434";
+const OLLAMA_API_BASE: &str = "http://localhost:11434/v1";
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct OllamaConfig {
     api_base: String,
     api_key: Secret<String>,
+}
+
+impl OllamaConfig {
+    pub fn with_api_base(&mut self, api_base: &str) -> &mut Self {
+        self.api_base = api_base.to_string();
+
+        self
+    }
 }
 
 impl Default for OllamaConfig {
