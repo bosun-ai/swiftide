@@ -55,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
     let result = pipeline
         .query("What is swiftide? Please provide an elaborate explanation")
         .await?;
-    
+
     println!("====");
     println!("{:?}", result.answer());
     Ok(())

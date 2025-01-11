@@ -20,6 +20,8 @@ pub mod parquet;
 pub mod pgvector;
 #[cfg(feature = "qdrant")]
 pub mod qdrant;
+#[cfg(feature = "qwen")]
+pub mod qwen;
 #[cfg(feature = "redb")]
 pub mod redb;
 #[cfg(feature = "redis")]
@@ -28,5 +30,3 @@ pub mod redis;
 pub mod scraping;
 #[cfg(feature = "tree-sitter")]
 pub mod treesitter;
-#[cfg(feature = "qwen")]
-pub mod qwen;

@@ -1,15 +1,12 @@
+use super::Qwen;
+use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 use swiftide_core::{EmbeddingModel, Embeddings};
-use anyhow::{Context as _, Result};
-use super::Qwen;
-
-
 
 #[async_trait]
 impl EmbeddingModel for Qwen {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
-        
         let model = self
             .default_options
             .embed_model
@@ -26,13 +23,8 @@ impl EmbeddingModel for Qwen {
             model = &model,
             "[Embed] Request to qwen"
         );
-        let response = self
-            .client
-            .embeddings()
-            .create(request)
-            .await
-            ?;
-        
+        let response = self.client.embeddings().create(request).await?;
+
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");
 

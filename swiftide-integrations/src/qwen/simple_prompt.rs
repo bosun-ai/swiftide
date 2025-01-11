@@ -5,7 +5,6 @@ use swiftide_core::{prompt::Prompt, SimplePrompt};
 use super::Qwen;
 use anyhow::{Context as _, Result};
 
-
 #[async_trait]
 impl SimplePrompt for Qwen {
     async fn prompt(&self, prompt: Prompt) -> Result<String> {
@@ -13,9 +12,10 @@ impl SimplePrompt for Qwen {
             .default_options
             .prompt_model
             .as_ref()
-            .context("Model not set")?.to_string();
+            .context("Model not set")?
+            .to_string();
 
-            let request = CreateChatCompletionRequestArgs::default()
+        let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render().await?)
