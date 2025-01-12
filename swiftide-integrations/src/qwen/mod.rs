@@ -182,30 +182,32 @@ impl QwenBuilder {
         self
     }
 
+    /// Sets the default dimensions for the `Qwen` instance.
+    ///
+    /// # Parameters
+    /// - `dimensions`: The dimensions to set.
+    ///
+    /// # Returns
+    /// A mutable reference to the `QwenBuilder`.
+    ///
+    /// # Panics
+    /// - Panics if the dimensions do not match the requirements for the specified embedding model.
     pub fn default_dimensions(&mut self, dimensions: u16) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             if let Some(model) = &options.embed_model {
                 let embed_model: QwenEmbedding = model.into();
                 match embed_model {
-                    QwenEmbedding::TextEmbeddingV1 => assert_eq!(
+                    QwenEmbedding::TextEmbeddingV1
+                    | QwenEmbedding::TextEmbeddingV2
+                    | QwenEmbedding::TextEmbeddingAsyncV1
+                    | QwenEmbedding::TextEmbeddingAsyncV2 => assert_eq!(
                         dimensions, 1536,
                         "Dimensions must be 1536 for this embedding model"
                     ),
-                    QwenEmbedding::TextEmbeddingV2 => assert_eq!(
-                        dimensions, 1536,
-                        "Dimensions must be 1536 for this embedding model"
-                    ),
+
                     QwenEmbedding::TextEmbeddingV3 => assert!(
                         matches!(dimensions, 1024 | 768 | 512),
                         "Dimensions must be one of [1024, 768, 512] for TextEmbeddingV3"
-                    ),
-                    QwenEmbedding::TextEmbeddingAsyncV1 => assert_eq!(
-                        dimensions, 1536,
-                        "Dimensions must be 1536 for this embedding model"
-                    ),
-                    QwenEmbedding::TextEmbeddingAsyncV2 => assert_eq!(
-                        dimensions, 1536,
-                        "Dimensions must be 1536 for this embedding model"
                     ),
                 }
             }
