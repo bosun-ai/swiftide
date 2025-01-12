@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1736679206674,
+  "lastUpdate": 1736680779086,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12365,6 +12365,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241812,
             "range": "± 4065",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b33b4c899f9af43257f262ced30ef942bb3459f6",
+          "message": "chore: release v0.16.4 (#547)\n\n## 🤖 New release\r\n* `swiftide`: 0.16.3 -> 0.16.4 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.16.3 -> 0.16.4 (✓ API compatible changes)\r\n* `swiftide-core`: 0.16.3 -> 0.16.4 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.16.3 -> 0.16.4\r\n* `swiftide-indexing`: 0.16.3 -> 0.16.4 (✓ API compatible changes)\r\n* `swiftide-integrations`: 0.16.3 -> 0.16.4 (✓ API compatible changes)\r\n* `swiftide-query`: 0.16.3 -> 0.16.4 (✓ API compatible changes)\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.16.4](https://github.com/bosun-ai/swiftide/compare/v0.16.3...v0.16.4)\r\n- 2025-01-12\r\n\r\n### New features\r\n\r\n-\r\n[c919484](https://github.com/bosun-ai/swiftide/commit/c9194845faa12b8a0fcecdd65f8ec9d3d221ba08)\r\nOllama via async-openai with chatcompletion support (#545)\r\n\r\n````text\r\nAdds support for chatcompletions (agents) for ollama. SimplePrompt and embeddings now use async-openai underneath.\r\n\r\n  Copy pasted as I expect some differences in the future.\r\n````\r\n\r\n### Miscellaneous\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.toml dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.16.3...0.16.4\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-01-12T12:10:31+01:00",
+          "tree_id": "f0241c4015ce7405e12a0a6b0e9b39c0ade0874f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b33b4c899f9af43257f262ced30ef942bb3459f6"
+        },
+        "date": 1736680778620,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1327145,
+            "range": "± 934361",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240602,
+            "range": "± 4554",
             "unit": "ns/iter"
           }
         ]
