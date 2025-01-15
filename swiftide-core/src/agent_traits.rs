@@ -124,4 +124,10 @@ pub trait AgentContext: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
     async fn history(&self) -> Vec<ChatMessage>;
+
+    /// Pops the last messages up until the last completion
+    ///
+    /// LLMs failing completion for various reasons is unfortunately a common occurence
+    /// This gives a way to redrive the last completion in a generic way
+    async fn redrive(&self);
 }

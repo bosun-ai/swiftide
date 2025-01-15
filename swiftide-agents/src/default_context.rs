@@ -48,6 +48,18 @@ impl Default for DefaultContext {
     }
 }
 
+impl std::fmt::Debug for DefaultContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DefaultContext")
+            .field("completion_history", &self.completion_history)
+            .field("completions_ptr", &self.completions_ptr)
+            .field("current_completions_ptr", &self.current_completions_ptr)
+            .field("tool_executor", &"Arc<dyn ToolExecutor>")
+            .field("stop_on_assistant", &self.stop_on_assistant)
+            .finish()
+    }
+}
+
 impl DefaultContext {
     /// Create a new context with a custom executor
     pub fn from_executor<T: Into<Arc<dyn ToolExecutor>>>(executor: T) -> DefaultContext {
@@ -116,6 +128,19 @@ impl AgentContext for DefaultContext {
     /// Execute a command in the tool executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         self.tool_executor.exec_cmd(cmd).await
+    }
+
+    /// Pops the last messages up until the previous completion
+    ///
+    /// LLMs failing completion for various reasons is unfortunately a common occurence
+    /// This gives a way to redrive the last completion in a generic way
+    async fn redrive(&self) {
+        let mut history = self.completion_history.lock().await;
+        let previous = self.current_completions_ptr.load(Ordering::SeqCst);
+
+        // delete everything after the last completion
+        history.truncate(previous + 1);
+        self.completions_ptr.store(previous, Ordering::SeqCst);
     }
 }
 
@@ -305,5 +330,62 @@ mod tests {
             new_messages[1],
             ChatMessage::Summary("Summary message 2".into())
         );
+    }
+
+    #[tokio::test]
+    async fn test_redrive() {
+        let context = DefaultContext::default();
+
+        // Record initial chat messages
+        context
+            .add_messages(vec![
+                ChatMessage::System("System message".into()),
+                ChatMessage::User("Hello".into()),
+            ])
+            .await;
+
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 2);
+        assert!(context.next_completion().await.is_none());
+
+        context
+            .add_messages(vec![ChatMessage::User("Hey?".into())])
+            .await;
+
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 3);
+        assert!(context.next_completion().await.is_none());
+
+        // Add more messages
+        context
+            .add_messages(vec![ChatMessage::User("How are you?".into())])
+            .await;
+
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 4);
+        assert!(context.next_completion().await.is_none());
+
+        // Redrive should remove the last set of messages
+        dbg!(&context);
+        context.redrive().await;
+        dbg!(&context);
+
+        // We just redrove with the same messages
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 4);
+        assert!(context.next_completion().await.is_none());
+
+        // Add more messages
+        context
+            .add_messages(vec![ChatMessage::User("How are you really?".into())])
+            .await;
+
+        // This should remove any additional messages
+        context.redrive().await;
+
+        // We just redrove with the same messages
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 4);
+        assert!(context.next_completion().await.is_none());
     }
 }
