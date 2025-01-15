@@ -53,6 +53,7 @@ tree-sitter-ruby = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true }
 htmd = { workspace = true, optional = true }
@@ -121,6 +122,7 @@ tree-sitter = [
   "dep:tree-sitter-typescript",
   "dep:tree-sitter-javascript",
   "dep:tree-sitter-java",
+  "dep:tree-sitter-go",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
@@ -145,6 +147,7 @@ fluvio = ["dep:fluvio"]
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+
 
 [lints]
 workspace = true
