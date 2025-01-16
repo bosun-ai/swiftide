@@ -44,7 +44,7 @@ convert_case = "0.6.0"
 
 # Integrations
 spider = { version = "2.26" }
-async-openai = { version = "0.26.0" }
+async-openai = { version = "0.27.1" }
 qdrant-client = { version = "1.10", default-features = false, features = [
   "serde",
 ] }
@@ -71,7 +71,7 @@ proc-macro2 = "1.0"
 quote = "1.0"
 redis = "0.27"
 reqwest = { version = "0.12.9", default-features = false }
-secrecy = "0.8.0"
+secrecy = "0.10.3"
 syn = "2.0"
 tera = { version = "1.20", default-features = false }
 text-splitter = "0.17"
