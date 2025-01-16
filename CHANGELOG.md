@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.0](https://github.com/bosun-ai/swiftide/compare/v0.16.4...v0.17.0) - 2025-01-16
+
+### New features
+
+- [835c35e](https://github.com/bosun-ai/swiftide/commit/835c35e7d74811daa90f7ca747054d1919633058) *(agents)*  Redrive completions manually on failure (#551)
+
+````text
+Sometimes LLMs fail a completion without deterministic errors, or the
+  user case where you just want to retry. `redrive` can now be called on a
+  context, popping any new messages (if any), and making the messages
+  available again to the agent.
+````
+
+- [f83f3f0](https://github.com/bosun-ai/swiftide/commit/f83f3f03bbf6a9591b54521dde91bf1a5ed19c5c) *(agents)*  Implement ToolExecutor for common dyn pointers (#549)
+
+- [7f85735](https://github.com/bosun-ai/swiftide/commit/7f857358e46e825494ba927dffb33c3afa0d762e) *(query)*  Add custom lancedb query generation for lancedb search (#518)
+
+- [ce4e34b](https://github.com/bosun-ai/swiftide/commit/ce4e34be42ce1a0ab69770d03695bd67f99a8739) *(tree-sitter)*  Add golang support (#552)
+
+````text
+Seems someone conveniently forgot to add Golang support for the
+  splitter.
+````
+
+### Miscellaneous
+
+- [c9ce250](https://github.com/bosun-ai/swiftide/commit/c9ce25030c6f6f0711722d7cb7b527fa78017d7a) *(deps)*  Update async openai to 0.27.1 (#554)
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.4...0.17.0
+
+
+
 ## [0.16.4](https://github.com/bosun-ai/swiftide/compare/v0.16.3...v0.16.4) - 2025-01-12
 
 ### New features
