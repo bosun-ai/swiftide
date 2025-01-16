@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737028952680,
+  "lastUpdate": 1737033552784,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12473,6 +12473,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244548,
             "range": "± 3523",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f83f3f03bbf6a9591b54521dde91bf1a5ed19c5c",
+          "message": "feat(agents): Implement ToolExecutor for common dyn pointers (#549)",
+          "timestamp": "2025-01-16T14:10:05+01:00",
+          "tree_id": "928fd323aa162738bbcaa3968e7148c6772e76a5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f83f3f03bbf6a9591b54521dde91bf1a5ed19c5c"
+        },
+        "date": 1737033552076,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1353129,
+            "range": "± 961295",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242906,
+            "range": "± 2130",
             "unit": "ns/iter"
           }
         ]
