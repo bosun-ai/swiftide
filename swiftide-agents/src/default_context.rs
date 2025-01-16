@@ -132,7 +132,7 @@ impl AgentContext for DefaultContext {
 
     /// Pops the last messages up until the previous completion
     ///
-    /// LLMs failing completion for various reasons is unfortunately a common occurence
+    /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self) {
         let mut history = self.completion_history.lock().await;

@@ -127,7 +127,7 @@ pub trait AgentContext: Send + Sync {
 
     /// Pops the last messages up until the last completion
     ///
-    /// LLMs failing completion for various reasons is unfortunately a common occurence
+    /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self);
 }
