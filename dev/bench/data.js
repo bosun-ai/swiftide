@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737033552784,
+  "lastUpdate": 1737035564480,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12527,6 +12527,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242906,
             "range": "± 2130",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "r.raajey@gmail.com",
+            "name": "RK",
+            "username": "shamb0"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7f857358e46e825494ba927dffb33c3afa0d762e",
+          "message": "feat(query): Add custom lancedb query generation for lancedb search (#518)\n\nFixes: #511\r\n\r\nThis PR implements the `CustomStrategy<Q>` trait for LanceDB, enabling\r\nflexible and customizable vector similarity search capabilities. The\r\nimplementation follows the successful pattern established in the\r\npgvector integration while leveraging LanceDB-specific features.\r\n\r\nSigned-off-by: shamb0 <r.raajey@gmail.com>\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-01-16T14:43:27+01:00",
+          "tree_id": "3df93b26f4bb06e642a3d3955575052eed4a8486",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7f857358e46e825494ba927dffb33c3afa0d762e"
+        },
+        "date": 1737035563299,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1342131,
+            "range": "± 938245",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243049,
+            "range": "± 3021",
             "unit": "ns/iter"
           }
         ]
