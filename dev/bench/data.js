@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737043030852,
+  "lastUpdate": 1737043150798,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12689,6 +12689,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243892,
             "range": "± 3701",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8e29f101699435cbd2c08b2eb5fba2d427b101f3",
+          "message": "chore: release v0.17.0 (#548)\n\n## 🤖 New release\r\n* `swiftide`: 0.16.4 -> 0.17.0 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.16.4 -> 0.17.0 (✓ API compatible changes)\r\n* `swiftide-core`: 0.16.4 -> 0.17.0 (⚠️ API breaking changes)\r\n* `swiftide-macros`: 0.16.4 -> 0.17.0\r\n* `swiftide-indexing`: 0.16.4 -> 0.17.0\r\n* `swiftide-integrations`: 0.16.4 -> 0.17.0 (✓ API compatible changes)\r\n* `swiftide-query`: 0.16.4 -> 0.17.0\r\n\r\n### ⚠️ `swiftide-core` breaking changes\r\n\r\n```\r\n--- failure trait_method_added: pub trait method added ---\r\n\r\nDescription:\r\nA non-sealed public trait added a new method without a default implementation, which breaks downstream implementations of the trait\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#trait-new-item-no-default\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/trait_method_added.ron\r\n\r\nFailed in:\r\n  trait method swiftide_core::agent_traits::AgentContext::redrive in file /tmp/.tmps520nh/swiftide/swiftide-core/src/agent_traits.rs:153\r\n  trait method swiftide_core::AgentContext::redrive in file /tmp/.tmps520nh/swiftide/swiftide-core/src/agent_traits.rs:153\r\n```\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.17.0](https://github.com/bosun-ai/swiftide/compare/v0.16.4...v0.17.0)\r\n- 2025-01-16\r\n\r\n### New features\r\n\r\n-\r\n[835c35e](https://github.com/bosun-ai/swiftide/commit/835c35e7d74811daa90f7ca747054d1919633058)\r\n*(agents)* Redrive completions manually on failure (#551)\r\n\r\n````text\r\nSometimes LLMs fail a completion without deterministic errors, or the\r\n  user case where you just want to retry. `redrive` can now be called on a\r\n  context, popping any new messages (if any), and making the messages\r\n  available again to the agent.\r\n````\r\n\r\n-\r\n[f83f3f0](https://github.com/bosun-ai/swiftide/commit/f83f3f03bbf6a9591b54521dde91bf1a5ed19c5c)\r\n*(agents)* Implement ToolExecutor for common dyn pointers (#549)\r\n\r\n-\r\n[7f85735](https://github.com/bosun-ai/swiftide/commit/7f857358e46e825494ba927dffb33c3afa0d762e)\r\n*(query)* Add custom lancedb query generation for lancedb search (#518)\r\n\r\n-\r\n[ce4e34b](https://github.com/bosun-ai/swiftide/commit/ce4e34be42ce1a0ab69770d03695bd67f99a8739)\r\n*(tree-sitter)* Add golang support (#552)\r\n\r\n````text\r\nSeems someone conveniently forgot to add Golang support for the\r\n  splitter.\r\n````\r\n\r\n### Miscellaneous\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.lock dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.16.4...0.17.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-01-16T16:50:00+01:00",
+          "tree_id": "f44d00487f189ec6ca8da12acd8a2db17ff1c9b3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8e29f101699435cbd2c08b2eb5fba2d427b101f3"
+        },
+        "date": 1737043150306,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1341658,
+            "range": "± 1025799",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241318,
+            "range": "± 1545",
             "unit": "ns/iter"
           }
         ]
