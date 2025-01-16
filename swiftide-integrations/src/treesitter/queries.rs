@@ -322,3 +322,40 @@ pub mod java {
             (object_creation_expression
                 type: (type_identifier) @name)";
 }
+
+pub mod go {
+    pub const DEFS: &str = r"
+    (function_declaration
+    name: (identifier) @name)
+
+    (method_declaration
+    name: (field_identifier) @name)
+
+    (type_declaration (type_spec name: (type_identifier) @name type: (interface_type)))
+
+    (type_declaration (type_spec name: (type_identifier) @name type: (struct_type)))
+
+    (import_declaration (import_spec) @name)
+
+    (var_declaration (var_spec name: (identifier) @name))
+
+    (const_declaration (const_spec name: (identifier) @name))
+
+            ";
+
+    pub const REFS: &str = r#"
+    (call_expression
+    function: [
+        (identifier) @name
+        (parenthesized_expression (identifier) @name)
+        (selector_expression field: (field_identifier) @name)
+        (parenthesized_expression (selector_expression field: (field_identifier) @name))
+    ])
+
+    (type_spec
+    name: (type_identifier) @name) 
+
+    (package_clause "package" (package_identifier) @name)
+    (type_identifier) @name 
+            "#;
+}

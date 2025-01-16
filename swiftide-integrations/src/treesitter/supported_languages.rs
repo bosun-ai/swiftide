@@ -47,6 +47,8 @@ pub enum SupportedLanguages {
     Javascript,
     #[serde(alias = "java")]
     Java,
+    #[serde(alias = "go")]
+    Go,
 }
 
 /// Static array of file extensions for Rust files.
@@ -67,6 +69,9 @@ static JAVASCRIPT_EXTENSIONS: &[&str] = &["js", "jsx"];
 /// Static array of file extensions for Java files.
 static JAVA_EXTENSIONS: &[&str] = &["java"];
 
+/// Static array of file extensions for Go files.
+static GO_EXTENSIONS: &[&str] = &["go"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -80,6 +85,7 @@ impl SupportedLanguages {
             SupportedLanguages::Ruby => RUBY_EXTENSIONS,
             SupportedLanguages::Javascript => JAVASCRIPT_EXTENSIONS,
             SupportedLanguages::Java => JAVA_EXTENSIONS,
+            SupportedLanguages::Go => GO_EXTENSIONS,
         }
     }
 }
@@ -103,6 +109,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Javascript => tree_sitter_javascript::LANGUAGE,
             SupportedLanguages::Ruby => tree_sitter_ruby::LANGUAGE,
             SupportedLanguages::Java => tree_sitter_java::LANGUAGE,
+            SupportedLanguages::Go => tree_sitter_go::LANGUAGE,
         }
         .into()
     }
