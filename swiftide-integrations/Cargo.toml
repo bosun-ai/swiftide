@@ -53,6 +53,7 @@ tree-sitter-ruby = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true }
 htmd = { workspace = true, optional = true }
@@ -67,7 +68,6 @@ aws-sdk-bedrockruntime = { workspace = true, features = [
 ], optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
-ollama-rs = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
   "rt_tokio_1",
@@ -122,13 +122,14 @@ tree-sitter = [
   "dep:tree-sitter-typescript",
   "dep:tree-sitter-javascript",
   "dep:tree-sitter-java",
+  "dep:tree-sitter-go",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
 # Groq prompting
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
-# Ollama prompting
-ollama = ["dep:ollama-rs"]
+# Ollama prompting, embedding, chatcompletion
+ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
 # Scraping via spider as loader and a html to markdown transformer
@@ -146,6 +147,7 @@ fluvio = ["dep:fluvio"]
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+
 
 [lints]
 workspace = true

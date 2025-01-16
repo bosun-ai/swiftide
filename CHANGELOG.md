@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.4](https://github.com/bosun-ai/swiftide/compare/v0.16.3...v0.16.4) - 2025-01-12
+
+### New features
+
+- [c919484](https://github.com/bosun-ai/swiftide/commit/c9194845faa12b8a0fcecdd65f8ec9d3d221ba08)  Ollama via async-openai with chatcompletion support (#545)
+
+````text
+Adds support for chatcompletions (agents) for ollama. SimplePrompt and embeddings now use async-openai underneath.
+
+  Copy pasted as I expect some differences in the future.
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.3...0.16.4
+
+
+
+## [0.16.3](https://github.com/bosun-ai/swiftide/compare/v0.16.2...v0.16.3) - 2025-01-10
+
+### New features
+
+- [b66bd79](https://github.com/bosun-ai/swiftide/commit/b66bd79070772d7e1bfe10a22531ccfd6501fc2a) *(fastembed)*  Add support for jina v2 code (#541)
+
+````text
+Add support for jina v2 code in fastembed.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.2...0.16.3
+
+
+
 ## [0.16.2](https://github.com/bosun-ai/swiftide/compare/v0.16.1...v0.16.2) - 2025-01-08
 
 ### Bug fixes
