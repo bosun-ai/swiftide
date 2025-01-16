@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737038876212,
+  "lastUpdate": 1737043030852,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12635,6 +12635,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242205,
             "range": "± 4110",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c9ce25030c6f6f0711722d7cb7b527fa78017d7a",
+          "message": "chore(deps): Update async openai to 0.27.1 (#554)",
+          "timestamp": "2025-01-16T16:47:53+01:00",
+          "tree_id": "449faa326ae462dbf5982cd16111a582b62053de",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c9ce25030c6f6f0711722d7cb7b527fa78017d7a"
+        },
+        "date": 1737043029582,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1351104,
+            "range": "± 982530",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243892,
+            "range": "± 3701",
             "unit": "ns/iter"
           }
         ]
