@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1736680779086,
+  "lastUpdate": 1737028952680,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12419,6 +12419,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240602,
             "range": "± 4554",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ce4e34be42ce1a0ab69770d03695bd67f99a8739",
+          "message": "feat(tree-sitter): Add golang support (#552)\n\nSeems someone conveniently forgot to add Golang support for the\r\nsplitter.",
+          "timestamp": "2025-01-16T12:53:17+01:00",
+          "tree_id": "af4937b8be8bb8d60b98780cf5e9b8410b4de45f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ce4e34be42ce1a0ab69770d03695bd67f99a8739"
+        },
+        "date": 1737028952112,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1364435,
+            "range": "± 1036719",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244548,
+            "range": "± 3523",
             "unit": "ns/iter"
           }
         ]
