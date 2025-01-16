@@ -80,9 +80,9 @@ impl DefaultContext {
 impl AgentContext for DefaultContext {
     /// Retrieve messages for the next completion
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
-        let current = self.completions_ptr.load(Ordering::SeqCst);
-
         let history = self.completion_history.lock().await;
+
+        let current = self.completions_ptr.load(Ordering::SeqCst);
 
         if history[current..].is_empty()
             || (self.stop_on_assistant
