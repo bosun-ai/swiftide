@@ -166,7 +166,7 @@ impl Retrieve<CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>> for P
         let pool = self.get_pool().await?;
 
         // Build the custom query using both strategy and query state
-        let mut query_builder = search_strategy.build_query(&query)?;
+        let mut query_builder = search_strategy.build_query(&query).await?;
 
         // Execute the query using the builder's built-in methods
         let results = query_builder
