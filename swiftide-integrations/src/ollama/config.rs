@@ -1,5 +1,5 @@
 use reqwest::header::HeaderMap;
-use secrecy::Secret;
+use secrecy::SecretString;
 use serde::Deserialize;
 
 const OLLAMA_API_BASE: &str = "http://localhost:11434/v1";
@@ -8,7 +8,7 @@ const OLLAMA_API_BASE: &str = "http://localhost:11434/v1";
 #[serde(default)]
 pub struct OllamaConfig {
     api_base: String,
-    api_key: Secret<String>,
+    api_key: SecretString,
 }
 
 impl OllamaConfig {
@@ -41,7 +41,7 @@ impl async_openai::config::Config for OllamaConfig {
         &self.api_base
     }
 
-    fn api_key(&self) -> &Secret<String> {
+    fn api_key(&self) -> &SecretString {
         &self.api_key
     }
 
