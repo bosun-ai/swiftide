@@ -3,12 +3,15 @@ use arrow_array::{RecordBatch, StringArray};
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use itertools::Itertools;
-use lancedb::query::{ExecutableQuery, QueryBase};
+use lancedb::{
+    index::scalar::FullTextSearchQuery,
+    query::{ExecutableQuery, QueryBase},
+};
 use swiftide_core::{
     document::Document,
     indexing::Metadata,
     querying::{
-        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        search_strategies::{CustomStrategy, HybridSearch, SimilaritySingleEmbedding},
         states, Query,
     },
     Retrieve,
@@ -117,6 +120,62 @@ impl<Q: ExecutableQuery + Send + Sync + 'static> Retrieve<CustomStrategy<Q>> for
     }
 }
 
+/// A very simple implementation of hybridsearch for Lance
+///
+/// Currently lance requires an index to be present.
+///
+/// If you need something more tailored, you can create a custom strategy from a query instead.
+#[async_trait]
+impl Retrieve<HybridSearch> for LanceDB {
+    #[tracing::instrument]
+    async fn retrieve(
+        &self,
+        search_strategy: &HybridSearch,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let Some(embedding) = &query.embedding else {
+            anyhow::bail!("No embedding for query")
+        };
+
+        let table = self
+            .get_connection()
+            .await?
+            .open_table(&self.table_name)
+            .execute()
+            .await?;
+
+        let vector_fields = self
+            .fields
+            .iter()
+            .filter(|field| matches!(field, FieldConfig::Vector(_)))
+            .collect_vec();
+
+        if vector_fields.is_empty() || vector_fields.len() > 1 {
+            anyhow::bail!("Zero or multiple vector fields configured in schema")
+        }
+
+        let column_name = vector_fields.first().map(|v| v.field_name()).unwrap();
+
+        dbg!(&column_name);
+        let mut query_builder = table
+            .query()
+            .nearest_to(embedding.as_slice())?
+            .full_text_search(FullTextSearchQuery::new(query.original().to_string()))
+            .column(&column_name)
+            .limit(usize::try_from(search_strategy.top_k())?);
+
+        let batches = query_builder
+            .execute_hybrid()
+            .await?
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        let documents = Self::retrieve_from_record_batches(&batches);
+
+        Ok(query.retrieved_documents(documents))
+    }
+}
+
 impl LanceDB {
     /// Retrieves documents from Arrow `RecordBatches` by processing each row and extracting content
     /// and metadata fields.
@@ -176,6 +235,7 @@ impl LanceDB {
 
 #[cfg(test)]
 mod test {
+    use lancedb::index::{vector::IvfFlatIndexBuilder, Index};
     use swiftide_core::{
         indexing::{self, EmbeddedField},
         Persist as _,
@@ -222,6 +282,17 @@ mod test {
             .await
             .unwrap();
 
+        {
+            // hybrid search must have an index
+            lancedb
+                .open_table()
+                .await
+                .unwrap()
+                .create_index(&["vector_combined"], Index::Auto)
+                .execute()
+                .await
+                .unwrap();
+        }
         let mut query = Query::<states::Pending>::new("test_query");
         query.embedding = Some(vec![1.0; 384]);
 
@@ -242,6 +313,14 @@ mod test {
         assert_eq!(result.documents().len(), 0);
 
         let search_strategy = SimilaritySingleEmbedding::<()>::default();
+        let result = lancedb
+            .retrieve(&search_strategy, query.clone())
+            .await
+            .unwrap();
+        assert_eq!(result.documents().len(), 3);
+
+        // Test hybrid search
+        let search_strategy = HybridSearch::default();
         let result = lancedb
             .retrieve(&search_strategy, query.clone())
             .await
