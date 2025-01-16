@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737035564480,
+  "lastUpdate": 1737038876212,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12581,6 +12581,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243049,
             "range": "± 3021",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "835c35e7d74811daa90f7ca747054d1919633058",
+          "message": "feat(agents): Redrive completions manually on failure (#551)\n\nSometimes LLMs fail a completion without deterministic errors, or the\r\nuser case where you just want to retry. `redrive` can now be called on a\r\ncontext, popping any new messages (if any), and making the messages\r\navailable again to the agent.",
+          "timestamp": "2025-01-16T15:38:27+01:00",
+          "tree_id": "76862504e819d35c1c5880cbbc54c26a60a3800c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/835c35e7d74811daa90f7ca747054d1919633058"
+        },
+        "date": 1737038875668,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1347554,
+            "range": "± 1044156",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242205,
+            "range": "± 4110",
             "unit": "ns/iter"
           }
         ]
