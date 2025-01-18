@@ -1,5 +1,5 @@
 use reqwest::header::{HeaderMap, AUTHORIZATION};
-use secrecy::{ExposeSecret as _, Secret};
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 const DASHSCOPE_API_BASE: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1";
@@ -8,7 +8,7 @@ const DASHSCOPE_API_BASE: &str = "https://dashscope.aliyuncs.com/compatible-mode
 #[serde(default)]
 pub struct DashscopeConfig {
     api_base: String,
-    api_key: Secret<String>,
+    api_key: SecretString,
 }
 
 impl Default for DashscopeConfig {
@@ -48,7 +48,7 @@ impl async_openai::config::Config for DashscopeConfig {
         &self.api_base
     }
 
-    fn api_key(&self) -> &Secret<String> {
+    fn api_key(&self) -> &SecretString {
         &self.api_key
     }
 

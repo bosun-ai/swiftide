@@ -5,7 +5,7 @@ use swiftide::{
         transformers::{metadata_qa_text, ChunkMarkdown, Embed, MetadataQAText},
         EmbeddedField,
     },
-    integrations::{lancedb::LanceDB, dashscope::DashscopeBuilder},
+    integrations::{dashscope::DashscopeBuilder, lancedb::LanceDB},
     query::{
         self,
         answers::{self},

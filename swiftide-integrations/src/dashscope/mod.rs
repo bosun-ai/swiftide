@@ -7,7 +7,6 @@ mod config;
 mod embed;
 mod simple_prompt;
 
-
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct Dashscope {
@@ -130,7 +129,6 @@ impl DashscopeBuilder {
     /// - Panics if the dimensions do not match the requirements for the specified embedding model.
     pub fn default_dimensions(&mut self, dimensions: u16) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
-            
             options.dimensions = dimensions;
         } else {
             self.default_options = Some(Options {

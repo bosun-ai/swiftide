@@ -2,6 +2,8 @@
 
 #[cfg(feature = "aws-bedrock")]
 pub mod aws_bedrock;
+#[cfg(feature = "dashscope")]
+pub mod dashscope;
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
 #[cfg(feature = "fluvio")]
@@ -20,8 +22,6 @@ pub mod parquet;
 pub mod pgvector;
 #[cfg(feature = "qdrant")]
 pub mod qdrant;
-#[cfg(feature = "dashscope")]
-pub mod dashscope;
 #[cfg(feature = "redb")]
 pub mod redb;
 #[cfg(feature = "redis")]
