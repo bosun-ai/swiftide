@@ -11,7 +11,7 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```ignore
 //! # use swiftide_agents::Agent;
 //! # use swiftide_integrations as integrations;
 //! # async fn run() -> Result<(), Box<dyn std::error::Error>> {

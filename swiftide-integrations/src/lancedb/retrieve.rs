@@ -1,6 +1,5 @@
 use anyhow::Result;
-use arrow::datatypes::SchemaRef;
-use arrow_array::StringArray;
+use arrow_array::{RecordBatch, StringArray};
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
 use itertools::Itertools;
@@ -8,7 +7,10 @@ use lancedb::query::{ExecutableQuery, QueryBase};
 use swiftide_core::{
     document::Document,
     indexing::Metadata,
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
+    querying::{
+        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        states, Query,
+    },
     Retrieve,
 };
 
@@ -66,43 +68,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for LanceDB {
             .try_collect::<Vec<_>>()
             .await?;
 
-        let mut documents = vec![];
-
-        for batch in batches {
-            let schema: SchemaRef = batch.schema();
-
-            for row_idx in 0..batch.num_rows() {
-                let mut metadata = Metadata::default();
-                let mut content = String::new();
-
-                for (col_idx, field) in schema.fields().iter().enumerate() {
-                    let column = batch.column(col_idx);
-
-                    if let Some(array) = column.as_any().downcast_ref::<StringArray>() {
-                        if field.name() == "chunk" {
-                            // Extract the "content" field
-                            content = array.value(row_idx).to_string();
-                        } else {
-                            // Assume other fields are part of the metadata
-                            let value = array.value(row_idx).to_string();
-                            metadata.insert(field.name().clone(), value);
-                        }
-                    } else {
-                        // Handle other array types as necessary
-                        // TODO: Can't we just downcast to serde::Value or fail?
-                    }
-                }
-
-                documents.push(Document::new(
-                    content,
-                    if metadata.is_empty() {
-                        None
-                    } else {
-                        Some(metadata)
-                    },
-                ));
-            }
-        }
+        let documents = Self::retrieve_from_record_batches(&batches);
 
         Ok(query.retrieved_documents(documents))
     }
@@ -121,6 +87,90 @@ impl Retrieve<SimilaritySingleEmbedding> for LanceDB {
             query,
         )
         .await
+    }
+}
+
+#[async_trait]
+impl<Q: ExecutableQuery + Send + Sync + 'static> Retrieve<CustomStrategy<Q>> for LanceDB {
+    /// Implements vector similarity search for LanceDB using a custom query strategy.
+    ///
+    /// # Type Parameters
+    /// * `VectorQuery` - LanceDB's query type for vector similarity search
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomStrategy<Q>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        // Build the custom query using both strategy and query state
+        let query_builder = search_strategy.build_query(&query).await?;
+
+        // Execute the query using the builder's built-in methods
+        let batches = query_builder
+            .execute()
+            .await?
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        let documents = Self::retrieve_from_record_batches(&batches);
+
+        Ok(query.retrieved_documents(documents))
+    }
+}
+
+impl LanceDB {
+    /// Retrieves documents from Arrow `RecordBatches` by processing each row and extracting content
+    /// and metadata fields.
+    ///
+    /// The function expects a "chunk" field to contain the main document content, while all other
+    /// string fields are treated as metadata. Non-string fields are currently skipped    
+    fn retrieve_from_record_batches(batches: &[RecordBatch]) -> Vec<Document> {
+        let total_rows: usize = batches.iter().map(RecordBatch::num_rows).sum();
+        let mut documents = Vec::with_capacity(total_rows);
+
+        let process_batch = |batch: &RecordBatch, documents: &mut Vec<Document>| {
+            for row_idx in 0..batch.num_rows() {
+                let schema = batch.schema();
+
+                let (content, metadata): (String, Option<Metadata>) = {
+                    let mut metadata = Metadata::default();
+                    let mut content = String::new();
+
+                    for (col_idx, field) in schema.as_ref().fields().iter().enumerate() {
+                        if let Some(array) =
+                            batch.column(col_idx).as_any().downcast_ref::<StringArray>()
+                        {
+                            let value = array.value(row_idx).to_string();
+
+                            if field.name() == "chunk" {
+                                content = value;
+                            } else {
+                                metadata.insert(field.name().to_string(), value);
+                            }
+                        } else {
+                            // Handle other array types as necessary
+                            // TODO: Can't we just downcast to serde::Value or fail?
+                        }
+                    }
+
+                    (
+                        content,
+                        if metadata.is_empty() {
+                            None
+                        } else {
+                            Some(metadata)
+                        },
+                    )
+                };
+
+                documents.push(Document::new(content, metadata));
+            }
+        };
+
+        batches
+            .iter()
+            .for_each(|batch| process_batch(batch, &mut documents));
+
+        documents
     }
 }
 

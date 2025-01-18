@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::chat_completion::ChatMessage;
 use anyhow::Result;
@@ -15,6 +15,27 @@ pub trait ToolExecutor: Send + Sync {
 impl<T: ToolExecutor> ToolExecutor for &T {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (*self).exec_cmd(cmd).await
+    }
+}
+
+#[async_trait]
+impl ToolExecutor for Arc<dyn ToolExecutor> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+}
+
+#[async_trait]
+impl ToolExecutor for Box<dyn ToolExecutor> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+}
+
+#[async_trait]
+impl ToolExecutor for &dyn ToolExecutor {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
     }
 }
 
@@ -124,4 +145,10 @@ pub trait AgentContext: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
     async fn history(&self) -> Vec<ChatMessage>;
+
+    /// Pops the last messages up until the last completion
+    ///
+    /// LLMs failing completion for various reasons is unfortunately a common occurrence
+    /// This gives a way to redrive the last completion in a generic way
+    async fn redrive(&self);
 }
