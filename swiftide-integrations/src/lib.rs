@@ -20,8 +20,8 @@ pub mod parquet;
 pub mod pgvector;
 #[cfg(feature = "qdrant")]
 pub mod qdrant;
-#[cfg(feature = "qwen")]
-pub mod qwen;
+#[cfg(feature = "dashscope")]
+pub mod dashscope;
 #[cfg(feature = "redb")]
 pub mod redb;
 #[cfg(feature = "redis")]

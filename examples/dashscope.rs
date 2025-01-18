@@ -5,7 +5,7 @@ use swiftide::{
         transformers::{metadata_qa_text, ChunkMarkdown, Embed, MetadataQAText},
         EmbeddedField,
     },
-    integrations::{lancedb::LanceDB, qwen::QwenBuilder},
+    integrations::{lancedb::LanceDB, dashscope::DashscopeBuilder},
     query::{
         self,
         answers::{self},
@@ -19,9 +19,9 @@ use temp_dir::TempDir;
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let client = QwenBuilder::default()
-        .default_embed_model(&swiftide::integrations::qwen::QwenEmbedding::TextEmbeddingV2)
-        .default_prompt_model(&swiftide::integrations::qwen::QwenModel::Long)
+    let client = DashscopeBuilder::default()
+        .default_embed_model("text-embedding-v2")
+        .default_prompt_model("qwen-long")
         .default_dimensions(1536)
         .build()?;
     let tempdir = TempDir::new().unwrap();

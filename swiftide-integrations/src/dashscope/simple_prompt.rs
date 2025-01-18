@@ -2,11 +2,11 @@ use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatComple
 use async_trait::async_trait;
 use swiftide_core::{prompt::Prompt, SimplePrompt};
 
-use super::Qwen;
+use super::Dashscope;
 use anyhow::{Context as _, Result};
 
 #[async_trait]
-impl SimplePrompt for Qwen {
+impl SimplePrompt for Dashscope {
     async fn prompt(&self, prompt: Prompt) -> Result<String> {
         let model = self
             .default_options

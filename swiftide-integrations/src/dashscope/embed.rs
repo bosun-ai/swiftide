@@ -1,11 +1,11 @@
-use super::Qwen;
+use super::Dashscope;
 use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 use swiftide_core::{EmbeddingModel, Embeddings};
 
 #[async_trait]
-impl EmbeddingModel for Qwen {
+impl EmbeddingModel for Dashscope {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         let model = self
             .default_options

@@ -132,8 +132,8 @@ groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
-# Qwen prompting
-qwen = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+# Dashscope prompting
+dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Scraping via spider as loader and a html to markdown transformer
 scraping = ["dep:spider", "dep:htmd"]
 # AWS Bedrock for prompting

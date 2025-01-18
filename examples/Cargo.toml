@@ -23,6 +23,7 @@ swiftide = { path = "../swiftide/", features = [
   "lancedb",
   "pgvector",
   "swiftide-agents",
+  "dashscope",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true }
@@ -111,5 +112,5 @@ name = "index-md-pgvector"
 path = "index_md_into_pgvector.rs"
 
 [[example]]
-name = "qwen"
-path = "qwen.rs"
+name = "dashscope"
+path = "dashscope.rs"
