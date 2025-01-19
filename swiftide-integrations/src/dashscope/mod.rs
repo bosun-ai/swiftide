@@ -124,9 +124,6 @@ impl DashscopeBuilder {
     ///
     /// # Returns
     /// A mutable reference to the `DashscopeBuilder`.
-    ///
-    /// # Panics
-    /// - Panics if the dimensions do not match the requirements for the specified embedding model.
     pub fn default_dimensions(&mut self, dimensions: u16) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             options.dimensions = dimensions;
