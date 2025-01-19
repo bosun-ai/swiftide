@@ -475,8 +475,14 @@ impl Agent {
         Ok(())
     }
 
+    /// Tell the agent to stop. It will finish it's current looop and then stop.
     pub fn stop(&mut self) {
         self.state = state::State::Stopped;
+    }
+
+    /// Access the agent's context
+    pub fn context(&self) -> &dyn AgentContext {
+        &self.context
     }
 }
 
@@ -523,6 +529,8 @@ mod tests {
         assert_eq!(agent.tools.len(), 2);
         assert!(agent.find_tool_by_name("mock_tool").is_some());
         assert!(agent.find_tool_by_name("stop").is_some());
+
+        assert!(agent.context().history().await.is_empty());
     }
 
     #[test_log::test(tokio::test)]
