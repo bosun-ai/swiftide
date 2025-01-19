@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737046260132,
+  "lastUpdate": 1737291939997,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12797,6 +12797,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243965,
             "range": "± 1931",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "e4e44681b65b07b5f1e987ce468bdcda61eb30da",
+          "message": "feat(agents): Implement AgentContext for smart dyn pointers",
+          "timestamp": "2025-01-19T13:55:43+01:00",
+          "tree_id": "eb2b3dfbfd12fae111968d5e5f1adf8bfb023374",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e4e44681b65b07b5f1e987ce468bdcda61eb30da"
+        },
+        "date": 1737291938763,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 12",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1335118,
+            "range": "± 928828",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242732,
+            "range": "± 2397",
             "unit": "ns/iter"
           }
         ]
