@@ -68,6 +68,9 @@ openai = ["swiftide-integrations/openai"]
 ## Groq prompting
 groq = ["swiftide-integrations/groq"]
 
+## Dashscope prompting
+dashscope = ["swiftide-integrations/dashscope"]
+
 ## Ollama prompting
 ollama = ["swiftide-integrations/ollama"]
 
