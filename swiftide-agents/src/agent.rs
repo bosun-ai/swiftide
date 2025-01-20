@@ -475,7 +475,7 @@ impl Agent {
         Ok(())
     }
 
-    /// Tell the agent to stop. It will finish it's current looop and then stop.
+    /// Tell the agent to stop. It will finish it's current loop and then stop.
     pub fn stop(&mut self) {
         self.state = state::State::Stopped;
     }
