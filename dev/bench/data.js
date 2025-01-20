@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737388680710,
+  "lastUpdate": 1737388790811,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13013,6 +13013,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245280,
             "range": "± 8939",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kingzcheung@gmail.com",
+            "name": "KK Cheung",
+            "username": "kingzcheung"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0f0f491b2621ad82389a57bdb521fcf4021b7d7a",
+          "message": "feat(integrations): Add Dashscope support  (#543)\n\n\r\n\r\n---------\r\n\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-01-20T16:50:42+01:00",
+          "tree_id": "e67aee45ede88295c8f9672182375602035e83cc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0f0f491b2621ad82389a57bdb521fcf4021b7d7a"
+        },
+        "date": 1737388790292,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1353324,
+            "range": "± 1085624",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 239928,
+            "range": "± 2494",
             "unit": "ns/iter"
           }
         ]
