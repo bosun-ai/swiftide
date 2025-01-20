@@ -7,7 +7,7 @@ use crate::{
     },
     state,
     system_prompt::SystemPrompt,
-    tools::control::Stop,
+    tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
 use std::{collections::HashSet, sync::Arc};
 
@@ -397,6 +397,7 @@ impl Agent {
                 tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool.name()));
 
             let handle = tokio::spawn(async move {
+                    let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
                     let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
                     tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name(), "Completed tool call");
