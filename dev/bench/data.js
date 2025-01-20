@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737388790811,
+  "lastUpdate": 1737402970172,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13067,6 +13067,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 239928,
             "range": "± 2494",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "402dd1ed0aff2147823b532586f4a5f11f775d66",
+          "message": "chore: release v0.17.1 (#563)\n\n## 🤖 New release\r\n* `swiftide`: 0.17.0 -> 0.17.1 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.17.0 -> 0.17.1 (✓ API compatible changes)\r\n* `swiftide-core`: 0.17.0 -> 0.17.1 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.17.0 -> 0.17.1\r\n* `swiftide-indexing`: 0.17.0 -> 0.17.1\r\n* `swiftide-integrations`: 0.17.0 -> 0.17.1 (✓ API compatible changes)\r\n* `swiftide-query`: 0.17.0 -> 0.17.1\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.17.1](https://github.com/bosun-ai/swiftide/compare/v0.17.0...v0.17.1)\r\n- 2025-01-20\r\n\r\n### New features\r\n\r\n-\r\n[e4e4468](https://github.com/bosun-ai/swiftide/commit/e4e44681b65b07b5f1e987ce468bdcda61eb30da)\r\n*(agents)* Implement AgentContext for smart dyn pointers\r\n\r\n-\r\n[70181d9](https://github.com/bosun-ai/swiftide/commit/70181d9642aa2c0a351b9f42be1a8cdbd83c9075)\r\n*(agents)* Add pub accessor for agent context (#558)\r\n\r\n-\r\n[274d9d4](https://github.com/bosun-ai/swiftide/commit/274d9d46f39ac2e28361c4881c6f8f7e20dd8753)\r\n*(agents)* Preprocess tool calls to fix common, fixable errors (#560)\r\n\r\n````text\r\nOpenAI has a tendency to sometimes send double keys. With this, Swiftide\r\n  will now take the first key and ignore any duplicates after that. Sets the stage for any future preprocessing before it gets strictly parsed by serde.\r\n````\r\n\r\n-\r\n[0f0f491](https://github.com/bosun-ai/swiftide/commit/0f0f491b2621ad82389a57bdb521fcf4021b7d7a)\r\n*(integrations)* Add Dashscope support (#543)\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-01-20T20:46:57+01:00",
+          "tree_id": "a43573a916c3b1428c589aee31e3a2669f560397",
+          "url": "https://github.com/bosun-ai/swiftide/commit/402dd1ed0aff2147823b532586f4a5f11f775d66"
+        },
+        "date": 1737402968986,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1349053,
+            "range": "± 932633",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241995,
+            "range": "± 1509",
             "unit": "ns/iter"
           }
         ]
