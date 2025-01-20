@@ -126,6 +126,7 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
         .function(FunctionObjectArgs::default()
             .name(spec.name)
             .description(spec.description)
+            .strict(true)
             .parameters(json!({
                 "type": "object",
                 "properties": properties,
