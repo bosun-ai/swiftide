@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737291939997,
+  "lastUpdate": 1737387127519,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12851,6 +12851,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242732,
             "range": "± 2397",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b2b15ac073e4f6b035239791a056fbdf6f6e704e",
+          "message": "fix(openai): Enable strict mode for tool calls (#561)\n\nEnsures openai sticks much better to the schema and avoids accidental\r\nmistakes.",
+          "timestamp": "2025-01-20T16:22:55+01:00",
+          "tree_id": "481aab79ce32d4b062faea257e442e660540706c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b2b15ac073e4f6b035239791a056fbdf6f6e704e"
+        },
+        "date": 1737387126360,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1346288,
+            "range": "± 973733",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242537,
+            "range": "± 3069",
             "unit": "ns/iter"
           }
         ]
