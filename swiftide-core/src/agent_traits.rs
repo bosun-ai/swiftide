@@ -152,3 +152,96 @@ pub trait AgentContext: Send + Sync {
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self);
 }
+
+#[async_trait]
+impl AgentContext for Box<dyn AgentContext> {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        (**self).next_completion().await
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        (**self).current_new_messages().await
+    }
+
+    async fn add_messages(&self, item: Vec<ChatMessage>) {
+        (**self).add_messages(item).await;
+    }
+
+    async fn add_message(&self, item: ChatMessage) {
+        (**self).add_message(item).await;
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        (**self).history().await
+    }
+
+    async fn redrive(&self) {
+        (**self).redrive().await;
+    }
+}
+
+#[async_trait]
+impl AgentContext for Arc<dyn AgentContext> {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        (**self).next_completion().await
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        (**self).current_new_messages().await
+    }
+
+    async fn add_messages(&self, item: Vec<ChatMessage>) {
+        (**self).add_messages(item).await;
+    }
+
+    async fn add_message(&self, item: ChatMessage) {
+        (**self).add_message(item).await;
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        (**self).history().await
+    }
+
+    async fn redrive(&self) {
+        (**self).redrive().await;
+    }
+}
+
+#[async_trait]
+impl AgentContext for &dyn AgentContext {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        (**self).next_completion().await
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        (**self).current_new_messages().await
+    }
+
+    async fn add_messages(&self, item: Vec<ChatMessage>) {
+        (**self).add_messages(item).await;
+    }
+
+    async fn add_message(&self, item: ChatMessage) {
+        (**self).add_message(item).await;
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        (**self).history().await
+    }
+
+    async fn redrive(&self) {
+        (**self).redrive().await;
+    }
+}
