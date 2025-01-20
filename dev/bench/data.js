@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737387127519,
+  "lastUpdate": 1737388652826,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12905,6 +12905,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242537,
             "range": "± 3069",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "274d9d46f39ac2e28361c4881c6f8f7e20dd8753",
+          "message": "feat(agents): Preprocess tool calls to fix common, fixable errors (#560)\n\nOpenAI has a tendency to sometimes send double keys. With this, Swiftide\r\nwill now take the first key and ignore any duplicates after that. Sets the stage for any future preprocessing before it gets strictly parsed by serde.",
+          "timestamp": "2025-01-20T16:48:06+01:00",
+          "tree_id": "56de2630146cc3423d86fc78e0655ecf9b2d7d81",
+          "url": "https://github.com/bosun-ai/swiftide/commit/274d9d46f39ac2e28361c4881c6f8f7e20dd8753"
+        },
+        "date": 1737388651664,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1357495,
+            "range": "± 1054633",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245028,
+            "range": "± 1913",
             "unit": "ns/iter"
           }
         ]
