@@ -108,6 +108,7 @@ impl ToolSpec {
 pub struct ParamSpec {
     pub name: &'static str,
     pub description: &'static str,
+    pub ty: &'static str,
     #[builder(default = true)]
     pub required: bool,
 }

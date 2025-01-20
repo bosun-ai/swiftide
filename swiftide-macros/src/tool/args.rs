@@ -22,6 +22,33 @@ pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {
     Ident::new(&struct_name_str, input.sig.ident.span())
 }
 
+fn as_owned_ty(ty: &syn::Type) -> TokenStream {
+    if let syn::Type::Reference(r) = ty {
+        if let syn::Type::Path(p) = &*r.elem {
+            if p.path.is_ident("str") {
+                return quote!(String);
+            }
+
+            // if slice return vec with recurse on sub type
+            if p.path.is_ident("Vec") {
+                if let syn::PathArguments::AngleBracketed(args) = &p.path.segments[0].arguments {
+                    if let syn::GenericArgument::Type(ty) = args.args.first().unwrap() {
+                        return as_owned_ty(ty);
+                    }
+                }
+            }
+        }
+        if let syn::Type::Slice(slice_type) = &*r.elem {
+            // slice_type.elem is T. We'll replace with Vec<T>.
+            let elem = &slice_type.elem;
+            return quote!(Vec<#elem>);
+        }
+        quote!(String)
+    } else {
+        ty.to_token_stream()
+    }
+}
+
 pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
     validate_first_argument_is_agent_context(input)?;
 
@@ -29,9 +56,10 @@ pub(crate) fn build_tool_args(input: &ItemFn) -> Result<TokenStream> {
     let mut struct_fields = Vec::new();
 
     for arg in args.iter().skip(1) {
-        if let syn::FnArg::Typed(PatType { pat, .. }) = arg {
+        if let syn::FnArg::Typed(PatType { pat, ty, .. }) = arg {
             if let syn::Pat::Ident(ident) = &**pat {
-                struct_fields.push(quote! { pub #ident: String });
+                let ty = as_owned_ty(ty);
+                struct_fields.push(quote! { pub #ident: #ty });
             }
         }
     }
@@ -159,6 +187,29 @@ mod tests {
         };
         let output = build_tool_args(&input).unwrap();
         let expected = quote! {};
+        assert_ts_eq!(&output, &expected);
+    }
+
+    #[test]
+    fn test_boolean_args() {
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &str, include_private: bool, a_number: usize, a_slice: &[String], a_vec: Vec<String>) -> Result<ToolOutput> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = build_tool_args(&input).unwrap();
+        let expected = quote! {
+            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize)]
+            struct SearchCodeArgs {
+                pub code_query: String,
+                pub include_private: bool,
+                pub a_number: usize,
+                pub a_slice: Vec<String>,
+                pub a_vec: Vec<String>,
+            }
+        };
+
         assert_ts_eq!(&output, &expected);
     }
 
