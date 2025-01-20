@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.1](https://github.com/bosun-ai/swiftide/compare/v0.17.0...v0.17.1) - 2025-01-20
+
+### New features
+
+- [e4e4468](https://github.com/bosun-ai/swiftide/commit/e4e44681b65b07b5f1e987ce468bdcda61eb30da) *(agents)*  Implement AgentContext for smart dyn pointers
+
+- [70181d9](https://github.com/bosun-ai/swiftide/commit/70181d9642aa2c0a351b9f42be1a8cdbd83c9075) *(agents)*  Add pub accessor for agent context (#558)
+
+- [274d9d4](https://github.com/bosun-ai/swiftide/commit/274d9d46f39ac2e28361c4881c6f8f7e20dd8753) *(agents)*  Preprocess tool calls to fix common, fixable errors (#560)
+
+````text
+OpenAI has a tendency to sometimes send double keys. With this, Swiftide
+  will now take the first key and ignore any duplicates after that. Sets the stage for any future preprocessing before it gets strictly parsed by serde.
+````
+
+- [0f0f491](https://github.com/bosun-ai/swiftide/commit/0f0f491b2621ad82389a57bdb521fcf4021b7d7a) *(integrations)*  Add Dashscope support  (#543)
+
+````text
+---------
+````
+
+### Bug fixes
+
+- [b2b15ac](https://github.com/bosun-ai/swiftide/commit/b2b15ac073e4f6b035239791a056fbdf6f6e704e) *(openai)*  Enable strict mode for tool calls (#561)
+
+````text
+Ensures openai sticks much better to the schema and avoids accidental
+  mistakes.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.0...0.17.1
+
+
+
 ## [0.17.0](https://github.com/bosun-ai/swiftide/compare/v0.16.4...v0.17.0) - 2025-01-16
 
 ### New features
