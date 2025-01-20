@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737388652826,
+  "lastUpdate": 1737388680710,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -12959,6 +12959,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245028,
             "range": "± 1913",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "70181d9642aa2c0a351b9f42be1a8cdbd83c9075",
+          "message": "feat(agents): Add pub accessor for agent context (#558)",
+          "timestamp": "2025-01-20T16:48:48+01:00",
+          "tree_id": "06ffc43841627cefa3bc2acf0a079eed1f25fdb2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/70181d9642aa2c0a351b9f42be1a8cdbd83c9075"
+        },
+        "date": 1737388679998,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1347256,
+            "range": "± 1014761",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245280,
+            "range": "± 8939",
             "unit": "ns/iter"
           }
         ]
