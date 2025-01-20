@@ -8,12 +8,12 @@ pub struct ArgPreprocessor;
 
 impl ArgPreprocessor {
     pub fn preprocess(value: Option<&str>) -> Option<Cow<'_, str>> {
-        Some(take_first_occurence_in_object(value?))
+        Some(take_first_occurrence_in_object(value?))
     }
 }
 
 /// Strips duplicate keys from JSON objects
-fn take_first_occurence_in_object(value: &str) -> Cow<'_, str> {
+fn take_first_occurrence_in_object(value: &str) -> Cow<'_, str> {
     let Ok(parsed) = &serde_json::from_str(value) else {
         return Cow::Borrowed(value);
     };
