@@ -550,9 +550,9 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31eccf20e8169ce394fea4ffc8fe3187045bb0789499df19ab91ca2dad4a6bed"
+checksum = "2d126927c78e1562d7e8473008ac8b082318c04d69e3a83e3495a563f8b84a66"
 dependencies = [
  "backoff",
  "base64 0.22.1",
@@ -6735,17 +6735,20 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "1.12.1"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbff72d38eac3860f5888f02d4688690de6cdc77c901112d3b0788694afc1d37"
+checksum = "9b585625d1ef06478e97fe8d7170a3f32a1cba5dbf986ff136095a85a0ec3d91"
 dependencies = [
  "anyhow",
  "derive_builder",
+ "futures",
  "prost",
  "prost-types",
+ "semver",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
  "tonic",
 ]
 
@@ -7682,9 +7685,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.135"
+version = "1.0.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0d7ba2887406110130a978386c4e1befb98c674b4fba677954e4db976630d9"
+checksum = "930cfb6e6abf99298aaad7d29abbef7a9999a9a8806a40088f55f0dcec03146b"
 dependencies = [
  "itoa",
  "memchr",
@@ -8005,9 +8008,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.26.0"
+version = "2.26.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb71e6fde49f96aafdc7626bd67538803481d6b4612bcddfe0e0c0853f4f576d"
+checksum = "4370f879facac520d0d6c10df820dfa2e77b15a236c8451f7a1e74748154bfaf"
 dependencies = [
  "ahash",
  "aho-corasick",
@@ -9111,9 +9114,9 @@ dependencies = [
 
 [[package]]
 name = "test-log"
-version = "0.2.16"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dffced63c2b5c7be278154d76b479f9f9920ed34e7574201407f0b14e2bbb93"
+checksum = "e7f46083d221181166e5b6f6b1e5f1d499f3a76888826e6cb1d057554157cd0f"
 dependencies = [
  "env_logger",
  "test-log-macros",
@@ -10001,9 +10004,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.11.1"
+version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b913a3b5fe84142e269d63cc62b64319ccaf89b748fc31fe025177f767a756c4"
+checksum = "b3758f5e68192bb96cc8f9b7e2c2cfdabb435499a28499a42f8f984092adad4b"
 dependencies = [
  "getrandom 0.2.15",
  "md-5",
