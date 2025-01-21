@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737402970172,
+  "lastUpdate": 1737490335039,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13121,6 +13121,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241995,
             "range": "± 1509",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "47db5ab138384a6c235a90024470e9ab96751cc8",
+          "message": "fix(agents): Redrive uses the correct pointer and works as intended",
+          "timestamp": "2025-01-21T21:02:59+01:00",
+          "tree_id": "9426a71daa8841c50c659a69033e48dc6f439f37",
+          "url": "https://github.com/bosun-ai/swiftide/commit/47db5ab138384a6c235a90024470e9ab96751cc8"
+        },
+        "date": 1737490334506,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1339659,
+            "range": "± 926800",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240492,
+            "range": "± 1845",
             "unit": "ns/iter"
           }
         ]
