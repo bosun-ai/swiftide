@@ -137,10 +137,10 @@ impl AgentContext for DefaultContext {
     async fn redrive(&self) {
         let mut history = self.completion_history.lock().await;
         let previous = self.current_completions_ptr.load(Ordering::SeqCst);
+        let redrive_ptr = self.completions_ptr.swap(previous, Ordering::SeqCst);
 
         // delete everything after the last completion
-        history.truncate(previous + 1);
-        self.completions_ptr.store(previous, Ordering::SeqCst);
+        history.truncate(redrive_ptr);
     }
 }
 
@@ -347,6 +347,10 @@ mod tests {
         let messages = context.next_completion().await.unwrap();
         assert_eq!(messages.len(), 2);
         assert!(context.next_completion().await.is_none());
+        context.redrive().await;
+
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 2);
 
         context
             .add_messages(vec![ChatMessage::User("Hey?".into())])
@@ -355,6 +359,7 @@ mod tests {
         let messages = context.next_completion().await.unwrap();
         assert_eq!(messages.len(), 3);
         assert!(context.next_completion().await.is_none());
+        context.redrive().await;
 
         // Add more messages
         context
@@ -377,13 +382,22 @@ mod tests {
 
         // Add more messages
         context
-            .add_messages(vec![ChatMessage::User("How are you really?".into())])
+            .add_messages(vec![
+                ChatMessage::User("How are you really?".into()),
+                ChatMessage::User("How are you really?".into()),
+            ])
             .await;
 
         // This should remove any additional messages
         context.redrive().await;
 
         // We just redrove with the same messages
+        let messages = context.next_completion().await.unwrap();
+        assert_eq!(messages.len(), 4);
+        assert!(context.next_completion().await.is_none());
+
+        // Redrive again
+        context.redrive().await;
         let messages = context.next_completion().await.unwrap();
         assert_eq!(messages.len(), 4);
         assert!(context.next_completion().await.is_none());
