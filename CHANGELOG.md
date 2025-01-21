@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.2](https://github.com/bosun-ai/swiftide/compare/v0.17.1...v0.17.2) - 2025-01-21
+
+### Bug fixes
+
+- [47db5ab](https://github.com/bosun-ai/swiftide/commit/47db5ab138384a6c235a90024470e9ab96751cc8) *(agents)*  Redrive uses the correct pointer and works as intended
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.1...0.17.2
+
+
+
 ## [0.17.1](https://github.com/bosun-ai/swiftide/compare/v0.17.0...v0.17.1) - 2025-01-20
 
 ### New features
