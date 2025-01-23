@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737491979905,
+  "lastUpdate": 1737643406844,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13229,6 +13229,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245267,
             "range": "± 4574",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "8a73781b632167875062180131642dc25fb7db5d",
+          "message": "docs: Less is more on taglines",
+          "timestamp": "2025-01-23T15:34:16+01:00",
+          "tree_id": "ad31b83f239e55b2f75cc90cc0e41ce379b47944",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8a73781b632167875062180131642dc25fb7db5d"
+        },
+        "date": 1737643406253,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1325463,
+            "range": "± 978057",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243304,
+            "range": "± 1133",
             "unit": "ns/iter"
           }
         ]
