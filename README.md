@@ -55,7 +55,7 @@
   <h3 align="center">Swiftide</h3>
 
   <p align="center">
-Fast, streaming, indexing, query, and agent library for building LLM applications in Rust.
+Fast, streaming indexing, query, and agentic LLM applications in Rust
     <br />
     <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
     <br />
