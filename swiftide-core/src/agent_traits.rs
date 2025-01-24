@@ -50,6 +50,12 @@ pub enum CommandError {
     NonZeroExit(CommandOutput),
 }
 
+impl From<std::io::Error> for CommandError {
+    fn from(err: std::io::Error) -> Self {
+        CommandError::NonZeroExit(err.to_string().into())
+    }
+}
+
 /// Commands that can be executed by the executor
 /// Conceptually, `Shell` allows any kind of input, and other commands enable more optimized
 /// implementations.
