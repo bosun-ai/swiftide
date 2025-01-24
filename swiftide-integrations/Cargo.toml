@@ -89,7 +89,7 @@ swiftide-test-utils = { path = "../swiftide-test-utils", features = [
   "test-utils",
 ] }
 temp-dir = { workspace = true }
-
+pretty_assertions = { workspace = true }
 arrow = { workspace = true, features = ["test_utils"] }
 
 # Used for hacking fluv to play nice

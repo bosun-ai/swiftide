@@ -73,6 +73,8 @@ fn try_create_vectors(
     vectors: HashMap<EmbeddedField, Embedding>,
     sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
 ) -> Result<qdrant::Vectors> {
+    dbg!(&vector_fields);
+    dbg!(&vectors);
     if vectors.is_empty() {
         bail!("Node with empty vectors")
     } else if vectors.len() == 1 && sparse_vectors.is_none() {
@@ -113,13 +115,12 @@ fn try_create_vectors(
 mod tests {
     use std::collections::{HashMap, HashSet};
 
-    use qdrant_client::qdrant::{
-        vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
-    };
+    use qdrant_client::qdrant::PointStruct;
     use swiftide_core::indexing::{EmbeddedField, Node};
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
+    use pretty_assertions::assert_eq;
 
     static EXPECTED_UUID: &str = "d42d252d-671d-37ef-a157-8e85d0710610";
 
@@ -133,12 +134,11 @@ mod tests {
             .build().unwrap()
         ,
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
-            ("content".into(), Value::from("data")),
-            ("path".into(), Value::from("/path")),
-            ("m1".into(), Value::from("mv1"))]),
-            vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vector(Vector { data: vec![1.0], ..Default::default()} )) })
-        };
+        PointStruct::new(EXPECTED_UUID, vec![1.0], HashMap::from([
+            ("content", "data".into()),
+            ("path", "/path".into()),
+            ("m1", "mv1".into())])
+        );
         "Node with single vector creates struct with unnamed vector"
     )]
     #[test_case(
@@ -153,19 +153,15 @@ mod tests {
             .embed_mode(swiftide_core::indexing::EmbedMode::PerField)
             .build().unwrap(),
         HashSet::from([EmbeddedField::Chunk, EmbeddedField::Metadata("m1".into())]),
-        PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
-            ("content".into(), Value::from("data")),
-            ("path".into(), Value::from("/path")),
-            ("m1".into(), Value::from("mv1"))]),
-            vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vectors(NamedVectors { vectors: HashMap::from([
-                ("Chunk".into(), qdrant_client::qdrant::Vector {
-                    data: vec![1.0], ..Default::default()
-                }),
-                ("Metadata: m1".into(), qdrant_client::qdrant::Vector {
-                    data: vec![2.0], ..Default::default()
-                })
-            ]) })) })
-        };
+        PointStruct::new(EXPECTED_UUID, HashMap::from([
+                ("Chunk".to_string(), vec![1.0]),
+                ("Metadata: m1".to_string(), vec![2.0])
+            ]),
+            HashMap::from([
+                ("content", "data".into()),
+                ("path", "/path".into()),
+                ("m1", "mv1".into())])
+        );
         "Node with multiple vectors creates struct with named vectors"
     )]
     #[test_case(
@@ -182,17 +178,16 @@ mod tests {
             .embed_mode(swiftide_core::indexing::EmbedMode::Both)
             .build().unwrap(),
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct { id: Some(PointId::from(EXPECTED_UUID)), payload: HashMap::from([
-            ("content".into(), Value::from("data")),
-            ("path".into(), Value::from("/path")),
-            ("m1".into(), Value::from("mv1")),
-            ("m2".into(), Value::from("mv2"))]),
-            vectors: Some(Vectors { vectors_options: Some(VectorsOptions::Vectors(NamedVectors { vectors: HashMap::from([
-                ("Combined".into(), qdrant_client::qdrant::Vector {
-                    data: vec![1.0], ..Default::default()
-                })
-            ]) })) })
-        };
+        PointStruct::new(EXPECTED_UUID,
+            HashMap::from([
+                ("Combined".to_string(), vec![1.0]),
+            ]),
+            HashMap::from([
+                ("content", "data".into()),
+                ("path", "/path".into()),
+                ("m1", "mv1".into()),
+                ("m2", "mv2".into())])
+        );
         "Storing only `Combined` vector. Skipping other vectors."
     )]
     #[allow(clippy::needless_pass_by_value)]
@@ -214,6 +209,8 @@ mod tests {
             .payload
             .insert(last_updated_at_key.into(), last_updated_at.clone());
 
-        assert_eq!(point, expected_point);
+        assert_eq!(point.id, expected_point.id);
+        assert_eq!(point.payload, expected_point.payload);
+        assert_eq!(point.vectors, expected_point.vectors);
     }
 }
