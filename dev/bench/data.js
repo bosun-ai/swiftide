@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737736232154,
+  "lastUpdate": 1737742832078,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13445,6 +13445,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243403,
             "range": "± 3439",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@tinco.nl",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0d9e250e2512fe9c66d5dfd2ac688dcd56bd07e9",
+          "message": "fix(tracing): Use `or_current()` to prevent orphaned tracing spans (#573)\n\nWhen a span is emitted that would be selected by the subscriber, but we\r\ninstrument its closure with a span that would not be selected by the\r\nsubscriber, the span would be emitted as an orphan (with a new\r\n`trace_id`) making them hard to find and cluttering dashboards.\r\n\r\nThis situation is also documented here:\r\nhttps://docs.rs/tracing/latest/tracing/struct.Span.html#method.or_current",
+          "timestamp": "2025-01-24T19:10:48+01:00",
+          "tree_id": "247fe0c9becb3b39785802fdb83c4a542bd8e5c9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0d9e250e2512fe9c66d5dfd2ac688dcd56bd07e9"
+        },
+        "date": 1737742831464,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1366647,
+            "range": "± 1990467",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 246062,
+            "range": "± 1696",
             "unit": "ns/iter"
           }
         ]
