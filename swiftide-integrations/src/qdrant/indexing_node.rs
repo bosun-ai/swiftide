@@ -115,9 +115,7 @@ fn try_create_vectors(
 mod tests {
     use std::collections::{HashMap, HashSet};
 
-    use qdrant_client::qdrant::{
-        vectors::VectorsOptions, NamedVectors, PointId, PointStruct, Value, Vector, Vectors,
-    };
+    use qdrant_client::qdrant::PointStruct;
     use swiftide_core::indexing::{EmbeddedField, Node};
     use test_case::test_case;
 
@@ -180,7 +178,7 @@ mod tests {
             .embed_mode(swiftide_core::indexing::EmbedMode::Both)
             .build().unwrap(),
         HashSet::from([EmbeddedField::Combined]),
-        PointStruct::new(EXPECTED_UUID, 
+        PointStruct::new(EXPECTED_UUID,
             HashMap::from([
                 ("Combined".to_string(), vec![1.0]),
             ]),
