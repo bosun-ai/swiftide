@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737643406844,
+  "lastUpdate": 1737717101138,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13283,6 +13283,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243304,
             "range": "± 1133",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c5408a96fbed6207022eb493da8d2cbb0fea7ca6",
+          "message": "fix(agents): io::Error should always be a NonZeroExit error for tool executors (#570)",
+          "timestamp": "2025-01-24T12:02:36+01:00",
+          "tree_id": "ee59273a6479dc7790f62881c4bc13ab3da17ed8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c5408a96fbed6207022eb493da8d2cbb0fea7ca6"
+        },
+        "date": 1737717099873,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1340880,
+            "range": "± 969804",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244444,
+            "range": "± 2921",
             "unit": "ns/iter"
           }
         ]
