@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737717101138,
+  "lastUpdate": 1737733696118,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13337,6 +13337,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244444,
             "range": "± 2921",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8e2244241f16fff77591cf04f40725ad0b05ca81",
+          "message": "feat(integrations): Support Qdrant 1.13 (#571)",
+          "timestamp": "2025-01-24T16:38:48+01:00",
+          "tree_id": "3049fd1779c3abd9e5a0e39fad23d736475cd1c0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8e2244241f16fff77591cf04f40725ad0b05ca81"
+        },
+        "date": 1737733695501,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1618296,
+            "range": "± 1560422",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253590,
+            "range": "± 18181",
             "unit": "ns/iter"
           }
         ]
