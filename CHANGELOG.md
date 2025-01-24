@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.3](https://github.com/bosun-ai/swiftide/compare/v0.17.2...v0.17.3) - 2025-01-24
+
+### New features
+
+- [8e22442](https://github.com/bosun-ai/swiftide/commit/8e2244241f16fff77591cf04f40725ad0b05ca81) *(integrations)*  Support Qdrant 1.13 (#571)
+
+### Bug fixes
+
+- [c5408a9](https://github.com/bosun-ai/swiftide/commit/c5408a96fbed6207022eb493da8d2cbb0fea7ca6) *(agents)*  Io::Error should always be a NonZeroExit error for tool executors (#570)
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.2...0.17.3
+
+
+
 ## [0.17.2](https://github.com/bosun-ai/swiftide/compare/v0.17.1...v0.17.2) - 2025-01-21
 
 ### Bug fixes
