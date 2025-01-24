@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737733696118,
+  "lastUpdate": 1737736232154,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13391,6 +13391,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253590,
             "range": "± 18181",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "19563dd214033f7c119623e4d79b4f260f39139c",
+          "message": "chore: release v0.17.3 (#566)\n\n## 🤖 New release\r\n* `swiftide`: 0.17.2 -> 0.17.3 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.17.2 -> 0.17.3 (✓ API compatible changes)\r\n* `swiftide-core`: 0.17.2 -> 0.17.3 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.17.2 -> 0.17.3\r\n* `swiftide-indexing`: 0.17.2 -> 0.17.3 (✓ API compatible changes)\r\n* `swiftide-integrations`: 0.17.2 -> 0.17.3 (✓ API compatible changes)\r\n* `swiftide-query`: 0.17.2 -> 0.17.3 (✓ API compatible changes)\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.17.3](https://github.com/bosun-ai/swiftide/compare/v0.17.2...v0.17.3)\r\n- 2025-01-24\r\n\r\n### New features\r\n\r\n-\r\n[8e22442](https://github.com/bosun-ai/swiftide/commit/8e2244241f16fff77591cf04f40725ad0b05ca81)\r\n*(integrations)* Support Qdrant 1.13 (#571)\r\n\r\n### Bug fixes\r\n\r\n-\r\n[c5408a9](https://github.com/bosun-ai/swiftide/commit/c5408a96fbed6207022eb493da8d2cbb0fea7ca6)\r\n*(agents)* Io::Error should always be a NonZeroExit error for tool\r\nexecutors (#570)\r\n\r\n### Miscellaneous\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.toml dependencies\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.lock dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.17.2...0.17.3\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-01-24T17:21:14+01:00",
+          "tree_id": "d1305a09fb7404d2788ac92ccfbf931d0bf2c00f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/19563dd214033f7c119623e4d79b4f260f39139c"
+        },
+        "date": 1737736231517,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1342740,
+            "range": "± 1086920",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243403,
+            "range": "± 3439",
             "unit": "ns/iter"
           }
         ]
