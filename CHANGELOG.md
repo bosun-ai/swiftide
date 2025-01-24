@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.4](https://github.com/bosun-ai/swiftide/compare/v0.17.3...v0.17.4) - 2025-01-24
+
+### Bug fixes
+
+- [0d9e250](https://github.com/bosun-ai/swiftide/commit/0d9e250e2512fe9c66d5dfd2ac688dcd56bd07e9) *(tracing)*  Use `or_current()` to prevent orphaned tracing spans (#573)
+
+````text
+When a span is emitted that would be selected by the subscriber, but we
+  instrument its closure with a span that would not be selected by the
+  subscriber, the span would be emitted as an orphan (with a new
+  `trace_id`) making them hard to find and cluttering dashboards.
+
+  This situation is also documented here:
+  https://docs.rs/tracing/latest/tracing/struct.Span.html#method.or_current
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.3...0.17.4
+
+
+
 ## [0.17.3](https://github.com/bosun-ai/swiftide/compare/v0.17.2...v0.17.3) - 2025-01-24
 
 ### New features
