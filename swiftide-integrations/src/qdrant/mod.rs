@@ -167,6 +167,11 @@ impl Qdrant {
         let size = config.vector_size.unwrap_or(self.vector_size);
         let distance = config.distance.unwrap_or(self.vector_distance);
 
+        tracing::debug!(
+            "Creating vector params: size={}, distance={:?}",
+            size,
+            distance
+        );
         qdrant::VectorParamsBuilder::new(size, distance).build()
     }
 

@@ -207,7 +207,7 @@ mod tests {
         (guard, qdrant_client)
     }
 
-    #[tokio::test]
+    #[test_log::test(tokio::test)]
     async fn test_retrieve_multiple_docs_and_filter() {
         let (_guard, qdrant_client) = setup().await;
 
