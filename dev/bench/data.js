@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737742832078,
+  "lastUpdate": 1737744318826,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13499,6 +13499,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 246062,
             "range": "± 1696",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e4193ef7ab1f861976a82c217469b4c4a359d972",
+          "message": "chore: release v0.17.4 (#575)\n\n## 🤖 New release\r\n* `swiftide`: 0.17.3 -> 0.17.4 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.17.3 -> 0.17.4 (✓ API compatible changes)\r\n* `swiftide-core`: 0.17.3 -> 0.17.4\r\n* `swiftide-macros`: 0.17.3 -> 0.17.4\r\n* `swiftide-indexing`: 0.17.3 -> 0.17.4 (✓ API compatible changes)\r\n* `swiftide-integrations`: 0.17.3 -> 0.17.4\r\n* `swiftide-query`: 0.17.3 -> 0.17.4 (✓ API compatible changes)\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.17.4](https://github.com/bosun-ai/swiftide/compare/v0.17.3...v0.17.4)\r\n- 2025-01-24\r\n\r\n### Bug fixes\r\n\r\n-\r\n[0d9e250](https://github.com/bosun-ai/swiftide/commit/0d9e250e2512fe9c66d5dfd2ac688dcd56bd07e9)\r\n*(tracing)* Use `or_current()` to prevent orphaned tracing spans (#573)\r\n\r\n````text\r\nWhen a span is emitted that would be selected by the subscriber, but we\r\n  instrument its closure with a span that would not be selected by the\r\n  subscriber, the span would be emitted as an orphan (with a new\r\n  `trace_id`) making them hard to find and cluttering dashboards.\r\n\r\n  This situation is also documented here:\r\n  https://docs.rs/tracing/latest/tracing/struct.Span.html#method.or_current\r\n````\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.17.3...0.17.4\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-01-24T18:36:05Z",
+          "tree_id": "1cd3911dd3b3172ff4dd6542bc8e00b6805cf0c9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e4193ef7ab1f861976a82c217469b4c4a359d972"
+        },
+        "date": 1737744318213,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1330152,
+            "range": "± 949094",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245091,
+            "range": "± 3336",
             "unit": "ns/iter"
           }
         ]
