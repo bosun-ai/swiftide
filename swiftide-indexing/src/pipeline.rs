@@ -157,7 +157,7 @@ impl Pipeline {
                         Ok(Some(node))
                     }
                 }
-                .instrument(span)
+                .instrument(span.or_current())
             })
             .boxed()
             .into();
@@ -194,7 +194,7 @@ impl Pipeline {
                 task::spawn(async move {
                     tracing::debug!(node = ?node, transformer = transformer.name(), "Transforming node");
                     transformer.transform_node(node).await
-                }.instrument(span)
+                }.instrument(span.or_current())
                 )
                 .err_into::<anyhow::Error>()
             })
@@ -243,7 +243,7 @@ impl Pipeline {
                         );
                         transformer.batch_transform(nodes).await
                     }
-                    .instrument(span),
+                    .instrument(span.or_current()),
                 )
                 .map_err(anyhow::Error::from)
             })
@@ -279,7 +279,7 @@ impl Pipeline {
                         tracing::debug!(chunker = chunker.name(), "Chunking node");
                         chunker.transform_node(node).await
                     }
-                    .instrument(span),
+                    .instrument(span.or_current()),
                 )
                 .map_err(anyhow::Error::from)
             })
@@ -323,7 +323,7 @@ impl Pipeline {
                         tracing::debug!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
                         storage.batch_store(nodes).await
                     }
-                    .instrument(span)
+                    .instrument(span.or_current())
                     )
                     .map_err(anyhow::Error::from)
 
@@ -346,7 +346,7 @@ impl Pipeline {
 
                             storage.store(node).await
                         }
-                        .instrument(span),
+                        .instrument(span.or_current()),
                     )
                     .err_into::<anyhow::Error>()
                 })
@@ -410,7 +410,7 @@ impl Pipeline {
                     })
                     .await;
             }
-            .instrument(span),
+            .instrument(span.or_current()),
         );
 
         let left_pipeline = Self {
