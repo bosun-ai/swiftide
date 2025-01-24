@@ -54,7 +54,7 @@ impl LocalExecutor {
     }
 
     async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput, CommandError> {
-        let output = tokio::fs::read(path).await.context("Could not read file")?;
+        let output = tokio::fs::read(path).await?;
 
         Ok(String::from_utf8(output)
             .context("Failed to parse read file output")?
@@ -69,9 +69,7 @@ impl LocalExecutor {
         if let Some(parent) = path.parent() {
             let _ = tokio::fs::create_dir_all(parent).await;
         }
-        tokio::fs::write(path, content)
-            .await
-            .context("Failed to write file")?;
+        tokio::fs::write(path, content).await?;
 
         Ok(CommandOutput::empty())
     }
@@ -208,6 +206,16 @@ mod tests {
         // Define the file path and content
         let file_path = temp_path.join("test_file.txt");
         let file_content = "Hello, world!";
+
+        // Assert that the file does not exist and it gives the correct error
+        let cmd = Command::ReadFile(file_path.clone());
+        let result = executor.exec_cmd(&cmd).await;
+
+        if let Err(err) = result {
+            assert!(matches!(err, CommandError::NonZeroExit(..)));
+        } else {
+            panic!("Expected error but got {result:?}");
+        }
 
         // Create a write command
         let write_cmd = Command::WriteFile(file_path.clone(), file_content.to_string());
