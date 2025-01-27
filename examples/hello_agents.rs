@@ -39,6 +39,20 @@ async fn search_code(
     Ok(command_output.into())
 }
 
+const READ_FILE: &str = "Read a file";
+
+#[swiftide_macros::tool(
+    description = READ_FILE,
+    param(name = "path", description = "Path to the file")
+)]
+async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput, ToolError> {
+    let command_output = context
+        .exec_cmd(&Command::shell(format!("cat {path}")))
+        .await?;
+
+    Ok(command_output.into())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Hello, agents!");

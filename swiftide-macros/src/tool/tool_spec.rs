@@ -1,10 +1,13 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use super::ToolArgs;
+use super::{Description, ToolArgs};
 
 pub fn tool_spec(tool_name: &str, args: &ToolArgs) -> TokenStream {
-    let description = &args.description;
+    let description = match &args.description {
+        Description::Literal(description) => quote! { #description },
+        Description::Path(path) => quote! { #path },
+    };
 
     if args.param.is_empty() {
         quote! { swiftide::chat_completion::ToolSpec::builder().name(#tool_name).description(#description).build().unwrap() }

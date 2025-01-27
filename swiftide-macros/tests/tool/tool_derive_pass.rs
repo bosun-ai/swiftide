@@ -70,4 +70,19 @@ impl MyToolLifetime<'_> {
     }
 }
 
+const DESCRIPTION: &str = "Hello tool";
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION)]
+struct MyToolConst<'a> {
+    test: &'a str,
+}
+
+impl MyToolConst<'_> {
+    async fn my_tool_const(
+        &self,
+        agent_context: &dyn AgentContext,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
 fn main() {}
