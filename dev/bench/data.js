@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737980296076,
+  "lastUpdate": 1737980395253,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13607,6 +13607,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242577,
             "range": "± 2086",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ab0f628bf361d1f9bf110b612c78780fe47c1391",
+          "message": "chore(deps): bump the minor group across 1 directory with 3 updates (#579)\n\nBumps the minor group with 3 updates in the / directory:\r\n[spider](https://github.com/spider-rs/spider),\r\n[fluvio](https://github.com/infinyon/fluvio) and\r\n[insta](https://github.com/mitsuhiko/insta).\r\n\r\nUpdates `spider` from 2.26.10 to 2.27.7\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>v2.27.5</h2>\r\n<h1>Whats Changed</h1>\r\n<p>Web page normalizing to prevent all duplicate content, crawl traps,\r\nand more pages from being crawled repeatedly.</p>\r\n<ol>\r\n<li>feat(page): add relative directory url handling</li>\r\n<li>chore(website): fix relative page merging links</li>\r\n</ol>\r\n<p><strong>Full Changelog</strong>: <a\r\nhref=\"https://github.com/spider-rs/spider/compare/v2.26.27...v2.27.5\">https://github.com/spider-rs/spider/compare/v2.26.27...v2.27.5</a></p>\r\n<h2>v2.26.27</h2>\r\n<h1>Whats Changed</h1>\r\n<ol>\r\n<li>add auto find sitemap url on 404 or network error.</li>\r\n<li>fix chrome_cache_hybrid compile.</li>\r\n<li>add <code>cache_chrome_hybrid_mem</code> flag to use memory instead\r\nof disk.</li>\r\n<li>fix q draining across website methods</li>\r\n<li>fix crawl depth handling</li>\r\n<li>fix worker init background connect</li>\r\n<li>add proper status code from errors</li>\r\n</ol>\r\n<p><strong>Full Changelog</strong>: <a\r\nhref=\"https://github.com/spider-rs/spider/compare/v2.26.1...v2.26.27\">https://github.com/spider-rs/spider/compare/v2.26.1...v2.26.27</a></p>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\nUpdates `fluvio` from 0.24.2 to 0.24.3\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/infinyon/fluvio/releases\">fluvio's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>dev</h2>\r\n<p>Published artifacts from the latest build</p>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/infinyon/fluvio/commits\">compare view</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\nUpdates `insta` from 1.42.0 to 1.42.1\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/mitsuhiko/insta/releases\">insta's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>1.42.1</h2>\r\n<h2>Release Notes</h2>\r\n<ul>\r\n<li>Improved handling of control characters in inline snapshots. <a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/713\">#713</a></li>\r\n</ul>\r\n<h2>Install cargo-insta 1.42.1</h2>\r\n<h3>Install prebuilt binaries via shell script</h3>\r\n<pre lang=\"sh\"><code>curl --proto '=https' --tlsv1.2 -LsSf\r\nhttps://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-installer.sh\r\n| sh\r\n</code></pre>\r\n<h3>Install prebuilt binaries via powershell script</h3>\r\n<pre lang=\"sh\"><code>powershell -ExecutionPolicy ByPass -c &quot;irm\r\nhttps://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-installer.ps1\r\n| iex&quot;\r\n</code></pre>\r\n<h2>Download cargo-insta 1.42.1</h2>\r\n<table>\r\n<thead>\r\n<tr>\r\n<th>File</th>\r\n<th>Platform</th>\r\n<th>Checksum</th>\r\n</tr>\r\n</thead>\r\n<tbody>\r\n<tr>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-aarch64-apple-darwin.tar.xz\">cargo-insta-aarch64-apple-darwin.tar.xz</a></td>\r\n<td>Apple Silicon macOS</td>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-aarch64-apple-darwin.tar.xz.sha256\">checksum</a></td>\r\n</tr>\r\n<tr>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-apple-darwin.tar.xz\">cargo-insta-x86_64-apple-darwin.tar.xz</a></td>\r\n<td>Intel macOS</td>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-apple-darwin.tar.xz.sha256\">checksum</a></td>\r\n</tr>\r\n<tr>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-pc-windows-msvc.zip\">cargo-insta-x86_64-pc-windows-msvc.zip</a></td>\r\n<td>x64 Windows</td>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-pc-windows-msvc.zip.sha256\">checksum</a></td>\r\n</tr>\r\n<tr>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-unknown-linux-gnu.tar.xz\">cargo-insta-x86_64-unknown-linux-gnu.tar.xz</a></td>\r\n<td>x64 Linux</td>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-unknown-linux-gnu.tar.xz.sha256\">checksum</a></td>\r\n</tr>\r\n<tr>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-unknown-linux-musl.tar.xz\">cargo-insta-x86_64-unknown-linux-musl.tar.xz</a></td>\r\n<td>x64 MUSL Linux</td>\r\n<td><a\r\nhref=\"https://github.com/mitsuhiko/insta/releases/download/1.42.1/cargo-insta-x86_64-unknown-linux-musl.tar.xz.sha256\">checksum</a></td>\r\n</tr>\r\n</tbody>\r\n</table>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Changelog</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/mitsuhiko/insta/blob/master/CHANGELOG.md\">insta's\r\nchangelog</a>.</em></p>\r\n<blockquote>\r\n<h2>1.42.1</h2>\r\n<ul>\r\n<li>Improved handling of control characters in inline snapshots. <a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/713\">#713</a></li>\r\n</ul>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li><a\r\nhref=\"https://github.com/mitsuhiko/insta/commit/272d628a5087dc6d37a19386dca43b9839624e51\"><code>272d628</code></a>\r\nBump version to 1.42.1 (<a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/714\">#714</a>)</li>\r\n<li><a\r\nhref=\"https://github.com/mitsuhiko/insta/commit/c22d1ee26013fad95e2a2fcf68572353c41c26d0\"><code>c22d1ee</code></a>\r\nImproved handling of control characters in inline snapshots (<a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/713\">#713</a>)</li>\r\n<li><a\r\nhref=\"https://github.com/mitsuhiko/insta/commit/f778d2964f011e91f95767718563eb7169b2320f\"><code>f778d29</code></a>\r\nReplace use of unsafe with pin_project (<a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/711\">#711</a>)</li>\r\n<li><a\r\nhref=\"https://github.com/mitsuhiko/insta/commit/949ac940aec545dad5d971e83abe44d11e35982d\"><code>949ac94</code></a>\r\nUpdate test output for <code>snapshot_text</code> change (<a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/706\">#706</a>)</li>\r\n<li><a\r\nhref=\"https://github.com/mitsuhiko/insta/commit/1da675c5a5c3d7d08e2e316f5eeb5b2134341498\"><code>1da675c</code></a>\r\nFix command in changelog (<a\r\nhref=\"https://redirect.github.com/mitsuhiko/insta/issues/705\">#705</a>)</li>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/mitsuhiko/insta/compare/1.42.0...1.42.1\">compare\r\nview</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\n\r\nDependabot will resolve any conflicts with this PR as long as you don't\r\nalter it yourself. You can also trigger a rebase manually by commenting\r\n`@dependabot rebase`.\r\n\r\n[//]: # (dependabot-automerge-start)\r\n[//]: # (dependabot-automerge-end)\r\n\r\n---\r\n\r\n<details>\r\n<summary>Dependabot commands and options</summary>\r\n<br />\r\n\r\nYou can trigger Dependabot actions by commenting on this PR:\r\n- `@dependabot rebase` will rebase this PR\r\n- `@dependabot recreate` will recreate this PR, overwriting any edits\r\nthat have been made to it\r\n- `@dependabot merge` will merge this PR after your CI passes on it\r\n- `@dependabot squash and merge` will squash and merge this PR after\r\nyour CI passes on it\r\n- `@dependabot cancel merge` will cancel a previously requested merge\r\nand block automerging\r\n- `@dependabot reopen` will reopen this PR if it is closed\r\n- `@dependabot close` will close this PR and stop Dependabot recreating\r\nit. You can achieve the same result by closing it manually\r\n- `@dependabot show <dependency name> ignore conditions` will show all\r\nof the ignore conditions of the specified dependency\r\n- `@dependabot ignore <dependency name> major version` will close this\r\ngroup update PR and stop Dependabot creating any more for the specific\r\ndependency's major version (unless you unignore this specific\r\ndependency's major version or upgrade to it yourself)\r\n- `@dependabot ignore <dependency name> minor version` will close this\r\ngroup update PR and stop Dependabot creating any more for the specific\r\ndependency's minor version (unless you unignore this specific\r\ndependency's minor version or upgrade to it yourself)\r\n- `@dependabot ignore <dependency name>` will close this group update PR\r\nand stop Dependabot creating any more for the specific dependency\r\n(unless you unignore this specific dependency or upgrade to it yourself)\r\n- `@dependabot unignore <dependency name>` will remove all of the ignore\r\nconditions of the specified dependency\r\n- `@dependabot unignore <dependency name> <ignore condition>` will\r\nremove the ignore condition of the specified dependency and ignore\r\nconditions\r\n\r\n\r\n</details>\r\n\r\nSigned-off-by: dependabot[bot] <support@github.com>\r\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-01-27T13:10:09+01:00",
+          "tree_id": "679e8d26afc7b187f063fda1fe96fec1d7ecaf17",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ab0f628bf361d1f9bf110b612c78780fe47c1391"
+        },
+        "date": 1737980394713,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1382251,
+            "range": "± 2130745",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243471,
+            "range": "± 1894",
             "unit": "ns/iter"
           }
         ]
