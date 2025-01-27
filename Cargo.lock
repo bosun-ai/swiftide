@@ -2689,7 +2689,16 @@ version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44c45a9d03d6676652bcb5e724c7e988de1acad23a711b5217ab9cbecbec2225"
 dependencies = [
- "dirs-sys",
+ "dirs-sys 0.4.1",
+]
+
+[[package]]
+name = "dirs"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3e8aa94d75141228480295a7d0e7feb620b1a5ad9f12bc40be62411e38cce4e"
+dependencies = [
+ "dirs-sys 0.5.0",
 ]
 
 [[package]]
@@ -2700,8 +2709,20 @@ checksum = "520f05a5cbd335fae5a99ff7a6ab8627577660ee5cfd6a94a6a929b52ff0321c"
 dependencies = [
  "libc",
  "option-ext",
- "redox_users",
+ "redox_users 0.4.6",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e01a3366d27ee9890022452ee61b2b63a67e6f13f58900b651ff5665f0bb1fab"
+dependencies = [
+ "libc",
+ "option-ext",
+ "redox_users 0.5.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3088,9 +3109,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.24.2"
+version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d325369b0fb41d003b70a329cffcff188fef38f613a210ff0cb7949bea97aebc"
+checksum = "1060ba83dc63372d3aa8d8817091218c1f1dbef12d822458925498645146834d"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -3099,7 +3120,7 @@ dependencies = [
  "cfg-if",
  "chrono",
  "derive_builder",
- "dirs",
+ "dirs 6.0.0",
  "event-listener 5.4.0",
  "fluvio-compression",
  "fluvio-future",
@@ -3116,7 +3137,7 @@ dependencies = [
  "semver",
  "serde",
  "siphasher 1.0.1",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "toml",
  "tracing",
@@ -3261,9 +3282,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28fc32dca29a840c2a6cc648c38f1c39f41ae0b353b3309cca799f4c8b4d5829"
+checksum = "3d53c29a88f09e513ee17100450ca5e1ee57072e53b8ebccd5225fe5a278271d"
 dependencies = [
  "async-channel 1.9.0",
  "async-lock 3.4.0",
@@ -3279,7 +3300,7 @@ dependencies = [
  "once_cell",
  "pin-project",
  "semver",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tokio-util",
  "tracing",
@@ -3826,7 +3847,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b780635574b3d92f036890d8373433d6f9fc7abb320ee42a5c25897fc8ed732"
 dependencies = [
- "dirs",
+ "dirs 5.0.1",
  "indicatif",
  "log",
  "native-tls",
@@ -4473,13 +4494,14 @@ checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
 
 [[package]]
 name = "insta"
-version = "1.42.0"
+version = "1.42.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6513e4067e16e69ed1db5ab56048ed65db32d10ba5fc1217f5393f8f17d8b5a5"
+checksum = "71c1b125e30d93896b365e156c33dadfffab45ee8400afcbba4752f59de08a86"
 dependencies = [
  "console",
  "linked-hash-map",
  "once_cell",
+ "pin-project",
  "serde",
  "similar",
 ]
@@ -4907,7 +4929,7 @@ dependencies = [
  "datafusion-physical-expr",
  "datafusion-sql",
  "deepsize",
- "dirs",
+ "dirs 5.0.1",
  "futures",
  "half",
  "itertools 0.13.0",
@@ -7190,6 +7212,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "redox_users"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6f9d3d47bdd2ad6945c5015a226ec6155d0bcdfd8f7cd29f86b71f8de99d2b"
+dependencies = [
+ "getrandom 0.2.15",
+ "libredox",
+ "thiserror 2.0.11",
+]
+
+[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7855,7 +7888,7 @@ version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da03fa3b94cc19e3ebfc88c4229c49d8f08cdbd1228870a45f0ffdf84988e14b"
 dependencies = [
- "dirs",
+ "dirs 5.0.1",
 ]
 
 [[package]]
@@ -8040,9 +8073,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.26.10"
+version = "2.27.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0dcd28d58738776b72f135de707dadac42364b0c7f90471bd88ad95f18499f"
+checksum = "b437d3848903de90c7bf90732d6fcdc308ee5225364b5bafcb6eda02691d5862"
 dependencies = [
  "ahash",
  "aho-corasick",
