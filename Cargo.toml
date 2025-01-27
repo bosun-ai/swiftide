@@ -43,7 +43,7 @@ dyn-clone = { version = "1.0" }
 convert_case = "0.7.1"
 
 # Integrations
-spider = { version = "2.26" }
+spider = { version = "2.27" }
 async-openai = { version = "0.27.1" }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
@@ -94,7 +94,7 @@ temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
 pretty_assertions = "1.4"
-insta = { version = "1.42.0", features = ["yaml"] }
+insta = { version = "1.42.1", features = ["yaml"] }
 
 
 [workspace.lints.rust]
