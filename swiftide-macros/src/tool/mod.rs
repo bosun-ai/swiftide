@@ -11,7 +11,7 @@ mod wrapped;
 
 #[derive(FromMeta, Default, Debug)]
 struct ToolArgs {
-    description: String,
+    description: Description,
 
     #[darling(multiple)]
     param: Vec<ParamOptions>,
@@ -23,6 +23,38 @@ struct ParamOptions {
     name: String,
     description: String,
     // TODO: I.e. openai also supports enums instead of strings as arg type
+}
+
+#[derive(Debug)]
+enum Description {
+    Literal(String),
+    Path(syn::Path),
+}
+
+impl Default for Description {
+    fn default() -> Self {
+        Description::Literal(String::new())
+    }
+}
+
+impl FromMeta for Description {
+    fn from_expr(expr: &syn::Expr) -> darling::Result<Self> {
+        match expr {
+            syn::Expr::Lit(lit) => {
+                if let syn::Lit::Str(s) = &lit.lit {
+                    Ok(Description::Literal(s.value()))
+                } else {
+                    Err(Error::unsupported_format(
+                        "expected a string literal or a const",
+                    ))
+                }
+            }
+            syn::Expr::Path(path) => Ok(Description::Path(path.path.clone())),
+            _ => Err(Error::unsupported_format(
+                "expected a string literal or a const",
+            )),
+        }
+    }
 }
 
 impl serde::Serialize for ParamOptions {
