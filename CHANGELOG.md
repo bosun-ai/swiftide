@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.5](https://github.com/bosun-ai/swiftide/compare/v0.17.4...v0.17.5) - 2025-01-27
+
+### New features
+
+- [825a52e](https://github.com/bosun-ai/swiftide/commit/825a52e70a74e4621d370485346a78d61bf5d7a9) *(agents)*  Tool description now also accepts paths (i.e. a const) (#580)
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.4...0.17.5
+
+
+
 ## [0.17.4](https://github.com/bosun-ai/swiftide/compare/v0.17.3...v0.17.4) - 2025-01-24
 
 ### Bug fixes
