@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737744318826,
+  "lastUpdate": 1737980296076,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13553,6 +13553,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245091,
             "range": "± 3336",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "825a52e70a74e4621d370485346a78d61bf5d7a9",
+          "message": "feat(agents): Tool description now also accepts paths (i.e. a const) (#580)",
+          "timestamp": "2025-01-27T13:08:45+01:00",
+          "tree_id": "b559a3c64c4e0d6a903c939968d82d0e3e2150aa",
+          "url": "https://github.com/bosun-ai/swiftide/commit/825a52e70a74e4621d370485346a78d61bf5d7a9"
+        },
+        "date": 1737980295352,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1354375,
+            "range": "± 1523427",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242577,
+            "range": "± 2086",
             "unit": "ns/iter"
           }
         ]
