@@ -260,7 +260,7 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::AfterTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self.context).instrument(span.or_current()).await?;
+                    hook(self).instrument(span.or_current()).await?;
                 }
             }
         }
@@ -315,7 +315,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::BeforeCompletion)
                 );
                 tracing::info!("Calling {} hook", HookTypes::BeforeCompletion);
-                hook(&*self.context, &mut chat_completion_request)
+                hook(&*self, &mut chat_completion_request)
                     .instrument(span.or_current())
                     .await?;
             }
@@ -341,7 +341,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::AfterCompletion)
                 );
                 tracing::info!("Calling {} hook", HookTypes::AfterCompletion);
-                hook(&*self.context, &mut response)
+                hook(&*self, &mut response)
                     .instrument(span.or_current())
                     .await?;
             }
@@ -363,7 +363,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::AfterEach)
                 );
                 tracing::info!("Calling {} hook", HookTypes::AfterEach);
-                hook(&*self.context).instrument(span.or_current()).await?;
+                hook(&*self).instrument(span.or_current()).await?;
             }
         }
 
@@ -391,7 +391,7 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::BeforeTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::BeforeTool);
-                    hook(&*self.context, &tool_call)
+                    hook(&*self, &tool_call)
                         .instrument(span.or_current())
                         .await?;
                 }
@@ -423,7 +423,7 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::AfterTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self.context, &tool_call, &mut output)
+                    hook(&*self, &tool_call, &mut output)
                         .instrument(span.or_current())
                         .await?;
                 }
@@ -468,10 +468,7 @@ impl Agent {
                     "hook",
                     "otel.name" = format!("hook.{}", HookTypes::OnNewMessage)
                 );
-                if let Err(err) = hook(&*self.context, &mut message)
-                    .instrument(span.or_current())
-                    .await
-                {
+                if let Err(err) = hook(self, &mut message).instrument(span.or_current()).await {
                     tracing::error!(
                         "Error in {hooktype} hook: {err}",
                         hooktype = HookTypes::OnNewMessage,
@@ -491,6 +488,21 @@ impl Agent {
     /// Access the agent's context
     pub fn context(&self) -> &dyn AgentContext {
         &self.context
+    }
+
+    /// The agent is still running
+    pub fn is_running(&self) -> bool {
+        self.state.is_running()
+    }
+
+    /// The agent stopped
+    pub fn is_stopped(&self) -> bool {
+        self.state.is_stopped()
+    }
+
+    /// The agent has not (ever) started
+    pub fn is_pending(&self) -> bool {
+        self.state.is_pending()
     }
 }
 

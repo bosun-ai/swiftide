@@ -8,6 +8,7 @@ use swiftide_core::AgentContext;
 use crate::hooks::{
     AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn, MessageHookFn,
 };
+use crate::Agent;
 
 #[macro_export]
 macro_rules! chat_request {
@@ -157,7 +158,7 @@ impl Tool for MockTool {
 
 impl From<MockTool> for Box<dyn Tool> {
     fn from(val: MockTool) -> Self {
-        Box::new(val)
+        Box::new(val) as Box<dyn Tool>
     }
 }
 
@@ -206,7 +207,7 @@ impl MockHook {
 
     pub fn hook_fn(&self) -> impl BeforeAllFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext| {
+        move |_: &Agent| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -218,7 +219,7 @@ impl MockHook {
 
     pub fn before_completion_fn(&self) -> impl BeforeCompletionFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -230,7 +231,7 @@ impl MockHook {
 
     pub fn after_completion_fn(&self) -> impl AfterCompletionFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -242,7 +243,7 @@ impl MockHook {
 
     pub fn after_tool_fn(&self) -> impl AfterToolFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _, _| {
+        move |_: &Agent, _, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -254,7 +255,7 @@ impl MockHook {
 
     pub fn before_tool_fn(&self) -> impl BeforeToolFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -266,7 +267,7 @@ impl MockHook {
 
     pub fn message_hook_fn(&self) -> impl MessageHookFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
