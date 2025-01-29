@@ -5327,6 +5327,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eac2de5219db852597558df5dcd617ffccd5cbd7b9f5402ccbf899aca6cb6047"
 dependencies = [
  "autocfg",
+ "cc",
  "flate2",
  "pkg-config",
  "serde",
@@ -8877,6 +8878,7 @@ dependencies = [
  "tree-sitter-ruby",
  "tree-sitter-rust",
  "tree-sitter-typescript",
+ "uuid",
 ]
 
 [[package]]
