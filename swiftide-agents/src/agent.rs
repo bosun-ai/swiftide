@@ -136,8 +136,8 @@ impl AgentBuilder {
     }
 
     /// Add a hook that runs once, when the agent starts. This hook also runs if the agent stopped
-    /// and then starts again. The hook runs after any before_all hooks and before the
-    /// before_completion hooks.
+    /// and then starts again. The hook runs after any `before_all` hooks and before the
+    /// `before_completion` hooks.
     pub fn on_start(&mut self, hook: impl OnStartFn + 'static) -> &mut Self {
         self.add_hook(Hook::OnStart(Box::new(hook)))
     }
@@ -848,7 +848,7 @@ mod tests {
             .llm(&mock_llm)
             .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
-            .on_start(mock_on_start_fn.hook_fn())
+            .on_start(mock_on_start_fn.on_start_fn())
             .before_completion(mock_before_completion.before_completion_fn())
             .before_tool(mock_before_tool.before_tool_fn())
             .after_completion(mock_after_completion.after_completion_fn())
