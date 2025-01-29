@@ -28,6 +28,7 @@ strum_macros = { workspace = true }
 regex = { workspace = true }
 futures-util = { workspace = true }
 tera = { workspace = true }
+uuid = { workspace = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
@@ -97,6 +98,7 @@ swiftide-macros = { path = "../swiftide-macros" }
 temp-dir = { workspace = true }
 pretty_assertions = { workspace = true }
 arrow = { workspace = true, features = ["test_utils"] }
+duckdb = { workspace = true, features = ["bundled"] }
 
 # Used for hacking fluv to play nice
 flv-util = { workspace = true }

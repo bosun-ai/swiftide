@@ -48,11 +48,15 @@ impl Duckdb {
 }
 
 impl DuckdbBuilder {
-    pub fn connection(
-        &mut self,
-        connection: impl Into<Arc<Mutex<duckdb::Connection>>>,
-    ) -> &mut Self {
-        self.connection = Some(connection.into());
+    pub fn connection(&mut self, connection: impl Into<duckdb::Connection>) -> &mut Self {
+        self.connection = Some(Arc::new(Mutex::new(connection.into())));
+        self
+    }
+
+    pub fn with_vector(&mut self, field: EmbeddedField, size: usize) -> &mut Self {
+        self.vectors
+            .get_or_insert_with(HashMap::new)
+            .insert(field, size);
         self
     }
 }
