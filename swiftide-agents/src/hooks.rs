@@ -138,6 +138,17 @@ pub trait MessageHookFn:
 
 dyn_clone::clone_trait_object!(MessageHookFn);
 
+/// Hooks that are called when the agent starts, either from pending or stopped
+pub trait OnStartFn:
+    for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(OnStartFn);
+
 /// Wrapper around the different types of hooks
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
@@ -157,6 +168,8 @@ pub enum Hook {
     /// Runs when a new message is added to the `AgentContext`, yielding a mutable reference to the
     /// message. This is only triggered when the message is added by the agent.
     OnNewMessage(Box<dyn MessageHookFn>),
+    /// Runs when the agent starts, either from pending or stopped
+    OnStart(Box<dyn OnStartFn>),
 }
 
 impl<F> BeforeAllFn for F where
@@ -227,6 +240,14 @@ impl<F> MessageHookFn for F where
 {
 }
 
+impl<F> OnStartFn for F where
+    F: for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Agent;
@@ -235,6 +256,7 @@ mod tests {
     fn test_hooks_compile_sync_and_async() {
         Agent::builder()
             .before_all(|_| Box::pin(async { Ok(()) }))
+            .on_start(|_| Box::pin(async { Ok(()) }))
             .before_completion(|_, _| Box::pin(async { Ok(()) }))
             .before_tool(|_, _| Box::pin(async { Ok(()) }))
             .after_tool(|_, _, _| Box::pin(async { Ok(()) }))

@@ -7,6 +7,7 @@ use swiftide_core::AgentContext;
 
 use crate::hooks::{
     AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn, MessageHookFn,
+    OnStartFn,
 };
 use crate::Agent;
 
@@ -217,6 +218,17 @@ impl MockHook {
         }
     }
 
+    pub fn on_start_fn(&self) -> impl OnStartFn {
+        let called = Arc::clone(&self.called);
+        move |_: &Agent| {
+            let called = Arc::clone(&called);
+            Box::pin(async move {
+                let mut called = called.lock().unwrap();
+                *called += 1;
+                Ok(())
+            })
+        }
+    }
     pub fn before_completion_fn(&self) -> impl BeforeCompletionFn {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {

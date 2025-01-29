@@ -3,7 +3,7 @@ use crate::{
     default_context::DefaultContext,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
-        Hook, HookTypes, MessageHookFn,
+        Hook, HookTypes, MessageHookFn, OnStartFn,
     },
     state,
     system_prompt::SystemPrompt,
@@ -135,6 +135,13 @@ impl AgentBuilder {
         self.add_hook(Hook::BeforeAll(Box::new(hook)))
     }
 
+    /// Add a hook that runs once, when the agent starts. This hook also runs if the agent stopped
+    /// and then starts again. The hook runs after any before_all hooks and before the
+    /// before_completion hooks.
+    pub fn on_start(&mut self, hook: impl OnStartFn + 'static) -> &mut Self {
+        self.add_hook(Hook::OnStart(Box::new(hook)))
+    }
+
     /// Add a hook that runs before each completion.
     pub fn before_completion(&mut self, hook: impl BeforeCompletionFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeCompletion(Box::new(hook)))
@@ -262,6 +269,17 @@ impl Agent {
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
                     hook(self).instrument(span.or_current()).await?;
                 }
+            }
+        }
+
+        for hook in self.hooks_by_type(HookTypes::OnStart) {
+            if let Hook::OnStart(hook) = hook {
+                let span = tracing::info_span!(
+                    "hook",
+                    "otel.name" = format!("hook.{}", HookTypes::OnStart)
+                );
+                tracing::info!("Calling {} hook", HookTypes::OnStart);
+                hook(self).instrument(span.or_current()).await?;
             }
         }
 
@@ -779,6 +797,7 @@ mod tests {
     #[test_log::test(tokio::test)]
     async fn test_agent_hooks() {
         let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
+        let mock_on_start_fn = MockHook::new("on_start").expect_calls(1).to_owned();
         let mock_before_completion = MockHook::new("before_completion")
             .expect_calls(2)
             .to_owned();
@@ -829,6 +848,7 @@ mod tests {
             .llm(&mock_llm)
             .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
+            .on_start(mock_on_start_fn.hook_fn())
             .before_completion(mock_before_completion.before_completion_fn())
             .before_tool(mock_before_tool.before_tool_fn())
             .after_completion(mock_after_completion.after_completion_fn())
