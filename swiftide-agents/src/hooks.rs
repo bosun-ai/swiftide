@@ -47,12 +47,9 @@ use anyhow::Result;
 use std::{future::Future, pin::Pin};
 
 use dyn_clone::DynClone;
-use swiftide_core::{
-    chat_completion::{
-        errors::ToolError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
-        ToolOutput,
-    },
-    AgentContext,
+use swiftide_core::chat_completion::{
+    errors::ToolError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
+    ToolOutput,
 };
 
 use crate::Agent;
