@@ -852,9 +852,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-bedrockruntime"
-version = "1.71.0"
+version = "1.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3df63bb064f19fc4b5af78db35ad514b08a54e2fe3109d049f9831a9afec851"
+checksum = "fe9f760ebf1bbb45ea94ba4c998bde97f67910798e481153ccce31ea13857cad"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -3109,9 +3109,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.24.3"
+version = "0.24.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1060ba83dc63372d3aa8d8817091218c1f1dbef12d822458925498645146834d"
+checksum = "cbce84db17ac70c190f41652f018a1703a7bc2f303160266bb77947b87c1c271"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -3141,6 +3141,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "web-time",
 ]
 
 [[package]]
@@ -7750,9 +7751,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.137"
+version = "1.0.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "930cfb6e6abf99298aaad7d29abbef7a9999a9a8806a40088f55f0dcec03146b"
+checksum = "d434192e7da787e94a6ea7e9670b26a036d0ca41e0b7efb2676dd32bae872949"
 dependencies = [
  "itoa",
  "memchr",
@@ -8073,9 +8074,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.27.7"
+version = "2.27.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b437d3848903de90c7bf90732d6fcdc308ee5225364b5bafcb6eda02691d5862"
+checksum = "a71324af007b79eef8f290df764f8b8bdf34bc45379e1af7e7bd6bdc57a3dd90"
 dependencies = [
  "ahash",
  "aho-corasick",
