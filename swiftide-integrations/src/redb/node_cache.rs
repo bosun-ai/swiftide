@@ -27,7 +27,6 @@ macro_rules! unwrap_or_log {
 }
 #[async_trait]
 impl NodeCache for Redb {
-    #[tracing::instrument(skip_all)]
     async fn get(&self, node: &Node) -> bool {
         let table_definition = self.table_definition();
         let read_txn = unwrap_or_log!(self.database.begin_read());
@@ -60,7 +59,6 @@ impl NodeCache for Redb {
         }
     }
 
-    #[tracing::instrument(skip_all)]
     async fn set(&self, node: &Node) {
         let write_txn = self.database.begin_write().unwrap();
 
