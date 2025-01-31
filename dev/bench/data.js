@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1738343470409,
+  "lastUpdate": 1738343498507,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13769,6 +13769,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243823,
             "range": "± 2706",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "de46656f80c5cf68cc192d21b5f34eb3e0667a14",
+          "message": "feat(agents): Add `on_start` hook (#586)\n\n- **feat(agents)!: Yield agent in hooks instead of context**\r\n- **Clippy**\r\n- **feat(agents): Add `on_start` hook for agents**",
+          "timestamp": "2025-01-31T18:02:07+01:00",
+          "tree_id": "0209a1b773627e580ce06045094689d1935af7d7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/de46656f80c5cf68cc192d21b5f34eb3e0667a14"
+        },
+        "date": 1738343497239,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1361377,
+            "range": "± 1587915",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241893,
+            "range": "± 5622",
             "unit": "ns/iter"
           }
         ]
