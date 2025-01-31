@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.6](https://github.com/bosun-ai/swiftide/compare/v0.17.5...v0.17.6) - 2025-01-31
+
+### New features
+
+- [c551f1b](https://github.com/bosun-ai/swiftide/commit/c551f1becfd1750ce480a00221a34908db61e42f) *(integrations)*  OpenRouter support (#589)
+
+````text
+Adds OpenRouter support. OpenRouter allows you to use any LLM via their
+  own api (with a minor upsell).
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.5...0.17.6
+
+
+
 ## [0.17.5](https://github.com/bosun-ai/swiftide/compare/v0.17.4...v0.17.5) - 2025-01-27
 
 ### New features
