@@ -17,8 +17,8 @@ pub mod simple_prompt;
 /// always need to be set, either with [`OpenRouter::with_default_prompt_model`] or [`OpenRouter::with_default_embed_model`] or via the builder.
 /// You can find available models in the `OpenRouter` documentation.
 ///
-/// Under the hood it uses [`async_openai`], with the OpenRouter openai compatibel api. This means
-/// some features might not work as expected. See the OpenRouter documentation for details.
+/// Under the hood it uses [`async_openai`], with the `OpenRouter` openai compatible api. This means
+/// some features might not work as expected. See the `OpenRouter` documentation for details.
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct OpenRouter {
