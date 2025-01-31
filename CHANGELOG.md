@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.0](https://github.com/bosun-ai/swiftide/compare/v0.17.5...v0.18.0) - 2025-01-31
+
+### New features
+
+- [de46656](https://github.com/bosun-ai/swiftide/commit/de46656f80c5cf68cc192d21b5f34eb3e0667a14) *(agents)*  Add `on_start` hook (#586)
+
+````text
+- **feat(agents)!: Yield agent in hooks instead of context**
+  - **Clippy**
+  - **feat(agents): Add `on_start` hook for agents**
+````
+
+- [c551f1b](https://github.com/bosun-ai/swiftide/commit/c551f1becfd1750ce480a00221a34908db61e42f) *(integrations)*  OpenRouter support (#589)
+
+````text
+Adds OpenRouter support. OpenRouter allows you to use any LLM via their
+  own api (with a minor upsell).
+````
+
+### Bug fixes
+
+- [3ea5839](https://github.com/bosun-ai/swiftide/commit/3ea583971c0d2cc5ef0594eaf764ea149bacd1d8) *(redb)*  Disable per-node tracing
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.5...0.18.0
+
+
+
 ## [0.17.5](https://github.com/bosun-ai/swiftide/compare/v0.17.4...v0.17.5) - 2025-01-27
 
 ### New features
