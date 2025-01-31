@@ -8,11 +8,6 @@ All notable changes to this project will be documented in this file.
 
 - [de46656](https://github.com/bosun-ai/swiftide/commit/de46656f80c5cf68cc192d21b5f34eb3e0667a14) *(agents)*  Add `on_start` hook (#586)
 
-````text
-- **feat(agents)!: Yield agent in hooks instead of context**
-  - **Clippy**
-  - **feat(agents): Add `on_start` hook for agents**
-````
 
 - [c551f1b](https://github.com/bosun-ai/swiftide/commit/c551f1becfd1750ce480a00221a34908db61e42f) *(integrations)*  OpenRouter support (#589)
 
