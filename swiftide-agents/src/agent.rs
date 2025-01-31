@@ -3,7 +3,7 @@ use crate::{
     default_context::DefaultContext,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
-        Hook, HookTypes, MessageHookFn,
+        Hook, HookTypes, MessageHookFn, OnStartFn,
     },
     state,
     system_prompt::SystemPrompt,
@@ -135,6 +135,13 @@ impl AgentBuilder {
         self.add_hook(Hook::BeforeAll(Box::new(hook)))
     }
 
+    /// Add a hook that runs once, when the agent starts. This hook also runs if the agent stopped
+    /// and then starts again. The hook runs after any `before_all` hooks and before the
+    /// `before_completion` hooks.
+    pub fn on_start(&mut self, hook: impl OnStartFn + 'static) -> &mut Self {
+        self.add_hook(Hook::OnStart(Box::new(hook)))
+    }
+
     /// Add a hook that runs before each completion.
     pub fn before_completion(&mut self, hook: impl BeforeCompletionFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeCompletion(Box::new(hook)))
@@ -260,8 +267,19 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::AfterTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self.context).instrument(span.or_current()).await?;
+                    hook(self).instrument(span.or_current()).await?;
                 }
+            }
+        }
+
+        for hook in self.hooks_by_type(HookTypes::OnStart) {
+            if let Hook::OnStart(hook) = hook {
+                let span = tracing::info_span!(
+                    "hook",
+                    "otel.name" = format!("hook.{}", HookTypes::OnStart)
+                );
+                tracing::info!("Calling {} hook", HookTypes::OnStart);
+                hook(self).instrument(span.or_current()).await?;
             }
         }
 
@@ -315,7 +333,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::BeforeCompletion)
                 );
                 tracing::info!("Calling {} hook", HookTypes::BeforeCompletion);
-                hook(&*self.context, &mut chat_completion_request)
+                hook(&*self, &mut chat_completion_request)
                     .instrument(span.or_current())
                     .await?;
             }
@@ -341,7 +359,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::AfterCompletion)
                 );
                 tracing::info!("Calling {} hook", HookTypes::AfterCompletion);
-                hook(&*self.context, &mut response)
+                hook(&*self, &mut response)
                     .instrument(span.or_current())
                     .await?;
             }
@@ -363,7 +381,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::AfterEach)
                 );
                 tracing::info!("Calling {} hook", HookTypes::AfterEach);
-                hook(&*self.context).instrument(span.or_current()).await?;
+                hook(&*self).instrument(span.or_current()).await?;
             }
         }
 
@@ -391,7 +409,7 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::BeforeTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::BeforeTool);
-                    hook(&*self.context, &tool_call)
+                    hook(&*self, &tool_call)
                         .instrument(span.or_current())
                         .await?;
                 }
@@ -423,7 +441,7 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::AfterTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self.context, &tool_call, &mut output)
+                    hook(&*self, &tool_call, &mut output)
                         .instrument(span.or_current())
                         .await?;
                 }
@@ -468,10 +486,7 @@ impl Agent {
                     "hook",
                     "otel.name" = format!("hook.{}", HookTypes::OnNewMessage)
                 );
-                if let Err(err) = hook(&*self.context, &mut message)
-                    .instrument(span.or_current())
-                    .await
-                {
+                if let Err(err) = hook(self, &mut message).instrument(span.or_current()).await {
                     tracing::error!(
                         "Error in {hooktype} hook: {err}",
                         hooktype = HookTypes::OnNewMessage,
@@ -491,6 +506,21 @@ impl Agent {
     /// Access the agent's context
     pub fn context(&self) -> &dyn AgentContext {
         &self.context
+    }
+
+    /// The agent is still running
+    pub fn is_running(&self) -> bool {
+        self.state.is_running()
+    }
+
+    /// The agent stopped
+    pub fn is_stopped(&self) -> bool {
+        self.state.is_stopped()
+    }
+
+    /// The agent has not (ever) started
+    pub fn is_pending(&self) -> bool {
+        self.state.is_pending()
     }
 }
 
@@ -767,6 +797,7 @@ mod tests {
     #[test_log::test(tokio::test)]
     async fn test_agent_hooks() {
         let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
+        let mock_on_start_fn = MockHook::new("on_start").expect_calls(1).to_owned();
         let mock_before_completion = MockHook::new("before_completion")
             .expect_calls(2)
             .to_owned();
@@ -817,6 +848,7 @@ mod tests {
             .llm(&mock_llm)
             .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
+            .on_start(mock_on_start_fn.on_start_fn())
             .before_completion(mock_before_completion.before_completion_fn())
             .before_tool(mock_before_tool.before_tool_fn())
             .after_completion(mock_after_completion.after_completion_fn())
