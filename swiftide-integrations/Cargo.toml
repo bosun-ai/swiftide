@@ -130,6 +130,8 @@ openai = ["dep:async-openai"]
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Ollama prompting, embedding, chatcompletion
 ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+# Openrouter prompting, embedding, chatcompletion
+open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
 # Dashscope prompting

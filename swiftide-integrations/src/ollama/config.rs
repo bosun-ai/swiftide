@@ -1,10 +1,11 @@
+use derive_builder::Builder;
 use reqwest::header::HeaderMap;
 use secrecy::SecretString;
 use serde::Deserialize;
 
 const OLLAMA_API_BASE: &str = "http://localhost:11434/v1";
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Builder)]
 #[serde(default)]
 pub struct OllamaConfig {
     api_base: String,
@@ -12,6 +13,10 @@ pub struct OllamaConfig {
 }
 
 impl OllamaConfig {
+    pub fn builder() -> OllamaConfigBuilder {
+        OllamaConfigBuilder::default()
+    }
+
     pub fn with_api_base(&mut self, api_base: &str) -> &mut Self {
         self.api_base = api_base.to_string();
 

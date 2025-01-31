@@ -14,6 +14,8 @@ pub mod groq;
 pub mod lancedb;
 #[cfg(feature = "ollama")]
 pub mod ollama;
+#[cfg(feature = "open-router")]
+pub mod open_router;
 #[cfg(feature = "openai")]
 pub mod openai;
 #[cfg(feature = "parquet")]
