@@ -71,6 +71,9 @@ groq = ["swiftide-integrations/groq"]
 ## Dashscope prompting
 dashscope = ["swiftide-integrations/dashscope"]
 
+## OpenRouter prompting
+open-router = ["swiftide-integrations/open-router"]
+
 ## Ollama prompting
 ollama = ["swiftide-integrations/ollama"]
 
@@ -99,6 +102,7 @@ redb = ["swiftide-integrations/redb"]
 
 ## Various testing utilities
 test-utils = ["swiftide-core/test-utils", "swiftide-test-utils/test-utils"]
+
 
 #! ### Experimental
 swiftide-agents = ["dep:swiftide-agents"]
