@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1738343567634,
+  "lastUpdate": 1738344415797,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13877,6 +13877,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242383,
             "range": "± 3938",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "3ea583971c0d2cc5ef0594eaf764ea149bacd1d8",
+          "message": "fix(redb): Disable per-node tracing",
+          "timestamp": "2025-01-31T18:17:24+01:00",
+          "tree_id": "0aa1f77c4f2519006e4982e6293ee8d6b248b1be",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3ea583971c0d2cc5ef0594eaf764ea149bacd1d8"
+        },
+        "date": 1738344414971,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1345916,
+            "range": "± 978628",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241319,
+            "range": "± 1932",
             "unit": "ns/iter"
           }
         ]
