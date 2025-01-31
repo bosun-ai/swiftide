@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737981468902,
+  "lastUpdate": 1738343470409,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13715,6 +13715,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244398,
             "range": "± 2994",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c551f1becfd1750ce480a00221a34908db61e42f",
+          "message": "feat(integrations): OpenRouter support (#589)\n\nAdds OpenRouter support. OpenRouter allows you to use any LLM via their\r\nown api (with a minor upsell).",
+          "timestamp": "2025-01-31T18:01:51+01:00",
+          "tree_id": "c6d69a8b1a83f7e5f589cc378a6c5e6a14c3d6d7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c551f1becfd1750ce480a00221a34908db61e42f"
+        },
+        "date": 1738343469777,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1352475,
+            "range": "± 1007380",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243823,
+            "range": "± 2706",
             "unit": "ns/iter"
           }
         ]
