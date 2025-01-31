@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1738343498507,
+  "lastUpdate": 1738343567634,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13823,6 +13823,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241893,
             "range": "± 5622",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a1880a0543f17dfc4b71024b02762b643eecdeb1",
+          "message": "feat(agents)!: Yield agent in hooks instead of context (#584)\n\nEnables a lot more customizability than yielding just the agent. The\r\ncontext can still be accessed through agent#context.",
+          "timestamp": "2025-01-31T18:03:29+01:00",
+          "tree_id": "0209a1b773627e580ce06045094689d1935af7d7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a1880a0543f17dfc4b71024b02762b643eecdeb1"
+        },
+        "date": 1738343566898,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1348993,
+            "range": "± 1040975",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242383,
+            "range": "± 3938",
             "unit": "ns/iter"
           }
         ]
