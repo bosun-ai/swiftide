@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1738344415797,
+  "lastUpdate": 1738406369147,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13931,6 +13931,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241319,
             "range": "± 1932",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dec20415d14fad60fe7666e762a28322ca1e3deb",
+          "message": "chore(deps): bump the minor group across 1 directory with 4 updates (#588)\n\nBumps the minor group with 4 updates in the / directory:\r\n[serde_json](https://github.com/serde-rs/json),\r\n[spider](https://github.com/spider-rs/spider),\r\n[fluvio](https://github.com/infinyon/fluvio) and\r\n[aws-sdk-bedrockruntime](https://github.com/awslabs/aws-sdk-rust).\r\n\r\nUpdates `serde_json` from 1.0.137 to 1.0.138\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/serde-rs/json/releases\">serde_json's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>v1.0.138</h2>\r\n<ul>\r\n<li>Documentation improvements</li>\r\n</ul>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/c916099147f0864c158bfffaf6d74870a64b16ee\"><code>c916099</code></a>\r\nRelease 1.0.138</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/dc29e4815d8b99d48f43d73638819b25e7cd19c8\"><code>dc29e48</code></a>\r\nMove BufReader to caller</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/29122f9ed796712c098a1cd614f207bd9d1b2ccc\"><code>29122f9</code></a>\r\nSort imports from PR 1237</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/d33c1b527e77d29ed9a6c2719d8aaac424e85357\"><code>d33c1b5</code></a>\r\nMerge pull request <a\r\nhref=\"https://redirect.github.com/serde-rs/json/issues/1237\">#1237</a>\r\nfrom JonathanBrouwer/master</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/8c2d8004b2b873772dbeadd5ad3f96a185d329df\"><code>8c2d800</code></a>\r\nAdd more warnings to apply buffering on docs of affected functions</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/65bbd1aa2d0c9aca8347ba5b963e2f8658ab2d42\"><code>65bbd1a</code></a>\r\nFix example of from_reader not applying buffering when it should</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/87f78da0f57a5bc6c875e56357bc9761558a3ef9\"><code>87f78da</code></a>\r\nMore precise gitignore patterns</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/4134f119c025afa0f57f6b52b66def5c69db0ae6\"><code>4134f11</code></a>\r\nRemove *.sw[po] from gitignore</li>\r\n<li><a\r\nhref=\"https://github.com/serde-rs/json/commit/c7626dbac286ddf54aa120b3f3e7c9ebb4804af7\"><code>c7626db</code></a>\r\nRemove **/*.rs.bk from project-specific gitignore</li>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/serde-rs/json/compare/v1.0.137...v1.0.138\">compare\r\nview</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\nUpdates `spider` from 2.27.7 to 2.27.27\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>v2.27.27</h2>\r\n<h1>Whats Changed</h1>\r\n<p>Web page normalizing to prevent all duplicate content, crawl traps,\r\nand more pages from being crawled repeatedly.\r\nWe can now crawl websites that target ports outside 80 and 443.</p>\r\n<ol>\r\n<li>feat(page): add relative directory url handling</li>\r\n<li>chore(website): fix relative page merging links</li>\r\n<li>chore(serde): fix cron compile configuration</li>\r\n<li>chore(chrome): update tokio-tungestite@0.26</li>\r\n<li>chore(page): add port validation links</li>\r\n<li>chore(website): fix signature compile non disk feature flag</li>\r\n<li>chore(rand): update rand@0.9</li>\r\n<li>[chore(abs): clear query pairs <a\r\nhref=\"https://redirect.github.com/spider-rs/spider/issues/257\">#257</a></li>\r\n</ol>\r\n<p><strong>Full Changelog</strong>: <a\r\nhref=\"https://github.com/spider-rs/spider/compare/v2.26.27...v2.27.27\">https://github.com/spider-rs/spider/compare/v2.26.27...v2.27.27</a></p>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/spider-rs/spider/commits/v2.27.27\">compare\r\nview</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\nUpdates `fluvio` from 0.24.3 to 0.24.4\r\n<details>\r\n<summary>Release notes</summary>\r\n<p><em>Sourced from <a\r\nhref=\"https://github.com/infinyon/fluvio/releases\">fluvio's\r\nreleases</a>.</em></p>\r\n<blockquote>\r\n<h2>dev</h2>\r\n<p>Published artifacts from the latest build</p>\r\n</blockquote>\r\n</details>\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/infinyon/fluvio/commits\">compare view</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\nUpdates `aws-sdk-bedrockruntime` from 1.71.0 to 1.72.0\r\n<details>\r\n<summary>Commits</summary>\r\n<ul>\r\n<li>See full diff in <a\r\nhref=\"https://github.com/awslabs/aws-sdk-rust/commits\">compare\r\nview</a></li>\r\n</ul>\r\n</details>\r\n<br />\r\n\r\n\r\nDependabot will resolve any conflicts with this PR as long as you don't\r\nalter it yourself. You can also trigger a rebase manually by commenting\r\n`@dependabot rebase`.\r\n\r\n[//]: # (dependabot-automerge-start)\r\n[//]: # (dependabot-automerge-end)\r\n\r\n---\r\n\r\n<details>\r\n<summary>Dependabot commands and options</summary>\r\n<br />\r\n\r\nYou can trigger Dependabot actions by commenting on this PR:\r\n- `@dependabot rebase` will rebase this PR\r\n- `@dependabot recreate` will recreate this PR, overwriting any edits\r\nthat have been made to it\r\n- `@dependabot merge` will merge this PR after your CI passes on it\r\n- `@dependabot squash and merge` will squash and merge this PR after\r\nyour CI passes on it\r\n- `@dependabot cancel merge` will cancel a previously requested merge\r\nand block automerging\r\n- `@dependabot reopen` will reopen this PR if it is closed\r\n- `@dependabot close` will close this PR and stop Dependabot recreating\r\nit. You can achieve the same result by closing it manually\r\n- `@dependabot show <dependency name> ignore conditions` will show all\r\nof the ignore conditions of the specified dependency\r\n- `@dependabot ignore <dependency name> major version` will close this\r\ngroup update PR and stop Dependabot creating any more for the specific\r\ndependency's major version (unless you unignore this specific\r\ndependency's major version or upgrade to it yourself)\r\n- `@dependabot ignore <dependency name> minor version` will close this\r\ngroup update PR and stop Dependabot creating any more for the specific\r\ndependency's minor version (unless you unignore this specific\r\ndependency's minor version or upgrade to it yourself)\r\n- `@dependabot ignore <dependency name>` will close this group update PR\r\nand stop Dependabot creating any more for the specific dependency\r\n(unless you unignore this specific dependency or upgrade to it yourself)\r\n- `@dependabot unignore <dependency name>` will remove all of the ignore\r\nconditions of the specified dependency\r\n- `@dependabot unignore <dependency name> <ignore condition>` will\r\nremove the ignore condition of the specified dependency and ignore\r\nconditions\r\n\r\n\r\n</details>\r\n\r\nSigned-off-by: dependabot[bot] <support@github.com>\r\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-02-01T11:30:17+01:00",
+          "tree_id": "2c0e32624a2ad62715f59f41e64fb7f1740078af",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dec20415d14fad60fe7666e762a28322ca1e3deb"
+        },
+        "date": 1738406367893,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1355457,
+            "range": "± 944020",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241835,
+            "range": "± 1109",
             "unit": "ns/iter"
           }
         ]
