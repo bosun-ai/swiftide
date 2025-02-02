@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1738406369147,
+  "lastUpdate": 1738504068118,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -13985,6 +13985,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241835,
             "range": "± 1109",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fc54fe49ee4a7dec401389d28b615bdfc777ba38",
+          "message": "chore: release v0.18.0 (#591)\n\n## 🤖 New release\r\n* `swiftide`: 0.17.5 -> 0.18.0 (✓ API compatible changes)\r\n* `swiftide-agents`: 0.17.5 -> 0.18.0 (⚠️ API breaking changes)\r\n* `swiftide-core`: 0.17.5 -> 0.18.0 (✓ API compatible changes)\r\n* `swiftide-macros`: 0.17.5 -> 0.18.0\r\n* `swiftide-indexing`: 0.17.5 -> 0.18.0 (✓ API compatible changes)\r\n* `swiftide-integrations`: 0.17.5 -> 0.18.0 (✓ API compatible changes)\r\n* `swiftide-query`: 0.17.5 -> 0.18.0 (✓ API compatible changes)\r\n\r\n### ⚠️ `swiftide-agents` breaking changes\r\n\r\n```\r\n--- failure enum_variant_added: enum variant added on exhaustive enum ---\r\n\r\nDescription:\r\nA publicly-visible enum without #[non_exhaustive] has a new variant.\r\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#enum-variant-new\r\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.38.0/src/lints/enum_variant_added.ron\r\n\r\nFailed in:\r\n  variant HookTypes:OnStart in /tmp/.tmpArEE27/swiftide/swiftide-agents/src/hooks.rs:172\r\n  variant Hook:OnStart in /tmp/.tmpArEE27/swiftide/swiftide-agents/src/hooks.rs:172\r\n```\r\n\r\n<details><summary><i><b>Changelog</b></i></summary><p>\r\n\r\n## `swiftide`\r\n<blockquote>\r\n\r\n##\r\n[0.18.0](https://github.com/bosun-ai/swiftide/compare/v0.17.5...v0.18.0)\r\n- 2025-02-01\r\n\r\n### New features\r\n\r\n-\r\n[de46656](https://github.com/bosun-ai/swiftide/commit/de46656f80c5cf68cc192d21b5f34eb3e0667a14)\r\n*(agents)* Add `on_start` hook (#586)\r\n\r\n````text\r\n- **feat(agents)!: Yield agent in hooks instead of context**\r\n  - **Clippy**\r\n  - **feat(agents): Add `on_start` hook for agents**\r\n````\r\n\r\n-\r\n[c551f1b](https://github.com/bosun-ai/swiftide/commit/c551f1becfd1750ce480a00221a34908db61e42f)\r\n*(integrations)* OpenRouter support (#589)\r\n\r\n````text\r\nAdds OpenRouter support. OpenRouter allows you to use any LLM via their\r\n  own api (with a minor upsell).\r\n````\r\n\r\n### Bug fixes\r\n\r\n-\r\n[3ea5839](https://github.com/bosun-ai/swiftide/commit/3ea583971c0d2cc5ef0594eaf764ea149bacd1d8)\r\n*(redb)* Disable per-node tracing\r\n\r\n### Miscellaneous\r\n\r\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\r\nCargo.lock dependencies\r\n\r\n\r\n**Full Changelog**:\r\nhttps://github.com/bosun-ai/swiftide/compare/0.17.5...0.18.0\r\n</blockquote>\r\n\r\n\r\n</p></details>\r\n\r\n---\r\nThis PR was generated with\r\n[release-plz](https://github.com/release-plz/release-plz/).\r\n\r\n---------\r\n\r\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-02-02T14:38:25+01:00",
+          "tree_id": "a3b7aa7785b78a893787ea2545cdae0b04c19836",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fc54fe49ee4a7dec401389d28b615bdfc777ba38"
+        },
+        "date": 1738504066887,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1352068,
+            "range": "± 953275",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244521,
+            "range": "± 2804",
             "unit": "ns/iter"
           }
         ]
