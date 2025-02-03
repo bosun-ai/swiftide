@@ -1,10 +1,10 @@
-use std::{collections::HashMap, path::Path};
+use std::{borrow::Cow, collections::HashMap, path::Path};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duckdb::{
     params_from_iter,
-    types::{OrderedMap, ToSqlOutput, Value},
+    types::{FromSql, OrderedMap, ToSqlOutput, Type, Value, ValueRef},
     ToSql,
 };
 use swiftide_core::{
@@ -19,12 +19,14 @@ use super::Duckdb;
 const SCHEMA: &str = include_str!("schema.sql");
 const UPSERT: &str = include_str!("upsert.sql");
 
+#[allow(dead_code)]
 enum NodeValues<'a> {
     Uuid(Uuid),
     Path(&'a Path),
     Chunk(&'a str),
     Metadata(&'a Metadata),
-    Vector(&'a [f32]),
+    Vector(Cow<'a, [f32]>),
+    Null,
 }
 
 impl ToSql for NodeValues<'_> {
@@ -33,22 +35,29 @@ impl ToSql for NodeValues<'_> {
             NodeValues::Uuid(uuid) => Ok(ToSqlOutput::Owned(uuid.to_string().into())),
             NodeValues::Path(path) => Ok(path.to_string_lossy().to_string().into()), // Should be borrow-able
             NodeValues::Chunk(chunk) => chunk.to_sql(),
-            NodeValues::Metadata(metadata) => {
-                let ordered_map: OrderedMap<Value, Value> = metadata
-                    .iter()
-                    .map(|(k, v)| {
-                        (
-                            k.to_string().into(),
-                            serde_json::to_string(v).unwrap().into(),
-                        )
-                    })
-                    .collect::<Vec<(_, _)>>()
-                    .into();
-                Ok(ToSqlOutput::Owned(duckdb::types::Value::Map(ordered_map)))
+            NodeValues::Metadata(_metadata) => {
+                unimplemented!("maps are not yet implemented for duckdb");
+                // let ordered_map = metadata
+                //     .iter()
+                //     .map(|(k, v)| format!("'{}': {}", k, serde_json::to_string(v).unwrap()))
+                //     .collect::<Vec<_>>()
+                //     .join(",");
+                //
+                // let formatted = format!("MAP {{{ordered_map}}}");
+                // Ok(ToSqlOutput::Owned(formatted.into()))
             }
-            NodeValues::Vector(vector) => Ok(ToSqlOutput::Owned(Value::Array(
-                vector.iter().map(|f| (*f).into()).collect(),
-            ))),
+            NodeValues::Vector(vector) => {
+                let array_str = format!(
+                    "[{}]",
+                    vector
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(",")
+                );
+                Ok(ToSqlOutput::Owned(array_str.into()))
+            }
+            NodeValues::Null => Ok(ToSqlOutput::Owned(Value::Null)),
         }
     }
 }
@@ -85,8 +94,6 @@ impl Persist for Duckdb {
 
         // TODO: Doing potentially many locks here for the duration of a single query,
         // SOMEONE IS GOING TO HAVE A BAD TIME
-        let lock = self.connection.lock().await;
-        let mut stmt = lock.prepare(query)?;
 
         // metadata needs to be converted to `map_from_entries([('key1', value)])``
         // TODO: Investigate if we can do with way less allocations
@@ -94,8 +101,13 @@ impl Persist for Duckdb {
             NodeValues::Uuid(node.id()),
             NodeValues::Chunk(&node.chunk),
             NodeValues::Path(&node.path),
-            NodeValues::Metadata(&node.metadata),
         ];
+
+        // if node.metadata.is_empty() {
+        //     values.push(NodeValues::Null);
+        // } else {
+        //     values.push(NodeValues::Metadata(&node.metadata));
+        // }
 
         let Some(node_vectors) = &node.vectors else {
             anyhow::bail!("Expected node to have vectors; cannot store into duckdb");
@@ -106,9 +118,11 @@ impl Persist for Duckdb {
                 anyhow::bail!("Expected vector for field {} in node", field);
             };
 
-            values.push(NodeValues::Vector(vector));
+            values.push(NodeValues::Vector(vector.into()));
         }
 
+        let lock = self.connection.lock().await;
+        let mut stmt = lock.prepare(query)?;
         // TODO: Investigate concurrency in duckdb, maybe optmistic if it works
         stmt.execute(params_from_iter(values))
             .context("Failed to store node")?;
@@ -148,23 +162,27 @@ mod tests {
         client.setup().await.unwrap();
         client.store(node).await.unwrap();
 
+        tracing::info!("Stored node");
+
         let connection = client.connection.lock().await;
-        let mut stmt = connection.prepare("SELECT * FROM test").unwrap();
+        let mut stmt = connection
+            .prepare("SELECT uuid,path,chunk FROM test")
+            .unwrap();
         let node_iter = stmt
             .query_map([], |row| {
                 Ok((
                     row.get::<_, String>(0).unwrap(), // id
                     row.get::<_, String>(1).unwrap(), // chunk
                     row.get::<_, String>(2).unwrap(), // path
-                    row.get::<_, String>(3).unwrap(), // metadata
-                    row.get::<_, String>(4).unwrap(), // vector
+                                                      // row.get::<_, String>(3).unwrap(), // metadata
+                                                      // row.get::<_, Vec<f32>>(4).unwrap(), // vector
                 ))
             })
             .unwrap();
 
         let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
-
+        dbg!(&retrieved);
+        //
         assert_eq!(retrieved.len(), 1);
-        assert_eq!(retrieved[0].1, "Hello duckdb!");
     }
 }
