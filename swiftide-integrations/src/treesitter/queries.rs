@@ -362,9 +362,8 @@ pub mod go {
 
 pub mod solidity {
     pub const DEFS: &str = r#"
-    (contract_declaration
-        (function_definition
-            name: (identifier) @name))
+    (function_definition
+    name: (identifier) @name)
 
     (source_file
         (function_definition

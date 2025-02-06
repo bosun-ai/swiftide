@@ -8,7 +8,7 @@ use tree_sitter::{Parser, Query, QueryCursor, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{go, java, javascript, python, ruby, rust, typescript};
+use crate::treesitter::queries::{solidity, go, java, javascript, python, ruby, rust, typescript};
 
 use super::SupportedLanguages;
 
@@ -107,7 +107,7 @@ impl CodeTree<'_> {
 }
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
-    use SupportedLanguages::{Go, Java, Javascript, Python, Ruby, Rust, Typescript};
+    use SupportedLanguages::{Solidity, Go, Java, Javascript, Python, Ruby, Rust, Typescript};
 
     match language {
         Rust => (rust::DEFS, rust::REFS),
@@ -118,6 +118,7 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Ruby => (ruby::DEFS, ruby::REFS),
         Java => (java::DEFS, java::REFS),
         Go => (go::DEFS, go::REFS),
+        Solidity => (solidity::DEFS, solidity::REFS),
     }
 }
 
@@ -140,6 +141,24 @@ mod tests {
         assert_eq!(result.references, vec!["println"]);
 
         assert_eq!(result.definitions, vec!["main"]);
+    }
+
+    #[test]
+    fn test_parsing_on_solidity() {
+        let parser = CodeParser::from_language(SupportedLanguages::Solidity);
+        let code = r#"
+        pragma solidity ^0.8.0;
+
+        contract MyContract {
+            function myFunction() public {
+                emit MyEvent();
+            }
+        }
+        "#;
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.references, vec!["MyEvent"]);
+        assert_eq!(result.definitions, vec!["MyContract", "myFunction"]);
     }
 
     #[test]
