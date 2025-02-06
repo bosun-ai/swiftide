@@ -8,7 +8,7 @@ use tree_sitter::{Parser, Query, QueryCursor, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{solidity, go, java, javascript, python, ruby, rust, typescript};
+use crate::treesitter::queries::{go, java, javascript, python, ruby, rust, solidity, typescript};
 
 use super::SupportedLanguages;
 
@@ -107,7 +107,7 @@ impl CodeTree<'_> {
 }
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
-    use SupportedLanguages::{Solidity, Go, Java, Javascript, Python, Ruby, Rust, Typescript};
+    use SupportedLanguages::{Go, Java, Javascript, Python, Ruby, Rust, Solidity, Typescript};
 
     match language {
         Rust => (rust::DEFS, rust::REFS),
