@@ -359,3 +359,46 @@ pub mod go {
     (type_identifier) @name 
             "#;
 }
+
+pub mod solidity {
+    pub const DEFS: &str = r#"
+    (contract_declaration
+        (function_definition
+            name: (identifier) @name))
+
+    (source_file
+        (function_definition
+            name: (identifier) @name))
+
+    (contract_declaration
+    name: (identifier) @name) 
+
+    (interface_declaration
+    name: (identifier) @name)
+
+    (library_declaration
+    name: (identifier) @name)
+
+    (struct_declaration name: (identifier) @name)
+    (enum_declaration name: (identifier) @name)
+    (event_definition name: (identifier) @name)
+    "#;
+
+    pub const REFS: &str = r#"
+    (call_expression (expression (identifier)) @name )
+
+    (call_expression
+        (expression (member_expression
+            property: (_) @name )))
+
+    (emit_statement name: (_) @name)
+
+
+    (inheritance_specifier
+        ancestor: (user_defined_type (_) @name . ))
+
+
+    (import_directive
+    import_name: (_) @name )
+    "#;
+}
