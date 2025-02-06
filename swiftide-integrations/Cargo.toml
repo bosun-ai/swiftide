@@ -54,6 +54,8 @@ tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
 tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-solidity = { workspace = true, optional = true }
+
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true }
 htmd = { workspace = true, optional = true }
@@ -123,6 +125,7 @@ tree-sitter = [
   "dep:tree-sitter-javascript",
   "dep:tree-sitter-java",
   "dep:tree-sitter-go",
+  "dep:tree-sitter-solidity",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
