@@ -9,6 +9,10 @@ mod chat_completion;
 mod embed;
 mod simple_prompt;
 
+// expose type aliases to simplify downstream use of the open ai builder invocations
+pub type OpenAIConfig = async_openai::config::OpenAIConfig;
+pub type AzureConfig = async_openai::config::AzureConfig;
+
 /// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt models.
 /// It uses the `Builder` pattern for flexible and customizable instantiation.
 ///
@@ -18,13 +22,13 @@ mod simple_prompt;
 /// # use swiftide_integrations::openai::OpenAI;
 ///
 /// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
-/// let openai = OpenAI::<async_openai::config::OpenAIConfig>::builder()
+/// let openai = OpenAI::<OpenAIConfig>::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .build().unwrap();
 ///
 /// // Create an OpenAI client with a custom api key.
-/// let openai = OpenAI::<async_openai::config::OpenAIConfig>::builder()
+/// let openai = OpenAI::<OpenAIConfig>::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
