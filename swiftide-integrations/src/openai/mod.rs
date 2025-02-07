@@ -20,6 +20,7 @@ pub type AzureConfig = async_openai::config::AzureConfig;
 ///
 /// ```no_run
 /// # use swiftide_integrations::openai::OpenAI;
+/// # use swiftide_integrations::openai::OpenAIConfig;
 ///
 /// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
 /// let openai = OpenAI::<OpenAIConfig>::builder()
