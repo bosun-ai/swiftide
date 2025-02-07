@@ -132,6 +132,11 @@ impl Tool for MockTool {
         _agent_context: &dyn AgentContext,
         raw_args: Option<&str>,
     ) -> std::result::Result<ToolOutput, ToolError> {
+        tracing::debug!(
+            "[MockTool] Invoked `{}` with args: {:?}",
+            self.name,
+            raw_args
+        );
         let expectation = self
             .expectations
             .lock()
