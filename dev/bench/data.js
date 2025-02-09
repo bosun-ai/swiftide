@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1738504068118,
+  "lastUpdate": 1739117012484,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14039,6 +14039,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244521,
             "range": "± 2804",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "JoranHonig@users.noreply.github.com",
+            "name": "JoranHonig",
+            "username": "JoranHonig"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "592e5a2ca4b0f09ba6a9b20cef105539cb7a7909",
+          "message": "feat(integrations): Support Azure openai via generics (#596)\n\n\n---------\n\nCo-authored-by: Timon Vonk <mail@timonv.nl>",
+          "timestamp": "2025-02-09T16:54:29+01:00",
+          "tree_id": "e0c5dac066939d00541bd2c48c7ee1e836f6263a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/592e5a2ca4b0f09ba6a9b20cef105539cb7a7909"
+        },
+        "date": 1739117011754,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1349690,
+            "range": "± 946907",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243968,
+            "range": "± 1878",
             "unit": "ns/iter"
           }
         ]
