@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739117012484,
+  "lastUpdate": 1739117112790,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14093,6 +14093,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243968,
             "range": "± 1878",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "78bf0e004049c852d4e32c0cd67725675b1250f9",
+          "message": "feat(agents): Add optional limit for agent iterations (#599)",
+          "timestamp": "2025-02-09T16:55:58+01:00",
+          "tree_id": "d54a47727e9c485f7c79d37a4f216f4078e8a63e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/78bf0e004049c852d4e32c0cd67725675b1250f9"
+        },
+        "date": 1739117112170,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1353784,
+            "range": "± 967302",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244598,
+            "range": "± 3028",
             "unit": "ns/iter"
           }
         ]
