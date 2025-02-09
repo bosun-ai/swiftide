@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.1](https://github.com/bosun-ai/swiftide/compare/v0.18.0...v0.18.1) - 2025-02-09
+
+### New features
+
+- [78bf0e0](https://github.com/bosun-ai/swiftide/commit/78bf0e004049c852d4e32c0cd67725675b1250f9) *(agents)*  Add optional limit for agent iterations (#599)
+
+- [592e5a2](https://github.com/bosun-ai/swiftide/commit/592e5a2ca4b0f09ba6a9b20cef105539cb7a7909) *(integrations)*  Support Azure openai via generics (#596)
+
+````text
+---------
+````
+
+- [c8f2eed](https://github.com/bosun-ai/swiftide/commit/c8f2eed9964341ac2dad611fc730dc234436430a) *(tree-sitter)*  Add solidity support (#597)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.18.0...0.18.1
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.18.0](https://github.com/bosun-ai/swiftide/compare/v0.17.5...v0.18.0) - 2025-02-01
 
 ### New features
