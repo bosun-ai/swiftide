@@ -16,7 +16,9 @@ use swiftide_core::chat_completion::{
 use super::OpenAI;
 
 #[async_trait]
-impl ChatCompletion for OpenAI {
+impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
+    ChatCompletion for OpenAI<C>
+{
     #[tracing::instrument(skip_all)]
     async fn complete(
         &self,

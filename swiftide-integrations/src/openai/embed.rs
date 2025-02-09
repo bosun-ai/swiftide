@@ -7,7 +7,9 @@ use swiftide_core::{EmbeddingModel, Embeddings};
 use super::OpenAI;
 
 #[async_trait]
-impl EmbeddingModel for OpenAI {
+impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
+    EmbeddingModel for OpenAI<C>
+{
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         let model = self
             .default_options
