@@ -10,8 +10,8 @@ mod embed;
 mod simple_prompt;
 
 // expose type aliases to simplify downstream use of the open ai builder invocations
-pub type OpenAIConfig = async_openai::config::OpenAIConfig;
-pub type AzureConfig = async_openai::config::AzureConfig;
+pub use async_openai::config::AzureConfig;
+pub use async_openai::config::OpenAIConfig;
 
 /// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt models.
 /// It uses the `Builder` pattern for flexible and customizable instantiation.
@@ -71,10 +71,10 @@ impl Options {
     }
 }
 
-impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> OpenAI<C> {
+impl OpenAI<OpenAIConfig> {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
-    pub fn builder() -> OpenAIBuilder<C> {
-        OpenAIBuilder::<C>::default()
+    pub fn builder() -> OpenAIBuilder<OpenAIConfig> {
+        OpenAIBuilder::<OpenAIConfig>::default()
     }
 }
 
