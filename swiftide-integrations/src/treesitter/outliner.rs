@@ -119,6 +119,7 @@ impl CodeOutliner {
                 _ => false,
             },
             SupportedLanguages::Go => unimplemented!(),
+            SupportedLanguages::Solidity => unimplemented!(),
         }
     }
 
