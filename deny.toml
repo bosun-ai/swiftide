@@ -18,6 +18,7 @@ allow = [
   "Zlib",
   "0BSD",
   "Unicode-3.0",
+  "NCSA",
 ]
 exceptions = [{ allow = ["OpenSSL"], crate = "ring" }]
 
