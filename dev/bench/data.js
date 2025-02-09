@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739117112790,
+  "lastUpdate": 1739122487600,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14147,6 +14147,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244598,
             "range": "± 3028",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "73a681c4a3e2a75cbee3bae66e14270ee6c9a0e0",
+          "message": "chore: release v0.18.1 (#601)\n\n## 🤖 New release\n\n* `swiftide`: 0.18.1\n* `swiftide-agents`: 0.18.1\n* `swiftide-core`: 0.18.1\n* `swiftide-macros`: 0.18.1\n* `swiftide-indexing`: 0.18.1\n* `swiftide-integrations`: 0.18.1\n* `swiftide-query`: 0.18.1\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.18.1](https://github.com/bosun-ai/swiftide/compare/v0.18.0...v0.18.1)\n- 2025-02-09\n\n### New features\n\n-\n[78bf0e0](https://github.com/bosun-ai/swiftide/commit/78bf0e004049c852d4e32c0cd67725675b1250f9)\n*(agents)* Add optional limit for agent iterations (#599)\n\n-\n[592e5a2](https://github.com/bosun-ai/swiftide/commit/592e5a2ca4b0f09ba6a9b20cef105539cb7a7909)\n*(integrations)* Support Azure openai via generics (#596)\n</blockquote>\n\n\n\n\n\n\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).\n\n---------\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-02-09T18:25:49+01:00",
+          "tree_id": "a2b4da80e3e7410cddca2720f9768f13d029eaf2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/73a681c4a3e2a75cbee3bae66e14270ee6c9a0e0"
+        },
+        "date": 1739122486868,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1335582,
+            "range": "± 946241",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241005,
+            "range": "± 1084",
             "unit": "ns/iter"
           }
         ]
