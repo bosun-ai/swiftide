@@ -10,10 +10,6 @@ All notable changes to this project will be documented in this file.
 
 - [592e5a2](https://github.com/bosun-ai/swiftide/commit/592e5a2ca4b0f09ba6a9b20cef105539cb7a7909) *(integrations)*  Support Azure openai via generics (#596)
 
-````text
----------
-````
-
 - [c8f2eed](https://github.com/bosun-ai/swiftide/commit/c8f2eed9964341ac2dad611fc730dc234436430a) *(tree-sitter)*  Add solidity support (#597)
 
 
