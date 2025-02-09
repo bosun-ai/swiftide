@@ -1263,7 +1263,7 @@ checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
 name = "benchmarks"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "criterion",
@@ -8505,7 +8505,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -8533,7 +8533,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-agents"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8557,7 +8557,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8585,7 +8585,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-examples"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "fluvio",
@@ -8606,7 +8606,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8634,7 +8634,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "arrow",
@@ -8688,12 +8688,13 @@ dependencies = [
  "tree-sitter-python",
  "tree-sitter-ruby",
  "tree-sitter-rust",
+ "tree-sitter-solidity",
  "tree-sitter-typescript",
 ]
 
 [[package]]
 name = "swiftide-macros"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8715,7 +8716,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8736,7 +8737,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.18.0"
+version = "0.18.1"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -9725,6 +9726,16 @@ name = "tree-sitter-rust"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4d64d449ca63e683c562c7743946a646671ca23947b9c925c0cfbe65051a4af"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-solidity"
+version = "1.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "316bcbf903cd09a781734f4127ef21341e810cf85f89b0b96fffab48d55fd672"
 dependencies = [
  "cc",
  "tree-sitter-language",
