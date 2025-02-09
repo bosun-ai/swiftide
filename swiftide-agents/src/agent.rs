@@ -76,6 +76,11 @@ pub struct Agent {
     /// Initial state of the agent
     #[builder(private, default = state::State::default())]
     pub(crate) state: state::State,
+
+    /// Optional limit on the amount of loops the agent can run.
+    /// The counter is reset when the agent is stopped.
+    #[builder(default, setter(strip_option))]
+    pub(crate) limit: Option<usize>,
 }
 
 impl std::fmt::Debug for Agent {
@@ -289,7 +294,15 @@ impl Agent {
             self.context.add_message(ChatMessage::User(query)).await;
         }
 
+        let mut loop_counter = 0;
+
         while let Some(messages) = self.context.next_completion().await {
+            if let Some(limit) = self.limit {
+                if loop_counter >= limit {
+                    tracing::warn!("Agent loop limit reached");
+                    break;
+                }
+            }
             let result = self.run_completions(&messages).await;
 
             if let Err(err) = result {
@@ -301,6 +314,7 @@ impl Agent {
             if just_once || self.state.is_stopped() {
                 break;
             }
+            loop_counter += 1;
         }
 
         // If there are no new messages, ensure we update our state
@@ -859,5 +873,52 @@ mod tests {
             .unwrap();
 
         agent.query(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_loop_limit() {
+        let prompt = "Generate content"; // Example prompt
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("mock_tool");
+
+        let chat_request = chat_request! {
+            user!(prompt);
+            tools = [mock_tool.clone()]
+        };
+        mock_tool.expect_invoke("Great!".into(), None);
+
+        let mock_tool_response = chat_response! {
+            "Some response";
+            tool_calls = ["mock_tool"]
+        };
+
+        // Set expectations for the mock LLM responses
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response.clone()));
+
+        // // Response for terminating the loop
+        let stop_response = chat_response! {
+            "Final response";
+            tool_calls = ["stop"]
+        };
+
+        mock_llm.expect_complete(chat_request, Ok(stop_response));
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .limit(1) // Setting the loop limit to 1
+            .build()
+            .unwrap();
+
+        // Run the agent
+        agent.query(prompt).await.unwrap();
+
+        // Assert that the remaining message is still in the queue
+        let remaining = mock_llm.expectations.lock().unwrap().pop();
+        assert!(remaining.is_some());
+
+        // Assert that the agent is stopped after reaching the loop limit
+        assert!(agent.is_stopped());
     }
 }

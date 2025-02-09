@@ -40,8 +40,8 @@ type Expectations = Arc<Mutex<Vec<(ChatCompletionRequest, Result<ChatCompletionR
 
 #[derive(Clone)]
 pub struct MockChatCompletion {
-    expectations: Expectations,
-    received_expectations: Expectations,
+    pub expectations: Expectations,
+    pub received_expectations: Expectations,
 }
 
 impl Default for MockChatCompletion {
