@@ -1,11 +1,15 @@
 use anyhow::{Context as _, Result};
 use async_anthropic::types::{
-    CreateMessagesRequestBuilder, CreateMessagesResponseBuilder, Message, MessageBuilder,
-    MessageContent, MessageContentList, MessageRole, ToolChoice, ToolResultBuilder,
+    CreateMessagesRequestBuilder, Message, MessageBuilder, MessageContent, MessageContentList,
+    MessageRole, ToolChoice, ToolResultBuilder, ToolUseBuilder,
 };
 use async_trait::async_trait;
+use serde_json::json;
 use swiftide_core::{
-    chat_completion::{errors::ChatCompletionError, ChatCompletionResponse, ChatMessage, ToolCall},
+    chat_completion::{
+        errors::ChatCompletionError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
+        ToolCall, ToolSpec,
+    },
     ChatCompletion,
 };
 
@@ -16,8 +20,8 @@ impl ChatCompletion for Anthropic {
     #[tracing::instrument(skip_all, err)]
     async fn complete(
         &self,
-        request: &swiftide_core::chat_completion::ChatCompletionRequest,
-    ) -> Result<swiftide_core::chat_completion::ChatCompletionResponse, ChatCompletionError> {
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
         let model = self
             .default_options
             .prompt_model
@@ -27,15 +31,16 @@ impl ChatCompletion for Anthropic {
         let messages = request
             .messages()
             .iter()
-            .map(message_to_anthropic)
+            .map(message_to_antropic)
             .collect::<Result<Vec<_>>>()?;
 
-        let mut anthropic_requerst = CreateMessagesRequestBuilder::default()
+        let mut anthropic_request = CreateMessagesRequestBuilder::default()
             .model(model)
-            .messages(messages);
+            .messages(messages)
+            .to_owned();
 
         if !request.tools_spec.is_empty() {
-            anthropic_requerst = anthropic_requerst
+            anthropic_request
                 .tools(
                     request
                         .tools_spec()
@@ -46,7 +51,7 @@ impl ChatCompletion for Anthropic {
                 .tool_choice(ToolChoice::Auto);
         }
 
-        let request = anthropic_requerst
+        let request = anthropic_request
             .build()
             .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
 
@@ -71,8 +76,7 @@ impl ChatCompletion for Anthropic {
         let maybe_tool_calls = response
             .messages()
             .iter()
-            .map(Message::tool_uses)
-            .flatten()
+            .flat_map(Message::tool_uses)
             .map(|atool| {
                 ToolCall::builder()
                     .id(atool.id)
@@ -96,21 +100,20 @@ impl ChatCompletion for Anthropic {
     }
 }
 
+#[allow(clippy::items_after_statements)]
 fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
-    use ChatMessage::*;
+    use ChatMessage::{Assistant, Summary, System, ToolOutput, User};
 
     match message {
-        System(msg) => builder.content(msg),
-        User(msg) => builder.content(msg),
         ToolOutput(tool_call, tool_output) => builder.content(
             ToolResultBuilder::default()
-                .tool_use_id(tool_call.id().clone())
+                .tool_use_id(tool_call.id())
                 .content(tool_output.content().unwrap_or("Success"))
                 .build()?,
         ),
-        Summary(msg) => builder.content(msg),
+        Summary(msg) | System(msg) | User(msg) => builder.content(msg),
         Assistant(msg, tool_calls) => {
             builder.role(MessageRole::Assistant);
 
@@ -120,11 +123,59 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
                 content_list.push(msg.into());
             }
 
-            let content = MessageContentList(content_list);
+            if let Some(tool_calls) = tool_calls {
+                for tool_call in tool_calls {
+                    let tool_call = ToolUseBuilder::default()
+                        .id(tool_call.id())
+                        .name(tool_call.name())
+                        .input(tool_call.args())
+                        .build()?;
+
+                    content_list.push(tool_call.into());
+                }
+            }
+
+            let content_list = MessageContentList(content_list);
 
             builder.content(content_list)
         }
     };
 
     builder.build().context("Failed to build message")
+}
+
+fn tools_to_anthropic(
+    spec: &ToolSpec,
+) -> Result<serde_json::value::Map<String, serde_json::Value>> {
+    let properties = spec
+        .parameters
+        .iter()
+        .map(|param| {
+            let map = json!({
+                param.name: {
+                    "type": "string",
+                    "description": param.description,
+                }
+            })
+            .as_object()
+            .context("Failed to build tool")?
+            .to_owned();
+
+            Ok(map)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let map = json!({
+        "name": spec.name,
+        "description": spec.description,
+        "input_schema": {
+            "type": "object",
+            "properties": properties,
+        },
+        "required": spec.parameters.iter().filter(|param| param.required).map(|param| param.name).collect::<Vec<_>>(),
+    })
+    .as_object_mut()
+    .context("Failed to build tool")?
+    .to_owned();
+
+    Ok(map)
 }
