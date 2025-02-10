@@ -91,6 +91,7 @@ swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 swiftide-test-utils = { path = "../swiftide-test-utils", features = [
   "test-utils",
 ] }
+swiftide-macros = { path = "../swiftide-macros" }
 temp-dir = { workspace = true }
 pretty_assertions = { workspace = true }
 arrow = { workspace = true, features = ["test_utils"] }
@@ -104,6 +105,7 @@ testcontainers = { workspace = true }
 test-case = { workspace = true }
 indoc = { workspace = true }
 insta = { workspace = true }
+wiremock = { workspace = true }
 
 
 [features]

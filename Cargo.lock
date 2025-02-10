@@ -8706,6 +8706,7 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-solidity",
  "tree-sitter-typescript",
+ "wiremock",
 ]
 
 [[package]]

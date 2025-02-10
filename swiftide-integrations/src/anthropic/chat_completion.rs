@@ -22,11 +22,7 @@ impl ChatCompletion for Anthropic {
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, ChatCompletionError> {
-        let model = self
-            .default_options
-            .prompt_model
-            .as_ref()
-            .context("Model not set")?;
+        let model = &self.default_options.prompt_model;
 
         let messages = request
             .messages()
@@ -178,4 +174,174 @@ fn tools_to_anthropic(
     .to_owned();
 
     Ok(map)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+    use swiftide_core::{
+        chat_completion::{ChatCompletionRequest, ChatMessage, ParamSpec},
+        AgentContext, Tool,
+    };
+    use wiremock::{
+        matchers::{method, path},
+        Mock, MockServer, ResponseTemplate,
+    };
+
+    #[derive(Clone)]
+    struct FakeTool();
+
+    #[async_trait]
+    impl Tool for FakeTool {
+        async fn invoke(
+            &self,
+            _agent_context: &dyn AgentContext,
+            _raw_args: Option<&str>,
+        ) -> std::result::Result<
+            swiftide_core::chat_completion::ToolOutput,
+            swiftide_core::chat_completion::errors::ToolError,
+        > {
+            todo!()
+        }
+
+        fn name(&self) -> &'static str {
+            "get_weather"
+        }
+
+        fn tool_spec(&self) -> ToolSpec {
+            ToolSpec::builder()
+                .description("Gets the weather")
+                .name("get_weather")
+                .parameters(vec![ParamSpec::builder()
+                    .description("Location")
+                    .name("location")
+                    .required(true)
+                    .build()
+                    .unwrap()])
+                .build()
+                .unwrap()
+        }
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_without_tools() {
+        // Start a wiremock server
+        let mock_server = MockServer::start().await;
+
+        // Create a mock response
+        let mock_response = ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "content": [{"type": "text", "text": "mocked response"}]
+        }));
+
+        // Mock the expected endpoint
+        Mock::given(method("POST"))
+            .and(path("/v1/messages")) // Adjust path to match expected endpoint
+            .respond_with(mock_response)
+            .mount(&mock_server)
+            .await;
+
+        let client = async_anthropic::Client::builder()
+            .base_url(mock_server.uri())
+            .build()
+            .unwrap();
+
+        // Build an Anthropic client with the mock server's URL
+        let mut client_builder = Anthropic::builder();
+        client_builder.client(client);
+        let client = client_builder.build().unwrap();
+
+        // Prepare a sample request
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hello".into())])
+            .build()
+            .unwrap();
+
+        // Call the complete method
+        let result = client.complete(&request).await.unwrap();
+
+        // Assert the result
+        assert_eq!(result.message, Some("mocked response".into()));
+        assert!(result.tool_calls.is_none());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_with_tools() {
+        // Start a wiremock server
+        let mock_server = MockServer::start().await;
+
+        // Create a mock response
+        let mock_response = ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "id": "msg_016zKNb88WhhgBQXhSaQf1rs",
+            "content": [
+            {
+                "type": "text",
+                "text": "I'll check the current weather in San Francisco, CA for you."
+            },
+            {
+                "type": "tool_use",
+                "id": "toolu_01E1yxpxXU4hBgCMLzPL1FuR",
+                "input": {
+                "location": "San Francisco, CA"
+                },
+                "name": "get_weather"
+            }
+            ],
+            "model": "claude-3-5-sonnet-20241022",
+            "stop_reason": "tool_use",
+            "stop_sequence": null,
+            "usage": {
+            "input_tokens": 403,
+            "output_tokens": 71
+            }
+        }));
+
+        // Mock the expected endpoint
+        Mock::given(method("POST"))
+            .and(path("/v1/messages")) // Adjust path to match expected endpoint
+            .respond_with(mock_response)
+            .mount(&mock_server)
+            .await;
+
+        let client = async_anthropic::Client::builder()
+            .base_url(mock_server.uri())
+            .build()
+            .unwrap();
+
+        // Build an Anthropic client with the mock server's URL
+        let mut client_builder = Anthropic::builder();
+        client_builder.client(client);
+        let client = client_builder.build().unwrap();
+
+        // Prepare a sample request
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hello".into())])
+            .tools_spec(HashSet::from([FakeTool().tool_spec()]))
+            .build()
+            .unwrap();
+
+        // Call the complete method
+        let result = client.complete(&request).await.unwrap();
+
+        // Assert the result
+        assert_eq!(
+            result.message,
+            Some("I'll check the current weather in San Francisco, CA for you.".into())
+        );
+        assert!(result.tool_calls.is_some());
+
+        let Some(tool_call) = result.tool_calls.and_then(|f| f.first().cloned()) else {
+            panic!("No tool call found")
+        };
+        assert_eq!(tool_call.name(), "get_weather");
+        assert_eq!(
+            tool_call.args(),
+            Some(
+                json!({"location": "San Francisco, CA"})
+                    .to_string()
+                    .as_str()
+            )
+        );
+    }
 }
