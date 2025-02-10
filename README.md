@@ -16,11 +16,10 @@
 - [Usage and concepts](#usage-and-concepts)
   - [Indexing](#indexing)
   - [Querying](#querying)
-- [Roadmap](#roadmap)
-- [Community](#community)
 - [Contributing](#contributing)
+- [Core Team Members](#core-team-members)
 - [License](#license)
-  <!--toc:end-->
+<!--toc:end-->
 
 </details>
 
@@ -291,20 +290,6 @@ Similar to the indexing pipeline each step is governed by simple Traits and clos
 
 <!-- ROADMAP -->
 
-## Roadmap
-
-See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- CONTRIBUTING -->
-
-## Community
-
-If you want to get more involved with Swiftide, have questions or want to chat, you can find us on [discord](https://discord.gg/3jjXYen9UY).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ## Contributing
 
 Swiftide is in a very early stage and we are aware that we lack features for the wider community. Contributions are very welcome. :tada:
@@ -323,6 +308,35 @@ If you just want to contribute (bless you!), see [our issues](https://github.com
 See [CONTRIBUTING](https://github.com/bosun-ai/swiftide/blob/master/CONTRIBUTING.md) for more
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Core Team Members
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/timonv">
+        <img
+          src="https://avatars.githubusercontent.com/u/49373?s=100"
+          width="100px;"
+          alt=""
+        />
+        <br /><sub><b>timonv</b></sub>
+        <br /><sub>open for swiftide consulting</sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/tinco">
+        <img
+          src="https://avatars.githubusercontent.com/u/22532?s=100"
+          width="100px;"
+          alt=""
+        />
+        <br /><sub><b>tinco</b></sub>
+        <br /><br />
+      </a>
+    </td>
+  </tr>
+</table>
 
 <!-- LICENSE -->
 
