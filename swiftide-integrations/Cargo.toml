@@ -30,6 +30,7 @@ futures-util = { workspace = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
+async-anthropic = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
 ] }
@@ -154,6 +155,8 @@ fluvio = ["dep:fluvio"]
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+# Anthropic for prompting and completions
+anthropic = ["dep:async-anthropic"]
 
 
 [lints]
