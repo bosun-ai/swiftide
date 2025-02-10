@@ -6,6 +6,8 @@ pub mod anthropic;
 pub mod aws_bedrock;
 #[cfg(feature = "dashscope")]
 pub mod dashscope;
+#[cfg(feature = "duckdb")]
+pub mod duckdb;
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
 #[cfg(feature = "fluvio")]

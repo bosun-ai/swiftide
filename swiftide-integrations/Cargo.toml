@@ -86,6 +86,7 @@ parquet = { workspace = true, optional = true, features = [
 ] }
 arrow = { workspace = true, optional = true }
 redb = { workspace = true, optional = true }
+duckdb = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -160,6 +161,8 @@ parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 redb = ["dep:redb"]
 # Anthropic for prompting and completions
 anthropic = ["dep:async-anthropic"]
+# Duckdb for indexing and retrieval
+duckdb = ["dep:duckdb"]
 
 
 [lints]
