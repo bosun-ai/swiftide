@@ -84,6 +84,7 @@ parquet = { workspace = true, optional = true, features = [
 ] }
 arrow = { workspace = true, optional = true }
 redb = { workspace = true, optional = true }
+duckdb = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -154,6 +155,8 @@ fluvio = ["dep:fluvio"]
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+# Duckdb for indexing and retrieval
+duckdb = ["dep:duckdb"]
 
 
 [lints]
