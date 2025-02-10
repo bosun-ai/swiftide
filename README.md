@@ -206,7 +206,7 @@ Our goal is to create a fast, extendable platform for building LLM applications 
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> OpenRouter <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                |
+| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> Anthropic <br> OpenRouter <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models |
 | **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
