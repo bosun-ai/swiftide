@@ -27,6 +27,7 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 regex = { workspace = true }
 futures-util = { workspace = true }
+uuid = { workspace = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
@@ -84,6 +85,7 @@ parquet = { workspace = true, optional = true, features = [
 ] }
 arrow = { workspace = true, optional = true }
 redb = { workspace = true, optional = true }
+duckdb = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -93,6 +95,7 @@ swiftide-test-utils = { path = "../swiftide-test-utils", features = [
 temp-dir = { workspace = true }
 pretty_assertions = { workspace = true }
 arrow = { workspace = true, features = ["test_utils"] }
+duckdb = { workspace = true, features = ["bundled"] }
 
 # Used for hacking fluv to play nice
 flv-util = { workspace = true }
@@ -154,6 +157,8 @@ fluvio = ["dep:fluvio"]
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+# Duckdb for indexing and retrieval
+duckdb = ["dep:duckdb"]
 
 
 [lints]
