@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739189381729,
+  "lastUpdate": 1739268253118,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14255,6 +14255,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243001,
             "range": "± 3241",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "50ffa156e28bb085a61a376bab71c135bc09622f",
+          "message": "feat: Anthropic support for prompts and agents (#602)",
+          "timestamp": "2025-02-11T10:55:06+01:00",
+          "tree_id": "976f4d43201dc951374170d5381c11f192eae8e2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/50ffa156e28bb085a61a376bab71c135bc09622f"
+        },
+        "date": 1739268252555,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1341549,
+            "range": "± 987719",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241523,
+            "range": "± 1407",
             "unit": "ns/iter"
           }
         ]
