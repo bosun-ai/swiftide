@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 use anyhow::{Context as _, Result};
 use async_anthropic::types::{
     CreateMessagesRequestBuilder, Message, MessageBuilder, MessageContent, MessageContentList,
     MessageRole, ToolChoice, ToolResultBuilder, ToolUseBuilder,
 };
 use async_trait::async_trait;
-use serde_json::{json, value, Value};
+use serde_json::{json, Value};
 use swiftide_core::{
     chat_completion::{
         errors::ChatCompletionError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
