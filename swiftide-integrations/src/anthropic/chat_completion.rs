@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use anyhow::{Context as _, Result};
 use async_anthropic::types::{
     CreateMessagesRequestBuilder, Message, MessageBuilder, MessageContent, MessageContentList,
     MessageRole, ToolChoice, ToolResultBuilder, ToolUseBuilder,
 };
 use async_trait::async_trait;
-use serde_json::json;
+use serde_json::{json, value, Value};
 use swiftide_core::{
     chat_completion::{
         errors::ChatCompletionError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
@@ -124,7 +126,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
                     let tool_call = ToolUseBuilder::default()
                         .id(tool_call.id())
                         .name(tool_call.name())
-                        .input(tool_call.args())
+                        .input(tool_call.args().and_then(|v| v.parse::<Value>().ok()))
                         .build()?;
 
                     content_list.push(tool_call.into());
@@ -143,35 +145,40 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
 fn tools_to_anthropic(
     spec: &ToolSpec,
 ) -> Result<serde_json::value::Map<String, serde_json::Value>> {
-    let properties = spec
-        .parameters
-        .iter()
-        .map(|param| {
-            let map = json!({
-                param.name: {
-                    "type": "string",
-                    "description": param.description,
-                }
-            })
-            .as_object()
-            .context("Failed to build tool")?
-            .to_owned();
+    let mut properties = serde_json::Map::new();
+    for param in &spec.parameters {
+        properties.insert(
+            param.name.to_string(),
+            json!({
 
-            Ok(map)
-        })
-        .collect::<Result<Vec<_>>>()?;
-    let map = json!({
+                        "type": "string",
+                        "description": param.description,
+            }),
+        );
+    }
+    let mut map = json!({
         "name": spec.name,
         "description": spec.description,
-        "input_schema": {
-            "type": "object",
-            "properties": properties,
-        },
-        "required": spec.parameters.iter().filter(|param| param.required).map(|param| param.name).collect::<Vec<_>>(),
     })
     .as_object_mut()
     .context("Failed to build tool")?
     .to_owned();
+
+    let required = spec
+        .parameters
+        .iter()
+        .filter(|param| param.required)
+        .map(|param| param.name)
+        .collect::<Vec<_>>();
+
+    map.insert(
+        "input_schema".to_string(),
+        json!({
+            "type": "object",
+            "properties": properties,
+            "required": required
+        }),
+    );
 
     Ok(map)
 }
