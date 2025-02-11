@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn test_parsing_on_solidity() {
         let parser = CodeParser::from_language(SupportedLanguages::Solidity);
-        let code = r#"
+        let code = r"
         pragma solidity ^0.8.0;
 
         contract MyContract {
@@ -154,7 +154,7 @@ mod tests {
                 emit MyEvent();
             }
         }
-        "#;
+        ";
         let tree = parser.parse(code).unwrap();
         let result = tree.references_and_definitions().unwrap();
         assert_eq!(result.references, vec!["MyEvent"]);
