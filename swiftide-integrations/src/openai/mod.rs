@@ -71,10 +71,10 @@ impl Options {
     }
 }
 
-impl OpenAI<OpenAIConfig> {
+impl<C: async_openai::config::Config + Default> OpenAI<C> {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
-    pub fn builder() -> OpenAIBuilder<OpenAIConfig> {
-        OpenAIBuilder::<OpenAIConfig>::default()
+    pub fn builder() -> OpenAIBuilder<C> {
+        OpenAIBuilder::<C>::default()
     }
 }
 
