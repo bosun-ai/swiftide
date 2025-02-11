@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.2](https://github.com/bosun-ai/swiftide/compare/v0.18.1...v0.18.2) - 2025-02-11
+
+### New features
+
+- [50ffa15](https://github.com/bosun-ai/swiftide/commit/50ffa156e28bb085a61a376bab71c135bc09622f)  Anthropic support for prompts and agents (#602)
+
+### Bug fixes
+
+- [8cf70e0](https://github.com/bosun-ai/swiftide/commit/8cf70e08787d1376ba20001cc9346767d8bd84ef) *(integrations)*  Ensure anthropic tool call format is consistent with specs
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.18.1...0.18.2
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.18.1](https://github.com/bosun-ai/swiftide/compare/v0.18.0...v0.18.1) - 2025-02-09
 
 ### New features
