@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739268253118,
+  "lastUpdate": 1739274836226,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14309,6 +14309,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241523,
             "range": "± 1407",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "8cf70e08787d1376ba20001cc9346767d8bd84ef",
+          "message": "fix(integrations): Ensure anthropic tool call format is consistent with specs",
+          "timestamp": "2025-02-11T12:43:59+01:00",
+          "tree_id": "d29b7b55d620512d5054a26318f33efcfd120d68",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8cf70e08787d1376ba20001cc9346767d8bd84ef"
+        },
+        "date": 1739274834988,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1364791,
+            "range": "± 1090250",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245134,
+            "range": "± 2080",
             "unit": "ns/iter"
           }
         ]
