@@ -77,6 +77,9 @@ open-router = ["swiftide-integrations/open-router"]
 ## Ollama prompting
 ollama = ["swiftide-integrations/ollama"]
 
+# Anthropic
+anthropic = ["swiftide-integrations/anthropic"]
+
 ## FastEmbed (by qdrant) for fast, local, sparse and dense embeddings
 fastembed = ["swiftide-integrations/fastembed"]
 

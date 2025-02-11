@@ -413,6 +413,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-anthropic"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d5ab06d2a635f46bfbc20de71461e3739448ba4ea52ad6aaad72532e8437f9a"
+dependencies = [
+ "derive_builder",
+ "reqwest",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.11",
+ "tracing",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8639,6 +8654,7 @@ dependencies = [
  "anyhow",
  "arrow",
  "arrow-array",
+ "async-anthropic",
  "async-openai",
  "async-trait",
  "aws-config",
@@ -8690,6 +8706,7 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-solidity",
  "tree-sitter-typescript",
+ "wiremock",
 ]
 
 [[package]]

@@ -85,6 +85,7 @@ tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"
 tree-sitter-go = "0.23"
 tree-sitter-solidity = "1.2.11"
+async-anthropic = "0.2.1"
 
 
 # Testing

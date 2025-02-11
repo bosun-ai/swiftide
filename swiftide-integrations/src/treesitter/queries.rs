@@ -361,7 +361,7 @@ pub mod go {
 }
 
 pub mod solidity {
-    pub const DEFS: &str = r#"
+    pub const DEFS: &str = r"
     (function_definition
     name: (identifier) @name)
 
@@ -381,9 +381,9 @@ pub mod solidity {
     (struct_declaration name: (identifier) @name)
     (enum_declaration name: (identifier) @name)
     (event_definition name: (identifier) @name)
-    "#;
+    ";
 
-    pub const REFS: &str = r#"
+    pub const REFS: &str = r"
     (call_expression (expression (identifier)) @name )
 
     (call_expression
@@ -399,5 +399,5 @@ pub mod solidity {
 
     (import_directive
     import_name: (_) @name )
-    "#;
+    ";
 }
