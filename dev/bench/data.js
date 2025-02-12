@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739281726417,
+  "lastUpdate": 1739351542623,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14471,6 +14471,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244623,
             "range": "± 2413",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "37a1a2c7bfd152db56ed929e0ea1ab99080e640d",
+          "message": "feat(integrations): Add system prompts as `system` instead of message in Anthropic requests",
+          "timestamp": "2025-02-12T10:03:10+01:00",
+          "tree_id": "6301009bba3c17a03f68553b6364f3f7c657ffe1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/37a1a2c7bfd152db56ed929e0ea1ab99080e640d"
+        },
+        "date": 1739351542037,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1358141,
+            "range": "± 1014137",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243653,
+            "range": "± 1783",
             "unit": "ns/iter"
           }
         ]
