@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739375246430,
+  "lastUpdate": 1739385245181,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14633,6 +14633,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244132,
             "range": "± 1379",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2388f187966d996ede4ff42c71521238b63d129c",
+          "message": "fix(agents): Use name/arg hash on tool retries (#612)",
+          "timestamp": "2025-02-12T19:24:53+01:00",
+          "tree_id": "c6a8f9bed9682b11ef15e5157cb5213d3fc39364",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2388f187966d996ede4ff42c71521238b63d129c"
+        },
+        "date": 1739385244467,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1341189,
+            "range": "± 948383",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242242,
+            "range": "± 1218",
             "unit": "ns/iter"
           }
         ]
