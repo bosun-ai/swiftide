@@ -46,6 +46,10 @@ pub struct ToolCall {
     name: String,
     #[builder(default)]
     args: Option<String>,
+
+    /// How often this tool call has been retried
+    #[builder(default)]
+    pub retries: usize,
 }
 
 impl std::fmt::Display for ToolCall {

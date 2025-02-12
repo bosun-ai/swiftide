@@ -84,6 +84,21 @@ macro_rules! tool_output {
 }
 
 #[macro_export]
+macro_rules! tool_failed {
+    ($tool_name:expr, $message:expr) => {{
+        ChatMessage::ToolOutput(
+            ToolCall::builder()
+                .name($tool_name)
+                .id("1")
+                .retries(1 as usize)
+                .build()
+                .unwrap(),
+            ToolOutput::Fail($message.to_string()),
+        )
+    }};
+}
+
+#[macro_export]
 macro_rules! chat_response {
     ($message:expr; tool_calls = [$($tool_name:expr),*]) => {{
 
@@ -99,7 +114,7 @@ macro_rules! chat_response {
     }};
 }
 
-type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
+type Expectations = Arc<Mutex<Vec<(Result<ToolOutput, ToolError>, Option<&'static str>)>>>;
 
 #[derive(Debug, Clone)]
 pub struct MockTool {
@@ -117,7 +132,19 @@ impl MockTool {
             name,
         }
     }
-    pub fn expect_invoke(&self, expected_result: ToolOutput, expected_args: Option<&'static str>) {
+    pub fn expect_invoke_ok(
+        &self,
+        expected_result: ToolOutput,
+        expected_args: Option<&'static str>,
+    ) {
+        self.expect_invoke(Ok(expected_result), expected_args);
+    }
+
+    pub fn expect_invoke(
+        &self,
+        expected_result: Result<ToolOutput, ToolError>,
+        expected_args: Option<&'static str>,
+    ) {
         self.expectations
             .lock()
             .unwrap()
@@ -146,7 +173,7 @@ impl Tool for MockTool {
 
         assert_eq!(expectation.1, raw_args);
 
-        Ok(expectation.0)
+        expectation.0
     }
 
     fn name(&self) -> &'static str {
