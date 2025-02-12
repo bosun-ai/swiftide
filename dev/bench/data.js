@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739358506077,
+  "lastUpdate": 1739375246430,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14579,6 +14579,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244692,
             "range": "± 1565",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "14f47780b4294be3a9fa3670aa18a952ad7e9d6e",
+          "message": "feat(integrations): Parallel tool calling in OpenAI is now configurable (#611)\n\nAdds support reasoning models in agents and for chat completions.",
+          "timestamp": "2025-02-12T16:37:45+01:00",
+          "tree_id": "79df3919c00ea15ff6f6e1fa3800088d6de083e4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/14f47780b4294be3a9fa3670aa18a952ad7e9d6e"
+        },
+        "date": 1739375245750,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1363079,
+            "range": "± 1257735",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244132,
+            "range": "± 1379",
             "unit": "ns/iter"
           }
         ]
