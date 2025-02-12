@@ -90,7 +90,6 @@ macro_rules! tool_failed {
             ToolCall::builder()
                 .name($tool_name)
                 .id("1")
-                .retries(1 as usize)
                 .build()
                 .unwrap(),
             ToolOutput::Fail($message.to_string()),

@@ -46,10 +46,14 @@ pub struct ToolCall {
     name: String,
     #[builder(default)]
     args: Option<String>,
+}
 
-    /// How often this tool call has been retried
-    #[builder(default)]
-    pub retries: usize,
+/// Hash is used for finding tool calls that have been retried by agents
+impl std::hash::Hash for &ToolCall {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.args.hash(state);
+    }
 }
 
 impl std::fmt::Display for ToolCall {

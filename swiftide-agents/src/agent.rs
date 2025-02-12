@@ -9,7 +9,11 @@ use crate::{
     system_prompt::SystemPrompt,
     tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::{DefaultHasher, Hash as _, Hasher as _},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -89,9 +93,16 @@ pub struct Agent {
     /// worth while. If the limit is not reached, the agent will send the formatted error back to
     /// the LLM.
     ///
-    /// The limit is on each individual tool call.
+    /// The limit is hashed based on the tool call name and arguments, so the limit is per tool call.
+    ///
+    /// This limit is _not_ reset when the agent is stopped.
     #[builder(default = 3)]
     pub(crate) tool_retry_limit: usize,
+
+    /// Internally tracks the amount of times a tool has been retried. The key is a hash based on
+    /// the name and args of the tool.
+    #[builder(private, default)]
+    pub(crate) tool_retries_counter: HashMap<u64, usize>,
 }
 
 impl std::fmt::Debug for Agent {
@@ -455,7 +466,7 @@ impl Agent {
             handles.push((handle, tool_call));
         }
 
-        for (handle, mut tool_call) in handles {
+        for (handle, tool_call) in handles {
             let mut output = handle.await?;
 
             // Invoking hooks feels too verbose and repetitive
@@ -472,26 +483,26 @@ impl Agent {
                 }
             }
 
-            if let Err(error) = &output {
-                if tool_call.retries < self.tool_retry_limit {
-                    tool_call.retries += 1;
-                    tracing::warn!(
-                        error = error.to_string(),
-                        "Tool call failed, retrying {}/{}",
-                        tool_call.retries,
-                        self.tool_retry_limit
+            if let Err(error) = output {
+                if self.tool_calls_over_limit(&tool_call) {
+                    tracing::error!(
+                        "Tool call failed, retry limit reached, stopping agent: {err}",
+                        err = error
                     );
-                    self.add_message(ChatMessage::ToolOutput(
-                        tool_call,
-                        ToolOutput::Fail(error.to_string()),
-                    ))
-                    .await?;
-                    continue;
+                    self.stop();
+                    return Err(error.into());
                 }
-                tracing::error!(
-                    "Tool call failed, retry limit reached, stopping agent: {err}",
-                    err = error
+                tracing::warn!(
+                    error = error.to_string(),
+                    tool_call = ?tool_call,
+                    "Tool call failed, retrying",
                 );
+                self.add_message(ChatMessage::ToolOutput(
+                    tool_call,
+                    ToolOutput::Fail(error.to_string()),
+                ))
+                .await?;
+                continue;
             }
 
             let output = output?;
@@ -522,6 +533,21 @@ impl Agent {
         if let ToolOutput::Stop = output {
             tracing::warn!("Stop tool called, stopping agent");
             self.stop();
+        }
+    }
+
+    fn tool_calls_over_limit(&mut self, tool_call: &ToolCall) -> bool {
+        let mut s = DefaultHasher::new();
+        tool_call.hash(&mut s);
+        let hash = s.finish();
+
+        if let Some(retries) = self.tool_retries_counter.get_mut(&hash) {
+            let val = *retries >= self.tool_retry_limit;
+            *retries += 1;
+            val
+        } else {
+            self.tool_retries_counter.insert(hash, 1);
+            false
         }
     }
 
@@ -965,7 +991,14 @@ mod tests {
         let mock_llm = MockChatCompletion::new();
         let mock_tool = MockTool::new("retry_tool");
 
-        // Configure mock tool to fail twice and succeed on third attempt
+        // Configure mock tool to fail twice. First time is fed back to the LLM, second time is an
+        // error
+        mock_tool.expect_invoke(
+            Err(ToolError::WrongArguments(serde_json::Error::custom(
+                "missing `query`",
+            ))),
+            None,
+        );
         mock_tool.expect_invoke(
             Err(ToolError::WrongArguments(serde_json::Error::custom(
                 "missing `query`",
@@ -973,32 +1006,28 @@ mod tests {
             None,
         );
 
-        // Expected response for first two failed calls
-        let retry_response = chat_response! {
-            "Attempted Retry";
-            tool_calls = ["retry_tool"]
-        };
-
-        // Final response to make the agent stop
-        let stop_response = chat_response! {
-            "Finished execution";
-            tool_calls = ["stop"]
-        };
-
         let chat_request = chat_request! {
             user!(prompt);
             tools = [mock_tool.clone()]
         };
-        mock_llm.expect_complete(chat_request.clone(), Ok(retry_response.clone()));
+        let retry_response = chat_response! {
+            "First failing attempt";
+            tool_calls = ["retry_tool"]
+        };
+        mock_llm.expect_complete(chat_request.clone(), Ok(retry_response));
 
         let chat_request = chat_request! {
             user!(prompt),
-            assistant!("Attempted Retry", ["retry_tool"]),
+            assistant!("First failing attempt", ["retry_tool"]),
             tool_failed!("retry_tool", "arguments for tool failed to parse: missing `query`");
 
             tools = [mock_tool.clone()]
         };
-        mock_llm.expect_complete(chat_request.clone(), Ok(stop_response));
+        let will_fail_response = chat_response! {
+            "Finished execution";
+            tool_calls = ["retry_tool"]
+        };
+        mock_llm.expect_complete(chat_request.clone(), Ok(will_fail_response));
 
         let mut agent = Agent::builder()
             .tools([mock_tool])
@@ -1009,9 +1038,10 @@ mod tests {
             .unwrap();
 
         // Run the agent
-        agent.query(prompt).await.unwrap();
+        let result = agent.query(prompt).await;
 
-        // Assert that the agent is stopped after the tool succeeds
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing `query`"));
         assert!(agent.is_stopped());
     }
 }
