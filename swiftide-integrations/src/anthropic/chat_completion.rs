@@ -23,9 +23,14 @@ impl ChatCompletion for Anthropic {
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, ChatCompletionError> {
         let model = &self.default_options.prompt_model;
+        let mut messages = request.messages().to_vec();
 
-        let messages = request
-            .messages()
+        let maybe_system = messages
+            .iter()
+            .position(ChatMessage::is_system)
+            .map(|idx| messages.remove(idx));
+
+        let messages = messages
             .iter()
             .map(message_to_antropic)
             .collect::<Result<Vec<_>>>()?;
@@ -34,6 +39,10 @@ impl ChatCompletion for Anthropic {
             .model(model)
             .messages(messages)
             .to_owned();
+
+        if let Some(ChatMessage::System(system)) = maybe_system {
+            anthropic_request.system(system);
+        }
 
         if !request.tools_spec.is_empty() {
             anthropic_request
@@ -191,7 +200,7 @@ mod tests {
         AgentContext, Tool,
     };
     use wiremock::{
-        matchers::{method, path},
+        matchers::{body_partial_json, method, path},
         Mock, MockServer, ResponseTemplate,
     };
 
@@ -348,5 +357,52 @@ mod tests {
                     .as_str()
             )
         );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_with_system_prompt() {
+        // Start a wiremock server
+        let mock_server = MockServer::start().await;
+
+        // Create a mock response
+        let mock_response = ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "content": [{"type": "text", "text": "Response with system prompt"}]
+        }));
+
+        // Mock the expected endpoint
+        Mock::given(method("POST"))
+            .and(path("/v1/messages")) // Adjust path to match expected endpoint
+            .and(body_partial_json(json!({
+                "system": "System message",
+                "messages":[{"role":"user","content":[{"type":"text","text":"Hello"}]}]
+            })))
+            .respond_with(mock_response)
+            .mount(&mock_server)
+            .await;
+
+        let client = async_anthropic::Client::builder()
+            .base_url(mock_server.uri())
+            .build()
+            .unwrap();
+
+        // Build an Anthropic client with the mock server's URL
+        let mut client_builder = Anthropic::builder();
+        client_builder.client(client);
+        let client = client_builder.build().unwrap();
+
+        // Prepare a sample request with a system message
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![
+                ChatMessage::System("System message".into()),
+                ChatMessage::User("Hello".into()),
+            ])
+            .build()
+            .unwrap();
+
+        // Call the complete method
+        let result = client.complete(&request).await.unwrap();
+
+        // Assert the result
+        assert_eq!(result.message, Some("Response with system prompt".into()));
     }
 }
