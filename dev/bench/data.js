@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739351542623,
+  "lastUpdate": 1739358506077,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14525,6 +14525,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243653,
             "range": "± 1783",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fa5112c9224fdf5984d26db669f04dedc8ebb561",
+          "message": "feat(agents): By default retry failed tools with LLM up to 3 times (#609)\n\nSpecifically meant for LLMs sending invalid JSON, these tool calls are\nnow retried by feeding back the error into the LLM up to a limit\n(default 3).",
+          "timestamp": "2025-02-12T11:58:37+01:00",
+          "tree_id": "223894391619cb31eece465fd744201dc1100609",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fa5112c9224fdf5984d26db669f04dedc8ebb561"
+        },
+        "date": 1739358504708,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1351175,
+            "range": "± 1136860",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244692,
+            "range": "± 1565",
             "unit": "ns/iter"
           }
         ]
