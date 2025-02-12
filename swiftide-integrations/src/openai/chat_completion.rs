@@ -52,7 +52,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                         .collect::<Result<Vec<_>>>()?,
                 )
                 .tool_choice("auto")
-                .parallel_tool_calls(true);
+                .parallel_tool_calls(self.default_options.parallel_tool_calls);
         }
 
         let request = openai_request

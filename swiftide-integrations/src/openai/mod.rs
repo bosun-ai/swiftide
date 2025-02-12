@@ -53,7 +53,7 @@ pub struct OpenAI<C: async_openai::config::Config + Default = async_openai::conf
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
 /// It includes optional fields for specifying the embedding and prompt models.
-#[derive(Debug, Default, Clone, Builder)]
+#[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Options {
     /// The default embedding model to use, if specified.
@@ -62,6 +62,22 @@ pub struct Options {
     /// The default prompt model to use, if specified.
     #[builder(default)]
     pub prompt_model: Option<String>,
+
+    #[builder(default = true)]
+    /// Option to enable or disable parallel tool calls for completions.
+    ///
+    /// At this moment, o1 and o3-mini do not support it.
+    pub parallel_tool_calls: bool,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            embed_model: None,
+            prompt_model: None,
+            parallel_tool_calls: true,
+        }
+    }
 }
 
 impl Options {
@@ -104,6 +120,23 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> 
         } else {
             self.default_options = Some(Options {
                 embed_model: Some(model.into()),
+                ..Default::default()
+            });
+        }
+        self
+    }
+
+    /// Enable or disable parallel tool calls for completions.
+    ///
+    /// Note that currently reasoning models do not support parallel tool calls
+    ///
+    /// Defaults to `true`
+    pub fn parallel_tool_calls(&mut self, parallel_tool_calls: bool) -> &mut Self {
+        if let Some(options) = self.default_options.as_mut() {
+            options.parallel_tool_calls = parallel_tool_calls;
+        } else {
+            self.default_options = Some(Options {
+                parallel_tool_calls,
                 ..Default::default()
             });
         }
