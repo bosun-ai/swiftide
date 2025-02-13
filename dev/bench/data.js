@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739465590472,
+  "lastUpdate": 1739465615361,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14903,6 +14903,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245435,
             "range": "± 3238",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6dd79cc0c40fa9d017b155cd6c26dfa8311d8d74",
+          "message": "chore(deps): Update text-splitter (#617)",
+          "timestamp": "2025-02-13T17:44:21+01:00",
+          "tree_id": "12157f9803fbfb9b42935711c276e80d9b495307",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6dd79cc0c40fa9d017b155cd6c26dfa8311d8d74"
+        },
+        "date": 1739465614597,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1348398,
+            "range": "± 965683",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243915,
+            "range": "± 2430",
             "unit": "ns/iter"
           }
         ]
