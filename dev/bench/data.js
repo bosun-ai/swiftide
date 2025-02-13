@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739454787668,
+  "lastUpdate": 1739461647041,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14741,6 +14741,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 247173,
             "range": "± 6758",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "da5566473e3f8874fce427ceb48a15d002737d07",
+          "message": "fix(integrations): Scraper should stop when finished (#614)\n\nFixes #610",
+          "timestamp": "2025-02-13T16:37:47+01:00",
+          "tree_id": "935c58f64f66abd74b9a9f0f81ba8e1d8618c600",
+          "url": "https://github.com/bosun-ai/swiftide/commit/da5566473e3f8874fce427ceb48a15d002737d07"
+        },
+        "date": 1739461645754,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1378573,
+            "range": "± 1167296",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242828,
+            "range": "± 3656",
             "unit": "ns/iter"
           }
         ]
