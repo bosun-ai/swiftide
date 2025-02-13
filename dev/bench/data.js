@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739385245181,
+  "lastUpdate": 1739454787668,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14687,6 +14687,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242242,
             "range": "± 1218",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "ab27c75b8f4a971cb61e88b26d94231afd35c871",
+          "message": "fix(agents): Add back anyhow catch all for failed tools",
+          "timestamp": "2025-02-13T14:43:32+01:00",
+          "tree_id": "6122a16db8ed84dcc98655bd712899c8c4cd6193",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ab27c75b8f4a971cb61e88b26d94231afd35c871"
+        },
+        "date": 1739454787100,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1360955,
+            "range": "± 988380",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 247173,
+            "range": "± 6758",
             "unit": "ns/iter"
           }
         ]
