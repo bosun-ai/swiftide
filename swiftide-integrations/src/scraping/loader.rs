@@ -42,13 +42,15 @@ impl Loader for ScrapingLoader {
     fn into_stream(self) -> IndexingStream {
         let (tx, rx) = std::sync::mpsc::channel();
         let mut spider_rx = tokio::task::block_in_place(|| {
-            Handle::current().block_on(async {
+            let spider_rx = Handle::current().block_on(async {
                 self.spider_website
                     .write()
                     .await
                     .subscribe(0)
                     .expect("Failed to subscribe to spider")
-            })
+            });
+            tracing::info!("Subscribed to spider");
+            spider_rx
         });
 
         let _recv_thread = tokio::spawn(async move {
@@ -62,15 +64,20 @@ impl Loader for ScrapingLoader {
                     .path(res.get_url())
                     .build();
 
-                if tx.send(node).is_err() {
+                tracing::debug!(?node, "Received node from spider");
+
+                if let Err(error) = tx.send(node) {
+                    tracing::error!(?error, "Failed to send node to stream");
                     break;
                 }
             }
         });
 
         let _scrape_thread = tokio::spawn(async move {
+            tracing::info!("Starting scrape loop");
             let mut spider_website = self.spider_website.write().await;
             spider_website.scrape().await;
+            tracing::info!("Scrape loop finished");
         });
 
         // NOTE: Handles should stay alive because of rx, but feels a bit fishy
@@ -80,5 +87,45 @@ impl Loader for ScrapingLoader {
 
     fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
         self.into_stream()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::scraping::loader::ScrapingLoader;
+    use futures_util::StreamExt as _;
+    use swiftide_core::indexing::Loader;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[test_log::test(tokio::test(flavor = "multi_thread"))]
+    async fn test_scraping_loader_with_wiremock() {
+        // Set up the wiremock server to simulate the remote web server
+        let mock_server = MockServer::start().await;
+
+        // Mocked response for the page we will scrape
+        let body = "<html><body><h1>Test Page</h1></body></html>";
+        Mock::given(method("GET"))
+            .and(path("/"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(body))
+            .mount(&mock_server)
+            .await;
+
+        // Create an instance of ScrapingLoader using the mock server's URL
+        let loader = ScrapingLoader::from_url(mock_server.uri());
+
+        // Execute the into_stream method
+        let mut stream = loader.into_stream();
+
+        // Process the stream to check if we get the expected result
+        while let Some(node) = stream.next().await {
+            tracing::info!(?node, "Received node from stream");
+            // Assert the scraped content against expected content
+            assert_eq!(node.unwrap().chunk, body);
+        }
+
+        tracing::info!("Stream finished");
+
+        drop(stream);
     }
 }
