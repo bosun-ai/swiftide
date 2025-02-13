@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.0](https://github.com/bosun-ai/swiftide/compare/v0.18.2...v0.19.0) - 2025-02-13
+
+### New features
+
+- [fa5112c](https://github.com/bosun-ai/swiftide/commit/fa5112c9224fdf5984d26db669f04dedc8ebb561) *(agents)*  By default retry failed tools with LLM up to 3 times (#609)
+
+````text
+Specifically meant for LLMs sending invalid JSON, these tool calls are
+  now retried by feeding back the error into the LLM up to a limit
+  (default 3).
+````
+
+- [14f4778](https://github.com/bosun-ai/swiftide/commit/14f47780b4294be3a9fa3670aa18a952ad7e9d6e) *(integrations)*  Parallel tool calling in OpenAI is now configurable (#611)
+
+````text
+Adds support reasoning models in agents and for chat completions.
+````
+
+- [37a1a2c](https://github.com/bosun-ai/swiftide/commit/37a1a2c7bfd152db56ed929e0ea1ab99080e640d) *(integrations)*  Add system prompts as `system` instead of message in Anthropic requests
+
+### Bug fixes
+
+- [ab27c75](https://github.com/bosun-ai/swiftide/commit/ab27c75b8f4a971cb61e88b26d94231afd35c871) *(agents)*  Add back anyhow catch all for failed tools
+
+- [2388f18](https://github.com/bosun-ai/swiftide/commit/2388f187966d996ede4ff42c71521238b63d129c) *(agents)*  Use name/arg hash on tool retries (#612)
+
+- [da55664](https://github.com/bosun-ai/swiftide/commit/da5566473e3f8874fce427ceb48a15d002737d07) *(integrations)*  Scraper should stop when finished (#614)
+
+### Miscellaneous
+
+- [990a8ea](https://github.com/bosun-ai/swiftide/commit/990a8eaeffdbd447bb05a0b01aa65a39a7c9cacf) *(deps)*  Update tree-sitter (#616)
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.18.2...0.19.0
+
+
+
 ## [0.18.2](https://github.com/bosun-ai/swiftide/compare/v0.18.1...v0.18.2) - 2025-02-11
 
 ### New features
