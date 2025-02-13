@@ -3,7 +3,7 @@
 //! Extracts typed semantics from code.
 #![allow(dead_code)]
 use itertools::Itertools;
-use tree_sitter::{Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _, Tree};
 
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
@@ -90,7 +90,7 @@ impl CodeTree<'_> {
 
         cursor
             .matches(query, self.ts_tree.root_node(), self.code.as_bytes())
-            .map(|m| {
+            .map_deref(|m| {
                 m.captures
                     .iter()
                     .map(|c| {
