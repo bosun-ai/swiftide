@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739464153468,
+  "lastUpdate": 1739465590472,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -14849,6 +14849,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242800,
             "range": "± 2344",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "990a8eaeffdbd447bb05a0b01aa65a39a7c9cacf",
+          "message": "chore(deps): Update tree-sitter (#616)",
+          "timestamp": "2025-02-13T17:43:54+01:00",
+          "tree_id": "e400ee4adbfd0bcf67e0837dd859132d8a13e263",
+          "url": "https://github.com/bosun-ai/swiftide/commit/990a8eaeffdbd447bb05a0b01aa65a39a7c9cacf"
+        },
+        "date": 1739465589708,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1351978,
+            "range": "± 950298",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245435,
+            "range": "± 3238",
             "unit": "ns/iter"
           }
         ]
