@@ -1853,6 +1853,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
+name = "core_maths"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77745e017f5edba1a9c1d854f6f3a52dac8a12dd5af5d2f54aecf61e43d80d30"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4328,6 +4337,28 @@ dependencies = [
  "quote",
  "syn 2.0.98",
 ]
+
+[[package]]
+name = "icu_segmenter"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a717725612346ffc2d7b42c94b820db6908048f39434504cb130e8b46256b0de"
+dependencies = [
+ "core_maths",
+ "displaydoc",
+ "icu_collections",
+ "icu_locid",
+ "icu_provider",
+ "icu_segmenter_data",
+ "utf8_iter",
+ "zerovec",
+]
+
+[[package]]
+name = "icu_segmenter_data"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f739ee737260d955e330bc83fdeaaf1631f7fb7ed218761d3c04bb13bb7d79df"
 
 [[package]]
 name = "ident_case"
@@ -8323,6 +8354,9 @@ name = "strum"
 version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce1475c515a4f03a8a7129bb5228b81a781a86cb0b3fbbc19e1c556d491a401f"
+dependencies = [
+ "strum_macros 0.27.0",
+]
 
 [[package]]
 name = "strum_macros"
@@ -9021,20 +9055,20 @@ dependencies = [
 
 [[package]]
 name = "text-splitter"
-version = "0.17.1"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6de8ec9ff8e9192f77add3b37ec040808a8bd6567c0616972b2a8568d7269c0d"
+checksum = "0cecf98dba14216de9fa678d921153d2e4e4b7f603dcffcf702099a09eca3108"
 dependencies = [
  "ahash",
  "auto_enums",
  "either",
- "itertools 0.13.0",
- "once_cell",
+ "icu_provider",
+ "icu_segmenter",
+ "itertools 0.14.0",
  "pulldown-cmark",
  "regex",
- "strum 0.26.3",
- "thiserror 1.0.69",
- "unicode-segmentation",
+ "strum 0.27.0",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
