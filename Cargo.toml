@@ -32,8 +32,8 @@ pin-project = { version = "1.1" }
 itertools = { version = "0.14" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-strum = { version = "0.26" }
-strum_macros = { version = "0.26" }
+strum = { version = "0.27" }
+strum_macros = { version = "0.27" }
 lazy_static = { version = "1.5.0" }
 chrono = { version = "0.4" }
 indoc = { version = "2.0" }
@@ -48,8 +48,8 @@ async-openai = { version = "0.27.1" }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
 ] }
-fluvio = { version = "0.24", default-features = false }
-lancedb = { version = "0.15", default-features = false }
+fluvio = { version = "0.25", default-features = false }
+lancedb = { version = "0.16", default-features = false }
 arrow-array = { version = "53.3", default-features = false }
 arrow = { version = "53.3", default-features = false }
 parquet = { version = "53.3", default-features = false, features = ["async"] }
