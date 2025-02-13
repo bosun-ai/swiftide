@@ -56,10 +56,10 @@ impl Loader for ScrapingLoader {
                     .path(res.get_url())
                     .build();
 
-                tracing::debug!(?node, "Received node from spider");
+                tracing::debug!(?node, "[Spider] Received node from spider");
 
                 if let Err(error) = tx.send(node) {
-                    tracing::error!(?error, "Failed to send node to stream");
+                    tracing::error!(?error, "[Spider] Failed to send node to stream");
                     break;
                 }
             }
@@ -68,9 +68,10 @@ impl Loader for ScrapingLoader {
         let mut spider_website = self.spider_website;
 
         let _scrape_thread = tokio::spawn(async move {
-            tracing::info!("Starting scrape loop");
+            tracing::info!("[Spider] Starting scrape loop");
             spider_website.scrape().await;
-            tracing::info!("Scrape loop finished");
+            spider_website.unsubscribe();
+            tracing::info!("[Spider] Scrape loop finished");
         });
 
         // NOTE: Handles should stay alive because of rx, but feels a bit fishy
