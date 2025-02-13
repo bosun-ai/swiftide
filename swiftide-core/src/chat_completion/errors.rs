@@ -9,12 +9,15 @@ pub enum ToolError {
     WrongArguments(#[from] serde_json::Error),
 
     /// Tool requires arguments but none were provided
-    #[error("arguments missing for tool: {0:#}")]
+    #[error("arguments missing for tool {0:#}")]
     MissingArguments(String),
 
     /// Tool execution failed
     #[error("tool execution failed: {0:#}")]
     ExecutionFailed(#[from] CommandError),
+
+    #[error(transparent)]
+    Unknown(#[from] anyhow::Error),
 }
 
 #[derive(Error, Debug)]
