@@ -16,7 +16,7 @@ use swiftide_core::{
 /// Under the hood uses the `spider` crate to scrape the website.
 /// For more configuration options see their documentation.
 pub struct ScrapingLoader {
-    spider_website: Arc<RwLock<Website>>,
+    spider_website: Website,
 }
 
 impl ScrapingLoader {
@@ -27,9 +27,7 @@ impl ScrapingLoader {
     // Constructs a scrapingloader from a `spider::Website` configuration
     #[allow(dead_code)]
     pub fn from_spider(spider_website: Website) -> Self {
-        Self {
-            spider_website: Arc::new(RwLock::new(spider_website)),
-        }
+        Self { spider_website }
     }
 
     /// Constructs a scrapingloader from a given url
@@ -39,19 +37,13 @@ impl ScrapingLoader {
 }
 
 impl Loader for ScrapingLoader {
-    fn into_stream(self) -> IndexingStream {
+    fn into_stream(mut self) -> IndexingStream {
         let (tx, rx) = std::sync::mpsc::channel();
-        let mut spider_rx = tokio::task::block_in_place(|| {
-            let spider_rx = Handle::current().block_on(async {
-                self.spider_website
-                    .write()
-                    .await
-                    .subscribe(0)
-                    .expect("Failed to subscribe to spider")
-            });
-            tracing::info!("Subscribed to spider");
-            spider_rx
-        });
+        let mut spider_rx = self
+            .spider_website
+            .subscribe(0)
+            .expect("Failed to subscribe to spider");
+        tracing::info!("Subscribed to spider");
 
         let _recv_thread = tokio::spawn(async move {
             while let Ok(res) = spider_rx.recv().await {
@@ -73,9 +65,10 @@ impl Loader for ScrapingLoader {
             }
         });
 
+        let mut spider_website = self.spider_website;
+
         let _scrape_thread = tokio::spawn(async move {
             tracing::info!("Starting scrape loop");
-            let mut spider_website = self.spider_website.write().await;
             spider_website.scrape().await;
             tracing::info!("Scrape loop finished");
         });
