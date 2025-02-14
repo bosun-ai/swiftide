@@ -66,9 +66,7 @@ impl Loader for ScrapingLoader {
 
         let _scrape_thread = tokio::spawn(async move {
             tracing::info!("[Spider] Starting scrape loop");
-            // TODO: It would be much nicer if this used `scrape` instead, as it is supposedly
-            // more concurrent
-            spider_website.crawl().await;
+            spider_website.scrape().await;
             tracing::info!("[Spider] Scrape loop finished");
         });
 
