@@ -115,8 +115,9 @@ async fn main() -> Result<()> {
                 Ok(())
             })
         })
+        .limit(5)
         .build()?
-        .query("In what file can I find an example of a swiftide agent?")
+        .query("In what file can I find an example of a swiftide agent? When you are done guess a number and stop")
         .await?;
 
     Ok(())
