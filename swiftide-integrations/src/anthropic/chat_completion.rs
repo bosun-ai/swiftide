@@ -405,4 +405,38 @@ mod tests {
         // Assert the result
         assert_eq!(result.message, Some("Response with system prompt".into()));
     }
+
+    #[test]
+    fn test_tools_to_anthropic() {
+        let tool_spec = ToolSpec::builder()
+            .description("Gets the weather")
+            .name("get_weather")
+            .parameters(vec![ParamSpec::builder()
+                .description("Location")
+                .name("location")
+                .required(true)
+                .build()
+                .unwrap()])
+            .build()
+            .unwrap();
+
+        let result = tools_to_anthropic(&tool_spec).unwrap();
+
+        let expected = json!({
+            "name": "get_weather",
+            "description": "Gets the weather",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "Location"
+                    }
+                },
+                "required": ["location"]
+            }
+        });
+
+        assert_eq!(result, expected.as_object().unwrap().to_owned());
+    }
 }
