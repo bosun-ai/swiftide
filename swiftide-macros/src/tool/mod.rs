@@ -3,10 +3,8 @@
 use convert_case::{Case, Casing as _};
 use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens, TokenStreamExt as _};
-use serde::ser::SerializeMap as _;
-use swiftide_core::chat_completion;
-use syn::{parse_quote, spanned::Spanned, DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
+use quote::quote;
+use syn::{DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
 
 mod args;
 mod tool_spec;

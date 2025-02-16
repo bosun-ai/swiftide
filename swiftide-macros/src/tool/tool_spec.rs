@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{quote, TokenStreamExt as _};
+use quote::quote;
 
 use crate::tool::ParamType;
 
@@ -52,38 +52,7 @@ fn param_type_to_token_stream(ty: ParamType) -> TokenStream {
         ParamType::Array => "Array",
     };
 
-    let ident = proc_macro2::Ident::new(&format!("{ty}"), proc_macro2::Span::call_site());
+    let ident = proc_macro2::Ident::new(ty, proc_macro2::Span::call_site());
 
     quote! { ::swiftide::chat_completion::ParamType::#ident }
 }
-
-// fn classify_type_path(type_path: &syn::TypePath) -> &'static str {
-//     // The last segment should hold the actual type name, e.g. "String" or "Vec".
-//     // (Ignore multi-segment paths like `std::collections::HashMap` by just checking
-//     // the final segment.)
-//     let segment = if let Some(seg) = type_path.path.segments.last() {
-//         seg
-//     } else {
-//         return "String";
-//     };
-//
-//     let ident_str = segment.ident.to_string();
-//
-//     // If it’s an actual generic like Vec<T>, parse out the identifier and check it.
-//     match ident_str.as_str() {
-//         // Known string type:
-//         "String" => "String",
-//
-//         // Common numeric primitives:
-//         "u8" | "u16" | "u32" | "u64" | "usize" | "i8" | "i16" | "i32" | "i64" | "isize" | "f32"
-//         | "f64" => "Number",
-//
-//         // A generic known container: check if it’s `Vec<...>`
-//         "Vec" => "Array",
-//
-//         // Could handle more explicitly, e.g. "HashMap" → "Object" or something else
-//
-//         // Fallback for any other type:
-//         _ => "String",
-//     }
-// }

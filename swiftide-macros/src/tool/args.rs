@@ -2,8 +2,6 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens as _};
 use syn::{parse::Result, Error, FnArg, Ident, ItemFn, PatType};
 
-use super::{ParamType, ToolArgs};
-
 pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {
     let struct_name_str = input
         .sig
