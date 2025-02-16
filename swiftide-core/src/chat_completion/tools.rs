@@ -107,7 +107,7 @@ impl ToolSpec {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::IntoStaticStr)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr)]
 #[strum(serialize_all = "camelCase")]
 pub enum ParamType {
     #[default]
@@ -128,6 +128,7 @@ pub struct ParamSpec {
     /// Description of the parameter
     pub description: &'static str,
     /// Json spec type of the parameter
+    #[builder(default)]
     pub ty: ParamType,
     /// Whether the parameter is required
     ///

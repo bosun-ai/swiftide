@@ -158,7 +158,7 @@ fn tools_to_anthropic(
             param.name.to_string(),
             json!({
 
-                        "type": "string",
+                        "type": param.ty.as_ref(),
                         "description": param.description,
             }),
         );

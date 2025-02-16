@@ -115,7 +115,7 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
         properties.insert(
             param.name.to_string(),
             json!({
-                "type": "string",
+                "type": param.ty.as_ref(),
                 "description": param.description,
             }),
         );
