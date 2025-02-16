@@ -29,7 +29,7 @@ fn as_owned_ty(ty: &syn::Type) -> TokenStream {
                 return quote!(String);
             }
 
-            // if slice return vec with recurse on sub type
+            // Does this happen?
             if p.path.is_ident("Vec") {
                 if let syn::PathArguments::AngleBracketed(args) = &p.path.segments[0].arguments {
                     if let syn::GenericArgument::Type(ty) = args.args.first().unwrap() {
@@ -191,7 +191,7 @@ mod tests {
     }
 
     #[test]
-    fn test_boolean_args() {
+    fn test_multiple_ty_args() {
         let input: ItemFn = parse_quote! {
             pub async fn search_code(context: &dyn AgentContext, code_query: &str, include_private: bool, a_number: usize, a_slice: &[String], a_vec: Vec<String>) -> Result<ToolOutput> {
                 return Ok("hello".into())
