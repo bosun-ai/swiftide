@@ -1,9 +1,10 @@
+#![allow(clippy::used_underscore_binding)]
+
 use convert_case::{Case, Casing as _};
 use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
-use serde::ser::SerializeMap as _;
-use syn::{spanned::Spanned, DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
+use syn::{DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
 
 mod args;
 mod tool_spec;
@@ -22,7 +23,18 @@ struct ToolArgs {
 struct ParamOptions {
     name: String,
     description: String,
-    // TODO: I.e. openai also supports enums instead of strings as arg type
+
+    json_type: ParamType,
+}
+
+#[derive(Debug, FromMeta, PartialEq, Eq, Default, Clone, Copy)]
+#[darling(rename_all = "camelCase")]
+enum ParamType {
+    #[default]
+    String,
+    Number,
+    Boolean,
+    Array,
 }
 
 #[derive(Debug)]
@@ -57,29 +69,31 @@ impl FromMeta for Description {
     }
 }
 
-impl serde::Serialize for ParamOptions {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(1))?;
-        map.serialize_entry(
-            &self.name,
-            &serde_json::json!({
-                "type": "string",
-                "description": self.description
-            }),
-        )?;
-        map.end()
-    }
-}
+// TODO: This should not be used?
+// impl serde::Serialize for ParamOptions {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         let mut map = serializer.serialize_map(Some(1))?;
+//         map.serialize_entry(
+//             &self.name,
+//             &serde_json::json!({
+//                 "type": "string",
+//                 "description": self.description
+//             }),
+//         )?;
+//         map.end()
+//     }
+// }
 
 #[allow(clippy::too_many_lines)]
 pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream {
-    let args = match parse_args(input_args.clone()) {
+    let input_tool_args = match parse_args(input_args.clone()) {
         Ok(args) => args,
         Err(e) => return e.write_errors(),
     };
+
     let fn_name = &input.sig.ident;
     let fn_args = &input.sig.inputs;
     let tool_name = fn_name.to_string();
@@ -90,9 +104,9 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
 
     let wrapped_fn = wrapped::wrap_tool_fn(input);
 
-    let tool_spec = tool_spec::tool_spec(&tool_name, &args);
+    let tool_spec = tool_spec::tool_spec(&tool_name, &input_tool_args);
 
-    let mut found_spec_arg_names = args
+    let mut found_spec_arg_names = input_tool_args
         .param
         .iter()
         .map(|param| param.name.clone())
@@ -101,6 +115,7 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
 
     let mut seen_arg_names = vec![];
 
+    let mut only_strings = true;
     let arg_names = fn_args
         .iter()
         .skip(1)
@@ -108,6 +123,11 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
             if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
                 if let Pat::Ident(ident) = &**pat {
                     seen_arg_names.push(ident.ident.to_string());
+                    if let syn::Type::Path(p) = &**ty {
+                        if !p.path.is_ident("str") || !p.path.is_ident("String") {
+                            only_strings = false;
+                        }
+                    }
 
                     // If the argument is a reference, we need to reference the quote as well
                     if let syn::Type::Reference(_) = &**ty {
@@ -150,11 +170,25 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
         }
 
         return syn::Error::new(
-            input_args.span(),
+            proc_macro2::Span::call_site(),
             format!(
                 "Arguments in spec and in function do not match:\n {}",
                 messages.join(", ")
             ),
+        )
+        .into_compile_error();
+    }
+
+    // Crude validation that types need to be set if non-string parameters are present
+    if !only_strings
+        && input_tool_args
+            .param
+            .iter()
+            .all(|p| matches!(p.json_type, ParamType::String))
+    {
+        return syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "Params that are not strings need to have their `type` as json spec specified",
         )
         .into_compile_error();
     }

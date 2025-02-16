@@ -1,6 +1,6 @@
 [workspace]
 members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
-default-members = ["swiftide", "swiftide-*"]
+# default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [workspace.package]
