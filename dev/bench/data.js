@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739468802756,
+  "lastUpdate": 1739726087290,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15011,6 +15011,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243051,
             "range": "± 2174",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5d85d142339d24c793bd89a907652bede0d1c94d",
+          "message": "feat(agents): Add support for numbers, arrays and booleans in tool args (#562)\n\nAdd support for numbers, arrays and boolean types in the\n`#[swiftide_macros::tool]` attribute macro. For enum and object a custom\nimplementation is now properly supported as well, but not via the macro.\nFor now, tools using Derive also still need a custom implementation.",
+          "timestamp": "2025-02-16T18:05:40+01:00",
+          "tree_id": "c95344c4bc707b980070c807bf282ab2b478eb9c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5d85d142339d24c793bd89a907652bede0d1c94d"
+        },
+        "date": 1739726086750,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1334783,
+            "range": "± 943561",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241423,
+            "range": "± 1485",
             "unit": "ns/iter"
           }
         ]
