@@ -11,7 +11,11 @@ async fn basic_tool(_agent_context: &dyn AgentContext, msg: &str) -> Result<Tool
 
 #[swiftide_macros::tool(
     description = "My first num tool",
-    param(name = "msg", description = "A message for testing")
+    param(
+        name = "msg",
+        description = "A message for testing",
+        json_type = "number"
+    )
 )]
 async fn basic_tool_num(
     _agent_context: &dyn AgentContext,
@@ -22,7 +26,11 @@ async fn basic_tool_num(
 
 #[swiftide_macros::tool(
     description = "My first array tool",
-    param(name = "msg", description = "A message for testing")
+    param(
+        name = "msg",
+        description = "A message for testing",
+        json_type = "array"
+    )
 )]
 async fn basic_tool_vec(
     _agent_context: &dyn AgentContext,
@@ -34,7 +42,11 @@ async fn basic_tool_vec(
 
 #[swiftide_macros::tool(
     description = "My first bool tool",
-    param(name = "msg", description = "A message for testing")
+    param(
+        name = "msg",
+        description = "A message for testing",
+        json_type = "boolean"
+    )
 )]
 async fn basic_tool_bool(
     _agent_context: &dyn AgentContext,
@@ -45,7 +57,11 @@ async fn basic_tool_bool(
 
 #[swiftide_macros::tool(
     description = "My first num slice tool",
-    param(name = "msg", description = "A message for testing")
+    param(
+        name = "msg",
+        description = "A message for testing",
+        json_type = "array"
+    )
 )]
 async fn basic_tool_num_slice(
     _agent_context: &dyn AgentContext,

@@ -91,10 +91,13 @@ impl ToolCall {
 /// i.e. the json spec `OpenAI` uses to define their tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder)]
 pub struct ToolSpec {
+    /// Name of the tool
     pub name: &'static str,
+    /// Description passed to the LLM for the tool
     pub description: &'static str,
 
     #[builder(default)]
+    /// Optional parameters for the tool
     pub parameters: Vec<ParamSpec>,
 }
 
@@ -104,11 +107,31 @@ impl ToolSpec {
     }
 }
 
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::IntoStaticStr)]
+#[strum(serialize_all = "camelCase")]
+pub enum ParamType {
+    #[default]
+    String,
+    Number,
+    Boolean,
+    Array,
+    // Enum
+    // Object
+    // anyOf
+}
+
+/// Parameters for tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Builder)]
 pub struct ParamSpec {
+    /// Name of the parameter
     pub name: &'static str,
+    /// Description of the parameter
     pub description: &'static str,
-    pub ty: &'static str,
+    /// Json spec type of the parameter
+    pub ty: ParamType,
+    /// Whether the parameter is required
+    ///
+    /// Note that macros will always generate required parameters
     #[builder(default = true)]
     pub required: bool,
 }

@@ -53,6 +53,31 @@ async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput,
     Ok(command_output.into())
 }
 
+// The macro supports strings/strs, vectors/slices, booleans and numbers.
+//
+// This is currently only supported for the attribute macro, not the derive macro.
+//
+// If you need more control or need to use full objects, we recommend to implement the `Tool` trait
+// and prove the Json spec yourself. Builders are available.
+//
+// For non-string types, the `json_type` is required to be specified.
+#[swiftide_macros::tool(
+    description = "Guess a number",
+    param(name = "number", description = "Number to guess", json_type = "number")
+)]
+async fn guess_a_number(
+    _context: &dyn AgentContext,
+    number: usize,
+) -> Result<ToolOutput, ToolError> {
+    let actual_number = 42;
+
+    if number == actual_number {
+        Ok("You guessed it!".into())
+    } else {
+        Ok("Try again!".into())
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Hello, agents!");
@@ -72,7 +97,7 @@ async fn main() -> Result<()> {
 
     agents::Agent::builder()
         .llm(&openai)
-        .tools(vec![search_code()])
+        .tools(vec![search_code(), read_file(), guess_a_number()])
         .before_all(move |_context| {
             // This is a hook that runs before any command is executed
             // No native async closures in Rust yet, so we have to use Box::pin

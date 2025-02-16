@@ -10,4 +10,20 @@ async fn basic_tool(
     Ok(format!("Hello {msg}").into())
 }
 
+#[swiftide_macros::tool(
+    description = READ_FILE,
+    param(name = "number", description = "Number to guess")
+)]
+async fn guess_a_number(
+    _context: &dyn AgentContext,
+    number: usize,
+) -> Result<ToolOutput, ToolError> {
+    let actual_number = 42;
+
+    if number == actual_number {
+        Ok("You guessed it!".into())
+    } else {
+        Ok("Try again!".into())
+    }
+}
 fn main() {}
