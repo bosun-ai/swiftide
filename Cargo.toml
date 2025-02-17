@@ -43,7 +43,7 @@ dyn-clone = { version = "1.0" }
 convert_case = "0.7.1"
 
 # Integrations
-spider = { version = "2.27" }
+spider = { version = "2.28" }
 async-openai = { version = "0.27.1" }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
@@ -62,7 +62,7 @@ aws-sdk-bedrockruntime = "1.72"
 criterion = { version = "0.5.1", default-features = false }
 darling = "0.20"
 deadpool = "0.12"
-document-features = "0.2.10"
+document-features = "0.2.11"
 fastembed = "4.4"
 flv-util = "0.5.2"
 htmd = "0.1"
