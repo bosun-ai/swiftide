@@ -36,7 +36,7 @@ pub(crate) fn wrap_tool_fn(input: &ItemFn) -> TokenStream {
         pub struct #struct_name {}
 
         pub fn #fn_name() -> Box<dyn ::swiftide::chat_completion::Tool> {
-            Box::new(#struct_name {})
+            Box::new(#struct_name {}) as Box<dyn ::swiftide::chat_completion::Tool>
         }
 
         impl #struct_name {
@@ -69,7 +69,7 @@ mod tests {
             pub struct SearchCode {}
 
             pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
-                Box::new(SearchCode {})
+                Box::new(SearchCode {}) as Box<dyn ::swiftide::chat_completion::Tool>
             }
 
             impl SearchCode {
@@ -98,7 +98,7 @@ mod tests {
             pub struct SearchCode {}
 
             pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
-                Box::new(SearchCode {})
+                Box::new(SearchCode {}) as Box<dyn ::swiftide::chat_completion::Tool>
             }
 
             impl SearchCode {

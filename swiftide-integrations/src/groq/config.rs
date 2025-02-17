@@ -1,5 +1,5 @@
 use reqwest::header::{HeaderMap, AUTHORIZATION};
-use secrecy::{ExposeSecret as _, Secret};
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 const GROQ_API_BASE: &str = "https://api.groq.com/openai/v1";
@@ -8,7 +8,7 @@ const GROQ_API_BASE: &str = "https://api.groq.com/openai/v1";
 #[serde(default)]
 pub struct GroqConfig {
     api_base: String,
-    api_key: Secret<String>,
+    api_key: SecretString,
 }
 
 impl Default for GroqConfig {
@@ -45,7 +45,7 @@ impl async_openai::config::Config for GroqConfig {
         &self.api_base
     }
 
-    fn api_key(&self) -> &Secret<String> {
+    fn api_key(&self) -> &SecretString {
         &self.api_key
     }
 

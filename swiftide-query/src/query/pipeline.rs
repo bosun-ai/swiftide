@@ -123,7 +123,7 @@ where
 
                         Ok(transformed_query)
                     }
-                    .instrument(span),
+                    .instrument(span.or_current()),
                 )
                 .err_into::<anyhow::Error>()
             })
@@ -181,7 +181,7 @@ impl<'stream: 'static, STRATEGY: SearchStrategy + 'stream>
                             Ok(result)
                         }
                     }
-                    .instrument(span),
+                    .instrument(span.or_current()),
                 )
                 .err_into::<anyhow::Error>()
             })
@@ -229,7 +229,7 @@ impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, sta
 
                         Ok(transformed_query)
                     }
-                    .instrument(span),
+                    .instrument(span.or_current()),
                 )
                 .err_into::<anyhow::Error>()
             })
@@ -281,7 +281,7 @@ impl<'stream: 'static, STRATEGY: SearchStrategy> Pipeline<'stream, STRATEGY, sta
                             Ok(result)
                         }
                     }
-                    .instrument(span),
+                    .instrument(span.or_current()),
                 )
                 .err_into::<anyhow::Error>()
             })

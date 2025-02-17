@@ -3,9 +3,10 @@
 
 <!--toc:start-->
 
-- [About The Project](#about-the-project)
+- [What is Swiftide?](#what-is-swiftide)
+  - [High level features](#high-level-features)
 - [Latest updates on our blog :fire:](#latest-updates-on-our-blog-fire)
-- [Example](#example)
+- [Examples](#examples)
 - [Vision](#vision)
 - [Features](#features)
   - [In detail](#in-detail)
@@ -13,12 +14,14 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Usage and concepts](#usage-and-concepts)
-- [Roadmap](#roadmap)
+  - [Indexing](#indexing)
+  - [Querying](#querying)
 - [Contributing](#contributing)
+- [Core Team Members](#core-team-members)
 - [License](#license)
-  <!--toc:end-->
+<!--toc:end-->
 
-    </details>
+</details>
 
 <a name="readme-top"></a>
 
@@ -37,6 +40,7 @@
 [![Docs Badge]][API Docs]
 [![Contributors][contributors-shield]][contributors-url]
 [![Stargazers][stars-shield]][stars-url]
+![Discord](https://img.shields.io/discord/1257672801553354802?style=flat-square&link=https%3A%2F%2Fdiscord.gg%2F3jjXYen9UY)
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
@@ -50,7 +54,7 @@
   <h3 align="center">Swiftide</h3>
 
   <p align="center">
-Fast, streaming, indexing, query, and agent library for building LLM applications in Rust.
+Fast, streaming indexing, query, and agentic LLM applications in Rust
     <br />
     <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
     <br />
@@ -68,37 +72,40 @@ Fast, streaming, indexing, query, and agent library for building LLM application
 
 <!-- ABOUT THE PROJECT -->
 
-## About The Project
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## What is Swiftide?
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a Rust native library for building LLM applications. Large language models are amazing, but need context
-to solve real problems. Swiftide allows you to ingest, transform and index large amounts of data fast, and then query that data so it it can be injected into prompts.
-This process is called Retrieval Augmented Generation.
+Swiftide is a Rust library for building LLM applications, enabling fast data ingestion, transformation, and indexing for effective querying and prompt injection, known as Retrieval Augmented Generation. It provides flexible building blocks for creating various agents, allowing rapid development from concept to production with minimal code.
 
-With Swiftide Agents, you have the building blocks to model and build a large variety of agents. The goal is to provide flexible building blocks, so that we can focus on experimenting and finding a model that works best, without having to constantly re-invent the underlying plumbing.
+### High level features
 
-With Swiftide, you can build your AI application from idea to production in a few lines of code.
+- Build fast, streaming indexing and querying pipelines
+- Easily build agents, mix and match with previously built pipelines
+- A modular and extendable API, with minimal abstractions
+- Integrations with popular LLMs and storage providers
+- Ready to use pipeline transformations
 
 <div align="center">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
 </div>
 
-While working with other Python-based tooling, frustrations arose around performance, stability, and ease of use. Thus, Swiftide was born. Swiftide's goal is to offer a fully fledged retrieval augmented generation library, that is fast, easy-to-use, reliable and easy-to-extend.
-
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 
 We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue or contact us on [discord](https://discord.gg/3jjXYen9UY).
 
-**Great starting points are this readme, [swiftide.rs](https://swiftide.rs), [the examples folder](https://github.com/bosun-ai/swiftide/tree/master/examples), our blog at [bosun.ai](https://bosun.ai), and in depth tutorials at [swiftide-tutorial](https://github.com/bosun-ai/swiftide-tutorial).**
-
 > [!CAUTION]
-> Swiftide is under heavy development and can have breaking changes while we work towards 1.0. Documentation here might fall short of all features, and despite our efforts be slightly outdated. Expect bugs. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you in an issue.
+> Swiftide is under heavy development and can have breaking changes. Documentation might fall short of all features, and despite our efforts be slightly outdated. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Latest updates on our blog :fire:
 
+- [Releasing kwaak with kwaak](https://bosun.ai/posts/releasing-kwaak-with-kwaak/)
+- [Release - Swiftide 0.16](https://bosun.ai/posts/swiftide-0-16/)
+- [Rust in LLM based tools for performance](https://bosun.ai/posts/rust-for-genai-performance/)
 - [Evaluate Swiftide pipelines with Ragas](https://bosun.ai/posts/evaluating-swiftide-with-ragas/) (2024-09-15)
 - [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
 - [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04
@@ -110,6 +117,8 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 - [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
 - [Release - Swiftide 0.6](https://bosun.ai/posts/swiftide-0-6/) (2024-07-12)
 - [Release - Swiftide 0.5](https://bosun.ai/posts/swiftide-0-5/) (2024-07-1)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -174,7 +183,7 @@ _You can find more detailed examples in [/examples](https://github.com/bosun-ai/
 
 ## Vision
 
-Our goal is to create a fast, extendable platform for building LLLM applications in Rust, to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
+Our goal is to create a fast, extendable platform for building LLM applications in Rust, to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -197,7 +206,7 @@ Our goal is to create a fast, extendable platform for building LLLM applications
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                                |
+| **Supported Large Language Model providers** | OpenAI (and Azure) - All models and embeddings <br> Anthropic <br> OpenRouter <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models |
 | **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
 | **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
@@ -281,20 +290,6 @@ Similar to the indexing pipeline each step is governed by simple Traits and clos
 
 <!-- ROADMAP -->
 
-## Roadmap
-
-See the [open issues](https://github.com/bosun-ai/swiftide/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- CONTRIBUTING -->
-
-## Community
-
-If you want to get more involved with Swiftide, have questions or want to chat, you can find us on [discord](https://discord.gg/3jjXYen9UY).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ## Contributing
 
 Swiftide is in a very early stage and we are aware that we lack features for the wider community. Contributions are very welcome. :tada:
@@ -313,6 +308,35 @@ If you just want to contribute (bless you!), see [our issues](https://github.com
 See [CONTRIBUTING](https://github.com/bosun-ai/swiftide/blob/master/CONTRIBUTING.md) for more
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Core Team Members
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/timonv">
+        <img
+          src="https://avatars.githubusercontent.com/u/49373?s=100"
+          width="100px;"
+          alt=""
+        />
+        <br /><sub><b>timonv</b></sub>
+        <br /><sub>open for swiftide consulting</sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/tinco">
+        <img
+          src="https://avatars.githubusercontent.com/u/22532?s=100"
+          width="100px;"
+          alt=""
+        />
+        <br /><sub><b>tinco</b></sub>
+        <br /><br />
+      </a>
+    </td>
+  </tr>
+</table>
 
 <!-- LICENSE -->
 

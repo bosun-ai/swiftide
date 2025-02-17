@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.15" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.15" }
+swiftide-core = { path = "../swiftide-core", version = "0.19" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.19" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -31,6 +31,7 @@ tera = { workspace = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
+async-anthropic = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
 ] }
@@ -54,6 +55,9 @@ tree-sitter-ruby = { workspace = true, optional = true }
 tree-sitter-typescript = { workspace = true, optional = true }
 tree-sitter-javascript = { workspace = true, optional = true }
 tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-solidity = { workspace = true, optional = true }
+
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true }
 htmd = { workspace = true, optional = true }
@@ -68,7 +72,6 @@ aws-sdk-bedrockruntime = { workspace = true, features = [
 ], optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
-ollama-rs = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
   "rt_tokio_1",
@@ -89,8 +92,9 @@ swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 swiftide-test-utils = { path = "../swiftide-test-utils", features = [
   "test-utils",
 ] }
+swiftide-macros = { path = "../swiftide-macros" }
 temp-dir = { workspace = true }
-
+pretty_assertions = { workspace = true }
 arrow = { workspace = true, features = ["test_utils"] }
 
 # Used for hacking fluv to play nice
@@ -102,6 +106,7 @@ testcontainers = { workspace = true }
 test-case = { workspace = true }
 indoc = { workspace = true }
 insta = { workspace = true }
+wiremock = { workspace = true }
 
 
 [features]
@@ -123,15 +128,21 @@ tree-sitter = [
   "dep:tree-sitter-typescript",
   "dep:tree-sitter-javascript",
   "dep:tree-sitter-java",
+  "dep:tree-sitter-go",
+  "dep:tree-sitter-solidity",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
 # Groq prompting
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
-# Ollama prompting
-ollama = ["dep:ollama-rs"]
+# Ollama prompting, embedding, chatcompletion
+ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+# Openrouter prompting, embedding, chatcompletion
+open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = ["dep:fastembed"]
+# Dashscope prompting
+dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Scraping via spider as loader and a html to markdown transformer
 scraping = ["dep:spider", "dep:htmd"]
 # AWS Bedrock for prompting
@@ -140,13 +151,16 @@ aws-bedrock = [
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
 ]
-lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
+lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array", "dep:arrow"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
 # Paruqet loader
 parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
 # Redb as an embeddable node cache
 redb = ["dep:redb"]
+# Anthropic for prompting and completions
+anthropic = ["dep:async-anthropic"]
+
 
 [lints]
 workspace = true

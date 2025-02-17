@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::chat_completion::ChatMessage;
 use anyhow::Result;
@@ -18,6 +18,27 @@ impl<T: ToolExecutor> ToolExecutor for &T {
     }
 }
 
+#[async_trait]
+impl ToolExecutor for Arc<dyn ToolExecutor> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+}
+
+#[async_trait]
+impl ToolExecutor for Box<dyn ToolExecutor> {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+}
+
+#[async_trait]
+impl ToolExecutor for &dyn ToolExecutor {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum CommandError {
     /// The executor itself failed
@@ -27,6 +48,12 @@ pub enum CommandError {
     /// The command failed, i.e. failing tests with stderr. This error might be handled
     #[error("command failed with NonZeroExit: {0}")]
     NonZeroExit(CommandOutput),
+}
+
+impl From<std::io::Error> for CommandError {
+    fn from(err: std::io::Error) -> Self {
+        CommandError::NonZeroExit(err.to_string().into())
+    }
 }
 
 /// Commands that can be executed by the executor
@@ -124,4 +151,103 @@ pub trait AgentContext: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
     async fn history(&self) -> Vec<ChatMessage>;
+
+    /// Pops the last messages up until the last completion
+    ///
+    /// LLMs failing completion for various reasons is unfortunately a common occurrence
+    /// This gives a way to redrive the last completion in a generic way
+    async fn redrive(&self);
+}
+
+#[async_trait]
+impl AgentContext for Box<dyn AgentContext> {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        (**self).next_completion().await
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        (**self).current_new_messages().await
+    }
+
+    async fn add_messages(&self, item: Vec<ChatMessage>) {
+        (**self).add_messages(item).await;
+    }
+
+    async fn add_message(&self, item: ChatMessage) {
+        (**self).add_message(item).await;
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        (**self).history().await
+    }
+
+    async fn redrive(&self) {
+        (**self).redrive().await;
+    }
+}
+
+#[async_trait]
+impl AgentContext for Arc<dyn AgentContext> {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        (**self).next_completion().await
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        (**self).current_new_messages().await
+    }
+
+    async fn add_messages(&self, item: Vec<ChatMessage>) {
+        (**self).add_messages(item).await;
+    }
+
+    async fn add_message(&self, item: ChatMessage) {
+        (**self).add_message(item).await;
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        (**self).history().await
+    }
+
+    async fn redrive(&self) {
+        (**self).redrive().await;
+    }
+}
+
+#[async_trait]
+impl AgentContext for &dyn AgentContext {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        (**self).next_completion().await
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        (**self).current_new_messages().await
+    }
+
+    async fn add_messages(&self, item: Vec<ChatMessage>) {
+        (**self).add_messages(item).await;
+    }
+
+    async fn add_message(&self, item: ChatMessage) {
+        (**self).add_message(item).await;
+    }
+
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd(cmd).await
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        (**self).history().await
+    }
+
+    async fn redrive(&self) {
+        (**self).redrive().await;
+    }
 }

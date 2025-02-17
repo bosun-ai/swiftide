@@ -8,11 +8,12 @@
 //!
 //! ```no_run
 //! # use swiftide_core::{AgentContext, chat_completion::ChatMessage};
+//! # use swiftide_agents::Agent;
 //! # fn test() {
 //! # let mut agent = swiftide_agents::Agent::builder();
-//! agent.before_all(move |context: &dyn AgentContext| {
+//! agent.before_all(move |agent: &Agent| {
 //!     Box::pin(async move {
-//!         context.add_message(ChatMessage::new_user("Hello, world")).await;
+//!         agent.context().add_message(ChatMessage::new_user("Hello, world")).await;
 //!         Ok(())
 //!     })
 //!});
@@ -30,13 +31,14 @@
 //! ```no_run
 //! # use swiftide_core::{AgentContext};
 //! # use swiftide_agents::hooks::BeforeAllFn;
+//! # use swiftide_agents::Agent;
 //! struct SomeHook<'thing> {
 //!    thing: &'thing str
 //! }
 //!
 //! impl<'thing> SomeHook<'thing> {
 //!    fn return_hook<'tool>(&'thing self) -> impl BeforeAllFn + 'tool where 'thing: 'tool {
-//!     move |_: &dyn AgentContext| {
+//!     move |_: &Agent| {
 //!      Box::pin(async move {{ Ok(())}})
 //!     }
 //!   }
@@ -45,16 +47,15 @@ use anyhow::Result;
 use std::{future::Future, pin::Pin};
 
 use dyn_clone::DynClone;
-use swiftide_core::{
-    chat_completion::{
-        errors::ToolError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
-        ToolOutput,
-    },
-    AgentContext,
+use swiftide_core::chat_completion::{
+    errors::ToolError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
+    ToolOutput,
 };
 
+use crate::Agent;
+
 pub trait BeforeAllFn:
-    for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -64,7 +65,7 @@ pub trait BeforeAllFn:
 dyn_clone::clone_trait_object!(BeforeAllFn);
 
 pub trait AfterEachFn:
-    for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -75,7 +76,7 @@ dyn_clone::clone_trait_object!(AfterEachFn);
 
 pub trait BeforeCompletionFn:
     for<'a> Fn(
-        &'a dyn AgentContext,
+        &'a Agent,
         &mut ChatCompletionRequest,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
@@ -88,7 +89,7 @@ dyn_clone::clone_trait_object!(BeforeCompletionFn);
 
 pub trait AfterCompletionFn:
     for<'a> Fn(
-        &'a dyn AgentContext,
+        &'a Agent,
         &mut ChatCompletionResponse,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
@@ -103,7 +104,7 @@ dyn_clone::clone_trait_object!(AfterCompletionFn);
 ///
 pub trait AfterToolFn:
     for<'tool> Fn(
-        &'tool dyn AgentContext,
+        &'tool Agent,
         &ToolCall,
         &'tool mut Result<ToolOutput, ToolError>,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'tool>>
@@ -117,10 +118,7 @@ dyn_clone::clone_trait_object!(AfterToolFn);
 
 /// Hooks that are called before each tool
 pub trait BeforeToolFn:
-    for<'a> Fn(
-        &'a dyn AgentContext,
-        &ToolCall,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(&'a Agent, &ToolCall) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -131,10 +129,7 @@ dyn_clone::clone_trait_object!(BeforeToolFn);
 
 /// Hooks that are called when a new message is added to the `AgentContext`
 pub trait MessageHookFn:
-    for<'a> Fn(
-        &'a dyn AgentContext,
-        &mut ChatMessage,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(&'a Agent, &mut ChatMessage) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -142,6 +137,17 @@ pub trait MessageHookFn:
 }
 
 dyn_clone::clone_trait_object!(MessageHookFn);
+
+/// Hooks that are called when the agent starts, either from pending or stopped
+pub trait OnStartFn:
+    for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(OnStartFn);
 
 /// Wrapper around the different types of hooks
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
@@ -162,10 +168,12 @@ pub enum Hook {
     /// Runs when a new message is added to the `AgentContext`, yielding a mutable reference to the
     /// message. This is only triggered when the message is added by the agent.
     OnNewMessage(Box<dyn MessageHookFn>),
+    /// Runs when the agent starts, either from pending or stopped
+    OnStart(Box<dyn OnStartFn>),
 }
 
 impl<F> BeforeAllFn for F where
-    F: for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    F: for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone
@@ -173,7 +181,7 @@ impl<F> BeforeAllFn for F where
 }
 
 impl<F> AfterEachFn for F where
-    F: for<'a> Fn(&'a dyn AgentContext) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    F: for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone
@@ -182,7 +190,7 @@ impl<F> AfterEachFn for F where
 
 impl<F> BeforeCompletionFn for F where
     F: for<'a> Fn(
-            &'a dyn AgentContext,
+            &'a Agent,
             &mut ChatCompletionRequest,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
@@ -193,7 +201,7 @@ impl<F> BeforeCompletionFn for F where
 
 impl<F> AfterCompletionFn for F where
     F: for<'a> Fn(
-            &'a dyn AgentContext,
+            &'a Agent,
             &mut ChatCompletionResponse,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
@@ -203,10 +211,7 @@ impl<F> AfterCompletionFn for F where
 }
 
 impl<F> BeforeToolFn for F where
-    F: for<'a> Fn(
-            &'a dyn AgentContext,
-            &ToolCall,
-        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    F: for<'a> Fn(&'a Agent, &ToolCall) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone
@@ -214,7 +219,7 @@ impl<F> BeforeToolFn for F where
 }
 impl<F> AfterToolFn for F where
     F: for<'tool> Fn(
-            &'tool dyn AgentContext,
+            &'tool Agent,
             &ToolCall,
             &'tool mut Result<ToolOutput, ToolError>,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'tool>>
@@ -226,9 +231,17 @@ impl<F> AfterToolFn for F where
 
 impl<F> MessageHookFn for F where
     F: for<'a> Fn(
-            &'a dyn AgentContext,
+            &'a Agent,
             &mut ChatMessage,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+
+impl<F> OnStartFn for F where
+    F: for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone
@@ -243,6 +256,7 @@ mod tests {
     fn test_hooks_compile_sync_and_async() {
         Agent::builder()
             .before_all(|_| Box::pin(async { Ok(()) }))
+            .on_start(|_| Box::pin(async { Ok(()) }))
             .before_completion(|_, _| Box::pin(async { Ok(()) }))
             .before_tool(|_, _| Box::pin(async { Ok(()) }))
             .after_tool(|_, _, _| Box::pin(async { Ok(()) }))

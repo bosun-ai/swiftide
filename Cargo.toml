@@ -4,12 +4,12 @@ default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.15.0"
+version = "0.19.0"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
 keywords = ["llm", "rag", "ai", "data", "openai"]
-description = "Blazing fast, streaming pipeline library for AI applications"
+description = "Fast, streaming indexing, query, and agentic LLM applications in Rust"
 categories = ["asynchronous"]
 repository = "https://github.com/bosun-ai/swiftide-rs"
 homepage = "https://swiftide.rs"
@@ -20,70 +20,72 @@ similar.opt-level = 3
 
 [workspace.dependencies]
 anyhow = { version = "1.0" }
-thiserror = "2.0.9"
+thiserror = "2.0.11"
 async-trait = { version = "0.1" }
 derive_builder = { version = "0.20" }
 futures-util = { version = "0.3" }
-tokio = { version = "1.41", features = ["rt-multi-thread"] }
+tokio = { version = "1.43", features = ["rt-multi-thread"] }
 tokio-stream = { version = "0.1" }
 tracing = { version = "0.1", features = ["log"] }
 num_cpus = { version = "1.16" }
 pin-project = { version = "1.1" }
-itertools = { version = "0.13" }
+itertools = { version = "0.14" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-strum = { version = "0.26" }
-strum_macros = { version = "0.26" }
+strum = { version = "0.27" }
+strum_macros = { version = "0.27" }
 lazy_static = { version = "1.5.0" }
 chrono = { version = "0.4" }
 indoc = { version = "2.0" }
 regex = { version = "1.11.1" }
-uuid = { version = "1.10", features = ["v3", "v4", "serde"] }
+uuid = { version = "1.11", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
-convert_case = "0.6.0"
+convert_case = "0.7.1"
 
 # Integrations
-spider = { version = "2.21" }
-async-openai = { version = "0.26" }
-qdrant-client = { version = "1.10", default-features = false, features = [
+spider = { version = "2.27" }
+async-openai = { version = "0.27.1" }
+qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
 ] }
-fluvio = { version = "0.24", default-features = false }
-lancedb = { version = "0.14", default-features = false }
+fluvio = { version = "0.25", default-features = false }
+lancedb = { version = "0.16", default-features = false }
 arrow-array = { version = "53.3", default-features = false }
 arrow = { version = "53.3", default-features = false }
 parquet = { version = "53.3", default-features = false, features = ["async"] }
-redb = { version = "2.3" }
-sqlx = { version = "0.8.2", features = ["postgres", "uuid"] }
+redb = { version = "2.4" }
+sqlx = { version = "0.8.3", features = ["postgres", "uuid"] }
 aws-config = "1.5"
 pgvector = { version = "0.4.0", features = ["sqlx"], default-features = false }
 aws-credential-types = "1.2"
-aws-sdk-bedrockruntime = "1.61"
+aws-sdk-bedrockruntime = "1.72"
 criterion = { version = "0.5.1", default-features = false }
 darling = "0.20"
 deadpool = "0.12"
 document-features = "0.2.10"
-fastembed = "4.1"
+fastembed = "4.4"
 flv-util = "0.5.2"
 htmd = "0.1"
 ignore = "0.4"
-ollama-rs = "0.2.2"
 proc-macro2 = "1.0"
 quote = "1.0"
-redis = "0.27"
+redis = "0.28"
 reqwest = { version = "0.12.9", default-features = false }
-secrecy = "0.8.0"
+secrecy = "0.10.3"
 syn = "2.0"
 tera = { version = "1.20", default-features = false }
-text-splitter = "0.17"
+text-splitter = "0.23"
 tracing-subscriber = "0.3"
-tree-sitter = "0.23"
+tree-sitter = "0.25"
 tree-sitter-java = "0.23"
 tree-sitter-javascript = "0.23"
 tree-sitter-python = "0.23"
 tree-sitter-ruby = "0.23"
 tree-sitter-rust = "0.23"
 tree-sitter-typescript = "0.23"
+tree-sitter-go = "0.23"
+tree-sitter-solidity = "1.2.11"
+async-anthropic = "0.2.1"
 
 
 # Testing
@@ -94,7 +96,7 @@ temp-dir = "0.1.13"
 wiremock = "0.6.0"
 test-case = "3.3.1"
 pretty_assertions = "1.4"
-insta = { version = "1.41.1", features = ["yaml"] }
+insta = { version = "1.42.1", features = ["yaml"] }
 
 
 [workspace.lints.rust]

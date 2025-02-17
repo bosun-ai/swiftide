@@ -1,11 +1,19 @@
+//! Documents are the main data structure that is retrieved via the query pipeline
+//!
+//! Retrievers are expected to eagerly set any configured metadata on the document, with the same
+//! field name used during indexing if applicable.
 use std::fmt;
 
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
 use crate::{metadata::Metadata, util::debug_long_utf8};
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// A document represents a single unit of retrieved text
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Builder)]
+#[builder(setter(into))]
 pub struct Document {
+    #[builder(default)]
     metadata: Metadata,
     content: String,
 }
@@ -61,6 +69,10 @@ impl Document {
             metadata: metadata.unwrap_or_default(),
             content: content.into(),
         }
+    }
+
+    pub fn builder() -> DocumentBuilder {
+        DocumentBuilder::default()
     }
 
     pub fn content(&self) -> &str {

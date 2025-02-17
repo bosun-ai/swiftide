@@ -10,6 +10,7 @@
 //! - Python
 //! - Ruby
 //! - Javascript
+//! - Solidity
 
 #[allow(unused_imports)]
 pub use std::str::FromStr as _;
@@ -47,6 +48,10 @@ pub enum SupportedLanguages {
     Javascript,
     #[serde(alias = "java")]
     Java,
+    #[serde(alias = "go")]
+    Go,
+    #[serde(alias = "solidity")]
+    Solidity,
 }
 
 /// Static array of file extensions for Rust files.
@@ -67,6 +72,12 @@ static JAVASCRIPT_EXTENSIONS: &[&str] = &["js", "jsx"];
 /// Static array of file extensions for Java files.
 static JAVA_EXTENSIONS: &[&str] = &["java"];
 
+/// Static array of file extensions for Go files.
+static GO_EXTENSIONS: &[&str] = &["go"];
+
+/// Static array of file extensions for Solidity files.
+static SOLIDITY_EXTENSIONS: &[&str] = &["sol"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -80,6 +91,8 @@ impl SupportedLanguages {
             SupportedLanguages::Ruby => RUBY_EXTENSIONS,
             SupportedLanguages::Javascript => JAVASCRIPT_EXTENSIONS,
             SupportedLanguages::Java => JAVA_EXTENSIONS,
+            SupportedLanguages::Go => GO_EXTENSIONS,
+            SupportedLanguages::Solidity => SOLIDITY_EXTENSIONS,
         }
     }
 }
@@ -103,6 +116,8 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Javascript => tree_sitter_javascript::LANGUAGE,
             SupportedLanguages::Ruby => tree_sitter_ruby::LANGUAGE,
             SupportedLanguages::Java => tree_sitter_java::LANGUAGE,
+            SupportedLanguages::Go => tree_sitter_go::LANGUAGE,
+            SupportedLanguages::Solidity => tree_sitter_solidity::LANGUAGE,
         }
         .into()
     }

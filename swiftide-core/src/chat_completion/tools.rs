@@ -48,6 +48,14 @@ pub struct ToolCall {
     args: Option<String>,
 }
 
+/// Hash is used for finding tool calls that have been retried by agents
+impl std::hash::Hash for &ToolCall {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.args.hash(state);
+    }
+}
+
 impl std::fmt::Display for ToolCall {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

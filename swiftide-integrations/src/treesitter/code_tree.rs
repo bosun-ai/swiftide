@@ -3,12 +3,12 @@
 //! Extracts typed semantics from code.
 #![allow(dead_code)]
 use itertools::Itertools;
-use tree_sitter::{Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _, Tree};
 
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{java, javascript, python, ruby, rust, typescript};
+use crate::treesitter::queries::{go, java, javascript, python, ruby, rust, solidity, typescript};
 
 use super::SupportedLanguages;
 
@@ -90,7 +90,7 @@ impl CodeTree<'_> {
 
         cursor
             .matches(query, self.ts_tree.root_node(), self.code.as_bytes())
-            .map(|m| {
+            .map_deref(|m| {
                 m.captures
                     .iter()
                     .map(|c| {
@@ -107,7 +107,7 @@ impl CodeTree<'_> {
 }
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
-    use SupportedLanguages::{Java, Javascript, Python, Ruby, Rust, Typescript};
+    use SupportedLanguages::{Go, Java, Javascript, Python, Ruby, Rust, Solidity, Typescript};
 
     match language {
         Rust => (rust::DEFS, rust::REFS),
@@ -117,6 +117,8 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Javascript => (javascript::DEFS, javascript::REFS),
         Ruby => (ruby::DEFS, ruby::REFS),
         Java => (java::DEFS, java::REFS),
+        Go => (go::DEFS, go::REFS),
+        Solidity => (solidity::DEFS, solidity::REFS),
     }
 }
 
@@ -139,6 +141,24 @@ mod tests {
         assert_eq!(result.references, vec!["println"]);
 
         assert_eq!(result.definitions, vec!["main"]);
+    }
+
+    #[test]
+    fn test_parsing_on_solidity() {
+        let parser = CodeParser::from_language(SupportedLanguages::Solidity);
+        let code = r"
+        pragma solidity ^0.8.0;
+
+        contract MyContract {
+            function myFunction() public {
+                emit MyEvent();
+            }
+        }
+        ";
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.references, vec!["MyEvent"]);
+        assert_eq!(result.definitions, vec!["MyContract", "myFunction"]);
     }
 
     #[test]
@@ -279,5 +299,29 @@ mod tests {
         let result = tree.references_and_definitions().unwrap();
         assert_eq!(result.definitions, vec!["Material", "Person", "getName"]);
         assert!(result.references.is_empty());
+    }
+
+    #[test]
+    fn test_parsing_go() {
+        let parser = CodeParser::from_language(SupportedLanguages::Go);
+        // hello world go with struct
+        let code = r"
+        package main
+
+        type Person struct {
+            name string
+            age int
+        }
+
+        func main() {
+            p := Person{name: 'John', age: 30}
+            fmt.Println(p)
+        }
+        ";
+
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+        assert_eq!(result.references, vec!["Println", "int", "string"]);
+        assert_eq!(result.definitions, vec!["Person", "main"]);
     }
 }

@@ -1,7 +1,11 @@
 //! Integrations with various platforms and external services.
 
+#[cfg(feature = "anthropic")]
+pub mod anthropic;
 #[cfg(feature = "aws-bedrock")]
 pub mod aws_bedrock;
+#[cfg(feature = "dashscope")]
+pub mod dashscope;
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
 #[cfg(feature = "fluvio")]
@@ -12,6 +16,8 @@ pub mod groq;
 pub mod lancedb;
 #[cfg(feature = "ollama")]
 pub mod ollama;
+#[cfg(feature = "open-router")]
+pub mod open_router;
 #[cfg(feature = "openai")]
 pub mod openai;
 #[cfg(feature = "parquet")]

@@ -2,6 +2,380 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.0](https://github.com/bosun-ai/swiftide/compare/v0.18.2...v0.19.0) - 2025-02-13
+
+### New features
+
+- [fa5112c](https://github.com/bosun-ai/swiftide/commit/fa5112c9224fdf5984d26db669f04dedc8ebb561) *(agents)*  By default retry failed tools with LLM up to 3 times (#609)
+
+````text
+Specifically meant for LLMs sending invalid JSON, these tool calls are
+  now retried by feeding back the error into the LLM up to a limit
+  (default 3).
+````
+
+- [14f4778](https://github.com/bosun-ai/swiftide/commit/14f47780b4294be3a9fa3670aa18a952ad7e9d6e) *(integrations)*  Parallel tool calling in OpenAI is now configurable (#611)
+
+````text
+Adds support reasoning models in agents and for chat completions.
+````
+
+- [37a1a2c](https://github.com/bosun-ai/swiftide/commit/37a1a2c7bfd152db56ed929e0ea1ab99080e640d) *(integrations)*  Add system prompts as `system` instead of message in Anthropic requests
+
+### Bug fixes
+
+- [ab27c75](https://github.com/bosun-ai/swiftide/commit/ab27c75b8f4a971cb61e88b26d94231afd35c871) *(agents)*  Add back anyhow catch all for failed tools
+
+- [2388f18](https://github.com/bosun-ai/swiftide/commit/2388f187966d996ede4ff42c71521238b63d129c) *(agents)*  Use name/arg hash on tool retries (#612)
+
+- [da55664](https://github.com/bosun-ai/swiftide/commit/da5566473e3f8874fce427ceb48a15d002737d07) *(integrations)*  Scraper should stop when finished (#614)
+
+### Miscellaneous
+
+- [990a8ea](https://github.com/bosun-ai/swiftide/commit/990a8eaeffdbd447bb05a0b01aa65a39a7c9cacf) *(deps)*  Update tree-sitter (#616)
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.18.2...0.19.0
+
+
+
+## [0.18.2](https://github.com/bosun-ai/swiftide/compare/v0.18.1...v0.18.2) - 2025-02-11
+
+### New features
+
+- [50ffa15](https://github.com/bosun-ai/swiftide/commit/50ffa156e28bb085a61a376bab71c135bc09622f)  Anthropic support for prompts and agents (#602)
+
+### Bug fixes
+
+- [8cf70e0](https://github.com/bosun-ai/swiftide/commit/8cf70e08787d1376ba20001cc9346767d8bd84ef) *(integrations)*  Ensure anthropic tool call format is consistent with specs
+
+### Miscellaneous
+
+- [98176c6](https://github.com/bosun-ai/swiftide/commit/98176c603b61e3971ca5583f9f4346eb5b962d51)  Clippy
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.18.1...0.18.2
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.18.1](https://github.com/bosun-ai/swiftide/compare/v0.18.0...v0.18.1) - 2025-02-09
+
+### New features
+
+- [78bf0e0](https://github.com/bosun-ai/swiftide/commit/78bf0e004049c852d4e32c0cd67725675b1250f9) *(agents)*  Add optional limit for agent iterations (#599)
+
+- [592e5a2](https://github.com/bosun-ai/swiftide/commit/592e5a2ca4b0f09ba6a9b20cef105539cb7a7909) *(integrations)*  Support Azure openai via generics (#596)
+
+- [c8f2eed](https://github.com/bosun-ai/swiftide/commit/c8f2eed9964341ac2dad611fc730dc234436430a) *(tree-sitter)*  Add solidity support (#597)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.18.0...0.18.1
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.18.0](https://github.com/bosun-ai/swiftide/compare/v0.17.5...v0.18.0) - 2025-02-01
+
+### New features
+
+- [de46656](https://github.com/bosun-ai/swiftide/commit/de46656f80c5cf68cc192d21b5f34eb3e0667a14) *(agents)*  Add `on_start` hook (#586)
+
+- [c551f1b](https://github.com/bosun-ai/swiftide/commit/c551f1becfd1750ce480a00221a34908db61e42f) *(integrations)*  OpenRouter support (#589)
+
+````text
+Adds OpenRouter support. OpenRouter allows you to use any LLM via their
+  own api (with a minor upsell).
+````
+
+### Bug fixes
+
+- [3ea5839](https://github.com/bosun-ai/swiftide/commit/3ea583971c0d2cc5ef0594eaf764ea149bacd1d8) *(redb)*  Disable per-node tracing
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.5...0.18.0
+
+
+
+## [0.17.5](https://github.com/bosun-ai/swiftide/compare/v0.17.4...v0.17.5) - 2025-01-27
+
+### New features
+
+- [825a52e](https://github.com/bosun-ai/swiftide/commit/825a52e70a74e4621d370485346a78d61bf5d7a9) *(agents)*  Tool description now also accepts paths (i.e. a const) (#580)
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.4...0.17.5
+
+
+
+## [0.17.4](https://github.com/bosun-ai/swiftide/compare/v0.17.3...v0.17.4) - 2025-01-24
+
+### Bug fixes
+
+- [0d9e250](https://github.com/bosun-ai/swiftide/commit/0d9e250e2512fe9c66d5dfd2ac688dcd56bd07e9) *(tracing)*  Use `or_current()` to prevent orphaned tracing spans (#573)
+
+````text
+When a span is emitted that would be selected by the subscriber, but we
+  instrument its closure with a span that would not be selected by the
+  subscriber, the span would be emitted as an orphan (with a new
+  `trace_id`) making them hard to find and cluttering dashboards.
+
+  This situation is also documented here:
+  https://docs.rs/tracing/latest/tracing/struct.Span.html#method.or_current
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.3...0.17.4
+
+
+
+## [0.17.3](https://github.com/bosun-ai/swiftide/compare/v0.17.2...v0.17.3) - 2025-01-24
+
+### New features
+
+- [8e22442](https://github.com/bosun-ai/swiftide/commit/8e2244241f16fff77591cf04f40725ad0b05ca81) *(integrations)*  Support Qdrant 1.13 (#571)
+
+### Bug fixes
+
+- [c5408a9](https://github.com/bosun-ai/swiftide/commit/c5408a96fbed6207022eb493da8d2cbb0fea7ca6) *(agents)*  Io::Error should always be a NonZeroExit error for tool executors (#570)
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.2...0.17.3
+
+
+
+## [0.17.2](https://github.com/bosun-ai/swiftide/compare/v0.17.1...v0.17.2) - 2025-01-21
+
+### Bug fixes
+
+- [47db5ab](https://github.com/bosun-ai/swiftide/commit/47db5ab138384a6c235a90024470e9ab96751cc8) *(agents)*  Redrive uses the correct pointer and works as intended
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.1...0.17.2
+
+
+
+## [0.17.1](https://github.com/bosun-ai/swiftide/compare/v0.17.0...v0.17.1) - 2025-01-20
+
+### New features
+
+- [e4e4468](https://github.com/bosun-ai/swiftide/commit/e4e44681b65b07b5f1e987ce468bdcda61eb30da) *(agents)*  Implement AgentContext for smart dyn pointers
+
+- [70181d9](https://github.com/bosun-ai/swiftide/commit/70181d9642aa2c0a351b9f42be1a8cdbd83c9075) *(agents)*  Add pub accessor for agent context (#558)
+
+- [274d9d4](https://github.com/bosun-ai/swiftide/commit/274d9d46f39ac2e28361c4881c6f8f7e20dd8753) *(agents)*  Preprocess tool calls to fix common, fixable errors (#560)
+
+````text
+OpenAI has a tendency to sometimes send double keys. With this, Swiftide
+  will now take the first key and ignore any duplicates after that. Sets the stage for any future preprocessing before it gets strictly parsed by serde.
+````
+
+- [0f0f491](https://github.com/bosun-ai/swiftide/commit/0f0f491b2621ad82389a57bdb521fcf4021b7d7a) *(integrations)*  Add Dashscope support  (#543)
+
+````text
+---------
+````
+
+### Bug fixes
+
+- [b2b15ac](https://github.com/bosun-ai/swiftide/commit/b2b15ac073e4f6b035239791a056fbdf6f6e704e) *(openai)*  Enable strict mode for tool calls (#561)
+
+````text
+Ensures openai sticks much better to the schema and avoids accidental
+  mistakes.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.17.0...0.17.1
+
+
+
+## [0.17.0](https://github.com/bosun-ai/swiftide/compare/v0.16.4...v0.17.0) - 2025-01-16
+
+### New features
+
+- [835c35e](https://github.com/bosun-ai/swiftide/commit/835c35e7d74811daa90f7ca747054d1919633058) *(agents)*  Redrive completions manually on failure (#551)
+
+````text
+Sometimes LLMs fail a completion without deterministic errors, or the
+  user case where you just want to retry. `redrive` can now be called on a
+  context, popping any new messages (if any), and making the messages
+  available again to the agent.
+````
+
+- [f83f3f0](https://github.com/bosun-ai/swiftide/commit/f83f3f03bbf6a9591b54521dde91bf1a5ed19c5c) *(agents)*  Implement ToolExecutor for common dyn pointers (#549)
+
+- [7f85735](https://github.com/bosun-ai/swiftide/commit/7f857358e46e825494ba927dffb33c3afa0d762e) *(query)*  Add custom lancedb query generation for lancedb search (#518)
+
+- [ce4e34b](https://github.com/bosun-ai/swiftide/commit/ce4e34be42ce1a0ab69770d03695bd67f99a8739) *(tree-sitter)*  Add golang support (#552)
+
+````text
+Seems someone conveniently forgot to add Golang support for the
+  splitter.
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.lock dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.4...0.17.0
+
+
+
+## [0.16.4](https://github.com/bosun-ai/swiftide/compare/v0.16.3...v0.16.4) - 2025-01-12
+
+### New features
+
+- [c919484](https://github.com/bosun-ai/swiftide/commit/c9194845faa12b8a0fcecdd65f8ec9d3d221ba08)  Ollama via async-openai with chatcompletion support (#545)
+
+````text
+Adds support for chatcompletions (agents) for ollama. SimplePrompt and embeddings now use async-openai underneath.
+
+  Copy pasted as I expect some differences in the future.
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.3...0.16.4
+
+
+
+## [0.16.3](https://github.com/bosun-ai/swiftide/compare/v0.16.2...v0.16.3) - 2025-01-10
+
+### New features
+
+- [b66bd79](https://github.com/bosun-ai/swiftide/commit/b66bd79070772d7e1bfe10a22531ccfd6501fc2a) *(fastembed)*  Add support for jina v2 code (#541)
+
+````text
+Add support for jina v2 code in fastembed.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.2...0.16.3
+
+
+
+## [0.16.2](https://github.com/bosun-ai/swiftide/compare/v0.16.1...v0.16.2) - 2025-01-08
+
+### Bug fixes
+
+- [2226755](https://github.com/bosun-ai/swiftide/commit/2226755f367d9006870a2dea2063655a7901d427)  Explicit cast on tools to Box<dyn> to make analyzer happy (#536)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.1...0.16.2
+
+
+
+## [0.16.1](https://github.com/bosun-ai/swiftide/compare/v0.16.0...v0.16.1) - 2025-01-06
+
+### Bug fixes
+
+- [d198bb0](https://github.com/bosun-ai/swiftide/commit/d198bb0807f5d5b12a51bc76721cc945be8e65b9) *(prompts)*  Skip rendering prompts if no context and forward as is (#530)
+
+````text
+Fixes an issue if strings suddenly include jinja style values by
+  mistake. Bonus performance boost.
+````
+
+- [4e8d59f](https://github.com/bosun-ai/swiftide/commit/4e8d59fbc0fbe72dd0f8d6a95e6e335280eb88e3) *(redb)*  Log errors and return uncached instead of panicing (#531)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.16.0...0.16.1
+
+
+
+## [0.16.0](https://github.com/bosun-ai/swiftide/compare/v0.15.0...v0.16.0) - 2025-01-02
+
+### New features
+
+- [52e341e](https://github.com/bosun-ai/swiftide/commit/52e341ee9777d04f9fb07054980ba087c55c033e) *(lancedb)*  Public method for opening table (#514)
+
+- [3254bd3](https://github.com/bosun-ai/swiftide/commit/3254bd34d0eeb038c8aa6ea56ac2940b3ca81960) *(query)*  Generic templates with document rendering (#520)
+
+````text
+Reworks `PromptTemplate` to a more generic `Template`, such that they
+  can also be used elsewhere. This deprecates `PromptTemplate`.
+
+  As an example, an optional `Template` in the `Simple` answer
+  transformer, which can be used to customize the output of retrieved
+  documents. This has excellent synergy with the metadata changes in #504.
+````
+
+- [235780b](https://github.com/bosun-ai/swiftide/commit/235780b941a0805b69541f0f4c55c3404091baa8) *(query)*  Documents as first class citizens (#504)
+
+````text
+For simple RAG, just adding the content of a retrieved document might be
+  enough. However, in more complex use cases, you might want to add
+  metadata as well, as is or for conditional formatting.
+
+  For instance, when dealing with large amounts of chunked code, providing
+  the path goes a long way. If generated metadata is good enough, could be
+  useful as well.
+
+  With this retrieved Documents are treated as first class citizens,
+  including any metadata as well. Additionally, this also paves the way
+  for multi retrieval (and multi modal).
+````
+
+- [584695e](https://github.com/bosun-ai/swiftide/commit/584695e4841a3c9341e521b81e9f254270b3416e) *(query)*  Add custom SQL query generation for pgvector search (#478)
+
+````text
+Adds support for custom retrieval queries with the sqlx query builder for PGVector. Puts down the fundamentals for custom query building for any retriever.
+
+  ---------
+````
+
+- [b55bf0b](https://github.com/bosun-ai/swiftide/commit/b55bf0b318042459a6983cf725078c4da662618b) *(redb)*  Public database and table definition (#510)
+
+- [176378f](https://github.com/bosun-ai/swiftide/commit/176378f846ddecc3ddba74f6b423338b793f29b4)  Implement traits for all Arc dynamic dispatch (#513)
+
+````text
+If you use i.e. a `Persist` or a `NodeCache` outside swiftide as well, and you already have it Arc'ed, now it just works.
+````
+
+- [dc9881e](https://github.com/bosun-ai/swiftide/commit/dc9881e48da7fb5dc744ef33b1c356b4152d00d3)  Allow opt out of pipeline debug truncation
+
+### Bug fixes
+
+- [2831101](https://github.com/bosun-ai/swiftide/commit/2831101daa2928b5507116d9eb907d98fb77bf50) *(lancedb)*  Metadata should be nullable in lancedb (#515)
+
+- [c35df55](https://github.com/bosun-ai/swiftide/commit/c35df5525d4d88cfb9ada89a060e1ab512b471af) *(macros)*  Explicit box dyn cast fixing Rust Analyzer troubles (#523)
+
+### Miscellaneous
+
+- [1bbbb0e](https://github.com/bosun-ai/swiftide/commit/1bbbb0e548cafa527c34856bd9ac6f76aca2ab5f)  Clippy
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.15.0...0.16.0
+
+
+
 ## [0.15.0](https://github.com/bosun-ai/swiftide/compare/v0.14.4...v0.15.0) - 2024-12-23
 
 ### New features

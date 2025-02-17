@@ -2,11 +2,14 @@
 //! It includes the `Ollama` struct for managing API clients and default options for embedding and prompt models.
 //! The module is conditionally compiled based on the "ollama" feature flag.
 
+use config::OllamaConfig;
 use derive_builder::Builder;
 use std::sync::Arc;
 
-mod embed;
-mod simple_prompt;
+pub mod chat_completion;
+pub mod config;
+pub mod embed;
+pub mod simple_prompt;
 
 /// The `Ollama` struct encapsulates an `Ollama` client and default options for embedding and prompt models.
 /// It uses the `Builder` pattern for flexible and customizable instantiation.
@@ -22,7 +25,7 @@ mod simple_prompt;
 pub struct Ollama {
     /// The `Ollama` client, wrapped in an `Arc` for thread-safe reference counting.
     #[builder(default = "default_client()", setter(custom))]
-    client: Arc<ollama_rs::Ollama>,
+    client: Arc<async_openai::Client<OllamaConfig>>,
     /// Default options for the embedding and prompt models.
     #[builder(default)]
     default_options: Options,
@@ -91,7 +94,7 @@ impl OllamaBuilder {
     ///
     /// # Returns
     /// A mutable reference to the `OllamaBuilder`.
-    pub fn client(&mut self, client: ollama_rs::Ollama) -> &mut Self {
+    pub fn client(&mut self, client: async_openai::Client<OllamaConfig>) -> &mut Self {
         self.client = Some(Arc::new(client));
         self
     }
@@ -135,8 +138,8 @@ impl OllamaBuilder {
     }
 }
 
-fn default_client() -> Arc<ollama_rs::Ollama> {
-    ollama_rs::Ollama::default().into()
+fn default_client() -> Arc<async_openai::Client<OllamaConfig>> {
+    Arc::new(async_openai::Client::with_config(OllamaConfig::default()))
 }
 
 #[cfg(test)]

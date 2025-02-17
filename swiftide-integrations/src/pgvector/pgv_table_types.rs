@@ -24,7 +24,7 @@ use tokio::time::sleep;
 #[derive(Clone, Debug)]
 pub struct VectorConfig {
     embedded_field: EmbeddedField,
-    pub(crate) field: String,
+    pub field: String,
 }
 
 impl VectorConfig {
@@ -76,7 +76,7 @@ impl<T: AsRef<str>> From<T> for MetadataConfig {
 /// Represents different field types that can be configured in the table schema,
 /// including vector embeddings, metadata, and system fields.
 #[derive(Clone, Debug)]
-pub(crate) enum FieldConfig {
+pub enum FieldConfig {
     /// `Vector` - Vector embedding field configuration
     Vector(VectorConfig),
     /// `Metadata` - Metadata field configuration
@@ -366,11 +366,11 @@ impl PgVector {
             .join(", ");
 
         Ok(format!(
-            r#"
+            r"
             INSERT INTO {} ({})
             SELECT {}
             FROM UNNEST({}) AS t({})
-            ON CONFLICT (id) DO UPDATE SET {}"#,
+            ON CONFLICT (id) DO UPDATE SET {}",
             self.table_name,
             columns.join(", "),
             columns.join(", "),
@@ -441,7 +441,7 @@ impl PgVector {
 }
 
 impl PgVector {
-    pub(crate) fn normalize_field_name(field: &str) -> String {
+    pub fn normalize_field_name(field: &str) -> String {
         // Define the special characters as an array
         let special_chars: [char; 4] = ['(', '[', '{', '<'];
 

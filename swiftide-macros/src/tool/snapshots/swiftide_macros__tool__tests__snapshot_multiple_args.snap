@@ -13,7 +13,7 @@ struct SearchCodeArgs {
 #[derive(Clone, Default)]
 pub struct SearchCode {}
 pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
-    Box::new(SearchCode {})
+    Box::new(SearchCode {}) as Box<dyn ::swiftide::chat_completion::Tool>
 }
 impl SearchCode {
     pub async fn search_code(
@@ -67,6 +67,6 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
 impl<'TOOLBOXED> From<SearchCode>
 for Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED> {
     fn from(val: SearchCode) -> Self {
-        Box::new(val)
+        Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED>
     }
 }

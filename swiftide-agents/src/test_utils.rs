@@ -7,7 +7,9 @@ use swiftide_core::AgentContext;
 
 use crate::hooks::{
     AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn, MessageHookFn,
+    OnStartFn,
 };
+use crate::Agent;
 
 #[macro_export]
 macro_rules! chat_request {
@@ -82,6 +84,20 @@ macro_rules! tool_output {
 }
 
 #[macro_export]
+macro_rules! tool_failed {
+    ($tool_name:expr, $message:expr) => {{
+        ChatMessage::ToolOutput(
+            ToolCall::builder()
+                .name($tool_name)
+                .id("1")
+                .build()
+                .unwrap(),
+            ToolOutput::Fail($message.to_string()),
+        )
+    }};
+}
+
+#[macro_export]
 macro_rules! chat_response {
     ($message:expr; tool_calls = [$($tool_name:expr),*]) => {{
 
@@ -97,7 +113,7 @@ macro_rules! chat_response {
     }};
 }
 
-type Expectations = Arc<Mutex<Vec<(ToolOutput, Option<&'static str>)>>>;
+type Expectations = Arc<Mutex<Vec<(Result<ToolOutput, ToolError>, Option<&'static str>)>>>;
 
 #[derive(Debug, Clone)]
 pub struct MockTool {
@@ -115,7 +131,19 @@ impl MockTool {
             name,
         }
     }
-    pub fn expect_invoke(&self, expected_result: ToolOutput, expected_args: Option<&'static str>) {
+    pub fn expect_invoke_ok(
+        &self,
+        expected_result: ToolOutput,
+        expected_args: Option<&'static str>,
+    ) {
+        self.expect_invoke(Ok(expected_result), expected_args);
+    }
+
+    pub fn expect_invoke(
+        &self,
+        expected_result: Result<ToolOutput, ToolError>,
+        expected_args: Option<&'static str>,
+    ) {
         self.expectations
             .lock()
             .unwrap()
@@ -130,6 +158,11 @@ impl Tool for MockTool {
         _agent_context: &dyn AgentContext,
         raw_args: Option<&str>,
     ) -> std::result::Result<ToolOutput, ToolError> {
+        tracing::debug!(
+            "[MockTool] Invoked `{}` with args: {:?}",
+            self.name,
+            raw_args
+        );
         let expectation = self
             .expectations
             .lock()
@@ -139,7 +172,7 @@ impl Tool for MockTool {
 
         assert_eq!(expectation.1, raw_args);
 
-        Ok(expectation.0)
+        expectation.0
     }
 
     fn name(&self) -> &'static str {
@@ -157,7 +190,7 @@ impl Tool for MockTool {
 
 impl From<MockTool> for Box<dyn Tool> {
     fn from(val: MockTool) -> Self {
-        Box::new(val)
+        Box::new(val) as Box<dyn Tool>
     }
 }
 
@@ -206,7 +239,7 @@ impl MockHook {
 
     pub fn hook_fn(&self) -> impl BeforeAllFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext| {
+        move |_: &Agent| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -216,9 +249,20 @@ impl MockHook {
         }
     }
 
+    pub fn on_start_fn(&self) -> impl OnStartFn {
+        let called = Arc::clone(&self.called);
+        move |_: &Agent| {
+            let called = Arc::clone(&called);
+            Box::pin(async move {
+                let mut called = called.lock().unwrap();
+                *called += 1;
+                Ok(())
+            })
+        }
+    }
     pub fn before_completion_fn(&self) -> impl BeforeCompletionFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -230,7 +274,7 @@ impl MockHook {
 
     pub fn after_completion_fn(&self) -> impl AfterCompletionFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -242,7 +286,7 @@ impl MockHook {
 
     pub fn after_tool_fn(&self) -> impl AfterToolFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _, _| {
+        move |_: &Agent, _, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -254,7 +298,7 @@ impl MockHook {
 
     pub fn before_tool_fn(&self) -> impl BeforeToolFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -266,7 +310,7 @@ impl MockHook {
 
     pub fn message_hook_fn(&self) -> impl MessageHookFn {
         let called = Arc::clone(&self.called);
-        move |_: &dyn AgentContext, _| {
+        move |_: &Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();

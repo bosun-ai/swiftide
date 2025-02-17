@@ -115,6 +115,19 @@ impl LanceDB {
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
+
+    /// Opens the lancedb table
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the table cannot be opened or the connection cannot be acquired.
+    pub async fn open_table(&self) -> Result<lancedb::Table> {
+        let conn = self.get_connection().await?;
+        conn.open_table(&self.table_name)
+            .execute()
+            .await
+            .context("Failed to open table")
+    }
 }
 
 impl LanceDBBuilder {
@@ -169,8 +182,11 @@ impl LanceDBBuilder {
                         true,
                     ));
                 }
-                FieldConfig::Chunk | FieldConfig::Metadata(_) => {
+                FieldConfig::Chunk => {
                     fields.push(Field::new(field.field_name(), DataType::Utf8, false));
+                }
+                FieldConfig::Metadata(_) => {
+                    fields.push(Field::new(field.field_name(), DataType::Utf8, true));
                 }
                 FieldConfig::ID => {
                     fields.push(Field::new(

@@ -3,13 +3,17 @@ use crate::{
     default_context::DefaultContext,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
-        Hook, HookTypes, MessageHookFn,
+        Hook, HookTypes, MessageHookFn, OnStartFn,
     },
     state,
     system_prompt::SystemPrompt,
-    tools::control::Stop,
+    tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::{DefaultHasher, Hash as _, Hasher as _},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use derive_builder::Builder;
@@ -38,7 +42,10 @@ pub struct Agent {
     #[builder(default, setter(into))]
     pub(crate) hooks: Vec<Hook>,
     /// The context in which the agent operates, by default this is the `DefaultContext`.
-    #[builder(setter(custom), default = Arc::new(DefaultContext::default()))]
+    #[builder(
+        setter(custom),
+        default = Arc::new(DefaultContext::default()) as Arc<dyn AgentContext>
+    )]
     pub(crate) context: Arc<dyn AgentContext>,
     /// Tools the agent can use
     #[builder(default = Agent::default_tools(), setter(custom))]
@@ -73,6 +80,29 @@ pub struct Agent {
     /// Initial state of the agent
     #[builder(private, default = state::State::default())]
     pub(crate) state: state::State,
+
+    /// Optional limit on the amount of loops the agent can run.
+    /// The counter is reset when the agent is stopped.
+    #[builder(default, setter(strip_option))]
+    pub(crate) limit: Option<usize>,
+
+    /// The maximum amount of times the failed output of a tool will be send
+    /// to an LLM before the agent stops. Defaults to 3.
+    ///
+    /// LLMs sometimes send missing arguments, or a tool might actually fail, but retrying could be
+    /// worth while. If the limit is not reached, the agent will send the formatted error back to
+    /// the LLM.
+    ///
+    /// The limit is hashed based on the tool call name and arguments, so the limit is per tool call.
+    ///
+    /// This limit is _not_ reset when the agent is stopped.
+    #[builder(default = 3)]
+    pub(crate) tool_retry_limit: usize,
+
+    /// Internally tracks the amount of times a tool has been retried. The key is a hash based on
+    /// the name and args of the tool.
+    #[builder(private, default)]
+    pub(crate) tool_retries_counter: HashMap<u64, usize>,
 }
 
 impl std::fmt::Debug for Agent {
@@ -107,7 +137,7 @@ impl AgentBuilder {
     where
         Self: Clone,
     {
-        self.context = Some(Arc::new(context));
+        self.context = Some(Arc::new(context) as Arc<dyn AgentContext>);
         self
     }
 
@@ -130,6 +160,13 @@ impl AgentBuilder {
     /// before all will not trigger again.
     pub fn before_all(&mut self, hook: impl BeforeAllFn + 'static) -> &mut Self {
         self.add_hook(Hook::BeforeAll(Box::new(hook)))
+    }
+
+    /// Add a hook that runs once, when the agent starts. This hook also runs if the agent stopped
+    /// and then starts again. The hook runs after any `before_all` hooks and before the
+    /// `before_completion` hooks.
+    pub fn on_start(&mut self, hook: impl OnStartFn + 'static) -> &mut Self {
+        self.add_hook(Hook::OnStart(Box::new(hook)))
     }
 
     /// Add a hook that runs before each completion.
@@ -170,7 +207,7 @@ impl AgentBuilder {
 
     /// Set the LLM for the agent. An LLM must implement the `ChatCompletion` trait.
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
-        let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone());
+        let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone()) as Box<dyn ChatCompletion>;
 
         self.llm = Some(boxed);
         self
@@ -257,8 +294,19 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::AfterTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self.context).instrument(span).await?;
+                    hook(self).instrument(span.or_current()).await?;
                 }
+            }
+        }
+
+        for hook in self.hooks_by_type(HookTypes::OnStart) {
+            if let Hook::OnStart(hook) = hook {
+                let span = tracing::info_span!(
+                    "hook",
+                    "otel.name" = format!("hook.{}", HookTypes::OnStart)
+                );
+                tracing::info!("Calling {} hook", HookTypes::OnStart);
+                hook(self).instrument(span.or_current()).await?;
             }
         }
 
@@ -268,7 +316,15 @@ impl Agent {
             self.context.add_message(ChatMessage::User(query)).await;
         }
 
+        let mut loop_counter = 0;
+
         while let Some(messages) = self.context.next_completion().await {
+            if let Some(limit) = self.limit {
+                if loop_counter >= limit {
+                    tracing::warn!("Agent loop limit reached");
+                    break;
+                }
+            }
             let result = self.run_completions(&messages).await;
 
             if let Err(err) = result {
@@ -280,6 +336,7 @@ impl Agent {
             if just_once || self.state.is_stopped() {
                 break;
             }
+            loop_counter += 1;
         }
 
         // If there are no new messages, ensure we update our state
@@ -312,8 +369,8 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::BeforeCompletion)
                 );
                 tracing::info!("Calling {} hook", HookTypes::BeforeCompletion);
-                hook(&*self.context, &mut chat_completion_request)
-                    .instrument(span)
+                hook(&*self, &mut chat_completion_request)
+                    .instrument(span.or_current())
                     .await?;
             }
         }
@@ -338,7 +395,9 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::AfterCompletion)
                 );
                 tracing::info!("Calling {} hook", HookTypes::AfterCompletion);
-                hook(&*self.context, &mut response).instrument(span).await?;
+                hook(&*self, &mut response)
+                    .instrument(span.or_current())
+                    .await?;
             }
         }
         self.add_message(ChatMessage::Assistant(
@@ -358,7 +417,7 @@ impl Agent {
                     "otel.name" = format!("hook.{}", HookTypes::AfterEach)
                 );
                 tracing::info!("Calling {} hook", HookTypes::AfterEach);
-                hook(&*self.context).instrument(span).await?;
+                hook(&*self).instrument(span.or_current()).await?;
             }
         }
 
@@ -386,7 +445,9 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::BeforeTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::BeforeTool);
-                    hook(&*self.context, &tool_call).instrument(span).await?;
+                    hook(&*self, &tool_call)
+                        .instrument(span.or_current())
+                        .await?;
                 }
             }
 
@@ -394,12 +455,13 @@ impl Agent {
                 tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool.name()));
 
             let handle = tokio::spawn(async move {
+                    let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
                     let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
                     tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name(), "Completed tool call");
 
                     Ok(output)
-                }.instrument(tool_span));
+                }.instrument(tool_span.or_current()));
 
             handles.push((handle, tool_call));
         }
@@ -415,10 +477,32 @@ impl Agent {
                         "otel.name" = format!("hook.{}", HookTypes::AfterTool)
                     );
                     tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self.context, &tool_call, &mut output)
-                        .instrument(span)
+                    hook(&*self, &tool_call, &mut output)
+                        .instrument(span.or_current())
                         .await?;
                 }
+            }
+
+            if let Err(error) = output {
+                if self.tool_calls_over_limit(&tool_call) {
+                    tracing::error!(
+                        "Tool call failed, retry limit reached, stopping agent: {err}",
+                        err = error
+                    );
+                    self.stop();
+                    return Err(error.into());
+                }
+                tracing::warn!(
+                    error = error.to_string(),
+                    tool_call = ?tool_call,
+                    "Tool call failed, retrying",
+                );
+                self.add_message(ChatMessage::ToolOutput(
+                    tool_call,
+                    ToolOutput::Fail(error.to_string()),
+                ))
+                .await?;
+                continue;
             }
 
             let output = output?;
@@ -452,6 +536,21 @@ impl Agent {
         }
     }
 
+    fn tool_calls_over_limit(&mut self, tool_call: &ToolCall) -> bool {
+        let mut s = DefaultHasher::new();
+        tool_call.hash(&mut s);
+        let hash = s.finish();
+
+        if let Some(retries) = self.tool_retries_counter.get_mut(&hash) {
+            let val = *retries >= self.tool_retry_limit;
+            *retries += 1;
+            val
+        } else {
+            self.tool_retries_counter.insert(hash, 1);
+            false
+        }
+    }
+
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
     async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
@@ -460,7 +559,7 @@ impl Agent {
                     "hook",
                     "otel.name" = format!("hook.{}", HookTypes::OnNewMessage)
                 );
-                if let Err(err) = hook(&*self.context, &mut message).instrument(span).await {
+                if let Err(err) = hook(self, &mut message).instrument(span.or_current()).await {
                     tracing::error!(
                         "Error in {hooktype} hook: {err}",
                         hooktype = HookTypes::OnNewMessage,
@@ -472,19 +571,44 @@ impl Agent {
         Ok(())
     }
 
+    /// Tell the agent to stop. It will finish it's current loop and then stop.
     pub fn stop(&mut self) {
         self.state = state::State::Stopped;
+    }
+
+    /// Access the agent's context
+    pub fn context(&self) -> &dyn AgentContext {
+        &self.context
+    }
+
+    /// The agent is still running
+    pub fn is_running(&self) -> bool {
+        self.state.is_running()
+    }
+
+    /// The agent stopped
+    pub fn is_stopped(&self) -> bool {
+        self.state.is_stopped()
+    }
+
+    /// The agent has not (ever) started
+    pub fn is_pending(&self) -> bool {
+        self.state.is_pending()
     }
 }
 
 #[cfg(test)]
 mod tests {
 
+    use serde::ser::Error;
+    use swiftide_core::chat_completion::errors::ToolError;
     use swiftide_core::chat_completion::{ChatCompletionResponse, ToolCall};
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
-    use crate::{assistant, chat_request, chat_response, summary, system, tool_output, user};
+    use crate::{
+        assistant, chat_request, chat_response, summary, system, tool_failed, tool_output, user,
+    };
 
     use crate::test_utils::{MockHook, MockTool};
 
@@ -520,6 +644,8 @@ mod tests {
         assert_eq!(agent.tools.len(), 2);
         assert!(agent.find_tool_by_name("mock_tool").is_some());
         assert!(agent.find_tool_by_name("stop").is_some());
+
+        assert!(agent.context().history().await.is_empty());
     }
 
     #[test_log::test(tokio::test)]
@@ -556,7 +682,7 @@ mod tests {
         };
 
         mock_llm.expect_complete(chat_request, Ok(stop_response));
-        mock_tool.expect_invoke("Great!".into(), None);
+        mock_tool.expect_invoke_ok("Great!".into(), None);
 
         let mut agent = Agent::builder()
             .tools([mock_tool])
@@ -587,7 +713,7 @@ mod tests {
 
         };
 
-        mock_tool.expect_invoke("Great!".into(), None);
+        mock_tool.expect_invoke_ok("Great!".into(), None);
         mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
 
         let mut agent = Agent::builder()
@@ -624,8 +750,8 @@ mod tests {
         };
 
         dbg!(&chat_request);
-        mock_tool.expect_invoke("Great!".into(), None);
-        mock_tool2.expect_invoke("Great!".into(), None);
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+        mock_tool2.expect_invoke_ok("Great!".into(), None);
         mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
 
         let chat_request = chat_request! {
@@ -748,6 +874,7 @@ mod tests {
     #[test_log::test(tokio::test)]
     async fn test_agent_hooks() {
         let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
+        let mock_on_start_fn = MockHook::new("on_start").expect_calls(1).to_owned();
         let mock_before_completion = MockHook::new("before_completion")
             .expect_calls(2)
             .to_owned();
@@ -791,13 +918,14 @@ mod tests {
         };
 
         mock_llm.expect_complete(chat_request, Ok(stop_response));
-        mock_tool.expect_invoke("Great!".into(), None);
+        mock_tool.expect_invoke_ok("Great!".into(), None);
 
         let mut agent = Agent::builder()
             .tools([mock_tool])
             .llm(&mock_llm)
             .no_system_prompt()
             .before_all(mock_before_all.hook_fn())
+            .on_start(mock_on_start_fn.on_start_fn())
             .before_completion(mock_before_completion.before_completion_fn())
             .before_tool(mock_before_tool.before_tool_fn())
             .after_completion(mock_after_completion.after_completion_fn())
@@ -808,5 +936,112 @@ mod tests {
             .unwrap();
 
         agent.query(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_loop_limit() {
+        let prompt = "Generate content"; // Example prompt
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("mock_tool");
+
+        let chat_request = chat_request! {
+            user!(prompt);
+            tools = [mock_tool.clone()]
+        };
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+
+        let mock_tool_response = chat_response! {
+            "Some response";
+            tool_calls = ["mock_tool"]
+        };
+
+        // Set expectations for the mock LLM responses
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response.clone()));
+
+        // // Response for terminating the loop
+        let stop_response = chat_response! {
+            "Final response";
+            tool_calls = ["stop"]
+        };
+
+        mock_llm.expect_complete(chat_request, Ok(stop_response));
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .limit(1) // Setting the loop limit to 1
+            .build()
+            .unwrap();
+
+        // Run the agent
+        agent.query(prompt).await.unwrap();
+
+        // Assert that the remaining message is still in the queue
+        let remaining = mock_llm.expectations.lock().unwrap().pop();
+        assert!(remaining.is_some());
+
+        // Assert that the agent is stopped after reaching the loop limit
+        assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_tool_retry_mechanism() {
+        let prompt = "Execute my tool";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("retry_tool");
+
+        // Configure mock tool to fail twice. First time is fed back to the LLM, second time is an
+        // error
+        mock_tool.expect_invoke(
+            Err(ToolError::WrongArguments(serde_json::Error::custom(
+                "missing `query`",
+            ))),
+            None,
+        );
+        mock_tool.expect_invoke(
+            Err(ToolError::WrongArguments(serde_json::Error::custom(
+                "missing `query`",
+            ))),
+            None,
+        );
+
+        let chat_request = chat_request! {
+            user!(prompt);
+            tools = [mock_tool.clone()]
+        };
+        let retry_response = chat_response! {
+            "First failing attempt";
+            tool_calls = ["retry_tool"]
+        };
+        mock_llm.expect_complete(chat_request.clone(), Ok(retry_response));
+
+        let chat_request = chat_request! {
+            user!(prompt),
+            assistant!("First failing attempt", ["retry_tool"]),
+            tool_failed!("retry_tool", "arguments for tool failed to parse: missing `query`");
+
+            tools = [mock_tool.clone()]
+        };
+        let will_fail_response = chat_response! {
+            "Finished execution";
+            tool_calls = ["retry_tool"]
+        };
+        mock_llm.expect_complete(chat_request.clone(), Ok(will_fail_response));
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .tool_retry_limit(1) // The test relies on a limit of 2 retries.
+            .build()
+            .unwrap();
+
+        // Run the agent
+        let result = agent.query(prompt).await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing `query`"));
+        assert!(agent.is_stopped());
     }
 }
