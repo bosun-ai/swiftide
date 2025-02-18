@@ -2744,9 +2744,9 @@ dependencies = [
 
 [[package]]
 name = "document-features"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb6969eaabd2421f8a2775cfd2471a2b634372b4a25d41e3bd647b79912850a0"
+checksum = "95249b50c6c185bee49034bcb378a49dc2b5dff0be90ff6616d31d64febab05d"
 dependencies = [
  "litrs",
 ]
@@ -7944,9 +7944,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.27.62"
+version = "2.28.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89064a268c22a86833ce57105b03e0771447fb29870f5e6311fb198cb8c7f82"
+checksum = "f30e54291f393986683ca173e5ad516d320da531e6d261040178e130d89a65da"
 dependencies = [
  "ahash",
  "aho-corasick",
@@ -8261,9 +8261,9 @@ checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
 [[package]]
 name = "string-interner"
-version = "0.18.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a3275464d7a9f2d4cac57c89c2ef96a8524dba2864c8d6f82e3980baf136f9b"
+checksum = "23de088478b31c349c9ba67816fa55d9355232d63c3afea8bf513e31f0f1d2c0"
 dependencies = [
  "hashbrown 0.15.2",
  "serde",
@@ -8351,11 +8351,11 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.27.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce1475c515a4f03a8a7129bb5228b81a781a86cb0b3fbbc19e1c556d491a401f"
+checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
 dependencies = [
- "strum_macros 0.27.0",
+ "strum_macros 0.27.1",
 ]
 
 [[package]]
@@ -8373,9 +8373,9 @@ dependencies = [
 
 [[package]]
 name = "strum_macros"
-version = "0.27.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9688894b43459159c82bfa5a5fa0435c19cbe3c9b427fa1dd7b1ce0c279b18a7"
+checksum = "c77a8c5abcaf0f9ce05d62342b7d298c346515365c36b673df4ebe3ced01fde8"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -8432,8 +8432,8 @@ dependencies = [
  "pretty_assertions",
  "serde",
  "serde_json",
- "strum 0.27.0",
- "strum_macros 0.27.0",
+ "strum 0.27.1",
+ "strum_macros 0.27.1",
  "swiftide-core",
  "swiftide-macros",
  "temp-dir",
@@ -8459,8 +8459,8 @@ dependencies = [
  "qdrant-client",
  "serde",
  "serde_json",
- "strum 0.27.0",
- "strum_macros 0.27.0",
+ "strum 0.27.1",
+ "strum_macros 0.27.1",
  "tera",
  "test-case",
  "thiserror 2.0.11",
@@ -8507,8 +8507,8 @@ dependencies = [
  "num_cpus",
  "serde",
  "serde_json",
- "strum 0.27.0",
- "strum_macros 0.27.0",
+ "strum 0.27.1",
+ "strum_macros 0.27.1",
  "swiftide-core",
  "swiftide-macros",
  "test-case",
@@ -8558,8 +8558,8 @@ dependencies = [
  "serde_json",
  "spider",
  "sqlx",
- "strum 0.27.0",
- "strum_macros 0.27.0",
+ "strum 0.27.1",
+ "strum_macros 0.27.1",
  "swiftide-core",
  "swiftide-macros",
  "swiftide-test-utils",
@@ -9067,7 +9067,7 @@ dependencies = [
  "itertools 0.14.0",
  "pulldown-cmark",
  "regex",
- "strum 0.27.0",
+ "strum 0.27.1",
  "thiserror 2.0.11",
 ]
 
@@ -9544,9 +9544,9 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.25.1"
+version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a802c93485fb6781d27e27cb5927f6b00ff8d26b56c70af87267be7e99def97"
+checksum = "5168a515fe492af54c5cc8800ff8c840be09fa5168de45838afaecd3e008bce4"
 dependencies = [
  "cc",
  "regex",
@@ -9893,9 +9893,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.13.1"
+version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced87ca4be083373936a67f8de945faa23b6b42384bd5b64434850802c6dccd0"
+checksum = "8c1f41ffb7cf259f1ecc2876861a17e7142e63ead296f671f81f6ae85903e0d6"
 dependencies = [
  "getrandom 0.3.1",
  "md-5",
