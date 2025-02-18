@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739726087290,
+  "lastUpdate": 1739887724239,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15065,6 +15065,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241423,
             "range": "± 1485",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b09afed72d463d8b59ffa2b325eb6a747c88c87f",
+          "message": "feat(query): Add support for reranking with `Fastembed` and multi-document retrieval (#508)\n\nAiming for post 0.16. Needs examples, better tests, and sanity checks.",
+          "timestamp": "2025-02-18T14:59:18+01:00",
+          "tree_id": "00985c5c44711d94429cfe01257519d2d794352e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b09afed72d463d8b59ffa2b325eb6a747c88c87f"
+        },
+        "date": 1739887723580,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1362753,
+            "range": "± 1076353",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242718,
+            "range": "± 2240",
             "unit": "ns/iter"
           }
         ]
