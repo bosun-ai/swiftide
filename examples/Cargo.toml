@@ -114,3 +114,7 @@ path = "index_md_into_pgvector.rs"
 [[example]]
 name = "dashscope"
 path = "dashscope.rs"
+
+[[example]]
+name = "reranking"
+path = "reranking.rs"

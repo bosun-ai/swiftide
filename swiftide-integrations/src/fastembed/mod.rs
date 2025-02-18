@@ -10,7 +10,10 @@ pub use swiftide_core::EmbeddingModel as _;
 pub use swiftide_core::SparseEmbeddingModel as _;
 
 mod embedding_model;
+mod rerank;
 mod sparse_embedding_model;
+
+pub use rerank::Rerank;
 
 pub enum EmbeddingModelType {
     Dense(TextEmbedding),

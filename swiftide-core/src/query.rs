@@ -38,7 +38,7 @@ pub struct Query<STATE: QueryState> {
     ///
     /// A query can retrieve multiple times, accumulating documents
     #[builder(default)]
-    documents: Vec<Document>,
+    pub documents: Vec<Document>,
 }
 
 impl<STATE: std::fmt::Debug + QueryState> std::fmt::Debug for Query<STATE> {

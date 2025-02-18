@@ -73,8 +73,6 @@ fn try_create_vectors(
     vectors: HashMap<EmbeddedField, Embedding>,
     sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
 ) -> Result<qdrant::Vectors> {
-    dbg!(&vector_fields);
-    dbg!(&vectors);
     if vectors.is_empty() {
         bail!("Node with empty vectors")
     } else if vectors.len() == 1 && sparse_vectors.is_none() {
