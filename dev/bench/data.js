@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739887724239,
+  "lastUpdate": 1739907544444,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15119,6 +15119,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242718,
             "range": "± 2240",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bogzbonny@protonmail.com",
+            "name": "bogzbonny",
+            "username": "bogzbonny"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "af7b57aecc3ee377cad126c6ba55588cc63937a4",
+          "message": "chore: update to async-anthropic 0.3.0 (#626)\n\nAdds backoff support",
+          "timestamp": "2025-02-18T20:29:35+01:00",
+          "tree_id": "e3a9d6b969e03df209819f186ad90f1ce72c3e25",
+          "url": "https://github.com/bosun-ai/swiftide/commit/af7b57aecc3ee377cad126c6ba55588cc63937a4"
+        },
+        "date": 1739907543574,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1372683,
+            "range": "± 1226904",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244882,
+            "range": "± 8617",
             "unit": "ns/iter"
           }
         ]
