@@ -40,7 +40,9 @@ impl swiftide::chat_completion::Tool for HelloDerive {
             .parameters(
                 vec![
                     swiftide::chat_completion::ParamSpec::builder().name("test")
-                    .description("test param").build().expect("infallible")
+                    .description("test param")
+                    .ty(::swiftide::chat_completion::ParamType::String).build()
+                    .expect("infallible")
                 ],
             )
             .build()

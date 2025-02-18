@@ -53,7 +53,9 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
             .parameters(
                 vec![
                     swiftide::chat_completion::ParamSpec::builder().name("code_query")
-                    .description("my param description").build().expect("infallible")
+                    .description("my param description")
+                    .ty(::swiftide::chat_completion::ParamType::String).build()
+                    .expect("infallible")
                 ],
             )
             .build()

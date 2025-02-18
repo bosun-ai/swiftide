@@ -14,6 +14,8 @@ homepage.workspace = true
 proc-macro = true
 
 [dependencies]
+swiftide-core = { path = "../swiftide-core/" }
+
 quote = { workspace = true }
 syn = { workspace = true }
 darling = { workspace = true }
@@ -32,7 +34,6 @@ rustversion = "1.0.18"
 trybuild = "1.0"
 prettyplease = "0.2.25"
 insta.workspace = true
-swiftide-core = { path = "../swiftide-core/" }
 swiftide = { path = "../swiftide/" }
 
 [lints]
