@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0](https://github.com/bosun-ai/swiftide/compare/v0.19.0...v0.20.0) - 2025-02-18
+
+### New features
+
+- [5d85d14](https://github.com/bosun-ai/swiftide/commit/5d85d142339d24c793bd89a907652bede0d1c94d) *(agents)*  Add support for numbers, arrays and booleans in tool args (#562)
+
+````text
+Add support for numbers, arrays and boolean types in the
+  `#[swiftide_macros::tool]` attribute macro. For enum and object a custom
+  implementation is now properly supported as well, but not via the macro.
+  For now, tools using Derive also still need a custom implementation.
+````
+
+- [b09afed](https://github.com/bosun-ai/swiftide/commit/b09afed72d463d8b59ffa2b325eb6a747c88c87f) *(query)*  Add support for reranking with `Fastembed` and multi-document retrieval (#508)
+
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.19.0...0.20.0
+
+
+
 ## [0.19.0](https://github.com/bosun-ai/swiftide/compare/v0.18.2...v0.19.0) - 2025-02-13
 
 ### New features
