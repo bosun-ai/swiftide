@@ -17,9 +17,6 @@ Add support for numbers, arrays and boolean types in the
 
 - [b09afed](https://github.com/bosun-ai/swiftide/commit/b09afed72d463d8b59ffa2b325eb6a747c88c87f) *(query)*  Add support for reranking with `Fastembed` and multi-document retrieval (#508)
 
-````text
-Aiming for post 0.16. Needs examples, better tests, and sanity checks.
-````
 
 ### Miscellaneous
 
