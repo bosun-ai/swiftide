@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739913471925,
+  "lastUpdate": 1739953509559,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15227,6 +15227,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244097,
             "range": "± 2135",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "26fe23257d11d0c95192cc2a21d34462a8846ee7",
+          "message": "chore: release v0.20.0 (#621)\n\n## 🤖 New release\n\n* `swiftide`: 0.19.0 -> 0.20.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.19.0 -> 0.20.0\n* `swiftide-core`: 0.19.0 -> 0.20.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.19.0 -> 0.20.0\n* `swiftide-indexing`: 0.19.0 -> 0.20.0\n* `swiftide-integrations`: 0.19.0 -> 0.20.0 (✓ API compatible changes)\n* `swiftide-query`: 0.19.0 -> 0.20.0\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure constructible_struct_adds_field: externally-constructible struct adds field ---\n\nDescription:\nA pub struct constructible with a struct literal has a new pub field. Existing struct literals must be updated to include the new field.\n        ref: https://doc.rust-lang.org/reference/expressions/struct-expr.html\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.39.0/src/lints/constructible_struct_adds_field.ron\n\nFailed in:\n  field ParamSpec.ty in /tmp/.tmpodBbEO/swiftide/swiftide-core/src/chat_completion/tools.rs:132\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.20.0](https://github.com/bosun-ai/swiftide/compare/v0.19.0...v0.20.0)\n- 2025-02-18\n\n### New features\n\n-\n[5d85d14](https://github.com/bosun-ai/swiftide/commit/5d85d142339d24c793bd89a907652bede0d1c94d)\n*(agents)* Add support for numbers, arrays and booleans in tool args\n(#562)\n\n````text\nAdd support for numbers, arrays and boolean types in the\n  `#[swiftide_macros::tool]` attribute macro. For enum and object a custom\n  implementation is now properly supported as well, but not via the macro.\n  For now, tools using Derive also still need a custom implementation.\n````\n\n-\n[b09afed](https://github.com/bosun-ai/swiftide/commit/b09afed72d463d8b59ffa2b325eb6a747c88c87f)\n*(query)* Add support for reranking with `Fastembed` and multi-document\nretrieval (#508)\n\n````text\nAiming for post 0.16. Needs examples, better tests, and sanity checks.\n````\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.19.0...0.20.0\n</blockquote>\n\n\n\n\n\n\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).\n\n---------\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-02-19T09:15:30+01:00",
+          "tree_id": "eb67fc0a99a5b934e768b30db22307466819ac7a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/26fe23257d11d0c95192cc2a21d34462a8846ee7"
+        },
+        "date": 1739953508265,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1335044,
+            "range": "± 1000946",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241619,
+            "range": "± 1825",
             "unit": "ns/iter"
           }
         ]
