@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739953509559,
+  "lastUpdate": 1739966318477,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15281,6 +15281,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241619,
             "range": "± 1825",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "73fbc60e335dadedebe822fd5cb45fd282fd63ad",
+          "message": "fix(deps): Add version to swiftide-core",
+          "timestamp": "2025-02-19T12:33:51+01:00",
+          "tree_id": "1fe20fde09c6c4aad54109d5212e199836baac68",
+          "url": "https://github.com/bosun-ai/swiftide/commit/73fbc60e335dadedebe822fd5cb45fd282fd63ad"
+        },
+        "date": 1739966317211,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1365827,
+            "range": "± 1009367",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243280,
+            "range": "± 2748",
             "unit": "ns/iter"
           }
         ]
