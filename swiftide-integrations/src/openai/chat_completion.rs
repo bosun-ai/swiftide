@@ -13,7 +13,7 @@ use swiftide_core::chat_completion::{
     ChatMessage, ToolCall, ToolSpec,
 };
 
-use super::OpenAI;
+use super::{open_ai_error_to_completion_error, OpenAI};
 
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
@@ -57,7 +57,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
 
         let request = openai_request
             .build()
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(open_ai_error_to_completion_error)?;
 
         tracing::debug!(
             model = &model,
@@ -70,7 +70,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .chat()
             .create(request)
             .await
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(open_ai_error_to_completion_error)?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("infallible"),

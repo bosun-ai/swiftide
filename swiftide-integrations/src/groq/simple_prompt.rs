@@ -3,7 +3,9 @@
 //! and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, SimplePrompt};
+use swiftide_core::{chat_completion::errors::ChatCompletionError, prompt::Prompt, SimplePrompt};
+
+use crate::openai::open_ai_error_to_completion_error;
 
 use super::Groq;
 use anyhow::{Context as _, Result};
@@ -25,7 +27,7 @@ impl SimplePrompt for Groq {
     /// - Returns an error if the request to the Groq API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
@@ -38,22 +40,31 @@ impl SimplePrompt for Groq {
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render().await?)
-                .build()?
+                .build()
+                .map_err(open_ai_error_to_completion_error)?
                 .into()])
-            .build()?;
+            .build()
+            .map_err(open_ai_error_to_completion_error)?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
-            messages = serde_json::to_string_pretty(&request)?,
+            messages = serde_json::to_string_pretty(&request)
+                .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
             "[SimplePrompt] Request to groq"
         );
 
         // Send the request to the Groq API and await the response.
-        let mut response = self.client.chat().create(request).await?;
+        let mut response = self
+            .client
+            .chat()
+            .create(request)
+            .await
+            .map_err(open_ai_error_to_completion_error)?;
 
         // Log the response for debugging purposes.
         tracing::debug!(
-            response = serde_json::to_string_pretty(&response)?,
+            response = serde_json::to_string_pretty(&response)
+                .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
             "[SimplePrompt] Response from groq"
         );
 
@@ -64,6 +75,8 @@ impl SimplePrompt for Groq {
             .message
             .content
             .take()
-            .context("Expected content in response")
+            .ok_or(ChatCompletionError::ClientError(
+                "Expected content in response".into(),
+            ))
     }
 }
