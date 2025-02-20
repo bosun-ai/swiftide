@@ -8451,6 +8451,7 @@ version = "0.20.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "backoff",
  "derive_builder",
  "dyn-clone",
  "futures-util",

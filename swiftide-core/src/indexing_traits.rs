@@ -8,8 +8,9 @@ use crate::Embeddings;
 use crate::{
     indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream, SparseEmbeddings,
 };
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::prompt::Prompt;
 use anyhow::Result;
@@ -533,15 +534,79 @@ impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
     }
 }
 
+/// Backoff configuration for api calls.
+/// Each time an api call fails backoff will wait an increasing period of time for each subsequent
+/// retry attempt. see <https://docs.rs/backoff/latest/backoff/> for more details.
+#[derive(Debug, Clone, Copy)]
+pub struct BackoffConfiguration {
+    /// Initial interval in seconds between retries
+    pub initial_interval_sec: u64,
+    /// The factor by which the interval is multiplied on each retry attempt
+    pub multiplier: f64,
+    /// Introduces randomness to avoid retry storms
+    pub randomization_factor: f64,
+    /// Total time all attempts are allowed in seconds. Once a retry must wait longer than this,
+    /// the request is considered to have failed.
+    pub max_elapsed_time_sec: u64,
+}
+
+#[derive(Debug)]
+pub enum PromptError {
+    ContextLengthExceeded(anyhow::Error),
+    ClientError(anyhow::Error),
+    TransientError(anyhow::Error),
+}
+
+impl Display for PromptError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PromptError::ContextLengthExceeded(e) => write!(f, "Context length exceeded: {}", e),
+            PromptError::ClientError(e) => write!(f, "Client error: {}", e),
+            PromptError::TransientError(e) => write!(f, "Transient error: {}", e),
+        }
+    }
+}
+
+impl From<PromptError> for anyhow::Error {
+    fn from(err: PromptError) -> Self {
+        match err {
+            PromptError::ContextLengthExceeded(e) => e,
+            PromptError::ClientError(e) => e,
+            PromptError::TransientError(e) => e,
+        }
+    }
+}
+
 #[async_trait]
 /// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync + DynClone {
     // Takes a simple prompt, prompts the llm and returns the response
-    async fn prompt(&self, prompt: Prompt) -> Result<String>;
+    async fn prompt(&self, prompt: Prompt) -> Result<String, PromptError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+
+    async fn prompt_with_backoff(self: &Self, prompt: Prompt, config: BackoffConfiguration) -> Result<String, PromptError> {
+        let strategy = backoff::ExponentialBackoffBuilder::default()
+            .with_initial_interval(Duration::from_secs(config.initial_interval_sec))
+            .with_multiplier(config.multiplier)
+            .with_max_elapsed_time(Some(Duration::from_secs(config.max_elapsed_time_sec)))
+            .with_randomization_factor(config.randomization_factor)
+            .build();
+
+        let op = || {
+            let prompt = prompt.clone();
+         async {
+            self.prompt(prompt).await.map_err(|e| match e {
+                PromptError::ContextLengthExceeded(e) => backoff::Error::Permanent(PromptError::ContextLengthExceeded(e)),
+                PromptError::ClientError(e) => backoff::Error::Permanent(PromptError::ClientError(e)),
+                PromptError::TransientError(e) => backoff::Error::transient(PromptError::TransientError(e)),
+            })
+        }};
+
+        backoff::future::retry(strategy, op).await
     }
 }
 
@@ -554,7 +619,7 @@ mock! {
 
     #[async_trait]
     impl SimplePrompt for SimplePrompt {
-        async fn prompt(&self, prompt: Prompt) -> Result<String>;
+        async fn prompt(&self, prompt: Prompt) -> Result<String, PromptError>;
         fn name(&self) -> &'static str;
     }
 
@@ -565,7 +630,7 @@ mock! {
 
 #[async_trait]
 impl SimplePrompt for Box<dyn SimplePrompt> {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, PromptError> {
         self.as_ref().prompt(prompt).await
     }
 
@@ -576,7 +641,7 @@ impl SimplePrompt for Box<dyn SimplePrompt> {
 
 #[async_trait]
 impl SimplePrompt for Arc<dyn SimplePrompt> {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, PromptError> {
         self.as_ref().prompt(prompt).await
     }
 
@@ -587,7 +652,7 @@ impl SimplePrompt for Arc<dyn SimplePrompt> {
 
 #[async_trait]
 impl SimplePrompt for &dyn SimplePrompt {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, PromptError> {
         (*self).prompt(prompt).await
     }
 }

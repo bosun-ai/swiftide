@@ -1,12 +1,12 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `OpenAI` struct.
 //! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt processing
 //! and generating responses as part of the Swiftide system.
-use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
+use async_openai::{error::OpenAIError, types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs}};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
+use swiftide_core::{prompt::Prompt, util::debug_long_utf8, PromptError, SimplePrompt};
 
 use super::OpenAI;
-use anyhow::{Context as _, Result};
+use anyhow::{anyhow, Context as _, Result};
 
 /// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a response.
 #[async_trait]
@@ -27,28 +27,30 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
     /// - Returns an error if the request to the OpenAI API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, PromptError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
             .prompt_model
             .as_ref()
-            .context("Model not set")?;
+            .context("Model not set")
+            .map_err(PromptError::ClientError)?;
 
         // Build the request to be sent to the OpenAI API.
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render().await?)
-                .build()?
+                .content(prompt.render().await.map_err(PromptError::ClientError)?)
+                .build().map_err(|e| PromptError::ClientError(e.into()))?
                 .into()])
-            .build()?;
+            .build().map_err(|e| PromptError::ClientError(e.into()))?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
-                serde_json::to_string_pretty(&request.messages.first())?,
+                serde_json::to_string_pretty(&request.messages.first())
+                .map_err(|e| PromptError::ClientError(e.into()))?,
                 100
             ),
             "[SimplePrompt] Request to openai"
@@ -59,13 +61,74 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .client
             .chat()
             .create(request)
-            .await?
+            .await;
+
+        let mut response = response.map_err(|e| match e {
+            OpenAIError::ApiError(api_error) => {
+                // If the response is an ApiError, it could be a context length exceeded error
+                if api_error.code == Some("context_length_exceeded".to_string()) {
+                    PromptError::ContextLengthExceeded(anyhow!(api_error))
+                } else {
+                    tracing::error!("OpenAI API Error: {:?}", api_error);
+                    PromptError::ClientError(anyhow!(api_error))
+                }
+            },
+            OpenAIError::Reqwest(e) => match e.status() {
+                Some(status) => {
+                    // If the response code is 429 it could either be a TransientError or a ClientError depending
+                    // on the message, if it contains the word quota, it should be a ClientError otherwise it should
+                    // be a TransientError.
+                    // If the response code is any other 4xx it should be a ClientError.
+                    if status.as_u16() == 429 && !e.to_string().contains("quota") {
+                        PromptError::TransientError(e.into())
+                    } else if status.is_client_error() {
+                        tracing::error!("OpenAI API Client Error: {:?}", e);
+                        PromptError::ClientError(e.into())
+                    } else if status.is_server_error() {
+                        tracing::warn!("OpenAI API Server Error: {:?}", e);
+                        PromptError::TransientError(e.into())
+                    } else {
+                        tracing::error!("Unexpected OpenAI Error: {:?}, error: {:?}", status, e);
+                        PromptError::ClientError(e.into())
+                    }
+                },
+                _ => {
+                    // making the request failed for some other reason, probably recoverable
+                    tracing::error!("Unexpected OpenAI Reqwest Error: {:?}", e);
+                    PromptError::TransientError(e.into())
+                },
+            }
+            OpenAIError::JSONDeserialize(e) => {
+                // OpenAI generated a non-json response, probably a temporary problem on their side
+                tracing::error!("OpenAI response could not be deserialized: {:?}", e);
+                PromptError::TransientError(e.into())
+            },
+            OpenAIError::FileSaveError(msg) => {
+                tracing::error!("OpenAI Failed to save file: {:?}", msg);
+                PromptError::ClientError(anyhow!(msg))
+            },
+            OpenAIError::FileReadError(msg) => {
+                tracing::error!("OpenAI Failed to read file: {:?}", msg);
+                PromptError::ClientError(anyhow!(msg))
+            },
+            OpenAIError::StreamError(msg) => {
+                tracing::error!("OpenAI Stream failed: {:?}", msg);
+                PromptError::ClientError(anyhow!(msg))
+            },
+            OpenAIError::InvalidArgument(msg) => {
+                tracing::error!("OpenAI Invalid Argument: {:?}", msg);
+                PromptError::ClientError(anyhow!(msg))
+            },
+        })?;
+        
+        let response = response
             .choices
             .remove(0)
             .message
             .content
             .take()
-            .context("Expected content in response")?;
+            .context("Expected content in response")
+            .map_err(PromptError::ClientError)?;
 
         // Log the response for debugging purposes.
         tracing::debug!(

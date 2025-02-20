@@ -147,19 +147,25 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
             ///
             /// Gives an error if no (default) client is provided
             async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String> {
+                let Some(client) = &self.client else {
+                    let Some(defaults) = &self.indexing_defaults.as_ref() else {
+                        anyhow::bail!("No client provided")
+                    };
 
-                if let Some(client) = &self.client {
-                    return client.prompt(prompt).await
+                    let Some(client) = defaults.simple_prompt() else {
+                        anyhow::bail!("No client provided")
+                    };
+
+                    Ok(Some(client))
+                }?;
+
+                let result = if let Some(backoff) = defaults.backoff {
+                    client.prompt_with_backoff(prompt, backoff.clone()).await
+                } else {
+                    client.prompt(prompt).await
                 };
 
-                let Some(defaults) = &self.indexing_defaults.as_ref() else {
-                    anyhow::bail!("No client provided")
-                };
-
-                let Some(client) = defaults.simple_prompt() else {
-                    anyhow::bail!("No client provided")
-                };
-                client.prompt(prompt).await
+                result.map_err(|e| anyhow::Error::from(e))
             }
         }
 
