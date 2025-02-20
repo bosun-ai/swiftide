@@ -105,7 +105,7 @@ pub struct Agent {
     pub(crate) tool_retries_counter: HashMap<u64, usize>,
 
     /// If true, the agent will continue to run even if a tool call fails after all retries
-    #[builder(default = true)]
+    #[builder(default = false)]
     pub(crate) continue_on_tool_total_failure: bool,
 }
 
