@@ -2,8 +2,10 @@
 //! It includes the `OpenAI` struct for managing API clients and default options for embedding and prompt models.
 //! The module is conditionally compiled based on the "openai" feature flag.
 
+use async_openai::error::OpenAIError;
 use derive_builder::Builder;
 use std::sync::Arc;
+use swiftide_core::chat_completion::errors::ChatCompletionError;
 
 mod chat_completion;
 mod embed;
@@ -160,6 +162,66 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> 
             });
         }
         self
+    }
+}
+
+pub fn open_ai_error_to_completion_error(e: OpenAIError) -> ChatCompletionError {
+    match e {
+        OpenAIError::ApiError(api_error) => {
+            // If the response is an ApiError, it could be a context length exceeded error
+            if api_error.code == Some("context_length_exceeded".to_string()) {
+                ChatCompletionError::ContextLengthExceeded(OpenAIError::ApiError(api_error).into())
+            } else {
+                tracing::error!("OpenAI API Error: {:?}", api_error);
+                ChatCompletionError::ClientError(OpenAIError::ApiError(api_error).into())
+            }
+        }
+        OpenAIError::Reqwest(e) => match e.status() {
+            Some(status) => {
+                // If the response code is 429 it could either be a TransientError or a ClientError depending
+                // on the message, if it contains the word quota, it should be a ClientError otherwise it should
+                // be a TransientError.
+                // If the response code is any other 4xx it should be a ClientError.
+                if status.as_u16() == 429 && !e.to_string().contains("quota") {
+                    ChatCompletionError::TransientError(e.into())
+                } else if status.is_client_error() {
+                    tracing::error!("OpenAI API Client Error: {:?}", e);
+                    ChatCompletionError::ClientError(e.into())
+                } else if status.is_server_error() {
+                    tracing::warn!("OpenAI API Server Error: {:?}", e);
+                    ChatCompletionError::TransientError(e.into())
+                } else {
+                    tracing::error!("Unexpected OpenAI Error: {:?}, error: {:?}", status, e);
+                    ChatCompletionError::ClientError(e.into())
+                }
+            }
+            _ => {
+                // making the request failed for some other reason, probably recoverable
+                tracing::error!("Unexpected OpenAI Reqwest Error: {:?}", e);
+                ChatCompletionError::TransientError(e.into())
+            }
+        },
+        OpenAIError::JSONDeserialize(e) => {
+            // OpenAI generated a non-json response, probably a temporary problem on their side
+            tracing::error!("OpenAI response could not be deserialized: {:?}", e);
+            ChatCompletionError::TransientError(e.into())
+        }
+        OpenAIError::FileSaveError(msg) => {
+            tracing::error!("OpenAI Failed to save file: {:?}", msg);
+            ChatCompletionError::ClientError(OpenAIError::FileSaveError(msg).into())
+        }
+        OpenAIError::FileReadError(msg) => {
+            tracing::error!("OpenAI Failed to read file: {:?}", msg);
+            ChatCompletionError::ClientError(OpenAIError::FileReadError(msg).into())
+        }
+        OpenAIError::StreamError(msg) => {
+            tracing::error!("OpenAI Stream failed: {:?}", msg);
+            ChatCompletionError::ClientError(OpenAIError::StreamError(msg).into())
+        }
+        OpenAIError::InvalidArgument(msg) => {
+            tracing::error!("OpenAI Invalid Argument: {:?}", msg);
+            ChatCompletionError::ClientError(OpenAIError::InvalidArgument(msg).into())
+        }
     }
 }
 

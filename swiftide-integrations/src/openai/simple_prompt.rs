@@ -3,10 +3,15 @@
 //! and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
+use swiftide_core::{
+    chat_completion::errors::ChatCompletionError, prompt::Prompt, util::debug_long_utf8,
+    SimplePrompt,
+};
+
+use crate::openai::open_ai_error_to_completion_error;
 
 use super::OpenAI;
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 
 /// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a response.
 #[async_trait]
@@ -27,45 +32,55 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
     /// - Returns an error if the request to the OpenAI API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
             .prompt_model
             .as_ref()
-            .context("Model not set")?;
+            .ok_or_else(|| ChatCompletionError::ClientError("Model not set".into()))?;
 
         // Build the request to be sent to the OpenAI API.
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render().await?)
-                .build()?
+                .content(
+                    prompt
+                        .render()
+                        .await
+                        .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+                )
+                .build()
+                .map_err(|e| ChatCompletionError::ClientError(e.into()))?
                 .into()])
-            .build()?;
+            .build()
+            .map_err(|e| ChatCompletionError::ClientError(e.into()))?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
-                serde_json::to_string_pretty(&request.messages.first())?,
+                serde_json::to_string_pretty(&request.messages.first())
+                    .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
                 100
             ),
             "[SimplePrompt] Request to openai"
         );
 
         // Send the request to the OpenAI API and await the response.
-        let response = self
-            .client
-            .chat()
-            .create(request)
-            .await?
+        let response = self.client.chat().create(request).await;
+
+        let mut response = response.map_err(open_ai_error_to_completion_error)?;
+
+        let response = response
             .choices
             .remove(0)
             .message
             .content
             .take()
-            .context("Expected content in response")?;
+            .ok_or_else(|| {
+                ChatCompletionError::ClientError("Expected content in response".into())
+            })?;
 
         // Log the response for debugging purposes.
         tracing::debug!(
