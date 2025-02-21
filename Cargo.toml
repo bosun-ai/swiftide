@@ -38,12 +38,12 @@ lazy_static = { version = "1.5.0" }
 chrono = { version = "0.4" }
 indoc = { version = "2.0" }
 regex = { version = "1.11.1" }
-uuid = { version = "1.13", features = ["v3", "v4", "serde"] }
+uuid = { version = "1.14", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
 convert_case = "0.7.1"
 
 # Integrations
-spider = { version = "2.28" }
+spider = { version = "2.30" }
 async-openai = { version = "0.27.1" }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
@@ -90,7 +90,7 @@ async-anthropic = "0.3.0"
 
 # Testing
 test-log = "0.2.16"
-testcontainers = { version = "0.23.0", features = ["http_wait"] }
+testcontainers = { version = "0.23.3", features = ["http_wait"] }
 mockall = "0.13.1"
 temp-dir = "0.1.13"
 wiremock = "0.6.0"
