@@ -38,6 +38,7 @@ test-log = { workspace = true }
 mockall = { workspace = true }
 insta = { workspace = true }
 test-case = { workspace = true }
+temp-dir = { workspace = true }
 
 [features]
 # TODO: Should not depend on integrations, transformers that use them should be in integrations instead and re-exported from root for convencience
