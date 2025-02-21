@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.1](https://github.com/bosun-ai/swiftide/compare/v0.20.0...v0.20.1) - 2025-02-21
+
+### Bug fixes
+
+- [0aa1248](https://github.com/bosun-ai/swiftide/commit/0aa124819d836f37d1fcaf88e6f88b5affb46cf9) *(indexing)*  Handle invalid utf-8 in fileloader lossy (#632)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.20.0...0.20.1
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.20.0](https://github.com/bosun-ai/swiftide/compare/v0.19.0...v0.20.0) - 2025-02-18
 
 ### New features
