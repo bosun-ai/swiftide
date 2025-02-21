@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739966318477,
+  "lastUpdate": 1740153798012,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15335,6 +15335,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243280,
             "range": "± 2748",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0aa124819d836f37d1fcaf88e6f88b5affb46cf9",
+          "message": "fix(indexing): Handle invalid utf-8 in fileloader lossy (#632)",
+          "timestamp": "2025-02-21T16:54:04+01:00",
+          "tree_id": "82d5ab795d4e985ab46fead52cffaaccd15fdf2a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0aa124819d836f37d1fcaf88e6f88b5affb46cf9"
+        },
+        "date": 1740153797365,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1339429,
+            "range": "± 967297",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 246570,
+            "range": "± 1548",
             "unit": "ns/iter"
           }
         ]
