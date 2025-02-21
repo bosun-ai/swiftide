@@ -8514,6 +8514,7 @@ dependencies = [
  "strum_macros 0.27.1",
  "swiftide-core",
  "swiftide-macros",
+ "temp-dir",
  "test-case",
  "test-log",
  "text-splitter",
