@@ -90,7 +90,7 @@ impl FileLoader {
     // If no extensions are specified, this function will return true.
     // If the file has no extension, this function will return false.
     fn file_has_extension(&self, path: &Path) -> bool {
-        self.extensions.as_ref().map_or(true, |exts| {
+        self.extensions.as_ref().is_none_or(|exts| {
             let Some(ext) = path.extension() else {
                 return false;
             };
