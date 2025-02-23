@@ -11,7 +11,7 @@ readme = "README.md"
 keywords = ["llm", "rag", "ai", "data", "openai"]
 description = "Fast, streaming indexing, query, and agentic LLM applications in Rust"
 categories = ["asynchronous"]
-repository = "https://github.com/bosun-ai/swiftide-rs"
+repository = "https://github.com/bosun-ai/swiftide"
 homepage = "https://swiftide.rs"
 
 [profile.dev.package]
