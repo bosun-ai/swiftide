@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740155499521,
+  "lastUpdate": 1740314042103,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15443,6 +15443,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242177,
             "range": "± 3044",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "74132c07845527f7102040458b09fc1419c3cff1",
+          "message": "fix: Correctly link to repository in Cargo.toml (#637)\n\nOops\n\nFixes #636",
+          "timestamp": "2025-02-23T13:24:56+01:00",
+          "tree_id": "5c64b58f40802db4d9beb2775f1cc0adbf8860cb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/74132c07845527f7102040458b09fc1419c3cff1"
+        },
+        "date": 1740314040907,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1343242,
+            "range": "± 937013",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245813,
+            "range": "± 16429",
             "unit": "ns/iter"
           }
         ]
