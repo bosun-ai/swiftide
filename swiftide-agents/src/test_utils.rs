@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use std::borrow::Cow;
 
 use async_trait::async_trait;
 use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec};
@@ -175,13 +176,13 @@ impl Tool for MockTool {
         expectation.0
     }
 
-    fn name(&self) -> &'static str {
-        self.name
+    fn name<'tool>(&'tool self) -> Cow<'tool, str> {
+        self.name.into()
     }
 
     fn tool_spec(&self) -> ToolSpec {
         ToolSpec::builder()
-            .name(self.name())
+            .name(self.name().as_ref())
             .description("A fake tool for testing purposes")
             .build()
             .unwrap()

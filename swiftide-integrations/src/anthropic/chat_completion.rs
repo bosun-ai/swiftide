@@ -159,13 +159,13 @@ fn tools_to_anthropic(
             json!({
 
                         "type": param.ty.as_ref(),
-                        "description": param.description,
+                        "description": &param.description,
             }),
         );
     }
     let mut map = json!({
-        "name": spec.name,
-        "description": spec.description,
+        "name": &spec.name,
+        "description": &spec.description,
     })
     .as_object_mut()
     .context("Failed to build tool")?
@@ -175,7 +175,7 @@ fn tools_to_anthropic(
         .parameters
         .iter()
         .filter(|param| param.required)
-        .map(|param| param.name)
+        .map(|param| &param.name)
         .collect::<Vec<_>>();
 
     map.insert(
@@ -220,8 +220,8 @@ mod tests {
             todo!()
         }
 
-        fn name(&self) -> &'static str {
-            "get_weather"
+        fn name<'tool>(&'tool self) -> std::borrow::Cow<'tool, str> {
+            "get_weather".into()
         }
 
         fn tool_spec(&self) -> ToolSpec {

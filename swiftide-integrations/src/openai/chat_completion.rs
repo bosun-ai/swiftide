@@ -118,7 +118,7 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
             param.name.to_string(),
             json!({
                 "type": param.ty.as_ref(),
-                "description": param.description,
+                "description": &param.description,
             }),
         );
     }
@@ -126,13 +126,13 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
     ChatCompletionToolArgs::default()
         .r#type(ChatCompletionToolType::Function)
         .function(FunctionObjectArgs::default()
-            .name(spec.name)
-            .description(spec.description)
+            .name(&spec.name)
+            .description(&spec.description)
             .strict(true)
             .parameters(json!({
                 "type": "object",
                 "properties": properties,
-                "required": spec.parameters.iter().filter(|param| param.required).map(|param| param.name).collect_vec(),
+                "required": spec.parameters.iter().filter(|param| param.required).map(|param| &param.name).collect_vec(),
                 "additionalProperties": false,
             })).build()?).build()
         .map_err(anyhow::Error::from)

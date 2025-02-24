@@ -5,6 +5,7 @@ use swiftide_core::{
     chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec},
     AgentContext,
 };
+use std::borrow::Cow;
 
 // TODO: Cannot use macros in our own crates because of import shenanigans
 #[derive(Clone, Debug, Default)]
@@ -20,8 +21,8 @@ impl Tool for Stop {
         Ok(ToolOutput::Stop)
     }
 
-    fn name(&self) -> &'static str {
-        "stop"
+    fn name<'tool>(&'tool self) -> Cow<'tool, str> {
+        "stop".into()
     }
 
     fn tool_spec(&self) -> ToolSpec {

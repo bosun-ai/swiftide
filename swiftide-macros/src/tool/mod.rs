@@ -220,8 +220,8 @@ pub(crate) fn tool_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream
                 #invoke_body
             }
 
-            fn name(&self) -> &'static str {
-                #tool_name
+            fn name<'TOOL>(&'TOOL self) -> std::borrow::Cow<'TOOL, str> {
+                #tool_name.into()
             }
 
             fn tool_spec(&self) -> ::swiftide::chat_completion::ToolSpec {
@@ -321,8 +321,8 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 #invoke_body
             }
 
-            fn name(&self) -> &'static str {
-                #expected_fn_name
+            fn name<'TOOL>(&'TOOL self) -> std::borrow::Cow<'TOOL, str> {
+                #expected_fn_name.into()
             }
 
             fn tool_spec(&self) -> swiftide::chat_completion::ToolSpec {
