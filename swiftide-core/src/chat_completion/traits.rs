@@ -78,7 +78,7 @@ pub trait Tool: Send + Sync + DynClone {
         raw_args: Option<&str>,
     ) -> Result<ToolOutput, ToolError>;
 
-    fn name<'a>(&'a self) -> Cow<'a, str>;
+    fn name(&self) -> Cow<'_, str>;
 
     fn tool_spec(&self) -> ToolSpec;
 
@@ -99,7 +99,7 @@ impl Tool for Box<dyn Tool> {
     ) -> Result<ToolOutput, ToolError> {
         (**self).invoke(agent_context, raw_args).await
     }
-    fn name<'a>(&'a self) -> Cow<'a, str> {
+    fn name(&self) -> Cow<'_, str> {
         (**self).name()
     }
     fn tool_spec(&self) -> ToolSpec {

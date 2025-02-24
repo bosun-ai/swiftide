@@ -220,7 +220,7 @@ mod tests {
             todo!()
         }
 
-        fn name<'tool>(&'tool self) -> std::borrow::Cow<'tool, str> {
+        fn name(&self) -> std::borrow::Cow<'_, str> {
             "get_weather".into()
         }
 

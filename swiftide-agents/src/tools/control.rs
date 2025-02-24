@@ -1,11 +1,11 @@
 //! Control tools manage control flow during agent's lifecycle.
 use anyhow::Result;
 use async_trait::async_trait;
+use std::borrow::Cow;
 use swiftide_core::{
     chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec},
     AgentContext,
 };
-use std::borrow::Cow;
 
 // TODO: Cannot use macros in our own crates because of import shenanigans
 #[derive(Clone, Debug, Default)]
@@ -21,7 +21,7 @@ impl Tool for Stop {
         Ok(ToolOutput::Stop)
     }
 
-    fn name<'tool>(&'tool self) -> Cow<'tool, str> {
+    fn name(&self) -> Cow<'_, str> {
         "stop".into()
     }
 

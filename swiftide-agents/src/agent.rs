@@ -451,8 +451,10 @@ impl Agent {
                 }
             }
 
-            let tool_span =
-                tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool.name().as_ref()));
+            let tool_span = tracing::info_span!(
+                "tool",
+                "otel.name" = format!("tool.{}", tool.name().as_ref())
+            );
 
             let handle = tokio::spawn(async move {
                     let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
