@@ -90,11 +90,12 @@ impl ToolCall {
 ///
 /// i.e. the json spec `OpenAI` uses to define their tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder)]
+#[builder(setter(into))]
 pub struct ToolSpec {
     /// Name of the tool
-    pub name: &'static str,
+    pub name: String,
     /// Description passed to the LLM for the tool
-    pub description: &'static str,
+    pub description: String,
 
     #[builder(default)]
     /// Optional parameters for the tool
@@ -122,11 +123,12 @@ pub enum ParamType {
 
 /// Parameters for tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Builder)]
+#[builder(setter(into))]
 pub struct ParamSpec {
     /// Name of the parameter
-    pub name: &'static str,
+    pub name: String,
     /// Description of the parameter
-    pub description: &'static str,
+    pub description: String,
     /// Json spec type of the parameter
     #[builder(default)]
     pub ty: ParamType,

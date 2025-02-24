@@ -451,14 +451,16 @@ impl Agent {
                 }
             }
 
-            let tool_span =
-                tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool.name()));
+            let tool_span = tracing::info_span!(
+                "tool",
+                "otel.name" = format!("tool.{}", tool.name().as_ref())
+            );
 
             let handle = tokio::spawn(async move {
                     let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
                     let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
-                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name(), "Completed tool call");
+                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name().as_ref(), "Completed tool call");
 
                     Ok(output)
                 }.instrument(tool_span.or_current()));
