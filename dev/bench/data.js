@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740314053393,
+  "lastUpdate": 1740416972479,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15551,6 +15551,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253308,
             "range": "± 3175",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "12a98736ab171c25d860000bb95b1e6e318758fb",
+          "message": "feat(agents): Improve flexibility for tool generation (#641)\n\nPreviously ToolSpec and name in the `Tool` trait worked with static.\nWith these changes, there is a lot more flexibility, allowing for i.e.\nrun-time tool generation.",
+          "timestamp": "2025-02-24T18:00:25+01:00",
+          "tree_id": "b6e94f7e7400a3d88421cc8f58b145568121992e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/12a98736ab171c25d860000bb95b1e6e318758fb"
+        },
+        "date": 1740416971229,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1358678,
+            "range": "± 951214",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 245636,
+            "range": "± 2113",
             "unit": "ns/iter"
           }
         ]
