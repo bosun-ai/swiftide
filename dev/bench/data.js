@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740476144540,
+  "lastUpdate": 1740486531578,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15821,6 +15821,48 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245764,
             "range": "± 1517",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f037286cfcfbbc8f1695af6804c6918bfc7d8fa3",
+          "message": "chore: release v0.21.0 (#645)\n\n## 🤖 New release\n\n* `swiftide`: 0.20.1 -> 0.21.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.20.1 -> 0.21.0 (✓ API compatible changes)\n* `swiftide-core`: 0.20.1 -> 0.21.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.20.1 -> 0.21.0\n* `swiftide-indexing`: 0.20.1 -> 0.21.0\n* `swiftide-integrations`: 0.20.1 -> 0.21.0 (✓ API compatible changes)\n* `swiftide-query`: 0.20.1 -> 0.21.0\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure method_requires_different_generic_type_params: method now requires a different number of generic type parameters ---\n\nDescription:\nA method now requires a different number of generic type parameters than it used to. Uses of this method that supplied the previous number of generic types will be broken.\n        ref: https://doc.rust-lang.org/reference/items/generics.html\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.39.0/src/lints/method_requires_different_generic_type_params.ron\n\nFailed in:\n  swiftide_core::chat_completion::ParamSpecBuilder::name takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:125\n  swiftide_core::chat_completion::ParamSpecBuilder::description takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:125\n  swiftide_core::chat_completion::ParamSpecBuilder::ty takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:125\n  swiftide_core::chat_completion::ParamSpecBuilder::required takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:125\n  swiftide_core::chat_completion::ToolSpecBuilder::name takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:92\n  swiftide_core::chat_completion::ToolSpecBuilder::description takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:92\n  swiftide_core::chat_completion::ToolSpecBuilder::parameters takes 1 generic types instead of 0, in /tmp/.tmpv6hZ41/swiftide/swiftide-core/src/chat_completion/tools.rs:92\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.21.0](https://github.com/bosun-ai/swiftide/compare/v0.20.1...v0.21.0)\n- 2025-02-25\n\n### New features\n\n-\n[12a9873](https://github.com/bosun-ai/swiftide/commit/12a98736ab171c25d860000bb95b1e6e318758fb)\n*(agents)* Improve flexibility for tool generation (#641)\n\n````text\nPreviously ToolSpec and name in the `Tool` trait worked with static.\n  With these changes, there is a lot more flexibility, allowing for i.e.\n  run-time tool generation.\n````\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.20.1...0.21.0\n</blockquote>\n\n\n\n\n\n\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-02-25T13:20:02+01:00",
+          "tree_id": "927d2aaa7f5eae07e5e2ddde0e81bab0d48463a7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f037286cfcfbbc8f1695af6804c6918bfc7d8fa3"
+        },
+        "date": 1740486530947,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
             "unit": "ns/iter"
           }
         ]
