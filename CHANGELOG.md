@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.0](https://github.com/bosun-ai/swiftide/compare/v0.20.1...v0.21.0) - 2025-02-25
+
+### New features
+
+- [12a9873](https://github.com/bosun-ai/swiftide/commit/12a98736ab171c25d860000bb95b1e6e318758fb) *(agents)*  Improve flexibility for tool generation (#641)
+
+````text
+Previously ToolSpec and name in the `Tool` trait worked with static.
+  With these changes, there is a lot more flexibility, allowing for i.e.
+  run-time tool generation.
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.20.1...0.21.0
+
+
+
 ## [0.20.1](https://github.com/bosun-ai/swiftide/compare/v0.20.0...v0.20.1) - 2025-02-21
 
 ### Bug fixes
