@@ -40,7 +40,7 @@ async fn test_name_on_dyn() {
     assert_eq!(qdrant.name(), "Qdrant");
 
     let openai_client: Box<dyn SimplePrompt> = Box::new(
-        integrations::openai::OpenAI::<async_openai::config::OpenAIConfig>::builder()
+        integrations::openai::OpenAI::builder()
             .default_embed_model("text-embedding-3-small")
             .default_prompt_model("gpt-3.5-turbo")
             .build()

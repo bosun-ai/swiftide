@@ -25,8 +25,8 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let groq_client = integrations::groq::Groq::default()
-        .with_default_prompt_model("llama3-8b-8192")
+    let groq_client = integrations::groq::Groq::builder()
+        .default_prompt_model("llama3-8b-8192")
         .to_owned();
 
     let fastembed = integrations::fastembed::FastEmbed::try_default()?;
