@@ -133,6 +133,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rerank_transform_response() {
+        // Test reranking without a template
         let rerank = Rerank::builder().top_k(1).build().unwrap();
 
         let documents = vec!["content1", "content2", "content3"]
@@ -152,10 +153,8 @@ mod tests {
         assert!(result.is_ok());
         let transformed_query = result.unwrap();
         assert_eq!(transformed_query.documents.len(), 1);
-    }
 
-    #[tokio::test]
-    async fn test_rerank_with_template() {
+        // Test reranking with a template
         let rerank = Rerank::builder()
             .top_k(1)
             .document_template(Some("{{ metadata.title }}".to_string()))
