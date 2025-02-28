@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740752208744,
+  "lastUpdate": 1740773603700,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16025,6 +16025,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 244284,
             "range": "± 15118",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "a7548463367023d3e5a3a25dd84f06632b372f18",
+          "message": "feat(agents): Implement Serialize and Deserialize for chat messages\n\nPersist, retry later, evaluate it completions in a script, you name it.",
+          "timestamp": "2025-02-28T21:03:35+01:00",
+          "tree_id": "e57fda64f48bef4de30d7b72ba7e0aaf71031a26",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a7548463367023d3e5a3a25dd84f06632b372f18"
+        },
+        "date": 1740773602862,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1347427,
+            "range": "± 974476",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243577,
+            "range": "± 1968",
             "unit": "ns/iter"
           }
         ]
