@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740486531578,
+  "lastUpdate": 1740742650124,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15863,6 +15863,60 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 176,
             "range": "± 5",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "e387e826200e1bc0a608e1f680537751cfc17969",
+          "message": "fix(lancedb): Update Lancedb to 0.17 and pin Arrow to a lower version",
+          "timestamp": "2025-02-28T12:27:33+01:00",
+          "tree_id": "e263dd2327d961a4bac2af8c96f0de235cf237b6",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e387e826200e1bc0a608e1f680537751cfc17969"
+        },
+        "date": 1740742649515,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1342031,
+            "range": "± 952640",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243565,
+            "range": "± 798",
             "unit": "ns/iter"
           }
         ]
