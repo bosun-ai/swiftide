@@ -103,10 +103,6 @@ pub struct Agent {
     /// the name and args of the tool.
     #[builder(private, default)]
     pub(crate) tool_retries_counter: HashMap<u64, usize>,
-
-    /// If true, the agent will continue to run even if a tool call fails after all retries
-    #[builder(default = false)]
-    pub(crate) continue_on_tool_total_failure: bool,
 }
 
 impl std::fmt::Debug for Agent {
@@ -491,42 +487,33 @@ impl Agent {
 
             if let Err(error) = output {
                 if self.tool_calls_over_limit(&tool_call) {
-                    if !self.continue_on_tool_total_failure {
-                        tracing::error!(
-                            "Tool call failed, retry limit reached, stopping agent: {err}",
-                            err = error
-                        );
-                        // required for graceful stop which can be recovered from
-                        self.add_message(ChatMessage::ToolOutput(
-                            tool_call,
-                            ToolOutput::Text(
-                                "Tool call could not be executed successfully, stopping agent"
-                                    .to_string(),
-                            ),
-                        ))
-                        .await?;
-                        self.stop();
-                        return Err(error.into());
-                    }
-
                     tracing::error!(
-                        "Tool call failed, retry limit reached, continuing agent, but ignoring this tool call: {err}",
+                        "Tool call failed, retry limit reached, stopping agent: {err}",
                         err = error
                     );
-                    output = Ok(ToolOutput::Text("Tool call could not be executed successfully, please try a different approach".to_string()));
-                } else {
-                    tracing::warn!(
-                        error = error.to_string(),
-                        tool_call = ?tool_call,
-                        "Tool call failed, retrying",
-                    );
+                    // required for graceful stop which can be recovered from
                     self.add_message(ChatMessage::ToolOutput(
                         tool_call,
-                        ToolOutput::Fail(error.to_string()),
+                        ToolOutput::Text(
+                            "Tool call could not be executed successfully, stopping agent"
+                                .to_string(),
+                        ),
                     ))
                     .await?;
-                    continue;
+                    self.stop();
+                    return Err(error.into());
                 }
+                tracing::warn!(
+                    error = error.to_string(),
+                    tool_call = ?tool_call,
+                    "Tool call failed, retrying",
+                );
+                self.add_message(ChatMessage::ToolOutput(
+                    tool_call,
+                    ToolOutput::Fail(error.to_string()),
+                ))
+                .await?;
+                continue;
             }
 
             let output = output?;
