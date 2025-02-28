@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.1](https://github.com/bosun-ai/swiftide/compare/v0.21.0...v0.21.1) - 2025-02-28
+
+### Bug fixes
+
+- [f418c5e](https://github.com/bosun-ai/swiftide/commit/f418c5ee2f0d3ee87fb3715ec6b1d7ecc80bf714) *(ci)*  Run just a single real rerank test to please the flaky gods
+
+- [e387e82](https://github.com/bosun-ai/swiftide/commit/e387e826200e1bc0a608e1f680537751cfc17969) *(lancedb)*  Update Lancedb to 0.17 and pin Arrow to a lower version
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.21.0...0.21.1
+
+
+
 ## [0.21.0](https://github.com/bosun-ai/swiftide/compare/v0.20.1...v0.21.0) - 2025-02-25
 
 ### New features
