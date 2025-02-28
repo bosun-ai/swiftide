@@ -49,10 +49,10 @@ qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
 ] }
 fluvio = { version = "0.25", default-features = false }
-lancedb = { version = "0.16", default-features = false }
-arrow-array = { version = "53.3", default-features = false }
-arrow = { version = "53.3", default-features = false }
-parquet = { version = "53.3", default-features = false, features = ["async"] }
+lancedb = { version = "0.17", default-features = false }
+arrow-array = { version = "53.2", default-features = false }
+arrow = { version = "53.2", default-features = false }
+parquet = { version = "53.2", default-features = false, features = ["async"] }
 redb = { version = "2.4" }
 sqlx = { version = "0.8.3", features = ["postgres", "uuid"] }
 aws-config = "1.5"
