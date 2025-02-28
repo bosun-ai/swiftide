@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740742650124,
+  "lastUpdate": 1740750039434,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15917,6 +15917,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243565,
             "range": "± 798",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "f418c5ee2f0d3ee87fb3715ec6b1d7ecc80bf714",
+          "message": "fix(ci): Run just a single real rerank test to please the flaky gods",
+          "timestamp": "2025-02-28T14:31:10+01:00",
+          "tree_id": "54f6485a32353eb3cdfa0ec6beb44776b7f010b0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f418c5ee2f0d3ee87fb3715ec6b1d7ecc80bf714"
+        },
+        "date": 1740750038789,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1350163,
+            "range": "± 952271",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 248290,
+            "range": "± 4097",
             "unit": "ns/iter"
           }
         ]
