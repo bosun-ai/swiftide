@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740750039434,
+  "lastUpdate": 1740752208744,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -15971,6 +15971,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 248290,
             "range": "± 4097",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "96744a76532166b8108c96e47056a3ab2126c58d",
+          "message": "chore: release v0.21.1 (#648)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.21.0 -> 0.21.1 (✓ API compatible changes)\n* `swiftide-macros`: 0.21.0 -> 0.21.1\n* `swiftide-agents`: 0.21.0 -> 0.21.1\n* `swiftide-indexing`: 0.21.0 -> 0.21.1\n* `swiftide-integrations`: 0.21.0 -> 0.21.1 (✓ API compatible changes)\n* `swiftide-query`: 0.21.0 -> 0.21.1\n* `swiftide`: 0.21.0 -> 0.21.1 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.21.1](https://github.com/bosun-ai/swiftide/compare/v0.21.0...v0.21.1)\n- 2025-02-28\n\n### Bug fixes\n\n-\n[f418c5e](https://github.com/bosun-ai/swiftide/commit/f418c5ee2f0d3ee87fb3715ec6b1d7ecc80bf714)\n*(ci)* Run just a single real rerank test to please the flaky gods\n\n-\n[e387e82](https://github.com/bosun-ai/swiftide/commit/e387e826200e1bc0a608e1f680537751cfc17969)\n*(lancedb)* Update Lancedb to 0.17 and pin Arrow to a lower version\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.21.0...0.21.1\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-02-28T15:07:41+01:00",
+          "tree_id": "a63d38d0cac30892d32f63384d42c33f9bac4880",
+          "url": "https://github.com/bosun-ai/swiftide/commit/96744a76532166b8108c96e47056a3ab2126c58d"
+        },
+        "date": 1740752207901,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1337152,
+            "range": "± 950606",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244284,
+            "range": "± 15118",
             "unit": "ns/iter"
           }
         ]
