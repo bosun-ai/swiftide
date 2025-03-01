@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740773603700,
+  "lastUpdate": 1740863865912,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16079,6 +16079,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243577,
             "range": "± 1968",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bogzbonny@protonmail.com",
+            "name": "bogzbonny",
+            "username": "bogzbonny"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4fd325921555a14552e33b2481bc9dfcf0c313fc",
+          "message": "feat: Continue Agent on Tool Failure (#628)\n\nEnsure tool calls and responses are always balanced, even when the tool retry limit is reached\nhttps://github.com/bosun-ai/kwaak/issues/313",
+          "timestamp": "2025-03-01T22:08:32+01:00",
+          "tree_id": "a67aaaa01125b6e861d65d7de4ada741faad6a3f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4fd325921555a14552e33b2481bc9dfcf0c313fc"
+        },
+        "date": 1740863865287,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1305278,
+            "range": "± 954893",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242530,
+            "range": "± 2417",
             "unit": "ns/iter"
           }
         ]
