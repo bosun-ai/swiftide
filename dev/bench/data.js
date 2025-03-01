@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740863865912,
+  "lastUpdate": 1740867760398,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16133,6 +16133,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242530,
             "range": "± 2417",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "c959844dffca886bb646965edb2320cb157fdcb6",
+          "message": "fix(ci): Remove @everyone from discord release",
+          "timestamp": "2025-03-01T23:13:23+01:00",
+          "tree_id": "0c2931cbd00525d54cd6ae2202f4aa14b251daff",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c959844dffca886bb646965edb2320cb157fdcb6"
+        },
+        "date": 1740867759624,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1276663,
+            "range": "± 968900",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 239599,
+            "range": "± 1542",
             "unit": "ns/iter"
           }
         ]
