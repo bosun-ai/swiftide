@@ -486,24 +486,28 @@ impl Agent {
             }
 
             if let Err(error) = output {
-                if self.tool_calls_over_limit(&tool_call) {
+                let stop = self.tool_calls_over_limit(&tool_call);
+                if stop {
                     tracing::error!(
                         "Tool call failed, retry limit reached, stopping agent: {err}",
                         err = error
                     );
-                    self.stop();
-                    return Err(error.into());
+                } else {
+                    tracing::warn!(
+                        error = error.to_string(),
+                        tool_call = ?tool_call,
+                        "Tool call failed, retrying",
+                    );
                 }
-                tracing::warn!(
-                    error = error.to_string(),
-                    tool_call = ?tool_call,
-                    "Tool call failed, retrying",
-                );
                 self.add_message(ChatMessage::ToolOutput(
                     tool_call,
                     ToolOutput::Fail(error.to_string()),
                 ))
                 .await?;
+                if stop {
+                    self.stop();
+                    return Err(error.into());
+                }
                 continue;
             }
 
