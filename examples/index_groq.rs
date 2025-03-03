@@ -27,7 +27,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let groq_client = integrations::groq::Groq::builder()
         .default_prompt_model("llama3-8b-8192")
-        .to_owned();
+        .to_owned()
+        .build()?;
 
     let fastembed = integrations::fastembed::FastEmbed::try_default()?;
     let memory_store = MemoryStorage::default();
