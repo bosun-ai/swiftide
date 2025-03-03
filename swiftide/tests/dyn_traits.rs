@@ -46,7 +46,7 @@ async fn test_name_on_dyn() {
             .build()
             .unwrap(),
     );
-    assert_eq!(openai_client.name(), "OpenAI");
+    assert_eq!(openai_client.name(), "GenericOpenAI");
 
     let loader: Box<dyn Loader> = Box::new(loaders::FileLoader::new(".").with_extensions(&["rs"]));
     assert_eq!(loader.name(), "FileLoader");

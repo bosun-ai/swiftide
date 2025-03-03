@@ -23,13 +23,13 @@ pub use async_openai::config::OpenAIConfig;
 /// # use swiftide_integrations::openai::OpenAIConfig;
 ///
 /// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
-/// let openai = OpenAI::<OpenAIConfig>::builder()
+/// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .build().unwrap();
 ///
 /// // Create an OpenAI client with a custom api key.
-/// let openai = OpenAI::<OpenAIConfig>::builder()
+/// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))

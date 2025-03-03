@@ -37,14 +37,14 @@
 //! # use swiftide::indexing::loaders::FileLoader;
 //! # use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
 //! # use swiftide::integrations::qdrant::Qdrant;
-//! # use swiftide::integrations::openai::{OpenAI, OpenAIConfig};
+//! # use swiftide::integrations::openai::OpenAI;
 //! # use swiftide::indexing::Pipeline;
 //! # use anyhow::Result;
 //!
 //! # #[tokio::main]
 //! # async fn main() -> Result<()> {
 //! # let qdrant_url = "url";
-//! # let openai_client = OpenAI::<OpenAIConfig>::builder().build()?;
+//! # let openai_client = OpenAI::builder().build()?;
 //!  Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
 //!          .then_chunk(ChunkMarkdown::from_chunk_range(10..512))
 //!          .then(MetadataQAText::new(openai_client.clone()))
@@ -66,12 +66,12 @@
 //! ```no_run
 //! # use anyhow::Result;
 //! # use swiftide::query::{query_transformers, self, response_transformers, answers};
-//! # use swiftide::integrations::openai::{OpenAI, OpenAIConfig};
+//! # use swiftide::integrations::openai::OpenAI;
 //!
 //! # #[tokio::main]
 //! # async fn main() -> Result<()> {
 //! # let qdrant_url = "url";
-//! # let openai_client = OpenAI::<OpenAIConfig>::builder().build()?;
+//! # let openai_client = OpenAI::builder().build()?;
 //! # let qdrant = swiftide::integrations::qdrant::Qdrant::try_from_url(qdrant_url)?
 //! #                .batch_size(50)
 //! #                .vector_size(1536)
@@ -166,12 +166,12 @@ pub mod indexing {
 ///         transformers::{ChunkMarkdown, Embed, MetadataQAText},
 ///     },
 ///     integrations::{self, qdrant::Qdrant},
-///     integrations::openai::{OpenAI, OpenAIConfig},
+///     integrations::openai::OpenAI,
 ///     query::{self, answers, query_transformers, response_transformers},
 /// };
 ///
 /// async fn index() -> Result<(), Box<dyn std::error::Error>> {
-///   let openai_client = OpenAI::<OpenAIConfig>::builder()
+///   let openai_client = OpenAI::builder()
 ///       .default_embed_model("text-embedding-3-large")
 ///       .default_prompt_model("gpt-4o")
 ///       .build()?;
@@ -205,10 +205,10 @@ pub mod indexing {
 /// #     },
 /// #     integrations::{self, qdrant::Qdrant},
 /// #     query::{self, answers, query_transformers, response_transformers},
-/// #     integrations::openai::{OpenAI, OpenAIConfig},
+/// #     integrations::openai::OpenAI,
 /// # };
 /// # async fn query() -> Result<(), Box<dyn std::error::Error>> {
-/// #  let openai_client = OpenAI::<OpenAIConfig>::builder()
+/// #  let openai_client = OpenAI::builder()
 /// #      .default_embed_model("text-embedding-3-large")
 /// #      .default_prompt_model("gpt-4o")
 /// #      .build()?;
