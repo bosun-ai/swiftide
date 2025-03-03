@@ -4,11 +4,11 @@ use async_trait::async_trait;
 
 use swiftide_core::{EmbeddingModel, Embeddings};
 
-use super::OpenAI;
+use super::GenericOpenAI;
 
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    EmbeddingModel for OpenAI<C>
+    EmbeddingModel for GenericOpenAI<C>
 {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
         let model = self

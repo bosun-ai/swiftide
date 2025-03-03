@@ -23,21 +23,27 @@ pub use async_openai::config::OpenAIConfig;
 /// # use swiftide_integrations::openai::OpenAIConfig;
 ///
 /// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
-/// let openai = OpenAI::<OpenAIConfig>::builder()
+/// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .build().unwrap();
 ///
 /// // Create an OpenAI client with a custom api key.
-/// let openai = OpenAI::<OpenAIConfig>::builder()
+/// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
 ///     .build().unwrap();
 ///```
+pub type OpenAI = GenericOpenAI<OpenAIConfig>;
+pub type OpenAIBuilder = GenericOpenAIBuilder<OpenAIConfig>;
+
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
-pub struct OpenAI<C: async_openai::config::Config + Default = async_openai::config::OpenAIConfig> {
+/// Generic client for `OpenAI` APIs.
+pub struct GenericOpenAI<
+    C: async_openai::config::Config + Default = async_openai::config::OpenAIConfig,
+> {
     /// The `OpenAI` client, wrapped in an `Arc` for thread-safe reference counting.
     /// Defaults to a new instance of `async_openai::Client`.
     #[builder(
@@ -48,7 +54,7 @@ pub struct OpenAI<C: async_openai::config::Config + Default = async_openai::conf
 
     /// Default options for embedding and prompt models.
     #[builder(default)]
-    default_options: Options,
+    pub(crate) default_options: Options,
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
@@ -87,14 +93,16 @@ impl Options {
     }
 }
 
-impl OpenAI<OpenAIConfig> {
+impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
-    pub fn builder() -> OpenAIBuilder<OpenAIConfig> {
-        OpenAIBuilder::<OpenAIConfig>::default()
+    pub fn builder() -> OpenAIBuilder {
+        OpenAIBuilder::default()
     }
 }
 
-impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> OpenAIBuilder<C> {
+impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
+    GenericOpenAIBuilder<C>
+{
     /// Sets the `OpenAI` client for the `OpenAI` instance.
     ///
     /// # Parameters
@@ -170,7 +178,7 @@ mod test {
     /// test default embed model
     #[test]
     fn test_default_embed_and_prompt_model() {
-        let openai: OpenAI<async_openai::config::OpenAIConfig> = OpenAI::builder()
+        let openai: OpenAI = OpenAI::builder()
             .default_embed_model("gpt-3")
             .default_prompt_model("gpt-4")
             .build()
@@ -184,7 +192,7 @@ mod test {
             Some("gpt-4".to_string())
         );
 
-        let openai: OpenAI<async_openai::config::OpenAIConfig> = OpenAI::builder()
+        let openai: OpenAI = OpenAI::builder()
             .default_prompt_model("gpt-4")
             .default_embed_model("gpt-3")
             .build()

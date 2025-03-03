@@ -5,13 +5,13 @@ use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatComple
 use async_trait::async_trait;
 use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
 
-use super::OpenAI;
+use super::GenericOpenAI;
 use anyhow::{Context as _, Result};
 
 /// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a response.
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    SimplePrompt for OpenAI<C>
+    SimplePrompt for GenericOpenAI<C>
 {
     /// Sends a prompt to the OpenAI API and returns the response content.
     ///

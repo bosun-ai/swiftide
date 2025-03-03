@@ -13,11 +13,11 @@ use swiftide_core::chat_completion::{
     ChatMessage, ToolCall, ToolSpec,
 };
 
-use super::OpenAI;
+use super::GenericOpenAI;
 
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    ChatCompletion for OpenAI<C>
+    ChatCompletion for GenericOpenAI<C>
 {
     #[tracing::instrument(skip_all)]
     async fn complete(

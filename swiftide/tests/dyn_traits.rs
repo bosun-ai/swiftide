@@ -40,13 +40,13 @@ async fn test_name_on_dyn() {
     assert_eq!(qdrant.name(), "Qdrant");
 
     let openai_client: Box<dyn SimplePrompt> = Box::new(
-        integrations::openai::OpenAI::<async_openai::config::OpenAIConfig>::builder()
+        integrations::openai::OpenAI::builder()
             .default_embed_model("text-embedding-3-small")
             .default_prompt_model("gpt-3.5-turbo")
             .build()
             .unwrap(),
     );
-    assert_eq!(openai_client.name(), "OpenAI");
+    assert_eq!(openai_client.name(), "GenericOpenAI");
 
     let loader: Box<dyn Loader> = Box::new(loaders::FileLoader::new(".").with_extensions(&["rs"]));
     assert_eq!(loader.name(), "FileLoader");
