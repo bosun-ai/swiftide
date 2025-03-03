@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.2](https://github.com/bosun-ai/swiftide/compare/v0.21.1...v0.21.2) - 2025-03-03
+
+### New features
+
+- [a754846](https://github.com/bosun-ai/swiftide/commit/a7548463367023d3e5a3a25dd84f06632b372f18) *(agents)*  Implement Serialize and Deserialize for chat messages
+
+````text
+Persist, retry later, evaluate it completions in a script, you name it.
+````
+
+- [0a592c6](https://github.com/bosun-ai/swiftide/commit/0a592c67621f3eba4ad6e0bfd5a539e19963cf17) *(indexing)*  Add `iter()` for file loader ([#655](https://github.com/bosun-ai/swiftide/pull/655))
+
+````text
+Allows playing with the iterator outside of the stream.
+
+  Relates to https://github.com/bosun-ai/kwaak/issues/337
+````
+
+- [4fd3259](https://github.com/bosun-ai/swiftide/commit/4fd325921555a14552e33b2481bc9dfcf0c313fc)  Continue Agent on Tool Failure ([#628](https://github.com/bosun-ai/swiftide/pull/628))
+
+````text
+Ensure tool calls and responses are always balanced, even when the tool retry limit is reached
+  https://github.com/bosun-ai/kwaak/issues/313
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.21.1...0.21.2
+
+
+
 ## [0.21.1](https://github.com/bosun-ai/swiftide/compare/v0.21.0...v0.21.1) - 2025-02-28
 
 ### Bug fixes
