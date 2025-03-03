@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::Context as _;
-use itertools::Itertools as _;
 use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory,
