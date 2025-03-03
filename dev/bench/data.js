@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741018374405,
+  "lastUpdate": 1741018412486,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16349,6 +16349,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241539,
             "range": "± 4143",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "57116e9a30c722f47398be61838cc1ef4d0bbfac",
+          "message": "feat: Groq ChatCompletion (#650)\n\nUse the new generics to _just-make-it-work_.",
+          "timestamp": "2025-03-03T17:04:22+01:00",
+          "tree_id": "d7469943329c0784e3866be482ad1586cdf155c6",
+          "url": "https://github.com/bosun-ai/swiftide/commit/57116e9a30c722f47398be61838cc1ef4d0bbfac"
+        },
+        "date": 1741018411072,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1282257,
+            "range": "± 955186",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 238121,
+            "range": "± 1262",
             "unit": "ns/iter"
           }
         ]
