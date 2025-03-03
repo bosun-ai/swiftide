@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741012216523,
+  "lastUpdate": 1741018374405,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16295,6 +16295,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 239273,
             "range": "± 2119",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "4072f7840a87fb48e5d06b59c3c23ae7794fbfbc",
+          "message": "chore(ci): Disable cargo deny until fixed",
+          "timestamp": "2025-03-03T17:03:35+01:00",
+          "tree_id": "300b79af66bf5f6366a8a08f6221fb23c95e8497",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4072f7840a87fb48e5d06b59c3c23ae7794fbfbc"
+        },
+        "date": 1741018373589,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1275208,
+            "range": "± 937454",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241539,
+            "range": "± 4143",
             "unit": "ns/iter"
           }
         ]
