@@ -67,52 +67,19 @@ impl FileLoader {
     /// # Panics
     /// This method will panic if it fails to read a file's content.
     pub fn list_nodes(&self) -> Vec<Node> {
-        ignore::Walk::new(&self.path)
-            .filter_map(Result::ok)
-            .filter(|entry| entry.file_type().is_some_and(|ft| ft.is_file()))
-            .filter(move |entry| self.file_has_extension(entry.path()))
-            .map(ignore::DirEntry::into_path)
-            .map(|entry| {
-                tracing::debug!("Reading file: {:?}", entry);
-                let content = std::fs::read_to_string(&entry).unwrap();
-                let original_size = content.len();
-                Node::builder()
-                    .path(entry)
-                    .chunk(content)
-                    .original_size(original_size)
-                    .build()
-                    .expect("Failed to build node")
-            })
-            .collect()
+        self.iter().filter_map(Result::ok).collect()
     }
 
-    // Helper function to check if a file has the specified extension.
-    // If no extensions are specified, this function will return true.
-    // If the file has no extension, this function will return false.
-    fn file_has_extension(&self, path: &Path) -> bool {
-        self.extensions.as_ref().is_none_or(|exts| {
-            let Some(ext) = path.extension() else {
-                return false;
-            };
-            exts.iter().any(|e| e == ext.to_string_lossy().as_ref())
-        })
-    }
-}
+    /// Iterates over the files in the directory
+    pub fn iter(&self) -> impl Iterator<Item = anyhow::Result<Node>> {
+        let path = self.path.clone();
+        let extensions = self.extensions.clone();
 
-impl Loader for FileLoader {
-    /// Converts the `FileLoader` into a stream of `Node`.
-    ///
-    /// # Returns
-    /// An `IndexingStream` representing the stream of files.
-    ///
-    /// # Errors
-    /// This method will return an error if it fails to read a file's content.
-    fn into_stream(self) -> IndexingStream {
-        let files = ignore::Walk::new(&self.path)
+        ignore::Walk::new(path)
             .filter_map(Result::ok)
             .filter(|entry| entry.file_type().is_some_and(|ft| ft.is_file()))
-            .filter(move |entry| self.file_has_extension(entry.path()))
-            .map(|entry| {
+            .filter(move |entry| file_has_extension(extensions.as_deref(), entry.path()))
+            .map(move |entry| {
                 tracing::debug!("Reading file: {:?}", entry);
 
                 // Files might be invalid utf-8, so we need to read them as bytes and convert it
@@ -129,9 +96,33 @@ impl Loader for FileLoader {
                     .chunk(content)
                     .original_size(original_size)
                     .build()
-            });
+            })
+    }
+}
 
-        IndexingStream::iter(files)
+// Helper function to check if a file has the specified extension.
+// If no extensions are specified, this function will return true.
+// If the file has no extension, this function will return false.
+fn file_has_extension(extensions: Option<&[impl AsRef<str>]>, path: &Path) -> bool {
+    extensions.as_ref().is_none_or(|exts| {
+        let Some(ext) = path.extension() else {
+            return false;
+        };
+        exts.iter()
+            .any(|e| e.as_ref() == ext.to_string_lossy().as_ref())
+    })
+}
+
+impl Loader for FileLoader {
+    /// Converts the `FileLoader` into a stream of `Node`.
+    ///
+    /// # Returns
+    /// An `IndexingStream` representing the stream of files.
+    ///
+    /// # Errors
+    /// This method will return an error if it fails to read a file's content.
+    fn into_stream(self) -> IndexingStream {
+        IndexingStream::iter(self.iter())
     }
 
     fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
