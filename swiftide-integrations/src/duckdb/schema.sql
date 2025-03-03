@@ -10,3 +10,7 @@ CREATE TABLE IF NOT EXISTS {{table_name}} (
     {{vector}} FLOAT[{{size}}],
   {% endfor %}
 );
+
+{% for vector, _ in vectors %}
+CREATE INDEX {{table_name}}_{{vector}} ON {{table_name}} USING HNSW ({{vector}});
+{% endfor %}

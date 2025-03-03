@@ -42,7 +42,7 @@ impl Duckdb {
         DuckdbBuilder::default()
     }
 
-    pub async fn connection(&self) -> &Mutex<duckdb::Connection> {
+    pub fn connection(&self) -> &Mutex<duckdb::Connection> {
         &self.connection
     }
 }

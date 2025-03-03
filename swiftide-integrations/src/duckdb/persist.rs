@@ -1,14 +1,14 @@
-use std::{borrow::Cow, collections::HashMap, path::Path};
+use std::{borrow::Cow, path::Path};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duckdb::{
     params_from_iter,
-    types::{FromSql, OrderedMap, ToSqlOutput, Type, Value, ValueRef},
+    types::{ToSqlOutput, Value},
     ToSql,
 };
 use swiftide_core::{
-    indexing::{self, EmbeddedField, Metadata},
+    indexing::{self, Metadata},
     template::{Context, Template},
     Persist,
 };
@@ -25,7 +25,7 @@ enum NodeValues<'a> {
     Path(&'a Path),
     Chunk(&'a str),
     Metadata(&'a Metadata),
-    Vector(Cow<'a, [f32]>),
+    Embedding(Cow<'a, [f32]>),
     Null,
 }
 
@@ -46,7 +46,8 @@ impl ToSql for NodeValues<'_> {
                 // let formatted = format!("MAP {{{ordered_map}}}");
                 // Ok(ToSqlOutput::Owned(formatted.into()))
             }
-            NodeValues::Vector(vector) => {
+            NodeValues::Embedding(vector) => {
+                // TODO: At scale this is a problem.
                 let array_str = format!(
                     "[{}]",
                     vector
@@ -92,9 +93,6 @@ impl Persist for Duckdb {
             anyhow::bail!("Upsert sql in Duckdb not set");
         };
 
-        // TODO: Doing potentially many locks here for the duration of a single query,
-        // SOMEONE IS GOING TO HAVE A BAD TIME
-
         // metadata needs to be converted to `map_from_entries([('key1', value)])``
         // TODO: Investigate if we can do with way less allocations
         let mut values = vec![
@@ -113,12 +111,12 @@ impl Persist for Duckdb {
             anyhow::bail!("Expected node to have vectors; cannot store into duckdb");
         };
 
-        for (field, size) in &self.vectors {
+        for field in self.vectors.keys() {
             let Some(vector) = node_vectors.get(field) else {
                 anyhow::bail!("Expected vector for field {} in node", field);
             };
 
-            values.push(NodeValues::Vector(vector.into()));
+            values.push(NodeValues::Embedding(vector.into()));
         }
 
         let lock = self.connection.lock().await;
