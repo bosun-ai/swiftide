@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741000191319,
+  "lastUpdate": 1741012216523,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16241,6 +16241,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242059,
             "range": "± 1355",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0a592c67621f3eba4ad6e0bfd5a539e19963cf17",
+          "message": "feat(indexing): Add `iter()` for file loader (#655)\n\nAllows playing with the iterator outside of the stream.\n\nRelates to https://github.com/bosun-ai/kwaak/issues/337",
+          "timestamp": "2025-03-03T15:21:10+01:00",
+          "tree_id": "830ac867a5802780e83242ea1756061650704a0b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0a592c67621f3eba4ad6e0bfd5a539e19963cf17"
+        },
+        "date": 1741012215839,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288022,
+            "range": "± 942830",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 239273,
+            "range": "± 2119",
             "unit": "ns/iter"
           }
         ]
