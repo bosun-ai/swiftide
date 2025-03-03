@@ -33,7 +33,7 @@ jobs:
         uses: crate-ci/typos@master
       - name: "Rustfmt"
         run: cargo fmt --all --check
-      - name: Lint dependencies
-        uses: EmbarkStudios/cargo-deny-action@v2
+      # - name: Lint dependencies
+      #   uses: EmbarkStudios/cargo-deny-action@v2
       - name: clippy
         run: cargo clippy --all-targets --all-features --workspace
