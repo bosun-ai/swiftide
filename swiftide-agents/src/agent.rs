@@ -499,11 +499,21 @@ impl Agent {
                         "Tool call failed, retrying",
                     );
                 }
-                self.add_message(ChatMessage::ToolOutput(
-                    tool_call,
-                    ToolOutput::Fail(error.to_string()),
-                ))
-                .await?;
+                let msg = match self.find_tool_by_name(tool_call.name()) {
+                    Some(tool) => {
+                        // build the message based on the tool description and input_schema
+                        let tool_spec = tool.tool_spec();
+                        let description = tool_spec.description.clone();
+                        let name = tool_spec.name.clone();
+
+                        format!("{error}, please re-read the input_schema from the tools list before reattempting the tool call.\n
+                            tool {name} description: {description}")
+                    }
+                    None => error.to_string(),
+                };
+
+                self.add_message(ChatMessage::ToolOutput(tool_call, ToolOutput::Fail(msg)))
+                    .await?;
                 if stop {
                     self.stop();
                     return Err(error.into());
