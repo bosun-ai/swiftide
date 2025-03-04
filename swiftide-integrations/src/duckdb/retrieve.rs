@@ -1,7 +1,13 @@
+use std::sync::Arc;
+
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
+use duckdb::Statement;
 use swiftide_core::{
-    querying::{search_strategies::SimilaritySingleEmbedding, states, Document, Query},
+    querying::{
+        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        states, Document, Query,
+    },
     Retrieve,
 };
 
@@ -29,7 +35,8 @@ impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
 
         let limit = search_strategy.top_k();
 
-        // TODO: Add metadata fields
+        // Ideally it should be a prepared statement, where only the new parameters lead to extra
+        // allocations
         let sql = format!(
             "SELECT uuid, chunk, path FROM {table_name}
             ORDER BY array_distance({field_name}, ARRAY[{}]::FLOAT[{}])
@@ -41,15 +48,55 @@ impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
                 .join(","),
             embedding_size,
         );
+        let custom_strat = CustomStrategy::from_query(move |_| Ok(sql.clone()));
+        self.retrieve(&custom_strat, query).await
+    }
+}
 
-        // TODO: Try this without a mutex.
+#[async_trait]
+impl Retrieve<CustomStrategy<String>> for Duckdb {
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomStrategy<String>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let sql = search_strategy.build_query(&query).await?;
+
         let conn = self.connection().lock().await;
         let mut stmt = conn
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for persist")?;
 
-        // If needed, switch to arrow for performance
-        // TODO: Should use the params properly here
+        let documents = stmt
+            .query_map([], |row| {
+                Ok(Document::builder()
+                    .metadata([("id", row.get::<_, String>(0)?), ("path", row.get(2)?)])
+                    .content(row.get::<_, String>(1)?)
+                    .build()
+                    .expect("Failed to build document; should never happen"))
+            })
+            .context("failed to build documents")?
+            .collect::<Result<Vec<Document>, _>>()
+            .context("infallible")?;
+
+        Ok(query.retrieved_documents(documents))
+    }
+}
+
+#[async_trait]
+impl<'a> Retrieve<CustomStrategy<&'a str>> for Duckdb {
+    async fn retrieve(
+        &self,
+        search_strategy: &CustomStrategy<&'a str>,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let sql = search_strategy.build_query(&query).await?;
+
+        let conn = self.connection().lock().await;
+        let mut stmt = conn
+            .prepare(sql)
+            .context("Failed to prepare duckdb statement for persist")?;
+
         let documents = stmt
             .query_map([], |row| {
                 Ok(Document::builder()
