@@ -60,7 +60,10 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
         search_strategy: &CustomStrategy<String>,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
-        let sql = search_strategy.build_query(&query).await?;
+        let sql = search_strategy
+            .build_query(&query)
+            .await
+            .context("Failed to build query")?;
 
         let conn = self.connection().lock().await;
         let mut stmt = conn
@@ -75,39 +78,9 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
                     .build()
                     .expect("Failed to build document; should never happen"))
             })
-            .context("failed to build documents")?
+            .context("failed to query for documents")?
             .collect::<Result<Vec<Document>, _>>()
-            .context("infallible")?;
-
-        Ok(query.retrieved_documents(documents))
-    }
-}
-
-#[async_trait]
-impl<'a> Retrieve<CustomStrategy<&'a str>> for Duckdb {
-    async fn retrieve(
-        &self,
-        search_strategy: &CustomStrategy<&'a str>,
-        query: Query<states::Pending>,
-    ) -> Result<Query<states::Retrieved>> {
-        let sql = search_strategy.build_query(&query).await?;
-
-        let conn = self.connection().lock().await;
-        let mut stmt = conn
-            .prepare(sql)
-            .context("Failed to prepare duckdb statement for persist")?;
-
-        let documents = stmt
-            .query_map([], |row| {
-                Ok(Document::builder()
-                    .metadata([("id", row.get::<_, String>(0)?), ("path", row.get(2)?)])
-                    .content(row.get::<_, String>(1)?)
-                    .build()
-                    .expect("Failed to build document; should never happen"))
-            })
-            .context("failed to build documents")?
-            .collect::<Result<Vec<Document>, _>>()
-            .context("infallible")?;
+            .context("failed to build documents")?;
 
         Ok(query.retrieved_documents(documents))
     }
