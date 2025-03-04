@@ -1,5 +1,6 @@
 INSTALL vss;
 LOAD vss;
+SET hnsw_enable_experimental_persistence = true;
 
 CREATE TABLE IF NOT EXISTS {{table_name}} (
   uuid TEXT PRIMARY KEY,

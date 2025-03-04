@@ -6,17 +6,20 @@ use std::{
 use anyhow::Context as _;
 use derive_builder::Builder;
 use swiftide_core::indexing::EmbeddedField;
+use tera::Context;
 use tokio::sync::{Mutex, RwLock};
 
 pub mod node_cache;
 pub mod persist;
 pub mod retrieve;
 
+const DEFAULT_INDEXING_SCHEMA: &str = include_str!("schema.sql");
+
 /// Provides `Persist`, `Retrieve`, and `NodeCache` for duckdb
 ///
-/// For Retrieve, `SimilaritySingleEmbedding` an`CustomStrategy`gy are implemented.
-///
 /// Unfortunately Metadata is not stored.
+///
+/// By default `hnsw_enable_experimental_persistance` is enabled.
 ///
 /// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
 /// doesn't let us know <3.
@@ -30,6 +33,13 @@ pub struct Duckdb {
     /// The name of the table to use for storing nodes. Defaults to "swiftide".
     #[builder(default = "swiftide".into())]
     table_name: String,
+
+    /// The schema to use for the table
+    /// You *can* customize it. However, it is recommended to use the default schema.
+    ///
+    /// The generated upsert statement expects uuid, path, and vector columns.
+    #[builder(default = "self.default_schema()")]
+    schema: String,
 
     // The vectors to be stored, field name -> size
     #[builder(default)]
@@ -70,6 +80,16 @@ impl std::fmt::Debug for Duckdb {
 impl Duckdb {
     pub fn builder() -> DuckdbBuilder {
         DuckdbBuilder::default()
+    }
+
+    /// Name of the indexing table
+    pub fn table_name(&self) -> &str {
+        &self.table_name
+    }
+
+    /// Name of the cache table
+    pub fn cache_table(&self) -> &str {
+        &self.cache_table
     }
 
     /// Returns the connection to the database
@@ -125,5 +145,14 @@ impl DuckdbBuilder {
             .get_or_insert_with(HashMap::new)
             .insert(field, size);
         self
+    }
+
+    fn default_schema(&self) -> String {
+        let mut context = Context::default();
+        context.insert("table_name", &self.table_name);
+        context.insert("vectors", &self.vectors);
+
+        tera::Tera::one_off(DEFAULT_INDEXING_SCHEMA, &context, false)
+            .expect("Could not render schema")
     }
 }

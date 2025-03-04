@@ -3,7 +3,6 @@ use std::{borrow::Cow, path::Path};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duckdb::{
-    arrow::array::Array,
     params_from_iter,
     types::{ToSqlOutput, Value},
     Statement, ToSql,
@@ -17,7 +16,6 @@ use uuid::Uuid;
 
 use super::Duckdb;
 
-const SCHEMA: &str = include_str!("schema.sql");
 const UPSERT: &str = include_str!("upsert.sql");
 
 #[allow(dead_code)]
@@ -105,24 +103,28 @@ impl Duckdb {
 #[async_trait]
 impl Persist for Duckdb {
     async fn setup(&self) -> Result<()> {
+        self.connection
+            .lock()
+            .await
+            .execute_batch(&self.schema)
+            .context("Failed to create indexing table")?;
+
         let mut context = Context::default();
         context.insert("table_name", &self.table_name);
         context.insert("vectors", &self.vectors);
-
-        let rendered = Template::Static(SCHEMA).render(&context).await?;
-        self.connection.lock().await.execute_batch(&rendered)?;
 
         context.insert(
             "vector_field_names",
             &self.vectors.keys().collect::<Vec<_>>(),
         );
 
-        // User could have overridden the upsert sql
-        // Which is fine
+        tracing::info!("Rendering upsert sql");
         let upsert = Template::Static(UPSERT).render(&context).await?;
         self.node_upsert_sql
             .set(upsert)
             .map_err(|_| anyhow::anyhow!("Failed to set upsert sql"))?;
+
+        tracing::info!("Setup completed");
 
         Ok(())
     }
