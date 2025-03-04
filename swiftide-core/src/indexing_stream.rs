@@ -46,11 +46,11 @@ impl Into<IndexingStream> for Vec<Node> {
     }
 }
 
-impl Into<IndexingStream> for anyhow::Error {
-    fn into(self) -> IndexingStream {
-        IndexingStream::iter(vec![Err(self)])
-    }
-}
+// impl Into<IndexingStream> for anyhow::Error {
+//     fn into(self) -> IndexingStream {
+//         IndexingStream::iter(vec![Err(self)])
+//     }
+// }
 
 impl Into<IndexingStream> for Result<Vec<Node>> {
     fn into(self) -> IndexingStream {
@@ -72,6 +72,12 @@ impl Into<IndexingStream> for Receiver<Result<Node>> {
         IndexingStream {
             inner: tokio_stream::wrappers::ReceiverStream::new(self).boxed(),
         }
+    }
+}
+
+impl From<anyhow::Error> for IndexingStream {
+    fn from(err: anyhow::Error) -> Self {
+        IndexingStream::iter(vec![Err(err)])
     }
 }
 

@@ -101,6 +101,9 @@ parquet = ["swiftide-integrations/parquet"]
 ## Redb embeddable nodecache
 redb = ["swiftide-integrations/redb"]
 
+## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
+duckdb = ["swiftide-integrations/duckdb"]
+
 #! ### Other features
 
 ## Various testing utilities
