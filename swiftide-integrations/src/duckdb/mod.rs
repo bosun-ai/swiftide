@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, OnceLock},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context as _;
 use derive_builder::Builder;
@@ -14,12 +11,13 @@ pub mod persist;
 pub mod retrieve;
 
 const DEFAULT_INDEXING_SCHEMA: &str = include_str!("schema.sql");
+const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 
 /// Provides `Persist`, `Retrieve`, and `NodeCache` for duckdb
 ///
 /// Unfortunately Metadata is not stored.
 ///
-/// By default `hnsw_enable_experimental_persistence` is enabled.
+/// By default `hnsw_enable_experimental_persistance` is enabled.
 ///
 /// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
 /// doesn't let us know <3.
@@ -38,7 +36,7 @@ pub struct Duckdb {
     /// You *can* customize it. However, it is recommended to use the default schema.
     ///
     /// The generated upsert statement expects uuid, path, and vector columns.
-    #[builder(default = "self.default_schema()")]
+    #[builder(default = self.default_schema())]
     schema: String,
 
     // The vectors to be stored, field name -> size
@@ -50,8 +48,8 @@ pub struct Duckdb {
     batch_size: usize,
 
     /// Sql to upsert a node
-    #[builder(private, default = OnceLock::new())]
-    node_upsert_sql: OnceLock<String>,
+    #[builder(private, default = self.default_node_upsert_sql())]
+    node_upsert_sql: String,
 
     /// Name of the table to use for caching nodes. Defaults to `"swiftide_cache"`.
     #[builder(default = "swiftide_cache".into())]
@@ -150,9 +148,28 @@ impl DuckdbBuilder {
     fn default_schema(&self) -> String {
         let mut context = Context::default();
         context.insert("table_name", &self.table_name);
-        context.insert("vectors", &self.vectors);
+        context.insert("vectors", &self.vectors.clone().unwrap_or_default());
 
         tera::Tera::one_off(DEFAULT_INDEXING_SCHEMA, &context, false)
-            .expect("Could not render schema")
+            .expect("Could not render schema; infalllible")
+    }
+
+    fn default_node_upsert_sql(&self) -> String {
+        let mut context = Context::default();
+        context.insert("table_name", &self.table_name);
+        context.insert("vectors", &self.vectors.clone().unwrap_or_default());
+
+        context.insert(
+            "vector_field_names",
+            &self
+                .vectors
+                .as_ref()
+                .map(|v| v.keys().collect::<Vec<_>>())
+                .unwrap_or_default(),
+        );
+
+        tracing::info!("Rendering upsert sql");
+        tera::Tera::one_off(DEFAULT_UPSERT_QUERY, &context, false)
+            .expect("could not render upsert query; infallible")
     }
 }

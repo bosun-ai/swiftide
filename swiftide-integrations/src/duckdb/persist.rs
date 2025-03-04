@@ -9,14 +9,11 @@ use duckdb::{
 };
 use swiftide_core::{
     indexing::{self, Metadata, Node},
-    template::{Context, Template},
     Persist,
 };
 use uuid::Uuid;
 
 use super::Duckdb;
-
-const UPSERT: &str = include_str!("upsert.sql");
 
 #[allow(dead_code)]
 enum NodeValues<'a> {
@@ -37,24 +34,6 @@ impl ToSql for NodeValues<'_> {
             NodeValues::Metadata(_metadata) => {
                 unimplemented!("maps are not yet implemented for duckdb");
                 // Casting doesn't work either, the duckdb conversion is also not implemented :(
-                // if metadata.is_empty() {
-                //     return Ok(ToSqlOutput::Owned(Value::Null));
-                // }
-                // // let ordered_map = metadata
-                // //     .iter()
-                // //     .map(|(k, v)| format!("'{}': '{}'", k, serde_json::to_string(v).unwrap()))
-                // //     .collect::<Vec<_>>()
-                // //     .join(",");
-                // let ordered_map = metadata
-                //     .iter()
-                //     .map(|(k, v)| format!("('{}', '{}')", k, serde_json::to_string(v).unwrap()))
-                //     .collect::<Vec<_>>()
-                //     .join(",");
-                //
-                // let formatted = format!("map_from_entries([{ordered_map}])");
-                // dbg!(&formatted);
-                // Ok(ToSqlOutput::Owned(formatted.into()))
-                // Ok(ToSqlOutput::Owned(formatted.into()))
             }
             NodeValues::Embedding(vector) => {
                 let array_str = format!(
@@ -109,33 +88,14 @@ impl Persist for Duckdb {
             .execute_batch(&self.schema)
             .context("Failed to create indexing table")?;
 
-        let mut context = Context::default();
-        context.insert("table_name", &self.table_name);
-        context.insert("vectors", &self.vectors);
-
-        context.insert(
-            "vector_field_names",
-            &self.vectors.keys().collect::<Vec<_>>(),
-        );
-
-        tracing::info!("Rendering upsert sql");
-        let upsert = Template::Static(UPSERT).render(&context).await?;
-        self.node_upsert_sql
-            .set(upsert)
-            .map_err(|_| anyhow::anyhow!("Failed to set upsert sql"))?;
-
         tracing::info!("Setup completed");
 
         Ok(())
     }
 
     async fn store(&self, node: indexing::Node) -> Result<indexing::Node> {
-        let Some(query) = self.node_upsert_sql.get() else {
-            anyhow::bail!("Upsert sql in Duckdb not set");
-        };
-
         let lock = self.connection.lock().await;
-        let mut stmt = lock.prepare(query)?;
+        let mut stmt = lock.prepare(&self.node_upsert_sql)?;
         self.store_node_on_stmt(&mut stmt, &node)?;
 
         Ok(node)
@@ -144,10 +104,6 @@ impl Persist for Duckdb {
     async fn batch_store(&self, nodes: Vec<indexing::Node>) -> indexing::IndexingStream {
         // TODO: Must batch
         let mut new_nodes = Vec::with_capacity(nodes.len());
-
-        let Some(query) = self.node_upsert_sql.get() else {
-            return Err(anyhow::anyhow!("Upsert sql in Duckdb not set")).into();
-        };
 
         let mut conn = self.connection.lock().await;
         let tx = match conn.transaction().context("Failed to start transaction") {
@@ -158,7 +114,10 @@ impl Persist for Duckdb {
         };
 
         {
-            let mut stmt = match tx.prepare(query).context("Failed to prepare statement") {
+            let mut stmt = match tx
+                .prepare(&self.node_upsert_sql)
+                .context("Failed to prepare statement")
+            {
                 Ok(stmt) => stmt,
                 Err(err) => {
                     return Err(err).into();
