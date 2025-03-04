@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use swiftide_core::indexing::EmbeddedField;
 use tera::Context;
@@ -33,9 +33,10 @@ pub struct Duckdb {
     table_name: String,
 
     /// The schema to use for the table
-    /// You *can* customize it. However, it is recommended to use the default schema.
     ///
-    /// The generated upsert statement expects uuid, path, and vector columns.
+    /// Note that if you change the schema, you probably also need to change the upsert query.
+    ///
+    /// Additionally, if you intend to use vectors, you must install and load the vss extension.
     #[builder(default = self.default_schema())]
     schema: String,
 
@@ -93,6 +94,30 @@ impl Duckdb {
     /// Returns the connection to the database
     pub fn connection(&self) -> &Mutex<duckdb::Connection> {
         &self.connection
+    }
+
+    /// Creatse HNSW incides on the vector fields
+    ///
+    /// These are *not* persisted. You must recreate them on startup.
+    ///
+    /// If you want to persist them, refer to the duckdb documentation.
+    pub async fn create_vector_indices(&self) -> Result<()> {
+        let table_name = &self.table_name;
+        let mut conn = self.connection.lock().await;
+        let tx = conn.transaction().context("Failed to start transaction")?;
+        {
+            for vector in self.vectors.keys() {
+                tx.execute(
+                    &format!(
+                        "CREATE INDEX IF NOT EXISTS idx_{vector} ON {table_name} USING hnsw ({vector})",
+                    ),
+                    [],
+                )
+                .context("Could not create index")?;
+            }
+        }
+        tx.commit().context("Failed to commit transaction")?;
+        Ok(())
     }
 
     /// Safely creates the cache table if it does not exist. Can be used concurrently
