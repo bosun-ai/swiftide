@@ -103,7 +103,6 @@ impl NodeCache for Duckdb {
 mod tests {
     use super::*;
     use swiftide_core::indexing::Node;
-    use temp_dir::TempDir;
 
     fn setup_duckdb() -> Duckdb {
         Duckdb::builder()

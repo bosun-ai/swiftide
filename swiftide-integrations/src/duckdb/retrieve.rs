@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use duckdb::Statement;
 use swiftide_core::{
     querying::{
         search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
@@ -48,8 +45,8 @@ impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
                 .join(","),
             embedding_size,
         );
-        let custom_strat = CustomStrategy::from_query(move |_| Ok(sql.clone()));
-        self.retrieve(&custom_strat, query).await
+        let custom_strategy = CustomStrategy::from_query(move |_| Ok(sql.clone()));
+        self.retrieve(&custom_strategy, query).await
     }
 }
 
