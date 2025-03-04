@@ -59,7 +59,7 @@ impl NodeCache for Duckdb {
         }
 
         let sql = format!(
-            "INSERT INTO {} (uuid, path) VALUES (?, ?)",
+            "INSERT INTO {} (uuid, path) VALUES (?, ?) ON CONFLICT (uuid) DO NOTHING",
             &self.cache_table
         );
 
