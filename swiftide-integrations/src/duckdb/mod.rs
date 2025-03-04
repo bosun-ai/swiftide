@@ -19,7 +19,7 @@ const DEFAULT_INDEXING_SCHEMA: &str = include_str!("schema.sql");
 ///
 /// Unfortunately Metadata is not stored.
 ///
-/// By default `hnsw_enable_experimental_persistance` is enabled.
+/// By default `hnsw_enable_experimental_persistence` is enabled.
 ///
 /// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
 /// doesn't let us know <3.
