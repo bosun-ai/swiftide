@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use duckdb::{
     arrow::array::Array,
     params_from_iter,
-    types::{FromSql, OrderedMap, ToSqlOutput, Value, ValueRef},
+    types::{ToSqlOutput, Value},
     Statement, ToSql,
 };
 use swiftide_core::{

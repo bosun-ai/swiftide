@@ -12,12 +12,20 @@ pub mod node_cache;
 pub mod persist;
 pub mod retrieve;
 
+/// Provides `Persist`, `Retrieve`, and `NodeCache` for duckdb
+///
+/// For Retrieve, `SimilaritySingleEmbedding` an`CustomStrategy`gy are implemented.
+///
+/// Unfortunately Metadata is not stored.
+///
+/// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
+/// doesn't let us know <3.
 #[derive(Clone, Builder)]
 #[builder(setter(into))]
 pub struct Duckdb {
     /// The connection to the database
     #[builder(setter(custom))]
-    connection: Arc<Mutex<duckdb::Connection>>, // should be rwlock, however, interally duckdb uses a refcell, so we need the mutex for sync :(
+    connection: Arc<Mutex<duckdb::Connection>>, // should be rwlock, however, internally duckdb uses a refcell, so we need the mutex for sync :(
 
     /// The name of the table to use for storing nodes. Defaults to "swiftide".
     #[builder(default = "swiftide".into())]
