@@ -26,6 +26,8 @@ strum_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
+async-mcp = { workspace = true, optional = true }
+
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 mockall.workspace = true
@@ -35,3 +37,6 @@ insta.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+mcp = ["dep:async-mcp"]
