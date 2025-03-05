@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741018412486,
+  "lastUpdate": 1741193157705,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16403,6 +16403,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 238121,
             "range": "± 1262",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7a27799ef2ab10ad6bd3b5227760e40900e6cd32",
+          "message": "chore: release v0.22.0 (#656)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.21.1 -> 0.22.0 (✓ API compatible changes)\n* `swiftide-macros`: 0.21.1 -> 0.22.0\n* `swiftide-agents`: 0.21.1 -> 0.22.0 (✓ API compatible changes)\n* `swiftide-indexing`: 0.21.1 -> 0.22.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.21.1 -> 0.22.0 (⚠ API breaking changes)\n* `swiftide-query`: 0.21.1 -> 0.22.0 (✓ API compatible changes)\n* `swiftide`: 0.21.1 -> 0.22.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-integrations` breaking changes\n\n```text\n--- failure enum_missing: pub enum removed or renamed ---\n\nDescription:\nA publicly-visible enum cannot be imported by its prior path. A `pub use` may have been removed, or the enum itself may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.39.0/src/lints/enum_missing.ron\n\nFailed in:\n  enum swiftide_integrations::groq::GroqBuilderError, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/groq/mod.rs:23\n  enum swiftide_integrations::openai::OpenAIBuilderError, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/openai/mod.rs:38\n  enum swiftide_integrations::groq::OptionsBuilderError, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/groq/mod.rs:46\n\n--- failure struct_missing: pub struct removed or renamed ---\n\nDescription:\nA publicly-visible struct cannot be imported by its prior path. A `pub use` may have been removed, or the struct itself may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.39.0/src/lints/struct_missing.ron\n\nFailed in:\n  struct swiftide_integrations::groq::GroqBuilder, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/groq/mod.rs:23\n  struct swiftide_integrations::openai::OpenAIBuilder, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/openai/mod.rs:38\n  struct swiftide_integrations::groq::OptionsBuilder, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/groq/mod.rs:46\n  struct swiftide_integrations::groq::Groq, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/groq/mod.rs:25\n  struct swiftide_integrations::openai::OpenAI, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/openai/mod.rs:40\n  struct swiftide_integrations::groq::Options, previously in file /tmp/.tmp04qAim/swiftide-integrations/src/groq/mod.rs:48\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.22.0](https://github.com/bosun-ai/swiftide/compare/v0.21.1...v0.22.0)\n- 2025-03-03\n\n### New features\n\n-\n[a754846](https://github.com/bosun-ai/swiftide/commit/a7548463367023d3e5a3a25dd84f06632b372f18)\n*(agents)* Implement Serialize and Deserialize for chat messages\n\n````text\nPersist, retry later, evaluate it completions in a script, you name it.\n````\n\n-\n[0a592c6](https://github.com/bosun-ai/swiftide/commit/0a592c67621f3eba4ad6e0bfd5a539e19963cf17)\n*(indexing)* Add `iter()` for file loader\n([#655](https://github.com/bosun-ai/swiftide/pull/655))\n\n````text\nAllows playing with the iterator outside of the stream.\n\n  Relates to https://github.com/bosun-ai/kwaak/issues/337\n````\n\n-\n[57116e9](https://github.com/bosun-ai/swiftide/commit/57116e9a30c722f47398be61838cc1ef4d0bbfac)\nGroq ChatCompletion\n([#650](https://github.com/bosun-ai/swiftide/pull/650))\n\n````text\nUse the new generics to _just-make-it-work_.\n````\n\n-\n[4fd3259](https://github.com/bosun-ai/swiftide/commit/4fd325921555a14552e33b2481bc9dfcf0c313fc)\nContinue Agent on Tool Failure\n([#628](https://github.com/bosun-ai/swiftide/pull/628))\n\n````text\nEnsure tool calls and responses are always balanced, even when the tool retry limit is reached\n  https://github.com/bosun-ai/kwaak/issues/313\n````\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.21.1...0.22.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-03-05T17:36:35+01:00",
+          "tree_id": "3d23f232aec3089e43c4c96885c32aaf9dcd0af7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7a27799ef2ab10ad6bd3b5227760e40900e6cd32"
+        },
+        "date": 1741193156968,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1312537,
+            "range": "± 926429",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240950,
+            "range": "± 1314",
             "unit": "ns/iter"
           }
         ]
