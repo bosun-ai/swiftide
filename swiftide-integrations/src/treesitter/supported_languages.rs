@@ -55,6 +55,12 @@ pub enum SupportedLanguages {
     #[serde(alias = "c")]
     C,
     #[serde(alias = "cpp", alias = "c++", alias = "C++", rename = "C++")]
+    #[strum(
+        serialize = "c++",
+        serialize = "cpp",
+        serialize = "Cpp",
+        to_string = "C++"
+    )]
     Cpp,
 }
 
@@ -174,6 +180,14 @@ mod test {
         assert_eq!(
             SupportedLanguages::from_str("Java"),
             Ok(SupportedLanguages::Java)
+        );
+        assert_eq!(
+            SupportedLanguages::from_str("C++"),
+            Ok(SupportedLanguages::Cpp)
+        );
+        assert_eq!(
+            SupportedLanguages::from_str("cpp"),
+            Ok(SupportedLanguages::Cpp)
         );
     }
 
