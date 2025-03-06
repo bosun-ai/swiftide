@@ -54,7 +54,7 @@ pub enum SupportedLanguages {
     Solidity,
     #[serde(alias = "c")]
     C,
-    #[serde(alias = "cpp", alias = "c++", alias = "C++")]
+    #[serde(alias = "cpp", alias = "c++", alias = "C++", rename = "C++")]
     Cpp,
 }
 
