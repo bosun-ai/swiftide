@@ -69,11 +69,11 @@ pub struct Options {
     #[builder(default)]
     pub prompt_model: Option<String>,
 
-    #[builder(default = true)]
+    #[builder(default = Some(true))]
     /// Option to enable or disable parallel tool calls for completions.
     ///
-    /// At this moment, o1 and o3-mini do not support it.
-    pub parallel_tool_calls: bool,
+    /// At this moment, o1 and o3-mini do not support it and should be set to `None`.
+    pub parallel_tool_calls: Option<bool>,
 }
 
 impl Default for Options {
@@ -81,7 +81,7 @@ impl Default for Options {
         Self {
             embed_model: None,
             prompt_model: None,
-            parallel_tool_calls: true,
+            parallel_tool_calls: Some(true),
         }
     }
 }
@@ -139,7 +139,7 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     /// Note that currently reasoning models do not support parallel tool calls
     ///
     /// Defaults to `true`
-    pub fn parallel_tool_calls(&mut self, parallel_tool_calls: bool) -> &mut Self {
+    pub fn parallel_tool_calls(&mut self, parallel_tool_calls: Option<bool>) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             options.parallel_tool_calls = parallel_tool_calls;
         } else {
