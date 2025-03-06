@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.1](https://github.com/bosun-ai/swiftide/compare/v0.22.0...v0.22.1) - 2025-03-06
+
+### New features
+
+- [474d612](https://github.com/bosun-ai/swiftide/commit/474d6122596e71132e35fcb181302dfed7794561) *(integrations)*  Add Duckdb support ([#578](https://github.com/bosun-ai/swiftide/pull/578))
+
+````text
+Adds support for Duckdb. Persist, Retrieve (Simple and Custom), and
+  NodeCache are implemented.
+````
+
+- [4cf417c](https://github.com/bosun-ai/swiftide/commit/4cf417c6a818fbec2641ad6576b4843412902bf6) *(treesitter)*  C and C++ support for splitter only ([#663](https://github.com/bosun-ai/swiftide/pull/663))
+
+````text
+- **feat(tree-sitter): C and C++ support for splitter only**
+  - **Rename to C++**
+````
+
+### Bug fixes
+
+- [590eaeb](https://github.com/bosun-ai/swiftide/commit/590eaeb3c6b5c14c56c925e038528326f88508a1) *(integrations)*  Make openai parallel_tool_calls an Option ([#664](https://github.com/bosun-ai/swiftide/pull/664))
+
+````text
+o3-mini needs to omit parallel_tool_calls - so we need to allow for a
+  None option to not include that field
+
+  needed for https://github.com/bosun-ai/kwaak/pull/392
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.0...0.22.1
+
+
+
 ## [0.22.0](https://github.com/bosun-ai/swiftide/compare/v0.21.1...v0.22.0) - 2025-03-03
 
 ### New features
