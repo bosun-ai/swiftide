@@ -52,6 +52,10 @@ pub enum SupportedLanguages {
     Go,
     #[serde(alias = "solidity")]
     Solidity,
+    #[serde(alias = "c")]
+    C,
+    #[serde(alias = "cpp", alias = "c++", alias = "C++")]
+    Cpp,
 }
 
 /// Static array of file extensions for Rust files.
@@ -78,6 +82,12 @@ static GO_EXTENSIONS: &[&str] = &["go"];
 /// Static array of file extensions for Solidity files.
 static SOLIDITY_EXTENSIONS: &[&str] = &["sol"];
 
+/// Static array of file extensions for C files.
+static C_EXTENSIONS: &[&str] = &["c", "h", "o"];
+
+/// Static array of file extensions for C++ files.
+static CPP_EXTENSIONS: &[&str] = &["c", "h", "o", "cc", "cpp"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -93,6 +103,8 @@ impl SupportedLanguages {
             SupportedLanguages::Java => JAVA_EXTENSIONS,
             SupportedLanguages::Go => GO_EXTENSIONS,
             SupportedLanguages::Solidity => SOLIDITY_EXTENSIONS,
+            SupportedLanguages::C => C_EXTENSIONS,
+            SupportedLanguages::Cpp => CPP_EXTENSIONS,
         }
     }
 }
@@ -118,6 +130,8 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Java => tree_sitter_java::LANGUAGE,
             SupportedLanguages::Go => tree_sitter_go::LANGUAGE,
             SupportedLanguages::Solidity => tree_sitter_solidity::LANGUAGE,
+            SupportedLanguages::C => tree_sitter_c::LANGUAGE,
+            SupportedLanguages::Cpp => tree_sitter_cpp::LANGUAGE,
         }
         .into()
     }
