@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741193157705,
+  "lastUpdate": 1741277105413,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16457,6 +16457,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240950,
             "range": "± 1314",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f71da4f1c9a155656989382d1e3e3d7fbb96b039",
+          "message": "chore(deps): bump tree-sitter from 0.25.2 to 0.25.3 in the tree-sitter group (#659)\n\nBumps the tree-sitter group with 1 update:\n[tree-sitter](https://github.com/tree-sitter/tree-sitter).\n\nUpdates `tree-sitter` from 0.25.2 to 0.25.3\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/tree-sitter/tree-sitter/releases\">tree-sitter's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v0.25.3</h2>\n<h3>Bug Fixes</h3>\n<ul>\n<li>Fixed an infinite loop that could happen in some grammars during\nerror recovery if the end of the file was reached.</li>\n<li>Fixed a parser-generation error where internal character set\nconstants were given external linkage, which could cause linking errors\non some platforms if multiple Tree-sitter parsers were linked into the\nsame application.</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/2a835ee029dca1c325e6f1c01dbce40396f6123e\"><code>2a835ee</code></a>\n0.25.3</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/3ad1c7d4e125f2c3b8a4fffa9f08f74e296d6894\"><code>3ad1c7d</code></a>\nFix cases where error recovery could infinite loop (<a\nhref=\"https://redirect.github.com/tree-sitter/tree-sitter/issues/4257\">#4257</a>)\n(<a\nhref=\"https://redirect.github.com/tree-sitter/tree-sitter/issues/4262\">#4262</a>)</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/b1a7074010b6e32d4577163b4e68abd731fdb970\"><code>b1a7074</code></a>\nfix(generate): mark <code>TSCharacterRange</code> as <code>static</code>\n(<a\nhref=\"https://redirect.github.com/tree-sitter/tree-sitter/issues/4255\">#4255</a>)</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/6f2dbaab5f0f63e655fd581d16eead9aa4b0b0f7\"><code>6f2dbaa</code></a>\nbuild: do not define _POSIX_C_SOURCE on NetBSD (<a\nhref=\"https://redirect.github.com/tree-sitter/tree-sitter/issues/4196\">#4196</a>)</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/781dc0570d3137b174f0d6f84620318f04db3b85\"><code>781dc05</code></a>\nci: separate nightly lints to separate job</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/1f64036d87da2c70da43470f7d1cfb2f70a4a429\"><code>1f64036</code></a>\nfix(test): update expected tree-sitter-rust supertypes</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/4eb46b493fb9c7d76f4ef934802c03f22d89dc1a\"><code>4eb46b4</code></a>\nfix(rust): adapt to some new nightly lints</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/d73126d58242df8f838dee79cbd1adc497447795\"><code>d73126d</code></a>\nfix(web): provide type in the exports</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/637a3e111b18664346666f5746019d2f43e62a20\"><code>637a3e1</code></a>\nfix(wasm): restore passing in ERROR to <code>descendantsOfType</code>\n(<a\nhref=\"https://redirect.github.com/tree-sitter/tree-sitter/issues/4226\">#4226</a>)</li>\n<li><a\nhref=\"https://github.com/tree-sitter/tree-sitter/commit/8b5c63bffae4c1948106eb0a8d722bf2a9141ce5\"><code>8b5c63b</code></a>\ntree-sitter-language 0.1.5</li>\n<li>See full diff in <a\nhref=\"https://github.com/tree-sitter/tree-sitter/compare/v0.25.2...v0.25.3\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=tree-sitter&package-manager=cargo&previous-version=0.25.2&new-version=0.25.3)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-03-06T16:56:02+01:00",
+          "tree_id": "f4de865bf7f2d46a2d6b00c336e79154e765ef6c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f71da4f1c9a155656989382d1e3e3d7fbb96b039"
+        },
+        "date": 1741277104683,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1292284,
+            "range": "± 938823",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 244461,
+            "range": "± 2279",
             "unit": "ns/iter"
           }
         ]
