@@ -105,7 +105,9 @@ impl Persist for Duckdb {
         // TODO: Must batch
         let mut new_nodes = Vec::with_capacity(nodes.len());
 
+        tracing::debug!("Waiting for transaction");
         let mut conn = self.connection.lock().await;
+        tracing::debug!("Got transaction");
         let tx = match conn.transaction().context("Failed to start transaction") {
             Ok(tx) => tx,
             Err(err) => {
@@ -113,6 +115,7 @@ impl Persist for Duckdb {
             }
         };
 
+        tracing::debug!("Starting batch store");
         {
             let mut stmt = match tx
                 .prepare(&self.node_upsert_sql)
@@ -138,6 +141,7 @@ impl Persist for Duckdb {
 
 #[cfg(test)]
 mod tests {
+    use futures_util::{StreamExt as _, TryStreamExt as _};
     use indexing::{EmbeddedField, Node};
 
     use super::*;
@@ -160,43 +164,95 @@ mod tests {
 
         tracing::info!("Stored node");
 
-        let connection = client.connection.lock().await;
-        let mut stmt = connection
-            .prepare("SELECT uuid,path,chunk FROM test")
-            .unwrap();
-        let node_iter = stmt
-            .query_map([], |row| {
-                Ok((
-                    row.get::<_, String>(0).unwrap(), // id
-                    row.get::<_, String>(1).unwrap(), // chunk
-                    row.get::<_, String>(2).unwrap(), // path
-                                                      // row.get::<_, String>(3).unwrap(), // metadata
-                                                      // row.get::<_, Vec<f32>>(4).unwrap(), // vector
-                ))
-            })
-            .unwrap();
+        {
+            let connection = client.connection.lock().await;
+            let mut stmt = connection
+                .prepare("SELECT uuid,path,chunk FROM test")
+                .unwrap();
+            let node_iter = stmt
+                .query_map([], |row| {
+                    Ok((
+                        row.get::<_, String>(0).unwrap(), // id
+                        row.get::<_, String>(1).unwrap(), // chunk
+                        row.get::<_, String>(2).unwrap(), // path
+                                                          // row.get::<_, String>(3).unwrap(), // metadata
+                                                          // row.get::<_, Vec<f32>>(4).unwrap(), // vector
+                    ))
+                })
+                .unwrap();
 
-        let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
-        //
-        assert_eq!(retrieved.len(), 1);
+            let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
+            //
+            assert_eq!(retrieved.len(), 1);
+        }
 
+        tracing::info!("Retrieved node");
         // Verify the upsert and batch works
-        let _ = client.batch_store(vec![node.clone(), node.clone(), node.clone()]);
-        let node_iter = stmt
-            .query_map([], |row| {
-                Ok((
-                    row.get::<_, String>(0).unwrap(), // id
-                    row.get::<_, String>(1).unwrap(), // chunk
-                    row.get::<_, String>(2).unwrap(), // path
-                                                      // row.get::<_, String>(3).unwrap(), // metadata
-                                                      // row.get::<_, Vec<f32>>(4).unwrap(), // vector
-                ))
-            })
+        let new_nodes = vec![node.clone(), node.clone(), node.clone()];
+        let stream_nodes: Vec<Node> = client
+            .batch_store(new_nodes)
+            .await
+            .try_collect()
+            .await
             .unwrap();
 
-        let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
-        //
-        assert_eq!(retrieved.len(), 1);
+        // let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
+        assert_eq!(stream_nodes.len(), 3);
+        assert_eq!(stream_nodes[0], node);
+
+        tracing::info!("Batch stored nodes 1");
+        {
+            let connection = client.connection.lock().await;
+            let mut stmt = connection
+                .prepare("SELECT uuid,path,chunk FROM test")
+                .unwrap();
+            let node_iter = stmt
+                .query_map([], |row| {
+                    Ok((
+                        row.get::<_, String>(0).unwrap(), // id
+                        row.get::<_, String>(1).unwrap(), // chunk
+                        row.get::<_, String>(2).unwrap(), // path
+                                                          // row.get::<_, String>(3).unwrap(), // metadata
+                                                          // row.get::<_, Vec<f32>>(4).unwrap(), // vector
+                    ))
+                })
+                .unwrap();
+
+            let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
+            assert_eq!(retrieved.len(), 1);
+        }
+
+        // Test batch store fully
+        let mut new_node = node.clone();
+        new_node.chunk = "Something else".into();
+
+        let new_nodes = vec![node.clone(), new_node.clone(), new_node.clone()];
+        let stream = client.batch_store(new_nodes).await;
+
+        let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
+        assert_eq!(streamed_nodes.len(), 3);
+        assert_eq!(streamed_nodes[0], node);
+
+        {
+            let connection = client.connection.lock().await;
+            let mut stmt = connection
+                .prepare("SELECT uuid,path,chunk FROM test")
+                .unwrap();
+
+            let node_iter = stmt
+                .query_map([], |row| {
+                    Ok((
+                        row.get::<_, String>(0).unwrap(), // id
+                        row.get::<_, String>(1).unwrap(), // chunk
+                        row.get::<_, String>(2).unwrap(), // path
+                                                          // row.get::<_, String>(3).unwrap(), // metadata
+                                                          // row.get::<_, Vec<f32>>(4).unwrap(), // vector
+                    ))
+                })
+                .unwrap();
+            let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
+            assert_eq!(retrieved.len(), 2);
+        }
     }
 
     #[ignore]
