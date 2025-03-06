@@ -141,7 +141,7 @@ impl Persist for Duckdb {
 
 #[cfg(test)]
 mod tests {
-    use futures_util::{StreamExt as _, TryStreamExt as _};
+    use futures_util::TryStreamExt as _;
     use indexing::{EmbeddedField, Node};
 
     use super::*;
