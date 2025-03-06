@@ -51,8 +51,10 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                         .map(tools_to_openai)
                         .collect::<Result<Vec<_>>>()?,
                 )
-                .tool_choice("auto")
-                .parallel_tool_calls(self.default_options.parallel_tool_calls);
+                .tool_choice("auto");
+            if let Some(par) = self.default_options.parallel_tool_calls {
+                openai_request.parallel_tool_calls(par);
+            }
         }
 
         let request = openai_request
