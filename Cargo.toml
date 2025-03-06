@@ -58,7 +58,7 @@ sqlx = { version = "0.8.3", features = ["postgres", "uuid"] }
 aws-config = "1.5"
 pgvector = { version = "0.4.0", features = ["sqlx"], default-features = false }
 aws-credential-types = "1.2"
-aws-sdk-bedrockruntime = "1.75"
+aws-sdk-bedrockruntime = "1.76"
 criterion = { version = "0.5.1", default-features = false }
 darling = "0.20"
 deadpool = "0.12"
