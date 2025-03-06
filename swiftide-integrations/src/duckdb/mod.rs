@@ -96,7 +96,7 @@ impl Duckdb {
         &self.connection
     }
 
-    /// Creatse HNSW indices on the vector fields
+    /// Creates HNSW indices on the vector fields
     ///
     /// These are *not* persisted. You must recreate them on startup.
     ///
