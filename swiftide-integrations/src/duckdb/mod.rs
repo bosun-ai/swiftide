@@ -17,7 +17,7 @@ const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 ///
 /// Unfortunately Metadata is not stored.
 ///
-/// By default `hnsw_enable_experimental_persistance` is enabled.
+/// By default `hnsw_enable_experimental_persistence` is enabled.
 ///
 /// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
 /// doesn't let us know <3.
@@ -96,11 +96,15 @@ impl Duckdb {
         &self.connection
     }
 
-    /// Creatse HNSW incides on the vector fields
+    /// Creatse HNSW indices on the vector fields
     ///
     /// These are *not* persisted. You must recreate them on startup.
     ///
     /// If you want to persist them, refer to the duckdb documentation.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the connection or statement fails
     pub async fn create_vector_indices(&self) -> Result<()> {
         let table_name = &self.table_name;
         let mut conn = self.connection.lock().await;
