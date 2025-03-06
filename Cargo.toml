@@ -86,6 +86,7 @@ tree-sitter-typescript = "0.23"
 tree-sitter-go = "0.23"
 tree-sitter-solidity = "1.2.11"
 async-anthropic = "0.3.0"
+duckdb = { version = "1.2", default-features = false }
 
 
 # Testing
