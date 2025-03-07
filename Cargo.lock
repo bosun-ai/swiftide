@@ -209,8 +209,6 @@ dependencies = [
  "arrow-schema 53.4.0",
  "arrow-select 53.4.0",
  "arrow-string 53.4.0",
- "chrono",
- "rand 0.8.5",
 ]
 
 [[package]]
@@ -229,6 +227,8 @@ dependencies = [
  "arrow-schema 54.2.1",
  "arrow-select 54.2.1",
  "arrow-string 54.2.1",
+ "half",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -8868,7 +8868,7 @@ name = "swiftide-integrations"
 version = "0.22.0"
 dependencies = [
  "anyhow",
- "arrow 53.4.0",
+ "arrow 54.2.1",
  "arrow-array 53.4.0",
  "async-anthropic",
  "async-openai",
