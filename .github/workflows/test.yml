@@ -28,4 +28,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: "Test"
-        run: cargo test -j 2 --all-features --no-fail-fast
+        run: cargo test -j 2 --tests --all-features --no-fail-fast
