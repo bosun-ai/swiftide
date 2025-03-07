@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741335108378,
+  "lastUpdate": 1741350523637,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16673,6 +16673,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 239194,
             "range": "± 1029",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d351465eb8c94ec36669e1035b37fd4a7db12124",
+          "message": "fix(ci): Only test `tests` target in ci (#669)\n\nSeems like github is having issues again.",
+          "timestamp": "2025-03-07T13:19:26+01:00",
+          "tree_id": "f880bb4ce0ef93ebb51f6607f93c24138d76ff31",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d351465eb8c94ec36669e1035b37fd4a7db12124"
+        },
+        "date": 1741350523000,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1290106,
+            "range": "± 1034523",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241748,
+            "range": "± 4509",
             "unit": "ns/iter"
           }
         ]
