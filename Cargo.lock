@@ -3,6 +3,16 @@
 version = 4
 
 [[package]]
+name = "adaptive_backoff"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c13fe4a0db6c40b835c26d92806193ff904a3a28c13258a7b432521c0fedf04"
+dependencies = [
+ "anyhow",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -202,7 +212,7 @@ dependencies = [
  "arrow-cast 53.4.0",
  "arrow-csv",
  "arrow-data 53.4.0",
- "arrow-ipc",
+ "arrow-ipc 53.4.0",
  "arrow-json",
  "arrow-ord 53.4.0",
  "arrow-row 53.4.0",
@@ -412,6 +422,19 @@ dependencies = [
  "flatbuffers",
  "lz4_flex",
  "zstd",
+]
+
+[[package]]
+name = "arrow-ipc"
+version = "54.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddecdeab02491b1ce88885986e25002a3da34dd349f682c7cfe67bab7cc17b86"
+dependencies = [
+ "arrow-array 54.2.1",
+ "arrow-buffer 54.2.1",
+ "arrow-data 54.2.1",
+ "arrow-schema 54.2.1",
+ "flatbuffers",
 ]
 
 [[package]]
@@ -2023,9 +2046,9 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "convert_case"
-version = "0.7.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb402b8d4c85569410425650ce3eddc7d698ed96d39a73f941b08fb63082f1e7"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -2342,7 +2365,7 @@ checksum = "014fc8c384ecacedaabb3bc8359c2a6c6e9d8f7bea65be3434eccacfc37f52d9"
 dependencies = [
  "arrow 53.4.0",
  "arrow-array 53.4.0",
- "arrow-ipc",
+ "arrow-ipc 53.4.0",
  "arrow-schema 53.4.0",
  "async-trait",
  "bytes",
@@ -3331,10 +3354,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.25.0"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1149b7b6a92d736782241c22c1c5bd1414eab1685c7ed3b3fa13c86a233e999"
+checksum = "5fe2db88a0670a165e397f4fdeaeea8bf4a7e291474142d905efe1d8912ec5f5"
 dependencies = [
+ "adaptive_backoff",
  "anyhow",
  "async-channel 1.9.0",
  "async-lock",
@@ -5288,7 +5312,7 @@ dependencies = [
  "arrow 53.4.0",
  "arrow-array 53.4.0",
  "arrow-buffer 53.4.0",
- "arrow-ipc",
+ "arrow-ipc 53.4.0",
  "arrow-schema 53.4.0",
  "async-trait",
  "aws-credential-types",
@@ -5343,7 +5367,7 @@ dependencies = [
  "arrow-array 53.4.0",
  "arrow-cast 53.4.0",
  "arrow-data 53.4.0",
- "arrow-ipc",
+ "arrow-ipc 53.4.0",
  "arrow-ord 53.4.0",
  "arrow-schema 53.4.0",
  "async-trait",
@@ -6388,18 +6412,18 @@ dependencies = [
 
 [[package]]
 name = "parquet"
-version = "53.4.0"
+version = "54.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8957c0c95a6a1804f3e51a18f69df29be53856a8c5768cc9b6d00fcafcd2917c"
+checksum = "f88838dca3b84d41444a0341b19f347e8098a3898b0f21536654b8b799e11abd"
 dependencies = [
  "ahash 0.8.11",
- "arrow-array 53.4.0",
- "arrow-buffer 53.4.0",
- "arrow-cast 53.4.0",
- "arrow-data 53.4.0",
- "arrow-ipc",
- "arrow-schema 53.4.0",
- "arrow-select 53.4.0",
+ "arrow-array 54.2.1",
+ "arrow-buffer 54.2.1",
+ "arrow-cast 54.2.1",
+ "arrow-data 54.2.1",
+ "arrow-ipc 54.2.1",
+ "arrow-schema 54.2.1",
+ "arrow-select 54.2.1",
  "base64 0.22.1",
  "bytes",
  "chrono",
@@ -7020,9 +7044,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.12.2"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f86ba2052aebccc42cbbb3ed234b8b13ce76f75c3551a303cb2bcffcff12bb14"
+checksum = "1e8bbe1a966bd2f362681a44f6edce3c2310ac21e4d5067a6e7ec396297a6ea0"
 dependencies = [
  "bitflags 2.9.0",
  "memchr",
@@ -7342,9 +7366,9 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.28.2"
+version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e37ec3fd44bea2ec947ba6cc7634d7999a6590aca7c35827c250bc0de502bda6"
+checksum = "8034fb926579ff49d3fe58d288d5dcb580bf11e9bccd33224b45adebf0fd0c23"
 dependencies = [
  "arc-swap",
  "backon",
@@ -7357,9 +7381,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "rustls 0.23.23",
- "rustls-native-certs 0.7.3",
- "rustls-pemfile 2.2.0",
- "rustls-pki-types",
+ "rustls-native-certs 0.8.1",
  "ryu",
  "sha1_smol",
  "socket2 0.5.8",
@@ -7753,19 +7775,6 @@ checksum = "a9aace74cb666635c918e9c12bc0d348266037aa8eb599b5cba565709a8dff00"
 dependencies = [
  "openssl-probe",
  "rustls-pemfile 1.0.4",
- "schannel",
- "security-framework 2.11.1",
-]
-
-[[package]]
-name = "rustls-native-certs"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5bfb394eeed242e909609f56089eecfe5fda225042e8b171791b9c95f5931e5"
-dependencies = [
- "openssl-probe",
- "rustls-pemfile 2.2.0",
- "rustls-pki-types",
  "schannel",
  "security-framework 2.11.1",
 ]
@@ -8761,7 +8770,7 @@ name = "swiftide"
 version = "0.22.0"
 dependencies = [
  "anyhow",
- "arrow-array 53.4.0",
+ "arrow-array 54.2.1",
  "async-openai",
  "async-trait",
  "document-features",
@@ -8886,7 +8895,7 @@ name = "swiftide-integrations"
 version = "0.22.0"
 dependencies = [
  "anyhow",
- "arrow-array 53.4.0",
+ "arrow-array 54.2.1",
  "async-anthropic",
  "async-openai",
  "async-trait",
@@ -8953,7 +8962,7 @@ version = "0.22.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "convert_case 0.7.1",
+ "convert_case 0.8.0",
  "darling",
  "insta",
  "pretty_assertions",
@@ -9419,9 +9428,9 @@ dependencies = [
 
 [[package]]
 name = "text-splitter"
-version = "0.23.0"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cecf98dba14216de9fa678d921153d2e4e4b7f603dcffcf702099a09eca3108"
+checksum = "698b22fc8ce5bef13475143a43e87df82440e66b2a18d7655d1425dd36580a53"
 dependencies = [
  "ahash 0.8.11",
  "auto_enums",

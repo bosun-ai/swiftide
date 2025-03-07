@@ -42,7 +42,7 @@ indoc = { version = "2.0" }
 regex = { version = "1.11" }
 uuid = { version = "1.14", features = ["v3", "v4", "serde"] }
 dyn-clone = { version = "1.0" }
-convert_case = "0.7"
+convert_case = "0.8"
 
 # Integrations
 spider = { version = "2.31" }
@@ -50,11 +50,10 @@ async-openai = { version = "0.27" }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
 ] }
-fluvio = { version = "0.25", default-features = false }
+fluvio = { version = "0.26", default-features = false }
 lancedb = { version = "0.17", default-features = false }
-arrow-array = { version = "53.2", default-features = false }
-arrow = { version = "53.2", default-features = false }
-parquet = { version = "53.2", default-features = false, features = ["async"] }
+arrow-array = { version = "54.2", default-features = false }
+parquet = { version = "54.2", default-features = false, features = ["async"] }
 redb = { version = "2.4" }
 sqlx = { version = "0.8", features = [
   "postgres",
@@ -74,12 +73,12 @@ htmd = "0.1"
 ignore = "0.4"
 proc-macro2 = "1.0"
 quote = "1.0"
-redis = "0.28"
+redis = "0.29"
 reqwest = { version = "0.12", default-features = false }
 secrecy = "0.10"
 syn = "2.0"
 tera = { version = "1.20", default-features = false }
-text-splitter = "0.23"
+text-splitter = "0.24"
 tracing-subscriber = "0.3"
 tree-sitter = "0.25"
 tree-sitter-java = "0.23"
