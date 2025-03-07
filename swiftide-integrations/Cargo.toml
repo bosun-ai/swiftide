@@ -87,7 +87,6 @@ parquet = { workspace = true, optional = true, features = [
   "arrow",
   "snap",
 ] }
-arrow = { workspace = true, optional = true }
 redb = { workspace = true, optional = true }
 duckdb = { workspace = true, optional = true }
 
@@ -99,7 +98,7 @@ swiftide-test-utils = { path = "../swiftide-test-utils", features = [
 swiftide-macros = { path = "../swiftide-macros" }
 temp-dir = { workspace = true }
 pretty_assertions = { workspace = true }
-arrow = { workspace = true, features = ["test_utils"] }
+# arrow = { workspace = true, features = ["test_utils"] }
 duckdb = { workspace = true, features = ["bundled"] }
 
 # Used for hacking fluv to play nice
@@ -158,13 +157,11 @@ aws-bedrock = [
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
 ]
-lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array", "dep:arrow"]
+lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
 # Paruqet loader
-parquet = ["dep:arrow-array", "dep:parquet", "dep:arrow"]
-# Redb as an embeddable node cache
-redb = ["dep:redb"]
+parquet = ["dep:arrow-array", "dep:parquet"]
 # Anthropic for prompting and completions
 anthropic = ["dep:async-anthropic"]
 # Duckdb for indexing and retrieval
