@@ -68,7 +68,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for LanceDB {
             .try_collect::<Vec<_>>()
             .await?;
 
-        let documents = Self::retrieve_from_record_batches(&batches);
+        let documents = Self::retrieve_from_record_batches(batches.as_slice());
 
         Ok(query.retrieved_documents(documents))
     }
@@ -111,7 +111,7 @@ impl<Q: ExecutableQuery + Send + Sync + 'static> Retrieve<CustomStrategy<Q>> for
             .try_collect::<Vec<_>>()
             .await?;
 
-        let documents = Self::retrieve_from_record_batches(&batches);
+        let documents = Self::retrieve_from_record_batches(batches.as_slice());
 
         Ok(query.retrieved_documents(documents))
     }

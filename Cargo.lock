@@ -212,7 +212,7 @@ dependencies = [
  "arrow-cast 53.4.0",
  "arrow-csv",
  "arrow-data 53.4.0",
- "arrow-ipc 53.4.0",
+ "arrow-ipc",
  "arrow-json",
  "arrow-ord 53.4.0",
  "arrow-row 53.4.0",
@@ -422,19 +422,6 @@ dependencies = [
  "flatbuffers",
  "lz4_flex",
  "zstd",
-]
-
-[[package]]
-name = "arrow-ipc"
-version = "54.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddecdeab02491b1ce88885986e25002a3da34dd349f682c7cfe67bab7cc17b86"
-dependencies = [
- "arrow-array 54.2.1",
- "arrow-buffer 54.2.1",
- "arrow-data 54.2.1",
- "arrow-schema 54.2.1",
- "flatbuffers",
 ]
 
 [[package]]
@@ -2365,7 +2352,7 @@ checksum = "014fc8c384ecacedaabb3bc8359c2a6c6e9d8f7bea65be3434eccacfc37f52d9"
 dependencies = [
  "arrow 53.4.0",
  "arrow-array 53.4.0",
- "arrow-ipc 53.4.0",
+ "arrow-ipc",
  "arrow-schema 53.4.0",
  "async-trait",
  "bytes",
@@ -5312,7 +5299,7 @@ dependencies = [
  "arrow 53.4.0",
  "arrow-array 53.4.0",
  "arrow-buffer 53.4.0",
- "arrow-ipc 53.4.0",
+ "arrow-ipc",
  "arrow-schema 53.4.0",
  "async-trait",
  "aws-credential-types",
@@ -5367,7 +5354,7 @@ dependencies = [
  "arrow-array 53.4.0",
  "arrow-cast 53.4.0",
  "arrow-data 53.4.0",
- "arrow-ipc 53.4.0",
+ "arrow-ipc",
  "arrow-ord 53.4.0",
  "arrow-schema 53.4.0",
  "async-trait",
@@ -6412,18 +6399,18 @@ dependencies = [
 
 [[package]]
 name = "parquet"
-version = "54.2.1"
+version = "53.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f88838dca3b84d41444a0341b19f347e8098a3898b0f21536654b8b799e11abd"
+checksum = "8957c0c95a6a1804f3e51a18f69df29be53856a8c5768cc9b6d00fcafcd2917c"
 dependencies = [
  "ahash 0.8.11",
- "arrow-array 54.2.1",
- "arrow-buffer 54.2.1",
- "arrow-cast 54.2.1",
- "arrow-data 54.2.1",
- "arrow-ipc 54.2.1",
- "arrow-schema 54.2.1",
- "arrow-select 54.2.1",
+ "arrow-array 53.4.0",
+ "arrow-buffer 53.4.0",
+ "arrow-cast 53.4.0",
+ "arrow-data 53.4.0",
+ "arrow-ipc",
+ "arrow-schema 53.4.0",
+ "arrow-select 53.4.0",
  "base64 0.22.1",
  "bytes",
  "chrono",
@@ -8770,7 +8757,7 @@ name = "swiftide"
 version = "0.22.0"
 dependencies = [
  "anyhow",
- "arrow-array 54.2.1",
+ "arrow-array 53.4.0",
  "async-openai",
  "async-trait",
  "document-features",
@@ -8895,7 +8882,7 @@ name = "swiftide-integrations"
 version = "0.22.0"
 dependencies = [
  "anyhow",
- "arrow-array 54.2.1",
+ "arrow-array 53.4.0",
  "async-anthropic",
  "async-openai",
  "async-trait",
