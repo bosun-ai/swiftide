@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741359636481,
+  "lastUpdate": 1741365377478,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16835,6 +16835,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 245886,
             "range": "± 2127",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "a64ca1656b903a680cc70ac7b33ac40d9d356d4a",
+          "message": "chore: tokio_stream features should include `time`",
+          "timestamp": "2025-03-07T17:26:27+01:00",
+          "tree_id": "ea3ca018b1a3ef3e3244b7415981f5ec41580761",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a64ca1656b903a680cc70ac7b33ac40d9d356d4a"
+        },
+        "date": 1741365376617,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 18",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1284723,
+            "range": "± 984442",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240800,
+            "range": "± 3338",
             "unit": "ns/iter"
           }
         ]
