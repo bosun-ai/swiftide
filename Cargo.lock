@@ -8817,9 +8817,6 @@ version = "0.22.0"
 dependencies = [
  "anyhow",
  "fluvio",
- "indoc",
- "qdrant-client",
- "serde",
  "serde_json",
  "spider",
  "sqlx",
