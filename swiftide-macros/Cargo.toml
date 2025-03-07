@@ -35,6 +35,7 @@ trybuild = "1.0"
 prettyplease = "0.2.25"
 insta.workspace = true
 swiftide = { path = "../swiftide/" }
+tokio = { workspace = true }
 
 [lints]
 workspace = true

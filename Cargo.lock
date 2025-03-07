@@ -8963,6 +8963,7 @@ dependencies = [
  "swiftide",
  "swiftide-core",
  "syn 2.0.99",
+ "tokio",
  "trybuild",
 ]
 
@@ -8989,16 +8990,11 @@ dependencies = [
 name = "swiftide-test-utils"
 version = "0.22.0"
 dependencies = [
- "anyhow",
  "async-openai",
- "mockall",
- "qdrant-client",
  "serde",
  "serde_json",
- "swiftide-core",
  "swiftide-integrations",
  "testcontainers",
- "tokio",
  "wiremock",
 ]
 

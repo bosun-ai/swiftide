@@ -12,21 +12,15 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
-swiftide-integrations = { path = "../swiftide-integrations", features = ["openai"] }
-
-async-openai = { workspace = true }
-qdrant-client = { workspace = true, default-features = false, features = [
-  "serde",
+swiftide-integrations = { path = "../swiftide-integrations", features = [
+  "openai",
 ] }
 
-anyhow = { workspace = true }
-testcontainers = { workspace = true }
-mockall = { workspace = true }
-wiremock = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true }
+async-openai = { workspace = true }
+testcontainers = { workspace = true }
+wiremock = { workspace = true }
 
 [features]
 default = ["test-utils"]
