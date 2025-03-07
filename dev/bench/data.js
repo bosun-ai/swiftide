@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741350523637,
+  "lastUpdate": 1741358383450,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16727,6 +16727,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241748,
             "range": "± 4509",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9b685b3281d9694c5faa58890a9aba32cba90f1c",
+          "message": "chore: Update and loosen deps (#670)",
+          "timestamp": "2025-03-07T15:30:39+01:00",
+          "tree_id": "2e66dc874133167a5c55e11df8092609bfd6bac8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9b685b3281d9694c5faa58890a9aba32cba90f1c"
+        },
+        "date": 1741358382745,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1286624,
+            "range": "± 989798",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240419,
+            "range": "± 6084",
             "unit": "ns/iter"
           }
         ]
