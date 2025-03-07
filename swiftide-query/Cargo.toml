@@ -15,8 +15,7 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 derive_builder = { workspace = true }
 futures-util = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-tokio-stream = { workspace = true }
+tokio = { workspace = true }
 num_cpus = { workspace = true }
 tracing = { workspace = true }
 indoc = { workspace = true }
@@ -30,7 +29,6 @@ swiftide-core = { path = "../swiftide-core", version = "0.22.0" }
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 
-mockall = { workspace = true }
 insta = { workspace = true }
 
 
