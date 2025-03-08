@@ -34,7 +34,7 @@ jobs:
         with:
           tool: cargo-llvm-cov
       - name: Install lld
-        run: apt install lld
+        run: sudo apt install lld
       - name: Generate code coverage
         run: |
           cargo +nightly llvm-cov --tests -j 2 --all-features --lcov --output-path lcov.info

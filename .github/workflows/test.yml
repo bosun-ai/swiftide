@@ -28,6 +28,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install lld
-        run: apt install lld
+        run: sudo apt install lld
       - name: "Test"
         run: cargo test -j 2 --tests --all-features --no-fail-fast
