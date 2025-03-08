@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RUSTFLAGS: "-Dwarnings -Clink-arg=-fuse-ld=ldd"
+  RUSTFLAGS: "-Dwarnings -Clink-arg=-fuse-ld=lld"
 
 jobs:
   test:

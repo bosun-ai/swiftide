@@ -12,7 +12,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-Dwarnings -Clink-arg=-fuse-ld=ldd"
+  RUSTFLAGS: "-Dwarnings -Clink-arg=-fuse-ld=lld"
 
 jobs:
   test:
