@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741520190288,
+  "lastUpdate": 1741524603431,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17051,6 +17051,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 237382,
             "range": "± 1053",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "28676fcb9e948b1e52104e233819c7d67f24af15",
+          "message": "chore: release v0.22.1 (#665)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.22.0 -> 0.22.1 (✓ API compatible changes)\n* `swiftide-agents`: 0.22.0 -> 0.22.1 (✓ API compatible changes)\n* `swiftide-macros`: 0.22.0 -> 0.22.1\n* `swiftide-indexing`: 0.22.0 -> 0.22.1 (✓ API compatible changes)\n* `swiftide-integrations`: 0.22.0 -> 0.22.1 (✓ API compatible changes)\n* `swiftide-query`: 0.22.0 -> 0.22.1 (✓ API compatible changes)\n* `swiftide`: 0.22.0 -> 0.22.1 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.22.1](https://github.com/bosun-ai/swiftide/compare/v0.22.0...v0.22.1)\n- 2025-03-09\n\n### New features\n\n-\n[474d612](https://github.com/bosun-ai/swiftide/commit/474d6122596e71132e35fcb181302dfed7794561)\n*(integrations)* Add Duckdb support\n([#578](https://github.com/bosun-ai/swiftide/pull/578))\n\n````text\nAdds support for Duckdb. Persist, Retrieve (Simple and Custom), and\n  NodeCache are implemented.\n````\n\n-\n[4cf417c](https://github.com/bosun-ai/swiftide/commit/4cf417c6a818fbec2641ad6576b4843412902bf6)\n*(treesitter)* C and C++ support for splitter only\n([#663](https://github.com/bosun-ai/swiftide/pull/663))\n\n````text\n- **feat(tree-sitter): C and C++ support for splitter only**\n  - **Rename to C++**\n````\n\n### Bug fixes\n\n-\n[590eaeb](https://github.com/bosun-ai/swiftide/commit/590eaeb3c6b5c14c56c925e038528326f88508a1)\n*(integrations)* Make openai parallel_tool_calls an Option\n([#664](https://github.com/bosun-ai/swiftide/pull/664))\n\n````text\no3-mini needs to omit parallel_tool_calls - so we need to allow for a\n  None option to not include that field\n\n  needed for https://github.com/bosun-ai/kwaak/pull/392\n````\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n-\n[d864c7e](https://github.com/bosun-ai/swiftide/commit/d864c7e72ba01d3f187e4f6ab6ad3e6244ae0dc4)\nDowngrade duckdb to 1.1.1 and fix ci\n([#671](https://github.com/bosun-ai/swiftide/pull/671))\n\n-\n[9b685b3](https://github.com/bosun-ai/swiftide/commit/9b685b3281d9694c5faa58890a9aba32cba90f1c)\nUpdate and loosen deps\n([#670](https://github.com/bosun-ai/swiftide/pull/670))\n\n-\n[a64ca16](https://github.com/bosun-ai/swiftide/commit/a64ca1656b903a680cc70ac7b33ac40d9d356d4a)\nTokio_stream features should include `time`\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.22.0...0.22.1\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).\n\n---------\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-03-09T12:40:43Z",
+          "tree_id": "594b947450f913df9c5d68b090d8c7e30db34ce9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/28676fcb9e948b1e52104e233819c7d67f24af15"
+        },
+        "date": 1741524602374,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1285746,
+            "range": "± 938609",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241752,
+            "range": "± 1399",
             "unit": "ns/iter"
           }
         ]
