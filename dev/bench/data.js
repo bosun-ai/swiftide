@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741440201714,
+  "lastUpdate": 1741520190288,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -16997,6 +16997,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242031,
             "range": "± 1619",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d864c7e72ba01d3f187e4f6ab6ad3e6244ae0dc4",
+          "message": "chore: Downgrade duckdb to 1.1.1 and fix ci (#671)",
+          "timestamp": "2025-03-09T12:27:31+01:00",
+          "tree_id": "200fd5119e4ac11d7e7f076e29aaf015ea870254",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d864c7e72ba01d3f187e4f6ab6ad3e6244ae0dc4"
+        },
+        "date": 1741520189433,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1274094,
+            "range": "± 936448",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 237382,
+            "range": "± 1053",
             "unit": "ns/iter"
           }
         ]
