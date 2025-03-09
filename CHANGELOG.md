@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.1](https://github.com/bosun-ai/swiftide/compare/v0.22.0...v0.22.1) - 2025-03-09
+
+### New features
+
+- [474d612](https://github.com/bosun-ai/swiftide/commit/474d6122596e71132e35fcb181302dfed7794561) *(integrations)*  Add Duckdb support ([#578](https://github.com/bosun-ai/swiftide/pull/578))
+
+````text
+Adds support for Duckdb. Persist, Retrieve (Simple and Custom), and
+  NodeCache are implemented. Metadata and full upsert are not. Once 1.2
+  has its issues fixed, it's easy to add.
+````
+
+- [4cf417c](https://github.com/bosun-ai/swiftide/commit/4cf417c6a818fbec2641ad6576b4843412902bf6) *(treesitter)*  C and C++ support for splitter only ([#663](https://github.com/bosun-ai/swiftide/pull/663))
+
+
+### Bug fixes
+
+- [590eaeb](https://github.com/bosun-ai/swiftide/commit/590eaeb3c6b5c14c56c925e038528326f88508a1) *(integrations)*  Make openai parallel_tool_calls an Option ([#664](https://github.com/bosun-ai/swiftide/pull/664))
+
+````text
+o3-mini needs to omit parallel_tool_calls - so we need to allow for a
+  None option to not include that field
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [d864c7e](https://github.com/bosun-ai/swiftide/commit/d864c7e72ba01d3f187e4f6ab6ad3e6244ae0dc4)  Downgrade duckdb to 1.1.1 and fix ci ([#671](https://github.com/bosun-ai/swiftide/pull/671))
+
+- [9b685b3](https://github.com/bosun-ai/swiftide/commit/9b685b3281d9694c5faa58890a9aba32cba90f1c)  Update and loosen deps ([#670](https://github.com/bosun-ai/swiftide/pull/670))
+
+- [a64ca16](https://github.com/bosun-ai/swiftide/commit/a64ca1656b903a680cc70ac7b33ac40d9d356d4a)  Tokio_stream features should include `time`
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.0...0.22.1
+
+
+
 ## [0.22.0](https://github.com/bosun-ai/swiftide/compare/v0.21.1...v0.22.0) - 2025-03-03
 
 ### New features
