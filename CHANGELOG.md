@@ -10,15 +10,12 @@ All notable changes to this project will be documented in this file.
 
 ````text
 Adds support for Duckdb. Persist, Retrieve (Simple and Custom), and
-  NodeCache are implemented.
+  NodeCache are implemented. Metadata and full upsert are not. Once 1.2
+  has its issues fixed, it's easy to add.
 ````
 
 - [4cf417c](https://github.com/bosun-ai/swiftide/commit/4cf417c6a818fbec2641ad6576b4843412902bf6) *(treesitter)*  C and C++ support for splitter only ([#663](https://github.com/bosun-ai/swiftide/pull/663))
 
-````text
-- **feat(tree-sitter): C and C++ support for splitter only**
-  - **Rename to C++**
-````
 
 ### Bug fixes
 
@@ -27,8 +24,6 @@ Adds support for Duckdb. Persist, Retrieve (Simple and Custom), and
 ````text
 o3-mini needs to omit parallel_tool_calls - so we need to allow for a
   None option to not include that field
-
-  needed for https://github.com/bosun-ai/kwaak/pull/392
 ````
 
 ### Miscellaneous
