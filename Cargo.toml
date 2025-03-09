@@ -1,6 +1,6 @@
 [workspace]
 members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
-# default-members = ["swiftide", "swiftide-*"]
+default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [workspace.package]
@@ -95,7 +95,8 @@ tree-sitter-solidity = "1.2"
 tree-sitter-c = "0.23"
 tree-sitter-cpp = "0.23"
 async-anthropic = "0.3.0"
-duckdb = { version = "1.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
+duckdb = { version = "=1.1.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
+libduckdb-sys = { version = "=1.1.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
 
 # Testing
 test-log = "0.2"

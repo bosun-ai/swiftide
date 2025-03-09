@@ -15,9 +15,8 @@ const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 
 /// Provides `Persist`, `Retrieve`, and `NodeCache` for duckdb
 ///
-/// Unfortunately Metadata is not stored.
-///
-/// By default `hnsw_enable_experimental_persistence` is enabled.
+/// Unfortunately Metadata is not stored and vectors are not upserted.
+/// Hopefully this will be fixed in a future release.
 ///
 /// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
 /// doesn't let us know <3.
