@@ -61,10 +61,10 @@ qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
 ] }
 fluvio = { version = "0.26", default-features = false }
-lancedb = { version = "0.17", default-features = false }
+lancedb = { version = "0.18", default-features = false }
 # Needs to stay in sync with whatever lancdb uses, nice
-arrow-array = { version = "53.4", default-features = false }
-parquet = { version = "53.2", default-features = false, features = ["async"] }
+arrow-array = { version = "54.2", default-features = false }
+parquet = { version = "54.2", default-features = false, features = ["async"] }
 redb = { version = "2.4", default-features = false }
 sqlx = { version = "0.8", features = [
   "postgres",
