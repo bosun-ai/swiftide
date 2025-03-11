@@ -90,7 +90,7 @@ secrecy = { version = "0.10", default-features = false }
 syn = { version = "2.0", default-features = false }
 tera = { version = "1.20", default-features = false }
 text-splitter = { version = "0.24", default-features = false }
-tracing-subscriber = { version = "0.3", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = true }
 tree-sitter = { version = "0.25", default-features = false, features = ["std"] }
 tree-sitter-java = { version = "0.23", default-features = false }
 tree-sitter-javascript = { version = "0.23", default-features = false }
