@@ -37,6 +37,9 @@ qdrant-client = { workspace = true, optional = true, default-features = false, f
   "serde",
 ] }
 sqlx = { workspace = true, optional = true, features = [
+  "any",
+  "json",
+  "macros",
   "postgres",
   "runtime-tokio",
   "chrono",
@@ -62,7 +65,7 @@ tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-cpp = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
-spider = { workspace = true, optional = true }
+spider = { workspace = true, optional = true, default-features = true }
 htmd = { workspace = true, optional = true }
 aws-config = { workspace = true, features = [
   "behavior-version-latest",
@@ -122,7 +125,7 @@ wiremock = { workspace = true }
 [features]
 default = ["rustls"]
 # Ensures rustls is used
-rustls = ["reqwest/rustls-tls-native-roots"]
+rustls = ["reqwest?/rustls-tls-native-roots", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
 qdrant = ["dep:qdrant-client", "swiftide-core/qdrant"]
 # PgVector for storage
@@ -152,7 +155,7 @@ ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Openrouter prompting, embedding, chatcompletion
 open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # FastEmbed (by qdrant) for fast, local embeddings
-fastembed = ["dep:fastembed"]
+fastembed = ["dep:fastembed", "fastembed/ort-download-binaries"]
 # Dashscope prompting
 dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Scraping via spider as loader and a html to markdown transformer

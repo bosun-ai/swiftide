@@ -7224,7 +7224,6 @@ dependencies = [
  "rustls 0.23.23",
  "rustls-native-certs 0.8.1",
  "ryu",
- "sha1_smol",
  "socket2 0.5.8",
  "tokio",
  "tokio-rustls 0.26.2",
@@ -7951,12 +7950,6 @@ dependencies = [
  "cpufeatures",
  "digest",
 ]
-
-[[package]]
-name = "sha1_smol"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
 
 [[package]]
 name = "sha2"

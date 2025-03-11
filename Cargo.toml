@@ -19,36 +19,44 @@ insta.opt-level = 3
 similar.opt-level = 3
 
 [workspace.dependencies]
-anyhow = { version = "1.0" }
-thiserror = "2.0"
-async-trait = { version = "0.1" }
-derive_builder = { version = "0.20" }
-futures-util = { version = "0.3" }
+anyhow = { version = "1.0", default-features = false }
+thiserror = { version = "2.0", default-features = false }
+async-trait = { version = "0.1", default-features = false }
+derive_builder = { version = "0.20", default-features = true }
+futures-util = { version = "0.3", default-features = true }
 tokio = { version = "1.43", features = [
   "rt-multi-thread",
+  "time",
 ], default-features = false }
 tokio-stream = { version = "0.1", default-features = false, features = [
   "time",
 ] }
-tracing = { version = "0.1", features = ["log"] }
-num_cpus = { version = "1.16" }
-pin-project = { version = "1.1" }
-itertools = { version = "0.14" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-strum = { version = "0.27" }
-strum_macros = { version = "0.27" }
-lazy_static = { version = "1.5" }
-chrono = { version = "0.4" }
-indoc = { version = "2.0" }
-regex = { version = "1.11" }
-uuid = { version = "1.14", features = ["v3", "v4", "serde"] }
-dyn-clone = { version = "1.0" }
-convert_case = "0.8"
+tracing = { version = "0.1", features = [
+  "log",
+  "attributes",
+], default-features = false }
+num_cpus = { version = "1.16", default-features = false }
+pin-project = { version = "1.1", default-features = false }
+itertools = { version = "0.14", default-features = true }
+serde = { version = "1.0", features = ["derive"], default-features = false }
+serde_json = { version = "1.0", default-features = false }
+strum = { version = "0.27", default-features = false }
+strum_macros = { version = "0.27", default-features = false }
+lazy_static = { version = "1.5", default-features = false }
+chrono = { version = "0.4", default-features = false }
+indoc = { version = "2.0", default-features = false }
+regex = { version = "1.11", default-features = false }
+uuid = { version = "1.14", features = [
+  "v3",
+  "v4",
+  "serde",
+], default-features = false }
+dyn-clone = { version = "1.0", default-features = false }
+convert_case = { version = "0.8", default-features = false }
 
 # Integrations
-spider = { version = "2.31" }
-async-openai = { version = "0.28" }
+spider = { version = "2.31", default-features = false }
+async-openai = { version = "0.28", default-features = false }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
 ] }
@@ -57,55 +65,55 @@ lancedb = { version = "0.17", default-features = false }
 # Needs to stay in sync with whatever lancdb uses, nice
 arrow-array = { version = "53.4", default-features = false }
 parquet = { version = "53.2", default-features = false, features = ["async"] }
-redb = { version = "2.4" }
+redb = { version = "2.4", default-features = false }
 sqlx = { version = "0.8", features = [
   "postgres",
   "uuid",
 ], default-features = false }
-aws-config = "1.5"
+aws-config = { version = "1.5", default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
-aws-credential-types = "1.2"
-aws-sdk-bedrockruntime = "1.76"
+aws-credential-types = { version = "1.2", default-features = false }
+aws-sdk-bedrockruntime = { version = "1.76", default-features = false }
 criterion = { version = "0.5", default-features = false }
-darling = "0.20"
-deadpool = "0.12"
-document-features = "0.2"
-fastembed = "4.5"
-flv-util = "0.5"
-htmd = "0.1"
-ignore = "0.4"
-proc-macro2 = "1.0"
-quote = "1.0"
-redis = "0.29"
+darling = { version = "0.20", default-features = false }
+deadpool = { version = "0.12", default-features = false }
+document-features = { version = "0.2" }
+fastembed = { version = "4.5", default-features = false }
+flv-util = { version = "0.5", default-features = false }
+htmd = { version = "0.1", default-features = false }
+ignore = { version = "0.4", default-features = false }
+proc-macro2 = { version = "1.0", default-features = false }
+quote = { version = "1.0", default-features = false }
+redis = { version = "0.29", default-features = false }
 reqwest = { version = "0.12", default-features = false }
-secrecy = "0.10"
-syn = "2.0"
+secrecy = { version = "0.10", default-features = false }
+syn = { version = "2.0", default-features = false }
 tera = { version = "1.20", default-features = false }
-text-splitter = "0.24"
-tracing-subscriber = "0.3"
-tree-sitter = "0.25"
-tree-sitter-java = "0.23"
-tree-sitter-javascript = "0.23"
-tree-sitter-python = "0.23"
-tree-sitter-ruby = "0.23"
-tree-sitter-rust = "0.23"
-tree-sitter-typescript = "0.23"
-tree-sitter-go = "0.23"
-tree-sitter-solidity = "1.2"
-tree-sitter-c = "0.23"
-tree-sitter-cpp = "0.23"
-async-anthropic = "0.3.0"
+text-splitter = { version = "0.24", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false }
+tree-sitter = { version = "0.25", default-features = false, features = ["std"] }
+tree-sitter-java = { version = "0.23", default-features = false }
+tree-sitter-javascript = { version = "0.23", default-features = false }
+tree-sitter-python = { version = "0.23", default-features = false }
+tree-sitter-ruby = { version = "0.23", default-features = false }
+tree-sitter-rust = { version = "0.23", default-features = false }
+tree-sitter-typescript = { version = "0.23", default-features = false }
+tree-sitter-go = { version = "0.23", default-features = false }
+tree-sitter-solidity = { version = "1.2", default-features = false }
+tree-sitter-c = { version = "0.23", default-features = false }
+tree-sitter-cpp = { version = "0.23", default-features = false }
+async-anthropic = { version = "0.3.0", default-features = false }
 duckdb = { version = "=1.1.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
 libduckdb-sys = { version = "=1.1.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
 
 # Testing
-test-log = "0.2"
+test-log = { version = "0.2" }
 testcontainers = { version = "0.23", features = ["http_wait"] }
-mockall = "0.13"
-temp-dir = "0.1"
-wiremock = "0.6"
-test-case = "3.3"
-pretty_assertions = "1.4"
+mockall = { version = "0.13" }
+temp-dir = { version = "0.1" }
+wiremock = { version = "0.6" }
+test-case = { version = "3.3" }
+pretty_assertions = { version = "1.4" }
 insta = { version = "1.42", features = ["yaml"] }
 
 [workspace.lints.rust]
