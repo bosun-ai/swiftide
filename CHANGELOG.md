@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.2](https://github.com/bosun-ai/swiftide/compare/v0.22.1...v0.22.2) - 2025-03-11
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [e1c097d](https://github.com/bosun-ai/swiftide/commit/e1c097da885374ec9320c1847a7dda7c5d9d41cb)  Disable default features on all dependencies ([#675](https://github.com/bosun-ai/swiftide/pull/675))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.1...0.22.2
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.22.1](https://github.com/bosun-ai/swiftide/compare/v0.22.0...v0.22.1) - 2025-03-09
 
 ### New features
