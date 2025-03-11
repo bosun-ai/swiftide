@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741704710140,
+  "lastUpdate": 1741711752003,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17267,6 +17267,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243381,
             "range": "± 2973",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2e51196b81256dd38ef54cdee57a7a62f6e38d78",
+          "message": "chore: release v0.22.2 (#676)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.22.1 -> 0.22.2 (✓ API compatible changes)\n* `swiftide-agents`: 0.22.1 -> 0.22.2 (✓ API compatible changes)\n* `swiftide-macros`: 0.22.1 -> 0.22.2\n* `swiftide-indexing`: 0.22.1 -> 0.22.2 (✓ API compatible changes)\n* `swiftide-integrations`: 0.22.1 -> 0.22.2 (✓ API compatible changes)\n* `swiftide-query`: 0.22.1 -> 0.22.2 (✓ API compatible changes)\n* `swiftide`: 0.22.1 -> 0.22.2 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.22.2](https://github.com/bosun-ai/swiftide/compare/v0.22.1...v0.22.2)\n- 2025-03-11\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n-\n[e1c097d](https://github.com/bosun-ai/swiftide/commit/e1c097da885374ec9320c1847a7dda7c5d9d41cb)\nDisable default features on all dependencies\n([#675](https://github.com/bosun-ai/swiftide/pull/675))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.22.1...0.22.2\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-03-11T17:40:26+01:00",
+          "tree_id": "1e2af90a9c9974ad1c5cb79ba4e0ea25c8b66443",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2e51196b81256dd38ef54cdee57a7a62f6e38d78"
+        },
+        "date": 1741711751256,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1302891,
+            "range": "± 1015370",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 243965,
+            "range": "± 5025",
             "unit": "ns/iter"
           }
         ]
