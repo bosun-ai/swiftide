@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741524603431,
+  "lastUpdate": 1741701577671,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17105,6 +17105,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241752,
             "range": "± 1399",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e1c097da885374ec9320c1847a7dda7c5d9d41cb",
+          "message": "chore: Disable default features on all dependencies (#675)",
+          "timestamp": "2025-03-11T14:51:00+01:00",
+          "tree_id": "ff7f0cbb4a4d725df2b7d43f7f9326052cb60eb5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e1c097da885374ec9320c1847a7dda7c5d9d41cb"
+        },
+        "date": 1741701577034,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1287730,
+            "range": "± 971059",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241278,
+            "range": "± 1653",
             "unit": "ns/iter"
           }
         ]
