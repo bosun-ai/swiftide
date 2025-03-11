@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741701577671,
+  "lastUpdate": 1741702170016,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17159,6 +17159,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241278,
             "range": "± 1653",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "f3358d942981dec75d5d40150e31812afef17839",
+          "message": "chore(deps): Remove arrow pin and update lance",
+          "timestamp": "2025-03-11T15:00:38+01:00",
+          "tree_id": "5e6d6e3b7f80eec3dd64ecc202aef67a149f21ee",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f3358d942981dec75d5d40150e31812afef17839"
+        },
+        "date": 1741702169358,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1289733,
+            "range": "± 1006292",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 240684,
+            "range": "± 18663",
             "unit": "ns/iter"
           }
         ]
