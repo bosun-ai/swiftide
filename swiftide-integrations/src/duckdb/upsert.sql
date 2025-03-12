@@ -8,7 +8,7 @@ ON CONFLICT (uuid) DO UPDATE SET
   chunk = EXCLUDED.chunk,
   path = EXCLUDED.path,
 -- We cannot do true upserts in 1.1.1. This is supported in 1.2.0
-  -- {% for vector in vector_field_names %}
-  --   {{ vector }} = EXCLUDED.{{ vector }},
-  -- {% endfor %}
+  {% for vector in vector_field_names %}
+    {{ vector }} = EXCLUDED.{{ vector }},
+  {% endfor %}
 ;
