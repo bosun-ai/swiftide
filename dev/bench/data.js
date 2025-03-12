@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741711752003,
+  "lastUpdate": 1741803262284,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17321,6 +17321,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 243965,
             "range": "± 5025",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "834fcd3b2270904bcfe8998a7015de15626128a8",
+          "message": "chore: Update duckdb to 1.2.1 (#680)",
+          "timestamp": "2025-03-12T19:05:39+01:00",
+          "tree_id": "fea7745e90662f485bc44661e5e7bbe5fb386107",
+          "url": "https://github.com/bosun-ai/swiftide/commit/834fcd3b2270904bcfe8998a7015de15626128a8"
+        },
+        "date": 1741803260752,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1290726,
+            "range": "± 938396",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242586,
+            "range": "± 1574",
             "unit": "ns/iter"
           }
         ]
