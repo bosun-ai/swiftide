@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741803262284,
+  "lastUpdate": 1741803272459,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17375,6 +17375,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242586,
             "range": "± 1574",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6e41d4a6c444ee821424c780b0ce529d42f674ee",
+          "message": "chore(deps): bump the aws group with 2 updates (#678)\n\nBumps the aws group with 2 updates:\n[aws-credential-types](https://github.com/smithy-lang/smithy-rs) and\n[aws-sdk-bedrockruntime](https://github.com/awslabs/aws-sdk-rust).\n\nUpdates `aws-credential-types` from 1.2.1 to 1.2.2\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/smithy-lang/smithy-rs/blob/main/CHANGELOG.md\">aws-credential-types's\nchangelog</a>.</em></p>\n<blockquote>\n<!-- raw HTML omitted -->\n<h1>March 10th, 2025</h1>\n<p><strong>New this release:</strong></p>\n<ul>\n<li>(client, <a\nhref=\"https://redirect.github.com/awslabs/aws-sdk-rust/issues/977\">aws-sdk-rust#977</a>,\n<a\nhref=\"https://redirect.github.com/smithy-lang/smithy-rs/issues/1925\">smithy-rs#1925</a>,\n<a\nhref=\"https://redirect.github.com/smithy-lang/smithy-rs/issues/3710\">smithy-rs#3710</a>)\nUpdates the default HTTP client to be based on the 1.x version of hyper\nand updates the default TLS provider to <a\nhref=\"https://github.com/rustls/rustls\">rustls</a> with <a\nhref=\"https://github.com/aws/aws-lc-rs\">aws-lc</a>. For more information\nsee the GitHub <a\nhref=\"https://github.com/awslabs/aws-sdk-rust/discussions/1257\">discussion</a>.</li>\n</ul>\n<h1>March 4th, 2025</h1>\n<p><strong>New this release:</strong></p>\n<ul>\n<li>:tada: (client, <a\nhref=\"https://redirect.github.com/smithy-lang/smithy-rs/issues/121\">smithy-rs#121</a>)\nAdds support for event stream operations with non-REST protocols such as\nRPC v2 CBOR.</li>\n</ul>\n<h1>February 20th, 2025</h1>\n<p><strong>New this release:</strong></p>\n<ul>\n<li>:bug: (server) Fixed code generation failure that occurred when\nusing <code>Result</code> as a shape name in Smithy models with\nconstrained members by properly handling naming conflicts with Rust's\nbuilt-in Result type</li>\n<li>:bug: (server) Previously, models would fail to generate when both\nthe list and at least one of its members was directly constrained with\ndocumentation comments</li>\n</ul>\n<h1>February 12th, 2025</h1>\n<h1>February 3rd, 2025</h1>\n<h1>January 28th, 2025</h1>\n<h1>January 23rd, 2025</h1>\n<h1>January 17th, 2025</h1>\n<h1>January 14th, 2025</h1>\n<p><strong>New this release:</strong></p>\n<ul>\n<li>\n<p>:bug::tada: (client, <a\nhref=\"https://redirect.github.com/smithy-lang/smithy-rs/issues/3845\">smithy-rs#3845</a>)\nS3 client behavior is updated to always calculate a checksum by default\nfor operations that support it (such as PutObject or UploadPart), or\nrequire it (such as DeleteObjects). The default checksum algorithm is\nCRC32. Checksum behavior can be configured using\n<code>when_supported</code> and <code>when_required</code> options - in\nshared config using request_checksum_calculation, or as env variable\nusing AWS_REQUEST_CHECKSUM_CALCULATION.</p>\n<p>The S3 client attempts to validate response checksums for all S3 API\noperations that support checksums. However, if the SDK has not\nimplemented the specified checksum algorithm then this validation is\nskipped. Checksum validation behavior can be configured using\n<code>when_supported</code> and <code>when_required</code> options - in\nshared config using response_checksum_validation, or as env variable\nusing AWS_RESPONSE_CHECKSUM_VALIDATION.</p>\n</li>\n<li>\n<p>:bug::tada: (client, <a\nhref=\"https://redirect.github.com/smithy-lang/smithy-rs/issues/3967\">smithy-rs#3967</a>)\nUpdates client generation to conform with Smithy's updates to the <a\nhref=\"https://smithy.io/2.0/aws/aws-core.html#aws-protocols-httpchecksum-trait\">httpChecksum\ntrait</a>.</p>\n</li>\n<li>\n<p>:bug: (client, <a\nhref=\"https://redirect.github.com/awslabs/aws-sdk-rust/issues/1234\">aws-sdk-rust#1234</a>)\nFix token bucket not being set for standard and adaptive retry modes</p>\n</li>\n</ul>\n<h1>December 30th, 2024</h1>\n<h1>December 26th, 2024</h1>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/smithy-lang/smithy-rs/commits\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `aws-sdk-bedrockruntime` from 1.76.0 to 1.77.0\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/awslabs/aws-sdk-rust/commits\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-03-12T19:05:52+01:00",
+          "tree_id": "429edd1666ec3988c2787f359c380881e046f093",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6e41d4a6c444ee821424c780b0ce529d42f674ee"
+        },
+        "date": 1741803271546,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1280512,
+            "range": "± 936838",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241548,
+            "range": "± 1983",
             "unit": "ns/iter"
           }
         ]
