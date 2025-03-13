@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.3](https://github.com/bosun-ai/swiftide/compare/v0.22.2...v0.22.3) - 2025-03-13
+
+### Miscellaneous
+
+- [834fcd3](https://github.com/bosun-ai/swiftide/commit/834fcd3b2270904bcfe8998a7015de15626128a8)  Update duckdb to 1.2.1 ([#680](https://github.com/bosun-ai/swiftide/pull/680))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.2...0.22.3
+
+
+
 ## [0.22.2](https://github.com/bosun-ai/swiftide/compare/v0.22.1...v0.22.2) - 2025-03-11
 
 ### Miscellaneous
