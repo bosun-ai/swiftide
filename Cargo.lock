@@ -4296,7 +4296,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.8",
  "tokio",
  "tower-service",
  "tracing",
@@ -8257,9 +8257,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.33.5"
+version = "2.33.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81dcbdf658df62d4665e68e6ced584b5b152bcc5b5e2538c2ca97db8cf0ee671"
+checksum = "f6b0f74cac4b5d6cb0b76fcdd297956dc4fb8c9b350eff26ed0e4fde4531a8d0"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -9582,9 +9582,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.44.0"
+version = "1.44.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9975ea0f48b5aa3972bf2d888c238182458437cc2a19374b81b25cdf1023fb3a"
+checksum = "f382da615b842244d4b8738c82ed1275e6c5dd90c459a30941cd07080b06c91a"
 dependencies = [
  "backtrace",
  "bytes",
@@ -10244,9 +10244,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.15.1"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f540e3240398cce6128b64ba83fdbdd86129c16a3aa1a3a252efd66eb3d587"
+checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
 dependencies = [
  "getrandom 0.3.1",
  "md-5",

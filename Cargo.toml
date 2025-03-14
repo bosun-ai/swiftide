@@ -24,7 +24,7 @@ thiserror = { version = "2.0", default-features = false }
 async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
 futures-util = { version = "0.3", default-features = true }
-tokio = { version = "1.43", features = [
+tokio = { version = "1.44", features = [
   "rt-multi-thread",
   "time",
 ], default-features = false }
@@ -46,7 +46,7 @@ lazy_static = { version = "1.5", default-features = false }
 chrono = { version = "0.4", default-features = false }
 indoc = { version = "2.0", default-features = false }
 regex = { version = "1.11", default-features = false }
-uuid = { version = "1.14", features = [
+uuid = { version = "1.16", features = [
   "v3",
   "v4",
   "serde",
