@@ -3,3 +3,4 @@
 # Unstable options - to run these, use `cargo +nightly fmt`
 wrap_comments = true
 comment_width = 100
+normalize_comments = true

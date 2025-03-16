@@ -110,7 +110,7 @@ pub struct Agent {
 impl std::fmt::Debug for Agent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Agent")
-            //display hooks as a list of type: number of hooks
+            // display hooks as a list of type: number of hooks
             .field(
                 "hooks",
                 &self

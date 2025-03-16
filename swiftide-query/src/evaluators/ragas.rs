@@ -1,39 +1,38 @@
-/*!
-The Ragas evaluator allows you to export a RAGAS compatible JSON dataset.
-
-RAGAS requires a ground truth to compare to. You can either record the answers for an initial dataset, or provide the ground truth yourself.
-
-Refer to the ragas documentation on how to use the dataset or take a look at a more involved
-example at [swiftide-tutorials](https://github.com/bosun-ai/swiftide-tutorial).
-
-# Example
-
-```ignore
-# use swiftide_query::*;
-# use anyhow::{Result, Context};
-# #[tokio::main]
-# async fn main() -> anyhow::Result<()> {
-
-let openai = swiftide::integrations::openai::OpenAi::default();
-let qdrant = swiftide::integrations::qdrant::Qdrant::default();
-
-let ragas = evaluators::ragas::Ragas::from_prepared_questions(questions);
-
-let pipeline = query::Pipeline::default()
-    .evaluate_with(ragas.clone())
-    .then_transform_query(query_transformers::GenerateSubquestions::from_client(openai.clone()))
-    .then_transform_query(query_transformers::Embed::from_client(
-        openai.clone(),
-    ))
-    .then_retrieve(qdrant.clone())
-    .then_answer(answers::Simple::from_client(openai.clone()));
-
-pipeline.query_all(ragas.questions().await).await.unwrap();
-
-std::fs::write("output.json", ragas.to_json().await).unwrap();
-# Ok(())
-# }
-*/
+//! The Ragas evaluator allows you to export a RAGAS compatible JSON dataset.
+//!
+//! RAGAS requires a ground truth to compare to. You can either record the answers for an initial
+//! dataset, or provide the ground truth yourself.
+//!
+//! Refer to the ragas documentation on how to use the dataset or take a look at a more involved
+//! example at [swiftide-tutorials](https://github.com/bosun-ai/swiftide-tutorial).
+//!
+//! # Example
+//!
+//! ```ignore
+//! # use swiftide_query::*;
+//! # use anyhow::{Result, Context};
+//! # #[tokio::main]
+//! # async fn main() -> anyhow::Result<()> {
+//!
+//! let openai = swiftide::integrations::openai::OpenAi::default();
+//! let qdrant = swiftide::integrations::qdrant::Qdrant::default();
+//!
+//! let ragas = evaluators::ragas::Ragas::from_prepared_questions(questions);
+//!
+//! let pipeline = query::Pipeline::default()
+//! .evaluate_with(ragas.clone())
+//! .then_transform_query(query_transformers::GenerateSubquestions::from_client(openai.clone()))
+//! .then_transform_query(query_transformers::Embed::from_client(
+//! openai.clone(),
+//! ))
+//! .then_retrieve(qdrant.clone())
+//! .then_answer(answers::Simple::from_client(openai.clone()));
+//!
+//! pipeline.query_all(ragas.questions().await).await.unwrap();
+//!
+//! std::fs::write("output.json", ragas.to_json().await).unwrap();
+//! # Ok(())
+//! # }
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
