@@ -54,7 +54,7 @@ impl LocalExecutor {
     }
 
     async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput, CommandError> {
-        let output = tokio::fs::read(path).await?;
+        let output = fs_err::tokio::read(path).await?;
 
         Ok(String::from_utf8(output)
             .context("Failed to parse read file output")?
@@ -67,9 +67,9 @@ impl LocalExecutor {
         content: &str,
     ) -> Result<CommandOutput, CommandError> {
         if let Some(parent) = path.parent() {
-            let _ = tokio::fs::create_dir_all(parent).await;
+            let _ = fs_err::tokio::create_dir_all(parent).await;
         }
-        tokio::fs::write(path, content).await?;
+        fs_err::tokio::write(path, content).await?;
 
         Ok(CommandOutput::empty())
     }
