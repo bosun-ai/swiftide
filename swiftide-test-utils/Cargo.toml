@@ -25,3 +25,8 @@ wiremock = { workspace = true }
 [features]
 default = ["test-utils"]
 test-utils = []
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

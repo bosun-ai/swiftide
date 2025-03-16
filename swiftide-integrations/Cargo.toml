@@ -127,7 +127,7 @@ default = ["rustls"]
 # Ensures rustls is used
 rustls = ["reqwest?/rustls-tls-native-roots", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
-qdrant = ["dep:qdrant-client", "swiftide-core/qdrant"]
+qdrant = ["dep:qdrant-client", "swiftide-core/qdrant", "chrono/now"]
 # PgVector for storage
 pgvector = ["dep:sqlx", "dep:pgvector"]
 # Redis for caching and storage
@@ -149,13 +149,17 @@ tree-sitter = [
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai"]
 # Groq prompting
-groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Ollama prompting, embedding, chatcompletion
 ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Openrouter prompting, embedding, chatcompletion
 open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # FastEmbed (by qdrant) for fast, local embeddings
-fastembed = ["dep:fastembed", "fastembed/ort-download-binaries"]
+fastembed = [
+  "dep:fastembed",
+  "fastembed/ort-download-binaries",
+  "fastembed/hf-hub",
+]
 # Dashscope prompting
 dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
 # Scraping via spider as loader and a html to markdown transformer
@@ -179,3 +183,8 @@ duckdb = ["dep:duckdb", "dep:libduckdb-sys"]
 
 [lints]
 workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

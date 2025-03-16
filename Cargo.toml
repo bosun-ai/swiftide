@@ -4,7 +4,7 @@ default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.22.2"
+version = "0.22.3"
 edition = "2021"
 license = "MIT"
 readme = "README.md"
@@ -55,7 +55,7 @@ dyn-clone = { version = "1.0", default-features = false }
 convert_case = { version = "0.8", default-features = false }
 
 # Integrations
-spider = { version = "2.31", default-features = false }
+spider = { version = "2.33", default-features = false }
 async-openai = { version = "0.28", default-features = false }
 qdrant-client = { version = "1.13", default-features = false, features = [
   "serde",
@@ -70,7 +70,7 @@ sqlx = { version = "0.8", features = [
   "postgres",
   "uuid",
 ], default-features = false }
-aws-config = { version = "1.5", default-features = false }
+aws-config = { version = "1.6", default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
 aws-credential-types = { version = "1.2", default-features = false }
 aws-sdk-bedrockruntime = { version = "1.77", default-features = false }
