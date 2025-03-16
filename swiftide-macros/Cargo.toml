@@ -44,3 +44,8 @@ workspace = true
 # TODO: Clean up feature flag
 default = ["swiftide-agents"]
 swiftide-agents = ["dep:serde", "dep:serde_json"]
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

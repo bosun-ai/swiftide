@@ -1,11 +1,9 @@
-//! # Swiftide
-//!
-//! <div>
-//! <img src="https://github.com/bosun-ai/swiftide/raw/master/images/logo.png" height="200"
-//! width="200" style="margin: auto; display: block;" />
-//! <br />
-//! </div>
-//!
+// show feature flags in the generated documentation
+// https://doc.rust-lang.org/rustdoc/unstable-features.html#extensions-to-the-doc-attribute
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
+
 //! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 //!
 //! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
@@ -14,7 +12,7 @@
 //!
 //! Read more about the project on the [swiftide website](https://swiftide.rs)
 //!
-//! ## Features
+//! # Features
 //!
 //! - Extremely fast streaming indexing pipeline with async, parallel processing
 //! - Integrations with `OpenAI`, `Redis`, `Qdrant`, `FastEmbed`, `Treesitter` and more
@@ -25,13 +23,13 @@
 //! - Store into multiple backends
 //! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
 //!
-//! ## Querying
+//! # Querying
 //!
 //! After running an indexing pipeline, you can use the [`query`] module to query the indexed data.
 //!
-//! ## Examples
+//! # Examples
 //!
-//! ### Indexing markdown
+//! ## Indexing markdown
 //!
 //! ```no_run
 //! # use swiftide::indexing::loaders::FileLoader;
@@ -61,7 +59,7 @@
 //! # }
 //! ```
 //!
-//! ### Querying
+//! ## Querying
 //!
 //! ```no_run
 //! # use anyhow::Result;
@@ -95,7 +93,7 @@
 //! # }
 //! ```
 //!
-//! ## Feature flags
+//! # Feature flags
 //!
 //! Swiftide has little features enabled by default, as there are some dependency heavy
 //! integrations. You need to cherry-pick the tools and integrations you want to use.
