@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742144946816,
+  "lastUpdate": 1742161174376,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17699,6 +17699,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 238715,
             "range": "± 2027",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7df6954d1c700799bfa5914f44a7d2007b5da8e9",
+          "message": "chore(ci): Verify each feature compiles individually with cargo hack (#688)",
+          "timestamp": "2025-03-16T22:30:48+01:00",
+          "tree_id": "f1273dc588b39fa975c5178763417dc6c71396f8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7df6954d1c700799bfa5914f44a7d2007b5da8e9"
+        },
+        "date": 1742161173395,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1283808,
+            "range": "± 954262",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 241934,
+            "range": "± 2084",
             "unit": "ns/iter"
           }
         ]
