@@ -53,7 +53,8 @@ const DEFAULT_BATCH_SIZE: usize = 256;
 /// also be set and is recommended. Batch size should match the batch size in the indexing
 /// pipeline.
 ///
-/// Note that the embedding vector dimensions need to match the dimensions of the vector database collection
+/// Note that the embedding vector dimensions need to match the dimensions of the vector database
+/// collection
 ///
 /// Requires the `fastembed` feature to be enabled.
 #[derive(Builder, Clone)]

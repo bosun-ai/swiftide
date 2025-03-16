@@ -82,8 +82,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         fastembed_sparse.clone(),
     ))
     .then_retrieve(qdrant.clone())
-    // Answer with Simple, which either takes the documents as is (in this case), or any transformations applied
-    // after querying
+    // Answer with Simple, which either takes the documents as is (in this case), or any
+    // transformations applied after querying
     .then_answer(answers::Simple::from_client(openai.clone()));
 
     let answer = query_pipeline
@@ -95,13 +95,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ## Different Pipelines in Swiftide and How They Work
     //
-    // Swiftide offers multiple pipelines, notably the indexing pipeline and the query pipeline. The functionality of these pipelines is enhanced using traits and components like transformers, stream handlers, and more. Below we elaborate on the key components and how they become part of the larger pipeline system:
+    // Swiftide offers multiple pipelines, notably the indexing pipeline and the query pipeline. The
+    // functionality of these pipelines is enhanced using traits and components like transformers,
+    // stream handlers, and more. Below we elaborate on the key components and how they become part
+    // of the larger pipeline system:
     //
     // ### Indexing Pipeline
     //
     // 1. **Transformers**:
-    //     - **Transformer Trait**: Transforms single nodes into single nodes. Mainly used for transforming data in a singular manner.
-    //     - **BatchableTransformer Trait**: Transforms a batch of nodes into a stream of nodes, useful for bulk processing.
+    //     - **Transformer Trait**: Transforms single nodes into single nodes. Mainly used for
+    //       transforming data in a singular manner.
+    //     - **BatchableTransformer Trait**: Transforms a batch of nodes into a stream of nodes,
+    //       useful for bulk processing.
     //
     //     ```rust
     //     #[async_trait]
@@ -124,8 +129,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     }
     //
     //     #[async_trait]
-    //     impl<F> BatchableTransformer for F where F: Fn(Vec<Node>) -> IndexingStream + Send + Sync {
-    //         async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+    //     impl<F> BatchableTransformer for F where F: Fn(Vec<Node>) -> IndexingStream + Send + Sync
+    // {         async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
     //             self(nodes)
     //         }
     //     }
@@ -141,7 +146,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     ```
     //
     // 3. **Chunker Transformers**:
-    //     - Splits one node into multiple nodes. It's useful for breaking down large nodes into smaller, manageable chunks.
+    //     - Splits one node into multiple nodes. It's useful for breaking down large nodes into
+    //       smaller, manageable chunks.
     //
     //     ```rust
     //     #[async_trait]
@@ -152,7 +158,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     ```
     //
     // 4. **IndexingStream**:
-    //     - An asynchronous stream of nodes, used internally by the indexing pipeline to handle streams of `Node` items.
+    //     - An asynchronous stream of nodes, used internally by the indexing pipeline to handle
+    //       streams of `Node` items.
     //
     //     ```rust
     //     pub struct IndexingStream {
@@ -191,7 +198,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // ### Extending the Pipeline with Traits
     //
-    // Swiftide allows developers to extend the pipeline by implementing custom transformers, loaders, and other components by implementing the respective traits. This design ensures flexibility and modularity, allowing seamless integration of custom functionality.
+    // Swiftide allows developers to extend the pipeline by implementing custom transformers,
+    // loaders, and other components by implementing the respective traits. This design ensures
+    // flexibility and modularity, allowing seamless integration of custom functionality.
     //
     // For example, to create a custom transformer:
     // ```rust
@@ -211,7 +220,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // ### Usage of Prompts in Transformers
     //
-    // Swiftide utilizes the [`Template`] for templating prompts, making it easy to define and manage prompts within transformers.
+    // Swiftide utilizes the [`Template`] for templating prompts, making it easy to define and
+    // manage prompts within transformers.
     //
     // ```rust
     // let template = PromptTemplate::try_compiled_from_str("hello {{world}}").await.unwrap();
@@ -221,7 +231,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // ### Conclusion
     //
-    // The Indexing and Query Pipelines in Swiftide are made extensible and modular via traits such as `Transformer`, `BatchableTransformer`, `Loader`, and more. Custom implementations can seamlessly integrate into the pipeline, providing flexibility in how data is processed, transformed, and indexed. The use of prompts further enhances the capability to manage dynamic and templated data within these pipelines.
+    // The Indexing and Query Pipelines in Swiftide are made extensible and modular via traits such
+    // as `Transformer`, `BatchableTransformer`, `Loader`, and more. Custom implementations can
+    // seamlessly integrate into the pipeline, providing flexibility in how data is processed,
+    // transformed, and indexed. The use of prompts further enhances the capability to manage
+    // dynamic and templated data within these pipelines.
 
     Ok(())
 }

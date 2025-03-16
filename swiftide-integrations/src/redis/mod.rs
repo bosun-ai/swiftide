@@ -12,7 +12,8 @@
 //! - Setting a node in the cache
 //! - Resetting the cache (primarily for testing purposes)
 //!
-//! This integration is essential for ensuring efficient node management and caching in the Swiftide system.
+//! This integration is essential for ensuring efficient node management and caching in the Swiftide
+//! system.
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
@@ -94,7 +95,8 @@ impl Redis {
     ///
     /// # Returns
     ///
-    /// An `Option` containing the `ConnectionManager` if the connection is successful, or `None` if it fails.
+    /// An `Option` containing the `ConnectionManager` if the connection is successful, or `None` if
+    /// it fails.
     ///
     /// # Errors
     ///

@@ -1,6 +1,6 @@
 /**
-* This example demonstrates how to index markdown into PGVector
-*/
+ * This example demonstrates how to index markdown into PGVector
+ */
 use std::path::PathBuf;
 use swiftide::{
     indexing::{

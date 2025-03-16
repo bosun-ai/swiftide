@@ -1,6 +1,7 @@
-//! This module provides integration with `OpenRouter`'s API, enabling the use of language models and embeddings within the Swiftide project.
-//! It includes the `OpenRouter` struct for managing API clients and default options for embedding and prompt models.
-//! The module is conditionally compiled based on the "openrouter" feature flag.
+//! This module provides integration with `OpenRouter`'s API, enabling the use of language models
+//! and embeddings within the Swiftide project. It includes the `OpenRouter` struct for managing API
+//! clients and default options for embedding and prompt models. The module is conditionally
+//! compiled based on the "openrouter" feature flag.
 
 use config::OpenRouterConfig;
 use derive_builder::Builder;
@@ -10,12 +11,13 @@ pub mod chat_completion;
 pub mod config;
 pub mod simple_prompt;
 
-/// The `OpenRouter` struct encapsulates an `OpenRouter` client and default options for embedding and prompt models.
-/// It uses the `Builder` pattern for flexible and customizable instantiation.
+/// The `OpenRouter` struct encapsulates an `OpenRouter` client and default options for embedding
+/// and prompt models. It uses the `Builder` pattern for flexible and customizable instantiation.
 ///
-/// By default it will look for a `OPENROUTER_API_KEY` environment variable. Note that either a prompt model or embedding model
-/// always need to be set, either with [`OpenRouter::with_default_prompt_model`] or [`OpenRouter::with_default_embed_model`] or via the builder.
-/// You can find available models in the `OpenRouter` documentation.
+/// By default it will look for a `OPENROUTER_API_KEY` environment variable. Note that either a
+/// prompt model or embedding model always need to be set, either with
+/// [`OpenRouter::with_default_prompt_model`] or [`OpenRouter::with_default_embed_model`] or via the
+/// builder. You can find available models in the `OpenRouter` documentation.
 ///
 /// Under the hood it uses [`async_openai`], with the `OpenRouter` openai compatible api. This means
 /// some features might not work as expected. See the `OpenRouter` documentation for details.

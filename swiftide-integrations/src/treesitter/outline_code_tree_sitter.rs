@@ -20,10 +20,12 @@ impl OutlineCodeTreeSitter {
     /// Tries to create a `OutlineCodeTreeSitter` instance for a given programming language.
     ///
     /// # Parameters
-    /// - `lang`: The programming language to be used to parse the code. It should implement `TryInto<SupportedLanguages>`.
+    /// - `lang`: The programming language to be used to parse the code. It should implement
+    ///   `TryInto<SupportedLanguages>`.
     ///
     /// # Returns
-    /// - `Result<Self>`: Returns an instance of `OutlineCodeTreeSitter` if successful, otherwise returns an error.
+    /// - `Result<Self>`: Returns an instance of `OutlineCodeTreeSitter` if successful, otherwise
+    ///   returns an error.
     ///
     /// # Errors
     /// - Returns an error if the language is not supported or if the `CodeOutliner` fails to build.
@@ -51,7 +53,8 @@ impl Transformer for OutlineCodeTreeSitter {
     /// - `node`: The `Node` containing the code of which the context is to be generated.
     ///
     /// # Returns
-    /// - `Node`: The same `Node` instances, with the metadata updated to include the generated context.
+    /// - `Node`: The same `Node` instances, with the metadata updated to include the generated
+    ///   context.
     ///
     /// # Errors
     /// - If the code outlining fails, an error is sent downstream.

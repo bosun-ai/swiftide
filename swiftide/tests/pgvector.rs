@@ -40,7 +40,8 @@ struct VectorSearchResult {
 /// - Executes an indexing pipeline for Rust code chunks with embedded vector metadata.
 /// - Performs a similarity-based vector search on the database and validates the retrieved results.
 ///
-/// Ensures correctness of end-to-end data flow, including table management, vector storage, and query execution.
+/// Ensures correctness of end-to-end data flow, including table management, vector storage, and
+/// query execution.
 #[test_log::test(tokio::test)]
 async fn test_pgvector_indexing() {
     // Setup temporary directory and file for testing
@@ -259,7 +260,7 @@ async fn test_pgvector_retrieve() {
 /// The test demonstrates the recommended configuration approach:
 /// - Define search parameters as constants in the implementation scope
 /// - Pass configuration through the query generator closure
-/// - Keep the strategy struct minimal and focused on query generation    
+/// - Keep the strategy struct minimal and focused on query generation
 #[test_log::test(tokio::test)]
 async fn test_pgvector_retrieve_dynamic_search() {
     // Setup temporary directory and file for testing

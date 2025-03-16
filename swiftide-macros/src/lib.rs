@@ -40,9 +40,7 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 /// // Or
 ///
 /// Agent::builder().tools([SearchCode::default()])
-///
 /// ```
-///
 pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemFn);
     tool_impl(&args.into(), &input).into()
@@ -66,9 +64,7 @@ pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
 ///     context.exec_cmd(&self.search_command.into()).await.map(Into::into)
 ///   }
 /// }
-///
 /// ```
-///
 #[proc_macro_derive(Tool, attributes(tool))]
 pub fn derive_tool(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

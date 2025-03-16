@@ -35,7 +35,8 @@ use tracing::{debug, Instrument};
 ///
 /// - The default context is the `DefaultContext`, executing tools locally with the `LocalExecutor`.
 /// - A default `stop` tool is provided for agents to explicitly stop if needed
-/// - The default `SystemPrompt` instructs the agent with chain of thought and some common safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
+/// - The default `SystemPrompt` instructs the agent with chain of thought and some common
+///   safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
 #[derive(Clone, Builder)]
 pub struct Agent {
     /// Hooks are functions that are called at specific points in the agent's lifecycle.
@@ -93,7 +94,8 @@ pub struct Agent {
     /// worth while. If the limit is not reached, the agent will send the formatted error back to
     /// the LLM.
     ///
-    /// The limit is hashed based on the tool call name and arguments, so the limit is per tool call.
+    /// The limit is hashed based on the tool call name and arguments, so the limit is per tool
+    /// call.
     ///
     /// This limit is _not_ reset when the agent is stopped.
     #[builder(default = 3)]
@@ -215,8 +217,8 @@ impl AgentBuilder {
 
     /// Define the available tools for the agent. Tools must implement the `Tool` trait.
     ///
-    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive macro](`swiftide_macros::Tool`)
-    /// for easy ways to create (many) tools.
+    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive
+    /// macro](`swiftide_macros::Tool`) for easy ways to create (many) tools.
     pub fn tools<TOOL, I: IntoIterator<Item = TOOL>>(&mut self, tools: I) -> &mut Self
     where
         TOOL: Into<Box<dyn Tool>>,
@@ -258,14 +260,15 @@ impl Agent {
         self.run_agent(Some(query.into()), true).await
     }
 
-    /// Run the agent with without user message. The agent will loop completions, make tool calls, until
-    /// no new messages are available.
+    /// Run the agent with without user message. The agent will loop completions, make tool calls,
+    /// until no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.run")]
     pub async fn run(&mut self) -> Result<()> {
         self.run_agent(None, false).await
     }
 
-    /// Run the agent with without user message. The agent will loop completions, make tool calls, until
+    /// Run the agent with without user message. The agent will loop completions, make tool calls,
+    /// until
     #[tracing::instrument(skip_all, name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<()> {
         self.run_agent(None, true).await

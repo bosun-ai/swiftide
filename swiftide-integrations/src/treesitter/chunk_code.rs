@@ -43,10 +43,12 @@ impl ChunkCode {
     /// Tries to create a `ChunkCode` instance for a given programming language.
     ///
     /// # Parameters
-    /// - `lang`: The programming language to be used for chunking. It should implement `TryInto<SupportedLanguages>`.
+    /// - `lang`: The programming language to be used for chunking. It should implement
+    ///   `TryInto<SupportedLanguages>`.
     ///
     /// # Returns
-    /// - `Result<Self>`: Returns an instance of `ChunkCode` if successful, otherwise returns an error.
+    /// - `Result<Self>`: Returns an instance of `ChunkCode` if successful, otherwise returns an
+    ///   error.
     ///
     /// # Errors
     /// - Returns an error if the language is not supported or if the `CodeSplitter` fails to build.
@@ -60,14 +62,17 @@ impl ChunkCode {
     /// Tries to create a `ChunkCode` instance for a given programming language and chunk size.
     ///
     /// # Parameters
-    /// - `lang`: The programming language to be used for chunking. It should implement `TryInto<SupportedLanguages>`.
+    /// - `lang`: The programming language to be used for chunking. It should implement
+    ///   `TryInto<SupportedLanguages>`.
     /// - `chunk_size`: The size of the chunks. It should implement `Into<ChunkSize>`.
     ///
     /// # Returns
-    /// - `Result<Self>`: Returns an instance of `ChunkCode` if successful, otherwise returns an error.
+    /// - `Result<Self>`: Returns an instance of `ChunkCode` if successful, otherwise returns an
+    ///   error.
     ///
     /// # Errors
-    /// - Returns an error if the language is not supported, if the chunk size is invalid, or if the `CodeSplitter` fails to build.
+    /// - Returns an error if the language is not supported, if the chunk size is invalid, or if the
+    ///   `CodeSplitter` fails to build.
     pub fn try_for_language_and_chunk_size(
         lang: impl TryInto<SupportedLanguages>,
         chunk_size: impl Into<ChunkSize>,

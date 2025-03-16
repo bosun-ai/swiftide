@@ -1,10 +1,10 @@
 /// Demonstrates reranking retrieved documents with fastembed
 ///
-/// When reranking, many more documents are retrieved than used for the initial query. Maybe even
-/// from multiple sources.
+/// When reranking, many more documents are retrieved than used for the initial query. Maybe
+/// even from multiple sources.
 ///
-/// Reranking compares the relevancy of the documents with the initial query, then filters out the
-/// `top_k` documents.
+/// Reranking compares the relevancy of the documents with the initial query, then filters out
+/// the `top_k` documents.
 ///
 /// By default the model uses 'bge-reranker-base'.
 use swiftide::{

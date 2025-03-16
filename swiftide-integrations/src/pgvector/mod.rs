@@ -53,8 +53,9 @@ const BATCH_SIZE: usize = 50;
 
 /// Represents a Pgvector client with configuration options.
 ///
-/// This struct is used to interact with the Pgvector vector database, providing methods to manage vector collections,
-/// store data, and ensure efficient searches. The client can be cloned with low cost as it shares connections.
+/// This struct is used to interact with the Pgvector vector database, providing methods to manage
+/// vector collections, store data, and ensure efficient searches. The client can be cloned with low
+/// cost as it shares connections.
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
 pub struct PgVector {
@@ -121,18 +122,18 @@ impl PgVector {
 
     /// Retrieves a connection pool for `PostgreSQL`.
     ///
-    /// This function returns the connection pool used for interacting with the `PostgreSQL` database.
-    /// It fetches the pool from the `PgDBConnectionPool` struct.
+    /// This function returns the connection pool used for interacting with the `PostgreSQL`
+    /// database. It fetches the pool from the `PgDBConnectionPool` struct.
     ///
     /// # Returns
     ///
-    /// A `Result` that, on success, contains the `PgPool` representing the database connection pool.
-    /// On failure, an error is returned.
+    /// A `Result` that, on success, contains the `PgPool` representing the database connection
+    /// pool. On failure, an error is returned.
     ///
     /// # Errors
     ///
-    /// This function will return an error if it fails to retrieve the connection pool, which could occur
-    /// if the underlying connection to `PostgreSQL` has not been properly established.
+    /// This function will return an error if it fails to retrieve the connection pool, which could
+    /// occur if the underlying connection to `PostgreSQL` has not been properly established.
     pub async fn get_pool(&self) -> Result<&PgPool> {
         self.pool_get_or_initialize().await
     }
@@ -163,8 +164,9 @@ impl PgVectorBuilder {
 
     /// Sets the metadata configuration for the vector similarity search.
     ///
-    /// This method allows you to specify metadata configurations for vector similarity search using `MetadataConfig`.
-    /// The provided configuration will be added as a new field in the builder.
+    /// This method allows you to specify metadata configurations for vector similarity search using
+    /// `MetadataConfig`. The provided configuration will be added as a new field in the
+    /// builder.
     ///
     /// # Arguments
     ///
