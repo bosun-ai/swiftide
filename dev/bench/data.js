@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741876593113,
+  "lastUpdate": 1742135318527,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17537,6 +17537,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 240342,
             "range": "± 1663",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshka@users.noreply.github.com",
+            "name": "Josh McKinney",
+            "username": "joshka"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "83d16348b9dfcc9fa0a90f462f2ac2924dfbcd05",
+          "message": "docs: Document feature flags using doc_auto_cfg (#685)\n\nhttps://doc.rust-lang.org/rustdoc/unstable-features.html#extensions-to-the-doc-attribute\n\nThis is an unstable feature, so it's feature flagged with a feature that\nis always passed by docs.rs. To run the same settings use cargo-docs-rs\n\nAlso moves the logo into the top left corner of all docs, rather than\njust in the main doc.\n\nMakes the docs.rs config consistent across all crate manifests.",
+          "timestamp": "2025-03-16T15:20:02+01:00",
+          "tree_id": "cf0253e379db9825faf66fadd4b22b242f903104",
+          "url": "https://github.com/bosun-ai/swiftide/commit/83d16348b9dfcc9fa0a90f462f2ac2924dfbcd05"
+        },
+        "date": 1742135317820,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1284176,
+            "range": "± 978505",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242238,
+            "range": "± 3314",
             "unit": "ns/iter"
           }
         ]
