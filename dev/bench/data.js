@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742135548987,
+  "lastUpdate": 1742144946816,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17645,6 +17645,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242030,
             "range": "± 1750",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0b204d90a68978bb4b75516c537a56d665771c55",
+          "message": "fix: Ensure `groq`, `fastembed`, `test-utils` features compile individually (#689)",
+          "timestamp": "2025-03-16T18:00:27+01:00",
+          "tree_id": "9076a2e7ce072b86144d88321cbb79f0a0ee428c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0b204d90a68978bb4b75516c537a56d665771c55"
+        },
+        "date": 1742144946142,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1281238,
+            "range": "± 959647",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 238715,
+            "range": "± 2027",
             "unit": "ns/iter"
           }
         ]
