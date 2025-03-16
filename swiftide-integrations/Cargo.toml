@@ -127,7 +127,7 @@ default = ["rustls"]
 # Ensures rustls is used
 rustls = ["reqwest?/rustls-tls-native-roots", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
-qdrant = ["dep:qdrant-client", "swiftide-core/qdrant"]
+qdrant = ["dep:qdrant-client", "swiftide-core/qdrant", "chrono/now"]
 # PgVector for storage
 pgvector = ["dep:sqlx", "dep:pgvector"]
 # Redis for caching and storage
