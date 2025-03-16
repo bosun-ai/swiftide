@@ -23,10 +23,11 @@ const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 #[builder(setter(into))]
 pub struct Duckdb {
     /// The connection to the database
+    ///
+    /// Note that this uses the tokio version of a mutex because the duckdb connection contains a
+    /// `RefCell`. This is not ideal, but it is what it is.
     #[builder(setter(custom))]
-    connection: Arc<Mutex<duckdb::Connection>>, /* should be rwlock, however, internally duckdb
-                                                 * uses a refcell, so we need the mutex for sync
-                                                 * :( */
+    connection: Arc<Mutex<duckdb::Connection>>,
 
     /// The name of the table to use for storing nodes. Defaults to "swiftide".
     #[builder(default = "swiftide".into())]

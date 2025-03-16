@@ -29,7 +29,8 @@ impl ToSql for NodeValues<'_> {
     fn to_sql(&self) -> duckdb::Result<ToSqlOutput<'_>> {
         match self {
             NodeValues::Uuid(uuid) => Ok(ToSqlOutput::Owned(uuid.to_string().into())),
-            NodeValues::Path(path) => Ok(path.to_string_lossy().to_string().into()), /* Should be borrow-able */
+            // Should be borrow-able
+            NodeValues::Path(path) => Ok(path.to_string_lossy().to_string().into()),
             NodeValues::Chunk(chunk) => chunk.to_sql(),
             NodeValues::Metadata(_metadata) => {
                 unimplemented!("maps are not yet implemented for duckdb");
@@ -174,11 +175,7 @@ mod tests {
                     Ok((
                         row.get::<_, String>(0).unwrap(), // id
                         row.get::<_, String>(1).unwrap(), // chunk
-                        row.get::<_, String>(2).unwrap(), /* path
-                                                           * row.get::<_, String>(3).unwrap(),
-                                                           * // metadata
-                                                           * row.get::<_, Vec<f32>>(4).unwrap(),
-                                                           * // vector */
+                        row.get::<_, String>(2).unwrap(), // path
                     ))
                 })
                 .unwrap();
@@ -213,11 +210,7 @@ mod tests {
                     Ok((
                         row.get::<_, String>(0).unwrap(), // id
                         row.get::<_, String>(1).unwrap(), // chunk
-                        row.get::<_, String>(2).unwrap(), /* path
-                                                           * row.get::<_, String>(3).unwrap(),
-                                                           * // metadata
-                                                           * row.get::<_, Vec<f32>>(4).unwrap(),
-                                                           * // vector */
+                        row.get::<_, String>(2).unwrap(), // path
                     ))
                 })
                 .unwrap();
@@ -248,11 +241,7 @@ mod tests {
                     Ok((
                         row.get::<_, String>(0).unwrap(), // id
                         row.get::<_, String>(1).unwrap(), // chunk
-                        row.get::<_, String>(2).unwrap(), /* path
-                                                           * row.get::<_, String>(3).unwrap(),
-                                                           * // metadata
-                                                           * row.get::<_, Vec<f32>>(4).unwrap(),
-                                                           * // vector */
+                        row.get::<_, String>(2).unwrap(), // path
                     ))
                 })
                 .unwrap();
