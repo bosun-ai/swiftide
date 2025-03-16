@@ -12,7 +12,6 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-Dwarnings"
 
 jobs:
   lint:
@@ -33,10 +32,14 @@ jobs:
         uses: crate-ci/typos@master
       - name: "Rustfmt"
         run: cargo fmt --all --check
+        env:
+          RUSTFLAGS: "-Dwarnings"
       # - name: Lint dependencies
       #   uses: EmbarkStudios/cargo-deny-action@v2
       - name: clippy
         run: cargo clippy --all-targets --all-features --workspace
+        env:
+          RUSTFLAGS: "-Dwarnings"
 
   hack:
     name: Cargo Hack
