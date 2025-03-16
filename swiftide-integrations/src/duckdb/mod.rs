@@ -1,10 +1,13 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use swiftide_core::indexing::EmbeddedField;
 use tera::Context;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 pub mod node_cache;
 pub mod persist;
@@ -23,8 +26,11 @@ const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 #[builder(setter(into))]
 pub struct Duckdb {
     /// The connection to the database
+    ///
+    /// Note: we'd like to use a RwLock here, but duckdb::Connection does not implement Sync due to
+    /// the internal RefCell
     #[builder(setter(custom))]
-    connection: Arc<Mutex<duckdb::Connection>>, // should be rwlock, however, internally duckdb uses a refcell, so we need the mutex for sync :(
+    connection: Arc<Mutex<duckdb::Connection>>,
 
     /// The name of the table to use for storing nodes. Defaults to "swiftide".
     #[builder(default = "swiftide".into())]
@@ -105,7 +111,7 @@ impl Duckdb {
     /// Errors if the connection or statement fails
     pub async fn create_vector_indices(&self) -> Result<()> {
         let table_name = &self.table_name;
-        let mut conn = self.connection.lock().await;
+        let mut conn = self.connection.lock().unwrap();
         let tx = conn.transaction().context("Failed to start transaction")?;
         {
             for vector in self.vectors.keys() {
@@ -130,7 +136,7 @@ impl Duckdb {
     pub async fn lazy_create_cache(&self) -> anyhow::Result<()> {
         if !*self.cache_table_created.read().await {
             let mut lock = self.cache_table_created.write().await;
-            let conn = self.connection.lock().await;
+            let conn = self.connection.lock().unwrap();
             conn.execute(
                 &format!(
                     "CREATE TABLE IF NOT EXISTS {} (uuid TEXT PRIMARY KEY, path TEXT)",

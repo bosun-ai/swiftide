@@ -84,7 +84,7 @@ impl Persist for Duckdb {
     async fn setup(&self) -> Result<()> {
         self.connection
             .lock()
-            .await
+            .unwrap()
             .execute_batch(&self.schema)
             .context("Failed to create indexing table")?;
 
@@ -94,7 +94,7 @@ impl Persist for Duckdb {
     }
 
     async fn store(&self, node: indexing::Node) -> Result<indexing::Node> {
-        let lock = self.connection.lock().await;
+        let lock = self.connection.lock().unwrap();
         let mut stmt = lock.prepare(&self.node_upsert_sql)?;
         self.store_node_on_stmt(&mut stmt, &node)?;
 
@@ -106,7 +106,7 @@ impl Persist for Duckdb {
         let mut new_nodes = Vec::with_capacity(nodes.len());
 
         tracing::debug!("Waiting for transaction");
-        let mut conn = self.connection.lock().await;
+        let mut conn = self.connection.lock().unwrap();
         tracing::debug!("Got transaction");
         let tx = match conn.transaction().context("Failed to start transaction") {
             Ok(tx) => tx,
