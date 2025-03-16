@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742135318527,
+  "lastUpdate": 1742135548987,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17591,6 +17591,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 242238,
             "range": "± 3314",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshka@users.noreply.github.com",
+            "name": "Josh McKinney",
+            "username": "joshka"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4ec00bb0fed214f27629f32569406bfa2c786dd7",
+          "message": "fix(integrations): Add chrono/utc feature flag when using qdrant (#684)\n\nThe Qdrant integration calls chrono::Utc::now(), which requires the now\nfeature flag to be enabled in the chrono crate when using qdrant\n\n\nhttps://github.com/bosun-ai/swiftide/blob/5f2a5e29b8ba98ddf4fc44f20c1e8da3f25229fa/swiftide-integrations/src/qdrant/indexing_node.rs#L57",
+          "timestamp": "2025-03-16T15:23:40+01:00",
+          "tree_id": "59f98c446a67c4c20f88762193e02da85aa2d1e0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4ec00bb0fed214f27629f32569406bfa2c786dd7"
+        },
+        "date": 1742135547660,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1288317,
+            "range": "± 1002553",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 242030,
+            "range": "± 1750",
             "unit": "ns/iter"
           }
         ]
