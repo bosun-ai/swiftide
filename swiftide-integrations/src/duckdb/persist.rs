@@ -165,7 +165,7 @@ mod tests {
         tracing::info!("Stored node");
 
         {
-            let connection = client.connection.lock().await;
+            let connection = client.connection.lock().unwrap();
             let mut stmt = connection
                 .prepare("SELECT uuid,path,chunk FROM test")
                 .unwrap();
@@ -202,7 +202,7 @@ mod tests {
 
         tracing::info!("Batch stored nodes 1");
         {
-            let connection = client.connection.lock().await;
+            let connection = client.connection.lock().unwrap();
             let mut stmt = connection
                 .prepare("SELECT uuid,path,chunk FROM test")
                 .unwrap();
@@ -234,7 +234,7 @@ mod tests {
         assert_eq!(streamed_nodes[0], node);
 
         {
-            let connection = client.connection.lock().await;
+            let connection = client.connection.lock().unwrap();
             let mut stmt = connection
                 .prepare("SELECT uuid,path,chunk FROM test")
                 .unwrap();
@@ -277,7 +277,7 @@ mod tests {
 
         tracing::info!("Stored node");
 
-        let connection = client.connection.lock().await;
+        let connection = client.connection.lock().unwrap();
         let mut stmt = connection
             .prepare("SELECT uuid,path,chunk FROM test")
             .unwrap();

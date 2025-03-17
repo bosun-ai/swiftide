@@ -27,8 +27,8 @@ const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 pub struct Duckdb {
     /// The connection to the database
     ///
-    /// Note: we'd like to use a RwLock here, but duckdb::Connection does not implement Sync due to
-    /// the internal RefCell
+    /// Note: we'd like to use a `RwLock` here, but `duckdb::Connection` does not implement Sync due
+    /// to the internal `RefCell`.
     #[builder(setter(custom))]
     connection: Arc<Mutex<duckdb::Connection>>,
 
@@ -109,7 +109,11 @@ impl Duckdb {
     /// # Errors
     ///
     /// Errors if the connection or statement fails
-    pub async fn create_vector_indices(&self) -> Result<()> {
+    ///
+    /// # Panics
+    ///
+    /// If the mutex locking the connection is poisoned
+    pub fn create_vector_indices(&self) -> Result<()> {
         let table_name = &self.table_name;
         let mut conn = self.connection.lock().unwrap();
         let tx = conn.transaction().context("Failed to start transaction")?;
@@ -133,6 +137,10 @@ impl Duckdb {
     /// # Errors
     ///
     /// Errors if the table or index could not be created
+    ///
+    /// # Panics
+    ///
+    /// If the mutex locking the connection is poisoned
     pub async fn lazy_create_cache(&self) -> anyhow::Result<()> {
         if !*self.cache_table_created.read().await {
             let mut lock = self.cache_table_created.write().await;
