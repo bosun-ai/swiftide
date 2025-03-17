@@ -256,10 +256,6 @@ pub mod query {
     pub use swiftide_query::*;
 }
 
-#[doc(hidden)]
-#[cfg(feature = "test-utils")]
-pub mod test_utils;
-
 /// Re-exports for macros
 #[doc(hidden)]
 pub mod reexports {
