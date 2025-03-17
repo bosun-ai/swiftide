@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742242332977,
+  "lastUpdate": 1742247425497,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18077,6 +18077,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250827,
             "range": "± 1985",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "47269f844ccfe800c569c207023e46cc81ffe80b",
+          "message": "chore: Remove test-utils from main Swiftide",
+          "timestamp": "2025-03-17T22:28:17+01:00",
+          "tree_id": "43e1da45b267b1254379c6cde8ab17a6bf1ed3ba",
+          "url": "https://github.com/bosun-ai/swiftide/commit/47269f844ccfe800c569c207023e46cc81ffe80b"
+        },
+        "date": 1742247424527,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1310614,
+            "range": "± 946147",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250751,
+            "range": "± 2080",
             "unit": "ns/iter"
           }
         ]
