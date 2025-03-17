@@ -11,8 +11,8 @@
 //! needed.
 //!
 //! [`Template`] can be added with [`Template::try_compiled_from_str`]. Prompts can also be
-//! created on the fly from anything that implements [`Into<String>`]. Compiled prompts are stored in
-//! an internal repository.
+//! created on the fly from anything that implements [`Into<String>`]. Compiled prompts are stored
+//! in an internal repository.
 //!
 //! Additionally, `Template::String` and `Template::Static` can be used to create
 //! templates on the fly as well.

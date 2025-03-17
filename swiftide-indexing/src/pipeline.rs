@@ -14,17 +14,18 @@ use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 /// The default batch size for batch processing.
 const DEFAULT_BATCH_SIZE: usize = 256;
 
-/// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then storing them.
+/// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then
+/// storing them.
 ///
-/// The `Pipeline` struct orchestrates the entire file indexing process. It is designed to be flexible and
-/// performant, allowing for various stages of data transformation and storage to be configured and executed asynchronously.
+/// The `Pipeline` struct orchestrates the entire file indexing process. It is designed to be
+/// flexible and performant, allowing for various stages of data transformation and storage to be
+/// configured and executed asynchronously.
 ///
 /// # Fields
 ///
 /// * `stream` - The stream of `Node` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
-///
 pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
@@ -34,7 +35,8 @@ pub struct Pipeline {
 }
 
 impl Default for Pipeline {
-    /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal to the number of CPUs.
+    /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal
+    /// to the number of CPUs.
     fn default() -> Self {
         Self {
             stream: IndexingStream::empty(),
@@ -104,8 +106,8 @@ impl Pipeline {
         self
     }
 
-    /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a [`Node`]
-    /// be embedded with a vector when transforming with [`crate::transformers::Embed`]
+    /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a
+    /// [`Node`] be embedded with a vector when transforming with [`crate::transformers::Embed`]
     ///
     /// See also [`swiftide_core::indexing::EmbedMode`].
     ///
@@ -208,7 +210,8 @@ impl Pipeline {
 
     /// Adds a batch transformer to the pipeline.
     ///
-    /// If the transformer has a batch size set, the batch size from the transformer is used, otherwise the pipeline default batch size ([`DEFAULT_BATCH_SIZE`]).
+    /// If the transformer has a batch size set, the batch size from the transformer is used,
+    /// otherwise the pipeline default batch size ([`DEFAULT_BATCH_SIZE`]).
     ///
     /// # Arguments
     ///
@@ -216,7 +219,8 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each batch of nodes.
+    /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each
+    /// batch of nodes.
     #[must_use]
     pub fn then_in_batch(
         mut self,
@@ -263,7 +267,8 @@ impl Pipeline {
     ///
     /// # Returns
     ///
-    /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to each node.
+    /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to
+    /// each node.
     #[must_use]
     pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
         let chunker = Arc::new(chunker);
@@ -449,7 +454,8 @@ impl Pipeline {
 
     /// Throttles the stream of nodes, limiting the rate to 1 per duration.
     ///
-    /// Useful for rate limiting the indexing pipeline. Uses `tokio_stream::StreamExt::throttle` internally which has a granualarity of 1ms.
+    /// Useful for rate limiting the indexing pipeline. Uses `tokio_stream::StreamExt::throttle`
+    /// internally which has a granualarity of 1ms.
     #[must_use]
     pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
         self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
@@ -460,8 +466,8 @@ impl Pipeline {
 
     // Silently filters out errors encountered by the pipeline.
     //
-    // This method filters out errors encountered by the pipeline, preventing them from bubbling up and terminating the stream.
-    // Note that errors are not logged.
+    // This method filters out errors encountered by the pipeline, preventing them from bubbling up
+    // and terminating the stream. Note that errors are not logged.
     #[must_use]
     pub fn filter_errors(mut self) -> Self {
         self.stream = self
@@ -535,7 +541,8 @@ impl Pipeline {
 
     /// Runs the indexing pipeline.
     ///
-    /// This method processes the stream of nodes, applying all configured transformations and storing the results.
+    /// This method processes the stream of nodes, applying all configured transformations and
+    /// storing the results.
     ///
     /// # Returns
     ///

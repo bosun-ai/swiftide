@@ -1,6 +1,7 @@
 //! This module contains tests for the indexing pipeline in the Swiftide project.
 //! The tests validate the functionality of the pipeline, ensuring it processes data correctly
-//! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector database.
+//! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector
+//! database.
 
 use qdrant_client::qdrant::vectors_output::VectorsOptions;
 use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder, Value};

@@ -1,5 +1,4 @@
 //! Tests for dyn trait objects
-//!
 use swiftide::{indexing::transformers::ChunkCode, integrations};
 use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, EmbeddingModel, Loader, NodeCache, Persist,

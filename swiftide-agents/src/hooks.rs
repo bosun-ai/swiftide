@@ -16,9 +16,9 @@
 //!         agent.context().add_message(ChatMessage::new_user("Hello, world")).await;
 //!         Ok(())
 //!     })
-//!});
-//!# }
-//!```
+//! });
+//! # }
+//! ```
 //! Rust has a long outstanding issue where it captures outer lifetimes when returning an impl
 //! that also has lifetimes, see [this issue](https://github.com/rust-lang/rust/issues/42940)
 //!
@@ -42,7 +42,7 @@
 //!      Box::pin(async move {{ Ok(())}})
 //!     }
 //!   }
-//!}
+//! }
 use anyhow::Result;
 use std::{future::Future, pin::Pin};
 
@@ -101,7 +101,6 @@ pub trait AfterCompletionFn:
 dyn_clone::clone_trait_object!(AfterCompletionFn);
 
 /// Hooks that are called after each tool
-///
 pub trait AfterToolFn:
     for<'tool> Fn(
         &'tool Agent,

@@ -1,6 +1,7 @@
-//! This module provides integration with `OpenAI`'s API, enabling the use of language models and embeddings within the Swiftide project.
-//! It includes the `OpenAI` struct for managing API clients and default options for embedding and prompt models.
-//! The module is conditionally compiled based on the "openai" feature flag.
+//! This module provides integration with `OpenAI`'s API, enabling the use of language models and
+//! embeddings within the Swiftide project. It includes the `OpenAI` struct for managing API clients
+//! and default options for embedding and prompt models. The module is conditionally compiled based
+//! on the "openai" feature flag.
 
 use derive_builder::Builder;
 use std::sync::Arc;
@@ -13,8 +14,8 @@ mod simple_prompt;
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
 
-/// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt models.
-/// It uses the `Builder` pattern for flexible and customizable instantiation.
+/// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt
+/// models. It uses the `Builder` pattern for flexible and customizable instantiation.
 ///
 /// # Example
 ///
@@ -34,7 +35,7 @@ pub use async_openai::config::OpenAIConfig;
 ///     .default_prompt_model("gpt-4")
 ///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
 ///     .build().unwrap();
-///```
+/// ```
 pub type OpenAI = GenericOpenAI<OpenAIConfig>;
 pub type OpenAIBuilder = GenericOpenAIBuilder<OpenAIConfig>;
 

@@ -1,6 +1,4 @@
-/**
-* This example demonstrates how to use the LanceDB integration with Swiftide
-*/
+/// This example demonstrates how to use the LanceDB integration with Swiftide
 use swiftide::{
     indexing::{
         self,

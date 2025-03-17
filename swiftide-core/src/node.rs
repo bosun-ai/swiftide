@@ -59,7 +59,8 @@ pub struct Node {
     /// Size of the input this node was originally derived from in bytes
     #[builder(default)]
     pub original_size: usize,
-    /// Offset of the chunk relative to the start of the input this node was originally derived from in bytes
+    /// Offset of the chunk relative to the start of the input this node was originally derived
+    /// from in bytes
     #[builder(default)]
     pub offset: usize,
 }
@@ -205,8 +206,8 @@ impl Node {
 
     /// Converts the node into an [`self::EmbeddedField::Combined`] type of embeddable.
     ///
-    /// This embeddable format consists of the metadata formatted as key-value pairs, each on a new line,
-    /// followed by the data chunk.
+    /// This embeddable format consists of the metadata formatted as key-value pairs, each on a new
+    /// line, followed by the data chunk.
     ///
     /// # Returns
     ///
@@ -266,7 +267,8 @@ pub enum EmbedMode {
     SingleWithMetadata,
     /// Embedding Chunk of data and every Metadata separately.
     PerField,
-    /// Embedding Chunk of data and every Metadata separately and Chunk of data combined with Metadata.
+    /// Embedding Chunk of data and every Metadata separately and Chunk of data combined with
+    /// Metadata.
     Both,
 }
 

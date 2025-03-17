@@ -1,8 +1,10 @@
-//! This module defines the supported programming languages for the Swiftide project and provides utility functions
-//! for mapping these languages to their respective file extensions and tree-sitter language objects.
+//! This module defines the supported programming languages for the Swiftide project and provides
+//! utility functions for mapping these languages to their respective file extensions and
+//! tree-sitter language objects.
 //!
-//! The primary purpose of this module is to facilitate the recognition and handling of different programming languages
-//! by mapping file extensions and converting language enums to tree-sitter language objects for accurate parsing and syntax analysis.
+//! The primary purpose of this module is to facilitate the recognition and handling of different
+//! programming languages by mapping file extensions and converting language enums to tree-sitter
+//! language objects for accurate parsing and syntax analysis.
 //!
 //! # Supported Languages
 //! - Rust
@@ -19,9 +21,10 @@ use serde::{Deserialize, Serialize};
 
 /// Enum representing the supported programming languages in the Swiftide project.
 ///
-/// This enum is used to map programming languages to their respective file extensions and tree-sitter language objects.
-/// The `EnumString` and `Display` macros from the `strum_macros` crate are used to provide string conversion capabilities.
-/// The `ascii_case_insensitive` attribute allows for case-insensitive string matching.
+/// This enum is used to map programming languages to their respective file extensions and
+/// tree-sitter language objects. The `EnumString` and `Display` macros from the `strum_macros`
+/// crate are used to provide string conversion capabilities. The `ascii_case_insensitive` attribute
+/// allows for case-insensitive string matching.
 #[derive(
     Debug,
     PartialEq,
@@ -118,14 +121,15 @@ impl SupportedLanguages {
 impl From<SupportedLanguages> for tree_sitter::Language {
     /// Converts a `SupportedLanguages` enum to a `tree_sitter::Language` object.
     ///
-    /// This implementation allows for the conversion of the supported languages to their respective tree-sitter language objects,
-    /// enabling accurate parsing and syntax analysis.
+    /// This implementation allows for the conversion of the supported languages to their respective
+    /// tree-sitter language objects, enabling accurate parsing and syntax analysis.
     ///
     /// # Parameters
     /// - `val`: The `SupportedLanguages` enum value to be converted.
     ///
     /// # Returns
-    /// A `tree_sitter::Language` object corresponding to the provided `SupportedLanguages` enum value.
+    /// A `tree_sitter::Language` object corresponding to the provided `SupportedLanguages` enum
+    /// value.
     fn from(val: SupportedLanguages) -> Self {
         match val {
             SupportedLanguages::Rust => tree_sitter_rust::LANGUAGE,

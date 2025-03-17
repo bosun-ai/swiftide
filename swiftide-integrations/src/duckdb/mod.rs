@@ -27,8 +27,8 @@ const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
 pub struct Duckdb {
     /// The connection to the database
     ///
-    /// Note: we'd like to use a `RwLock` here, but `duckdb::Connection` does not implement Sync due
-    /// to the internal `RefCell`.
+    /// Note that this uses the tokio version of a mutex because the duckdb connection contains a
+    /// `RefCell`. This is not ideal, but it is what it is.
     #[builder(setter(custom))]
     connection: Arc<Mutex<duckdb::Connection>>,
 

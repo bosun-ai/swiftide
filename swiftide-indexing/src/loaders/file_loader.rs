@@ -8,7 +8,8 @@ use anyhow::Context as _;
 use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory,
-/// filtering them based on their extensions, and creating a stream of these files for further processing.
+/// filtering them based on their extensions, and creating a stream of these files for further
+/// processing.
 ///
 /// # Example
 ///
@@ -84,7 +85,7 @@ impl FileLoader {
 
                 // Files might be invalid utf-8, so we need to read them as bytes and convert it
                 // lossy, as Swiftide (currently) works internally with strings.
-                let mut file = std::fs::File::open(entry.path()).context("Failed to open file")?;
+                let mut file = fs_err::File::open(entry.path()).context("Failed to open file")?;
                 let mut buf = vec![];
                 file.read_to_end(&mut buf).context("Failed to read file")?;
                 let content = String::from_utf8_lossy(&buf);
@@ -147,7 +148,7 @@ mod test {
     async fn test_ignores_invalid_utf8() {
         let tempdir = temp_dir::TempDir::new().unwrap();
 
-        std::fs::write(tempdir.child("invalid.txt"), [0x80, 0x80, 0x80]).unwrap();
+        fs_err::write(tempdir.child("invalid.txt"), [0x80, 0x80, 0x80]).unwrap();
 
         let loader = FileLoader::new(tempdir.path()).with_extensions(&["txt"]);
         let result = loader.into_stream().collect::<Vec<_>>().await;

@@ -1,6 +1,6 @@
 //! This module provides an implementation of the `Storage` trait for the `Qdrant` struct.
-//! It includes methods for setting up the storage, storing a single node, and storing a batch of nodes.
-//! This integration allows the Swiftide project to use Qdrant as a storage backend.
+//! It includes methods for setting up the storage, storing a single node, and storing a batch of
+//! nodes. This integration allows the Swiftide project to use Qdrant as a storage backend.
 
 use std::collections::HashSet;
 use swiftide_core::{

@@ -93,6 +93,7 @@ parquet = { workspace = true, optional = true, features = [
 redb = { workspace = true, optional = true }
 duckdb = { workspace = true, optional = true }
 libduckdb-sys = { workspace = true, optional = true }
+fs-err = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

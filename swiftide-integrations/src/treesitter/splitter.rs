@@ -31,7 +31,8 @@ impl CodeSplitterBuilder {
     ///
     /// # Returns
     ///
-    /// * `Result<Self>` - The builder instance with the language set, or an error if the language is not supported.
+    /// * `Result<Self>` - The builder instance with the language set, or an error if the language
+    ///   is not supported.
     ///
     /// # Errors
     ///
@@ -131,8 +132,10 @@ impl CodeSplitter {
             );
 
             // if the next child will make the chunk too big then there are two options:
-            // 1. if the next child is too big to fit in a whole chunk, then recursively chunk it one level down
-            // 2. if the next child is small enough to fit in a chunk, then add the current chunk to the list and start a new chunk
+            // 1. if the next child is too big to fit in a whole chunk, then recursively chunk it
+            //    one level down
+            // 2. if the next child is small enough to fit in a chunk, then add the current chunk to
+            //    the list and start a new chunk
 
             let next_child_size = child.end_byte() - last_end;
             if current_chunk.len() + next_child_size >= self.max_bytes() {
@@ -142,7 +145,8 @@ impl CodeSplitter {
                     current_chunk = sub_chunks.pop().unwrap_or_default();
                     new_chunks.extend(sub_chunks);
                 } else {
-                    // NOTE: if the current chunk was smaller than then the min_bytes, then it is discarded here
+                    // NOTE: if the current chunk was smaller than then the min_bytes, then it is
+                    // discarded here
                     if !current_chunk.is_empty() && current_chunk.len() > self.min_bytes() {
                         new_chunks.push(current_chunk);
                     }
@@ -170,7 +174,8 @@ impl CodeSplitter {
     ///
     /// # Returns
     ///
-    /// * `Result<Vec<String>>` - A result containing a vector of code chunks as strings, or an error if the code could not be parsed.
+    /// * `Result<Vec<String>>` - A result containing a vector of code chunks as strings, or an
+    ///   error if the code could not be parsed.
     ///
     /// # Errors
     ///

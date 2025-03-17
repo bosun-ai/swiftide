@@ -1,6 +1,6 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `OpenAI` struct.
-//! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt processing
-//! and generating responses as part of the Swiftide system.
+//! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt
+//! processing and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
 use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
@@ -8,7 +8,8 @@ use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
 use super::GenericOpenAI;
 use anyhow::{Context as _, Result};
 
-/// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a response.
+/// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a
+/// response.
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
     SimplePrompt for GenericOpenAI<C>
@@ -19,8 +20,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
     /// - `prompt`: A string slice that holds the prompt to be sent to the OpenAI API.
     ///
     /// # Returns
-    /// - `Result<String>`: On success, returns the content of the response as a `String`.
-    ///   On failure, returns an error wrapped in a `Result`.
+    /// - `Result<String>`: On success, returns the content of the response as a `String`. On
+    ///   failure, returns an error wrapped in a `Result`.
     ///
     /// # Errors
     /// - Returns an error if the model is not set in the default options.
