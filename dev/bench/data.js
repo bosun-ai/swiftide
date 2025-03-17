@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742208721255,
+  "lastUpdate": 1742214166734,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17807,6 +17807,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256083,
             "range": "± 1283",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshka@users.noreply.github.com",
+            "name": "Josh McKinney",
+            "username": "joshka"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "65f953c98ac3faf78b98b46a2bea855adfc8c68f",
+          "message": "docs: wrap code comments at 100 chars (#692)",
+          "timestamp": "2025-03-17T13:13:58+01:00",
+          "tree_id": "e0bcce35e3ecd14eefada6b25ac57332dc15e750",
+          "url": "https://github.com/bosun-ai/swiftide/commit/65f953c98ac3faf78b98b46a2bea855adfc8c68f"
+        },
+        "date": 1742214165676,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1311004,
+            "range": "± 986108",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251540,
+            "range": "± 1934",
             "unit": "ns/iter"
           }
         ]
