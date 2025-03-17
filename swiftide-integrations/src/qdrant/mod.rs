@@ -101,25 +101,26 @@ impl Qdrant {
     ///
     /// Errors if client fails build
     pub async fn create_index_if_not_exists(&self) -> Result<()> {
-        tracing::info!("Checking if collection {} exists", &self.collection_name);
+        let collection_name = &self.collection_name;
 
-        if self.client.collection_exists(&self.collection_name).await? {
-            tracing::warn!("Collection {} exists", &self.collection_name);
+        tracing::debug!("Checking if collection {collection_name} exists");
+        if self.client.collection_exists(collection_name).await? {
+            tracing::debug!("Collection {collection_name} exists");
             return Ok(());
         }
 
         let vectors_config = self.create_vectors_config()?;
         tracing::debug!(?vectors_config, "Adding vectors config");
 
-        let mut collection = qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
-            .vectors_config(vectors_config);
+        let mut collection =
+            qdrant::CreateCollectionBuilder::new(collection_name).vectors_config(vectors_config);
 
         if let Some(sparse_vectors_config) = self.create_sparse_vectors_config() {
             tracing::debug!(?sparse_vectors_config, "Adding sparse vectors config");
             collection = collection.sparse_vectors_config(sparse_vectors_config);
         }
-        tracing::warn!("Creating collection {}", &self.collection_name);
 
+        tracing::info!("Creating collection {collection_name}");
         self.client.create_collection(collection).await?;
         Ok(())
     }
