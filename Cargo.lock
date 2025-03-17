@@ -1376,7 +1376,7 @@ dependencies = [
  "bitflags 2.9.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
  "log",
@@ -3643,6 +3643,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c2141d6d6c8512188a7891b4b01590a45f6dac67afb4f255c4124dbb86d4eaa"
 
 [[package]]
+name = "fs-err"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f89bda4c2a21204059a977ed3bfe746677dfd137b83c339e702b0ac91d482aa"
+dependencies = [
+ "autocfg",
+ "tokio",
+]
+
+[[package]]
 name = "fs4"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4296,7 +4306,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.8",
  "tokio",
  "tower-service",
  "tracing",
@@ -6935,7 +6945,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.14.0",
  "log",
  "multimap",
@@ -8212,7 +8222,7 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03c3c6b7927ffe7ecaa769ee0e3994da3b8cafc8f444578982c83ecb161af917"
 dependencies = [
- "heck 0.4.1",
+ "heck 0.5.0",
  "proc-macro2",
  "quote",
  "syn 2.0.100",
@@ -8761,6 +8771,7 @@ dependencies = [
  "async-trait",
  "derive_builder",
  "dyn-clone",
+ "fs-err",
  "indoc",
  "insta",
  "mockall",
@@ -8829,6 +8840,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "derive_builder",
+ "fs-err",
  "futures-util",
  "ignore",
  "indoc",
@@ -8870,6 +8882,7 @@ dependencies = [
  "fastembed",
  "fluvio",
  "flv-util",
+ "fs-err",
  "futures-util",
  "htmd",
  "indoc",

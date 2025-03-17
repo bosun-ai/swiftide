@@ -23,6 +23,7 @@ anyhow = { version = "1.0", default-features = false }
 thiserror = { version = "2.0", default-features = false }
 async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
+fs-err = { version = "3.1", default-features = false }
 futures-util = { version = "0.3", default-features = true }
 tokio = { version = "1.43", features = [
   "rt-multi-thread",

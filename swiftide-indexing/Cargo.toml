@@ -31,6 +31,7 @@ indoc = { workspace = true }
 
 ignore = { workspace = true }
 text-splitter = { workspace = true, features = ["markdown"] }
+fs-err.workspace = true
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

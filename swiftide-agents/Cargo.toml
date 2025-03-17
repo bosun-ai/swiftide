@@ -24,6 +24,7 @@ strum.workspace = true
 strum_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+fs-err = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
