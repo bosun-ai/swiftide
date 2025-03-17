@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.4](https://github.com/bosun-ai/swiftide/compare/v0.22.3...v0.22.4) - 2025-03-17
+
+### Bug fixes
+
+- [4ec00bb](https://github.com/bosun-ai/swiftide/commit/4ec00bb0fed214f27629f32569406bfa2c786dd7) *(integrations)*  Add chrono/utc feature flag when using qdrant ([#684](https://github.com/bosun-ai/swiftide/pull/684))
+
+````text
+The Qdrant integration calls chrono::Utc::now(), which requires the now
+  feature flag to be enabled in the chrono crate when using qdrant
+````
+
+- [0b204d9](https://github.com/bosun-ai/swiftide/commit/0b204d90a68978bb4b75516c537a56d665771c55)  Ensure `groq`, `fastembed`, `test-utils` features compile individually ([#689](https://github.com/bosun-ai/swiftide/pull/689))
+
+### Miscellaneous
+
+- [bd4ef97](https://github.com/bosun-ai/swiftide/commit/bd4ef97f2b9207b5ac03d610b76bdb3440e3d5c0)  Include filenames in errors in file io ([#694](https://github.com/bosun-ai/swiftide/pull/694))
+
+````text
+Uses fs-err crate to automatically include filenames in the error
+  messages
+````
+
+- [9453e06](https://github.com/bosun-ai/swiftide/commit/9453e06d5338c99cec5f51b085739cc30a5f12be)  Use std::sync::Mutex instead of tokio mutex ([#693](https://github.com/bosun-ai/swiftide/pull/693))
+
+- [b3456e2](https://github.com/bosun-ai/swiftide/commit/b3456e25af99f661aff1779ae5f2d4da460f128c)  Log qdrant setup messages at debug level ([#696](https://github.com/bosun-ai/swiftide/pull/696))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.3...0.22.4
+
+
+
 ## [0.22.3](https://github.com/bosun-ai/swiftide/compare/v0.22.2...v0.22.3) - 2025-03-13
 
 ### Miscellaneous
