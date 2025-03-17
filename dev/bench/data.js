@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742161174376,
+  "lastUpdate": 1742208721255,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17753,6 +17753,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 241934,
             "range": "± 2084",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshka@users.noreply.github.com",
+            "name": "Josh McKinney",
+            "username": "joshka"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bd4ef97f2b9207b5ac03d610b76bdb3440e3d5c0",
+          "message": "chore: include filenames in errors in file io (#694)\n\nUses fs-err crate to automatically include filenames in the error\nmessages",
+          "timestamp": "2025-03-17T11:43:02+01:00",
+          "tree_id": "51e0adb8c14edaeffb53723a4cfbb4c4cbcfd753",
+          "url": "https://github.com/bosun-ai/swiftide/commit/bd4ef97f2b9207b5ac03d610b76bdb3440e3d5c0"
+        },
+        "date": 1742208720367,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1291305,
+            "range": "± 1236044",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256083,
+            "range": "± 1283",
             "unit": "ns/iter"
           }
         ]
