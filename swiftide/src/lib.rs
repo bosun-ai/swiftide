@@ -4,11 +4,15 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
 
-//! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+//! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation
+//! (RAG). When building applications with large language models (LLM), these LLMs need access to
+//! external resources. Data needs to be transformed, enriched, split up, embedded, and persisted.
+//! It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 //!
 //! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 //!
-//! We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue.
+//! We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open
+//! an issue.
 //!
 //! Read more about the project on the [swiftide website](https://swiftide.rs)
 //!
@@ -21,7 +25,8 @@
 //! - Splitting and merging pipelines
 //! - Jinja-like templating for prompts
 //! - Store into multiple backends
-//! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
+//! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more
+//!   information.
 //!
 //! # Querying
 //!
@@ -133,8 +138,8 @@ pub mod integrations {
 
 /// This module serves as the main entry point for indexing in Swiftide.
 ///
-/// The indexing system in Swiftide is designed to handle the asynchronous processing of large volumes
-/// of data, including loading, transforming, and storing data chunks.
+/// The indexing system in Swiftide is designed to handle the asynchronous processing of large
+/// volumes of data, including loading, transforming, and storing data chunks.
 pub mod indexing {
     #[doc(inline)]
     pub use swiftide_core::indexing::*;
@@ -154,7 +159,8 @@ pub mod indexing {
 ///
 /// Swiftide allows you to define sophisticated query pipelines.
 ///
-/// Consider the following code that uses Swiftide to load some markdown text, chunk it, embed it, and store it in a Qdrant index:
+/// Consider the following code that uses Swiftide to load some markdown text, chunk it, embed it,
+/// and store it in a Qdrant index:
 ///
 /// ```no_run
 /// use swiftide::{
@@ -239,10 +245,10 @@ pub mod indexing {
 /// # }
 /// ```
 ///
-/// By using a query pipeline to transform queries, we can improve the quality of the answers we get from our index.
-/// In this example, we used an LLM to generate subquestions, embedding those and then using them to search the index.
-/// Finally, we summarize the results and combine them together into a single answer.
-///
+/// By using a query pipeline to transform queries, we can improve the quality of the answers we get
+/// from our index. In this example, we used an LLM to generate subquestions, embedding those and
+/// then using them to search the index. Finally, we summarize the results and combine them together
+/// into a single answer.
 pub mod query {
     #[doc(inline)]
     pub use swiftide_core::querying::*;

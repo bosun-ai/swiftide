@@ -21,9 +21,11 @@ impl Persist for Redis {
 
     /// Stores a node in Redis using the SET command.
     ///
-    /// By default nodes are stored with the path and hash as key and the node serialized as JSON as value.
+    /// By default nodes are stored with the path and hash as key and the node serialized as JSON as
+    /// value.
     ///
-    /// You can customize the key and value used for storing nodes by setting the `persist_key_fn` and `persist_value_fn` fields.
+    /// You can customize the key and value used for storing nodes by setting the `persist_key_fn`
+    /// and `persist_value_fn` fields.
     async fn store(&self, node: Node) -> Result<Node> {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("SET")
@@ -41,9 +43,11 @@ impl Persist for Redis {
 
     /// Stores a batch of nodes in Redis using the MSET command.
     ///
-    /// By default nodes are stored with the path and hash as key and the node serialized as JSON as value.
+    /// By default nodes are stored with the path and hash as key and the node serialized as JSON as
+    /// value.
     ///
-    /// You can customize the key and value used for storing nodes by setting the `persist_key_fn` and `persist_value_fn` fields.
+    /// You can customize the key and value used for storing nodes by setting the `persist_key_fn`
+    /// and `persist_value_fn` fields.
     async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
         // use mset for batch store
         if let Some(mut cm) = self.lazy_connect().await {

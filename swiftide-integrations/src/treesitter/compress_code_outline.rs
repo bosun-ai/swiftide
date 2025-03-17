@@ -1,4 +1,5 @@
-//! `CompressCodeOutline` is a transformer that reduces the size of the outline of a the parent file of a chunk to make it more relevant to the chunk.
+//! `CompressCodeOutline` is a transformer that reduces the size of the outline of a the parent file
+//! of a chunk to make it more relevant to the chunk.
 use std::sync::OnceLock;
 
 use anyhow::Result;
@@ -26,9 +27,11 @@ fn extract_markdown_codeblock(text: String) -> String {
 
 #[async_trait]
 impl Transformer for CompressCodeOutline {
-    /// Asynchronously transforms an `Node` by reducing the size of the outline to make it more relevant to the chunk.
+    /// Asynchronously transforms an `Node` by reducing the size of the outline to make it more
+    /// relevant to the chunk.
     ///
-    /// This method uses the `SimplePrompt` client to compress the outline of the `Node` and updates the `Node` with the compressed outline.
+    /// This method uses the `SimplePrompt` client to compress the outline of the `Node` and updates
+    /// the `Node` with the compressed outline.
     ///
     /// # Arguments
     ///
@@ -40,7 +43,8 @@ impl Transformer for CompressCodeOutline {
     ///
     /// # Errors
     ///
-    /// This function will return an error if the `SimplePrompt` client fails to generate a response.
+    /// This function will return an error if the `SimplePrompt` client fails to generate a
+    /// response.
     #[tracing::instrument(skip_all, name = "transformers.compress_code_outline")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         if node.metadata.get(NAME).is_none() {

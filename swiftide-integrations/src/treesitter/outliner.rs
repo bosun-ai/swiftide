@@ -8,12 +8,11 @@ use super::supported_languages::SupportedLanguages;
 #[derive(Debug, Builder, Clone)]
 /// Generates a summary of a code file.
 ///
-/// It does so by parsing the code file and removing function bodies, leaving only the function signatures and
-/// other top-level declarations along with any comments.
+/// It does so by parsing the code file and removing function bodies, leaving only the function
+/// signatures and other top-level declarations along with any comments.
 ///
-/// The resulting summary can be used as a context when considering subsets of the code file, or for determining
-/// relevance of the code file to a given task.
-///
+/// The resulting summary can be used as a context when considering subsets of the code file, or for
+/// determining relevance of the code file to a given task.
 #[builder(setter(into), build_fn(error = "anyhow::Error"))]
 pub struct CodeOutliner {
     #[builder(setter(custom))]
@@ -29,7 +28,8 @@ impl CodeOutlinerBuilder {
     ///
     /// # Returns
     ///
-    /// * `Result<Self>` - The builder instance with the language set, or an error if the language is not supported.
+    /// * `Result<Self>` - The builder instance with the language set, or an error if the language
+    ///   is not supported.
     ///
     /// # Errors
     /// * If the language is not supported, an error is returned.
@@ -75,7 +75,8 @@ impl CodeOutliner {
     ///
     /// # Returns
     ///
-    /// * `Result<String>` - A result containing a string, or an error if the code could not be parsed.
+    /// * `Result<String>` - A result containing a string, or an error if the code could not be
+    ///   parsed.
     ///
     /// # Errors
     /// * If the code could not be parsed, an error is returned.
@@ -179,7 +180,8 @@ mod tests {
 
     // Test every supported language.
     // We should strip away all code blocks and leave only imports, comments, function signatures,
-    // class, interface and structure definitions and definitions of constants, variables and other members.
+    // class, interface and structure definitions and definitions of constants, variables and other
+    // members.
     #[test]
     fn test_outline_rust() {
         let code = r#"

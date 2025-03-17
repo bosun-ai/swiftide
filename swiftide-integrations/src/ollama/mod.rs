@@ -1,6 +1,7 @@
-//! This module provides integration with `Ollama`'s API, enabling the use of language models and embeddings within the Swiftide project.
-//! It includes the `Ollama` struct for managing API clients and default options for embedding and prompt models.
-//! The module is conditionally compiled based on the "ollama" feature flag.
+//! This module provides integration with `Ollama`'s API, enabling the use of language models and
+//! embeddings within the Swiftide project. It includes the `Ollama` struct for managing API clients
+//! and default options for embedding and prompt models. The module is conditionally compiled based
+//! on the "ollama" feature flag.
 
 use config::OllamaConfig;
 use derive_builder::Builder;
@@ -11,12 +12,13 @@ pub mod config;
 pub mod embed;
 pub mod simple_prompt;
 
-/// The `Ollama` struct encapsulates an `Ollama` client and default options for embedding and prompt models.
-/// It uses the `Builder` pattern for flexible and customizable instantiation.
+/// The `Ollama` struct encapsulates an `Ollama` client and default options for embedding and prompt
+/// models. It uses the `Builder` pattern for flexible and customizable instantiation.
 ///
-/// By default it will look for a `OLLAMA_API_KEY` environment variable. Note that either a prompt model or embedding model
-/// always need to be set, either with [`Ollama::with_default_prompt_model`] or [`Ollama::with_default_embed_model`] or via the builder.
-/// You can find available models in the Ollama documentation.
+/// By default it will look for a `OLLAMA_API_KEY` environment variable. Note that either a prompt
+/// model or embedding model always need to be set, either with
+/// [`Ollama::with_default_prompt_model`] or [`Ollama::with_default_embed_model`] or via the
+/// builder. You can find available models in the Ollama documentation.
 ///
 /// Under the hood it uses [`async_openai`], with the Ollama openai mapping. This means
 /// some features might not work as expected. See the Ollama documentation for details.

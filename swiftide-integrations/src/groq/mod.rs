@@ -1,6 +1,6 @@
-//! This module provides integration with `Groq`'s API, enabling the use of language models within the Swiftide project.
-//! It includes the `Groq` struct for managing API clients and default options for prompt models.
-//! The module is conditionally compiled based on the "groq" feature flag.
+//! This module provides integration with `Groq`'s API, enabling the use of language models within
+//! the Swiftide project. It includes the `Groq` struct for managing API clients and default options
+//! for prompt models. The module is conditionally compiled based on the "groq" feature flag.
 
 use crate::openai;
 

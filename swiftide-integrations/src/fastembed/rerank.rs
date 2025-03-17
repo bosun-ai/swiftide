@@ -25,7 +25,6 @@ const TOP_K: usize = 10;
 ///
 /// Can be customized with any rerank model from `fastembed` and the number of top documents to
 /// return. Optionally you can provide a template to render the document before reranking.
-///
 #[derive(Clone, Builder)]
 pub struct Rerank {
     /// The reranker model from [`Fastembed`]

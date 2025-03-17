@@ -52,8 +52,8 @@ impl Embed {
     }
 
     /// Sets the batch size for the transformer.
-    /// If the batch size is not set, the transformer will use the default batch size set by the pipeline
-    /// # Parameters
+    /// If the batch size is not set, the transformer will use the default batch size set by the
+    /// pipeline # Parameters
     ///
     /// * `batch_size` - The batch size to use for the transformer.
     ///

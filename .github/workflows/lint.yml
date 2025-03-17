@@ -17,12 +17,9 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
       - uses: r7kamura/rust-problem-matchers@v1
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -30,14 +27,24 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check typos
         uses: crate-ci/typos@master
-      - name: "Rustfmt"
-        run: cargo fmt --all --check
-        env:
-          RUSTFLAGS: "-Dwarnings"
       # - name: Lint dependencies
       #   uses: EmbarkStudios/cargo-deny-action@v2
       - name: clippy
         run: cargo clippy --all-targets --all-features --workspace
+        env:
+          RUSTFLAGS: "-Dwarnings"
+
+  lint-formatting:
+    name: Lint formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - uses: r7kamura/rust-problem-matchers@v1
+      - name: "Rustfmt"
+        run: cargo +nightly fmt --all -- --check
         env:
           RUSTFLAGS: "-Dwarnings"
 

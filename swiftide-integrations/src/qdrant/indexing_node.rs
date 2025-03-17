@@ -30,8 +30,8 @@ impl TryInto<qdrant::PointStruct> for NodeWithVectors<'_> {
     ///
     /// # Returns
     ///
-    /// A `Result` which is `Ok` if the conversion is successful, containing the `qdrant::PointStruct`.
-    /// If the conversion fails, it returns an `anyhow::Error`.
+    /// A `Result` which is `Ok` if the conversion is successful, containing the
+    /// `qdrant::PointStruct`. If the conversion fails, it returns an `anyhow::Error`.
     fn try_into(self) -> Result<qdrant::PointStruct> {
         let node = self.node;
         // Calculate a unique identifier for the node.

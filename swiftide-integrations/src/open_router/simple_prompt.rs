@@ -1,6 +1,6 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `OpenRouter` struct.
-//! It defines an asynchronous function to interact with the `OpenRouter` API, allowing prompt processing
-//! and generating responses as part of the Swiftide system.
+//! It defines an asynchronous function to interact with the `OpenRouter` API, allowing prompt
+//! processing and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
 use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
@@ -8,7 +8,8 @@ use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
 use super::OpenRouter;
 use anyhow::{Context as _, Result};
 
-/// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a response.
+/// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a
+/// response.
 #[async_trait]
 impl SimplePrompt for OpenRouter {
     /// Sends a prompt to the OpenRouter API and returns the response content.
@@ -17,8 +18,8 @@ impl SimplePrompt for OpenRouter {
     /// - `prompt`: A string slice that holds the prompt to be sent to the OpenRouter API.
     ///
     /// # Returns
-    /// - `Result<String>`: On success, returns the content of the response as a `String`.
-    ///   On failure, returns an error wrapped in a `Result`.
+    /// - `Result<String>`: On success, returns the content of the response as a `String`. On
+    ///   failure, returns an error wrapped in a `Result`.
     ///
     /// # Errors
     /// - Returns an error if the model is not set in the default options.

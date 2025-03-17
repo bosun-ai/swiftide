@@ -1,6 +1,7 @@
 //! # [Swiftide] Aws Bedrock example
 //!
-//! This example demonstrates how to use the `AwsBedrock` integration to interact with the Bedrock service.
+//! This example demonstrates how to use the `AwsBedrock` integration to interact with the Bedrock
+//! service.
 //!
 //! To use bedrock you will need the following:
 //! - AWS cli or environment variables configured
