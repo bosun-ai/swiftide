@@ -34,7 +34,7 @@ impl NodeCache for Duckdb {
             &self.cache_table
         );
 
-        let lock = self.connection.lock().await;
+        let lock = self.connection.lock().unwrap();
         let mut stmt = unwrap_or_log!(lock
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for persist"));
@@ -63,7 +63,7 @@ impl NodeCache for Duckdb {
             &self.cache_table
         );
 
-        let lock = self.connection.lock().await;
+        let lock = self.connection.lock().unwrap();
         let mut stmt = match lock
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for cache set")
@@ -88,7 +88,7 @@ impl NodeCache for Duckdb {
 
     async fn clear(&self) -> anyhow::Result<()> {
         let sql = format!("DROP TABLE IF EXISTS {}", &self.cache_table);
-        let lock = self.connection.lock().await;
+        let lock = self.connection.lock().unwrap();
         let mut stmt = lock
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for cache clear")?;

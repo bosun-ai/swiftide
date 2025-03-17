@@ -1,10 +1,13 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
 use swiftide_core::indexing::EmbeddedField;
 use tera::Context;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 pub mod node_cache;
 pub mod persist;
@@ -106,9 +109,13 @@ impl Duckdb {
     /// # Errors
     ///
     /// Errors if the connection or statement fails
-    pub async fn create_vector_indices(&self) -> Result<()> {
+    ///
+    /// # Panics
+    ///
+    /// If the mutex locking the connection is poisoned
+    pub fn create_vector_indices(&self) -> Result<()> {
         let table_name = &self.table_name;
-        let mut conn = self.connection.lock().await;
+        let mut conn = self.connection.lock().unwrap();
         let tx = conn.transaction().context("Failed to start transaction")?;
         {
             for vector in self.vectors.keys() {
@@ -130,10 +137,14 @@ impl Duckdb {
     /// # Errors
     ///
     /// Errors if the table or index could not be created
+    ///
+    /// # Panics
+    ///
+    /// If the mutex locking the connection is poisoned
     pub async fn lazy_create_cache(&self) -> anyhow::Result<()> {
         if !*self.cache_table_created.read().await {
             let mut lock = self.cache_table_created.write().await;
-            let conn = self.connection.lock().await;
+            let conn = self.connection.lock().unwrap();
             conn.execute(
                 &format!(
                     "CREATE TABLE IF NOT EXISTS {} (uuid TEXT PRIMARY KEY, path TEXT)",

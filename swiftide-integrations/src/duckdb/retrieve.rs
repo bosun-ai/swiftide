@@ -62,7 +62,7 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
             .await
             .context("Failed to build query")?;
 
-        let conn = self.connection().lock().await;
+        let conn = self.connection().lock().unwrap();
         let mut stmt = conn
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for persist")?;
