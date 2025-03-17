@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742214166734,
+  "lastUpdate": 1742214330766,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17861,6 +17861,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251540,
             "range": "± 1934",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshka@users.noreply.github.com",
+            "name": "Josh McKinney",
+            "username": "joshka"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b3456e25af99f661aff1779ae5f2d4da460f128c",
+          "message": "chore: log qdrant setup messages at debug level (#696)",
+          "timestamp": "2025-03-17T13:16:42+01:00",
+          "tree_id": "f885af7f57aac5e37ebd3e3679f5dfd4155eb64b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b3456e25af99f661aff1779ae5f2d4da460f128c"
+        },
+        "date": 1742214329980,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1301168,
+            "range": "± 997062",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249557,
+            "range": "± 2577",
             "unit": "ns/iter"
           }
         ]
