@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742217142436,
+  "lastUpdate": 1742242332977,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18023,6 +18023,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252401,
             "range": "± 1949",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bcd7c98cedfb5ff8ceb023ea0647c9ff6a8b92c1",
+          "message": "chore: release v0.22.4 (#697)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.22.3 -> 0.22.4 (✓ API compatible changes)\n* `swiftide-agents`: 0.22.3 -> 0.22.4 (✓ API compatible changes)\n* `swiftide-macros`: 0.22.3 -> 0.22.4\n* `swiftide-indexing`: 0.22.3 -> 0.22.4 (✓ API compatible changes)\n* `swiftide-integrations`: 0.22.3 -> 0.22.4 (✓ API compatible changes)\n* `swiftide-query`: 0.22.3 -> 0.22.4 (✓ API compatible changes)\n* `swiftide`: 0.22.3 -> 0.22.4 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.22.4](https://github.com/bosun-ai/swiftide/compare/v0.22.3...v0.22.4)\n- 2025-03-17\n\n### Bug fixes\n\n-\n[4ec00bb](https://github.com/bosun-ai/swiftide/commit/4ec00bb0fed214f27629f32569406bfa2c786dd7)\n*(integrations)* Add chrono/utc feature flag when using qdrant\n([#684](https://github.com/bosun-ai/swiftide/pull/684))\n\n````text\nThe Qdrant integration calls chrono::Utc::now(), which requires the now\n  feature flag to be enabled in the chrono crate when using qdrant\n````\n\n-\n[0b204d9](https://github.com/bosun-ai/swiftide/commit/0b204d90a68978bb4b75516c537a56d665771c55)\nEnsure `groq`, `fastembed`, `test-utils` features compile individually\n([#689](https://github.com/bosun-ai/swiftide/pull/689))\n\n### Miscellaneous\n\n-\n[bd4ef97](https://github.com/bosun-ai/swiftide/commit/bd4ef97f2b9207b5ac03d610b76bdb3440e3d5c0)\nInclude filenames in errors in file io\n([#694](https://github.com/bosun-ai/swiftide/pull/694))\n\n````text\nUses fs-err crate to automatically include filenames in the error\n  messages\n````\n\n-\n[9453e06](https://github.com/bosun-ai/swiftide/commit/9453e06d5338c99cec5f51b085739cc30a5f12be)\nUse std::sync::Mutex instead of tokio mutex\n([#693](https://github.com/bosun-ai/swiftide/pull/693))\n\n-\n[b3456e2](https://github.com/bosun-ai/swiftide/commit/b3456e25af99f661aff1779ae5f2d4da460f128c)\nLog qdrant setup messages at debug level\n([#696](https://github.com/bosun-ai/swiftide/pull/696))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.22.3...0.22.4\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-03-17T21:03:17+01:00",
+          "tree_id": "0d19df0ef2df6110b0f995b9d1c80559c9473e96",
+          "url": "https://github.com/bosun-ai/swiftide/commit/bcd7c98cedfb5ff8ceb023ea0647c9ff6a8b92c1"
+        },
+        "date": 1742242331824,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1328364,
+            "range": "± 1269784",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250827,
+            "range": "± 1985",
             "unit": "ns/iter"
           }
         ]
