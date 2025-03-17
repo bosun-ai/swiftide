@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742214330766,
+  "lastUpdate": 1742214350128,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -17915,6 +17915,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249557,
             "range": "± 2577",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "adcaba10697c165ff82bfdd096ec870918d46805",
+          "message": "chore(deps): bump the minor group across 1 directory with 4 updates (#690)\n\nBumps the minor group with 4 updates in the / directory:\n[async-trait](https://github.com/dtolnay/async-trait),\n[tokio](https://github.com/tokio-rs/tokio),\n[uuid](https://github.com/uuid-rs/uuid) and\n[spider](https://github.com/spider-rs/spider).\n\nUpdates `async-trait` from 0.1.87 to 0.1.88\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/dtolnay/async-trait/releases\">async-trait's\nreleases</a>.</em></p>\n<blockquote>\n<h2>0.1.88</h2>\n<ul>\n<li>Fix lifetime bounding on generic parameters that have cfg (<a\nhref=\"https://redirect.github.com/dtolnay/async-trait/issues/289\">#289</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/dtolnay/async-trait/commit/b3a59195c29c5b336490cec1bac23cff8d3e4483\"><code>b3a5919</code></a>\nRelease 0.1.88</li>\n<li><a\nhref=\"https://github.com/dtolnay/async-trait/commit/a306be84ec998f46acc700e8b24a3b68b77a873a\"><code>a306be8</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/dtolnay/async-trait/issues/289\">#289</a>\nfrom dtolnay/cfg</li>\n<li><a\nhref=\"https://github.com/dtolnay/async-trait/commit/d3059849a4024425f80f0713bc802d8959290d96\"><code>d305984</code></a>\nFix lifetime bounding on generic parameters that have cfg</li>\n<li><a\nhref=\"https://github.com/dtolnay/async-trait/commit/78506f17149e08594c1a120f1df828411772a0b8\"><code>78506f1</code></a>\nAdd regression test for issue 288</li>\n<li><a\nhref=\"https://github.com/dtolnay/async-trait/commit/a11384eec60634098f66a3d6ac89c23beccdbbc8\"><code>a11384e</code></a>\nAdd issue 283 link in test</li>\n<li>See full diff in <a\nhref=\"https://github.com/dtolnay/async-trait/compare/0.1.87...0.1.88\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `tokio` from 1.44.0 to 1.44.1\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/tokio-rs/tokio/releases\">tokio's\nreleases</a>.</em></p>\n<blockquote>\n<h2>Tokio v1.44.1</h2>\n<h1>1.44.1 (March 13th, 2025)</h1>\n<h3>Fixed</h3>\n<ul>\n<li>rt: skip defer queue in <code>block_in_place</code> context (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7216\">#7216</a>)</li>\n</ul>\n<p><a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7216\">#7216</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7216\">tokio-rs/tokio#7216</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/d413c9c02af8f2b4fea14b769b86484b12f46595\"><code>d413c9c</code></a>\nchore: prepare Tokio v1.44.1 (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7217\">#7217</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/addbfb9204be25a8621feb3f20b44a7c1f00edbd\"><code>addbfb9</code></a>\nrt: skip defer queue in <code>block_in_place</code> context (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7216\">#7216</a>)</li>\n<li>See full diff in <a\nhref=\"https://github.com/tokio-rs/tokio/compare/tokio-1.44.0...tokio-1.44.1\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `uuid` from 1.15.1 to 1.16.0\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/uuid-rs/uuid/releases\">uuid's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v1.16.0</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>Mark <code>Uuid::new_v8</code> const by <a\nhref=\"https://github.com/tguichaoua\"><code>@​tguichaoua</code></a> in <a\nhref=\"https://redirect.github.com/uuid-rs/uuid/pull/815\">uuid-rs/uuid#815</a></li>\n<li>Prepare for 1.16.0 release by <a\nhref=\"https://github.com/KodrAus\"><code>@​KodrAus</code></a> in <a\nhref=\"https://redirect.github.com/uuid-rs/uuid/pull/817\">uuid-rs/uuid#817</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a\nhref=\"https://github.com/tguichaoua\"><code>@​tguichaoua</code></a> made\ntheir first contribution in <a\nhref=\"https://redirect.github.com/uuid-rs/uuid/pull/815\">uuid-rs/uuid#815</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/uuid-rs/uuid/compare/v1.15.1...v1.16.0\">https://github.com/uuid-rs/uuid/compare/v1.15.1...v1.16.0</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/uuid-rs/uuid/commit/c36beb14d50f835c1f1220117ca51aae64860a3e\"><code>c36beb1</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/uuid-rs/uuid/issues/817\">#817</a> from\nuuid-rs/cargo/v1.16.0</li>\n<li><a\nhref=\"https://github.com/uuid-rs/uuid/commit/5338b246b7a8244cab3cfaa85b14fe1d1bcdcd96\"><code>5338b24</code></a>\nprepare for 1.16.0 release</li>\n<li><a\nhref=\"https://github.com/uuid-rs/uuid/commit/420f6279aeff48f0e12b0b39af43a5c149963382\"><code>420f627</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/uuid-rs/uuid/issues/815\">#815</a> from\ntguichaoua/new_v8_const</li>\n<li><a\nhref=\"https://github.com/uuid-rs/uuid/commit/254258c8c7c7d6c41aaf6f573dc1731549d519b2\"><code>254258c</code></a>\nmark <code>Uuid::new_v8</code> const</li>\n<li>See full diff in <a\nhref=\"https://github.com/uuid-rs/uuid/compare/v1.15.1...v1.16.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `spider` from 2.33.5 to 2.33.19\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v2.33.11</h2>\n<h1>Whats Changed</h1>\n<p>Add <code>Website::with_crawl_timeout</code> builder method to add a\nmax timeout for the crawl.\nThis is useful when robots.txt can change the expected crawl\ndurations.</p>\n<p>Example:</p>\n<pre lang=\"rust\"><code>use std::time::Duration;\nuse spider::tokio;\nuse spider::website::Website;\nuse tokio::io::AsyncWriteExt;\n<p>#[tokio::main]\nasync fn main() {\nlet mut website: Website = Website::new(&quot;<a\nhref=\"https://spider.cloud&amp;quot;).with_crawl_timeout(Some(Duration::from_millis(10))).build().unwrap(\">https://spider.cloud&amp;quot;).with_crawl_timeout(Some(Duration::from_millis(10))).build().unwrap(</a>);\nlet mut rx2: tokio::sync::broadcast::Receiver&lt;spider::page::Page&gt;\n=\nwebsite.subscribe(0).unwrap();\nlet mut stdout = tokio::io::stdout();</p>\n<pre><code>let join_handle = tokio::spawn(async move {\n    while let Ok(res) = rx2.recv().await {\n        let _ = stdout\n.write_all(format!(&amp;quot;- {}\\n&amp;quot;,\nres.get_url()).as_bytes())\n            .await;\n    }\n    stdout\n});\n\nlet start = std::time::Instant::now();\nwebsite.crawl().await;\nwebsite.unsubscribe();\nlet duration = start.elapsed();\nlet mut stdout = join_handle.await.unwrap();\n\nlet _ = stdout\n    .write_all(\n        format!(\n&amp;quot;Time elapsed in website.crawl() is: {:?} for total pages:\n{:?}&amp;quot;,\n            duration,\n            website.get_size().await\n        )\n        .as_bytes(),\n    )\n    .await;\n</code></pre>\n<p>}\n</code></pre></p>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/spider-rs/spider/compare/v2.33.1...v2.33.11\">https://github.com/spider-rs/spider/compare/v2.33.1...v2.33.11</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-03-17T13:17:03+01:00",
+          "tree_id": "9c365e44586151cb8bfd3a3d9527dcad27216498",
+          "url": "https://github.com/bosun-ai/swiftide/commit/adcaba10697c165ff82bfdd096ec870918d46805"
+        },
+        "date": 1742214349437,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1297501,
+            "range": "± 957131",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 247740,
+            "range": "± 1066",
             "unit": "ns/iter"
           }
         ]
