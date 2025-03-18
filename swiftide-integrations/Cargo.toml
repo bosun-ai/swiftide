@@ -94,6 +94,7 @@ redb = { workspace = true, optional = true }
 duckdb = { workspace = true, optional = true }
 libduckdb-sys = { workspace = true, optional = true }
 fs-err = { workspace = true, features = ["tokio"] }
+tiktoken-rs = { workspace = true, optional = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -148,7 +149,7 @@ tree-sitter = [
   "dep:tree-sitter-cpp",
 ]
 # OpenAI for embedding and prompting
-openai = ["dep:async-openai"]
+openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
 # Groq prompting
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Ollama prompting, embedding, chatcompletion
@@ -180,6 +181,7 @@ parquet = ["dep:arrow-array", "dep:parquet"]
 anthropic = ["dep:async-anthropic"]
 # Duckdb for indexing and retrieval
 duckdb = ["dep:duckdb", "dep:libduckdb-sys"]
+tiktoken = ["dep:tiktoken-rs"]
 
 
 [lints]

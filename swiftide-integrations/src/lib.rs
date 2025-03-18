@@ -40,5 +40,7 @@ pub mod redb;
 pub mod redis;
 #[cfg(feature = "scraping")]
 pub mod scraping;
+#[cfg(feature = "tiktoken")]
+pub mod tiktoken;
 #[cfg(feature = "tree-sitter")]
 pub mod treesitter;
