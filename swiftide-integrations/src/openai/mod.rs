@@ -14,6 +14,15 @@ mod simple_prompt;
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
 
+#[cfg(feature = "tiktoken")]
+use crate::tiktoken::TikToken;
+#[cfg(feature = "tiktoken")]
+use anyhow::Result;
+#[cfg(feature = "tiktoken")]
+use swiftide_core::Estimatable;
+#[cfg(feature = "tiktoken")]
+use swiftide_core::EstimateTokens;
+
 /// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt
 /// models. It uses the `Builder` pattern for flexible and customizable instantiation.
 ///
@@ -56,6 +65,10 @@ pub struct GenericOpenAI<
     /// Default options for embedding and prompt models.
     #[builder(default)]
     pub(crate) default_options: Options,
+
+    #[cfg(feature = "tiktoken")]
+    #[cfg_attr(feature = "tiktoken", builder( default = self.default_tiktoken()))]
+    pub(crate) tiktoken: TikToken,
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
@@ -169,6 +182,32 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
             });
         }
         self
+    }
+}
+impl<C: async_openai::config::Config + Default> GenericOpenAIBuilder<C> {
+    #[cfg(feature = "tiktoken")]
+    fn default_tiktoken(&self) -> TikToken {
+        let model = self
+            .default_options
+            .as_ref()
+            .and_then(|o| o.prompt_model.as_deref())
+            .unwrap_or("gpt-4");
+
+        TikToken::try_from_model(model).expect("Failed to build default model; infallible")
+    }
+}
+
+impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
+    /// Estimates the number of tokens for implementors of the `Estimatable` trait.
+    ///
+    /// I.e. `String`, `ChatMessage` etc
+    ///
+    /// # Errors
+    ///
+    /// Errors if tokinization fails in any way
+    #[cfg(feature = "tiktoken")]
+    pub async fn estimate_tokens(&self, value: impl Estimatable) -> Result<usize> {
+        self.tiktoken.estimate(value).await
     }
 }
 

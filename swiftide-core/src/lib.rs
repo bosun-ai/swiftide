@@ -15,6 +15,7 @@ mod query;
 mod query_stream;
 pub mod query_traits;
 mod search_strategies;
+pub mod tokenizer;
 pub mod type_aliases;
 
 pub mod document;
@@ -30,6 +31,7 @@ pub use crate::agent_traits::*;
 pub use crate::chat_completion::traits::*;
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
+pub use crate::tokenizer::*;
 
 pub mod indexing {
     pub use crate::indexing_defaults::*;

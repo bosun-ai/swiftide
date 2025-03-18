@@ -560,8 +560,13 @@ impl Agent {
         }
     }
 
+    /// Add a message to the agent's context
+    ///
+    /// This will trigger a `OnNewMessage` hook if its present.
+    ///
+    /// If you want to add a message without triggering the hook, use the context directly.
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
-    async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
+    pub async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
             if let Hook::OnNewMessage(hook) = hook {
                 let span = tracing::info_span!(

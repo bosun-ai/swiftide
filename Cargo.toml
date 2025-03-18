@@ -106,6 +106,7 @@ tree-sitter-cpp = { version = "0.23", default-features = false }
 async-anthropic = { version = "0.3.0", default-features = false }
 duckdb = { version = "1.2.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
 libduckdb-sys = { version = "1.2.1", default-features = false } # 1.2 is broken, should be fixed in 1.2.1
+tiktoken-rs = { version = "0.6", default-features = false }
 
 # Testing
 test-log = { version = "0.2" }
