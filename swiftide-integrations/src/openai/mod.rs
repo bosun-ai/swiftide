@@ -3,11 +3,8 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
-use anyhow::Result;
 use derive_builder::Builder;
 use std::sync::Arc;
-use swiftide_core::Estimatable;
-use swiftide_core::EstimateTokens as _;
 
 mod chat_completion;
 mod embed;
@@ -19,6 +16,12 @@ pub use async_openai::config::OpenAIConfig;
 
 #[cfg(feature = "tiktoken")]
 use crate::tiktoken::TikToken;
+#[cfg(feature = "tiktoken")]
+use anyhow::Result;
+#[cfg(feature = "tiktoken")]
+use swiftide_core::Estimatable;
+#[cfg(feature = "tiktoken")]
+use swiftide_core::EstimateTokens;
 
 /// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt
 /// models. It uses the `Builder` pattern for flexible and customizable instantiation.
@@ -195,10 +198,10 @@ impl<C: async_openai::config::Config + Default> GenericOpenAIBuilder<C> {
 }
 
 impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
-    #[cfg(feature = "tiktoken")]
     /// Estimates the number of tokens for implementors of the `Estimatable` trait.
     ///
     /// I.e. `String`, `ChatMessage` etc
+    #[cfg(feature = "tiktoken")]
     pub async fn estimate_tokens(&self, value: impl Estimatable) -> Result<usize> {
         self.tiktoken.estimate(value).await
     }
