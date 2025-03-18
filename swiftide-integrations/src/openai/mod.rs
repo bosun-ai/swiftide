@@ -201,6 +201,10 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
     /// Estimates the number of tokens for implementors of the `Estimatable` trait.
     ///
     /// I.e. `String`, `ChatMessage` etc
+    ///
+    /// # Errors
+    ///
+    /// Errors if tokinization fails in any way
     #[cfg(feature = "tiktoken")]
     pub async fn estimate_tokens(&self, value: impl Estimatable) -> Result<usize> {
         self.tiktoken.estimate(value).await
