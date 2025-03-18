@@ -15,6 +15,7 @@ mod query;
 mod query_stream;
 pub mod query_traits;
 mod search_strategies;
+pub mod tokenizer;
 pub mod type_aliases;
 
 pub mod document;
