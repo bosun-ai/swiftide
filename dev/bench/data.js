@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742247425497,
+  "lastUpdate": 1742288553463,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18131,6 +18131,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250751,
             "range": "± 2080",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshka@users.noreply.github.com",
+            "name": "Josh McKinney",
+            "username": "joshka"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "345c57a663dd0d315a28f0927c5d598ba21d019d",
+          "message": "refactor: improve file loader logging (#695)\n\nThe logging now logs appropriate detail about each file and node\nprocessed\n\n- Skipped files are logged at TRACE level\n- Configuration of the loader is logged at the start\n- The necessary details to identify the loader (path) is included in the\nspan fields\n- You can now correlate a node id with a path\n\n<img width=\"1630\" alt=\"image\"\nsrc=\"https://github.com/user-attachments/assets/308e95cc-5b94-41bd-9b77-7089d4bdabd3\"\n/>\n\n```\n2025-03-17T00:34:18.965601Z DEBUG pipeline:file_loader{root=.}: swiftide_indexing::loaders::file_loader: Loading files extensions=Some([\"rs\"])\n2025-03-17T00:34:18.968115Z TRACE pipeline:file_loader{root=.}:load{path=./Cargo.toml}: swiftide_indexing::loaders::file_loader: Skipping file with extension toml\n2025-03-17T00:34:18.968153Z TRACE pipeline:file_loader{root=.}:load{path=./Cargo.lock}: swiftide_indexing::loaders::file_loader: Skipping file with extension lock\n2025-03-17T00:34:18.968186Z TRACE pipeline:file_loader{root=.}:load{path=./README.md}: swiftide_indexing::loaders::file_loader: Skipping file with extension md\n2025-03-17T00:34:18.968248Z DEBUG pipeline:file_loader{root=.}:load{path=./src/main.rs}: swiftide_indexing::loaders::file_loader: Loading file\n2025-03-17T00:34:18.968302Z DEBUG pipeline:file_loader{root=.}:load{path=./src/main.rs}: swiftide_indexing::loaders::file_loader: Loaded file node_id=9cef7b97-dfbb-327b-a47d-0816f4ed69db\n2025-03-17T00:34:18.968324Z TRACE pipeline:file_loader{root=.}:load{path=./src/compose.yaml}: swiftide_indexing::loaders::file_loader: Skipping file with extension yaml\n```\n\nRelated to https://github.com/bosun-ai/swiftide/issues/686",
+          "timestamp": "2025-03-18T09:53:20+01:00",
+          "tree_id": "3d2ec26040476dd75d69f0f14caafeccea961de9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/345c57a663dd0d315a28f0927c5d598ba21d019d"
+        },
+        "date": 1742288551843,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1309114,
+            "range": "± 991262",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250300,
+            "range": "± 2225",
             "unit": "ns/iter"
           }
         ]
