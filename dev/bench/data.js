@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742288553463,
+  "lastUpdate": 1742314810883,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18185,6 +18185,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250300,
             "range": "± 2225",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "eb4e0442293e17722743aa2b88d8dd7582dd9236",
+          "message": "feat: Estimate tokens for OpenAI like apis with tiktoken-rs (#699)",
+          "timestamp": "2025-03-18T17:11:21+01:00",
+          "tree_id": "a9dd422bea5bc076c345a4502bc40ad74c93d72c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/eb4e0442293e17722743aa2b88d8dd7582dd9236"
+        },
+        "date": 1742314809725,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 10",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1300089,
+            "range": "± 936532",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250271,
+            "range": "± 1150",
             "unit": "ns/iter"
           }
         ]
