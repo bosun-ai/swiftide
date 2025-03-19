@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742314810883,
+  "lastUpdate": 1742374879463,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18239,6 +18239,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250271,
             "range": "± 1150",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "50131faeb639c88b495cc6211aec504eb261fc17",
+          "message": "chore(deps): bump the minor group with 2 updates (#700)",
+          "timestamp": "2025-03-19T09:52:34+01:00",
+          "tree_id": "a237d0f7d66d6cbee324ce3850da1a1de69405a6",
+          "url": "https://github.com/bosun-ai/swiftide/commit/50131faeb639c88b495cc6211aec504eb261fc17"
+        },
+        "date": 1742374878577,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1282424,
+            "range": "± 941234",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 247681,
+            "range": "± 7347",
             "unit": "ns/iter"
           }
         ]
