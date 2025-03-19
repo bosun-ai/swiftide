@@ -431,7 +431,7 @@ checksum = "96beb82247804e3c488d955707ce5cefa2dc8a6256d78cda2e01498c3e025018"
 dependencies = [
  "backoff",
  "derive_builder 0.20.2",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "secrecy",
  "serde",
  "serde_json",
@@ -593,7 +593,7 @@ dependencies = [
  "eventsource-stream",
  "futures",
  "rand 0.8.5",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "reqwest-eventsource 0.6.0",
  "secrecy",
  "serde",
@@ -1388,7 +1388,7 @@ dependencies = [
  "bitflags 2.9.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.10.5",
  "lazy_static",
  "lazycell",
  "log",
@@ -4189,7 +4189,7 @@ dependencies = [
  "log",
  "native-tls",
  "rand 0.8.5",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
@@ -4411,7 +4411,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.8",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -6284,7 +6284,7 @@ dependencies = [
  "percent-encoding",
  "quick-xml",
  "rand 0.8.5",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "ring",
  "rustls-pemfile 2.2.0",
  "serde",
@@ -7044,7 +7044,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.14.0",
  "log",
  "multimap",
@@ -7612,9 +7612,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.14"
+version = "0.12.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "989e327e510263980e231de548a33e63d34962d29ae61b467389a1a09627a254"
+checksum = "d19c46a6fdd48bc4dab94b6103fccc55d34c67cc0ad04653aad4ea2a07cd7bbb"
 dependencies = [
  "async-compression",
  "base64 0.22.1",
@@ -7695,7 +7695,7 @@ dependencies = [
  "mime",
  "nom",
  "pin-project-lite",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "thiserror 1.0.69",
 ]
 
@@ -8374,7 +8374,7 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03c3c6b7927ffe7ecaa769ee0e3994da3b8cafc8f444578982c83ecb161af917"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn 2.0.100",
@@ -8419,9 +8419,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.33.19"
+version = "2.34.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ae628182ea800c3f5fcdc1b519a7168ec6512685118aba89f1f1fd7a9496436"
+checksum = "84776b5a950784c6432ef5535afbf8d7b0b7678a90a0ef499be7bb05d07539f4"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -8441,7 +8441,7 @@ dependencies = [
  "pin-project-lite",
  "quick-xml",
  "regex",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "smallvec",
  "sqlx",
  "string-interner",
@@ -9056,7 +9056,7 @@ dependencies = [
  "redb",
  "redis",
  "regex",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "secrecy",
  "serde",
  "serde_json",
@@ -9570,7 +9570,7 @@ dependencies = [
  "memchr",
  "parse-display",
  "pin-project-lite",
- "reqwest 0.12.14",
+ "reqwest 0.12.15",
  "serde",
  "serde_json",
  "serde_with",
