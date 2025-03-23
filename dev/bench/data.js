@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742374879463,
+  "lastUpdate": 1742731541179,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18293,6 +18293,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 247681,
             "range": "± 7347",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b5ec88fd0c61029746f32e528df3e243afa469f4",
+          "message": "chore(deps): bump the minor group with 2 updates (#701)\n\nBumps the minor group with 2 updates:\n[spider](https://github.com/spider-rs/spider) and\n[text-splitter](https://github.com/benbrandt/text-splitter).\n\nUpdates `spider` from 2.34.2 to 2.34.4\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v2.34.3</h2>\n<h1>Whats Changed</h1>\n<p>Get a map of the request and responses sent for headless.</p>\n<p>Responses: bytes transfered\nRequests: mono time</p>\n<p>Example: mapping</p>\n<pre lang=\"json\"><code>{\n        &quot;response_map&quot;: {\n&quot;https://spider.cloud/_astro/page.V2R8AmkL.js&quot;: 0.0,\n&quot;https://spider.cloud/_astro/FaqSection.93yW76zV.js&quot;: 0.0,\n\n&quot;https://spider.cloud/_astro/AuthDropdownMarketing.BtXgMRKz.js&quot;:\n0.0,\n\n&quot;https://spider.cloud/fonts/berkeley-mono/WEB/BerkeleyMono-Italic.woff2&quot;:\n0.0,\n\n&quot;https://spider.cloud/fonts/berkeley-mono/WEB/BerkeleyMono-Bold.woff2&quot;:\n0.0,\n\n&quot;https://spider.cloud/fonts/berkeley-mono/WEB/BerkeleyMono-Regular.woff2&quot;:\n0.0,\n&quot;https://spider.cloud/_astro/DemoButton.CR4r7Wpi.js&quot;: 0.0,\n&quot;https://spider.cloud/img/external/difyai.webp&quot;: 0.0,\n            &quot;https://spider.cloud/img/x.svg&quot;: 0.0,\n            &quot;https://spider.cloud/&quot;: 76756.0,\n&quot;https://spider.cloud/_astro/new.TMn7LXCt.css&quot;: 0.0,\n\n&quot;https://spider.cloud/_astro/MarketingNavigation.astro_astro_type_script_index_0_lang.B-77HRFd.js&quot;:\n0.0,\n&quot;https://spider.cloud/_astro/client.BSWQIR0-.js&quot;: 0.0,\n&quot;https://spider.cloud/img/external/ashpreet_bedi.webp&quot;: 0.0,\n&quot;https://spider.cloud/img/external/iammerrick_twitter.webp&quot;:\n0.0,\n&quot;https://spider.cloud/img/external/gaza_twitter.webp&quot;: 0.0,\n&quot;https://spider.cloud/img/external/william_twitter.webp&quot;: 0.0,\n&quot;https://spider.cloud/img/external/troy_twitter.webp&quot;: 0.0\n        },\n        &quot;request_map&quot;: {\n&quot;https://spider.cloud/img/external/william_twitter.webp&quot;:\n5619.234736,\n\n&quot;https://spider.cloud/fonts/berkeley-mono/WEB/BerkeleyMono-Bold.woff2&quot;:\n5618.876067,\n&quot;https://spider.cloud/img/external/ashpreet_bedi.webp&quot;:\n5619.235394,\n\n&quot;https://spider.cloud/_astro/AuthDropdownMarketing.BtXgMRKz.js&quot;:\n5618.925413,\n&quot;https://spider.cloud/_astro/DemoButton.CR4r7Wpi.js&quot;:\n5618.927034,\n            &quot;https://spider.cloud/img/x.svg&quot;: 5619.234307,\n            &quot;https://spider.cloud/&quot;: 5617.301155,\n&quot;https://spider.cloud/_astro/page.V2R8AmkL.js&quot;: 5618.876297,\n&quot;https://spider.cloud/img/external/gaza_twitter.webp&quot;:\n5619.235053,\n&quot;https://spider.cloud/_astro/client.BSWQIR0-.js&quot;: 5618.925752,\n&quot;https://spider.cloud/_astro/FaqSection.93yW76zV.js&quot;:\n5619.213312,\n&quot;https://spider.cloud/img/external/iammerrick_twitter.webp&quot;:\n5619.234049,\n&quot;https://spider.cloud/img/external/difyai.webp&quot;: 5619.235971,\n&quot;https://spider.cloud/_astro/new.TMn7LXCt.css&quot;: 5618.876208,\n\n&quot;https://spider.cloud/fonts/berkeley-mono/WEB/BerkeleyMono-Regular.woff2&quot;:\n5618.875715,\n\n&quot;https://spider.cloud/_astro/MarketingNavigation.astro_astro_type_script_index_0_lang.B-77HRFd.js&quot;:\n5618.876355,\n&quot;https://spider.cloud/img/external/troy_twitter.webp&quot;:\n5619.235737,\n&lt;/tr&gt;&lt;/table&gt; \n</code></pre>\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `text-splitter` from 0.24.1 to 0.24.2\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/benbrandt/text-splitter/releases\">text-splitter's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v0.24.2</h2>\n<h3>Fixes</h3>\n<ul>\n<li>Python packages target a newer version of libc to hopefully fix\nheader file issues with tree-sitter <a\nhref=\"https://redirect.github.com/benbrandt/text-splitter/pull/638\">benbrandt/text-splitter#638</a></li>\n</ul>\n<h3>What's New</h3>\n<ul>\n<li>MSRV updated to 1.81.0</li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/benbrandt/text-splitter/compare/v0.24.1...v0.24.2\">https://github.com/benbrandt/text-splitter/compare/v0.24.1...v0.24.2</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/benbrandt/text-splitter/blob/main/CHANGELOG.md\">text-splitter's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>v0.24.2</h2>\n<h3>Fixes</h3>\n<ul>\n<li>Python packages target a newer version of libc to hopefully fix\nheader file issues with tree-sitter.</li>\n</ul>\n<h3>What's New</h3>\n<ul>\n<li>MSRV updated to 1.81.0</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/11f12e47db98336f9404d78c28c0ec4798b2dd9f\"><code>11f12e4</code></a>\nprep v0.24.2</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/9e039937d2700b54ef0e6ffcb9b3f373e02db49a\"><code>9e03993</code></a>\nci: remove x86 target</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/4b05233ce5c972e9bb6337140268d5465842ad2f\"><code>4b05233</code></a>\nci: try building with newer manylinux</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/e0dc663d344b92daa07712b7ed2b0f15c75f98e8\"><code>e0dc663</code></a>\nci: try building without extra cc flags</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/ea9413c391cfc09ec81295776570f2e83a182311\"><code>ea9413c</code></a>\nchore(deps): bump the minor group in /docs with 6 updates</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/769b9680622e708a3441b6024be3843c9ebce798\"><code>769b968</code></a>\nchore(deps): bump the minor group with 2 updates</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/fbf1cdb96e446f319e5361fb2343abd922fc2c2d\"><code>fbf1cdb</code></a>\nchore(deps): bump the minor group in /docs with 4 updates</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/2eb59aab91096020f1568103e3a3b3bef6adce09\"><code>2eb59aa</code></a>\nchore(deps): bump deunicode from 1.6.0 to 1.6.1 in the minor group</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/d39e3478234f0ac7729ea35e84b6d0efeaa089a5\"><code>d39e347</code></a>\nchore(deps): bump the minor group in /docs with 3 updates</li>\n<li><a\nhref=\"https://github.com/benbrandt/text-splitter/commit/dd38e1a1e59889fd826db66c6da2a7c94161ec05\"><code>dd38e1a</code></a>\nchore(deps): bump the minor group with 3 updates</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/benbrandt/text-splitter/compare/v0.24.1...v0.24.2\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-03-23T12:56:51+01:00",
+          "tree_id": "82bfddeb7bd3cac335fccb15b29c09b365780fec",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b5ec88fd0c61029746f32e528df3e243afa469f4"
+        },
+        "date": 1742731540491,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293013,
+            "range": "± 955834",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251229,
+            "range": "± 3581",
             "unit": "ns/iter"
           }
         ]
