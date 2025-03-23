@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.5](https://github.com/bosun-ai/swiftide/compare/v0.22.4...v0.22.5) - 2025-03-23
+
+### New features
+
+- [eb4e044](https://github.com/bosun-ai/swiftide/commit/eb4e0442293e17722743aa2b88d8dd7582dd9236)  Estimate tokens for OpenAI like apis with tiktoken-rs ([#699](https://github.com/bosun-ai/swiftide/pull/699))
+
+### Miscellaneous
+
+- [345c57a](https://github.com/bosun-ai/swiftide/commit/345c57a663dd0d315a28f0927c5d598ba21d019d)  Improve file loader logging ([#695](https://github.com/bosun-ai/swiftide/pull/695))
+
+````text
+The logging now logs appropriate detail about each file and node
+  processed
+
+  - Skipped files are logged at TRACE level
+  - Configuration of the loader is logged at the start
+  - The necessary details to identify the loader (path) is included in the
+  span fields
+  - You can now correlate a node id with a path
+
+  <img width="1630" alt="image"
+  src="https://github.com/user-attachments/assets/308e95cc-5b94-41bd-9b77-7089d4bdabd3"
+  />
+
+  ```
+  2025-03-17T00:34:18.965601Z DEBUG pipeline:file_loader{root=.}: swiftide_indexing::loaders::file_loader: Loading files extensions=Some(["rs"])
+  2025-03-17T00:34:18.968115Z TRACE pipeline:file_loader{root=.}:load{path=./Cargo.toml}: swiftide_indexing::loaders::file_loader: Skipping file with extension toml
+  2025-03-17T00:34:18.968153Z TRACE pipeline:file_loader{root=.}:load{path=./Cargo.lock}: swiftide_indexing::loaders::file_loader: Skipping file with extension lock
+  2025-03-17T00:34:18.968186Z TRACE pipeline:file_loader{root=.}:load{path=./README.md}: swiftide_indexing::loaders::file_loader: Skipping file with extension md
+  2025-03-17T00:34:18.968248Z DEBUG pipeline:file_loader{root=.}:load{path=./src/main.rs}: swiftide_indexing::loaders::file_loader: Loading file
+  2025-03-17T00:34:18.968302Z DEBUG pipeline:file_loader{root=.}:load{path=./src/main.rs}: swiftide_indexing::loaders::file_loader: Loaded file node_id=9cef7b97-dfbb-327b-a47d-0816f4ed69db
+  2025-03-17T00:34:18.968324Z TRACE pipeline:file_loader{root=.}:load{path=./src/compose.yaml}: swiftide_indexing::loaders::file_loader: Skipping file with extension yaml
+  ```
+
+  Related to https://github.com/bosun-ai/swiftide/issues/686
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.4...0.22.5
+
+
+
 ## [0.22.4](https://github.com/bosun-ai/swiftide/compare/v0.22.3...v0.22.4) - 2025-03-17
 
 ### Bug fixes
