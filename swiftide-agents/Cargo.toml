@@ -25,6 +25,10 @@ strum_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
+mcp-core = { workspace = true }
+mcp-client = { workspace = true }
+mcp-spec = { workspace = true }
+tower-service = { workspace = true }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -40,3 +44,6 @@ workspace = true
 all-features = true
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+mcp = []

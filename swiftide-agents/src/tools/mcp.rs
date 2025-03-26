@@ -1,53 +1,137 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use async_mcp::{protocol::RequestOptions, transport::Transport};
+use anyhow::Context as _;
 use async_trait::async_trait;
-use serde_json::json;
-use swiftide_core::{chat_completion::ToolSpec, Tool};
+use mcp_client::{transport::Error, McpClientTrait as _, Transport};
+use mcp_spec::{protocol::JsonRpcMessage, Content};
+use serde::Deserialize;
+use serde_json::{json, Value};
+use swiftide_core::{
+    chat_completion::{errors::ToolError, ParamSpec, ParamType, ToolSpec},
+    Tool, ToolBox,
+};
+use tower_service::Service;
 
-struct McpClient<T: Transport> {
-    client: Arc<async_mcp::client::Client<T>>,
+#[derive(Clone)]
+struct McpClient<S>
+where
+    S: Service<JsonRpcMessage, Response = JsonRpcMessage> + Clone + Send + Sync + 'static,
+    S::Error: Into<Error>,
+    S::Future: Send,
+    mcp_client::Error: std::convert::From<
+        <S as tower_service::Service<mcp_spec::protocol::JsonRpcMessage>>::Error,
+    >,
+{
+    client: Arc<mcp_client::client::McpClient<S>>,
 }
 
-impl<T: Transport> McpClient<T> {
-    // {
-    //   "jsonrpc": "2.0",
-    //   "id": 1,
-    //   "result": {
-    //     "tools": [
-    //       {
-    //         "name": "get_weather",
-    //         "description": "Get current weather information for a location",
-    //         "inputSchema": {
-    //           "type": "object",
-    //           "properties": {
-    //             "location": {
-    //               "type": "string",
-    //               "description": "City name or zip code"
-    //             }
-    //           },
-    //           "required": ["location"]
-    //         }
-    //       }
-    //     ],
-    //     "nextCursor": "next-page-cursor"
-    //   }
-    // }
-    pub async fn list_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
-        let specs =
-
+impl<S> McpClient<S>
+where
+    S: Service<JsonRpcMessage, Response = JsonRpcMessage> + Clone + Send + Sync + 'static,
+    S::Error: Into<Error>,
+    S::Future: Send,
+    mcp_client::Error: std::convert::From<
+        <S as tower_service::Service<mcp_spec::protocol::JsonRpcMessage>>::Error,
+    >,
+{
+    pub fn from_client(client: impl Into<Arc<mcp_client::client::McpClient<S>>>) -> Self {
+        Self {
+            client: client.into(),
+        }
     }
+}
 
+// wtf nice schema bro
+#[derive(Deserialize)]
+struct ToolInputSchema {
+    pub type_: String,
+    pub properties: Option<HashMap<String, Value>>,
+    pub required: Option<Vec<String>>,
+}
+
+#[async_trait]
+impl<S> ToolBox for McpClient<S>
+where
+    S: Service<JsonRpcMessage, Response = JsonRpcMessage> + Clone + Send + Sync + 'static,
+    S::Error: Into<Error>,
+    S::Future: Send,
+    mcp_client::Error: std::convert::From<
+        <S as tower_service::Service<mcp_spec::protocol::JsonRpcMessage>>::Error,
+    >,
+{
+    async fn available_tools(&self) -> Vec<Box<dyn Tool>> {
+        let tools = match self.client.list_tools(None).await {
+            Ok(tools) => tools,
+            Err(e) => {
+                // Probably should return the error instead but it is late
+                tracing::error!("Failed to list tools: {:?}", e);
+                return vec![];
+            }
+        };
+
+        tools
+            .tools
+            .into_iter()
+            .map(|t| {
+                let schema: ToolInputSchema = serde_json::from_value(t.input_schema).unwrap();
+
+                let mut tool_spec = ToolSpec::builder()
+                    .name(t.name.clone())
+                    .description(t.description)
+                    .to_owned();
+                let mut parameters = Vec::new();
+
+                if let Some(p) = schema.properties {
+                    let param = ParamSpec::builder()
+                        .name(p.get("name").unwrap().to_string())
+                        .description(p.get("description").unwrap().to_string())
+                        .ty(p.get("type").map_or(ParamType::String, |t| {
+                            serde_json::from_value(t.clone()).unwrap_or(ParamType::String)
+                        }))
+                        .build()
+                        .unwrap();
+
+                    parameters.push(param);
+                }
+
+                tool_spec.parameters(parameters);
+                let tool_spec = tool_spec.build().unwrap();
+
+                Box::new(McpTool {
+                    client: self.client.clone(),
+                    tool_name: t.name.clone(),
+                    tool_spec,
+                }) as Box<dyn Tool>
+            })
+            .collect()
+    }
 }
 
 #[derive(Clone)]
-struct McpTool<T: Transport> {
-    client: Arc<async_mcp::client::Client<T>>,
+struct McpTool<S>
+where
+    S: Service<JsonRpcMessage, Response = JsonRpcMessage> + Clone + Send + Sync + 'static,
+    S::Error: Into<Error>,
+    S::Future: Send,
+    mcp_client::Error: std::convert::From<
+        <S as tower_service::Service<mcp_spec::protocol::JsonRpcMessage>>::Error,
+    >,
+{
+    client: Arc<mcp_client::client::McpClient<S>>,
+    tool_name: String,
     tool_spec: ToolSpec,
 }
 
 #[async_trait]
-impl<T: Transport + Clone> Tool for McpTool<T> {
+impl<S> Tool for McpTool<S>
+where
+    S: Service<JsonRpcMessage, Response = JsonRpcMessage> + Clone + Send + Sync + 'static,
+    S::Error: Into<Error>,
+    S::Future: Send,
+    mcp_client::Error: std::convert::From<
+        <S as tower_service::Service<mcp_spec::protocol::JsonRpcMessage>>::Error,
+    >,
+{
     async fn invoke(
         &self,
         _agent_context: &dyn swiftide_core::AgentContext,
@@ -56,29 +140,30 @@ impl<T: Transport + Clone> Tool for McpTool<T> {
         swiftide_core::chat_completion::ToolOutput,
         swiftide_core::chat_completion::errors::ToolError,
     > {
-        // TODO:  validate the input based on the tool spec
-
-        let args = serde_json::from_str(raw_args.unwrap_or("{}"))?;
         let response = self
             .client
-            .request(
-                "tools/call",
-                Some(json!({
-                    "name": self.name(),
-                    "arguments": args
-                })),
-                RequestOptions::default().timeout(Duration::from_secs(5)),
-            )
-            .await?; // TODO: Handle this error properly
-                     //
-                     //
+            .call_tool(&self.tool_name, serde_json::to_value(raw_args)?)
+            .await
+            .context("Failed to call mcp tool")?;
 
-        // TODO: Do something with this value, should parse like `{ content: { type: text, text: string} }`, tool errors should have a handleable 'isError' in the root
-        todo!()
+        let content = response
+            .content
+            .iter()
+            .filter_map(|c| c.as_text())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        if let Some(error) = response.is_error {
+            if error {
+                ToolError::Unknown(anyhow::anyhow!("Failed to execute mcp tool: {content}"));
+            }
+        }
+
+        Ok(content.into())
     }
 
     fn name(&self) -> std::borrow::Cow<'_, str> {
-        self.tool_spec().name.into()
+        self.tool_name.as_str().into()
     }
 
     fn tool_spec(&self) -> ToolSpec {
