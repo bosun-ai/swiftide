@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -109,7 +109,9 @@ impl ToolSpec {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr, Serialize, Deserialize,
+)]
 #[strum(serialize_all = "camelCase")]
 pub enum ParamType {
     #[default]
