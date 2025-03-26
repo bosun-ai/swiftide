@@ -1,5 +1,4 @@
 use darling::Error;
-use quote::ToTokens as _;
 use syn::{GenericArgument, PathArguments, Type, TypePath};
 
 use super::args::ParamType;

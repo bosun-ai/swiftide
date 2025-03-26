@@ -1,8 +1,7 @@
 #![allow(clippy::used_underscore_binding)]
 
 use args::ToolArgs;
-use convert_case::{Case, Casing as _};
-use darling::{ast::NestedMeta, Error, FromDeriveInput, FromMeta};
+use darling::{Error, FromDeriveInput};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
@@ -14,7 +13,7 @@ mod wrapped;
 
 #[allow(clippy::too_many_lines)]
 pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> TokenStream {
-    let tool_args = match ToolArgs::try_from_attribute_input(&input, input_args.clone()) {
+    let tool_args = match ToolArgs::try_from_attribute_input(input, input_args.clone()) {
         Ok(args) => args,
         Err(e) => return e.write_errors(),
     };
@@ -116,7 +115,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let struct_ident = &parsed.ident;
 
     let expected_fn_name = parsed.tool.fn_name();
-    let expected_fn_ident = syn::Ident::new(&expected_fn_name, struct_ident.span());
+    let expected_fn_ident = syn::Ident::new(expected_fn_name, struct_ident.span());
 
     let invoke_tool_args = parsed
         .tool
