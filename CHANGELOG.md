@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.5](https://github.com/bosun-ai/swiftide/compare/v0.22.4...v0.22.5) - 2025-03-23
+
+### New features
+
+- [eb4e044](https://github.com/bosun-ai/swiftide/commit/eb4e0442293e17722743aa2b88d8dd7582dd9236)  Estimate tokens for OpenAI like apis with tiktoken-rs ([#699](https://github.com/bosun-ai/swiftide/pull/699))
+
+### Miscellaneous
+
+- [345c57a](https://github.com/bosun-ai/swiftide/commit/345c57a663dd0d315a28f0927c5d598ba21d019d)  Improve file loader logging ([#695](https://github.com/bosun-ai/swiftide/pull/695))
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.4...0.22.5
+
+
+
 ## [0.22.4](https://github.com/bosun-ai/swiftide/compare/v0.22.3...v0.22.4) - 2025-03-17
 
 ### Bug fixes
