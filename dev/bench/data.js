@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742982891544,
+  "lastUpdate": 1743028364823,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18401,6 +18401,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251008,
             "range": "± 2440",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "182f209b92890886b48dee03acdc2a0f06aad0b8",
+          "message": "chore(deps): More flexible on duckdb version",
+          "timestamp": "2025-03-26T23:23:27+01:00",
+          "tree_id": "a9a39a210bc01a494d461162be320575cf459738",
+          "url": "https://github.com/bosun-ai/swiftide/commit/182f209b92890886b48dee03acdc2a0f06aad0b8"
+        },
+        "date": 1743028363223,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293734,
+            "range": "± 1288061",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 247289,
+            "range": "± 1682",
             "unit": "ns/iter"
           }
         ]
