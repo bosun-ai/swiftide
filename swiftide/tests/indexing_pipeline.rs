@@ -90,7 +90,7 @@ async fn test_indexing_pipeline() {
             .collect::<Vec<String>>()
             .join("\n---\n");
         println!("{received_requests}");
-    };
+    }
 
     result.expect("Indexing pipeline failed");
 
