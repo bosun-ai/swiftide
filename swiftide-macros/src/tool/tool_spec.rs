@@ -1,21 +1,22 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tool::ParamType;
+use crate::tool::args::ParamType;
 
-use super::{Description, ToolArgs};
+use super::args::{Description, ToolArgs};
 
-pub fn tool_spec(tool_name: &str, args: &ToolArgs) -> TokenStream {
-    let description = match &args.description {
+pub fn tool_spec(args: &ToolArgs) -> TokenStream {
+    let tool_name = args.tool_name();
+    let description = match &args.tool_description() {
         Description::Literal(description) => quote! { #description },
         Description::Path(path) => quote! { #path },
     };
 
-    if args.param.is_empty() {
+    if args.tool_params().is_empty() {
         quote! { swiftide::chat_completion::ToolSpec::builder().name(#tool_name).description(#description).build().unwrap() }
     } else {
         let params = args
-            .param
+            .tool_params()
             .iter()
             .map(|param| {
                 let name = &param.name;

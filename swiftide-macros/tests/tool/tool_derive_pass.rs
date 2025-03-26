@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 use swiftide::chat_completion::{errors::ToolError, ToolOutput};
 use swiftide::traits::AgentContext;
 use swiftide_macros::Tool;
@@ -81,6 +82,56 @@ impl MyToolConst<'_> {
     async fn my_tool_const(
         &self,
         agent_context: &dyn AgentContext,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
+
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION,
+    param(name = "test", description = "My param", json_type = "number")
+)]
+struct MyToolNumber;
+
+impl MyToolNumber {
+    async fn my_tool_number(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &usize,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
+
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION,
+    param(name = "test", description = "My param", rust_type = "usize")
+)]
+struct MyToolNumber2;
+
+impl MyToolNumber2 {
+    async fn my_tool_number_2(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &usize,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
+
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION,
+    name = "my_very_renamed_tool",
+    fn_name = "my_very_renamed_tool",
+    param(name = "test", description = "My param", rust_type = "usize")
+)]
+struct MyRenamedTool;
+
+impl MyRenamedTool {
+    async fn my_very_renamed_tool(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &usize,
     ) -> Result<ToolOutput, ToolError> {
         Ok(format!("Hello world").into())
     }
