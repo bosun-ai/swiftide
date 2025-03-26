@@ -63,7 +63,7 @@ async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput,
 // For non-string types, the `json_type` is required to be specified.
 #[swiftide_macros::tool(
     description = "Guess a number",
-    param(name = "number", description = "Number to guess", json_type = "number")
+    param(name = "number", description = "Number to guess")
 )]
 async fn guess_a_number(
     _context: &dyn AgentContext,

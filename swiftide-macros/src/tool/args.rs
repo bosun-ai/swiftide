@@ -304,16 +304,6 @@ impl ToolArgs {
             proc_macro2::Span::call_site(),
         )
     }
-
-    #[cfg(test)]
-    pub(crate) fn new(name: &str, description: Description, params: Vec<ParamOptions>) -> Self {
-        Self {
-            name: name.into(),
-            fn_name: name.into(),
-            description,
-            params,
-        }
-    }
 }
 
 fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Result<(), Error> {
@@ -326,36 +316,13 @@ fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Re
 
     let mut seen_arg_names = vec![];
 
-    let mut only_strings = true;
-    item_fn
-        .sig
-        .inputs
-        .iter()
-        .skip(1)
-        .filter_map(|arg| {
-            if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
-                if let Pat::Ident(ident) = &**pat {
-                    seen_arg_names.push(ident.ident.to_string());
-                    if let syn::Type::Path(p) = &**ty {
-                        if !p.path.is_ident("str") || !p.path.is_ident("String") {
-                            only_strings = false;
-                        }
-                    }
-
-                    // If the argument is a reference, we need to reference the quote as well
-                    if let syn::Type::Reference(_) = &**ty {
-                        Some(quote! { &args.#ident })
-                    } else {
-                        Some(quote! { args.#ident })
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
+    item_fn.sig.inputs.iter().skip(1).for_each(|arg| {
+        if let FnArg::Typed(PatType { pat, .. }) = arg {
+            if let Pat::Ident(ident) = &**pat {
+                seen_arg_names.push(ident.ident.to_string());
             }
-        })
-        .collect::<Vec<_>>();
+        }
+    });
     seen_arg_names.sort();
 
     let mut errors = Error::accumulator();
@@ -383,39 +350,8 @@ fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Re
         }
     }
 
-    if !only_strings
-        && tool_args
-            .params
-            .iter()
-            .all(|p| matches!(p.json_type, ParamType::String))
-    {
-        errors.push(Error::custom(
-            "Params that are not strings need to have their `type` as json spec specified",
-        ));
-    }
-
     errors.finish()?;
     Ok(())
-}
-
-pub(crate) fn args_struct_name(input: &ItemFn) -> Ident {
-    let struct_name_str = input
-        .sig
-        .ident
-        .to_string()
-        .split('_') // Split by underscores
-        .map(|s| {
-            let mut chars = s.chars();
-            chars
-                .next()
-                .map(|c| c.to_ascii_uppercase())
-                .into_iter()
-                .collect::<String>()
-                + chars.as_str()
-        })
-        .collect::<String>()
-        + "Args";
-    Ident::new(&struct_name_str, input.sig.ident.span())
 }
 
 fn as_owned_ty(ty: &syn::Type) -> syn::Type {
