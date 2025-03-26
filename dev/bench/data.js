@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1742731541179,
+  "lastUpdate": 1742982891544,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18347,6 +18347,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251229,
             "range": "± 3581",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0696c38fb3d4aafa564421ce256293105b1db5f3",
+          "message": "chore: release v0.22.5 (#698)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.22.4 -> 0.22.5 (✓ API compatible changes)\n* `swiftide-agents`: 0.22.4 -> 0.22.5 (✓ API compatible changes)\n* `swiftide-macros`: 0.22.4 -> 0.22.5\n* `swiftide-indexing`: 0.22.4 -> 0.22.5 (✓ API compatible changes)\n* `swiftide-integrations`: 0.22.4 -> 0.22.5 (✓ API compatible changes)\n* `swiftide-query`: 0.22.4 -> 0.22.5\n* `swiftide`: 0.22.4 -> 0.22.5 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.22.5](https://github.com/bosun-ai/swiftide/compare/v0.22.4...v0.22.5)\n- 2025-03-23\n\n### New features\n\n-\n[eb4e044](https://github.com/bosun-ai/swiftide/commit/eb4e0442293e17722743aa2b88d8dd7582dd9236)\nEstimate tokens for OpenAI like apis with tiktoken-rs\n([#699](https://github.com/bosun-ai/swiftide/pull/699))\n\n### Miscellaneous\n\n-\n[345c57a](https://github.com/bosun-ai/swiftide/commit/345c57a663dd0d315a28f0927c5d598ba21d019d)\nImprove file loader logging\n([#695](https://github.com/bosun-ai/swiftide/pull/695))\n\n````text\nThe logging now logs appropriate detail about each file and node\n  processed\n\n  - Skipped files are logged at TRACE level\n  - Configuration of the loader is logged at the start\n  - The necessary details to identify the loader (path) is included in the\n  span fields\n  - You can now correlate a node id with a path\n\n  <img width=\"1630\" alt=\"image\"\n  src=\"https://github.com/user-attachments/assets/308e95cc-5b94-41bd-9b77-7089d4bdabd3\"\n  />\n\n  ```\n  2025-03-17T00:34:18.965601Z DEBUG pipeline:file_loader{root=.}: swiftide_indexing::loaders::file_loader: Loading files extensions=Some([\"rs\"])\n  2025-03-17T00:34:18.968115Z TRACE pipeline:file_loader{root=.}:load{path=./Cargo.toml}: swiftide_indexing::loaders::file_loader: Skipping file with extension toml\n  2025-03-17T00:34:18.968153Z TRACE pipeline:file_loader{root=.}:load{path=./Cargo.lock}: swiftide_indexing::loaders::file_loader: Skipping file with extension lock\n  2025-03-17T00:34:18.968186Z TRACE pipeline:file_loader{root=.}:load{path=./README.md}: swiftide_indexing::loaders::file_loader: Skipping file with extension md\n  2025-03-17T00:34:18.968248Z DEBUG pipeline:file_loader{root=.}:load{path=./src/main.rs}: swiftide_indexing::loaders::file_loader: Loading file\n  2025-03-17T00:34:18.968302Z DEBUG pipeline:file_loader{root=.}:load{path=./src/main.rs}: swiftide_indexing::loaders::file_loader: Loaded file node_id=9cef7b97-dfbb-327b-a47d-0816f4ed69db\n  2025-03-17T00:34:18.968324Z TRACE pipeline:file_loader{root=.}:load{path=./src/compose.yaml}: swiftide_indexing::loaders::file_loader: Skipping file with extension yaml\n  ```\n\n  Related to https://github.com/bosun-ai/swiftide/issues/686\n````\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.22.4...0.22.5\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).\n\n---------\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-03-26T10:46:06+01:00",
+          "tree_id": "5c20015b43b97cd5c2a3f9d2f063b355bb879bdb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0696c38fb3d4aafa564421ce256293105b1db5f3"
+        },
+        "date": 1742982890095,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1284656,
+            "range": "± 989992",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251008,
+            "range": "± 2440",
             "unit": "ns/iter"
           }
         ]
