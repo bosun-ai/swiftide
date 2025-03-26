@@ -222,6 +222,26 @@ mod tests {
     }
 
     #[test]
+    fn test_snapshot_single_arg_option() {
+        let args = quote! {
+            description = "Hello world tool",
+            param(
+                name = "code_query",
+                description = "my param description"
+            )
+        };
+        let input: ItemFn = parse_quote! {
+            pub async fn search_code(context: &dyn AgentContext, code_query: &Option<String>) -> Result<ToolOutput, ToolError> {
+                return Ok("hello".into())
+            }
+        };
+
+        let output = tool_attribute_impl(&args, &input);
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
     fn test_snapshot_multiple_args() {
         let args = quote! {
             description = "Hello world tool",
@@ -263,6 +283,20 @@ mod tests {
     fn test_snapshot_derive_with_args() {
         let input: DeriveInput = parse_quote! {
             #[tool(description="Hello derive", param(name="test", description="test param"))]
+            pub struct HelloDerive {
+                my_thing: String
+            }
+        };
+
+        let output = tool_derive_impl(&input).unwrap();
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
+    fn test_snapshot_derive_with_option() {
+        let input: DeriveInput = parse_quote! {
+            #[tool(description="Hello derive", param(name="test", description="test param", required = false))]
             pub struct HelloDerive {
                 my_thing: String
             }

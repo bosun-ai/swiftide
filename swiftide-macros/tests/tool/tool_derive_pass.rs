@@ -136,4 +136,36 @@ impl MyRenamedTool {
         Ok(format!("Hello world").into())
     }
 }
+
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION,
+    param(name = "test", description = "My param", required = false)
+)]
+struct MyOptionalTool;
+
+impl MyOptionalTool {
+    async fn my_optional_tool(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &Option<String>,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
+
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION,
+    param(name = "test", description = "My param", rust_type = "Option<usize>")
+)]
+struct MyOptionalTool2;
+
+impl MyOptionalTool2 {
+    async fn my_optional_tool_2(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &Option<usize>,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
 fn main() {}

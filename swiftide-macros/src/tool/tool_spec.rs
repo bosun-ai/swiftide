@@ -21,13 +21,15 @@ pub fn tool_spec(args: &ToolArgs) -> TokenStream {
             .map(|param| {
                 let name = &param.name;
                 let description = &param.description;
-                let ty = param_type_to_token_stream(param.json_type);
+                let required = !matches!(param.json_type, ParamType::Option(_));
+                let ty = param_type_to_token_stream(&param.json_type);
 
                 quote! {
                     swiftide::chat_completion::ParamSpec::builder()
                         .name(#name)
                         .description(#description)
                         .ty(#ty)
+                        .required(#required)
                         .build().expect("infallible")
 
                 }
@@ -45,12 +47,19 @@ pub fn tool_spec(args: &ToolArgs) -> TokenStream {
     }
 }
 
-fn param_type_to_token_stream(ty: ParamType) -> TokenStream {
+fn param_type_to_token_stream(ty: &ParamType) -> TokenStream {
     let ty = match ty {
         ParamType::String => "String",
         ParamType::Number => "Number",
         ParamType::Boolean => "Boolean",
         ParamType::Array => "Array",
+        ParamType::Option(inner) => match inner.as_ref() {
+            ParamType::String => "String",
+            ParamType::Number => "Number",
+            ParamType::Boolean => "Boolean",
+            ParamType::Array => "Array",
+            ParamType::Option(_) => panic!("Panicked while trying to build a recursive option"),
+        },
     };
 
     let ident = proc_macro2::Ident::new(ty, proc_macro2::Span::call_site());

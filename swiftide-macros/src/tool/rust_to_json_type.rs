@@ -1,5 +1,6 @@
 use darling::Error;
-use syn::{Type, TypePath};
+use quote::ToTokens as _;
+use syn::{GenericArgument, PathArguments, Type, TypePath};
 
 use super::args::ParamType;
 
@@ -49,7 +50,9 @@ fn classify_path(type_path: &TypePath) -> Result<ParamType, Error> {
             "String" | "str" => Ok(ParamType::String),
 
             // We *could* add object support here
-            _ => Err(Error::unsupported_shape("unsupported type")),
+            other => Err(Error::unsupported_shape(&format!(
+                "unsupported type {other}"
+            ))),
         };
     }
 
@@ -60,11 +63,31 @@ fn classify_path(type_path: &TypePath) -> Result<ParamType, Error> {
         match seg_str.as_str() {
             "Vec" => Ok(ParamType::Array),
             "Option" => {
-                // This would be very nice to support optional arguments
-                Err(Error::unsupported_shape("unsupported type"))
+                // First get the inner type of the Option<T> as a TypePath
+                match &last_segment.arguments {
+                    PathArguments::AngleBracketed(generics) => {
+                        // e.g. Option<T>
+                        if let Some(GenericArgument::Type(inner_ty)) = generics.args.first() {
+                            // Recursively classify T
+                            Some(ParamType::Option(Box::new(rust_type_to_json_type(
+                                inner_ty,
+                            )?)))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                }
+                .ok_or_else(|| Error::unsupported_shape("unsupported inner option type"))
             }
+            // "Option" => {
+            //     // This would be very nice to support optional arguments
+            //     Err(Error::unsupported_shape("unsupported type"))
+            // }
             // For real use, you might handle Result<T, E>, HashMap, etc.
-            _ => Err(Error::unsupported_shape("unsupported type")),
+            other => Err(Error::unsupported_shape(&format!(
+                "unsupported type {other}"
+            ))),
         }
     } else {
         Err(Error::unsupported_shape("unsupported type"))

@@ -81,4 +81,15 @@ async fn basic_tool_num_slice(
     Ok(format!("Hello {msg:?}").into())
 }
 
+#[swiftide_macros::tool(
+    description = "My first num slice tool",
+    param(name = "msg", description = "A message for testing")
+)]
+async fn basic_tool_num_optional(
+    _agent_context: &dyn AgentContext,
+    msg: Option<i32>,
+) -> Result<ToolOutput, ToolError> {
+    Ok(format!("Hello {msg:?}").into())
+}
+
 fn main() {}
