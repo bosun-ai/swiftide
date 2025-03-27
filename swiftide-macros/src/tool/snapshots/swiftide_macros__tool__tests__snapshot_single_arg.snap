@@ -4,9 +4,10 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
 ---
 #[derive(
     ::swiftide::reexports::serde::Serialize,
-    ::swiftide::reexports::serde::Deserialize
+    ::swiftide::reexports::serde::Deserialize,
+    Debug
 )]
-struct SearchCodeArgs {
+pub struct SearchCodeArgs {
     pub code_query: String,
 }
 #[derive(Clone, Default)]
@@ -54,8 +55,8 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
                 vec![
                     swiftide::chat_completion::ParamSpec::builder().name("code_query")
                     .description("my param description")
-                    .ty(::swiftide::chat_completion::ParamType::String).build()
-                    .expect("infallible")
+                    .ty(::swiftide::chat_completion::ParamType::String).required(true)
+                    .build().expect("infallible")
                 ],
             )
             .build()

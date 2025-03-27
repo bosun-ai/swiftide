@@ -166,7 +166,7 @@ impl TestContext {
             for field in metadata_fields_inner {
                 builder = builder.with_metadata(field);
             }
-        };
+        }
 
         let pgv_storage = builder.build().map_err(|err| {
             tracing::error!("Failed to build PgVector: {}", err);

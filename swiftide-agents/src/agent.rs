@@ -411,7 +411,7 @@ impl Agent {
 
         if let Some(tool_calls) = response.tool_calls {
             self.invoke_tools(tool_calls).await?;
-        };
+        }
 
         for hook in self.hooks_by_type(HookTypes::AfterEach) {
             if let Hook::AfterEach(hook) = hook {

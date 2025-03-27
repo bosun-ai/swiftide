@@ -25,6 +25,17 @@ async fn basic_tool_num(
 }
 
 #[swiftide_macros::tool(
+    description = "My first num tool",
+    param(name = "msg", description = "A message for testing")
+)]
+async fn basic_tool_num_no_type(
+    _agent_context: &dyn AgentContext,
+    msg: i32,
+) -> Result<ToolOutput, ToolError> {
+    Ok(format!("Hello {msg}").into())
+}
+
+#[swiftide_macros::tool(
     description = "My first array tool",
     param(
         name = "msg",
@@ -66,6 +77,17 @@ async fn basic_tool_bool(
 async fn basic_tool_num_slice(
     _agent_context: &dyn AgentContext,
     msg: &[i32],
+) -> Result<ToolOutput, ToolError> {
+    Ok(format!("Hello {msg:?}").into())
+}
+
+#[swiftide_macros::tool(
+    description = "My first num slice tool",
+    param(name = "msg", description = "A message for testing")
+)]
+async fn basic_tool_num_optional(
+    _agent_context: &dyn AgentContext,
+    msg: Option<i32>,
 ) -> Result<ToolOutput, ToolError> {
     Ok(format!("Hello {msg:?}").into())
 }

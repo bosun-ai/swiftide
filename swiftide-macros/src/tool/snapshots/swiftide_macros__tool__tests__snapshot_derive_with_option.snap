@@ -8,10 +8,10 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
     Debug
 )]
 pub struct HelloDeriveArgs {
-    pub test: String,
+    pub test: Option<String>,
 }
 #[async_trait::async_trait]
-impl<'a> swiftide::chat_completion::Tool for HelloDerive<'a> {
+impl swiftide::chat_completion::Tool for HelloDerive {
     async fn invoke(
         &self,
         agent_context: &dyn swiftide::traits::AgentContext,
@@ -41,11 +41,17 @@ impl<'a> swiftide::chat_completion::Tool for HelloDerive<'a> {
                 vec![
                     swiftide::chat_completion::ParamSpec::builder().name("test")
                     .description("test param")
-                    .ty(::swiftide::chat_completion::ParamType::String).required(true)
+                    .ty(::swiftide::chat_completion::ParamType::String).required(false)
                     .build().expect("infallible")
                 ],
             )
             .build()
             .unwrap()
+    }
+}
+impl<'TOOLBOXED> From<HelloDerive>
+for Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED> {
+    fn from(val: HelloDerive) -> Self {
+        Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED>
     }
 }
