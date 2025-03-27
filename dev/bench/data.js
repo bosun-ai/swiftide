@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1743028364823,
+  "lastUpdate": 1743092575104,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18455,6 +18455,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 247289,
             "range": "± 1682",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1866d5a081f40123e607208d04403fb98f34c057",
+          "message": "fix(integrations): Loosen up duckdb requirements even more and make it more flexible for version requirements (#706)",
+          "timestamp": "2025-03-27T17:13:46+01:00",
+          "tree_id": "d96afb6bf648d71c238ca1f4e718113c711e99ba",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1866d5a081f40123e607208d04403fb98f34c057"
+        },
+        "date": 1743092573432,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 8",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1308025,
+            "range": "± 1092280",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250736,
+            "range": "± 2558",
             "unit": "ns/iter"
           }
         ]
