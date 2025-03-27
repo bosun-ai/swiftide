@@ -33,20 +33,43 @@ impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
         let limit = search_strategy.top_k();
 
         // Ideally it should be a prepared statement, where only the new parameters lead to extra
-        // allocations
+        // allocations. This is possible in 1.2.1, but that version is still broken for VSS via
+        // Rust.
         let sql = format!(
-            "SELECT uuid, chunk, path FROM {table_name}
-            ORDER BY array_distance({field_name}, ARRAY[{}]::FLOAT[{}])
+            "SELECT uuid, chunk, path FROM {table_name}\n
+            ORDER BY array_distance({field_name}, ARRAY[{}]::FLOAT[{embedding_size}])\n
             LIMIT {limit}",
             embedding
                 .iter()
                 .map(ToString::to_string)
                 .collect::<Vec<_>>()
-                .join(","),
-            embedding_size,
+                .join(",")
         );
-        let custom_strategy = CustomStrategy::from_query(move |_| Ok(sql.clone()));
-        self.retrieve(&custom_strategy, query).await
+
+        tracing::trace!("[duckdb] Executing query: {}", sql);
+
+        let conn = self.connection().lock().unwrap();
+
+        let mut stmt = conn
+            .prepare(&sql)
+            .context("Failed to prepare duckdb statement for persist")?;
+
+        tracing::trace!("[duckdb] Retrieving documents");
+
+        let documents = stmt
+            .query_map([], |row| {
+                Ok(Document::builder()
+                    .metadata([("id", row.get::<_, String>(0)?), ("path", row.get(2)?)])
+                    .content(row.get::<_, String>(1)?)
+                    .build()
+                    .expect("Failed to build document; should never happen"))
+            })
+            .context("failed to query for documents")?
+            .collect::<Result<Vec<Document>, _>>()
+            .context("failed to build documents")?;
+
+        tracing::debug!("[duckdb] Retrieved documents");
+        Ok(query.retrieved_documents(documents))
     }
 }
 
@@ -62,10 +85,14 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
             .await
             .context("Failed to build query")?;
 
+        tracing::debug!("[duckdb] Executing query: {}", sql);
+
         let conn = self.connection().lock().unwrap();
         let mut stmt = conn
             .prepare(&sql)
             .context("Failed to prepare duckdb statement for persist")?;
+
+        tracing::debug!("[duckdb] Prepared statement");
 
         let documents = stmt
             .query_map([], |row| {
@@ -78,6 +105,8 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
             .context("failed to query for documents")?
             .collect::<Result<Vec<Document>, _>>()
             .context("failed to build documents")?;
+
+        tracing::debug!("[duckdb] Retrieved documents");
 
         Ok(query.retrieved_documents(documents))
     }

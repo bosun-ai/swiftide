@@ -121,7 +121,7 @@ impl Duckdb {
             for vector in self.vectors.keys() {
                 tx.execute(
                     &format!(
-                        "CREATE INDEX IF NOT EXISTS idx_{vector} ON {table_name} USING hnsw ({vector})",
+                        "CREATE INDEX IF NOT EXISTS idx_{vector} ON {table_name} USING hnsw ({vector}) WITH (metric = 'cosine')",
                     ),
                     [],
                 )
