@@ -639,7 +639,7 @@ impl Agent {
 
     async fn load_toolboxes(&mut self) -> Result<()> {
         for toolbox in &self.toolboxes {
-            let tools = toolbox.available_tools().await;
+            let tools = toolbox.available_tools().await?;
             self.toolbox_tools.extend(tools);
         }
 

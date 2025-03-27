@@ -1,3 +1,4 @@
+use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 use std::{borrow::Cow, sync::Arc};
@@ -107,41 +108,41 @@ pub trait Tool: Send + Sync + DynClone {
 /// It also allows for tools to be dynamically loaded and unloaded, etc.
 #[async_trait]
 pub trait ToolBox: Send + Sync + DynClone {
-    async fn available_tools(&self) -> Vec<Box<dyn Tool>>;
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>>;
 }
 
 #[async_trait]
 impl ToolBox for Vec<Box<dyn Tool>> {
-    async fn available_tools(&self) -> Vec<Box<dyn Tool>> {
-        self.clone()
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        Ok(self.clone())
     }
 }
 
 #[async_trait]
 impl ToolBox for Box<dyn ToolBox> {
-    async fn available_tools(&self) -> Vec<Box<dyn Tool>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
         (**self).available_tools().await
     }
 }
 
 #[async_trait]
 impl ToolBox for Arc<dyn ToolBox> {
-    async fn available_tools(&self) -> Vec<Box<dyn Tool>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
         (**self).available_tools().await
     }
 }
 
 #[async_trait]
 impl ToolBox for &dyn ToolBox {
-    async fn available_tools(&self) -> Vec<Box<dyn Tool>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
         (**self).available_tools().await
     }
 }
 
 #[async_trait]
 impl ToolBox for &[Box<dyn Tool>] {
-    async fn available_tools(&self) -> Vec<Box<dyn Tool>> {
-        self.to_vec()
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        Ok(self.to_vec())
     }
 }
 
