@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.6](https://github.com/bosun-ai/swiftide/compare/v0.22.5...v0.22.6) - 2025-03-27
+
+### New features
+
+- [a05b3c8](https://github.com/bosun-ai/swiftide/commit/a05b3c8e7c4224c060215c34490b2ea7729592bf) *(macros)*  Support optional values and make them even nicer to use ([#703](https://github.com/bosun-ai/swiftide/pull/703))
+
+### Bug fixes
+
+- [1866d5a](https://github.com/bosun-ai/swiftide/commit/1866d5a081f40123e607208d04403fb98f34c057) *(integrations)*  Loosen up duckdb requirements even more and make it more flexible for version requirements ([#706](https://github.com/bosun-ai/swiftide/pull/706))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.5...0.22.6
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.22.5](https://github.com/bosun-ai/swiftide/compare/v0.22.4...v0.22.5) - 2025-03-23
 
 ### New features
