@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1743092575104,
+  "lastUpdate": 1743094280308,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18509,6 +18509,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250736,
             "range": "± 2558",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a05b3c8e7c4224c060215c34490b2ea7729592bf",
+          "message": "feat(macros): Support optional values and make them even nicer to use (#703)",
+          "timestamp": "2025-03-27T17:42:27+01:00",
+          "tree_id": "35f675911e9880b6a22a833654382922f488116c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a05b3c8e7c4224c060215c34490b2ea7729592bf"
+        },
+        "date": 1743094278451,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1287450,
+            "range": "± 954823",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254500,
+            "range": "± 1745",
             "unit": "ns/iter"
           }
         ]
