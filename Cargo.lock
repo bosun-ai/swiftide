@@ -1655,6 +1655,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6b1fc10dbac614ebc03540c9dbd60e83887fda27794998c6528f1782047d540"
 
 [[package]]
+name = "bytemuck_derive"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fa76293b4f7bb636ab88fd78228235b5248b4d05cc589aed610f954af5d7c7a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3775,9 +3786,9 @@ checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
 
 [[package]]
 name = "fsst"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "499049427ae23480696a1b728a292fec9fa554742ee26c0f35acbdade47801be"
+checksum = "7504bf440f60a6a243276bf7b9d9d77b6857b041444ae2bd4f9afb677266cf0a"
 dependencies = [
  "rand 0.8.5",
 ]
@@ -4411,7 +4422,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.8",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -5038,9 +5049,9 @@ dependencies = [
 
 [[package]]
 name = "lance"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "748d2bd8e36f25a7fc130398e115678d01a1b821aceafe790965a0511d2443fe"
+checksum = "85ab26780cb0fd7685cdcc88e78169891f007a13d2a69aab3717b0b9a21d2d9f"
 dependencies = [
  "arrow",
  "arrow-arith",
@@ -5099,9 +5110,9 @@ dependencies = [
 
 [[package]]
 name = "lance-arrow"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5ca5041940b2623daf6398c1e297aedd99a9fc38070222e69a69f600dd374c9"
+checksum = "d187abfbe228c23f5e673f9b4d9ed7634f849747ab46b4c01f961a61960438ca"
 dependencies = [
  "arrow-array",
  "arrow-buffer",
@@ -5118,9 +5129,9 @@ dependencies = [
 
 [[package]]
 name = "lance-core"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc3cd36bd1de369dd957e98fbacf8963fd1b147595fd4d2ba5e9f5866f143db9"
+checksum = "de398fb5fa40f06e7a8347a9869d0bf8d506656f36b43eff330b399eadbe7add"
 dependencies = [
  "arrow-array",
  "arrow-buffer",
@@ -5156,9 +5167,9 @@ dependencies = [
 
 [[package]]
 name = "lance-datafusion"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72791574cb837c5d2e89f3688b71c5fc9cc584f8f79cc50005787f5cbe285506"
+checksum = "b4302f8ff769e80caec1b49b151e00c5ab071a9cee59bda2470e3cf1b2acf31b"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -5179,13 +5190,14 @@ dependencies = [
  "prost",
  "snafu",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "lance-encoding"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4739cefb4757f5405c09c848d71e5a3ec05fbff26ac1a6e799774a1e878ba72"
+checksum = "a5270904a834388e6a48748b6d18406beed2a2674486182869a9b7f4317d00c4"
 dependencies = [
  "arrayref",
  "arrow",
@@ -5223,9 +5235,9 @@ dependencies = [
 
 [[package]]
 name = "lance-file"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "005824228e561b4fda8f3bfd9d755a6cbd14b2d68da93c4f094af9ee6981977f"
+checksum = "8e38ba8059e2eda463cc08df67673f064e7365396cea7956bd037ebef2607304"
 dependencies = [
  "arrow-arith",
  "arrow-array",
@@ -5259,9 +5271,9 @@ dependencies = [
 
 [[package]]
 name = "lance-index"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49177175c77cc1201366aba59ca4aa457893d1a0aad0fa6cbf7095741be7aeba"
+checksum = "d0fa394061e98308b83fcd87dc8e916547996a0d79f8bc46c35d88cb1e4c2fae"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -5313,9 +5325,9 @@ dependencies = [
 
 [[package]]
 name = "lance-io"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea5e9a5bbbab0e5efc3038abb49c74add55fe7d72541a448e8c8dc45d7cbe406"
+checksum = "c05a387cdcf546079752aed6e2007fe97a119c481f1e4ebddeba82713a361c1b"
 dependencies = [
  "arrow",
  "arrow-arith",
@@ -5353,9 +5365,9 @@ dependencies = [
 
 [[package]]
 name = "lance-linalg"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c6958010c1f35babc9c68c5a4a49c154a3ecc2d0a9a11a11a970c06e2f2bdb5"
+checksum = "8d1ac911444fdf2ad14c4beb6333d2e9f56276f79f8aed74b0e5c501c3c91071"
 dependencies = [
  "arrow-array",
  "arrow-ord",
@@ -5378,9 +5390,9 @@ dependencies = [
 
 [[package]]
 name = "lance-table"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c08830bb24cadbbd24069e76d17570bfa7518eca9f2aa3651afb72035b74331"
+checksum = "6f4e9974cc8fd273081f914936f7dad00af9965cdd7dead5350b7711d0463a91"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -5419,9 +5431,9 @@ dependencies = [
 
 [[package]]
 name = "lance-testing"
-version = "0.24.1"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae923e5c09091bcf48aa166ac362b0dd189b55779ff553281094510728ea0c66"
+checksum = "0fd92aef3493e6ad688e25f3eb2ac087ff69c63765be94b1739af5131676e5eb"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -5432,9 +5444,9 @@ dependencies = [
 
 [[package]]
 name = "lancedb"
-version = "0.18.1"
+version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c74183cc7d3346eab9d552501970124cd452f538678c6d9f00f7610fb5d78f21"
+checksum = "134f86c0c3fe692a0aa6df59fc9c2ca894e67abe1db305909258d1bf6274fe8e"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -5444,6 +5456,7 @@ dependencies = [
  "arrow-ord",
  "arrow-schema",
  "async-trait",
+ "bytemuck_derive",
  "bytes",
  "chrono",
  "crunchy",
@@ -5637,7 +5650,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -7045,7 +7058,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck 0.4.1",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "log",
  "multimap",
  "once_cell",
@@ -7065,7 +7078,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "syn 2.0.100",
@@ -7434,9 +7447,9 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.29.1"
+version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8034fb926579ff49d3fe58d288d5dcb580bf11e9bccd33224b45adebf0fd0c23"
+checksum = "b110459d6e323b7cda23980c46c77157601199c9da6241552b284cd565a7a133"
 dependencies = [
  "arc-swap",
  "backon",
@@ -8419,9 +8432,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.34.4"
+version = "2.35.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e3cc7105f4a27818a298e39f0259b15f1379833d521be04be97327abcd293fa"
+checksum = "9bedd09f34b81c967d080368c70bfb52ddbaf600f38a565df87bf691b4e7dba7"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -10730,7 +10743,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
