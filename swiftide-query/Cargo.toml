@@ -24,7 +24,7 @@ serde_json = { workspace = true }
 tera = { workspace = true }
 
 # Internal
-swiftide-core = { path = "../swiftide-core", version = "0.22.5" }
+swiftide-core = { path = "../swiftide-core", version = "0.22.6" }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
