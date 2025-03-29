@@ -3,18 +3,17 @@
 //! Uses the `rmcp` crate to connect to an MCP server and list available tools, and invoke them
 //!
 //! Supports any transport that the `rmcp` crate supports
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use derive_builder::Builder;
-use rmcp::model::{ClientCapabilities, ClientInfo, Implementation, InitializeRequestParam};
+use rmcp::model::{ClientInfo, Implementation, InitializeRequestParam};
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
+use rmcp::RoleClient;
 use rmcp::{model::CallToolRequestParam, ServiceExt};
-use rmcp::{RoleClient, Service};
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use swiftide_core::{
     chat_completion::{errors::ToolError, ParamSpec, ParamType, ToolSpec},
     Tool, ToolBox,
@@ -30,8 +29,7 @@ enum Filter {
 /// # Example
 ///
 /// ```no_run
-///
-///
+/// 
 ///
 /// ```
 #[derive(Clone)]
