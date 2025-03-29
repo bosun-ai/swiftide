@@ -56,10 +56,8 @@ dyn-clone = { version = "1.0", default-features = false }
 convert_case = { version = "0.8", default-features = false }
 
 # Mcp
-mcp-core = "0.1.42"
-mcp-client = "0.1.0"
-mcp-spec = "0.1.0"
-tower-service = { version = "0.3" }
+rmcp = { version = "0.1", default-features = false }
+schemars = { version = "0.8", default-features = false }
 
 # Integrations
 spider = { version = "2.34", default-features = false }

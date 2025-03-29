@@ -27,10 +27,11 @@ serde_json.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 
 # Mcp
-mcp-core = { workspace = true, optional = true }
-mcp-client = { workspace = true, optional = true }
-mcp-spec = { workspace = true, optional = true }
-tower-service = { workspace = true, optional = true }
+rmcp = { workspace = true, optional = true, default-features = false, features = [
+  "base64",
+  "client",
+  "macros",
+] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -38,6 +39,8 @@ mockall.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
 insta.workspace = true
+rmcp = { workspace = true, features = ["server"] }
+schemars = { workspace = true }
 
 [lints]
 workspace = true
@@ -48,4 +51,4 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-mcp = ["dep:mcp-core", "dep:mcp-client", "dep:mcp-spec", "dep:tower-service"]
+mcp = ["dep:rmcp"]
