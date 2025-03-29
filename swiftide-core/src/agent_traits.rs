@@ -251,3 +251,33 @@ impl AgentContext for &dyn AgentContext {
         (**self).redrive().await;
     }
 }
+
+/// Convenience implementation for empty agent context
+///
+/// Errors if tools attempt to execute commands
+#[async_trait]
+impl AgentContext for () {
+    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+        None
+    }
+
+    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+        Vec::new()
+    }
+
+    async fn add_messages(&self, _item: Vec<ChatMessage>) {}
+
+    async fn add_message(&self, _item: ChatMessage) {}
+
+    async fn exec_cmd(&self, _cmd: &Command) -> Result<CommandOutput, CommandError> {
+        Err(CommandError::ExecutorError(anyhow::anyhow!(
+            "Empty agent context does not have a tool executor"
+        )))
+    }
+
+    async fn history(&self) -> Vec<ChatMessage> {
+        Vec::new()
+    }
+
+    async fn redrive(&self) {}
+}
