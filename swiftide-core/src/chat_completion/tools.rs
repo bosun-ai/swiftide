@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
