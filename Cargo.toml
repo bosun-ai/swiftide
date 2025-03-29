@@ -55,6 +55,10 @@ uuid = { version = "1.16", features = [
 dyn-clone = { version = "1.0", default-features = false }
 convert_case = { version = "0.8", default-features = false }
 
+# Mcp
+rmcp = { version = "0.1", default-features = false }
+schemars = { version = "0.8", default-features = false }
+
 # Integrations
 spider = { version = "2.34", default-features = false }
 async-openai = { version = "0.28", default-features = false }

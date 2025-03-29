@@ -109,7 +109,9 @@ impl ToolSpec {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr, Serialize, Deserialize,
+)]
 #[strum(serialize_all = "camelCase")]
 pub enum ParamType {
     #[default]
