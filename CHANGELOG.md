@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.7](https://github.com/bosun-ai/swiftide/compare/v0.22.6...v0.22.7) - 2025-03-30
+
+### Bug fixes
+
+- [b0001fb](https://github.com/bosun-ai/swiftide/commit/b0001fbb12cf6bb85fc4d5a8ef0968219e8c78db) *(duckdb)*  Upsert is now opt in as it requires duckdb >= 1.2 ([#708](https://github.com/bosun-ai/swiftide/pull/708))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.6...0.22.7
+
+
+
 ## [0.22.6](https://github.com/bosun-ai/swiftide/compare/v0.22.5...v0.22.6) - 2025-03-27
 
 ### New features
