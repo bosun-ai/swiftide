@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1743098837200,
+  "lastUpdate": 1743348979081,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18617,6 +18617,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253383,
             "range": "± 1370",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b0001fbb12cf6bb85fc4d5a8ef0968219e8c78db",
+          "message": "fix(duckdb): Upsert is now opt in as it requires duckdb >= 1.2 (#708)",
+          "timestamp": "2025-03-30T17:27:26+02:00",
+          "tree_id": "2ec59097cf94571b79c948029a4f9fc5a494c8ff",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b0001fbb12cf6bb85fc4d5a8ef0968219e8c78db"
+        },
+        "date": 1743348977547,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1298043,
+            "range": "± 940220",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 248548,
+            "range": "± 3334",
             "unit": "ns/iter"
           }
         ]
