@@ -120,6 +120,8 @@ pub mod traits {
     #[doc(inline)]
     pub use swiftide_core::agent_traits::*;
     #[doc(inline)]
+    pub use swiftide_core::chat_completion::traits::*;
+    #[doc(inline)]
     pub use swiftide_core::indexing_traits::*;
     #[doc(inline)]
     pub use swiftide_core::query_traits::*;

@@ -12,7 +12,7 @@ pub mod errors;
 mod tools;
 
 // Re-exported in the root per convention
-pub(crate) mod traits;
+pub mod traits;
 
 pub use chat_completion_request::*;
 pub use chat_completion_response::*;
