@@ -68,6 +68,12 @@ pub struct Duckdb {
     /// manually invalidate the cache.
     #[builder(default = "String::new()")]
     cache_key_prefix: String,
+
+    /// If enabled, vectors will be upserted with an ON CONFLICT DO UPDATE. If disabled, ON
+    /// conflict does nothing. Requires `duckdb` >= 1.2.1
+    #[builder(default)]
+    #[allow(dead_code)]
+    upsert_vectors: bool,
 }
 
 impl std::fmt::Debug for Duckdb {
@@ -199,6 +205,7 @@ impl DuckdbBuilder {
         let mut context = Context::default();
         context.insert("table_name", &self.table_name);
         context.insert("vectors", &self.vectors.clone().unwrap_or_default());
+        context.insert("upsert_vectors", &self.upsert_vectors);
 
         context.insert(
             "vector_field_names",
