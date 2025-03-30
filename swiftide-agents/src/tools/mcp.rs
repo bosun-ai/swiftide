@@ -24,21 +24,21 @@ enum Filter {
     Whitelist(Vec<String>),
 }
 
-/// A client for an MCP server
+/// Connects to an MCP server and provides tools at runtime to the agent.
 ///
 /// # Example
 ///
 /// ```no_run
-/// 
+///
 ///
 /// ```
 #[derive(Clone)]
-pub struct McpClient {
-    client: Arc<RunningService<RoleClient, InitializeRequestParam>>,
+pub struct McpToolbox {
+    service: Arc<RunningService<RoleClient, InitializeRequestParam>>,
     filter: Arc<Option<Filter>>,
 }
 
-impl McpClient {
+impl McpToolbox {
     /// Blacklist tools by name, the agent will not be able to use these tools
     pub fn with_blacklist<ITEM: Into<String>, I: IntoIterator<Item = ITEM>>(
         &mut self,
@@ -59,7 +59,7 @@ impl McpClient {
         self
     }
 
-    /// Create a new client from a transport
+    /// Create a new toolbox from a transport
     ///
     /// # Errors
     ///
@@ -71,20 +71,20 @@ impl McpClient {
         transport: impl IntoTransport<RoleClient, E, A>,
     ) -> Result<Self> {
         let info = Self::default_client_info();
-        let client = Arc::new(info.serve(transport).await?);
+        let service = Arc::new(info.serve(transport).await?);
 
         Ok(Self {
-            client,
+            service,
             filter: None.into(),
         })
     }
 
-    /// Create a new client from a running service
+    /// Create a new toolbox from a running service
     pub fn from_running_service(
-        client: impl Into<Arc<RunningService<RoleClient, InitializeRequestParam>>>,
+        service: RunningService<RoleClient, InitializeRequestParam>,
     ) -> Self {
         Self {
-            client: client.into(),
+            service: service.into(),
             filter: None.into(),
         }
     }
@@ -110,11 +110,11 @@ struct ToolInputSchema {
 }
 
 #[async_trait]
-impl ToolBox for McpClient {
+impl ToolBox for McpToolbox {
     #[tracing::instrument(skip_all)]
     async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
         let tools = self
-            .client
+            .service
             .list_tools(None)
             .await
             .context("Failed to list tools")?;
@@ -157,7 +157,7 @@ impl ToolBox for McpClient {
                 let tool_spec = tool_spec.build().context("Failed to build tool spec")?;
 
                 Ok(Box::new(McpTool {
-                    client: self.client.clone(),
+                    client: self.service.clone(),
                     tool_name: t.name.into(),
                     tool_spec,
                 }) as Box<dyn Tool>)
@@ -334,12 +334,12 @@ mod tests {
         Ok(())
     }
 
-    async fn client() -> anyhow::Result<McpClient> {
+    async fn client() -> anyhow::Result<McpToolbox> {
         println!("Client connecting to {SOCKET_PATH}");
         let stream = UnixStream::connect(SOCKET_PATH).await?;
 
         // let client = serve_client((), stream).await?;
-        let client = McpClient::try_from_transport(stream).await?;
+        let client = McpToolbox::try_from_transport(stream).await?;
         println!("Client connected and initialized successfully");
 
         Ok(client)
