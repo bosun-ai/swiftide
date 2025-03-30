@@ -109,6 +109,13 @@ pub trait Tool: Send + Sync + DynClone {
 #[async_trait]
 pub trait ToolBox: Send + Sync + DynClone {
     async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>>;
+
+    fn boxed<'a>(self) -> Box<dyn ToolBox + 'a>
+    where
+        Self: Sized + 'a,
+    {
+        Box::new(self) as Box<dyn ToolBox>
+    }
 }
 
 #[async_trait]
