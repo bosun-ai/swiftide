@@ -15,13 +15,13 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .default_options
             .embed_model
             .as_ref()
-            .ok_or(LanguageModelError::ClientError("Model not set".into()))?;
+            .ok_or(LanguageModelError::PermanentError("Model not set".into()))?;
 
         let request = CreateEmbeddingRequestArgs::default()
             .model(model)
             .input(&input)
             .build()
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         tracing::debug!(
             num_chunks = input.len(),

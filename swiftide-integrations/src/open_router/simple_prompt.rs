@@ -45,17 +45,17 @@ impl SimplePrompt for OpenRouter {
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render().await?)
                 .build()
-                .map_err(|e| LanguageModelError::ClientError(e.into()))?
+                .map_err(|e| LanguageModelError::PermanentError(e.into()))?
                 .into()])
             .build()
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
                 serde_json::to_string_pretty(&request.messages.first())
-                    .map_err(|e| LanguageModelError::ClientError(e.into()))?,
+                    .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
                 100
             ),
             "[SimplePrompt] Request to openrouter"

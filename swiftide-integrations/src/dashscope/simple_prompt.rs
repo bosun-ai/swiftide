@@ -29,7 +29,7 @@ impl SimplePrompt for Dashscope {
 
         tracing::debug!(
             messages = serde_json::to_string_pretty(&request)
-                .map_err(|e| LanguageModelError::ClientError(e.into()))?,
+                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
             "[SimplePrompt] Request to qwen"
         );
 
@@ -42,7 +42,7 @@ impl SimplePrompt for Dashscope {
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response)
-                .map_err(|e| LanguageModelError::ClientError(e.into()))?,
+                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
             "[SimplePrompt] Response from qwen"
         );
 
@@ -52,7 +52,7 @@ impl SimplePrompt for Dashscope {
             .message
             .content
             .take()
-            .ok_or(LanguageModelError::ClientError(
+            .ok_or(LanguageModelError::PermanentError(
                 "Expected content in response".into(),
             ))
     }

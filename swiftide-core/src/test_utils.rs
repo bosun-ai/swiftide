@@ -114,7 +114,7 @@ impl ChatCompletion for MockChatCompletion {
                 .unwrap()
                 .push((expected_request, Err(anyhow::anyhow!(err.to_string()))));
 
-            Err(LanguageModelError::ClientError(err.into()))
+            Err(LanguageModelError::PermanentError(err.into()))
         }
     }
 }

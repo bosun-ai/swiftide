@@ -624,8 +624,8 @@ impl<P: SimplePrompt + Clone> SimplePrompt for ReliableLanguageModel<P> {
                     LanguageModelError::ContextLengthExceeded(e) => {
                         backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
                     }
-                    LanguageModelError::ClientError(e) => {
-                        backoff::Error::Permanent(LanguageModelError::ClientError(e))
+                    LanguageModelError::PermanentError(e) => {
+                        backoff::Error::Permanent(LanguageModelError::PermanentError(e))
                     }
                     LanguageModelError::TransientError(e) => {
                         backoff::Error::transient(LanguageModelError::TransientError(e))

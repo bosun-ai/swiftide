@@ -26,20 +26,20 @@ type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 pub enum LanguageModelError {
     #[error("Context length exceeded: {0}")]
     ContextLengthExceeded(BoxedError),
-    #[error("Client error: {0}")]
-    ClientError(BoxedError),
+    #[error("Permanent error: {0}")]
+    PermanentError(BoxedError),
     #[error("Transient error: {0}")]
     TransientError(BoxedError),
 }
 
 impl From<BoxedError> for LanguageModelError {
     fn from(e: BoxedError) -> Self {
-        LanguageModelError::ClientError(e)
+        LanguageModelError::PermanentError(e)
     }
 }
 
 impl From<anyhow::Error> for LanguageModelError {
     fn from(e: anyhow::Error) -> Self {
-        LanguageModelError::ClientError(e.into())
+        LanguageModelError::PermanentError(e.into())
     }
 }

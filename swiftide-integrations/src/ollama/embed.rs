@@ -20,7 +20,7 @@ impl EmbeddingModel for Ollama {
             .model(model)
             .input(&input)
             .build()
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
         tracing::debug!(
             num_chunks = input.len(),
             model = &model,

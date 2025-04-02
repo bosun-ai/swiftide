@@ -221,26 +221,27 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
                 LanguageModelError::ContextLengthExceeded(OpenAIError::ApiError(api_error).into())
             } else {
                 tracing::error!("OpenAI API Error: {:?}", api_error);
-                LanguageModelError::ClientError(OpenAIError::ApiError(api_error).into())
+                LanguageModelError::PermanentError(OpenAIError::ApiError(api_error).into())
             }
         }
         OpenAIError::Reqwest(e) => {
             if let Some(status) = e.status() {
-                // If the response code is 429 it could either be a TransientError or a ClientError depending
-                // on the message, if it contains the word quota, it should be a ClientError otherwise it should
+                // If the response code is 429 it could either be a TransientError or a
+                // PermanentError depending on the message, if it contains the word
+                // quota, it should be a PermanentError otherwise it should
                 // be a TransientError.
-                // If the response code is any other 4xx it should be a ClientError.
+                // If the response code is any other 4xx it should be a PermanentError.
                 if status.as_u16() == 429 && !e.to_string().contains("quota") {
                     LanguageModelError::TransientError(e.into())
                 } else if status.is_client_error() {
                     tracing::error!("OpenAI API Client Error: {:?}", e);
-                    LanguageModelError::ClientError(e.into())
+                    LanguageModelError::PermanentError(e.into())
                 } else if status.is_server_error() {
                     tracing::warn!("OpenAI API Server Error: {:?}", e);
                     LanguageModelError::TransientError(e.into())
                 } else {
                     tracing::error!("Unexpected OpenAI Error: {:?}, error: {:?}", status, e);
-                    LanguageModelError::ClientError(e.into())
+                    LanguageModelError::PermanentError(e.into())
                 }
             } else {
                 // making the request failed for some other reason, probably recoverable
@@ -255,19 +256,19 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
         }
         OpenAIError::FileSaveError(msg) => {
             tracing::error!("OpenAI Failed to save file: {:?}", msg);
-            LanguageModelError::ClientError(OpenAIError::FileSaveError(msg).into())
+            LanguageModelError::PermanentError(OpenAIError::FileSaveError(msg).into())
         }
         OpenAIError::FileReadError(msg) => {
             tracing::error!("OpenAI Failed to read file: {:?}", msg);
-            LanguageModelError::ClientError(OpenAIError::FileReadError(msg).into())
+            LanguageModelError::PermanentError(OpenAIError::FileReadError(msg).into())
         }
         OpenAIError::StreamError(msg) => {
             tracing::error!("OpenAI Stream failed: {:?}", msg);
-            LanguageModelError::ClientError(OpenAIError::StreamError(msg).into())
+            LanguageModelError::PermanentError(OpenAIError::StreamError(msg).into())
         }
         OpenAIError::InvalidArgument(msg) => {
             tracing::error!("OpenAI Invalid Argument: {:?}", msg);
-            LanguageModelError::ClientError(OpenAIError::InvalidArgument(msg).into())
+            LanguageModelError::PermanentError(OpenAIError::InvalidArgument(msg).into())
         }
     }
 }

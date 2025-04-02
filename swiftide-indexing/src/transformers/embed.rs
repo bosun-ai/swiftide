@@ -316,7 +316,7 @@ mod tests {
         model_mock
             .expect_embed()
             .times(1)
-            .returning(|_| Err(LanguageModelError::ClientError("error".into())));
+            .returning(|_| Err(LanguageModelError::PermanentError("error".into())));
         let embed = Embed::new(model_mock);
         let mut stream = embed.batch_transform(test_nodes).await;
         let error = stream

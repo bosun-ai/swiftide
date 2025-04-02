@@ -344,7 +344,7 @@ mod tests {
         model_mock
             .expect_sparse_embed()
             .times(1)
-            .returning(|_| Err(LanguageModelError::ClientError("error".into())));
+            .returning(|_| Err(LanguageModelError::PermanentError("error".into())));
         let embed = SparseEmbed::new(model_mock);
         let mut stream = embed.batch_transform(test_nodes).await;
         let error = stream

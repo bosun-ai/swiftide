@@ -14,7 +14,7 @@ impl EmbeddingModel for Dashscope {
             .embed_model
             .as_ref()
             .context("Model not set")
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         let dimensions = self.default_options.dimensions;
         let request = CreateEmbeddingRequestArgs::default()
@@ -22,7 +22,7 @@ impl EmbeddingModel for Dashscope {
             .dimensions(dimensions)
             .input(&input)
             .build()
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
         tracing::debug!(
             num_chunks = input.len(),
             model = &model,

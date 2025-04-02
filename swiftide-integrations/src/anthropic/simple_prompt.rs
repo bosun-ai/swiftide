@@ -20,12 +20,12 @@ impl SimplePrompt for Anthropic {
             .model(model)
             .messages(vec![prompt.render().await?.into()])
             .build()
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         tracing::debug!(
             model = &model,
             messages = serde_json::to_string_pretty(&request)
-                .map_err(|e| LanguageModelError::ClientError(e.into()))?,
+                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
             "[SimplePrompt] Request to anthropic"
         );
 
@@ -34,11 +34,11 @@ impl SimplePrompt for Anthropic {
             match e {
                 AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
                 AnthropicError::UnexpectedError => {
-                    LanguageModelError::ClientError("Anthropic unexpected error".into())
+                    LanguageModelError::PermanentError("Anthropic unexpected error".into())
                     // Seriously?
                 }
                 AnthropicError::Unauthorized => {
-                    LanguageModelError::ClientError("Anthropic unauthorized".into())
+                    LanguageModelError::PermanentError("Anthropic unauthorized".into())
                 }
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
@@ -46,13 +46,13 @@ impl SimplePrompt for Anthropic {
                 // For now, we'll just map all of them to client errors so we get feedback.
                 AnthropicError::BadRequest(_)
                 | AnthropicError::ApiError(_)
-                | AnthropicError::Unknown(_) => LanguageModelError::ClientError(e.into()),
+                | AnthropicError::Unknown(_) => LanguageModelError::PermanentError(e.into()),
             }
         })?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response)
-                .map_err(|e| LanguageModelError::ClientError(e.into()))?,
+                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
             "[SimplePrompt] Response from anthropic"
         );
 
@@ -61,12 +61,12 @@ impl SimplePrompt for Anthropic {
             .into_iter()
             .next()
             .context("No messages in response")
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         message
             .text()
             .context("No text in response")
-            .map_err(|e| LanguageModelError::ClientError(e.into()))
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))
     }
 }
 

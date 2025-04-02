@@ -58,7 +58,7 @@ impl ChatCompletion for Anthropic {
 
         let request = anthropic_request
             .build()
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         tracing::debug!(
             model = &model,
@@ -71,7 +71,7 @@ impl ChatCompletion for Anthropic {
             .messages()
             .create(request)
             .await
-            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("Infallible"),

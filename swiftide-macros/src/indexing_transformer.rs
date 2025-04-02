@@ -154,11 +154,11 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
                 };
 
                 let Some(defaults) = &self.indexing_defaults.as_ref() else {
-                    return Err(hidden::LanguageModelError::ClientError("No client provided".into()))
+                    return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                 };
 
                 let Some(client) = defaults.simple_prompt() else {
-                    return Err(hidden::LanguageModelError::ClientError("No client provided".into()))
+                    return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                 };
                 client.prompt(prompt).await
             }
@@ -289,11 +289,11 @@ mod tests {
                     };
 
                     let Some(defaults) = &self.indexing_defaults.as_ref() else {
-                        return Err(hidden::LanguageModelError::ClientError("No client provided".into()))
+                        return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                     };
 
                     let Some(client) = defaults.simple_prompt() else {
-                        return Err(hidden::LanguageModelError::ClientError("No client provided".into()))
+                        return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                     };
                     client.prompt(prompt).await
                 }
