@@ -823,3 +823,143 @@ impl WithIndexingDefaults for MockTransformer {}
 //
 #[cfg(feature = "test-utils")]
 impl WithBatchIndexingDefaults for MockBatchableTransformer {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    #[derive(Debug, Clone)]
+    struct MockSimplePrompt {
+        call_count: Arc<AtomicUsize>,
+        should_fail_count: usize,
+        error_type: MockErrorType,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    enum MockErrorType {
+        Transient,
+        Permanent,
+        ContextLengthExceeded,
+    }
+
+    #[async_trait]
+    impl SimplePrompt for MockSimplePrompt {
+        async fn prompt(&self, _prompt: Prompt) -> Result<String, LanguageModelError> {
+            let count = self.call_count.fetch_add(1, Ordering::SeqCst);
+            
+            if count < self.should_fail_count {
+                match self.error_type {
+                    MockErrorType::Transient => {
+                        Err(LanguageModelError::TransientError(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::ConnectionReset,
+                            "Transient error",
+                        ))))
+                    }
+                    MockErrorType::Permanent => {
+                        Err(LanguageModelError::PermanentError(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Permanent error",
+                        ))))
+                    }
+                    MockErrorType::ContextLengthExceeded => {
+                        Err(LanguageModelError::ContextLengthExceeded(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidInput,
+                            "Context length exceeded",
+                        ))))
+                    }
+                }
+            } else {
+                Ok("Success response".to_string())
+            }
+        }
+
+        fn name(&self) -> &'static str {
+            "MockSimplePrompt"
+        }
+    }
+
+    #[tokio::test]
+    async fn test_reliable_language_model_retries_transient_errors() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_prompt = MockSimplePrompt {
+            call_count: call_count.clone(),
+            should_fail_count: 2, // Fail twice, succeed on third attempt
+            error_type: MockErrorType::Transient,
+        };
+
+        let config = BackoffConfiguration {
+            initial_interval_sec: 1,
+            max_elapsed_time_sec: 10,
+            multiplier: 1.5,
+            randomization_factor: 0.5,
+        };
+
+        let reliable_model = ReliableLanguageModel::new(mock_prompt, config);
+        
+        let result = reliable_model.prompt(Prompt::from("Test prompt")).await;
+        
+        assert!(result.is_ok());
+        assert_eq!(call_count.load(Ordering::SeqCst), 3);
+        assert_eq!(result.unwrap(), "Success response");
+    }
+
+    #[tokio::test]
+    async fn test_reliable_language_model_does_not_retry_permanent_errors() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_prompt = MockSimplePrompt {
+            call_count: call_count.clone(),
+            should_fail_count: 1,
+            error_type: MockErrorType::Permanent,
+        };
+
+        let config = BackoffConfiguration {
+            initial_interval_sec: 1,
+            max_elapsed_time_sec: 10,
+            multiplier: 1.5,
+            randomization_factor: 0.5,
+        };
+
+        let reliable_model = ReliableLanguageModel::new(mock_prompt, config);
+        
+        let result = reliable_model.prompt(Prompt::from("Test prompt")).await;
+        
+        assert!(result.is_err());
+        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+        
+        match result {
+            Err(LanguageModelError::PermanentError(_)) => {}, // Expected
+            _ => panic!("Expected PermanentError"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_reliable_language_model_does_not_retry_context_length_errors() {
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_prompt = MockSimplePrompt {
+            call_count: call_count.clone(),
+            should_fail_count: 1,
+            error_type: MockErrorType::ContextLengthExceeded,
+        };
+
+        let config = BackoffConfiguration {
+            initial_interval_sec: 1,
+            max_elapsed_time_sec: 10,
+            multiplier: 1.5,
+            randomization_factor: 0.5,
+        };
+
+        let reliable_model = ReliableLanguageModel::new(mock_prompt, config);
+        
+        let result = reliable_model.prompt(Prompt::from("Test prompt")).await;
+        
+        assert!(result.is_err());
+        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+        
+        match result {
+            Err(LanguageModelError::ContextLengthExceeded(_)) => {}, // Expected
+            _ => panic!("Expected ContextLengthExceeded"),
+        }
+    }
+}
