@@ -4,10 +4,9 @@
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
 use swiftide_core::{
-    prompt::Prompt, util::debug_long_utf8,
-    chat_completion::errors::ChatCompletionError, indexing::SimplePrompt,
+    chat_completion::errors::ChatCompletionError, indexing::SimplePrompt, prompt::Prompt,
+    util::debug_long_utf8,
 };
-
 
 use crate::openai::open_ai_error_to_completion_error;
 
@@ -42,13 +41,11 @@ impl SimplePrompt for OpenRouter {
         // Build the request to be sent to the OpenRouter API.
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
-            .messages(vec![
-                ChatCompletionRequestUserMessageArgs::default()
+            .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render().await?)
                 .build()
                 .map_err(|e| ChatCompletionError::ClientError(e.into()))?
-                .into()
-            ])
+                .into()])
             .build()
             .map_err(|e| ChatCompletionError::ClientError(e.into()))?;
 
@@ -56,7 +53,8 @@ impl SimplePrompt for OpenRouter {
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
-                serde_json::to_string_pretty(&request.messages.first()).map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+                serde_json::to_string_pretty(&request.messages.first())
+                    .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
                 100
             ),
             "[SimplePrompt] Request to openrouter"
@@ -68,7 +66,7 @@ impl SimplePrompt for OpenRouter {
             .chat()
             .create(request)
             .await
-            .map_err(|e|open_ai_error_to_completion_error(e))?
+            .map_err(|e| open_ai_error_to_completion_error(e))?
             .choices
             .remove(0)
             .message

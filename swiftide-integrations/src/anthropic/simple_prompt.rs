@@ -1,17 +1,19 @@
 use anyhow::Context as _;
-use async_anthropic::{errors::CreateMessagesError, errors::AnthropicError, types::CreateMessagesRequestBuilder};
-use async_trait::async_trait;
-use swiftide_core::{
-    chat_completion::errors::ChatCompletionError, indexing::SimplePrompt
+use async_anthropic::{
+    errors::AnthropicError, errors::CreateMessagesError, types::CreateMessagesRequestBuilder,
 };
-
+use async_trait::async_trait;
+use swiftide_core::{chat_completion::errors::ChatCompletionError, indexing::SimplePrompt};
 
 use super::Anthropic;
 
 #[async_trait]
 impl SimplePrompt for Anthropic {
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: swiftide_core::prompt::Prompt) -> Result<String, ChatCompletionError> {
+    async fn prompt(
+        &self,
+        prompt: swiftide_core::prompt::Prompt,
+    ) -> Result<String, ChatCompletionError> {
         let model = &self.default_options.prompt_model;
 
         let request = CreateMessagesRequestBuilder::default()
@@ -22,29 +24,34 @@ impl SimplePrompt for Anthropic {
 
         tracing::debug!(
             model = &model,
-            messages = serde_json::to_string_pretty(&request).map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+            messages = serde_json::to_string_pretty(&request)
+                .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
             "[SimplePrompt] Request to anthropic"
         );
 
-        let response = self.client.messages().create(request).await
-            .map_err(|e| {
-                let CreateMessagesError::AnthropicError(e) = e;
-                match e {
-                    AnthropicError::NetworkError(_) => ChatCompletionError::TransientError(e.into()),
-                    // TODO: The Rust Anthropic client is not documented well, we should figure out
-                    // which of these errors are client errors and which are server errors.
-                    // And which would be the ContextLengthExceeded error
-                    // For now, we'll just map all of them to client errors so we get feedback.
-                    AnthropicError::BadRequest(_) => ChatCompletionError::ClientError(e.into()),
-                    AnthropicError::ApiError(_) => ChatCompletionError::ClientError(e.into()),
-                    AnthropicError::Unauthorized => ChatCompletionError::ClientError("Unauthorized".into()),
-                    AnthropicError::Unknown(_) => ChatCompletionError::ClientError(e.into()),
-                    AnthropicError::UnexpectedError => ChatCompletionError::ClientError("Unexpected error".into()),
+        let response = self.client.messages().create(request).await.map_err(|e| {
+            let CreateMessagesError::AnthropicError(e) = e;
+            match e {
+                AnthropicError::NetworkError(_) => ChatCompletionError::TransientError(e.into()),
+                // TODO: The Rust Anthropic client is not documented well, we should figure out
+                // which of these errors are client errors and which are server errors.
+                // And which would be the ContextLengthExceeded error
+                // For now, we'll just map all of them to client errors so we get feedback.
+                AnthropicError::BadRequest(_) => ChatCompletionError::ClientError(e.into()),
+                AnthropicError::ApiError(_) => ChatCompletionError::ClientError(e.into()),
+                AnthropicError::Unauthorized => {
+                    ChatCompletionError::ClientError("Unauthorized".into())
                 }
-            })?;
+                AnthropicError::Unknown(_) => ChatCompletionError::ClientError(e.into()),
+                AnthropicError::UnexpectedError => {
+                    ChatCompletionError::ClientError("Unexpected error".into())
+                }
+            }
+        })?;
 
         tracing::debug!(
-            response = serde_json::to_string_pretty(&response).map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+            response = serde_json::to_string_pretty(&response)
+                .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
             "[SimplePrompt] Response from anthropic"
         );
 
@@ -55,7 +62,9 @@ impl SimplePrompt for Anthropic {
             .context("No messages in response")
             .map_err(|e| ChatCompletionError::ClientError(e.into()))?;
 
-        message.text().context("No text in response")
+        message
+            .text()
+            .context("No text in response")
             .map_err(|e| ChatCompletionError::ClientError(e.into()))
     }
 }
