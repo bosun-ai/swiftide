@@ -13,6 +13,8 @@ use swiftide_core::chat_completion::{
     ChatMessage, ToolCall, ToolSpec,
 };
 
+use crate::openai::open_ai_error_to_completion_error;
+
 use super::OpenRouter;
 
 #[async_trait]
@@ -55,7 +57,7 @@ impl ChatCompletion for OpenRouter {
 
         let request = openai_request
             .build()
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(|e| open_ai_error_to_completion_error(e))?;
 
         tracing::debug!(
             model = &model,
@@ -68,7 +70,7 @@ impl ChatCompletion for OpenRouter {
             .chat()
             .create(request)
             .await
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(|e| open_ai_error_to_completion_error(e))?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("infallible"),
