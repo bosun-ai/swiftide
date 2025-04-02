@@ -589,12 +589,12 @@ pub trait SimplePrompt: Debug + Send + Sync + DynClone {
 dyn_clone::clone_trait_object!(SimplePrompt);
 
 #[derive(Debug, Clone)]
-pub struct ReliableSimplePrompt<P: Clone> {
+pub struct ReliableLanguageModel<P: Clone> {
     inner: P,
     config: BackoffConfiguration,
 }
 
-impl<P: Clone> ReliableSimplePrompt<P> {
+impl<P: Clone> ReliableLanguageModel<P> {
     pub fn new(client: P, config: BackoffConfiguration) -> Self {
         Self {
             inner: client,
@@ -613,7 +613,7 @@ impl<P: Clone> ReliableSimplePrompt<P> {
 }
 
 #[async_trait]
-impl<P: SimplePrompt + Clone> SimplePrompt for ReliableSimplePrompt<P> {
+impl<P: SimplePrompt + Clone> SimplePrompt for ReliableLanguageModel<P> {
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let strategy = self.strategy();
 
@@ -643,7 +643,7 @@ impl<P: SimplePrompt + Clone> SimplePrompt for ReliableSimplePrompt<P> {
 }
 
 #[async_trait]
-impl<P: EmbeddingModel + Clone> EmbeddingModel for ReliableSimplePrompt<P> {
+impl<P: EmbeddingModel + Clone> EmbeddingModel for ReliableLanguageModel<P> {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         self.inner.embed(input).await
     }
