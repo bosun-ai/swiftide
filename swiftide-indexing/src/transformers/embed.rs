@@ -325,6 +325,6 @@ mod tests {
             .expect("IngestionStream has same length as expected_nodes")
             .expect_err("Is Err");
 
-        assert_eq!(error.to_string(), "error");
+        assert_eq!(error.to_string(), "Permanent error: error");
     }
 }
