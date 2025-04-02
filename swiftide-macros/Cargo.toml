@@ -14,7 +14,7 @@ homepage.workspace = true
 proc-macro = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core/", version = "0.20.0" }
+swiftide-core = { path = "../swiftide-core/", version = "0.22.8" }
 
 quote = { workspace = true }
 syn = { workspace = true }
@@ -35,6 +35,7 @@ trybuild = "1.0"
 prettyplease = "0.2.25"
 insta.workspace = true
 swiftide = { path = "../swiftide/" }
+tokio = { workspace = true, features = ["full"] }
 
 [lints]
 workspace = true
@@ -43,3 +44,8 @@ workspace = true
 # TODO: Clean up feature flag
 default = ["swiftide-agents"]
 swiftide-agents = ["dep:serde", "dep:serde_json"]
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

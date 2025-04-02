@@ -6,7 +6,8 @@
 //! The pipeline will:
 //! - Loads the readme from the project
 //! - Chunk the code into pieces of 10 to 2048 bytes
-//! - Run metadata QA on each chunk with Ollama; generating questions and answers and adding metadata
+//! - Run metadata QA on each chunk with Ollama; generating questions and answers and adding
+//!   metadata
 //! - Embed the chunks in batches of 10, Metadata is embedded by default
 //! - Store the nodes in Memory Storage
 //!

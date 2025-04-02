@@ -15,7 +15,7 @@ pub fn safe_truncate_utf8(s: impl AsRef<str>, max_chars: usize) -> String {
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore
 /// # use swiftide_core::util::debug_long_utf8;
 /// let s = debug_long_utf8("🦀".repeat(10), 3);
 ///

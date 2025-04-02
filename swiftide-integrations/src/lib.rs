@@ -1,3 +1,9 @@
+// show feature flags in the generated documentation
+// https://doc.rust-lang.org/rustdoc/unstable-features.html#extensions-to-the-doc-attribute
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
+
 //! Integrations with various platforms and external services.
 
 #[cfg(feature = "anthropic")]
@@ -6,6 +12,8 @@ pub mod anthropic;
 pub mod aws_bedrock;
 #[cfg(feature = "dashscope")]
 pub mod dashscope;
+#[cfg(feature = "duckdb")]
+pub mod duckdb;
 #[cfg(feature = "fastembed")]
 pub mod fastembed;
 #[cfg(feature = "fluvio")]
@@ -32,5 +40,7 @@ pub mod redb;
 pub mod redis;
 #[cfg(feature = "scraping")]
 pub mod scraping;
+#[cfg(feature = "tiktoken")]
+pub mod tiktoken;
 #[cfg(feature = "tree-sitter")]
 pub mod treesitter;

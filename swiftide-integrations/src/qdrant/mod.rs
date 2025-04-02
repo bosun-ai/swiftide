@@ -1,6 +1,6 @@
 //! This module provides integration with the Qdrant vector database.
-//! It includes functionalities to interact with Qdrant, such as creating and managing vector collections,
-//! storing data, and ensuring proper indexing for efficient searches.
+//! It includes functionalities to interact with Qdrant, such as creating and managing vector
+//! collections, storing data, and ensuring proper indexing for efficient searches.
 //!
 //! Qdrant can be used both in `indexing::Pipeline` and `query::Pipeline`
 
@@ -23,8 +23,8 @@ const DEFAULT_BATCH_SIZE: usize = 50;
 
 /// A struct representing a Qdrant client with configuration options.
 ///
-/// This struct is used to interact with the Qdrant vector database, providing methods to create and manage
-/// vector collections, store data, and ensure proper indexing for efficient searches.
+/// This struct is used to interact with the Qdrant vector database, providing methods to create and
+/// manage vector collections, store data, and ensure proper indexing for efficient searches.
 ///
 /// Can be cloned with relative low cost as the client is shared.
 #[derive(Builder, Clone)]
@@ -65,7 +65,8 @@ impl Qdrant {
         QdrantBuilder::default()
     }
 
-    /// Tries to create a `QdrantBuilder` from a given URL. Will use the api key in `QDRANT_API_KEY` if present.
+    /// Tries to create a `QdrantBuilder` from a given URL. Will use the api key in `QDRANT_API_KEY`
+    /// if present.
     ///
     /// Returns
     ///
@@ -90,8 +91,8 @@ impl Qdrant {
 
     /// Creates an index in the Qdrant collection if it does not already exist.
     ///
-    /// This method checks if the specified collection exists in Qdrant. If it does not exist, it creates a new collection
-    /// with the specified vector size and cosine distance metric.
+    /// This method checks if the specified collection exists in Qdrant. If it does not exist, it
+    /// creates a new collection with the specified vector size and cosine distance metric.
     ///
     /// # Returns
     ///
@@ -101,25 +102,26 @@ impl Qdrant {
     ///
     /// Errors if client fails build
     pub async fn create_index_if_not_exists(&self) -> Result<()> {
-        tracing::info!("Checking if collection {} exists", &self.collection_name);
+        let collection_name = &self.collection_name;
 
-        if self.client.collection_exists(&self.collection_name).await? {
-            tracing::warn!("Collection {} exists", &self.collection_name);
+        tracing::debug!("Checking if collection {collection_name} exists");
+        if self.client.collection_exists(collection_name).await? {
+            tracing::debug!("Collection {collection_name} exists");
             return Ok(());
         }
 
         let vectors_config = self.create_vectors_config()?;
         tracing::debug!(?vectors_config, "Adding vectors config");
 
-        let mut collection = qdrant::CreateCollectionBuilder::new(self.collection_name.clone())
-            .vectors_config(vectors_config);
+        let mut collection =
+            qdrant::CreateCollectionBuilder::new(collection_name).vectors_config(vectors_config);
 
         if let Some(sparse_vectors_config) = self.create_sparse_vectors_config() {
             tracing::debug!(?sparse_vectors_config, "Adding sparse vectors config");
             collection = collection.sparse_vectors_config(sparse_vectors_config);
         }
-        tracing::warn!("Creating collection {}", &self.collection_name);
 
+        tracing::info!("Creating collection {collection_name}");
         self.client.create_collection(collection).await?;
         Ok(())
     }
@@ -196,9 +198,10 @@ impl QdrantBuilder {
 
     /// Configures a dense vector on the collection
     ///
-    /// When not configured Pipeline by default configures vector only for [`EmbeddedField::Combined`]
-    /// Default config is enough when `indexing::Pipeline::with_embed_mode` is not set
-    /// or when the value is set to [`swiftide_core::indexing::EmbedMode::SingleWithMetadata`].
+    /// When not configured Pipeline by default configures vector only for
+    /// [`EmbeddedField::Combined`] Default config is enough when
+    /// `indexing::Pipeline::with_embed_mode` is not set or when the value is set to
+    /// [`swiftide_core::indexing::EmbedMode::SingleWithMetadata`].
     #[must_use]
     pub fn with_vector(mut self, vector: impl Into<VectorConfig>) -> QdrantBuilder {
         if self.vectors.is_none() {

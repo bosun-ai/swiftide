@@ -1,3 +1,8 @@
+// show feature flags in the generated documentation
+// https://doc.rust-lang.org/rustdoc/unstable-features.html#extensions-to-the-doc-attribute
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 pub mod agent_traits;
@@ -10,6 +15,7 @@ mod query;
 mod query_stream;
 pub mod query_traits;
 mod search_strategies;
+pub mod tokenizer;
 pub mod type_aliases;
 
 pub mod document;
@@ -25,6 +31,7 @@ pub use crate::agent_traits::*;
 pub use crate::chat_completion::traits::*;
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
+pub use crate::tokenizer::*;
 
 pub mod indexing {
     pub use crate::indexing_defaults::*;

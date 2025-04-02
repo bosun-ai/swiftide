@@ -1,12 +1,13 @@
 use anyhow::{Context as _, Result};
 use arrow_array::StringArray;
+use fs_err::tokio::File;
 use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
 use swiftide_core::{
     indexing::{IndexingStream, Node},
     Loader,
 };
-use tokio::{fs::File, runtime::Handle};
+use tokio::runtime::Handle;
 
 use super::Parquet;
 

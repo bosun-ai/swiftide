@@ -2,6 +2,249 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.8](https://github.com/bosun-ai/swiftide/compare/v0.22.7...v0.22.8) - 2025-04-02
+
+### Bug fixes
+
+- [6b4dfca](https://github.com/bosun-ai/swiftide/commit/6b4dfca822f39b3700d60e6ea31b9b48ccd6d56f)  Tool macros should work with latest darling version ([#712](https://github.com/bosun-ai/swiftide/pull/712))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.7...0.22.8
+
+
+
+## [0.22.7](https://github.com/bosun-ai/swiftide/compare/v0.22.6...v0.22.7) - 2025-03-30
+
+### Bug fixes
+
+- [b0001fb](https://github.com/bosun-ai/swiftide/commit/b0001fbb12cf6bb85fc4d5a8ef0968219e8c78db) *(duckdb)*  Upsert is now opt in as it requires duckdb >= 1.2 ([#708](https://github.com/bosun-ai/swiftide/pull/708))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.6...0.22.7
+
+
+
+## [0.22.6](https://github.com/bosun-ai/swiftide/compare/v0.22.5...v0.22.6) - 2025-03-27
+
+### New features
+
+- [a05b3c8](https://github.com/bosun-ai/swiftide/commit/a05b3c8e7c4224c060215c34490b2ea7729592bf) *(macros)*  Support optional values and make them even nicer to use ([#703](https://github.com/bosun-ai/swiftide/pull/703))
+
+### Bug fixes
+
+- [1866d5a](https://github.com/bosun-ai/swiftide/commit/1866d5a081f40123e607208d04403fb98f34c057) *(integrations)*  Loosen up duckdb requirements even more and make it more flexible for version requirements ([#706](https://github.com/bosun-ai/swiftide/pull/706))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.5...0.22.6
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.22.5](https://github.com/bosun-ai/swiftide/compare/v0.22.4...v0.22.5) - 2025-03-23
+
+### New features
+
+- [eb4e044](https://github.com/bosun-ai/swiftide/commit/eb4e0442293e17722743aa2b88d8dd7582dd9236)  Estimate tokens for OpenAI like apis with tiktoken-rs ([#699](https://github.com/bosun-ai/swiftide/pull/699))
+
+### Miscellaneous
+
+- [345c57a](https://github.com/bosun-ai/swiftide/commit/345c57a663dd0d315a28f0927c5d598ba21d019d)  Improve file loader logging ([#695](https://github.com/bosun-ai/swiftide/pull/695))
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.4...0.22.5
+
+
+
+## [0.22.4](https://github.com/bosun-ai/swiftide/compare/v0.22.3...v0.22.4) - 2025-03-17
+
+### Bug fixes
+
+- [4ec00bb](https://github.com/bosun-ai/swiftide/commit/4ec00bb0fed214f27629f32569406bfa2c786dd7) *(integrations)*  Add chrono/utc feature flag when using qdrant ([#684](https://github.com/bosun-ai/swiftide/pull/684))
+
+````text
+The Qdrant integration calls chrono::Utc::now(), which requires the now
+  feature flag to be enabled in the chrono crate when using qdrant
+````
+
+- [0b204d9](https://github.com/bosun-ai/swiftide/commit/0b204d90a68978bb4b75516c537a56d665771c55)  Ensure `groq`, `fastembed`, `test-utils` features compile individually ([#689](https://github.com/bosun-ai/swiftide/pull/689))
+
+### Miscellaneous
+
+- [bd4ef97](https://github.com/bosun-ai/swiftide/commit/bd4ef97f2b9207b5ac03d610b76bdb3440e3d5c0)  Include filenames in errors in file io ([#694](https://github.com/bosun-ai/swiftide/pull/694))
+
+````text
+Uses fs-err crate to automatically include filenames in the error
+  messages
+````
+
+- [9453e06](https://github.com/bosun-ai/swiftide/commit/9453e06d5338c99cec5f51b085739cc30a5f12be)  Use std::sync::Mutex instead of tokio mutex ([#693](https://github.com/bosun-ai/swiftide/pull/693))
+
+- [b3456e2](https://github.com/bosun-ai/swiftide/commit/b3456e25af99f661aff1779ae5f2d4da460f128c)  Log qdrant setup messages at debug level ([#696](https://github.com/bosun-ai/swiftide/pull/696))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.3...0.22.4
+
+
+
+## [0.22.3](https://github.com/bosun-ai/swiftide/compare/v0.22.2...v0.22.3) - 2025-03-13
+
+### Miscellaneous
+
+- [834fcd3](https://github.com/bosun-ai/swiftide/commit/834fcd3b2270904bcfe8998a7015de15626128a8)  Update duckdb to 1.2.1 ([#680](https://github.com/bosun-ai/swiftide/pull/680))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.2...0.22.3
+
+
+
+## [0.22.2](https://github.com/bosun-ai/swiftide/compare/v0.22.1...v0.22.2) - 2025-03-11
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [e1c097d](https://github.com/bosun-ai/swiftide/commit/e1c097da885374ec9320c1847a7dda7c5d9d41cb)  Disable default features on all dependencies ([#675](https://github.com/bosun-ai/swiftide/pull/675))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.1...0.22.2
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.22.1](https://github.com/bosun-ai/swiftide/compare/v0.22.0...v0.22.1) - 2025-03-09
+
+### New features
+
+- [474d612](https://github.com/bosun-ai/swiftide/commit/474d6122596e71132e35fcb181302dfed7794561) *(integrations)*  Add Duckdb support ([#578](https://github.com/bosun-ai/swiftide/pull/578))
+
+````text
+Adds support for Duckdb. Persist, Retrieve (Simple and Custom), and
+  NodeCache are implemented. Metadata and full upsert are not. Once 1.2
+  has its issues fixed, it's easy to add.
+````
+
+- [4cf417c](https://github.com/bosun-ai/swiftide/commit/4cf417c6a818fbec2641ad6576b4843412902bf6) *(treesitter)*  C and C++ support for splitter only ([#663](https://github.com/bosun-ai/swiftide/pull/663))
+
+
+### Bug fixes
+
+- [590eaeb](https://github.com/bosun-ai/swiftide/commit/590eaeb3c6b5c14c56c925e038528326f88508a1) *(integrations)*  Make openai parallel_tool_calls an Option ([#664](https://github.com/bosun-ai/swiftide/pull/664))
+
+````text
+o3-mini needs to omit parallel_tool_calls - so we need to allow for a
+  None option to not include that field
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [d864c7e](https://github.com/bosun-ai/swiftide/commit/d864c7e72ba01d3f187e4f6ab6ad3e6244ae0dc4)  Downgrade duckdb to 1.1.1 and fix ci ([#671](https://github.com/bosun-ai/swiftide/pull/671))
+
+- [9b685b3](https://github.com/bosun-ai/swiftide/commit/9b685b3281d9694c5faa58890a9aba32cba90f1c)  Update and loosen deps ([#670](https://github.com/bosun-ai/swiftide/pull/670))
+
+- [a64ca16](https://github.com/bosun-ai/swiftide/commit/a64ca1656b903a680cc70ac7b33ac40d9d356d4a)  Tokio_stream features should include `time`
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.0...0.22.1
+
+
+
+## [0.22.0](https://github.com/bosun-ai/swiftide/compare/v0.21.1...v0.22.0) - 2025-03-03
+
+### New features
+
+- [a754846](https://github.com/bosun-ai/swiftide/commit/a7548463367023d3e5a3a25dd84f06632b372f18) *(agents)*  Implement Serialize and Deserialize for chat messages
+
+````text
+Persist, retry later, evaluate it completions in a script, you name it.
+````
+
+- [0a592c6](https://github.com/bosun-ai/swiftide/commit/0a592c67621f3eba4ad6e0bfd5a539e19963cf17) *(indexing)*  Add `iter()` for file loader ([#655](https://github.com/bosun-ai/swiftide/pull/655))
+
+````text
+Allows playing with the iterator outside of the stream.
+
+  Relates to https://github.com/bosun-ai/kwaak/issues/337
+````
+
+- [57116e9](https://github.com/bosun-ai/swiftide/commit/57116e9a30c722f47398be61838cc1ef4d0bbfac)  Groq ChatCompletion ([#650](https://github.com/bosun-ai/swiftide/pull/650))
+
+````text
+Use the new generics to _just-make-it-work_.
+````
+
+- [4fd3259](https://github.com/bosun-ai/swiftide/commit/4fd325921555a14552e33b2481bc9dfcf0c313fc)  Continue Agent on Tool Failure ([#628](https://github.com/bosun-ai/swiftide/pull/628))
+
+````text
+Ensure tool calls and responses are always balanced, even when the tool retry limit is reached
+  https://github.com/bosun-ai/kwaak/issues/313
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.21.1...0.22.0
+
+
+
+## [0.21.1](https://github.com/bosun-ai/swiftide/compare/v0.21.0...v0.21.1) - 2025-02-28
+
+### Bug fixes
+
+- [f418c5e](https://github.com/bosun-ai/swiftide/commit/f418c5ee2f0d3ee87fb3715ec6b1d7ecc80bf714) *(ci)*  Run just a single real rerank test to please the flaky gods
+
+- [e387e82](https://github.com/bosun-ai/swiftide/commit/e387e826200e1bc0a608e1f680537751cfc17969) *(lancedb)*  Update Lancedb to 0.17 and pin Arrow to a lower version
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.21.0...0.21.1
+
+
+
+## [0.21.0](https://github.com/bosun-ai/swiftide/compare/v0.20.1...v0.21.0) - 2025-02-25
+
+### New features
+
+- [12a9873](https://github.com/bosun-ai/swiftide/commit/12a98736ab171c25d860000bb95b1e6e318758fb) *(agents)*  Improve flexibility for tool generation (#641)
+
+````text
+Previously ToolSpec and name in the `Tool` trait worked with static.
+  With these changes, there is a lot more flexibility, allowing for i.e.
+  run-time tool generation.
+````
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.20.1...0.21.0
+
+
+
+## [0.20.1](https://github.com/bosun-ai/swiftide/compare/v0.20.0...v0.20.1) - 2025-02-21
+
+### Bug fixes
+
+- [0aa1248](https://github.com/bosun-ai/swiftide/commit/0aa124819d836f37d1fcaf88e6f88b5affb46cf9) *(indexing)*  Handle invalid utf-8 in fileloader lossy (#632)
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.20.0...0.20.1
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.20.0](https://github.com/bosun-ai/swiftide/compare/v0.19.0...v0.20.0) - 2025-02-18
 
 ### New features

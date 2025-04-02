@@ -1,7 +1,8 @@
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
@@ -39,7 +40,7 @@ impl std::fmt::Display for ToolOutput {
 }
 
 /// A tool call that can be executed by the executor
-#[derive(Clone, Debug, Builder, PartialEq)]
+#[derive(Clone, Debug, Builder, PartialEq, Serialize, Deserialize)]
 #[builder(setter(into, strip_option))]
 pub struct ToolCall {
     id: String,
@@ -90,11 +91,12 @@ impl ToolCall {
 ///
 /// i.e. the json spec `OpenAI` uses to define their tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder)]
+#[builder(setter(into))]
 pub struct ToolSpec {
     /// Name of the tool
-    pub name: &'static str,
+    pub name: String,
     /// Description passed to the LLM for the tool
-    pub description: &'static str,
+    pub description: String,
 
     #[builder(default)]
     /// Optional parameters for the tool
@@ -122,11 +124,12 @@ pub enum ParamType {
 
 /// Parameters for tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Builder)]
+#[builder(setter(into))]
 pub struct ParamSpec {
     /// Name of the parameter
-    pub name: &'static str,
+    pub name: String,
     /// Description of the parameter
-    pub description: &'static str,
+    pub description: String,
     /// Json spec type of the parameter
     #[builder(default)]
     pub ty: ParamType,

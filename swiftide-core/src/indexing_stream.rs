@@ -1,6 +1,7 @@
 #![allow(clippy::from_over_into)]
 
-//! This module defines the `IndexingStream` type, which is used internally by a pipeline  for handling asynchronous streams of `Node` items in the indexing pipeline.
+//! This module defines the `IndexingStream` type, which is used internally by a pipeline  for
+//! handling asynchronous streams of `Node` items in the indexing pipeline.
 
 use crate::node::Node;
 use anyhow::Result;
@@ -46,11 +47,11 @@ impl Into<IndexingStream> for Vec<Node> {
     }
 }
 
-impl Into<IndexingStream> for anyhow::Error {
-    fn into(self) -> IndexingStream {
-        IndexingStream::iter(vec![Err(self)])
-    }
-}
+// impl Into<IndexingStream> for anyhow::Error {
+//     fn into(self) -> IndexingStream {
+//         IndexingStream::iter(vec![Err(self)])
+//     }
+// }
 
 impl Into<IndexingStream> for Result<Vec<Node>> {
     fn into(self) -> IndexingStream {
@@ -72,6 +73,12 @@ impl Into<IndexingStream> for Receiver<Result<Node>> {
         IndexingStream {
             inner: tokio_stream::wrappers::ReceiverStream::new(self).boxed(),
         }
+    }
+}
+
+impl From<anyhow::Error> for IndexingStream {
+    fn from(err: anyhow::Error) -> Self {
+        IndexingStream::iter(vec![Err(err)])
     }
 }
 

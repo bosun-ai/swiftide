@@ -12,42 +12,39 @@ pub mod connection_pool;
 pub mod persist;
 pub mod retrieve;
 
-/**
-`LanceDB` is a columnar database that separates data and compute.
-
-This enables local, embedded databases, or storing in a cloud storage.
-
-See examples for more information.
-
-Implements `Persist` and `Retrieve`.
-
-If you want to store / retrieve metadata in Lance, the columns can be defined with `with_metadata`.
-
-Note: For querying large tables you manually need to create an index. You can get an
-active connection via `get_connection`.
-
-# Example
-
-```no_run
-# use swiftide_integrations::lancedb::{LanceDB};
-# use swiftide_core::indexing::EmbeddedField;
-    LanceDB::builder()
-    .uri("/my/lancedb")
-    .vector_size(1536)
-    .with_vector(EmbeddedField::Combined)
-    .with_metadata("Metadata field to also store")
-    .table_name("swiftide_test")
-    .build()
-    .unwrap();
-*/
+/// `LanceDB` is a columnar database that separates data and compute.
+///
+/// This enables local, embedded databases, or storing in a cloud storage.
+///
+/// See examples for more information.
+///
+/// Implements `Persist` and `Retrieve`.
+///
+/// If you want to store / retrieve metadata in Lance, the columns can be defined with
+/// `with_metadata`.
+///
+/// Note: For querying large tables you manually need to create an index. You can get an
+/// active connection via `get_connection`.
+///
+/// # Example
+///
+/// ```no_run
+/// # use swiftide_integrations::lancedb::{LanceDB};
+/// # use swiftide_core::indexing::EmbeddedField;
+/// LanceDB::builder()
+/// .uri("/my/lancedb")
+/// .vector_size(1536)
+/// .with_vector(EmbeddedField::Combined)
+/// .with_metadata("Metadata field to also store")
+/// .table_name("swiftide_test")
+/// .build()
+/// .unwrap();
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
 #[allow(dead_code)]
 pub struct LanceDB {
-    /**
-    Connection pool for `LanceDB`
-    By default will use settings provided when creating the instance.
-    */
+    /// Connection pool for `LanceDB`
+    /// By default will use settings provided when creating the instance.
     #[builder(default = "self.default_connection_pool()?")]
     connection_pool: Arc<LanceDBConnectionPool>,
 
@@ -103,13 +100,11 @@ impl LanceDB {
         LanceDBBuilder::default()
     }
 
-    /**
-    Get a connection to `LanceDB` from the connection pool
-
-    # Errors
-
-    Returns an error if the connection cannot be retrieved.
-    */
+    /// Get a connection to `LanceDB` from the connection pool
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the connection cannot be retrieved.
     pub async fn get_connection(&self) -> Result<Object<LanceDBPoolManager>> {
         Box::pin(self.connection_pool.get())
             .await

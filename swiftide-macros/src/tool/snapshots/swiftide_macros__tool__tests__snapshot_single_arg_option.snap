@@ -1,0 +1,71 @@
+---
+source: swiftide-macros/src/tool/mod.rs
+expression: "crate::test_utils::pretty_macro_output(&output)"
+---
+#[derive(
+    ::swiftide::reexports::serde::Serialize,
+    ::swiftide::reexports::serde::Deserialize,
+    Debug
+)]
+pub struct SearchCodeArgs {
+    pub code_query: Option<String>,
+}
+#[derive(Clone, Default)]
+pub struct SearchCode {}
+pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
+    Box::new(SearchCode {}) as Box<dyn ::swiftide::chat_completion::Tool>
+}
+impl SearchCode {
+    pub async fn search_code(
+        &self,
+        context: &dyn AgentContext,
+        code_query: &Option<String>,
+    ) -> Result<ToolOutput, ToolError> {
+        return Ok("hello".into());
+    }
+}
+#[::swiftide::reexports::async_trait::async_trait]
+impl ::swiftide::chat_completion::Tool for SearchCode {
+    async fn invoke(
+        &self,
+        agent_context: &dyn ::swiftide::traits::AgentContext,
+        raw_args: Option<&str>,
+    ) -> ::std::result::Result<
+        ::swiftide::chat_completion::ToolOutput,
+        ::swiftide::chat_completion::errors::ToolError,
+    > {
+        let Some(args) = raw_args else {
+            return Err(
+                ::swiftide::chat_completion::errors::ToolError::MissingArguments(
+                    format!("No arguments provided for {}", "search_code"),
+                ),
+            )
+        };
+        let args: SearchCodeArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
+        return self.search_code(agent_context, &args.code_query).await;
+    }
+    fn name<'TOOL>(&'TOOL self) -> std::borrow::Cow<'TOOL, str> {
+        "search_code".into()
+    }
+    fn tool_spec(&self) -> ::swiftide::chat_completion::ToolSpec {
+        swiftide::chat_completion::ToolSpec::builder()
+            .name("search_code")
+            .description("Hello world tool")
+            .parameters(
+                vec![
+                    swiftide::chat_completion::ParamSpec::builder().name("code_query")
+                    .description("my param description")
+                    .ty(::swiftide::chat_completion::ParamType::String).required(false)
+                    .build().expect("infallible")
+                ],
+            )
+            .build()
+            .unwrap()
+    }
+}
+impl<'TOOLBOXED> From<SearchCode>
+for Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED> {
+    fn from(val: SearchCode) -> Self {
+        Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED>
+    }
+}

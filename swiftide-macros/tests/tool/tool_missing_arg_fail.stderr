@@ -1,22 +1,10 @@
-error: Arguments in spec and in function do not match:
-        The following parameters are missing from the spec: ["other"]
- --> tests/tool/tool_missing_arg_fail.rs:1:1
+error: The following parameters are missing from the spec: ["other"]
+ --> tests/tool/tool_missing_arg_fail.rs:5:1
   |
-1 | / #[swiftide_macros::tool(
-2 | |     description = "My first tool",
-3 | |     param(name = "msg", description = "A message for testing")
-4 | | )]
+5 | / #[swiftide_macros::tool(
+6 | |     description = "My first tool",
+7 | |     param(name = "msg", description = "A message for testing")
+8 | | )]
   | |__^
   |
   = note: this error originates in the attribute macro `swiftide_macros::tool` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error: Params that are not strings need to have their `type` as json spec specified
-  --> tests/tool/tool_missing_arg_fail.rs:13:1
-   |
-13 | / #[swiftide_macros::tool(
-14 | |     description = READ_FILE,
-15 | |     param(name = "number", description = "Number to guess")
-16 | | )]
-   | |__^
-   |
-   = note: this error originates in the attribute macro `swiftide_macros::tool` (in Nightly builds, run with -Z macro-backtrace for more info)

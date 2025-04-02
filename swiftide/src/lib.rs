@@ -1,20 +1,22 @@
-//! # Swiftide
-//!
-//! <div>
-//! <img src="https://github.com/bosun-ai/swiftide/raw/master/images/logo.png" height="200"
-//! width="200" style="margin: auto; display: block;" />
-//! <br />
-//! </div>
-//!
-//! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation (RAG). When building applications with large language models (LLM), these LLMs need access to external resources. Data needs to be transformed, enriched, split up, embedded, and persisted. It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+// show feature flags in the generated documentation
+// https://doc.rust-lang.org/rustdoc/unstable-features.html#extensions-to-the-doc-attribute
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
+
+//! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation
+//! (RAG). When building applications with large language models (LLM), these LLMs need access to
+//! external resources. Data needs to be transformed, enriched, split up, embedded, and persisted.
+//! It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
 //!
 //! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 //!
-//! We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue.
+//! We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open
+//! an issue.
 //!
 //! Read more about the project on the [swiftide website](https://swiftide.rs)
 //!
-//! ## Features
+//! # Features
 //!
 //! - Extremely fast streaming indexing pipeline with async, parallel processing
 //! - Integrations with `OpenAI`, `Redis`, `Qdrant`, `FastEmbed`, `Treesitter` and more
@@ -23,28 +25,29 @@
 //! - Splitting and merging pipelines
 //! - Jinja-like templating for prompts
 //! - Store into multiple backends
-//! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
+//! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more
+//!   information.
 //!
-//! ## Querying
+//! # Querying
 //!
 //! After running an indexing pipeline, you can use the [`query`] module to query the indexed data.
 //!
-//! ## Examples
+//! # Examples
 //!
-//! ### Indexing markdown
+//! ## Indexing markdown
 //!
 //! ```no_run
 //! # use swiftide::indexing::loaders::FileLoader;
 //! # use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
 //! # use swiftide::integrations::qdrant::Qdrant;
-//! # use swiftide::integrations::openai::{OpenAI, OpenAIConfig};
+//! # use swiftide::integrations::openai::OpenAI;
 //! # use swiftide::indexing::Pipeline;
 //! # use anyhow::Result;
 //!
 //! # #[tokio::main]
 //! # async fn main() -> Result<()> {
 //! # let qdrant_url = "url";
-//! # let openai_client = OpenAI::<OpenAIConfig>::builder().build()?;
+//! # let openai_client = OpenAI::builder().build()?;
 //!  Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
 //!          .then_chunk(ChunkMarkdown::from_chunk_range(10..512))
 //!          .then(MetadataQAText::new(openai_client.clone()))
@@ -61,17 +64,17 @@
 //! # }
 //! ```
 //!
-//! ### Querying
+//! ## Querying
 //!
 //! ```no_run
 //! # use anyhow::Result;
 //! # use swiftide::query::{query_transformers, self, response_transformers, answers};
-//! # use swiftide::integrations::openai::{OpenAI, OpenAIConfig};
+//! # use swiftide::integrations::openai::OpenAI;
 //!
 //! # #[tokio::main]
 //! # async fn main() -> Result<()> {
 //! # let qdrant_url = "url";
-//! # let openai_client = OpenAI::<OpenAIConfig>::builder().build()?;
+//! # let openai_client = OpenAI::builder().build()?;
 //! # let qdrant = swiftide::integrations::qdrant::Qdrant::try_from_url(qdrant_url)?
 //! #                .batch_size(50)
 //! #                .vector_size(1536)
@@ -95,7 +98,7 @@
 //! # }
 //! ```
 //!
-//! ## Feature flags
+//! # Feature flags
 //!
 //! Swiftide has little features enabled by default, as there are some dependency heavy
 //! integrations. You need to cherry-pick the tools and integrations you want to use.
@@ -135,8 +138,8 @@ pub mod integrations {
 
 /// This module serves as the main entry point for indexing in Swiftide.
 ///
-/// The indexing system in Swiftide is designed to handle the asynchronous processing of large volumes
-/// of data, including loading, transforming, and storing data chunks.
+/// The indexing system in Swiftide is designed to handle the asynchronous processing of large
+/// volumes of data, including loading, transforming, and storing data chunks.
 pub mod indexing {
     #[doc(inline)]
     pub use swiftide_core::indexing::*;
@@ -156,7 +159,8 @@ pub mod indexing {
 ///
 /// Swiftide allows you to define sophisticated query pipelines.
 ///
-/// Consider the following code that uses Swiftide to load some markdown text, chunk it, embed it, and store it in a Qdrant index:
+/// Consider the following code that uses Swiftide to load some markdown text, chunk it, embed it,
+/// and store it in a Qdrant index:
 ///
 /// ```no_run
 /// use swiftide::{
@@ -166,12 +170,12 @@ pub mod indexing {
 ///         transformers::{ChunkMarkdown, Embed, MetadataQAText},
 ///     },
 ///     integrations::{self, qdrant::Qdrant},
-///     integrations::openai::{OpenAI, OpenAIConfig},
+///     integrations::openai::OpenAI,
 ///     query::{self, answers, query_transformers, response_transformers},
 /// };
 ///
 /// async fn index() -> Result<(), Box<dyn std::error::Error>> {
-///   let openai_client = OpenAI::<OpenAIConfig>::builder()
+///   let openai_client = OpenAI::builder()
 ///       .default_embed_model("text-embedding-3-large")
 ///       .default_prompt_model("gpt-4o")
 ///       .build()?;
@@ -205,10 +209,10 @@ pub mod indexing {
 /// #     },
 /// #     integrations::{self, qdrant::Qdrant},
 /// #     query::{self, answers, query_transformers, response_transformers},
-/// #     integrations::openai::{OpenAI, OpenAIConfig},
+/// #     integrations::openai::OpenAI,
 /// # };
 /// # async fn query() -> Result<(), Box<dyn std::error::Error>> {
-/// #  let openai_client = OpenAI::<OpenAIConfig>::builder()
+/// #  let openai_client = OpenAI::builder()
 /// #      .default_embed_model("text-embedding-3-large")
 /// #      .default_prompt_model("gpt-4o")
 /// #      .build()?;
@@ -241,20 +245,16 @@ pub mod indexing {
 /// # }
 /// ```
 ///
-/// By using a query pipeline to transform queries, we can improve the quality of the answers we get from our index.
-/// In this example, we used an LLM to generate subquestions, embedding those and then using them to search the index.
-/// Finally, we summarize the results and combine them together into a single answer.
-///
+/// By using a query pipeline to transform queries, we can improve the quality of the answers we get
+/// from our index. In this example, we used an LLM to generate subquestions, embedding those and
+/// then using them to search the index. Finally, we summarize the results and combine them together
+/// into a single answer.
 pub mod query {
     #[doc(inline)]
     pub use swiftide_core::querying::*;
     #[doc(inline)]
     pub use swiftide_query::*;
 }
-
-#[doc(hidden)]
-#[cfg(feature = "test-utils")]
-pub mod test_utils;
 
 /// Re-exports for macros
 #[doc(hidden)]

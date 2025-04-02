@@ -1,12 +1,25 @@
+// show feature flags in the generated documentation
+// https://doc.rust-lang.org/rustdoc/unstable-features.html#extensions-to-the-doc-attribute
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
+
 //! Swiftide agents are a flexible way to build fast and reliable AI agents.
 //!
 //! # Features
 //!
-//! * **Tools**: Tools can be defined as functions using the `#[tool]` attribute macro, the `Tool` derive macro, or manually implementing the `Tool` trait.
-//! * **Hooks**: At various stages of the agent lifecycle, hooks can be defined to run custom logic. These are defined when building the agent, and each take a closure.
-//! * **Context**: Agents operate in an `AgentContext`, which is a shared state between tools and hooks. The context is responsible for managing the completions and interacting with the outside world.
-//! * **Tool Execution**: A context takes a tool executor (local by default) to execute its tools on. This enables tools to be run i.e. in containers, remote, etc.
-//! * **System prompt defaults**: `SystemPrompt` provides a default, customizable prompt for the agent. If you want to provider your own prompt, the builder takes anything that converts into a `Prompt`, including strings.
+//! * **Tools**: Tools can be defined as functions using the `#[tool]` attribute macro, the `Tool`
+//!   derive macro, or manually implementing the `Tool` trait.
+//! * **Hooks**: At various stages of the agent lifecycle, hooks can be defined to run custom logic.
+//!   These are defined when building the agent, and each take a closure.
+//! * **Context**: Agents operate in an `AgentContext`, which is a shared state between tools and
+//!   hooks. The context is responsible for managing the completions and interacting with the
+//!   outside world.
+//! * **Tool Execution**: A context takes a tool executor (local by default) to execute its tools
+//!   on. This enables tools to be run i.e. in containers, remote, etc.
+//! * **System prompt defaults**: `SystemPrompt` provides a default, customizable prompt for the
+//!   agent. If you want to provider your own prompt, the builder takes anything that converts into
+//!   a `Prompt`, including strings.
 //! * **Open Telemetry**: Agents are fully instrumented with open telemetry.
 //!
 //! # Example

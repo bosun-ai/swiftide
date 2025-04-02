@@ -15,8 +15,7 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 derive_builder = { workspace = true }
 futures-util = { workspace = true }
-tokio = { workspace = true, features = ["full"] }
-tokio-stream = { workspace = true }
+tokio = { workspace = true }
 num_cpus = { workspace = true }
 tracing = { workspace = true }
 indoc = { workspace = true }
@@ -25,14 +24,18 @@ serde_json = { workspace = true }
 tera = { workspace = true }
 
 # Internal
-swiftide-core = { path = "../swiftide-core", version = "0.20.0" }
+swiftide-core = { path = "../swiftide-core", version = "0.22.8" }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
 
-mockall = { workspace = true }
 insta = { workspace = true }
 
 
 [lints]
 workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

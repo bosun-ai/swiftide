@@ -8,6 +8,8 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 
+// TODO: Should be possible to remove the static bounds and allow Q as borrowed with some fu
+
 // Function type for generating retriever-specific queries
 type QueryGenerator<Q> = Arc<dyn Fn(&Query<states::Pending>) -> Result<Q> + Send + Sync>;
 
@@ -26,7 +28,7 @@ pub struct CustomStrategy<Q> {
     _marker: PhantomData<Q>,
 }
 
-impl<Q: Send + Sync + 'static> querying::SearchStrategy for CustomStrategy<Q> {}
+impl<Q: Send + Sync> querying::SearchStrategy for CustomStrategy<Q> {}
 
 impl<Q> Default for CustomStrategy<Q> {
     fn default() -> Self {
@@ -48,7 +50,7 @@ impl<Q> Clone for CustomStrategy<Q> {
     }
 }
 
-impl<Q: Send + Sync + 'static> CustomStrategy<Q> {
+impl<Q: Send + Sync> CustomStrategy<Q> {
     /// Creates a new strategy with a synchronous query generator.
     pub fn from_query(
         query: impl Fn(&Query<states::Pending>) -> Result<Q> + Send + Sync + 'static,

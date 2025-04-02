@@ -1,6 +1,7 @@
 //! # [Swiftide] Ingesting file with multiple metadata stored as named vectors
 //!
-//! This example demonstrates how to ingest a LICENSE file, generate multiple metadata, and store it all in Qdrant with individual named vectors
+//! This example demonstrates how to ingest a LICENSE file, generate multiple metadata, and store it
+//! all in Qdrant with individual named vectors
 //!
 //! The pipeline will:
 //! - Load the LICENSE file from the current directory

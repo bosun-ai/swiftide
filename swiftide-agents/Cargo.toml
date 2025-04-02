@@ -11,20 +11,20 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.20" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.20" }
+swiftide-core = { path = "../swiftide-core", version = "0.22" }
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
 derive_builder.workspace = true
-tokio.workspace = true
 indoc.workspace = true
 tracing.workspace = true
-pretty_assertions.workspace = true
+tokio.workspace = true
+# pretty_assertions.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+fs-err = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -35,3 +35,8 @@ insta.workspace = true
 
 [lints]
 workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

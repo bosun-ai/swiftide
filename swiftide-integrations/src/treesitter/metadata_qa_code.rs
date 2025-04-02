@@ -20,8 +20,8 @@ pub struct MetadataQACode {
 impl Transformer for MetadataQACode {
     /// Asynchronously transforms a `Node` by generating questions and answers for its code chunk.
     ///
-    /// This method uses the `SimplePrompt` client to generate questions and answers based on the code chunk
-    /// and adds this information to the node's metadata.
+    /// This method uses the `SimplePrompt` client to generate questions and answers based on the
+    /// code chunk and adds this information to the node's metadata.
     ///
     /// # Arguments
     ///
@@ -33,7 +33,8 @@ impl Transformer for MetadataQACode {
     ///
     /// # Errors
     ///
-    /// This function will return an error if the `SimplePrompt` client fails to generate a response.
+    /// This function will return an error if the `SimplePrompt` client fails to generate a
+    /// response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let mut prompt = self

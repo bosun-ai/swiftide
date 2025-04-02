@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use super::tools::{ToolCall, ToolOutput};
 
-#[derive(Clone, strum_macros::EnumIs, PartialEq, Debug)]
+#[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]
 pub enum ChatMessage {
     System(String),
     User(String),

@@ -5,7 +5,6 @@
 //! - Field configuration for different vector embedding types
 //! - HNSW index creation for similarity search optimization
 //! - Bulk data preparation and SQL query generation
-//!
 use crate::pgvector::PgVector;
 use anyhow::{anyhow, Result};
 use pgvector as ExtPgVector;
@@ -172,7 +171,7 @@ impl PgVector {
     ///
     /// # Errors
     ///
-    /// *  Returns an error if the table name is invalid or if `vector_size` is not configured.
+    /// * Returns an error if the table name is invalid or if `vector_size` is not configured.
     pub fn generate_create_table_sql(&self) -> Result<String> {
         // Validate table_name and field_name (e.g., check against allowed patterns)
         if !Self::is_valid_identifier(&self.table_name) {
@@ -246,7 +245,8 @@ impl PgVector {
     ///
     /// This function will return an error if:
     /// - The database connection pool is not established.
-    /// - Any of the SQL queries fail to execute due to schema mismatch, constraint violations, or connectivity issues.
+    /// - Any of the SQL queries fail to execute due to schema mismatch, constraint violations, or
+    ///   connectivity issues.
     /// - Committing the transaction fails.
     pub async fn store_nodes(&self, nodes: &[Node]) -> Result<()> {
         let pool = self.pool_get_or_initialize().await?;

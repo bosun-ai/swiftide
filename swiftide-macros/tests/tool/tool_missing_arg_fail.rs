@@ -1,3 +1,7 @@
+use swiftide::chat_completion::errors::ToolError;
+use swiftide::chat_completion::ToolOutput;
+use swiftide::traits::AgentContext;
+
 #[swiftide_macros::tool(
     description = "My first tool",
     param(name = "msg", description = "A message for testing")
@@ -9,6 +13,8 @@ async fn basic_tool(
 ) -> Result<ToolOutput, ToolError> {
     Ok(format!("Hello {msg}").into())
 }
+
+const READ_FILE: &str = "Read a file";
 
 #[swiftide_macros::tool(
     description = READ_FILE,

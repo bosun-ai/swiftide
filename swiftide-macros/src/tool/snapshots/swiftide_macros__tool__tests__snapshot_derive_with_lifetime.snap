@@ -30,8 +30,8 @@ impl<'a> swiftide::chat_completion::Tool for HelloDerive<'a> {
         let args: HelloDeriveArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
         return self.hello_derive(agent_context, &args.test).await;
     }
-    fn name(&self) -> &'static str {
-        "hello_derive"
+    fn name<'TOOL>(&'TOOL self) -> std::borrow::Cow<'TOOL, str> {
+        "hello_derive".into()
     }
     fn tool_spec(&self) -> swiftide::chat_completion::ToolSpec {
         swiftide::chat_completion::ToolSpec::builder()
@@ -41,8 +41,8 @@ impl<'a> swiftide::chat_completion::Tool for HelloDerive<'a> {
                 vec![
                     swiftide::chat_completion::ParamSpec::builder().name("test")
                     .description("test param")
-                    .ty(::swiftide::chat_completion::ParamType::String).build()
-                    .expect("infallible")
+                    .ty(::swiftide::chat_completion::ParamType::String).required(true)
+                    .build().expect("infallible")
                 ],
             )
             .build()

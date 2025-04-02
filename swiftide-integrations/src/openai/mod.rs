@@ -1,6 +1,7 @@
-//! This module provides integration with `OpenAI`'s API, enabling the use of language models and embeddings within the Swiftide project.
-//! It includes the `OpenAI` struct for managing API clients and default options for embedding and prompt models.
-//! The module is conditionally compiled based on the "openai" feature flag.
+//! This module provides integration with `OpenAI`'s API, enabling the use of language models and
+//! embeddings within the Swiftide project. It includes the `OpenAI` struct for managing API clients
+//! and default options for embedding and prompt models. The module is conditionally compiled based
+//! on the "openai" feature flag.
 
 use async_openai::error::OpenAIError;
 use derive_builder::Builder;
@@ -15,8 +16,17 @@ mod simple_prompt;
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
 
-/// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt models.
-/// It uses the `Builder` pattern for flexible and customizable instantiation.
+#[cfg(feature = "tiktoken")]
+use crate::tiktoken::TikToken;
+#[cfg(feature = "tiktoken")]
+use anyhow::Result;
+#[cfg(feature = "tiktoken")]
+use swiftide_core::Estimatable;
+#[cfg(feature = "tiktoken")]
+use swiftide_core::EstimateTokens;
+
+/// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt
+/// models. It uses the `Builder` pattern for flexible and customizable instantiation.
 ///
 /// # Example
 ///
@@ -25,21 +35,27 @@ pub use async_openai::config::OpenAIConfig;
 /// # use swiftide_integrations::openai::OpenAIConfig;
 ///
 /// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
-/// let openai = OpenAI::<OpenAIConfig>::builder()
+/// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .build().unwrap();
 ///
 /// // Create an OpenAI client with a custom api key.
-/// let openai = OpenAI::<OpenAIConfig>::builder()
+/// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
 ///     .build().unwrap();
-///```
+/// ```
+pub type OpenAI = GenericOpenAI<OpenAIConfig>;
+pub type OpenAIBuilder = GenericOpenAIBuilder<OpenAIConfig>;
+
 #[derive(Debug, Builder, Clone)]
 #[builder(setter(into, strip_option))]
-pub struct OpenAI<C: async_openai::config::Config + Default = async_openai::config::OpenAIConfig> {
+/// Generic client for `OpenAI` APIs.
+pub struct GenericOpenAI<
+    C: async_openai::config::Config + Default = async_openai::config::OpenAIConfig,
+> {
     /// The `OpenAI` client, wrapped in an `Arc` for thread-safe reference counting.
     /// Defaults to a new instance of `async_openai::Client`.
     #[builder(
@@ -50,7 +66,11 @@ pub struct OpenAI<C: async_openai::config::Config + Default = async_openai::conf
 
     /// Default options for embedding and prompt models.
     #[builder(default)]
-    default_options: Options,
+    pub(crate) default_options: Options,
+
+    #[cfg(feature = "tiktoken")]
+    #[cfg_attr(feature = "tiktoken", builder( default = self.default_tiktoken()))]
+    pub(crate) tiktoken: TikToken,
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
@@ -65,11 +85,11 @@ pub struct Options {
     #[builder(default)]
     pub prompt_model: Option<String>,
 
-    #[builder(default = true)]
+    #[builder(default = Some(true))]
     /// Option to enable or disable parallel tool calls for completions.
     ///
-    /// At this moment, o1 and o3-mini do not support it.
-    pub parallel_tool_calls: bool,
+    /// At this moment, o1 and o3-mini do not support it and should be set to `None`.
+    pub parallel_tool_calls: Option<bool>,
 }
 
 impl Default for Options {
@@ -77,7 +97,7 @@ impl Default for Options {
         Self {
             embed_model: None,
             prompt_model: None,
-            parallel_tool_calls: true,
+            parallel_tool_calls: Some(true),
         }
     }
 }
@@ -89,14 +109,16 @@ impl Options {
     }
 }
 
-impl OpenAI<OpenAIConfig> {
+impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
-    pub fn builder() -> OpenAIBuilder<OpenAIConfig> {
-        OpenAIBuilder::<OpenAIConfig>::default()
+    pub fn builder() -> OpenAIBuilder {
+        OpenAIBuilder::default()
     }
 }
 
-impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> OpenAIBuilder<C> {
+impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
+    GenericOpenAIBuilder<C>
+{
     /// Sets the `OpenAI` client for the `OpenAI` instance.
     ///
     /// # Parameters
@@ -133,7 +155,7 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> 
     /// Note that currently reasoning models do not support parallel tool calls
     ///
     /// Defaults to `true`
-    pub fn parallel_tool_calls(&mut self, parallel_tool_calls: bool) -> &mut Self {
+    pub fn parallel_tool_calls(&mut self, parallel_tool_calls: Option<bool>) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             options.parallel_tool_calls = parallel_tool_calls;
         } else {
@@ -162,6 +184,32 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug> 
             });
         }
         self
+    }
+}
+impl<C: async_openai::config::Config + Default> GenericOpenAIBuilder<C> {
+    #[cfg(feature = "tiktoken")]
+    fn default_tiktoken(&self) -> TikToken {
+        let model = self
+            .default_options
+            .as_ref()
+            .and_then(|o| o.prompt_model.as_deref())
+            .unwrap_or("gpt-4");
+
+        TikToken::try_from_model(model).expect("Failed to build default model; infallible")
+    }
+}
+
+impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
+    /// Estimates the number of tokens for implementors of the `Estimatable` trait.
+    ///
+    /// I.e. `String`, `ChatMessage` etc
+    ///
+    /// # Errors
+    ///
+    /// Errors if tokinization fails in any way
+    #[cfg(feature = "tiktoken")]
+    pub async fn estimate_tokens(&self, value: impl Estimatable) -> Result<usize> {
+        self.tiktoken.estimate(value).await
     }
 }
 
@@ -231,7 +279,7 @@ mod test {
     /// test default embed model
     #[test]
     fn test_default_embed_and_prompt_model() {
-        let openai: OpenAI<async_openai::config::OpenAIConfig> = OpenAI::builder()
+        let openai: OpenAI = OpenAI::builder()
             .default_embed_model("gpt-3")
             .default_prompt_model("gpt-4")
             .build()
@@ -245,7 +293,7 @@ mod test {
             Some("gpt-4".to_string())
         );
 
-        let openai: OpenAI<async_openai::config::OpenAIConfig> = OpenAI::builder()
+        let openai: OpenAI = OpenAI::builder()
             .default_prompt_model("gpt-4")
             .default_embed_model("gpt-3")
             .build()

@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.20" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.20" }
+swiftide-core = { path = "../swiftide-core", version = "0.22" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.22" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -31,6 +31,7 @@ indoc = { workspace = true }
 
 ignore = { workspace = true }
 text-splitter = { workspace = true, features = ["markdown"] }
+fs-err.workspace = true
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -38,6 +39,7 @@ test-log = { workspace = true }
 mockall = { workspace = true }
 insta = { workspace = true }
 test-case = { workspace = true }
+temp-dir = { workspace = true }
 
 [features]
 # TODO: Should not depend on integrations, transformers that use them should be in integrations instead and re-exported from root for convencience
@@ -45,3 +47,8 @@ tree-sitter = []
 
 [lints]
 workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

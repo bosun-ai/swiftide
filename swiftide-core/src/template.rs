@@ -2,6 +2,7 @@ use anyhow::{Context as _, Result};
 use tokio::sync::RwLock;
 
 use lazy_static::lazy_static;
+pub use tera::Context;
 use tera::Tera;
 use uuid::Uuid;
 

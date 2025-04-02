@@ -4,9 +4,10 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
 ---
 #[derive(
     ::swiftide::reexports::serde::Serialize,
-    ::swiftide::reexports::serde::Deserialize
+    ::swiftide::reexports::serde::Deserialize,
+    Debug
 )]
-struct SearchCodeArgs {
+pub struct SearchCodeArgs {
     pub code_query: String,
     pub other: String,
 }
@@ -45,8 +46,8 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
         let args: SearchCodeArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
         return self.search_code(agent_context, &args.code_query, &args.other).await;
     }
-    fn name(&self) -> &'static str {
-        "search_code"
+    fn name<'TOOL>(&'TOOL self) -> std::borrow::Cow<'TOOL, str> {
+        "search_code".into()
     }
     fn tool_spec(&self) -> ::swiftide::chat_completion::ToolSpec {
         swiftide::chat_completion::ToolSpec::builder()
@@ -56,12 +57,12 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
                 vec![
                     swiftide::chat_completion::ParamSpec::builder().name("code_query")
                     .description("my param description")
-                    .ty(::swiftide::chat_completion::ParamType::String).build()
-                    .expect("infallible"),
+                    .ty(::swiftide::chat_completion::ParamType::String).required(true)
+                    .build().expect("infallible"),
                     swiftide::chat_completion::ParamSpec::builder().name("other")
                     .description("my param description")
-                    .ty(::swiftide::chat_completion::ParamType::String).build()
-                    .expect("infallible")
+                    .ty(::swiftide::chat_completion::ParamType::String).required(true)
+                    .build().expect("infallible")
                 ],
             )
             .build()

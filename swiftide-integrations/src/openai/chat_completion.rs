@@ -13,11 +13,12 @@ use swiftide_core::chat_completion::{
     ChatMessage, ToolCall, ToolSpec,
 };
 
-use super::{open_ai_error_to_completion_error, OpenAI};
+use super::open_ai_error_to_completion_error;
+use super::GenericOpenAI;
 
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    ChatCompletion for OpenAI<C>
+    ChatCompletion for GenericOpenAI<C>
 {
     #[tracing::instrument(skip_all)]
     async fn complete(
@@ -51,8 +52,10 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                         .map(tools_to_openai)
                         .collect::<Result<Vec<_>>>()?,
                 )
-                .tool_choice("auto")
-                .parallel_tool_calls(self.default_options.parallel_tool_calls);
+                .tool_choice("auto");
+            if let Some(par) = self.default_options.parallel_tool_calls {
+                openai_request.parallel_tool_calls(par);
+            }
         }
 
         let request = openai_request
@@ -118,7 +121,7 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
             param.name.to_string(),
             json!({
                 "type": param.ty.as_ref(),
-                "description": param.description,
+                "description": &param.description,
             }),
         );
     }
@@ -126,13 +129,13 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
     ChatCompletionToolArgs::default()
         .r#type(ChatCompletionToolType::Function)
         .function(FunctionObjectArgs::default()
-            .name(spec.name)
-            .description(spec.description)
+            .name(&spec.name)
+            .description(&spec.description)
             .strict(true)
             .parameters(json!({
                 "type": "object",
                 "properties": properties,
-                "required": spec.parameters.iter().filter(|param| param.required).map(|param| param.name).collect_vec(),
+                "required": spec.parameters.iter().filter(|param| param.required).map(|param| &param.name).collect_vec(),
                 "additionalProperties": false,
             })).build()?).build()
         .map_err(anyhow::Error::from)

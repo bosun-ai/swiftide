@@ -7,14 +7,15 @@
 //! If chat messages include a `ChatMessage::Summary`, all previous messages are ignored except the
 //! system prompt. This is useful for maintaining focus in long conversations or managing token
 //! limits.
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc, Mutex,
+};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::{AgentContext, Command, CommandError, CommandOutput, ToolExecutor};
-use tokio::sync::Mutex;
 
 use crate::tools::local_executor::LocalExecutor;
 
@@ -80,7 +81,7 @@ impl DefaultContext {
 impl AgentContext for DefaultContext {
     /// Retrieve messages for the next completion
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
-        let history = self.completion_history.lock().await;
+        let history = self.completion_history.lock().unwrap();
 
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
@@ -103,14 +104,14 @@ impl AgentContext for DefaultContext {
         let current = self.current_completions_ptr.load(Ordering::SeqCst);
         let end = self.completions_ptr.load(Ordering::SeqCst);
 
-        let history = self.completion_history.lock().await;
+        let history = self.completion_history.lock().unwrap();
 
         filter_messages_since_summary(history[current..end].to_vec())
     }
 
     /// Retrieve all messages in the conversation history
     async fn history(&self) -> Vec<ChatMessage> {
-        self.completion_history.lock().await.clone()
+        self.completion_history.lock().unwrap().clone()
     }
 
     /// Add multiple messages to the conversation history
@@ -122,7 +123,7 @@ impl AgentContext for DefaultContext {
 
     /// Add a single message to the conversation history
     async fn add_message(&self, item: ChatMessage) {
-        self.completion_history.lock().await.push(item);
+        self.completion_history.lock().unwrap().push(item);
     }
 
     /// Execute a command in the tool executor
@@ -135,7 +136,7 @@ impl AgentContext for DefaultContext {
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self) {
-        let mut history = self.completion_history.lock().await;
+        let mut history = self.completion_history.lock().unwrap();
         let previous = self.current_completions_ptr.load(Ordering::SeqCst);
         let redrive_ptr = self.completions_ptr.swap(previous, Ordering::SeqCst);
 

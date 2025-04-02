@@ -35,7 +35,8 @@ use tracing::{debug, Instrument};
 ///
 /// - The default context is the `DefaultContext`, executing tools locally with the `LocalExecutor`.
 /// - A default `stop` tool is provided for agents to explicitly stop if needed
-/// - The default `SystemPrompt` instructs the agent with chain of thought and some common safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
+/// - The default `SystemPrompt` instructs the agent with chain of thought and some common
+///   safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
 #[derive(Clone, Builder)]
 pub struct Agent {
     /// Hooks are functions that are called at specific points in the agent's lifecycle.
@@ -93,7 +94,8 @@ pub struct Agent {
     /// worth while. If the limit is not reached, the agent will send the formatted error back to
     /// the LLM.
     ///
-    /// The limit is hashed based on the tool call name and arguments, so the limit is per tool call.
+    /// The limit is hashed based on the tool call name and arguments, so the limit is per tool
+    /// call.
     ///
     /// This limit is _not_ reset when the agent is stopped.
     #[builder(default = 3)]
@@ -108,7 +110,7 @@ pub struct Agent {
 impl std::fmt::Debug for Agent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Agent")
-            //display hooks as a list of type: number of hooks
+            // display hooks as a list of type: number of hooks
             .field(
                 "hooks",
                 &self
@@ -215,8 +217,8 @@ impl AgentBuilder {
 
     /// Define the available tools for the agent. Tools must implement the `Tool` trait.
     ///
-    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive macro](`swiftide_macros::Tool`)
-    /// for easy ways to create (many) tools.
+    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive
+    /// macro](`swiftide_macros::Tool`) for easy ways to create (many) tools.
     pub fn tools<TOOL, I: IntoIterator<Item = TOOL>>(&mut self, tools: I) -> &mut Self
     where
         TOOL: Into<Box<dyn Tool>>,
@@ -258,14 +260,15 @@ impl Agent {
         self.run_agent(Some(query.into()), true).await
     }
 
-    /// Run the agent with without user message. The agent will loop completions, make tool calls, until
-    /// no new messages are available.
+    /// Run the agent with without user message. The agent will loop completions, make tool calls,
+    /// until no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.run")]
     pub async fn run(&mut self) -> Result<()> {
         self.run_agent(None, false).await
     }
 
-    /// Run the agent with without user message. The agent will loop completions, make tool calls, until
+    /// Run the agent with without user message. The agent will loop completions, make tool calls,
+    /// until
     #[tracing::instrument(skip_all, name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<()> {
         self.run_agent(None, true).await
@@ -408,7 +411,7 @@ impl Agent {
 
         if let Some(tool_calls) = response.tool_calls {
             self.invoke_tools(tool_calls).await?;
-        };
+        }
 
         for hook in self.hooks_by_type(HookTypes::AfterEach) {
             if let Hook::AfterEach(hook) = hook {
@@ -451,14 +454,16 @@ impl Agent {
                 }
             }
 
-            let tool_span =
-                tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool.name()));
+            let tool_span = tracing::info_span!(
+                "tool",
+                "otel.name" = format!("tool.{}", tool.name().as_ref())
+            );
 
             let handle = tokio::spawn(async move {
                     let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
                     let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
-                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name(), "Completed tool call");
+                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name().as_ref(), "Completed tool call");
 
                     Ok(output)
                 }.instrument(tool_span.or_current()));
@@ -484,24 +489,28 @@ impl Agent {
             }
 
             if let Err(error) = output {
-                if self.tool_calls_over_limit(&tool_call) {
+                let stop = self.tool_calls_over_limit(&tool_call);
+                if stop {
                     tracing::error!(
                         "Tool call failed, retry limit reached, stopping agent: {err}",
                         err = error
                     );
-                    self.stop();
-                    return Err(error.into());
+                } else {
+                    tracing::warn!(
+                        error = error.to_string(),
+                        tool_call = ?tool_call,
+                        "Tool call failed, retrying",
+                    );
                 }
-                tracing::warn!(
-                    error = error.to_string(),
-                    tool_call = ?tool_call,
-                    "Tool call failed, retrying",
-                );
                 self.add_message(ChatMessage::ToolOutput(
                     tool_call,
                     ToolOutput::Fail(error.to_string()),
                 ))
                 .await?;
+                if stop {
+                    self.stop();
+                    return Err(error.into());
+                }
                 continue;
             }
 
@@ -551,8 +560,13 @@ impl Agent {
         }
     }
 
+    /// Add a message to the agent's context
+    ///
+    /// This will trigger a `OnNewMessage` hook if its present.
+    ///
+    /// If you want to add a message without triggering the hook, use the context directly.
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
-    async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
+    pub async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
         for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
             if let Hook::OnNewMessage(hook) = hook {
                 let span = tracing::info_span!(

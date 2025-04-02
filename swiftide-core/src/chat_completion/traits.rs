@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use dyn_clone::DynClone;
+use std::borrow::Cow;
 
 use crate::{AgentContext, CommandOutput};
 
@@ -68,6 +69,14 @@ impl From<CommandOutput> for ToolOutput {
     }
 }
 
+/// The `Tool` trait is the main interface for chat completion and agent tools.
+///
+/// `swiftide-macros` provides a set of macros to generate implementations of this trait. If you
+/// need more control over the implementation, you can implement the trait manually.
+///
+/// The `ToolSpec` is what will end up with the LLM. A builder is provided. The `name` is expected
+/// to be unique, and is used to identify the tool. It should be the same as the name in the
+/// `ToolSpec`.
 #[async_trait]
 pub trait Tool: Send + Sync + DynClone {
     // tbd
@@ -77,7 +86,7 @@ pub trait Tool: Send + Sync + DynClone {
         raw_args: Option<&str>,
     ) -> Result<ToolOutput, ToolError>;
 
-    fn name(&self) -> &'static str;
+    fn name(&self) -> Cow<'_, str>;
 
     fn tool_spec(&self) -> ToolSpec;
 
@@ -98,7 +107,7 @@ impl Tool for Box<dyn Tool> {
     ) -> Result<ToolOutput, ToolError> {
         (**self).invoke(agent_context, raw_args).await
     }
-    fn name(&self) -> &'static str {
+    fn name(&self) -> Cow<'_, str> {
         (**self).name()
     }
     fn tool_spec(&self) -> ToolSpec {
@@ -107,16 +116,6 @@ impl Tool for Box<dyn Tool> {
 }
 
 dyn_clone::clone_trait_object!(Tool);
-
-// impl<T> From<T> for Box<dyn Tool + '_>
-// where
-//     for<'b> T: Tool + 'b,
-// {
-//     fn from(value: T) -> Self {
-//         // dyn_clone::clone_box(&value)
-//         Box::new(value)
-//     }
-// }
 
 /// Tools are identified and unique by name
 /// These allow comparison and lookups

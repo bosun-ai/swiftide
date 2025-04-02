@@ -1,16 +1,18 @@
 //! # [Swiftide] Indexing the Swiftide itself example with reduced context size
 //!
-//! This example demonstrates how to index the Swiftide codebase itself, optimizing for a smaller context size.
-//! Note that for it to work correctly you need to have OPENAI_API_KEY set, redis and qdrant
-//! running.
+//! This example demonstrates how to index the Swiftide codebase itself, optimizing for a smaller
+//! context size. Note that for it to work correctly you need to have OPENAI_API_KEY set, redis and
+//! qdrant running.
 //!
 //! The pipeline will:
 //! - Load all `.rs` files from the current directory
 //! - Skip any nodes previously processed; hashes are based on the path and chunk (not the
 //!   metadata!)
-//! - Generate an outline of the symbols defined in each file to be used as context in a later step and store it in the metadata
+//! - Generate an outline of the symbols defined in each file to be used as context in a later step
+//!   and store it in the metadata
 //! - Chunk the code into pieces of 10 to 2048 bytes
-//! - For each chunk, generate a condensed subset of the symbols outline tailored for that specific chunk and store that in the metadata
+//! - For each chunk, generate a condensed subset of the symbols outline tailored for that specific
+//!   chunk and store that in the metadata
 //! - Run metadata QA on each chunk; generating questions and answers and adding metadata
 //! - Embed the chunks in batches of 10, Metadata is embedded by default
 //! - Store the nodes in Qdrant

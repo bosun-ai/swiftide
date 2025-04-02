@@ -12,11 +12,12 @@ use swiftide_core::{
 /// Generate an answer based on the current query
 ///
 /// For most general purposes, this transformer should provide a sensible default. It takes either
-/// a transformation that has already been applied to the documents (in `Query::current`), or the documents themselves,
-/// and will then feed them as context with the _original_ question to an llm to generate an
-/// answer.
+/// a transformation that has already been applied to the documents (in `Query::current`), or the
+/// documents themselves, and will then feed them as context with the _original_ question to an llm
+/// to generate an answer.
 ///
-/// Optionally, a custom document template can be provided to render the documents in a specific way.
+/// Optionally, a custom document template can be provided to render the documents in a specific
+/// way.
 #[derive(Debug, Clone, Builder)]
 pub struct Simple {
     #[builder(setter(custom))]

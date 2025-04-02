@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -175,13 +176,13 @@ impl Tool for MockTool {
         expectation.0
     }
 
-    fn name(&self) -> &'static str {
-        self.name
+    fn name(&self) -> Cow<'_, str> {
+        self.name.into()
     }
 
     fn tool_spec(&self) -> ToolSpec {
         ToolSpec::builder()
-            .name(self.name())
+            .name(self.name().as_ref())
             .description("A fake tool for testing purposes")
             .build()
             .unwrap()

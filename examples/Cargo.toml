@@ -27,17 +27,15 @@ swiftide = { path = "../swiftide/", features = [
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true }
-serde = { workspace = true }
 serde_json = { workspace = true }
 spider = { workspace = true }
-qdrant-client = { workspace = true }
 fluvio = { workspace = true }
 temp-dir = { workspace = true }
 anyhow = { workspace = true }
-indoc = { workspace = true }
 sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
+serde = { workspace = true }
 
 
 [[example]]
