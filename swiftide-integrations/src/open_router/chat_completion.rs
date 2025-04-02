@@ -57,7 +57,7 @@ impl ChatCompletion for OpenRouter {
 
         let request = openai_request
             .build()
-            .map_err(|e| open_ai_error_to_completion_error(e))?;
+            .map_err(open_ai_error_to_completion_error)?;
 
         tracing::debug!(
             model = &model,
@@ -70,7 +70,7 @@ impl ChatCompletion for OpenRouter {
             .chat()
             .create(request)
             .await
-            .map_err(|e| open_ai_error_to_completion_error(e))?;
+            .map_err(open_ai_error_to_completion_error)?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("infallible"),

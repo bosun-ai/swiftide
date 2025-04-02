@@ -34,7 +34,7 @@ pub enum ChatCompletionError {
 
 impl From<LLMError> for ChatCompletionError {
     fn from(e: LLMError) -> Self {
-        ChatCompletionError::ClientError(e.into())
+        ChatCompletionError::ClientError(e)
     }
 }
 

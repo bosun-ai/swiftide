@@ -66,7 +66,7 @@ impl SimplePrompt for OpenRouter {
             .chat()
             .create(request)
             .await
-            .map_err(|e| open_ai_error_to_completion_error(e))?
+            .map_err(open_ai_error_to_completion_error)?
             .choices
             .remove(0)
             .message

@@ -26,7 +26,7 @@ impl SimplePrompt for AwsBedrock {
 
         self.model_family
             .output_message_from_bytes(&response_bytes)
-            .map_err(|e| e.into())
+            .map_err(std::convert::Into::into)
     }
 }
 

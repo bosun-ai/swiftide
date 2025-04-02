@@ -33,19 +33,20 @@ impl SimplePrompt for Anthropic {
             let CreateMessagesError::AnthropicError(e) = e;
             match e {
                 AnthropicError::NetworkError(_) => ChatCompletionError::TransientError(e.into()),
+                AnthropicError::UnexpectedError => {
+                    ChatCompletionError::ClientError("Anthropic unexpected error".into())
+                    // Seriously?
+                }
+                AnthropicError::Unauthorized => {
+                    ChatCompletionError::ClientError("Anthropic unauthorized".into())
+                }
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
                 // And which would be the ContextLengthExceeded error
                 // For now, we'll just map all of them to client errors so we get feedback.
-                AnthropicError::BadRequest(_) => ChatCompletionError::ClientError(e.into()),
-                AnthropicError::ApiError(_) => ChatCompletionError::ClientError(e.into()),
-                AnthropicError::Unauthorized => {
-                    ChatCompletionError::ClientError("Unauthorized".into())
-                }
-                AnthropicError::Unknown(_) => ChatCompletionError::ClientError(e.into()),
-                AnthropicError::UnexpectedError => {
-                    ChatCompletionError::ClientError("Unexpected error".into())
-                }
+                AnthropicError::BadRequest(_)
+                | AnthropicError::ApiError(_)
+                | AnthropicError::Unknown(_) => ChatCompletionError::ClientError(e.into()),
             }
         })?;
 

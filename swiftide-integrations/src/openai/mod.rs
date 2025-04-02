@@ -176,8 +176,8 @@ pub fn open_ai_error_to_completion_error(e: OpenAIError) -> ChatCompletionError 
                 ChatCompletionError::ClientError(OpenAIError::ApiError(api_error).into())
             }
         }
-        OpenAIError::Reqwest(e) => match e.status() {
-            Some(status) => {
+        OpenAIError::Reqwest(e) => {
+            if let Some(status) = e.status() {
                 // If the response code is 429 it could either be a TransientError or a ClientError depending
                 // on the message, if it contains the word quota, it should be a ClientError otherwise it should
                 // be a TransientError.
@@ -194,13 +194,12 @@ pub fn open_ai_error_to_completion_error(e: OpenAIError) -> ChatCompletionError 
                     tracing::error!("Unexpected OpenAI Error: {:?}, error: {:?}", status, e);
                     ChatCompletionError::ClientError(e.into())
                 }
-            }
-            _ => {
+            } else {
                 // making the request failed for some other reason, probably recoverable
                 tracing::error!("Unexpected OpenAI Reqwest Error: {:?}", e);
                 ChatCompletionError::TransientError(e.into())
             }
-        },
+        }
         OpenAIError::JSONDeserialize(e) => {
             // OpenAI generated a non-json response, probably a temporary problem on their side
             tracing::error!("OpenAI response could not be deserialized: {:?}", e);
