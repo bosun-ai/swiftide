@@ -4,11 +4,11 @@
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
 use swiftide_core::{
-    chat_completion::errors::ChatCompletionError, indexing::SimplePrompt, prompt::Prompt,
+    chat_completion::errors::LanguageModelError, indexing::SimplePrompt, prompt::Prompt,
     util::debug_long_utf8,
 };
 
-use crate::openai::open_ai_error_to_completion_error;
+use crate::openai::openai_error_to_language_model_error;
 
 use super::OpenRouter;
 use anyhow::{Context as _, Result};
@@ -31,7 +31,7 @@ impl SimplePrompt for OpenRouter {
     /// - Returns an error if the request to the OpenRouter API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
@@ -45,17 +45,17 @@ impl SimplePrompt for OpenRouter {
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render().await?)
                 .build()
-                .map_err(|e| ChatCompletionError::ClientError(e.into()))?
+                .map_err(|e| LanguageModelError::ClientError(e.into()))?
                 .into()])
             .build()
-            .map_err(|e| ChatCompletionError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
                 serde_json::to_string_pretty(&request.messages.first())
-                    .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+                    .map_err(|e| LanguageModelError::ClientError(e.into()))?,
                 100
             ),
             "[SimplePrompt] Request to openrouter"
@@ -67,7 +67,7 @@ impl SimplePrompt for OpenRouter {
             .chat()
             .create(request)
             .await
-            .map_err(open_ai_error_to_completion_error)?
+            .map_err(openai_error_to_language_model_error)?
             .choices
             .remove(0)
             .message

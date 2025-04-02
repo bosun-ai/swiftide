@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 
 use crate::chat_completion::{
-    errors::ChatCompletionError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
+    errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
 };
 use anyhow::Result;
 use pretty_assertions::assert_eq;
@@ -74,7 +74,7 @@ impl ChatCompletion for MockChatCompletion {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let (expected_request, response) =
             self.expectations.lock().unwrap().pop().unwrap_or_else(|| {
                 panic!(
@@ -114,7 +114,7 @@ impl ChatCompletion for MockChatCompletion {
                 .unwrap()
                 .push((expected_request, Err(anyhow::anyhow!(err.to_string()))));
 
-            Err(ChatCompletionError::ClientError(err.into()))
+            Err(LanguageModelError::ClientError(err.into()))
         }
     }
 }

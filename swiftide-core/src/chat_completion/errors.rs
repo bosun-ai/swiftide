@@ -20,26 +20,26 @@ pub enum ToolError {
     Unknown(#[from] anyhow::Error),
 }
 
-type LLMError = Box<dyn std::error::Error + Send + Sync>;
+type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Error, Debug)]
-pub enum ChatCompletionError {
+pub enum LanguageModelError {
     #[error("Context length exceeded: {0}")]
-    ContextLengthExceeded(LLMError),
+    ContextLengthExceeded(BoxedError),
     #[error("Client error: {0}")]
-    ClientError(LLMError),
+    ClientError(BoxedError),
     #[error("Transient error: {0}")]
-    TransientError(LLMError),
+    TransientError(BoxedError),
 }
 
-impl From<LLMError> for ChatCompletionError {
-    fn from(e: LLMError) -> Self {
-        ChatCompletionError::ClientError(e)
+impl From<BoxedError> for LanguageModelError {
+    fn from(e: BoxedError) -> Self {
+        LanguageModelError::ClientError(e)
     }
 }
 
-impl From<anyhow::Error> for ChatCompletionError {
+impl From<anyhow::Error> for LanguageModelError {
     fn from(e: anyhow::Error) -> Self {
-        ChatCompletionError::ClientError(e.into())
+        LanguageModelError::ClientError(e.into())
     }
 }

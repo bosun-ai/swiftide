@@ -2,13 +2,14 @@ use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 
-use swiftide_core::{EmbeddingModel, Embeddings};
+use swiftide_core::{chat_completion::errors::LanguageModelError, EmbeddingModel, Embeddings};
 
 use super::Ollama;
+use crate::openai::openai_error_to_language_model_error;
 
 #[async_trait]
 impl EmbeddingModel for Ollama {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         let model = self
             .default_options
             .embed_model
@@ -18,7 +19,8 @@ impl EmbeddingModel for Ollama {
         let request = CreateEmbeddingRequestArgs::default()
             .model(model)
             .input(&input)
-            .build()?;
+            .build()
+            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
         tracing::debug!(
             num_chunks = input.len(),
             model = &model,
@@ -29,7 +31,7 @@ impl EmbeddingModel for Ollama {
             .embeddings()
             .create(request)
             .await
-            .context("Request to OpenAI Failed")?;
+            .map_err(openai_error_to_language_model_error)?;
 
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");

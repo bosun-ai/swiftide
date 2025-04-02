@@ -7,7 +7,7 @@ use crate::{AgentContext, CommandOutput};
 use super::{
     chat_completion_request::ChatCompletionRequest,
     chat_completion_response::ChatCompletionResponse,
-    errors::{ChatCompletionError, ToolError},
+    errors::{LanguageModelError, ToolError},
     ToolOutput, ToolSpec,
 };
 
@@ -16,7 +16,7 @@ pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError>;
+    ) -> Result<ChatCompletionResponse, LanguageModelError>;
 }
 
 #[async_trait]
@@ -24,7 +24,7 @@ impl ChatCompletion for Box<dyn ChatCompletion> {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
 }
@@ -34,7 +34,7 @@ impl ChatCompletion for &dyn ChatCompletion {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
 }
@@ -47,7 +47,7 @@ where
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
 }

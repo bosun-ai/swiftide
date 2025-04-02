@@ -3,7 +3,7 @@ use async_anthropic::{
     errors::AnthropicError, errors::CreateMessagesError, types::CreateMessagesRequestBuilder,
 };
 use async_trait::async_trait;
-use swiftide_core::{chat_completion::errors::ChatCompletionError, indexing::SimplePrompt};
+use swiftide_core::{chat_completion::errors::LanguageModelError, indexing::SimplePrompt};
 
 use super::Anthropic;
 
@@ -13,32 +13,32 @@ impl SimplePrompt for Anthropic {
     async fn prompt(
         &self,
         prompt: swiftide_core::prompt::Prompt,
-    ) -> Result<String, ChatCompletionError> {
+    ) -> Result<String, LanguageModelError> {
         let model = &self.default_options.prompt_model;
 
         let request = CreateMessagesRequestBuilder::default()
             .model(model)
             .messages(vec![prompt.render().await?.into()])
             .build()
-            .map_err(|e| ChatCompletionError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
 
         tracing::debug!(
             model = &model,
             messages = serde_json::to_string_pretty(&request)
-                .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+                .map_err(|e| LanguageModelError::ClientError(e.into()))?,
             "[SimplePrompt] Request to anthropic"
         );
 
         let response = self.client.messages().create(request).await.map_err(|e| {
             let CreateMessagesError::AnthropicError(e) = e;
             match e {
-                AnthropicError::NetworkError(_) => ChatCompletionError::TransientError(e.into()),
+                AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
                 AnthropicError::UnexpectedError => {
-                    ChatCompletionError::ClientError("Anthropic unexpected error".into())
+                    LanguageModelError::ClientError("Anthropic unexpected error".into())
                     // Seriously?
                 }
                 AnthropicError::Unauthorized => {
-                    ChatCompletionError::ClientError("Anthropic unauthorized".into())
+                    LanguageModelError::ClientError("Anthropic unauthorized".into())
                 }
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
@@ -46,13 +46,13 @@ impl SimplePrompt for Anthropic {
                 // For now, we'll just map all of them to client errors so we get feedback.
                 AnthropicError::BadRequest(_)
                 | AnthropicError::ApiError(_)
-                | AnthropicError::Unknown(_) => ChatCompletionError::ClientError(e.into()),
+                | AnthropicError::Unknown(_) => LanguageModelError::ClientError(e.into()),
             }
         })?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response)
-                .map_err(|e| ChatCompletionError::ClientError(e.into()))?,
+                .map_err(|e| LanguageModelError::ClientError(e.into()))?,
             "[SimplePrompt] Response from anthropic"
         );
 
@@ -61,12 +61,12 @@ impl SimplePrompt for Anthropic {
             .into_iter()
             .next()
             .context("No messages in response")
-            .map_err(|e| ChatCompletionError::ClientError(e.into()))?;
+            .map_err(|e| LanguageModelError::ClientError(e.into()))?;
 
         message
             .text()
             .context("No text in response")
-            .map_err(|e| ChatCompletionError::ClientError(e.into()))
+            .map_err(|e| LanguageModelError::ClientError(e.into()))
     }
 }
 

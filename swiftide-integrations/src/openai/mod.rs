@@ -6,7 +6,7 @@
 use async_openai::error::OpenAIError;
 use derive_builder::Builder;
 use std::sync::Arc;
-use swiftide_core::chat_completion::errors::ChatCompletionError;
+use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
@@ -213,15 +213,15 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
     }
 }
 
-pub fn open_ai_error_to_completion_error(e: OpenAIError) -> ChatCompletionError {
+pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelError {
     match e {
         OpenAIError::ApiError(api_error) => {
             // If the response is an ApiError, it could be a context length exceeded error
             if api_error.code == Some("context_length_exceeded".to_string()) {
-                ChatCompletionError::ContextLengthExceeded(OpenAIError::ApiError(api_error).into())
+                LanguageModelError::ContextLengthExceeded(OpenAIError::ApiError(api_error).into())
             } else {
                 tracing::error!("OpenAI API Error: {:?}", api_error);
-                ChatCompletionError::ClientError(OpenAIError::ApiError(api_error).into())
+                LanguageModelError::ClientError(OpenAIError::ApiError(api_error).into())
             }
         }
         OpenAIError::Reqwest(e) => {
@@ -231,43 +231,43 @@ pub fn open_ai_error_to_completion_error(e: OpenAIError) -> ChatCompletionError 
                 // be a TransientError.
                 // If the response code is any other 4xx it should be a ClientError.
                 if status.as_u16() == 429 && !e.to_string().contains("quota") {
-                    ChatCompletionError::TransientError(e.into())
+                    LanguageModelError::TransientError(e.into())
                 } else if status.is_client_error() {
                     tracing::error!("OpenAI API Client Error: {:?}", e);
-                    ChatCompletionError::ClientError(e.into())
+                    LanguageModelError::ClientError(e.into())
                 } else if status.is_server_error() {
                     tracing::warn!("OpenAI API Server Error: {:?}", e);
-                    ChatCompletionError::TransientError(e.into())
+                    LanguageModelError::TransientError(e.into())
                 } else {
                     tracing::error!("Unexpected OpenAI Error: {:?}, error: {:?}", status, e);
-                    ChatCompletionError::ClientError(e.into())
+                    LanguageModelError::ClientError(e.into())
                 }
             } else {
                 // making the request failed for some other reason, probably recoverable
                 tracing::error!("Unexpected OpenAI Reqwest Error: {:?}", e);
-                ChatCompletionError::TransientError(e.into())
+                LanguageModelError::TransientError(e.into())
             }
         }
         OpenAIError::JSONDeserialize(e) => {
             // OpenAI generated a non-json response, probably a temporary problem on their side
             tracing::error!("OpenAI response could not be deserialized: {:?}", e);
-            ChatCompletionError::TransientError(e.into())
+            LanguageModelError::TransientError(e.into())
         }
         OpenAIError::FileSaveError(msg) => {
             tracing::error!("OpenAI Failed to save file: {:?}", msg);
-            ChatCompletionError::ClientError(OpenAIError::FileSaveError(msg).into())
+            LanguageModelError::ClientError(OpenAIError::FileSaveError(msg).into())
         }
         OpenAIError::FileReadError(msg) => {
             tracing::error!("OpenAI Failed to read file: {:?}", msg);
-            ChatCompletionError::ClientError(OpenAIError::FileReadError(msg).into())
+            LanguageModelError::ClientError(OpenAIError::FileReadError(msg).into())
         }
         OpenAIError::StreamError(msg) => {
             tracing::error!("OpenAI Stream failed: {:?}", msg);
-            ChatCompletionError::ClientError(OpenAIError::StreamError(msg).into())
+            LanguageModelError::ClientError(OpenAIError::StreamError(msg).into())
         }
         OpenAIError::InvalidArgument(msg) => {
             tracing::error!("OpenAI Invalid Argument: {:?}", msg);
-            ChatCompletionError::ClientError(OpenAIError::InvalidArgument(msg).into())
+            LanguageModelError::ClientError(OpenAIError::InvalidArgument(msg).into())
         }
     }
 }

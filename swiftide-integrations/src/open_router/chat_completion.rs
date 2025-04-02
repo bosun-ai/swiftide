@@ -9,11 +9,11 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    errors::ChatCompletionError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
+    errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
     ChatMessage, ToolCall, ToolSpec,
 };
 
-use crate::openai::open_ai_error_to_completion_error;
+use crate::openai::openai_error_to_language_model_error;
 
 use super::OpenRouter;
 
@@ -23,7 +23,7 @@ impl ChatCompletion for OpenRouter {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self
             .default_options
             .prompt_model
@@ -57,7 +57,7 @@ impl ChatCompletion for OpenRouter {
 
         let request = openai_request
             .build()
-            .map_err(open_ai_error_to_completion_error)?;
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
             model = &model,
@@ -70,7 +70,7 @@ impl ChatCompletion for OpenRouter {
             .chat()
             .create(request)
             .await
-            .map_err(open_ai_error_to_completion_error)?;
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("infallible"),
@@ -104,7 +104,7 @@ impl ChatCompletion for OpenRouter {
                     }),
             )
             .build()
-            .map_err(ChatCompletionError::from)
+            .map_err(LanguageModelError::from)
     }
 }
 

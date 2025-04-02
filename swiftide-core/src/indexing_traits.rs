@@ -12,7 +12,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::chat_completion::errors::ChatCompletionError;
+use crate::chat_completion::errors::LanguageModelError;
 use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -421,7 +421,7 @@ impl NodeCache for &dyn NodeCache {
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync + Debug + DynClone {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
@@ -438,7 +438,7 @@ mock! {
 
     #[async_trait]
     impl EmbeddingModel for EmbeddingModel {
-        async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+        async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError>;
         fn name(&self) -> &'static str;
     }
 
@@ -449,7 +449,7 @@ mock! {
 
 #[async_trait]
 impl EmbeddingModel for Box<dyn EmbeddingModel> {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         self.as_ref().embed(input).await
     }
 
@@ -460,7 +460,7 @@ impl EmbeddingModel for Box<dyn EmbeddingModel> {
 
 #[async_trait]
 impl EmbeddingModel for Arc<dyn EmbeddingModel> {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         self.as_ref().embed(input).await
     }
 
@@ -471,7 +471,7 @@ impl EmbeddingModel for Arc<dyn EmbeddingModel> {
 
 #[async_trait]
 impl EmbeddingModel for &dyn EmbeddingModel {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         (*self).embed(input).await
     }
 }
@@ -480,7 +480,10 @@ impl EmbeddingModel for &dyn EmbeddingModel {
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
 pub trait SparseEmbeddingModel: Send + Sync + Debug + DynClone {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
@@ -497,7 +500,7 @@ mock! {
 
     #[async_trait]
     impl SparseEmbeddingModel for SparseEmbeddingModel {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+        async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings, LanguageModelError>;
         fn name(&self) -> &'static str;
     }
 
@@ -508,7 +511,10 @@ mock! {
 
 #[async_trait]
 impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError> {
         self.as_ref().sparse_embed(input).await
     }
 
@@ -519,7 +525,10 @@ impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
 
 #[async_trait]
 impl SparseEmbeddingModel for Arc<dyn SparseEmbeddingModel> {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError> {
         self.as_ref().sparse_embed(input).await
     }
 
@@ -530,7 +539,10 @@ impl SparseEmbeddingModel for Arc<dyn SparseEmbeddingModel> {
 
 #[async_trait]
 impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError> {
         (*self).sparse_embed(input).await
     }
 }
@@ -551,41 +563,72 @@ pub struct BackoffConfiguration {
     pub max_elapsed_time_sec: u64,
 }
 
+impl Default for BackoffConfiguration {
+    fn default() -> Self {
+        Self {
+            initial_interval_sec: 1,
+            multiplier: 2.0,
+            randomization_factor: 0.5,
+            max_elapsed_time_sec: 60,
+        }
+    }
+}
+
 #[async_trait]
 /// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync + DynClone {
     // Takes a simple prompt, prompts the llm and returns the response
-    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError>;
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+}
 
-    async fn prompt_with_backoff(
-        self: &Self,
-        prompt: Prompt,
-        config: BackoffConfiguration,
-    ) -> Result<String, ChatCompletionError> {
-        let strategy = backoff::ExponentialBackoffBuilder::default()
-            .with_initial_interval(Duration::from_secs(config.initial_interval_sec))
-            .with_multiplier(config.multiplier)
-            .with_max_elapsed_time(Some(Duration::from_secs(config.max_elapsed_time_sec)))
-            .with_randomization_factor(config.randomization_factor)
-            .build();
+dyn_clone::clone_trait_object!(SimplePrompt);
+
+#[derive(Debug, Clone)]
+pub struct ReliableSimplePrompt<P: Clone> {
+    inner: P,
+    config: BackoffConfiguration,
+}
+
+impl<P: Clone> ReliableSimplePrompt<P> {
+    pub fn new(client: P, config: BackoffConfiguration) -> Self {
+        Self {
+            inner: client,
+            config,
+        }
+    }
+
+    fn strategy(&self) -> backoff::ExponentialBackoff {
+        backoff::ExponentialBackoffBuilder::default()
+            .with_initial_interval(Duration::from_secs(self.config.initial_interval_sec))
+            .with_multiplier(self.config.multiplier)
+            .with_max_elapsed_time(Some(Duration::from_secs(self.config.max_elapsed_time_sec)))
+            .with_randomization_factor(self.config.randomization_factor)
+            .build()
+    }
+}
+
+#[async_trait]
+impl<P: SimplePrompt + Clone> SimplePrompt for ReliableSimplePrompt<P> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
+        let strategy = self.strategy();
 
         let op = || {
             let prompt = prompt.clone();
             async {
-                self.prompt(prompt).await.map_err(|e| match e {
-                    ChatCompletionError::ContextLengthExceeded(e) => {
-                        backoff::Error::Permanent(ChatCompletionError::ContextLengthExceeded(e))
+                self.inner.prompt(prompt).await.map_err(|e| match e {
+                    LanguageModelError::ContextLengthExceeded(e) => {
+                        backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
                     }
-                    ChatCompletionError::ClientError(e) => {
-                        backoff::Error::Permanent(ChatCompletionError::ClientError(e))
+                    LanguageModelError::ClientError(e) => {
+                        backoff::Error::Permanent(LanguageModelError::ClientError(e))
                     }
-                    ChatCompletionError::TransientError(e) => {
-                        backoff::Error::transient(ChatCompletionError::TransientError(e))
+                    LanguageModelError::TransientError(e) => {
+                        backoff::Error::transient(LanguageModelError::TransientError(e))
                     }
                 })
             }
@@ -593,9 +636,22 @@ pub trait SimplePrompt: Debug + Send + Sync + DynClone {
 
         backoff::future::retry(strategy, op).await
     }
+
+    fn name(&self) -> &'static str {
+        self.inner.name()
+    }
 }
 
-dyn_clone::clone_trait_object!(SimplePrompt);
+#[async_trait]
+impl<P: EmbeddingModel + Clone> EmbeddingModel for ReliableSimplePrompt<P> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
+        self.inner.embed(input).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.inner.name()
+    }
+}
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -604,7 +660,7 @@ mock! {
 
     #[async_trait]
     impl SimplePrompt for SimplePrompt {
-        async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError>;
+        async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError>;
         fn name(&self) -> &'static str;
     }
 
@@ -615,7 +671,7 @@ mock! {
 
 #[async_trait]
 impl SimplePrompt for Box<dyn SimplePrompt> {
-    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         self.as_ref().prompt(prompt).await
     }
 
@@ -626,7 +682,7 @@ impl SimplePrompt for Box<dyn SimplePrompt> {
 
 #[async_trait]
 impl SimplePrompt for Arc<dyn SimplePrompt> {
-    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         self.as_ref().prompt(prompt).await
     }
 
@@ -637,7 +693,7 @@ impl SimplePrompt for Arc<dyn SimplePrompt> {
 
 #[async_trait]
 impl SimplePrompt for &dyn SimplePrompt {
-    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         (*self).prompt(prompt).await
     }
 }

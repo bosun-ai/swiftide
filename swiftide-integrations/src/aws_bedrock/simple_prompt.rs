@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::primitives::Blob;
 use swiftide_core::{
-    chat_completion::errors::ChatCompletionError, indexing::SimplePrompt, prompt::Prompt,
+    chat_completion::errors::LanguageModelError, indexing::SimplePrompt, prompt::Prompt,
 };
 
 use super::AwsBedrock;
@@ -10,7 +10,7 @@ use super::AwsBedrock;
 #[async_trait]
 impl SimplePrompt for AwsBedrock {
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: Prompt) -> Result<String, ChatCompletionError> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let blob = self
             .model_family
             .build_request_to_bytes(prompt.render().await?, &self.model_config)
@@ -21,7 +21,7 @@ impl SimplePrompt for AwsBedrock {
         tracing::debug!(
             "Received response: {:?}",
             std::str::from_utf8(&response_bytes)
-                .map_err(|e| ChatCompletionError::ClientError(e.into()))
+                .map_err(|e| LanguageModelError::ClientError(e.into()))
         );
 
         self.model_family

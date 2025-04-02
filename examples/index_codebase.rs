@@ -24,6 +24,7 @@ use swiftide::{
     indexing::loaders::FileLoader,
     indexing::transformers::{ChunkCode, Embed, MetadataQACode},
     integrations::{self, qdrant::Qdrant, redis::Redis},
+    traits::ReliableSimplePrompt,
 };
 
 #[tokio::main]
@@ -34,6 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default_embed_model("text-embedding-3-small")
         .default_prompt_model("gpt-3.5-turbo")
         .build()?;
+
+    let openai_client = ReliableSimplePrompt::new(openai_client, Default::default());
 
     let redis_url = std::env::var("REDIS_URL")
         .as_deref()
