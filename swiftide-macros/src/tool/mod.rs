@@ -93,7 +93,7 @@ pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> T
 }
 
 #[derive(FromDeriveInput)]
-#[darling(attributes(tool), supports(struct_any), and_then = ToolDerive::update_defaults)]
+#[darling(attributes(tool), supports(struct_any), and_then = ToolDerive::update_defaults, forward_attrs(allow, doc, cfg))]
 struct ToolDerive {
     ident: syn::Ident,
     #[allow(dead_code)]
