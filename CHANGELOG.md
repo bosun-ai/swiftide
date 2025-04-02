@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.8](https://github.com/bosun-ai/swiftide/compare/v0.22.7...v0.22.8) - 2025-04-02
+
+### Bug fixes
+
+- [6b4dfca](https://github.com/bosun-ai/swiftide/commit/6b4dfca822f39b3700d60e6ea31b9b48ccd6d56f)  Tool macros should work with latest darling version ([#712](https://github.com/bosun-ai/swiftide/pull/712))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.7...0.22.8
+
+
+
 ## [0.22.7](https://github.com/bosun-ai/swiftide/compare/v0.22.6...v0.22.7) - 2025-03-30
 
 ### Bug fixes
