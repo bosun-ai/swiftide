@@ -3,6 +3,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::{prelude::FromRow, types::Uuid, Column, Row};
+use std::fmt::Write as _;
 use swiftide_core::{
     document::Document,
     indexing::Metadata,
@@ -117,10 +118,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
         }
 
         // Add the ORDER BY clause for vector similarity search
-        sql.push_str(&format!(
-            " ORDER BY {} <=> $1 LIMIT $2",
-            &vector_column_name
-        ));
+        write!(sql, " ORDER BY {vector_column_name} <=> $1 LIMIT $2")?;
 
         tracing::debug!("Running retrieve with SQL: {}", sql);
 
