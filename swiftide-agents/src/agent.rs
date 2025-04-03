@@ -246,6 +246,8 @@ impl AgentBuilder {
     /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added to the
     /// to the agent. Available tools are evaluated at runtime, when the agent starts for the first
     /// time.
+    ///
+    /// Agents can have many toolboxes.
     pub fn add_toolbox(&mut self, toolbox: impl ToolBox + 'static) -> &mut Self {
         self.toolboxes.get_or_insert_with(Vec::new);
 
@@ -514,12 +516,12 @@ impl Agent {
                 let stop = self.tool_calls_over_limit(&tool_call);
                 if stop {
                     tracing::error!(
-                        "Tool call failed, retry limit reached, stopping agent: {err}",
-                        err = error
+                        ?error,
+                        "Tool call failed, retry limit reached, stopping agent: {error}",
                     );
                 } else {
                     tracing::warn!(
-                        error = error.to_string(),
+                        ?error,
                         tool_call = ?tool_call,
                         "Tool call failed, retrying",
                     );

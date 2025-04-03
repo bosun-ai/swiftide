@@ -110,6 +110,10 @@ pub trait Tool: Send + Sync + DynClone {
 pub trait ToolBox: Send + Sync + DynClone {
     async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>>;
 
+    fn name(&self) -> Cow<'_, str> {
+        Cow::Borrowed("Unnamed ToolBox")
+    }
+
     fn boxed<'a>(self) -> Box<dyn ToolBox + 'a>
     where
         Self: Sized + 'a,
