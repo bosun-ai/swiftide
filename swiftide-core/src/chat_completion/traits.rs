@@ -100,7 +100,6 @@ mod tests {
         atomic::{AtomicUsize, Ordering},
         Arc,
     };
-    use std::time::Duration;
 
     #[derive(Clone)]
     enum MockErrorType {

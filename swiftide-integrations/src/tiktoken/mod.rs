@@ -22,12 +22,14 @@ use tiktoken_rs::{get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokeniz
 ///
 /// ```no_run
 /// # use swiftide_core::tokenizer::EstimateTokens;
-/// # use crate::tiktoken::TikToken;
-///
-/// let tokenizer = TikToken::try_from_model("gpt-4-0314").unwrap();
-/// let estimate = tokenizer.estimate("hello {{world}}").await.unwrap();
+/// # use swiftide_integrations::tiktoken::TikToken;
+/// # async fn example() -> anyhow::Result<()> {
+/// let tokenizer = TikToken::try_from_model("gpt-4-0314")?;
+/// let estimate = tokenizer.estimate("hello {{world}}").await?;
 ///
 /// assert_eq!(estimate, 4);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone)]
 pub struct TikToken {
