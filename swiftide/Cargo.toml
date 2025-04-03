@@ -104,6 +104,9 @@ redb = ["swiftide-integrations/redb"]
 ## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
 duckdb = ["swiftide-integrations/duckdb"]
 
+## MCP tool support for agents (tools only)
+mcp = ["swiftide-agents", "swiftide-agents/mcp"]
+
 #! ### Experimental
 swiftide-agents = ["dep:swiftide-agents"]
 
