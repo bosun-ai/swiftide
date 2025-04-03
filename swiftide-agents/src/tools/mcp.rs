@@ -29,12 +29,8 @@ pub enum ToolFilter {
 
 /// Connects to an MCP server and provides tools at runtime to the agent.
 ///
-/// # Example
-///
-/// ```no_run
-///
-///
-/// ```
+/// WARN: The rmcp has a quirky feature to serve from `()`. This does not work; serve from
+/// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
 #[derive(Clone)]
 pub struct McpToolbox {
     service: Arc<RunningService<RoleClient, InitializeRequestParam>>,
