@@ -96,9 +96,12 @@ dyn_clone::clone_trait_object!(ChatCompletion);
 mod tests {
     use super::*;
     use crate::BackoffConfiguration;
-    use std::sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
+    use std::{
+        collections::HashSet,
+        sync::{
+            atomic::{AtomicUsize, Ordering},
+            Arc,
+        },
     };
 
     #[derive(Clone)]
@@ -167,7 +170,7 @@ mod tests {
 
         let request = ChatCompletionRequest {
             messages: vec![],
-            tools_spec: Default::default(),
+            tools_spec: HashSet::default(),
         };
 
         let result = resilient_model.complete(&request).await;
@@ -200,7 +203,7 @@ mod tests {
 
         let request = ChatCompletionRequest {
             messages: vec![],
-            tools_spec: Default::default(),
+            tools_spec: HashSet::default(),
         };
 
         let result = resilient_model.complete(&request).await;
@@ -210,7 +213,7 @@ mod tests {
 
         match result {
             Err(LanguageModelError::PermanentError(_)) => {} // Expected
-            _ => panic!("Expected PermanentError, got {:?}", result),
+            _ => panic!("Expected PermanentError, got {result:?}"),
         }
     }
 
@@ -234,7 +237,7 @@ mod tests {
 
         let request = ChatCompletionRequest {
             messages: vec![],
-            tools_spec: Default::default(),
+            tools_spec: HashSet::default(),
         };
 
         let result = resilient_model.complete(&request).await;
@@ -244,7 +247,7 @@ mod tests {
 
         match result {
             Err(LanguageModelError::ContextLengthExceeded(_)) => {} // Expected
-            _ => panic!("Expected ContextLengthExceeded, got {:?}", result),
+            _ => panic!("Expected ContextLengthExceeded, got {result:?}"),
         }
     }
 }

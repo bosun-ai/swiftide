@@ -316,7 +316,7 @@ mod test {
         // Verify it's categorized as ContextLengthExceeded
         match result {
             LanguageModelError::ContextLengthExceeded(_) => {} // Expected
-            _ => panic!("Expected ContextLengthExceeded error, got {:?}", result),
+            _ => panic!("Expected ContextLengthExceeded error, got {result:?}"),
         }
     }
 
@@ -336,7 +336,7 @@ mod test {
         // Verify it's categorized as PermanentError
         match result {
             LanguageModelError::PermanentError(_) => {} // Expected
-            _ => panic!("Expected PermanentError, got {:?}", result),
+            _ => panic!("Expected PermanentError, got {result:?}"),
         }
     }
 
@@ -349,7 +349,7 @@ mod test {
         // Verify it's categorized as PermanentError
         match result {
             LanguageModelError::PermanentError(_) => {} // Expected
-            _ => panic!("Expected PermanentError, got {:?}", result),
+            _ => panic!("Expected PermanentError, got {result:?}"),
         }
     }
 
@@ -362,7 +362,7 @@ mod test {
         // Verify it's categorized as PermanentError
         match result {
             LanguageModelError::PermanentError(_) => {} // Expected
-            _ => panic!("Expected PermanentError, got {:?}", result),
+            _ => panic!("Expected PermanentError, got {result:?}"),
         }
     }
 
@@ -375,7 +375,7 @@ mod test {
         // Verify it's categorized as PermanentError
         match result {
             LanguageModelError::PermanentError(_) => {} // Expected
-            _ => panic!("Expected PermanentError, got {:?}", result),
+            _ => panic!("Expected PermanentError, got {result:?}"),
         }
     }
 
@@ -388,7 +388,7 @@ mod test {
         // Verify it's categorized as PermanentError
         match result {
             LanguageModelError::PermanentError(_) => {} // Expected
-            _ => panic!("Expected PermanentError, got {:?}", result),
+            _ => panic!("Expected PermanentError, got {result:?}"),
         }
     }
 }
