@@ -848,27 +848,21 @@ mod tests {
     impl SimplePrompt for MockSimplePrompt {
         async fn prompt(&self, _prompt: Prompt) -> Result<String, LanguageModelError> {
             let count = self.call_count.fetch_add(1, Ordering::SeqCst);
-            
+
             if count < self.should_fail_count {
                 match self.error_type {
-                    MockErrorType::Transient => {
-                        Err(LanguageModelError::TransientError(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::ConnectionReset,
-                            "Transient error",
-                        ))))
-                    }
-                    MockErrorType::Permanent => {
-                        Err(LanguageModelError::PermanentError(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            "Permanent error",
-                        ))))
-                    }
-                    MockErrorType::ContextLengthExceeded => {
-                        Err(LanguageModelError::ContextLengthExceeded(Box::new(std::io::Error::new(
+                    MockErrorType::Transient => Err(LanguageModelError::TransientError(Box::new(
+                        std::io::Error::new(std::io::ErrorKind::ConnectionReset, "Transient error"),
+                    ))),
+                    MockErrorType::Permanent => Err(LanguageModelError::PermanentError(Box::new(
+                        std::io::Error::new(std::io::ErrorKind::InvalidData, "Permanent error"),
+                    ))),
+                    MockErrorType::ContextLengthExceeded => Err(
+                        LanguageModelError::ContextLengthExceeded(Box::new(std::io::Error::new(
                             std::io::ErrorKind::InvalidInput,
                             "Context length exceeded",
-                        ))))
-                    }
+                        ))),
+                    ),
                 }
             } else {
                 Ok("Success response".to_string())
@@ -897,9 +891,9 @@ mod tests {
         };
 
         let reliable_model = ReliableLanguageModel::new(mock_prompt, config);
-        
+
         let result = reliable_model.prompt(Prompt::from("Test prompt")).await;
-        
+
         assert!(result.is_ok());
         assert_eq!(call_count.load(Ordering::SeqCst), 3);
         assert_eq!(result.unwrap(), "Success response");
@@ -922,14 +916,14 @@ mod tests {
         };
 
         let reliable_model = ReliableLanguageModel::new(mock_prompt, config);
-        
+
         let result = reliable_model.prompt(Prompt::from("Test prompt")).await;
-        
+
         assert!(result.is_err());
         assert_eq!(call_count.load(Ordering::SeqCst), 1);
-        
+
         match result {
-            Err(LanguageModelError::PermanentError(_)) => {}, // Expected
+            Err(LanguageModelError::PermanentError(_)) => {} // Expected
             _ => panic!("Expected PermanentError"),
         }
     }
@@ -951,14 +945,14 @@ mod tests {
         };
 
         let reliable_model = ReliableLanguageModel::new(mock_prompt, config);
-        
+
         let result = reliable_model.prompt(Prompt::from("Test prompt")).await;
-        
+
         assert!(result.is_err());
         assert_eq!(call_count.load(Ordering::SeqCst), 1);
-        
+
         match result {
-            Err(LanguageModelError::ContextLengthExceeded(_)) => {}, // Expected
+            Err(LanguageModelError::ContextLengthExceeded(_)) => {} // Expected
             _ => panic!("Expected ContextLengthExceeded"),
         }
     }
