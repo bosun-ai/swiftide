@@ -590,7 +590,7 @@ dyn_clone::clone_trait_object!(SimplePrompt);
 
 #[derive(Debug, Clone)]
 pub struct ResilientLanguageModel<P: Clone> {
-    inner: P,
+    pub(crate) inner: P,
     config: BackoffConfiguration,
 }
 
@@ -602,7 +602,7 @@ impl<P: Clone> ResilientLanguageModel<P> {
         }
     }
 
-    fn strategy(&self) -> backoff::ExponentialBackoff {
+    pub(crate) fn strategy(&self) -> backoff::ExponentialBackoff {
         backoff::ExponentialBackoffBuilder::default()
             .with_initial_interval(Duration::from_secs(self.config.initial_interval_sec))
             .with_multiplier(self.config.multiplier)
