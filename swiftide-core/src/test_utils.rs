@@ -1,4 +1,5 @@
 #![allow(clippy::missing_panics_doc)]
+use std::fmt::Write as _;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -176,7 +177,7 @@ fn pretty_expectation(
 fn pretty_request(request: &ChatCompletionRequest) -> String {
     let mut output = String::new();
     for message in request.messages() {
-        output.push_str(&format!(" {message}\n"));
+        writeln!(output, " {message}").unwrap();
     }
     output
 }
@@ -184,11 +185,11 @@ fn pretty_request(request: &ChatCompletionRequest) -> String {
 fn pretty_response(response: &ChatCompletionResponse) -> String {
     let mut output = String::new();
     if let Some(message) = response.message() {
-        output.push_str(&format!(" {message}\n"));
+        writeln!(output, " {message}").unwrap();
     }
     if let Some(tool_calls) = response.tool_calls() {
         for tool_call in tool_calls {
-            output.push_str(&format!(" {tool_call}\n"));
+            writeln!(output, " {tool_call}").unwrap();
         }
     }
     output
