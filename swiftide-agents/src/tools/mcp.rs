@@ -3,6 +3,7 @@
 //! Uses the `rmcp` crate to connect to an MCP server and list available tools, and invoke them
 //!
 //! Supports any transport that the `rmcp` crate supports
+use std::borrow::Cow;
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context as _, Result};
@@ -12,14 +13,16 @@ use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
 use rmcp::RoleClient;
 use rmcp::{model::CallToolRequestParam, ServiceExt};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use swiftide_core::{
     chat_completion::{errors::ToolError, ParamSpec, ParamType, ToolSpec},
     Tool, ToolBox,
 };
 
-enum Filter {
+/// A filter to apply to the available tools
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum ToolFilter {
     Blacklist(Vec<String>),
     Whitelist(Vec<String>),
 }
@@ -35,7 +38,11 @@ enum Filter {
 #[derive(Clone)]
 pub struct McpToolbox {
     service: Arc<RunningService<RoleClient, InitializeRequestParam>>,
-    filter: Arc<Option<Filter>>,
+
+    /// Optional human readable name for the toolbox
+    name: Option<String>,
+
+    filter: Arc<Option<ToolFilter>>,
 }
 
 impl McpToolbox {
@@ -45,7 +52,7 @@ impl McpToolbox {
         blacklist: I,
     ) -> &mut Self {
         let list = blacklist.into_iter().map(Into::into).collect::<Vec<_>>();
-        self.filter = Some(Filter::Blacklist(list)).into();
+        self.filter = Some(ToolFilter::Blacklist(list)).into();
         self
     }
 
@@ -55,8 +62,24 @@ impl McpToolbox {
         blacklist: I,
     ) -> &mut Self {
         let list = blacklist.into_iter().map(Into::into).collect::<Vec<_>>();
-        self.filter = Some(Filter::Whitelist(list)).into();
+        self.filter = Some(ToolFilter::Whitelist(list)).into();
         self
+    }
+
+    /// Apply a custom filter to the tools
+    pub fn with_filter(&mut self, filter: ToolFilter) -> &mut Self {
+        self.filter = Some(filter).into();
+        self
+    }
+
+    /// Apply an optional name to the toolbox
+    pub fn with_name(&mut self, name: impl Into<String>) -> &mut Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_deref().unwrap_or("MCP Toolbox")
     }
 
     /// Create a new toolbox from a transport
@@ -76,6 +99,7 @@ impl McpToolbox {
         Ok(Self {
             service,
             filter: None.into(),
+            name: None,
         })
     }
 
@@ -86,6 +110,7 @@ impl McpToolbox {
         Self {
             service: service.into(),
             filter: None.into(),
+            name: None,
         }
     }
 
@@ -113,14 +138,18 @@ struct ToolInputSchema {
 impl ToolBox for McpToolbox {
     #[tracing::instrument(skip_all)]
     async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        tracing::debug!(name = self.name(), "Connecting to mcp server");
+        let peer_info = self.service.peer_info();
+        tracing::debug!(?peer_info, name = self.name(), "Connected to mcp server");
+
+        tracing::debug!(name = self.name(), "Listing tools from mcp server");
         let tools = self
             .service
-            .list_tools(None)
+            .list_all_tools()
             .await
             .context("Failed to list tools")?;
 
         let tools = tools
-            .tools
             .into_iter()
             .map(|t| {
                 let schema: ToolInputSchema = serde_json::from_value(t.schema_as_json_value())
@@ -132,8 +161,9 @@ impl ToolBox for McpToolbox {
                     .to_owned();
                 let mut parameters = Vec::new();
 
-                if let Some(p) = schema.properties {
-                    for (name, value) in &p {
+                if let Some(mut p) = schema.properties {
+                    for (name, value) in &mut p {
+                        tracing::debug!(?name, ?value, "Parsing tool parameter");
                         let param = ParamSpec::builder()
                             .name(name)
                             .description(
@@ -142,9 +172,11 @@ impl ToolBox for McpToolbox {
                                     .and_then(Value::as_str)
                                     .unwrap_or(""),
                             )
-                            .ty(value.get("type").map_or(ParamType::String, |t| {
-                                serde_json::from_value(t.clone()).unwrap_or(ParamType::String)
-                            }))
+                            .ty(value
+                                .get_mut("type")
+                                .and_then(|t| serde_json::from_value(t.take()).ok())
+                                .unwrap_or(ParamType::String))
+                            .required(schema.required.as_ref().is_some_and(|r| r.contains(name)))
                             .build()
                             .context("Failed to build parameters")
                             .unwrap();
@@ -166,14 +198,14 @@ impl ToolBox for McpToolbox {
 
         if let Some(filter) = self.filter.as_ref() {
             match filter {
-                Filter::Blacklist(blacklist) => {
+                ToolFilter::Blacklist(blacklist) => {
                     let blacklist = blacklist.iter().map(String::as_str).collect::<Vec<_>>();
                     Ok(tools
                         .into_iter()
                         .filter(|t| !blacklist.contains(&t.name().as_ref()))
                         .collect())
                 }
-                Filter::Whitelist(whitelist) => {
+                ToolFilter::Whitelist(whitelist) => {
                     let whitelist = whitelist.iter().map(String::as_str).collect::<Vec<_>>();
                     Ok(tools
                         .into_iter()
@@ -184,6 +216,10 @@ impl ToolBox for McpToolbox {
         } else {
             Ok(tools)
         }
+    }
+
+    fn name(&self) -> Cow<'_, str> {
+        self.name().into()
     }
 }
 
@@ -205,7 +241,7 @@ impl Tool for McpTool {
         swiftide_core::chat_completion::errors::ToolError,
     > {
         let args = match raw_args {
-            Some(args) => Some(serde_json::from_str(args)?),
+            Some(args) => Some(serde_json::from_str(args).map_err(ToolError::WrongArguments)?),
             None => None,
         };
 
@@ -219,7 +255,7 @@ impl Tool for McpTool {
             .client
             .call_tool(request)
             .await
-            .context("Failed to call mcp tool")?;
+            .context("Failed to call tool")?;
 
         tracing::debug!(response = ?response, tool = self.name().as_ref(), "Received response from mcp tool");
         let content = response
