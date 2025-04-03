@@ -31,24 +31,34 @@
 //! assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
 //! # }
 //! ```
-use anyhow::Result;
+use std::{
+    borrow::Cow,
+    sync::{LazyLock, Mutex},
+};
 
-use crate::{node::Node, template::Template};
+use anyhow::{Context as _, Result};
+use tera::Tera;
+
+use crate::node::Node;
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
-pub struct Prompt {
-    template: Template,
+pub struct Prompt<'tmpl> {
+    template_ref: TemplateRef<'tmpl>,
     context: Option<tera::Context>,
 }
 
-#[deprecated(
-    since = "0.16.0",
-    note = "Use `Template` instead; they serve a more general purpose"
-)]
-pub type PromptTemplate = Template;
+/// References a to be rendered template
+/// Either a one-off template or a tera template
+#[derive(Clone, Debug)]
+enum TemplateRef<'a> {
+    OneOff(Cow<'a, str>),
+    Tera(Cow<'a, str>),
+}
 
-impl Prompt {
+pub static SWIFTIDE_TERA: LazyLock<Tera> = LazyLock::new(|| Tera::default());
+
+impl<'tmpl> Prompt<'tmpl> {
     /// Adds an `ingestion::Node` to the context of the Prompt
     #[must_use]
     pub fn with_node(mut self, node: &Node) -> Self {
@@ -81,43 +91,34 @@ impl Prompt {
     /// # Errors
     ///
     /// See `Template::render`
-    pub async fn render(&self) -> Result<String> {
-        if let Some(context) = &self.context {
-            self.template.render(context).await
-        } else {
-            match &self.template {
-                Template::CompiledTemplate(_) => {
-                    self.template.render(&tera::Context::default()).await
-                }
-                Template::String(string) => Ok(string.clone()),
-                Template::Static(string) => Ok((*string).to_string()),
+    pub async fn render(&mut self) -> Result<String> {
+        let context = self.context.take().unwrap_or_default();
+
+        match &self.template_ref {
+            TemplateRef::OneOff(template) => {
+                tera::Tera::one_off(template.as_ref(), &context, false)
+                    .context("Failed to render one-off template")
             }
+            TemplateRef::Tera(ref template) => SWIFTIDE_TERA
+                .render(template.as_ref(), &context)
+                .context("Failed to render template"),
         }
     }
 }
 
-impl From<&'static str> for Prompt {
-    fn from(prompt: &'static str) -> Self {
+impl<'a> From<&'a str> for Prompt<'a> {
+    fn from(prompt: &'a str) -> Self {
         Prompt {
-            template: Template::Static(prompt),
+            template_ref: TemplateRef::OneOff(prompt.into()),
             context: None,
         }
     }
 }
 
-impl From<String> for Prompt {
+impl From<String> for Prompt<'_> {
     fn from(prompt: String) -> Self {
         Prompt {
-            template: Template::String(prompt),
-            context: None,
-        }
-    }
-}
-
-impl From<&Template> for Prompt {
-    fn from(template: &Template) -> Self {
-        Prompt {
-            template: template.clone(),
+            template_ref: TemplateRef::OneOff(prompt.into()),
             context: None,
         }
     }
