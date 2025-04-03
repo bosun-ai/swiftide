@@ -33,14 +33,14 @@ impl SimplePrompt for Anthropic {
             let CreateMessagesError::AnthropicError(e) = e;
             match e {
                 AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
-                AnthropicError::UnexpectedError => LanguageModelError::PermanentError(e.into()),
-                AnthropicError::Unauthorized => LanguageModelError::PermanentError(e.into()),
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
                 // And which would be the ContextLengthExceeded error
                 // For now, we'll just map all of them to client errors so we get feedback.
                 AnthropicError::BadRequest(_)
                 | AnthropicError::ApiError(_)
+                | AnthropicError::UnexpectedError
+                | AnthropicError::Unauthorized
                 | AnthropicError::Unknown(_) => LanguageModelError::PermanentError(e.into()),
             }
         })?;

@@ -69,11 +69,12 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         );
 
         // Send the request to the OpenAI API and await the response.
-        let response = self.client.chat().create(request).await;
-
-        let mut response = response.map_err(openai_error_to_language_model_error)?;
-
-        let response = response
+        let response = self
+            .client
+            .chat()
+            .create(request)
+            .await
+            .map_err(openai_error_to_language_model_error)?
             .choices
             .remove(0)
             .message
