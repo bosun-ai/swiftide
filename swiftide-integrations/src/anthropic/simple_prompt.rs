@@ -34,11 +34,10 @@ impl SimplePrompt for Anthropic {
             match e {
                 AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
                 AnthropicError::UnexpectedError => {
-                    LanguageModelError::PermanentError("Anthropic unexpected error".into())
-                    // Seriously?
+                    LanguageModelError::PermanentError(e.into())
                 }
                 AnthropicError::Unauthorized => {
-                    LanguageModelError::PermanentError("Anthropic unauthorized".into())
+                    LanguageModelError::PermanentError(e.into())
                 }
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
