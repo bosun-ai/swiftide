@@ -20,8 +20,7 @@ impl SimplePrompt for AwsBedrock {
 
         tracing::debug!(
             "Received response: {:?}",
-            std::str::from_utf8(&response_bytes)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))
+            std::str::from_utf8(&response_bytes).map_err(LanguageModelError::permanent)
         );
 
         self.model_family

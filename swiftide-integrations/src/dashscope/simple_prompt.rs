@@ -28,8 +28,8 @@ impl SimplePrompt for Dashscope {
             .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
-            messages = serde_json::to_string_pretty(&request)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
+            messages =
+                serde_json::to_string_pretty(&request).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Request to qwen"
         );
 
@@ -41,8 +41,8 @@ impl SimplePrompt for Dashscope {
             .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
-            response = serde_json::to_string_pretty(&response)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
+            response =
+                serde_json::to_string_pretty(&response).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Response from qwen"
         );
 

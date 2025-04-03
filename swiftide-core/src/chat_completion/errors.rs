@@ -32,6 +32,20 @@ pub enum LanguageModelError {
     TransientError(BoxedError),
 }
 
+impl LanguageModelError {
+    pub fn permanent(e: impl Into<BoxedError>) -> Self {
+        LanguageModelError::PermanentError(e.into())
+    }
+
+    pub fn transient(e: impl Into<BoxedError>) -> Self {
+        LanguageModelError::TransientError(e.into())
+    }
+
+    pub fn context_length_exceeded(e: impl Into<BoxedError>) -> Self {
+        LanguageModelError::ContextLengthExceeded(e.into())
+    }
+}
+
 impl From<BoxedError> for LanguageModelError {
     fn from(e: BoxedError) -> Self {
         LanguageModelError::PermanentError(e)

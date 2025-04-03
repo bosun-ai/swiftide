@@ -49,20 +49,20 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                     prompt
                         .render()
                         .await
-                        .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
+                        .map_err(LanguageModelError::permanent)?,
                 )
                 .build()
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))?
+                .map_err(LanguageModelError::permanent)?
                 .into()])
             .build()
-            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
+            .map_err(LanguageModelError::permanent)?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
                 serde_json::to_string_pretty(&request.messages.first())
-                    .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
+                    .map_err(LanguageModelError::permanent)?,
                 100
             ),
             "[SimplePrompt] Request to openai"

@@ -20,12 +20,12 @@ impl SimplePrompt for Anthropic {
             .model(model)
             .messages(vec![prompt.render().await?.into()])
             .build()
-            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
+            .map_err(LanguageModelError::permanent)?;
 
         tracing::debug!(
             model = &model,
-            messages = serde_json::to_string_pretty(&request)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
+            messages =
+                serde_json::to_string_pretty(&request).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Request to anthropic"
         );
 
@@ -33,12 +33,8 @@ impl SimplePrompt for Anthropic {
             let CreateMessagesError::AnthropicError(e) = e;
             match e {
                 AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
-                AnthropicError::UnexpectedError => {
-                    LanguageModelError::PermanentError(e.into())
-                }
-                AnthropicError::Unauthorized => {
-                    LanguageModelError::PermanentError(e.into())
-                }
+                AnthropicError::UnexpectedError => LanguageModelError::PermanentError(e.into()),
+                AnthropicError::Unauthorized => LanguageModelError::PermanentError(e.into()),
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
                 // And which would be the ContextLengthExceeded error
@@ -50,8 +46,8 @@ impl SimplePrompt for Anthropic {
         })?;
 
         tracing::debug!(
-            response = serde_json::to_string_pretty(&response)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))?,
+            response =
+                serde_json::to_string_pretty(&response).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Response from anthropic"
         );
 
@@ -60,12 +56,12 @@ impl SimplePrompt for Anthropic {
             .into_iter()
             .next()
             .context("No messages in response")
-            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
+            .map_err(LanguageModelError::permanent)?;
 
         message
             .text()
             .context("No text in response")
-            .map_err(|e| LanguageModelError::PermanentError(e.into()))
+            .map_err(LanguageModelError::permanent)
     }
 }
 

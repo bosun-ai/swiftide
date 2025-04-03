@@ -21,7 +21,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .model(model)
             .input(&input)
             .build()
-            .map_err(|e| LanguageModelError::PermanentError(e.into()))?;
+            .map_err(LanguageModelError::permanent)?;
 
         tracing::debug!(
             num_chunks = input.len(),

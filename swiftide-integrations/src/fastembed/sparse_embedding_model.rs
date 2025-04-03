@@ -13,7 +13,7 @@ impl SparseEmbeddingModel for FastEmbed {
         if let EmbeddingModelType::Sparse(embedding_model) = &*self.embedding_model {
             embedding_model
                 .embed(input, self.batch_size)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))
+                .map_err(LanguageModelError::permanent)
                 .and_then(|embeddings| {
                     embeddings
                         .into_iter()
@@ -21,10 +21,7 @@ impl SparseEmbeddingModel for FastEmbed {
                             let indices = embedding
                                 .indices
                                 .iter()
-                                .map(|v| {
-                                    u32::try_from(*v)
-                                        .map_err(|e| LanguageModelError::PermanentError(e.into()))
-                                })
+                                .map(|v| u32::try_from(*v).map_err(LanguageModelError::permanent))
                                 .collect::<Result<Vec<_>, LanguageModelError>>()?;
 
                             Ok(SparseEmbedding {

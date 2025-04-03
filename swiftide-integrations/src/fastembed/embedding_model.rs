@@ -10,7 +10,7 @@ impl EmbeddingModel for FastEmbed {
         if let EmbeddingModelType::Dense(embedding_model) = &*self.embedding_model {
             embedding_model
                 .embed(input, self.batch_size)
-                .map_err(|e| LanguageModelError::PermanentError(e.into()))
+                .map_err(LanguageModelError::permanent)
         } else {
             Err(LanguageModelError::PermanentError(
                 "Expected dense model, got sparse".into(),
