@@ -218,48 +218,25 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
         OpenAIError::ApiError(api_error) => {
             // If the response is an ApiError, it could be a context length exceeded error
             if api_error.code == Some("context_length_exceeded".to_string()) {
-                LanguageModelError::ContextLengthExceeded(OpenAIError::ApiError(api_error).into())
+                LanguageModelError::context_length_exceeded(OpenAIError::ApiError(api_error))
             } else {
-                LanguageModelError::PermanentError(OpenAIError::ApiError(api_error).into())
+                LanguageModelError::permanent(OpenAIError::ApiError(api_error))
             }
         }
         OpenAIError::Reqwest(e) => {
-            if let Some(status) = e.status() {
-                // If the response code is 429 it could either be a TransientError or a
-                // PermanentError depending on the message, if it contains the word
-                // quota, it should be a PermanentError otherwise it should
-                // be a TransientError.
-                // If the response code is any other 4xx it should be a PermanentError.
-                if status.as_u16() == 429 && !e.to_string().contains("quota") {
-                    LanguageModelError::TransientError(e.into())
-                } else if status.is_client_error() {
-                    LanguageModelError::PermanentError(e.into())
-                } else if status.is_server_error() {
-                    LanguageModelError::TransientError(e.into())
-                } else {
-                    LanguageModelError::PermanentError(e.into())
-                }
-            } else {
-                // making the request failed for some other reason, probably recoverable
-                LanguageModelError::TransientError(e.into())
-            }
+            // async_openai passes any network errors as reqwest errors, so we just assume they are
+            // recoverable
+            LanguageModelError::transient(e)
         }
-        OpenAIError::JSONDeserialize(e) => {
+        OpenAIError::JSONDeserialize(_) => {
             // OpenAI generated a non-json response, probably a temporary problem on their side
-            LanguageModelError::TransientError(e.into())
+            // (i.e. reverse proxy can't find an available backend)
+            LanguageModelError::transient(e)
         }
-        OpenAIError::FileSaveError(msg) => {
-            LanguageModelError::PermanentError(OpenAIError::FileSaveError(msg).into())
-        }
-        OpenAIError::FileReadError(msg) => {
-            LanguageModelError::PermanentError(OpenAIError::FileReadError(msg).into())
-        }
-        OpenAIError::StreamError(msg) => {
-            LanguageModelError::PermanentError(OpenAIError::StreamError(msg).into())
-        }
-        OpenAIError::InvalidArgument(msg) => {
-            LanguageModelError::PermanentError(OpenAIError::InvalidArgument(msg).into())
-        }
+        OpenAIError::FileSaveError(_)
+        | OpenAIError::FileReadError(_)
+        | OpenAIError::StreamError(_)
+        | OpenAIError::InvalidArgument(_) => LanguageModelError::permanent(e),
     }
 }
 
