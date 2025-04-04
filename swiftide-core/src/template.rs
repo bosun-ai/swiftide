@@ -1,3 +1,4 @@
+#![allow(clippy::non_std_lazy_statics, reason = "will be removed soon")]
 use anyhow::{Context as _, Result};
 use tokio::sync::RwLock;
 

@@ -311,7 +311,7 @@ impl PgVector {
 
                         bulk_data.vector_fields[idx].push(ExtPgVector::Vector::from(data));
                     }
-                    _ => continue,
+                    _ => (),
                 }
             }
         }

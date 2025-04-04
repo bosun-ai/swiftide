@@ -13,7 +13,7 @@ use swiftide_core::{
 /// This file defines the `Embed` struct and its implementation of the `BatchableTransformer` trait.
 #[derive(Clone)]
 pub struct Embed {
-    embed_model: Arc<dyn EmbeddingModel>,
+    model: Arc<dyn EmbeddingModel>,
     concurrency: Option<usize>,
     batch_size: Option<usize>,
 }
@@ -39,7 +39,7 @@ impl Embed {
     /// A new instance of `Embed`.
     pub fn new(model: impl EmbeddingModel + 'static) -> Self {
         Self {
-            embed_model: Arc::new(model),
+            model: Arc::new(model),
             concurrency: None,
             batch_size: None,
         }
@@ -106,7 +106,7 @@ impl BatchableTransformer for Embed {
             });
 
         // Embeddings vectors of every node stored in order of processed nodes.
-        let mut embeddings = match self.embed_model.embed(embeddables_data).await {
+        let mut embeddings = match self.model.embed(embeddables_data).await {
             Ok(embeddngs) => VecDeque::from(embeddngs),
             Err(err) => return IndexingStream::iter(vec![Err(err.into())]),
         };
