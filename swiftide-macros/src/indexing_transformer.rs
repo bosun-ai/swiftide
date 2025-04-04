@@ -91,9 +91,11 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
             pub use swiftide_core::{
                 indexing::{IndexingDefaults},
                 prompt::Prompt,
+                chat_completion::errors::LanguageModelError,
                 template::Template,
                 SimplePrompt, Transformer, WithIndexingDefaults
             };
+
         }
 
         #metadata_field_name
@@ -146,18 +148,17 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
             /// # Errors
             ///
             /// Gives an error if no (default) client is provided
-            async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String> {
-
+            async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String, hidden::LanguageModelError> {
                 if let Some(client) = &self.client {
                     return client.prompt(prompt).await
                 };
 
                 let Some(defaults) = &self.indexing_defaults.as_ref() else {
-                    anyhow::bail!("No client provided")
+                    return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                 };
 
                 let Some(client) = defaults.simple_prompt() else {
-                    anyhow::bail!("No client provided")
+                    return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                 };
                 client.prompt(prompt).await
             }
@@ -227,6 +228,7 @@ mod tests {
                 pub use swiftide_core::{
                     indexing::{IndexingDefaults},
                     prompt::Prompt,
+                    chat_completion::errors::LanguageModelError,
                     template::Template,
                     SimplePrompt, Transformer, WithIndexingDefaults
                 };
@@ -281,17 +283,17 @@ mod tests {
                 /// # Errors
                 ///
                 /// Gives an error if no (default) client is provided
-                async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String> {
+                async fn prompt(&self, prompt: hidden::Prompt) -> hidden::Result<String, hidden::LanguageModelError> {
                     if let Some(client) = &self.client {
                         return client.prompt(prompt).await
                     };
 
                     let Some(defaults) = &self.indexing_defaults.as_ref() else {
-                        anyhow::bail!("No client provided")
+                        return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                     };
 
                     let Some(client) = defaults.simple_prompt() else {
-                        anyhow::bail!("No client provided")
+                        return Err(hidden::LanguageModelError::PermanentError("No client provided".into()))
                     };
                     client.prompt(prompt).await
                 }

@@ -108,7 +108,7 @@ impl BatchableTransformer for Embed {
         // Embeddings vectors of every node stored in order of processed nodes.
         let mut embeddings = match self.model.embed(embeddables_data).await {
             Ok(embeddngs) => VecDeque::from(embeddngs),
-            Err(err) => return err.into(),
+            Err(err) => return IndexingStream::iter(vec![Err(err.into())]),
         };
 
         // Iterator of nodes with embeddings vectors map.
@@ -149,6 +149,8 @@ mod tests {
     use futures_util::StreamExt;
     use mockall::predicate::*;
     use test_case::test_case;
+
+    use swiftide_core::chat_completion::errors::LanguageModelError;
 
     #[derive(Clone)]
     struct TestData<'a> {
@@ -314,7 +316,7 @@ mod tests {
         model_mock
             .expect_embed()
             .times(1)
-            .returning(|_| Err(anyhow::anyhow!("error")));
+            .returning(|_| Err(LanguageModelError::PermanentError("error".into())));
         let embed = Embed::new(model_mock);
         let mut stream = embed.batch_transform(test_nodes).await;
         let error = stream
@@ -323,6 +325,6 @@ mod tests {
             .expect("IngestionStream has same length as expected_nodes")
             .expect_err("Is Err");
 
-        assert_eq!(error.to_string(), "error");
+        assert_eq!(error.to_string(), "Permanent error: error");
     }
 }

@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use swiftide_core::{
     chat_completion::{
-        errors::ChatCompletionError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
+        errors::LanguageModelError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
         ToolCall, ToolSpec,
     },
     ChatCompletion,
@@ -21,7 +21,7 @@ impl ChatCompletion for Anthropic {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = &self.default_options.prompt_model;
         let mut messages = request.messages().to_vec();
 
@@ -58,7 +58,7 @@ impl ChatCompletion for Anthropic {
 
         let request = anthropic_request
             .build()
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(LanguageModelError::permanent)?;
 
         tracing::debug!(
             model = &model,
@@ -71,7 +71,7 @@ impl ChatCompletion for Anthropic {
             .messages()
             .create(request)
             .await
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(LanguageModelError::permanent)?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("Infallible"),
@@ -101,7 +101,7 @@ impl ChatCompletion for Anthropic {
             .maybe_message(response.messages().iter().find_map(Message::text))
             .maybe_tool_calls(maybe_tool_calls)
             .build()
-            .map_err(ChatCompletionError::from)
+            .map_err(LanguageModelError::from)
     }
 }
 
