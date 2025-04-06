@@ -168,4 +168,23 @@ impl MyOptionalTool2 {
         Ok(format!("Hello world").into())
     }
 }
+
+#[derive(Clone, Tool)]
+#[tool(description = DESCRIPTION,
+    param(name = "test", description = "My param")
+)]
+struct MyGenericTool<S: Send + Sync + Clone> {
+    thing: S,
+}
+
+impl<S: Send + Sync + Clone> MyGenericTool<S> {
+    async fn my_generic_tool(
+        &self,
+        agent_context: &dyn AgentContext,
+        test: &str,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(format!("Hello world").into())
+    }
+}
+
 fn main() {}
