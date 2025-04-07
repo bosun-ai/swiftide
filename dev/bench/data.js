@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744030447491,
+  "lastUpdate": 1744033649537,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18995,6 +18995,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251243,
             "range": "± 4523",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "52c44e9b610c0ba4bf144881c36eacc3a0d10e53",
+          "message": "feat: Agent mcp client support  (#658)\n\nAdds support for agents to use tools from MCP servers. All transports\nare supported via the `rmcp` crate.\n\nAdditionally adds the possibility to add toolboxes to agents (of which\nMCP is one). Tool boxes declare their available tools at runtime, like\ntool box.",
+          "timestamp": "2025-04-07T15:38:47+02:00",
+          "tree_id": "124af60b43b59b38b0b3383737f1e7083c7b8407",
+          "url": "https://github.com/bosun-ai/swiftide/commit/52c44e9b610c0ba4bf144881c36eacc3a0d10e53"
+        },
+        "date": 1744033648597,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1298926,
+            "range": "± 936106",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249681,
+            "range": "± 4996",
             "unit": "ns/iter"
           }
         ]
