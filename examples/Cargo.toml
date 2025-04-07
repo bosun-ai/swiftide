@@ -24,6 +24,7 @@ swiftide = { path = "../swiftide/", features = [
   "pgvector",
   "swiftide-agents",
   "dashscope",
+  "mcp",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true }
@@ -36,6 +37,7 @@ sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
 serde = { workspace = true }
+rmcp = { workspace = true, features = ["transport-child-process", "client"] }
 
 
 [[example]]
@@ -116,3 +118,7 @@ path = "dashscope.rs"
 [[example]]
 name = "reranking"
 path = "reranking.rs"
+
+[[example]]
+name = "agents-mcp"
+path = "agents_mcp_tools.rs"

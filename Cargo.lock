@@ -9209,6 +9209,7 @@ version = "0.22.8"
 dependencies = [
  "anyhow",
  "fluvio",
+ "rmcp",
  "serde",
  "serde_json",
  "spider",
