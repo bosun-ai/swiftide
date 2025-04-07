@@ -780,6 +780,38 @@ mod tests {
         agent.query_once(prompt).await.unwrap();
     }
 
+    #[test_log::test(tokio::test)]
+    async fn test_agent_tool_via_toolbox_run_once() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::default();
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
+
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![mock_tool.boxed()])
+            .system_prompt("My system prompt")
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+    }
+
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
     async fn test_multiple_tool_calls() {
         let prompt = "Write a poem";

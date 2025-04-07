@@ -157,6 +157,13 @@ impl ToolBox for &[Box<dyn Tool>] {
     }
 }
 
+#[async_trait]
+impl ToolBox for [Box<dyn Tool>] {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        Ok(self.to_vec())
+    }
+}
+
 dyn_clone::clone_trait_object!(ToolBox);
 
 #[async_trait]
