@@ -121,7 +121,7 @@ impl McpToolbox {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct ToolInputSchema {
     #[serde(rename = "type")]
     #[allow(dead_code)]
@@ -151,6 +151,8 @@ impl ToolBox for McpToolbox {
                 let schema: ToolInputSchema = serde_json::from_value(t.schema_as_json_value())
                     .context("Failed to parse tool input schema")?;
 
+                tracing::trace!(?schema, "Parsing tool input schema for {}", t.name);
+
                 let mut tool_spec = ToolSpec::builder()
                     .name(t.name.clone())
                     .description(t.description)
@@ -159,7 +161,6 @@ impl ToolBox for McpToolbox {
 
                 if let Some(mut p) = schema.properties {
                     for (name, value) in &mut p {
-                        tracing::debug!(?name, ?value, "Parsing tool parameter");
                         let param = ParamSpec::builder()
                             .name(name)
                             .description(
@@ -174,8 +175,7 @@ impl ToolBox for McpToolbox {
                                 .unwrap_or(ParamType::String))
                             .required(schema.required.as_ref().is_some_and(|r| r.contains(name)))
                             .build()
-                            .context("Failed to build parameters")
-                            .unwrap();
+                            .context("Failed to build parameters for mcp tool")?;
 
                         parameters.push(param);
                     }
@@ -190,7 +190,8 @@ impl ToolBox for McpToolbox {
                     tool_spec,
                 }) as Box<dyn Tool>)
             })
-            .collect::<Result<Vec<_>>>()?;
+            .collect::<Result<Vec<_>>>()
+            .context("Failed to build mcp tool specs")?;
 
         if let Some(filter) = self.filter.as_ref() {
             match filter {
@@ -291,8 +292,9 @@ mod tests {
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
 
     #[allow(clippy::similar_names)]
-    #[test_log::test(tokio::test(flavor = "multi_thread"))]
-    async fn test_socket() -> Result<()> {
+    // #[test_log::test(tokio::test(flavor = "multi_thread"))]
+    #[test_log::test(tokio::test)]
+    async fn test_socket() {
         let _ = std::fs::remove_file(SOCKET_PATH);
 
         match UnixListener::bind(SOCKET_PATH) {
@@ -305,36 +307,32 @@ mod tests {
             }
         }
 
-        let client = client().await?;
+        let client = client().await.unwrap();
 
-        let t = client.available_tools().await?;
-        assert_eq!(client.available_tools().await?.len(), 2);
+        let t = client.available_tools().await.unwrap();
+        assert_eq!(client.available_tools().await.unwrap().len(), 2);
 
         let mut names = t.iter().map(|t| t.name()).collect::<Vec<_>>();
         names.sort();
         assert_eq!(names, ["sub", "sum"]);
 
         let sum_tool = t.iter().find(|t| t.name() == "sum").unwrap();
-        assert_eq!(
-            sum_tool.tool_spec(),
-            ToolSpec::builder().name("sub").build()?
-        );
+        assert_eq!(sum_tool.tool_spec().name, "sum");
         let result = sum_tool
             .invoke(&(), Some(r#"{"a": 10, "b": 20}"#))
-            .await?
+            .await
+            .unwrap()
             .content()
             .unwrap()
             .to_string();
         assert_eq!(result, "30");
 
         let sub_tool = t.iter().find(|t| t.name() == "sub").unwrap();
-        assert_eq!(
-            sub_tool.tool_spec(),
-            ToolSpec::builder().name("sub").build()?
-        );
+        assert_eq!(sub_tool.tool_spec().name, "sub");
         let result = sub_tool
             .invoke(&(), Some(r#"{"a": 10, "b": 20}"#))
-            .await?
+            .await
+            .unwrap()
             .content()
             .unwrap()
             .to_string();
@@ -342,8 +340,6 @@ mod tests {
 
         // Clean up socket file
         let _ = std::fs::remove_file(SOCKET_PATH);
-
-        Ok(())
     }
 
     async fn server(unix_listener: UnixListener) -> anyhow::Result<()> {

@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     // Use `rmcp` to start the server
     let running_service = client_info
         .serve(TokioChildProcess::new(
-            &mut tokio::process::Command::new("npx")
+            tokio::process::Command::new("npx")
                 .args(["-y", "@modelcontextprotocol/server-everything"]),
         )?)
         .await?;
