@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1743704381194,
+  "lastUpdate": 1744011837326,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -18887,6 +18887,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252856,
             "range": "± 15541",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7645f2a0d92784261b61c67fdec1eab29b954440",
+          "message": "chore(deps): bump openssl from 0.10.71 to 0.10.72 in the cargo group (#719)\n\nBumps the cargo group with 1 update:\n[openssl](https://github.com/sfackler/rust-openssl).\n\nUpdates `openssl` from 0.10.71 to 0.10.72\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/sfackler/rust-openssl/releases\">openssl's\nreleases</a>.</em></p>\n<blockquote>\n<h2>openssl-v0.10.72</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>make set_rsa_oaep_md visible to boringssl config by <a\nhref=\"https://github.com/frncs-rss\"><code>@​frncs-rss</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2372\">sfackler/rust-openssl#2372</a></li>\n<li>Fix typo in openssl-sys build script by <a\nhref=\"https://github.com/rushilmehra\"><code>@​rushilmehra</code></a> in\n<a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2375\">sfackler/rust-openssl#2375</a></li>\n<li>Unify the two BoringSSL codepaths a bit and simplify init by <a\nhref=\"https://github.com/davidben\"><code>@​davidben</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2377\">sfackler/rust-openssl#2377</a></li>\n<li>pkey_ctx: Fix link to the corresponding OpenSSL function by <a\nhref=\"https://github.com/Jakuje\"><code>@​Jakuje</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2378\">sfackler/rust-openssl#2378</a></li>\n<li>fix test on MSRV by <a\nhref=\"https://github.com/alex\"><code>@​alex</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2383\">sfackler/rust-openssl#2383</a></li>\n<li>Add support for AWS-LC to openssl and openssl-sys crates by <a\nhref=\"https://github.com/skmcgrail\"><code>@​skmcgrail</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/1805\">sfackler/rust-openssl#1805</a></li>\n<li>Enable additional capabilities for AWS-LC by <a\nhref=\"https://github.com/skmcgrail\"><code>@​skmcgrail</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2386\">sfackler/rust-openssl#2386</a></li>\n<li>Use --experimental with bindgen-cli with aws-lc build by <a\nhref=\"https://github.com/skmcgrail\"><code>@​skmcgrail</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2389\">sfackler/rust-openssl#2389</a></li>\n<li>Fixed two UAFs and bumped versions for release by <a\nhref=\"https://github.com/alex\"><code>@​alex</code></a> in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2390\">sfackler/rust-openssl#2390</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a href=\"https://github.com/Jakuje\"><code>@​Jakuje</code></a> made\ntheir first contribution in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/2378\">sfackler/rust-openssl#2378</a></li>\n<li><a href=\"https://github.com/skmcgrail\"><code>@​skmcgrail</code></a>\nmade their first contribution in <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/pull/1805\">sfackler/rust-openssl#1805</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/sfackler/rust-openssl/compare/openssl-v0.10.71...openssl-v0.10.72\">https://github.com/sfackler/rust-openssl/compare/openssl-v0.10.71...openssl-v0.10.72</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/87085bd67896b7f92e6de35d081f607a334beae4\"><code>87085bd</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/issues/2390\">#2390</a>\nfrom alex/uaf-fix</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/d1a12e21573e95727b2e38b8b65273cb389be7e4\"><code>d1a12e2</code></a>\nFixed two UAFs and bumped versions for release</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/7c7b2e6c9f95e77e56ab37af70b16de75beff387\"><code>7c7b2e6</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/issues/2389\">#2389</a>\nfrom skmcgrail/aws-lc-follow-up</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/34a477bff20cbe43492915338d3c12597430c345\"><code>34a477b</code></a>\nUse --experimental with bindgen-cli with aws-lc build</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/d4bf0710640e4725b8b237968040aef3e5f4ab9a\"><code>d4bf071</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/issues/2386\">#2386</a>\nfrom skmcgrail/aws-lc-follow-up</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/a86bf670c4cba3ee5531838b52419356791d966e\"><code>a86bf67</code></a>\nRemove comment</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/705dbfb2ee3f2d7151ff313d840bf558435d4379\"><code>705dbfb</code></a>\nFix test</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/e0df413d46a89303c42e15bf7d4566193b242466\"><code>e0df413</code></a>\nSkip final call for LibreSSL 4.1.0 for CCM mode</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/2f1164b5e838d3665dd10a9fac19e22174289ea3\"><code>2f1164b</code></a>\nEnable additional capabilities for AWS-LC</li>\n<li><a\nhref=\"https://github.com/sfackler/rust-openssl/commit/dde9ffb36071249ff98474eec853fd830aea44f5\"><code>dde9ffb</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/sfackler/rust-openssl/issues/1805\">#1805</a>\nfrom skmcgrail/aws-lc-support-final</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/sfackler/rust-openssl/compare/openssl-v0.10.71...openssl-v0.10.72\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=openssl&package-manager=cargo&previous-version=0.10.71&new-version=0.10.72)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\nYou can disable automated security fix PRs for this repo from the\n[Security Alerts\npage](https://github.com/bosun-ai/swiftide/network/alerts).\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-04-07T09:35:15+02:00",
+          "tree_id": "e2858f7de85ff9af50cbb3967ce50ffe666fc09e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7645f2a0d92784261b61c67fdec1eab29b954440"
+        },
+        "date": 1744011836114,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1294342,
+            "range": "± 948287",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250728,
+            "range": "± 1195",
             "unit": "ns/iter"
           }
         ]
