@@ -22,7 +22,7 @@ use swiftide_core::{
         ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
     },
     prompt::Prompt,
-    AgentContext,
+    AgentContext, ToolBox,
 };
 use tracing::{debug, Instrument};
 
@@ -51,6 +51,12 @@ pub struct Agent {
     /// Tools the agent can use
     #[builder(default = Agent::default_tools(), setter(custom))]
     pub(crate) tools: HashSet<Box<dyn Tool>>,
+
+    /// Toolboxes are collections of tools that can be added to the agent.
+    ///
+    /// Toolboxes make their tools available to the agent at runtime.
+    #[builder(default)]
+    pub(crate) toolboxes: Vec<Box<dyn ToolBox>>,
 
     /// The language model that the agent uses for completion.
     #[builder(setter(custom))]
@@ -105,6 +111,10 @@ pub struct Agent {
     /// the name and args of the tool.
     #[builder(private, default)]
     pub(crate) tool_retries_counter: HashMap<u64, usize>,
+
+    /// Tools loaded from toolboxes
+    #[builder(private, default)]
+    pub(crate) toolbox_tools: HashSet<Box<dyn Tool>>,
 }
 
 impl std::fmt::Debug for Agent {
@@ -232,6 +242,18 @@ impl AgentBuilder {
         );
         self
     }
+
+    /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added to the
+    /// to the agent. Available tools are evaluated at runtime, when the agent starts for the first
+    /// time.
+    ///
+    /// Agents can have many toolboxes.
+    pub fn add_toolbox(&mut self, toolbox: impl ToolBox + 'static) -> &mut Self {
+        self.toolboxes.get_or_insert_with(Vec::new);
+
+        self.toolboxes.as_mut().unwrap().push(Box::new(toolbox));
+        self
+    }
 }
 
 impl Agent {
@@ -300,6 +322,8 @@ impl Agent {
                     hook(self).instrument(span.or_current()).await?;
                 }
             }
+
+            self.load_toolboxes().await?;
         }
 
         for hook in self.hooks_by_type(HookTypes::OnStart) {
@@ -492,12 +516,12 @@ impl Agent {
                 let stop = self.tool_calls_over_limit(&tool_call);
                 if stop {
                     tracing::error!(
-                        "Tool call failed, retry limit reached, stopping agent: {err}",
-                        err = error
+                        ?error,
+                        "Tool call failed, retry limit reached, stopping agent: {error}",
                     );
                 } else {
                     tracing::warn!(
-                        error = error.to_string(),
+                        ?error,
                         tool_call = ?tool_call,
                         "Tool call failed, retrying",
                     );
@@ -608,6 +632,22 @@ impl Agent {
     /// The agent has not (ever) started
     pub fn is_pending(&self) -> bool {
         self.state.is_pending()
+    }
+
+    /// Get a list of tools available to the agent
+    fn tools(&self) -> &HashSet<Box<dyn Tool>> {
+        &self.tools
+    }
+
+    async fn load_toolboxes(&mut self) -> Result<()> {
+        for toolbox in &self.toolboxes {
+            let tools = toolbox.available_tools().await?;
+            self.toolbox_tools.extend(tools);
+        }
+
+        self.tools.extend(self.toolbox_tools.clone());
+
+        Ok(())
     }
 }
 
@@ -732,6 +772,38 @@ mod tests {
 
         let mut agent = Agent::builder()
             .tools([mock_tool])
+            .system_prompt("My system prompt")
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_tool_via_toolbox_run_once() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::default();
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
+
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![mock_tool.boxed()])
             .system_prompt("My system prompt")
             .llm(&mock_llm)
             .build()

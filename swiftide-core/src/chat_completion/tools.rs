@@ -109,8 +109,11 @@ impl ToolSpec {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr)]
+#[derive(
+    Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr, Serialize, Deserialize,
+)]
 #[strum(serialize_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub enum ParamType {
     #[default]
     String,
@@ -134,8 +137,6 @@ pub struct ParamSpec {
     #[builder(default)]
     pub ty: ParamType,
     /// Whether the parameter is required
-    ///
-    /// Note that macros will always generate required parameters
     #[builder(default = true)]
     pub required: bool,
 }
