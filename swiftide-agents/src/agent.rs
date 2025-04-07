@@ -309,7 +309,7 @@ impl Agent {
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
-                    .add_messages(vec![ChatMessage::System(system_prompt.render().await?)])
+                    .add_messages(vec![ChatMessage::System(system_prompt.render()?)])
                     .await;
             }
             for hook in self.hooks_by_type(HookTypes::BeforeAll) {

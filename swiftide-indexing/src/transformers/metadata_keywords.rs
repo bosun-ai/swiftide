@@ -36,7 +36,7 @@ impl Transformer for MetadataKeywords {
     /// a keywords from the provided prompt.
     #[tracing::instrument(skip_all, name = "transformers.metadata_keywords")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
-        let prompt = self.prompt_template.to_prompt().with_node(&node);
+        let prompt = self.prompt_template.clone().with_node(&node);
         let response = self.prompt(prompt).await?;
 
         node.metadata.insert(NAME, response);
@@ -59,8 +59,8 @@ mod test {
     async fn test_template() {
         let template = default_prompt();
 
-        let prompt = template.to_prompt().with_node(&Node::new("test"));
-        insta::assert_snapshot!(prompt.render().await.unwrap());
+        let prompt = template.clone().with_node(&Node::new("test"));
+        insta::assert_snapshot!(prompt.render().unwrap());
     }
 
     #[tokio::test]

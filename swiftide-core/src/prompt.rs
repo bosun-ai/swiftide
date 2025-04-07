@@ -33,7 +33,7 @@
 //! ```
 use std::{
     borrow::Cow,
-    sync::{LazyLock, Mutex},
+    sync::{LazyLock, RwLock},
 };
 
 use anyhow::{Context as _, Result};
@@ -43,22 +43,47 @@ use crate::node::Node;
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
-pub struct Prompt<'tmpl> {
-    template_ref: TemplateRef<'tmpl>,
+pub struct Prompt {
+    template_ref: TemplateRef,
     context: Option<tera::Context>,
 }
 
 /// References a to be rendered template
 /// Either a one-off template or a tera template
 #[derive(Clone, Debug)]
-enum TemplateRef<'a> {
-    OneOff(Cow<'a, str>),
-    Tera(Cow<'a, str>),
+enum TemplateRef {
+    OneOff(String),
+    Tera(String),
 }
 
-pub static SWIFTIDE_TERA: LazyLock<Tera> = LazyLock::new(|| Tera::default());
+pub static SWIFTIDE_TERA: LazyLock<RwLock<Tera>> = LazyLock::new(|| RwLock::new(Tera::default()));
 
-impl<'tmpl> Prompt<'tmpl> {
+impl Prompt {
+    /// Extend the swiftide repository with another Tera instance.
+    ///
+    /// You can use this to add your own templates, functions and partials.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `RWLock` is poisoned.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the `Tera` instance cannot be extended.
+    pub fn extend(other: &Tera) -> Result<()> {
+        let mut swiftide_tera = SWIFTIDE_TERA.write().unwrap();
+        swiftide_tera.extend(other)?;
+        Ok(())
+    }
+
+    /// Create a new prompt from a compiled template that is present in the Tera repository
+    pub fn from_compiled_template(name: impl Into<String>) -> Prompt {
+        Prompt {
+            template_ref: TemplateRef::Tera(name.into()),
+            context: None,
+        }
+    }
+
     /// Adds an `ingestion::Node` to the context of the Prompt
     #[must_use]
     pub fn with_node(mut self, node: &Node) -> Self {
@@ -91,8 +116,15 @@ impl<'tmpl> Prompt<'tmpl> {
     /// # Errors
     ///
     /// See `Template::render`
-    pub async fn render(&mut self) -> Result<String> {
-        let context = self.context.take().unwrap_or_default();
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `RWLock` is poisoned.
+    pub fn render(&self) -> Result<String> {
+        let context: Cow<'_, tera::Context> = self
+            .context
+            .as_ref()
+            .map_or_else(|| Cow::Owned(tera::Context::default()), Cow::Borrowed);
 
         match &self.template_ref {
             TemplateRef::OneOff(template) => {
@@ -100,14 +132,16 @@ impl<'tmpl> Prompt<'tmpl> {
                     .context("Failed to render one-off template")
             }
             TemplateRef::Tera(ref template) => SWIFTIDE_TERA
+                .read()
+                .unwrap()
                 .render(template.as_ref(), &context)
                 .context("Failed to render template"),
         }
     }
 }
 
-impl<'a> From<&'a str> for Prompt<'a> {
-    fn from(prompt: &'a str) -> Self {
+impl From<&str> for Prompt {
+    fn from(prompt: &str) -> Self {
         Prompt {
             template_ref: TemplateRef::OneOff(prompt.into()),
             context: None,
@@ -115,10 +149,10 @@ impl<'a> From<&'a str> for Prompt<'a> {
     }
 }
 
-impl From<String> for Prompt<'_> {
+impl From<String> for Prompt {
     fn from(prompt: String) -> Self {
         Prompt {
-            template_ref: TemplateRef::OneOff(prompt.into()),
+            template_ref: TemplateRef::OneOff(prompt),
             context: None,
         }
     }
@@ -130,21 +164,17 @@ mod test {
 
     #[tokio::test]
     async fn test_prompt() {
-        let template = Template::try_compiled_from_str("hello {{world}}")
-            .await
-            .unwrap();
-        let prompt = template.to_prompt().with_context_value("world", "swiftide");
-        assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+        let prompt: Prompt = "hello {{world}}".into();
+        let prompt = prompt.with_context_value("world", "swiftide");
+        assert_eq!(prompt.render().unwrap(), "hello swiftide");
     }
 
     #[tokio::test]
     async fn test_prompt_with_node() {
-        let template = Template::try_compiled_from_str("hello {{node.chunk}}")
-            .await
-            .unwrap();
+        let prompt: Prompt = "hello {{node.chunk}}".into();
         let node = Node::new("test");
-        let prompt = template.to_prompt().with_node(&node);
-        assert_eq!(prompt.render().await.unwrap(), "hello test");
+        let prompt = prompt.with_node(&node);
+        assert_eq!(prompt.render().unwrap(), "hello test");
     }
 
     #[tokio::test]
@@ -152,7 +182,7 @@ mod test {
         let mut prompt: Prompt = "hello {{world}}".into();
         prompt = prompt.with_context_value("world", "swiftide");
 
-        assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+        assert_eq!(prompt.render().unwrap(), "hello swiftide");
     }
 
     #[tokio::test]
@@ -163,13 +193,12 @@ mod test {
             .add_raw_template("hello", "hello {{world}}")
             .unwrap();
 
-        Template::extend(&custom_tera).await.unwrap();
+        Prompt::extend(&custom_tera).unwrap();
 
-        let prompt = Template::from_compiled_template_name("hello")
-            .to_prompt()
-            .with_context_value("world", "swiftide");
+        let prompt =
+            Prompt::from_compiled_template("hello").with_context_value("world", "swiftide");
 
-        assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+        assert_eq!(prompt.render().unwrap(), "hello swiftide");
     }
 
     #[tokio::test]
@@ -182,7 +211,6 @@ mod test {
             prompt
                 .with_context_value("world", "swiftide")
                 .render()
-                .await
                 .unwrap(),
             "hello swiftide"
         );
@@ -192,34 +220,6 @@ mod test {
             prompt
                 .with_context_value("world", "swiftide")
                 .render()
-                .await
-                .unwrap(),
-            "hello swiftide"
-        );
-    }
-
-    #[tokio::test]
-    async fn test_coercion_to_template() {
-        let raw: &str = "hello {{world}}";
-
-        let prompt: Template = raw.into();
-        assert_eq!(
-            prompt
-                .to_prompt()
-                .with_context_value("world", "swiftide")
-                .render()
-                .await
-                .unwrap(),
-            "hello swiftide"
-        );
-
-        let prompt: Template = raw.to_string().into();
-        assert_eq!(
-            prompt
-                .to_prompt()
-                .with_context_value("world", "swiftide")
-                .render()
-                .await
                 .unwrap(),
             "hello swiftide"
         );
@@ -229,6 +229,6 @@ mod test {
     async fn test_assume_rendered_unless_context_methods_called() {
         let prompt = Prompt::from("hello {{world}}");
 
-        assert_eq!(prompt.render().await.unwrap(), "hello {{world}}");
+        assert_eq!(prompt.render().unwrap(), "hello {{world}}");
     }
 }
