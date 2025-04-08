@@ -55,6 +55,7 @@ pub mod hooks;
 mod state;
 pub mod system_prompt;
 pub mod tools;
+mod util;
 
 pub use agent::Agent;
 pub use default_context::DefaultContext;
