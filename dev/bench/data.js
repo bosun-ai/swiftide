@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744033649537,
+  "lastUpdate": 1744100036521,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19049,6 +19049,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249681,
             "range": "± 4996",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a48e3a0aab44c8becbdf27438004a6ca501e914c",
+          "message": "chore(deps): bump tokio from 1.44.1 to 1.44.2 in the cargo group (#722)\n\nBumps the cargo group with 1 update:\n[tokio](https://github.com/tokio-rs/tokio).\n\nUpdates `tokio` from 1.44.1 to 1.44.2\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/tokio-rs/tokio/releases\">tokio's\nreleases</a>.</em></p>\n<blockquote>\n<h2>Tokio v1.44.2</h2>\n<p>This release fixes a soundness issue in the broadcast channel. The\nchannel\naccepts values that are <code>Send</code> but <code>!Sync</code>.\nPreviously, the channel called\n<code>clone()</code> on these values without synchronizing. This release\nfixes the channel\nby synchronizing calls to <code>.clone()</code> (Thanks Austin Bonander\nfor finding and\nreporting the issue).</p>\n<h3>Fixed</h3>\n<ul>\n<li>sync: synchronize <code>clone()</code> call in broadcast channel (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7232\">#7232</a>)</li>\n</ul>\n<p><a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7232\">#7232</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7232\">tokio-rs/tokio#7232</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/ec4b1d7215a3e1e91797ad3fb6ba0f7c7f3d2566\"><code>ec4b1d7</code></a>\nchore: forward port 1.43.x</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/e3c3a56718d201fb7bb430567f05fbb64b2ef082\"><code>e3c3a56</code></a>\nMerge branch 'tokio-1.43.x' into forward-port-1.43.x</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/a7b658c35bd40f6811e557aeb97cbb361b612c56\"><code>a7b658c</code></a>\nchore: prepare Tokio v1.43.1 release</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/c1c8d1033d637d7027fdc137ec8008c5801cbc0d\"><code>c1c8d10</code></a>\nMerge remote-tracking branch 'origin/tokio-1.38.x' into\nforward-port-1.38.x</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/aa303bc2051f7c21b48bb7bfcafe8fd4f39afd21\"><code>aa303bc</code></a>\nchore: prepare Tokio v1.38.2 release</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/7b6ccb515ff067151ed62db835f735e5653f8784\"><code>7b6ccb5</code></a>\nchore: backport CI fixes</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/4b174ce2c95fe1d1a217917db93fcc935e17e0da\"><code>4b174ce</code></a>\nsync: fix cloning value when receiving from broadcast channel</li>\n<li>See full diff in <a\nhref=\"https://github.com/tokio-rs/tokio/compare/tokio-1.44.1...tokio-1.44.2\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=tokio&package-manager=cargo&previous-version=1.44.1&new-version=1.44.2)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\nYou can disable automated security fix PRs for this repo from the\n[Security Alerts\npage](https://github.com/bosun-ai/swiftide/network/alerts).\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-04-08T10:05:10+02:00",
+          "tree_id": "c484c2712e307363a0767da095a74c1194726769",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a48e3a0aab44c8becbdf27438004a6ca501e914c"
+        },
+        "date": 1744100035095,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1309080,
+            "range": "± 973867",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250030,
+            "range": "± 2400",
             "unit": "ns/iter"
           }
         ]
