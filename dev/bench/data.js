@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744113081565,
+  "lastUpdate": 1744116028806,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19211,6 +19211,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249656,
             "range": "± 1260",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fca4165c5be4b14cdc3d20ed8215ef64c5fd69a9",
+          "message": "feat(agents): Return typed errors and yield error in `on_stop` (#725)",
+          "timestamp": "2025-04-08T14:31:42+02:00",
+          "tree_id": "91dc36965ebe5353d9600ee8d7dccffabe51791f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fca4165c5be4b14cdc3d20ed8215ef64c5fd69a9"
+        },
+        "date": 1744116027699,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293570,
+            "range": "± 1029776",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251848,
+            "range": "± 2782",
             "unit": "ns/iter"
           }
         ]
