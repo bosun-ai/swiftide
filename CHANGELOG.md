@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.0](https://github.com/bosun-ai/swiftide/compare/v0.22.8...v0.23.0) - 2025-04-08
+
+### New features
+
+- [a85cd8e](https://github.com/bosun-ai/swiftide/commit/a85cd8e2d014f198685ee6bfcfdf17f7f34acf91) *(macros)*  Support generics in Derive for tools ([#720](https://github.com/bosun-ai/swiftide/pull/720))
+
+- [52c44e9](https://github.com/bosun-ai/swiftide/commit/52c44e9b610c0ba4bf144881c36eacc3a0d10e53)  Agent mcp client support  ([#658](https://github.com/bosun-ai/swiftide/pull/658))
+
+````text
+Adds support for agents to use tools from MCP servers. All transports
+  are supported via the `rmcp` crate.
+
+  Additionally adds the possibility to add toolboxes to agents (of which
+  MCP is one). Tool boxes declare their available tools at runtime, like
+  tool box.
+````
+
+### Miscellaneous
+
+- [69706ec](https://github.com/bosun-ai/swiftide/commit/69706ec6630b70ea9d332c151637418736437a99)  [**breaking**] Remove templates ([#716](https://github.com/bosun-ai/swiftide/pull/716))
+
+````text
+Template / prompt interface got confusing and bloated. This removes
+  `Template` fully, and changes Prompt such that it can either ref to a
+  one-off, or to a template named compiled in the swiftide repository.
+````
+
+**BREAKING CHANGE**: This removes `Template` from Swiftide and simplifies
+the whole setup significantly. The internal Swiftide Tera repository can
+still be extended like with Templates. Same behaviour with less code and
+abstractions.
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.22.8...0.23.0
+
+
+
 ## [0.22.8](https://github.com/bosun-ai/swiftide/compare/v0.22.7...v0.22.8) - 2025-04-02
 
 ### Bug fixes
