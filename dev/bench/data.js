@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744100036521,
+  "lastUpdate": 1744113066764,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19103,6 +19103,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250030,
             "range": "± 2400",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "69706ec6630b70ea9d332c151637418736437a99",
+          "message": "refactor!: Remove templates (#716)\n\nTemplate / prompt interface got confusing and bloated. This removes\n`Template` fully, and changes Prompt such that it can either ref to a\none-off, or to a template named compiled in the swiftide repository.\n\nBREAKING CHANGE: This removes `Template` from Swiftide and simplifies\nthe whole setup significantly. The internal Swiftide Tera repository can\nstill be extended like with Templates. Same behaviour with less code and\nabstractions.",
+          "timestamp": "2025-04-08T13:42:06+02:00",
+          "tree_id": "77281770490653c6a91012229f9e52a9d724906b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/69706ec6630b70ea9d332c151637418736437a99"
+        },
+        "date": 1744113065729,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1326931,
+            "range": "± 1279468",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252561,
+            "range": "± 6732",
             "unit": "ns/iter"
           }
         ]
