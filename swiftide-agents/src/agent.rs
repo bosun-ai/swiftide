@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use crate::{
     default_context::DefaultContext,
+    errors::AgentError,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
         Hook, HookTypes, MessageHookFn, OnStartFn, OnStopFn,
@@ -16,7 +17,6 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
     chat_completion::{
@@ -277,27 +277,33 @@ impl Agent {
     /// Run the agent with a user message. The agent will loop completions, make tool calls, until
     /// no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.query")]
-    pub async fn query(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
+    pub async fn query(
+        &mut self,
+        query: impl Into<String> + std::fmt::Debug,
+    ) -> Result<(), AgentError> {
         self.run_agent(Some(query.into()), false).await
     }
 
     /// Run the agent with a user message once.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
-    pub async fn query_once(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
+    pub async fn query_once(
+        &mut self,
+        query: impl Into<String> + std::fmt::Debug,
+    ) -> Result<(), AgentError> {
         self.run_agent(Some(query.into()), true).await
     }
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
     /// until no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.run")]
-    pub async fn run(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<(), AgentError> {
         self.run_agent(None, false).await
     }
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
     /// until
     #[tracing::instrument(skip_all, name = "agent.run_once")]
-    pub async fn run_once(&mut self) -> Result<()> {
+    pub async fn run_once(&mut self) -> Result<(), AgentError> {
         self.run_agent(None, true).await
     }
 
@@ -306,15 +312,23 @@ impl Agent {
         self.context.history().await
     }
 
-    async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
+    async fn run_agent(
+        &mut self,
+        maybe_query: Option<String>,
+        just_once: bool,
+    ) -> Result<(), AgentError> {
         if self.state.is_running() {
-            anyhow::bail!("Agent is already running");
+            return Err(AgentError::AlreadyRunning);
         }
 
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
-                    .add_messages(vec![ChatMessage::System(system_prompt.render()?)])
+                    .add_messages(vec![ChatMessage::System(
+                        system_prompt
+                            .render()
+                            .map_err(AgentError::FailedToRenderSystemPrompt)?,
+                    )])
                     .await;
             }
 
@@ -343,7 +357,7 @@ impl Agent {
             let result = self.run_completions(&messages).await;
 
             if let Err(err) = result {
-                self.stop(StopReason::Error).await;
+                self.stop_with_error(&err).await;
                 tracing::error!(error = ?err, "Agent stopped with error {err}");
                 return Err(err);
             }
@@ -361,7 +375,7 @@ impl Agent {
     }
 
     #[tracing::instrument(skip_all, err)]
-    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<()> {
+    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<(), AgentError> {
         debug!(
             "Running completion for agent with {} messages",
             messages.len()
@@ -375,7 +389,8 @@ impl Agent {
                     .map(swiftide_core::Tool::tool_spec)
                     .collect::<HashSet<_>>(),
             )
-            .build()?;
+            .build()
+            .map_err(AgentError::FailedToBuildRequest)?;
 
         invoke_hooks!(BeforeCompletion, self, &mut chat_completion_request);
 
@@ -390,7 +405,11 @@ impl Agent {
                 .join(",\n")
         );
 
-        let mut response = self.llm.complete(&chat_completion_request).await?;
+        let mut response = self
+            .llm
+            .complete(&chat_completion_request)
+            .await
+            .map_err(AgentError::CompletionsFailed)?;
 
         invoke_hooks!(AfterCompletion, self, &mut response);
 
@@ -409,7 +428,7 @@ impl Agent {
         Ok(())
     }
 
-    async fn invoke_tools(&mut self, tool_calls: Vec<ToolCall>) -> Result<()> {
+    async fn invoke_tools(&mut self, tool_calls: Vec<ToolCall>) -> Result<(), AgentError> {
         debug!("LLM returned tool calls: {:?}", tool_calls);
 
         let mut handles = vec![];
@@ -443,7 +462,7 @@ impl Agent {
         }
 
         for (handle, tool_call) in handles {
-            let mut output = handle.await?;
+            let mut output = handle.await.map_err(AgentError::ToolFailedToJoin)?;
 
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
@@ -526,7 +545,7 @@ impl Agent {
     ///
     /// If you want to add a message without triggering the hook, use the context directly.
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
-    pub async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
+    pub async fn add_message(&self, mut message: ChatMessage) -> Result<(), AgentError> {
         invoke_hooks!(OnNewMessage, self, &mut message);
 
         self.context.add_message(message).await;
@@ -539,9 +558,18 @@ impl Agent {
             return;
         }
         let reason = reason.into();
-        invoke_hooks!(OnStop, self, reason.clone());
+        invoke_hooks!(OnStop, self, reason.clone(), None);
 
         self.state = state::State::Stopped(reason);
+    }
+
+    pub async fn stop_with_error(&mut self, error: &AgentError) {
+        if self.state.is_stopped() {
+            return;
+        }
+        invoke_hooks!(OnStop, self, StopReason::Error, Some(error));
+
+        self.state = state::State::Stopped(StopReason::Error);
     }
 
     /// Access the agent's context
@@ -569,9 +597,12 @@ impl Agent {
         &self.tools
     }
 
-    async fn load_toolboxes(&mut self) -> Result<()> {
+    async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
         for toolbox in &self.toolboxes {
-            let tools = toolbox.available_tools().await?;
+            let tools = toolbox
+                .available_tools()
+                .await
+                .map_err(AgentError::ToolBoxFailedToLoad)?;
             self.toolbox_tools.extend(tools);
         }
 

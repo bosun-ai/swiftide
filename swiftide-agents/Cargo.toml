@@ -25,6 +25,7 @@ strum_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
+thiserror.workspace = true
 
 # Mcp
 rmcp = { workspace = true, optional = true, default-features = false, features = [

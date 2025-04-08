@@ -51,6 +51,7 @@
 //! Agents run in a loop as long as they have new messages to process.
 mod agent;
 mod default_context;
+pub mod errors;
 pub mod hooks;
 mod state;
 pub mod system_prompt;

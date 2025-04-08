@@ -9171,6 +9171,7 @@ dependencies = [
  "swiftide-core",
  "temp-dir",
  "test-log",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
 ]
