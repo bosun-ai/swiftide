@@ -323,7 +323,7 @@ impl MockHook {
 
     pub fn stop_hook_fn(&self) -> impl OnStopFn {
         let called = Arc::clone(&self.called);
-        move |_: &Agent, _| {
+        move |_: &Agent, _, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();

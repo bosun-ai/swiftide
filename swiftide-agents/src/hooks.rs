@@ -52,7 +52,7 @@ use swiftide_core::chat_completion::{
     ToolOutput,
 };
 
-use crate::{state::StopReason, Agent};
+use crate::{errors::AgentError, state::StopReason, Agent};
 
 pub trait BeforeAllFn:
     for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
@@ -150,7 +150,11 @@ dyn_clone::clone_trait_object!(OnStartFn);
 
 /// Hooks that are called when the agent stop
 pub trait OnStopFn:
-    for<'a> Fn(&'a Agent, StopReason) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(
+        &'a Agent,
+        StopReason,
+        Option<&AgentError>,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -261,7 +265,11 @@ impl<F> OnStartFn for F where
 }
 
 impl<F> OnStopFn for F where
-    F: for<'a> Fn(&'a Agent, StopReason) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    F: for<'a> Fn(
+            &'a Agent,
+            StopReason,
+            Option<&AgentError>,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone
