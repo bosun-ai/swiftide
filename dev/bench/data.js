@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744113066764,
+  "lastUpdate": 1744113081565,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19157,6 +19157,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252561,
             "range": "± 6732",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "29352e6d3dc51779f3202e0e9936bf72e0b61605",
+          "message": "feat(agents): Add `on_stop` hook and `stop` now takes a `StopReason` (#724)",
+          "timestamp": "2025-04-08T13:42:32+02:00",
+          "tree_id": "c2f9e1f41b09b9467171e6c59e04d6b1315482a4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/29352e6d3dc51779f3202e0e9936bf72e0b61605"
+        },
+        "date": 1744113080479,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1285876,
+            "range": "± 931558",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249656,
+            "range": "± 1260",
             "unit": "ns/iter"
           }
         ]
