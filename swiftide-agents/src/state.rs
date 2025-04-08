@@ -15,7 +15,7 @@ pub(crate) enum State {
 ///
 /// `StopReason::Other` has some convenience methods to convert from any `AsRef<str>`
 ///
-/// A default is also provied for `StopReason`
+/// A default is also provided for `StopReason`
 #[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum StopReason {

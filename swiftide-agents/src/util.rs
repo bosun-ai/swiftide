@@ -1,5 +1,4 @@
 //! Internal utility functions and macros for anything agent
-//!
 
 /// Simple macro to consistently call hooks and clean up the code
 #[macro_export]
