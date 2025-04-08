@@ -18,7 +18,7 @@ impl SimplePrompt for Dashscope {
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render().await?)
+                .content(prompt.render()?)
                 .build()?
                 .into()])
             .build()?;

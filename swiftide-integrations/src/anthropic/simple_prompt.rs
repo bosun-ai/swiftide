@@ -13,7 +13,7 @@ impl SimplePrompt for Anthropic {
 
         let request = CreateMessagesRequestBuilder::default()
             .model(model)
-            .messages(vec![prompt.render().await?.into()])
+            .messages(vec![prompt.render()?.into()])
             .build()?;
 
         tracing::debug!(

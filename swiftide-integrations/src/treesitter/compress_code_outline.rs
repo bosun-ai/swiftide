@@ -51,7 +51,7 @@ impl Transformer for CompressCodeOutline {
             return Ok(node);
         }
 
-        let prompt = self.prompt_template.to_prompt().with_node(&node);
+        let prompt = self.prompt_template.clone().with_node(&node);
 
         let response = extract_markdown_codeblock(self.prompt(prompt).await?);
 
@@ -80,9 +80,9 @@ mod test {
         let mut node = Node::new(code);
         node.metadata.insert("Outline", outline);
 
-        let prompt = template.to_prompt().with_node(&node);
+        let prompt = template.clone().with_node(&node);
 
-        insta::assert_snapshot!(prompt.render().await.unwrap());
+        insta::assert_snapshot!(prompt.render().unwrap());
     }
 
     #[tokio::test]

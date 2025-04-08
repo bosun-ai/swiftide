@@ -39,7 +39,7 @@ impl Estimatable for String {
 #[async_trait]
 impl Estimatable for &Prompt {
     async fn for_estimate(&self) -> Result<Cow<'_, str>> {
-        let rendered = self.render().await?;
+        let rendered = self.render()?;
         Ok(Cow::Owned(rendered))
     }
 }

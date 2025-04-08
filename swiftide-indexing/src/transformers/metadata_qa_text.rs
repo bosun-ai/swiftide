@@ -42,7 +42,7 @@ impl Transformer for MetadataQAText {
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         let prompt = self
             .prompt_template
-            .to_prompt()
+            .clone()
             .with_node(&node)
             .with_context_value("questions", self.num_questions);
 
@@ -69,10 +69,10 @@ mod test {
         let template = default_prompt();
 
         let prompt = template
-            .to_prompt()
+            .clone()
             .with_node(&Node::new("test"))
             .with_context_value("questions", 5);
-        insta::assert_snapshot!(prompt.render().await.unwrap());
+        insta::assert_snapshot!(prompt.render().unwrap());
     }
 
     #[tokio::test]

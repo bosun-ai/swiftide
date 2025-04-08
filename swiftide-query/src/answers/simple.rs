@@ -4,8 +4,8 @@ use swiftide_core::{
     document::Document,
     indexing::SimplePrompt,
     prelude::*,
+    prompt::Prompt,
     querying::{states, Query},
-    template::Template,
     Answer,
 };
 
@@ -23,9 +23,9 @@ pub struct Simple {
     #[builder(setter(custom))]
     client: Arc<dyn SimplePrompt>,
     #[builder(default = "default_prompt()")]
-    prompt_template: Template,
+    prompt_template: Prompt,
     #[builder(default, setter(into, strip_option))]
-    document_template: Option<Template>,
+    document_template: Option<Prompt>,
 }
 
 impl Simple {
@@ -54,7 +54,7 @@ impl SimpleBuilder {
     }
 }
 
-fn default_prompt() -> Template {
+fn default_prompt() -> Prompt {
     indoc::indoc! {"
     Answer the following question based on the context provided:
     {{ question }}
@@ -87,8 +87,9 @@ impl Answer for Simple {
             let mut rendered_documents = Vec::new();
             for document in query.documents() {
                 let rendered = template
-                    .render(&tera::Context::from_serialize(document)?)
-                    .await?;
+                    .clone()
+                    .with_context(tera::Context::from_serialize(document)?)
+                    .render()?;
                 rendered_documents.push(rendered);
             }
 
@@ -105,7 +106,7 @@ impl Answer for Simple {
 
         let answer = self
             .client
-            .prompt(self.prompt_template.to_prompt().with_context(context))
+            .prompt(self.prompt_template.clone().with_context(context))
             .await?;
 
         Ok(query.answered(answer))
@@ -159,7 +160,7 @@ mod test {
         transformer.answer(query).await.unwrap();
 
         let received_prompt = received_prompt.lock().unwrap().take().unwrap();
-        let rendered = received_prompt.render().await.unwrap();
+        let rendered = received_prompt.render().unwrap();
         assert_snapshot!(rendered);
     }
 
@@ -208,7 +209,7 @@ mod test {
         transformer.answer(query).await.unwrap();
 
         let received_prompt = received_prompt.lock().unwrap().take().unwrap();
-        let rendered = received_prompt.render().await.unwrap();
+        let rendered = received_prompt.render().unwrap();
         assert_snapshot!(rendered);
     }
 }
