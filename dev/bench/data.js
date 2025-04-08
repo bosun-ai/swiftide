@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744116028806,
+  "lastUpdate": 1744125825743,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19265,6 +19265,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251848,
             "range": "± 2782",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1d2b7a5421ef19209dad086dbd7f626ba8c402a1",
+          "message": "chore: release v0.23.0 (#726)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.22.8 -> 0.23.0 (⚠ API breaking changes)\n* `swiftide-agents`: 0.22.8 -> 0.23.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.22.8 -> 0.23.0\n* `swiftide-indexing`: 0.22.8 -> 0.23.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.22.8 -> 0.23.0 (✓ API compatible changes)\n* `swiftide-query`: 0.22.8 -> 0.23.0 (✓ API compatible changes)\n* `swiftide`: 0.22.8 -> 0.23.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure enum_missing: pub enum removed or renamed ---\n\nDescription:\nA publicly-visible enum cannot be imported by its prior path. A `pub use` may have been removed, or the enum itself may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/enum_missing.ron\n\nFailed in:\n  enum swiftide_core::prompt::PromptTemplate, previously in file /tmp/.tmpZjQGX3/swiftide-core/src/template.rs:29\n  enum swiftide_core::template::Template, previously in file /tmp/.tmpZjQGX3/swiftide-core/src/template.rs:29\n\n--- failure module_missing: pub module removed or renamed ---\n\nDescription:\nA publicly-visible module cannot be imported by its prior path. A `pub use` may have been removed, or the module may have been renamed, removed, or made non-public.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/module_missing.ron\n\nFailed in:\n  mod swiftide_core::template, previously in file /tmp/.tmpZjQGX3/swiftide-core/src/template.rs:1\n```\n\n### ⚠ `swiftide-agents` breaking changes\n\n```text\n--- failure enum_variant_added: enum variant added on exhaustive enum ---\n\nDescription:\nA publicly-visible enum without #[non_exhaustive] has a new variant.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#enum-variant-new\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/enum_variant_added.ron\n\nFailed in:\n  variant Hook:OnStop in /tmp/.tmpDX2JBq/swiftide/swiftide-agents/src/hooks.rs:188\n  variant HookTypes:OnStop in /tmp/.tmpDX2JBq/swiftide/swiftide-agents/src/hooks.rs:188\n\n--- failure method_parameter_count_changed: pub method parameter count changed ---\n\nDescription:\nA publicly-visible method now takes a different number of parameters.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#fn-change-arity\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/method_parameter_count_changed.ron\n\nFailed in:\n  swiftide_agents::Agent::stop now takes 2 parameters instead of 1, in /tmp/.tmpDX2JBq/swiftide/swiftide-agents/src/agent.rs:556\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.23.0](https://github.com/bosun-ai/swiftide/compare/v0.22.8...v0.23.0)\n- 2025-04-08\n\n### New features\n\n-\n[fca4165](https://github.com/bosun-ai/swiftide/commit/fca4165c5be4b14cdc3d20ed8215ef64c5fd69a9)\n*(agents)* Return typed errors and yield error in `on_stop`\n([#725](https://github.com/bosun-ai/swiftide/pull/725))\n\n-\n[29352e6](https://github.com/bosun-ai/swiftide/commit/29352e6d3dc51779f3202e0e9936bf72e0b61605)\n*(agents)* Add `on_stop` hook and `stop` now takes a `StopReason`\n([#724](https://github.com/bosun-ai/swiftide/pull/724))\n\n-\n[a85cd8e](https://github.com/bosun-ai/swiftide/commit/a85cd8e2d014f198685ee6bfcfdf17f7f34acf91)\n*(macros)* Support generics in Derive for tools\n([#720](https://github.com/bosun-ai/swiftide/pull/720))\n\n-\n[52c44e9](https://github.com/bosun-ai/swiftide/commit/52c44e9b610c0ba4bf144881c36eacc3a0d10e53)\nAgent mcp client support\n([#658](https://github.com/bosun-ai/swiftide/pull/658))\n\n````text\nAdds support for agents to use tools from MCP servers. All transports\n  are supported via the `rmcp` crate.\n\n  Additionally adds the possibility to add toolboxes to agents (of which\n  MCP is one). Tool boxes declare their available tools at runtime, like\n  tool box.\n````\n\n### Miscellaneous\n\n-\n[69706ec](https://github.com/bosun-ai/swiftide/commit/69706ec6630b70ea9d332c151637418736437a99)\n[**breaking**] Remove templates\n([#716](https://github.com/bosun-ai/swiftide/pull/716))\n\n````text\nTemplate / prompt interface got confusing and bloated. This removes\n  `Template` fully, and changes Prompt such that it can either ref to a\n  one-off, or to a template named compiled in the swiftide repository.\n````\n\n**BREAKING CHANGE**: This removes `Template` from Swiftide and\nsimplifies\nthe whole setup significantly. The internal Swiftide Tera repository can\nstill be extended like with Templates. Same behaviour with less code and\nabstractions.\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.22.8...0.23.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-04-08T17:14:57+02:00",
+          "tree_id": "081b69e9ec617dbeea89482404da8854961f8ec1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1d2b7a5421ef19209dad086dbd7f626ba8c402a1"
+        },
+        "date": 1744125824537,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293646,
+            "range": "± 968295",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254427,
+            "range": "± 2969",
             "unit": "ns/iter"
           }
         ]
