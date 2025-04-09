@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use dyn_clone::DynClone;
 use std::borrow::Cow;
 
-use crate::{AgentContext, CommandOutput, ResilientLanguageModel};
+use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
 
 use super::{
     chat_completion_request::ChatCompletionRequest,
@@ -12,7 +12,7 @@ use super::{
 };
 
 #[async_trait]
-impl<LLM: ChatCompletion + Clone> ChatCompletion for ResilientLanguageModel<LLM> {
+impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LLM> {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resilient_language_model_retries_chat_completion_transient_errors() {
+    async fn test_language_model_with_backoff_retries_chat_completion_transient_errors() {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_chat = MockChatCompletion {
             call_count: call_count.clone(),
@@ -166,14 +166,14 @@ mod tests {
             randomization_factor: 0.5,
         };
 
-        let resilient_model = ResilientLanguageModel::new(mock_chat, config);
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
         let request = ChatCompletionRequest {
             messages: vec![],
             tools_spec: HashSet::default(),
         };
 
-        let result = resilient_model.complete(&request).await;
+        let result = model_with_backoff.complete(&request).await;
 
         assert!(result.is_ok());
         assert_eq!(call_count.load(Ordering::SeqCst), 3);
@@ -184,7 +184,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resilient_language_model_does_not_retry_chat_completion_permanent_errors() {
+    async fn test_language_model_with_backoff_does_not_retry_chat_completion_permanent_errors() {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_chat = MockChatCompletion {
             call_count: call_count.clone(),
@@ -199,14 +199,14 @@ mod tests {
             randomization_factor: 0.5,
         };
 
-        let resilient_model = ResilientLanguageModel::new(mock_chat, config);
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
         let request = ChatCompletionRequest {
             messages: vec![],
             tools_spec: HashSet::default(),
         };
 
-        let result = resilient_model.complete(&request).await;
+        let result = model_with_backoff.complete(&request).await;
 
         assert!(result.is_err());
         assert_eq!(call_count.load(Ordering::SeqCst), 1); // Should only be called once
@@ -218,7 +218,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resilient_language_model_does_not_retry_chat_completion_context_length_errors() {
+    async fn test_language_model_with_backoff_does_not_retry_chat_completion_context_length_errors() {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_chat = MockChatCompletion {
             call_count: call_count.clone(),
@@ -233,14 +233,14 @@ mod tests {
             randomization_factor: 0.5,
         };
 
-        let resilient_model = ResilientLanguageModel::new(mock_chat, config);
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
         let request = ChatCompletionRequest {
             messages: vec![],
             tools_spec: HashSet::default(),
         };
 
-        let result = resilient_model.complete(&request).await;
+        let result = model_with_backoff.complete(&request).await;
 
         assert!(result.is_err());
         assert_eq!(call_count.load(Ordering::SeqCst), 1); // Should only be called once

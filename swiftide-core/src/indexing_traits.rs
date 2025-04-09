@@ -589,12 +589,12 @@ pub trait SimplePrompt: Debug + Send + Sync + DynClone {
 dyn_clone::clone_trait_object!(SimplePrompt);
 
 #[derive(Debug, Clone)]
-pub struct ResilientLanguageModel<P: Clone> {
+pub struct LanguageModelWithBackOff<P: Clone> {
     pub(crate) inner: P,
     config: BackoffConfiguration,
 }
 
-impl<P: Clone> ResilientLanguageModel<P> {
+impl<P: Clone> LanguageModelWithBackOff<P> {
     pub fn new(client: P, config: BackoffConfiguration) -> Self {
         Self {
             inner: client,
@@ -613,7 +613,7 @@ impl<P: Clone> ResilientLanguageModel<P> {
 }
 
 #[async_trait]
-impl<P: SimplePrompt + Clone> SimplePrompt for ResilientLanguageModel<P> {
+impl<P: SimplePrompt + Clone> SimplePrompt for LanguageModelWithBackOff<P> {
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let strategy = self.strategy();
 
@@ -643,7 +643,7 @@ impl<P: SimplePrompt + Clone> SimplePrompt for ResilientLanguageModel<P> {
 }
 
 #[async_trait]
-impl<P: EmbeddingModel + Clone> EmbeddingModel for ResilientLanguageModel<P> {
+impl<P: EmbeddingModel + Clone> EmbeddingModel for LanguageModelWithBackOff<P> {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         self.inner.embed(input).await
     }
@@ -875,7 +875,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resilient_language_model_retries_transient_errors() {
+    async fn test_language_model_with_backoff_retries_transient_errors() {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_prompt = MockSimplePrompt {
             call_count: call_count.clone(),
@@ -890,9 +890,9 @@ mod tests {
             randomization_factor: 0.5,
         };
 
-        let resilient_model = ResilientLanguageModel::new(mock_prompt, config);
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_prompt, config);
 
-        let result = resilient_model.prompt(Prompt::from("Test prompt")).await;
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
 
         assert!(result.is_ok());
         assert_eq!(call_count.load(Ordering::SeqCst), 3);
@@ -900,7 +900,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resilient_language_model_does_not_retry_permanent_errors() {
+    async fn test_language_model_with_backoff_does_not_retry_permanent_errors() {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_prompt = MockSimplePrompt {
             call_count: call_count.clone(),
@@ -915,9 +915,9 @@ mod tests {
             randomization_factor: 0.5,
         };
 
-        let resilient_model = ResilientLanguageModel::new(mock_prompt, config);
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_prompt, config);
 
-        let result = resilient_model.prompt(Prompt::from("Test prompt")).await;
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
 
         assert!(result.is_err());
         assert_eq!(call_count.load(Ordering::SeqCst), 1);
@@ -929,7 +929,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_resilient_language_model_does_not_retry_context_length_errors() {
+    async fn test_language_model_with_backoff_does_not_retry_context_length_errors() {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_prompt = MockSimplePrompt {
             call_count: call_count.clone(),
@@ -944,9 +944,9 @@ mod tests {
             randomization_factor: 0.5,
         };
 
-        let resilient_model = ResilientLanguageModel::new(mock_prompt, config);
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_prompt, config);
 
-        let result = resilient_model.prompt(Prompt::from("Test prompt")).await;
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
 
         assert!(result.is_err());
         assert_eq!(call_count.load(Ordering::SeqCst), 1);
