@@ -91,6 +91,7 @@ aws-bedrock = ["swiftide-integrations/aws-bedrock"]
 
 ## Lancdb for persistance and querying
 lancedb = ["swiftide-integrations/lancedb"]
+lancedb-remote = ["swiftide-integrations/lancedb-remote"]
 
 ## Fluvio loader
 fluvio = ["swiftide-integrations/fluvio"]

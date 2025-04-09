@@ -173,6 +173,8 @@ aws-bedrock = [
   "dep:aws-sdk-bedrockruntime",
 ]
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
+lancedb-remote = ["lancedb", "lancedb/remote"]
+
 # Fluvio loader
 fluvio = ["dep:fluvio"]
 # Paruqet loader

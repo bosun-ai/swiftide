@@ -31,12 +31,14 @@ impl Manager for LanceDBPoolManager {
     async fn create(&self) -> Result<Self::Type, Self::Error> {
         let mut builder = ConnectBuilder::new(&self.uri);
 
-        if let Some(api_key) = &self.api_key {
-            builder = builder.api_key(api_key);
-        }
+        if cfg!(feature = "lancedb-remote") {
+            if let Some(api_key) = &self.api_key {
+                builder = builder.api_key(api_key);
+            }
 
-        if let Some(region) = &self.region {
-            builder = builder.region(region);
+            if let Some(region) = &self.region {
+                builder = builder.region(region);
+            }
         }
 
         for (key, value) in &self.storage_options {
