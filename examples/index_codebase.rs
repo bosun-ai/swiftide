@@ -23,8 +23,8 @@ use swiftide::{
     indexing,
     indexing::loaders::FileLoader,
     indexing::transformers::{ChunkCode, Embed, MetadataQACode},
+    indexing::LanguageModelWithBackOff,
     integrations::{self, qdrant::Qdrant, redis::Redis},
-    traits::LanguageModelWithBackOff,
 };
 
 #[tokio::main]
