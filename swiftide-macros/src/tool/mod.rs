@@ -4,7 +4,7 @@ use args::ToolArgs;
 use darling::{Error, FromDeriveInput};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, FnArg, ItemFn, Lifetime, Pat, PatType};
+use syn::{parse_quote, DeriveInput, FnArg, ItemFn, Pat, PatType};
 
 mod args;
 mod rust_to_json_type;
@@ -66,7 +66,7 @@ pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> T
         }
     };
 
-    let boxed_from = boxed_from(&tool_struct, &[]);
+    let boxed_from = boxed_from(&tool_struct, &parse_quote!());
 
     quote! {
         #args_struct
@@ -143,26 +143,16 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     let tool_spec = tool_spec::tool_spec(&parsed.tool);
 
-    let struct_lifetimes = input
-        .generics
-        .lifetimes()
-        .map(|l| &l.lifetime)
-        .collect::<Vec<_>>();
-
-    let struct_lifetime = if struct_lifetimes.is_empty() {
-        quote! {}
-    } else {
-        quote! { <#(#struct_lifetimes),*> }
-    };
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     // Arg should be, if empty None, else Some(&args)
-    let boxed_from = boxed_from(struct_ident, &struct_lifetimes);
+    let boxed_from = boxed_from(struct_ident, &input.generics);
     Ok(quote! {
         #args_struct
 
 
         #[async_trait::async_trait]
-        impl #struct_lifetime swiftide::chat_completion::Tool for #struct_ident #struct_lifetime {
+        impl #impl_generics swiftide::chat_completion::Tool for #struct_ident #ty_generics #where_clause {
             async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                 #invoke_body
             }
@@ -180,15 +170,23 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     })
 }
 
-fn boxed_from(struct_ident: &syn::Ident, lifetimes: &[&Lifetime]) -> TokenStream {
-    if !lifetimes.is_empty() {
-        return quote! {};
+fn boxed_from(struct_ident: &syn::Ident, generics: &syn::Generics) -> TokenStream {
+    if !generics.params.is_empty() {
+        return quote!();
     }
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let lt_ident = if let Some(other_lifetime) = generics.lifetimes().next() {
+        let lifetime = &other_lifetime.lifetime;
+        quote!(+ #lifetime)
+    } else {
+        quote!()
+    };
 
     quote! {
-        impl<'TOOLBOXED> From<#struct_ident> for Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED> {
+        impl #impl_generics From<#struct_ident #ty_generics> for Box<dyn ::swiftide::chat_completion::Tool #lt_ident> #where_clause {
             fn from(val: #struct_ident) -> Self {
-                Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool + 'TOOLBOXED>
+                Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool>
             }
         }
     }
@@ -312,6 +310,20 @@ mod tests {
             #[tool(description="Hello derive", param(name="test", description="test param"))]
             pub struct HelloDerive<'a> {
                 my_thing: &'a str,
+            }
+        };
+
+        let output = tool_derive_impl(&input).unwrap();
+
+        insta::assert_snapshot!(crate::test_utils::pretty_macro_output(&output));
+    }
+
+    #[test]
+    fn test_snapshot_derive_with_generics() {
+        let input: DeriveInput = parse_quote! {
+            #[tool(description="Hello derive", param(name="test", description="test param"))]
+            pub struct HelloDerive<S: Send + Sync + Clone> {
+                my_thing: S,
             }
         };
 

@@ -52,7 +52,7 @@ use swiftide_core::chat_completion::{
     ToolOutput,
 };
 
-use crate::Agent;
+use crate::{errors::AgentError, state::StopReason, Agent};
 
 pub trait BeforeAllFn:
     for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
@@ -148,6 +148,21 @@ pub trait OnStartFn:
 
 dyn_clone::clone_trait_object!(OnStartFn);
 
+/// Hooks that are called when the agent stop
+pub trait OnStopFn:
+    for<'a> Fn(
+        &'a Agent,
+        StopReason,
+        Option<&AgentError>,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(OnStopFn);
+
 /// Wrapper around the different types of hooks
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
@@ -169,6 +184,8 @@ pub enum Hook {
     OnNewMessage(Box<dyn MessageHookFn>),
     /// Runs when the agent starts, either from pending or stopped
     OnStart(Box<dyn OnStartFn>),
+    /// Runs when the agent stops
+    OnStop(Box<dyn OnStopFn>),
 }
 
 impl<F> BeforeAllFn for F where
@@ -241,6 +258,18 @@ impl<F> MessageHookFn for F where
 
 impl<F> OnStartFn for F where
     F: for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+
+impl<F> OnStopFn for F where
+    F: for<'a> Fn(
+            &'a Agent,
+            StopReason,
+            Option<&AgentError>,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync
         + DynClone

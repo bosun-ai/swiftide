@@ -45,12 +45,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(
-                    prompt
-                        .render()
-                        .await
-                        .map_err(LanguageModelError::permanent)?,
-                )
+                .content(prompt.render()?)
                 .build()
                 .map_err(LanguageModelError::permanent)?
                 .into()])

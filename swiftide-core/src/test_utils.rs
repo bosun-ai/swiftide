@@ -16,11 +16,11 @@ macro_rules! assert_default_prompt_snapshot {
         #[tokio::test]
         async fn test_default_prompt() {
         let template = default_prompt();
-        let mut prompt = template.to_prompt().with_node(&Node::new($node));
+        let mut prompt = template.clone().with_node(&Node::new($node));
         $(
             prompt = prompt.with_context_value($key, $value);
         )*
-        insta::assert_snapshot!(prompt.render().await.unwrap());
+        insta::assert_snapshot!(prompt.render().unwrap());
         }
     };
 
@@ -28,11 +28,11 @@ macro_rules! assert_default_prompt_snapshot {
         #[tokio::test]
         async fn test_default_prompt() {
             let template = default_prompt();
-            let mut prompt = template.to_prompt();
+            let mut prompt = template;
             $(
                 prompt = prompt.with_context_value($key, $value);
             )*
-            insta::assert_snapshot!(prompt.render().await.unwrap());
+            insta::assert_snapshot!(prompt.render().unwrap());
         }
     };
 }

@@ -51,10 +51,12 @@
 //! Agents run in a loop as long as they have new messages to process.
 mod agent;
 mod default_context;
+pub mod errors;
 pub mod hooks;
 mod state;
 pub mod system_prompt;
 pub mod tools;
+mod util;
 
 pub use agent::Agent;
 pub use default_context::DefaultContext;

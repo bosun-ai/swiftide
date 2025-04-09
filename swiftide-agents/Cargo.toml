@@ -11,7 +11,7 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.22" }
+swiftide-core = { path = "../swiftide-core", version = "0.23" }
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
@@ -25,6 +25,14 @@ strum_macros.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
+thiserror.workspace = true
+
+# Mcp
+rmcp = { workspace = true, optional = true, default-features = false, features = [
+  "base64",
+  "client",
+  "macros",
+] }
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
@@ -32,6 +40,8 @@ mockall.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
 insta.workspace = true
+rmcp = { workspace = true, features = ["server"] }
+schemars = { workspace = true }
 
 [lints]
 workspace = true
@@ -40,3 +50,6 @@ workspace = true
 all-features = true
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+mcp = ["dep:rmcp"]

@@ -45,14 +45,14 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
     let prompt_template_struct_attr = match &args.default_prompt_file {
         Some(_file) => quote! {
             #[builder(default = "default_prompt()")]
-            prompt_template: hidden::Template,
+            prompt_template: hidden::Prompt,
         },
         None => quote! {},
     };
 
     let default_prompt_fn = match &args.default_prompt_file {
         Some(file) => quote! {
-            fn default_prompt() -> hidden::Template {
+            fn default_prompt() -> hidden::Prompt {
                 include_str!(#file).into()
             }
         },
@@ -92,7 +92,6 @@ pub(crate) fn indexing_transformer_impl(args: TokenStream, input: ItemStruct) ->
                 indexing::{IndexingDefaults},
                 prompt::Prompt,
                 chat_completion::errors::LanguageModelError,
-                template::Template,
                 SimplePrompt, Transformer, WithIndexingDefaults
             };
 
@@ -229,7 +228,6 @@ mod tests {
                     indexing::{IndexingDefaults},
                     prompt::Prompt,
                     chat_completion::errors::LanguageModelError,
-                    template::Template,
                     SimplePrompt, Transformer, WithIndexingDefaults
                 };
             }

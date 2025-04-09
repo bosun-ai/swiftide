@@ -43,7 +43,7 @@ impl SimplePrompt for Ollama {
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render().await?)
+                .content(prompt.render()?)
                 .build()
                 .map_err(openai_error_to_language_model_error)?
                 .into()])

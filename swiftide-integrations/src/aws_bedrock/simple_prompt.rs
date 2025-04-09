@@ -13,7 +13,7 @@ impl SimplePrompt for AwsBedrock {
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let blob = self
             .model_family
-            .build_request_to_bytes(prompt.render().await?, &self.model_config)
+            .build_request_to_bytes(prompt.render()?, &self.model_config)
             .map(Blob::new)?;
 
         let response_bytes = self.client.prompt_u8(&self.model_id, blob).await?;

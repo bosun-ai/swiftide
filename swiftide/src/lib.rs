@@ -107,8 +107,6 @@
 #[doc(inline)]
 pub use swiftide_core::prompt;
 #[doc(inline)]
-pub use swiftide_core::template;
-#[doc(inline)]
 pub use swiftide_core::type_aliases::*;
 
 #[cfg(feature = "swiftide-agents")]
@@ -119,6 +117,8 @@ pub use swiftide_agents as agents;
 pub mod traits {
     #[doc(inline)]
     pub use swiftide_core::agent_traits::*;
+    #[doc(inline)]
+    pub use swiftide_core::chat_completion::traits::*;
     #[doc(inline)]
     pub use swiftide_core::indexing_traits::*;
     #[doc(inline)]

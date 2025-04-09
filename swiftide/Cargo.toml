@@ -16,11 +16,11 @@ homepage.workspace = true
 document-features = { workspace = true }
 
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.22" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.22" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.22" }
-swiftide-query = { path = "../swiftide-query", version = "0.22" }
-swiftide-agents = { path = "../swiftide-agents", version = "0.22", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.23" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.23" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.23" }
+swiftide-query = { path = "../swiftide-query", version = "0.23" }
+swiftide-agents = { path = "../swiftide-agents", version = "0.23", optional = true }
 
 # Re-exports for macros and ease of use
 anyhow.workspace = true
@@ -103,6 +103,9 @@ redb = ["swiftide-integrations/redb"]
 
 ## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
 duckdb = ["swiftide-integrations/duckdb"]
+
+## MCP tool support for agents (tools only)
+mcp = ["swiftide-agents", "swiftide-agents/mcp"]
 
 #! ### Experimental
 swiftide-agents = ["dep:swiftide-agents"]

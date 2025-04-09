@@ -1,6 +1,7 @@
+use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
 
@@ -218,7 +219,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_language_model_with_backoff_does_not_retry_chat_completion_context_length_errors() {
+    async fn test_language_model_with_backoff_does_not_retry_chat_completion_context_length_errors()
+    {
         let call_count = Arc::new(AtomicUsize::new(0));
         let mock_chat = MockChatCompletion {
             call_count: call_count.clone(),
@@ -286,6 +288,73 @@ pub trait Tool: Send + Sync + DynClone {
         Box::new(self) as Box<dyn Tool>
     }
 }
+
+/// A toolbox is a collection of tools
+///
+/// It can be a list, an mcp client, or anything else we can think of.
+///
+/// This allows agents to not know their tools when they are created, and to get them at runtime.
+///
+/// It also allows for tools to be dynamically loaded and unloaded, etc.
+#[async_trait]
+pub trait ToolBox: Send + Sync + DynClone {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>>;
+
+    fn name(&self) -> Cow<'_, str> {
+        Cow::Borrowed("Unnamed ToolBox")
+    }
+
+    fn boxed<'a>(self) -> Box<dyn ToolBox + 'a>
+    where
+        Self: Sized + 'a,
+    {
+        Box::new(self) as Box<dyn ToolBox>
+    }
+}
+
+#[async_trait]
+impl ToolBox for Vec<Box<dyn Tool>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        Ok(self.clone())
+    }
+}
+
+#[async_trait]
+impl ToolBox for Box<dyn ToolBox> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        (**self).available_tools().await
+    }
+}
+
+#[async_trait]
+impl ToolBox for Arc<dyn ToolBox> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        (**self).available_tools().await
+    }
+}
+
+#[async_trait]
+impl ToolBox for &dyn ToolBox {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        (**self).available_tools().await
+    }
+}
+
+#[async_trait]
+impl ToolBox for &[Box<dyn Tool>] {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        Ok(self.to_vec())
+    }
+}
+
+#[async_trait]
+impl ToolBox for [Box<dyn Tool>] {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        Ok(self.to_vec())
+    }
+}
+
+dyn_clone::clone_trait_object!(ToolBox);
 
 #[async_trait]
 impl Tool for Box<dyn Tool> {

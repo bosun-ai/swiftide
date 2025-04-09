@@ -1,11 +1,13 @@
 #![allow(dead_code)]
 use crate::{
     default_context::DefaultContext,
+    errors::AgentError,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
-        Hook, HookTypes, MessageHookFn, OnStartFn,
+        Hook, HookTypes, MessageHookFn, OnStartFn, OnStopFn,
     },
-    state,
+    invoke_hooks,
+    state::{self, StopReason},
     system_prompt::SystemPrompt,
     tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
@@ -15,14 +17,13 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Result;
 use derive_builder::Builder;
 use swiftide_core::{
     chat_completion::{
         ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
     },
     prompt::Prompt,
-    AgentContext,
+    AgentContext, ToolBox,
 };
 use tracing::{debug, Instrument};
 
@@ -51,6 +52,12 @@ pub struct Agent {
     /// Tools the agent can use
     #[builder(default = Agent::default_tools(), setter(custom))]
     pub(crate) tools: HashSet<Box<dyn Tool>>,
+
+    /// Toolboxes are collections of tools that can be added to the agent.
+    ///
+    /// Toolboxes make their tools available to the agent at runtime.
+    #[builder(default)]
+    pub(crate) toolboxes: Vec<Box<dyn ToolBox>>,
 
     /// The language model that the agent uses for completion.
     #[builder(setter(custom))]
@@ -105,6 +112,10 @@ pub struct Agent {
     /// the name and args of the tool.
     #[builder(private, default)]
     pub(crate) tool_retries_counter: HashMap<u64, usize>,
+
+    /// Tools loaded from toolboxes
+    #[builder(private, default)]
+    pub(crate) toolbox_tools: HashSet<Box<dyn Tool>>,
 }
 
 impl std::fmt::Debug for Agent {
@@ -207,6 +218,10 @@ impl AgentBuilder {
         self.add_hook(Hook::OnNewMessage(Box::new(hook)))
     }
 
+    pub fn on_stop(&mut self, hook: impl OnStopFn + 'static) -> &mut Self {
+        self.add_hook(Hook::OnStop(Box::new(hook)))
+    }
+
     /// Set the LLM for the agent. An LLM must implement the `ChatCompletion` trait.
     pub fn llm<LLM: ChatCompletion + Clone + 'static>(&mut self, llm: &LLM) -> &mut Self {
         let boxed: Box<dyn ChatCompletion> = Box::new(llm.clone()) as Box<dyn ChatCompletion>;
@@ -232,6 +247,18 @@ impl AgentBuilder {
         );
         self
     }
+
+    /// Add a toolbox to the agent. Toolboxes are collections of tools that can be added to the
+    /// to the agent. Available tools are evaluated at runtime, when the agent starts for the first
+    /// time.
+    ///
+    /// Agents can have many toolboxes.
+    pub fn add_toolbox(&mut self, toolbox: impl ToolBox + 'static) -> &mut Self {
+        self.toolboxes.get_or_insert_with(Vec::new);
+
+        self.toolboxes.as_mut().unwrap().push(Box::new(toolbox));
+        self
+    }
 }
 
 impl Agent {
@@ -250,27 +277,33 @@ impl Agent {
     /// Run the agent with a user message. The agent will loop completions, make tool calls, until
     /// no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.query")]
-    pub async fn query(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
+    pub async fn query(
+        &mut self,
+        query: impl Into<String> + std::fmt::Debug,
+    ) -> Result<(), AgentError> {
         self.run_agent(Some(query.into()), false).await
     }
 
     /// Run the agent with a user message once.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
-    pub async fn query_once(&mut self, query: impl Into<String> + std::fmt::Debug) -> Result<()> {
+    pub async fn query_once(
+        &mut self,
+        query: impl Into<String> + std::fmt::Debug,
+    ) -> Result<(), AgentError> {
         self.run_agent(Some(query.into()), true).await
     }
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
     /// until no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.run")]
-    pub async fn run(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<(), AgentError> {
         self.run_agent(None, false).await
     }
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
     /// until
     #[tracing::instrument(skip_all, name = "agent.run_once")]
-    pub async fn run_once(&mut self) -> Result<()> {
+    pub async fn run_once(&mut self) -> Result<(), AgentError> {
         self.run_agent(None, true).await
     }
 
@@ -279,39 +312,32 @@ impl Agent {
         self.context.history().await
     }
 
-    async fn run_agent(&mut self, maybe_query: Option<String>, just_once: bool) -> Result<()> {
+    async fn run_agent(
+        &mut self,
+        maybe_query: Option<String>,
+        just_once: bool,
+    ) -> Result<(), AgentError> {
         if self.state.is_running() {
-            anyhow::bail!("Agent is already running");
+            return Err(AgentError::AlreadyRunning);
         }
 
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
-                    .add_messages(vec![ChatMessage::System(system_prompt.render().await?)])
+                    .add_messages(vec![ChatMessage::System(
+                        system_prompt
+                            .render()
+                            .map_err(AgentError::FailedToRenderSystemPrompt)?,
+                    )])
                     .await;
             }
-            for hook in self.hooks_by_type(HookTypes::BeforeAll) {
-                if let Hook::BeforeAll(hook) = hook {
-                    let span = tracing::info_span!(
-                        "hook",
-                        "otel.name" = format!("hook.{}", HookTypes::AfterTool)
-                    );
-                    tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(self).instrument(span.or_current()).await?;
-                }
-            }
+
+            invoke_hooks!(BeforeAll, self);
+
+            self.load_toolboxes().await?;
         }
 
-        for hook in self.hooks_by_type(HookTypes::OnStart) {
-            if let Hook::OnStart(hook) = hook {
-                let span = tracing::info_span!(
-                    "hook",
-                    "otel.name" = format!("hook.{}", HookTypes::OnStart)
-                );
-                tracing::info!("Calling {} hook", HookTypes::OnStart);
-                hook(self).instrument(span.or_current()).await?;
-            }
-        }
+        invoke_hooks!(OnStart, self);
 
         self.state = state::State::Running;
 
@@ -331,7 +357,7 @@ impl Agent {
             let result = self.run_completions(&messages).await;
 
             if let Err(err) = result {
-                self.stop();
+                self.stop_with_error(&err).await;
                 tracing::error!(error = ?err, "Agent stopped with error {err}");
                 return Err(err);
             }
@@ -343,13 +369,13 @@ impl Agent {
         }
 
         // If there are no new messages, ensure we update our state
-        self.stop();
+        self.stop(StopReason::NoNewMessages).await;
 
         Ok(())
     }
 
     #[tracing::instrument(skip_all, err)]
-    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<()> {
+    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<(), AgentError> {
         debug!(
             "Running completion for agent with {} messages",
             messages.len()
@@ -363,20 +389,10 @@ impl Agent {
                     .map(swiftide_core::Tool::tool_spec)
                     .collect::<HashSet<_>>(),
             )
-            .build()?;
+            .build()
+            .map_err(AgentError::FailedToBuildRequest)?;
 
-        for hook in self.hooks_by_type(HookTypes::BeforeCompletion) {
-            if let Hook::BeforeCompletion(hook) = hook {
-                let span = tracing::info_span!(
-                    "hook",
-                    "otel.name" = format!("hook.{}", HookTypes::BeforeCompletion)
-                );
-                tracing::info!("Calling {} hook", HookTypes::BeforeCompletion);
-                hook(&*self, &mut chat_completion_request)
-                    .instrument(span.or_current())
-                    .await?;
-            }
-        }
+        invoke_hooks!(BeforeCompletion, self, &mut chat_completion_request);
 
         debug!(
             "Calling LLM with the following new messages:\n {}",
@@ -389,20 +405,14 @@ impl Agent {
                 .join(",\n")
         );
 
-        let mut response = self.llm.complete(&chat_completion_request).await?;
+        let mut response = self
+            .llm
+            .complete(&chat_completion_request)
+            .await
+            .map_err(AgentError::CompletionsFailed)?;
 
-        for hook in self.hooks_by_type(HookTypes::AfterCompletion) {
-            if let Hook::AfterCompletion(hook) = hook {
-                let span = tracing::info_span!(
-                    "hook",
-                    "otel.name" = format!("hook.{}", HookTypes::AfterCompletion)
-                );
-                tracing::info!("Calling {} hook", HookTypes::AfterCompletion);
-                hook(&*self, &mut response)
-                    .instrument(span.or_current())
-                    .await?;
-            }
-        }
+        invoke_hooks!(AfterCompletion, self, &mut response);
+
         self.add_message(ChatMessage::Assistant(
             response.message,
             response.tool_calls.clone(),
@@ -413,21 +423,12 @@ impl Agent {
             self.invoke_tools(tool_calls).await?;
         }
 
-        for hook in self.hooks_by_type(HookTypes::AfterEach) {
-            if let Hook::AfterEach(hook) = hook {
-                let span = tracing::info_span!(
-                    "hook",
-                    "otel.name" = format!("hook.{}", HookTypes::AfterEach)
-                );
-                tracing::info!("Calling {} hook", HookTypes::AfterEach);
-                hook(&*self).instrument(span.or_current()).await?;
-            }
-        }
+        invoke_hooks!(AfterEach, self);
 
         Ok(())
     }
 
-    async fn invoke_tools(&mut self, tool_calls: Vec<ToolCall>) -> Result<()> {
+    async fn invoke_tools(&mut self, tool_calls: Vec<ToolCall>) -> Result<(), AgentError> {
         debug!("LLM returned tool calls: {:?}", tool_calls);
 
         let mut handles = vec![];
@@ -441,18 +442,7 @@ impl Agent {
             let tool_args = tool_call.args().map(String::from);
             let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
-            for hook in self.hooks_by_type(HookTypes::BeforeTool) {
-                if let Hook::BeforeTool(hook) = hook {
-                    let span = tracing::info_span!(
-                        "hook",
-                        "otel.name" = format!("hook.{}", HookTypes::BeforeTool)
-                    );
-                    tracing::info!("Calling {} hook", HookTypes::BeforeTool);
-                    hook(&*self, &tool_call)
-                        .instrument(span.or_current())
-                        .await?;
-                }
-            }
+            invoke_hooks!(BeforeTool, self, &tool_call);
 
             let tool_span = tracing::info_span!(
                 "tool",
@@ -472,50 +462,38 @@ impl Agent {
         }
 
         for (handle, tool_call) in handles {
-            let mut output = handle.await?;
+            let mut output = handle.await.map_err(AgentError::ToolFailedToJoin)?;
 
-            // Invoking hooks feels too verbose and repetitive
-            for hook in self.hooks_by_type(HookTypes::AfterTool) {
-                if let Hook::AfterTool(hook) = hook {
-                    let span = tracing::info_span!(
-                        "hook",
-                        "otel.name" = format!("hook.{}", HookTypes::AfterTool)
-                    );
-                    tracing::info!("Calling {} hook", HookTypes::AfterTool);
-                    hook(&*self, &tool_call, &mut output)
-                        .instrument(span.or_current())
-                        .await?;
-                }
-            }
+            invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
             if let Err(error) = output {
                 let stop = self.tool_calls_over_limit(&tool_call);
                 if stop {
                     tracing::error!(
-                        "Tool call failed, retry limit reached, stopping agent: {err}",
-                        err = error
+                        ?error,
+                        "Tool call failed, retry limit reached, stopping agent: {error}",
                     );
                 } else {
                     tracing::warn!(
-                        error = error.to_string(),
+                        ?error,
                         tool_call = ?tool_call,
                         "Tool call failed, retrying",
                     );
                 }
                 self.add_message(ChatMessage::ToolOutput(
-                    tool_call,
+                    tool_call.clone(),
                     ToolOutput::Fail(error.to_string()),
                 ))
                 .await?;
                 if stop {
-                    self.stop();
+                    self.stop(StopReason::ToolCallsOverLimit(tool_call)).await;
                     return Err(error.into());
                 }
                 continue;
             }
 
             let output = output?;
-            self.handle_control_tools(&output);
+            self.handle_control_tools(&tool_call, &output).await;
             self.add_message(ChatMessage::ToolOutput(tool_call, output))
                 .await?;
         }
@@ -538,10 +516,11 @@ impl Agent {
     }
 
     // Handle any tool specific output (e.g. stop)
-    fn handle_control_tools(&mut self, output: &ToolOutput) {
+    async fn handle_control_tools(&mut self, tool_call: &ToolCall, output: &ToolOutput) {
         if let ToolOutput::Stop = output {
             tracing::warn!("Stop tool called, stopping agent");
-            self.stop();
+            self.stop(StopReason::RequestedByTool(tool_call.clone()))
+                .await;
         }
     }
 
@@ -566,28 +545,31 @@ impl Agent {
     ///
     /// If you want to add a message without triggering the hook, use the context directly.
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
-    pub async fn add_message(&self, mut message: ChatMessage) -> Result<()> {
-        for hook in self.hooks_by_type(HookTypes::OnNewMessage) {
-            if let Hook::OnNewMessage(hook) = hook {
-                let span = tracing::info_span!(
-                    "hook",
-                    "otel.name" = format!("hook.{}", HookTypes::OnNewMessage)
-                );
-                if let Err(err) = hook(self, &mut message).instrument(span.or_current()).await {
-                    tracing::error!(
-                        "Error in {hooktype} hook: {err}",
-                        hooktype = HookTypes::OnNewMessage,
-                    );
-                }
-            }
-        }
+    pub async fn add_message(&self, mut message: ChatMessage) -> Result<(), AgentError> {
+        invoke_hooks!(OnNewMessage, self, &mut message);
+
         self.context.add_message(message).await;
         Ok(())
     }
 
     /// Tell the agent to stop. It will finish it's current loop and then stop.
-    pub fn stop(&mut self) {
-        self.state = state::State::Stopped;
+    pub async fn stop(&mut self, reason: impl Into<StopReason>) {
+        if self.state.is_stopped() {
+            return;
+        }
+        let reason = reason.into();
+        invoke_hooks!(OnStop, self, reason.clone(), None);
+
+        self.state = state::State::Stopped(reason);
+    }
+
+    pub async fn stop_with_error(&mut self, error: &AgentError) {
+        if self.state.is_stopped() {
+            return;
+        }
+        invoke_hooks!(OnStop, self, StopReason::Error, Some(error));
+
+        self.state = state::State::Stopped(StopReason::Error);
     }
 
     /// Access the agent's context
@@ -608,6 +590,25 @@ impl Agent {
     /// The agent has not (ever) started
     pub fn is_pending(&self) -> bool {
         self.state.is_pending()
+    }
+
+    /// Get a list of tools available to the agent
+    fn tools(&self) -> &HashSet<Box<dyn Tool>> {
+        &self.tools
+    }
+
+    async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
+        for toolbox in &self.toolboxes {
+            let tools = toolbox
+                .available_tools()
+                .await
+                .map_err(AgentError::ToolBoxFailedToLoad)?;
+            self.toolbox_tools.extend(tools);
+        }
+
+        self.tools.extend(self.toolbox_tools.clone());
+
+        Ok(())
     }
 }
 
@@ -732,6 +733,38 @@ mod tests {
 
         let mut agent = Agent::builder()
             .tools([mock_tool])
+            .system_prompt("My system prompt")
+            .llm(&mock_llm)
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_tool_via_toolbox_run_once() {
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::default();
+
+        let chat_request = chat_request! {
+            system!("My system prompt"),
+            user!("Write a poem");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
+
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let mut agent = Agent::builder()
+            .add_toolbox(vec![mock_tool.boxed()])
             .system_prompt("My system prompt")
             .llm(&mock_llm)
             .build()
@@ -895,6 +928,7 @@ mod tests {
         let mock_after_completion = MockHook::new("after_completion").expect_calls(2).to_owned();
         let mock_after_each = MockHook::new("after_each").expect_calls(2).to_owned();
         let mock_on_message = MockHook::new("on_message").expect_calls(4).to_owned();
+        let mock_on_stop = MockHook::new("on_stop").expect_calls(1).to_owned();
 
         // Once for mock tool and once for stop
         let mock_before_tool = MockHook::new("before_tool").expect_calls(2).to_owned();
@@ -946,6 +980,7 @@ mod tests {
             .after_tool(mock_after_tool.after_tool_fn())
             .after_each(mock_after_each.hook_fn())
             .on_new_message(mock_on_message.message_hook_fn())
+            .on_stop(mock_on_stop.stop_hook_fn())
             .build()
             .unwrap();
 

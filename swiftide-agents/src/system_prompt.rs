@@ -10,7 +10,7 @@
 //! be provided on the agent level.
 
 use derive_builder::Builder;
-use swiftide_core::{prompt::Prompt, template::Template};
+use swiftide_core::prompt::Prompt;
 
 #[derive(Clone, Debug, Builder)]
 #[builder(setter(into, strip_option))]
@@ -28,7 +28,7 @@ pub struct SystemPrompt {
 
     /// The template to use for the system prompt
     #[builder(default = default_prompt_template())]
-    template: Template,
+    template: Prompt,
 }
 
 impl SystemPrompt {
@@ -76,7 +76,7 @@ impl SystemPromptBuilder {
     }
 }
 
-fn default_prompt_template() -> Template {
+fn default_prompt_template() -> Prompt {
     include_str!("system_prompt_template.md").into()
 }
 
@@ -91,7 +91,6 @@ impl Into<Prompt> for SystemPrompt {
         } = self;
 
         template
-            .to_prompt()
             .with_context_value("role", role)
             .with_context_value("guidelines", guidelines)
             .with_context_value("constraints", constraints)
@@ -113,7 +112,7 @@ mod tests {
 
         let prompt: Prompt = prompt.into();
 
-        let rendered = prompt.render().await.unwrap();
+        let rendered = prompt.render().unwrap();
 
         insta::assert_snapshot!(rendered);
     }
