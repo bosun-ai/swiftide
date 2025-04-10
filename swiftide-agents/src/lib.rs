@@ -55,6 +55,7 @@ pub mod errors;
 pub mod hooks;
 mod state;
 pub mod system_prompt;
+pub mod tasks;
 pub mod tools;
 mod util;
 
