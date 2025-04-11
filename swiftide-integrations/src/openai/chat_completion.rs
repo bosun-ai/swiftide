@@ -9,10 +9,11 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    errors::ChatCompletionError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
+    errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
     ChatMessage, ToolCall, ToolSpec,
 };
 
+use super::openai_error_to_language_model_error;
 use super::GenericOpenAI;
 
 #[async_trait]
@@ -23,7 +24,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, ChatCompletionError> {
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self
             .default_options
             .prompt_model
@@ -59,7 +60,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
 
         let request = openai_request
             .build()
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
             model = &model,
@@ -72,7 +73,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .chat()
             .create(request)
             .await
-            .map_err(|e| ChatCompletionError::LLM(Box::new(e)))?;
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
             response = serde_json::to_string_pretty(&response).expect("infallible"),
@@ -106,7 +107,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                     }),
             )
             .build()
-            .map_err(ChatCompletionError::from)
+            .map_err(LanguageModelError::from)
     }
 }
 

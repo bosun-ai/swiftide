@@ -20,12 +20,40 @@ pub enum ToolError {
     Unknown(#[from] anyhow::Error),
 }
 
-#[derive(Error, Debug)]
-pub enum ChatCompletionError {
-    /// Underlying errors by the llm
-    #[error("llm returned an error: {0}")]
-    LLM(Box<dyn std::error::Error + Send + Sync>),
+type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 
-    #[error(transparent)]
-    Unknown(#[from] anyhow::Error),
+#[derive(Error, Debug)]
+pub enum LanguageModelError {
+    #[error("Context length exceeded: {0}")]
+    ContextLengthExceeded(BoxedError),
+    #[error("Permanent error: {0}")]
+    PermanentError(BoxedError),
+    #[error("Transient error: {0}")]
+    TransientError(BoxedError),
+}
+
+impl LanguageModelError {
+    pub fn permanent(e: impl Into<BoxedError>) -> Self {
+        LanguageModelError::PermanentError(e.into())
+    }
+
+    pub fn transient(e: impl Into<BoxedError>) -> Self {
+        LanguageModelError::TransientError(e.into())
+    }
+
+    pub fn context_length_exceeded(e: impl Into<BoxedError>) -> Self {
+        LanguageModelError::ContextLengthExceeded(e.into())
+    }
+}
+
+impl From<BoxedError> for LanguageModelError {
+    fn from(e: BoxedError) -> Self {
+        LanguageModelError::PermanentError(e)
+    }
+}
+
+impl From<anyhow::Error> for LanguageModelError {
+    fn from(e: anyhow::Error) -> Self {
+        LanguageModelError::PermanentError(e.into())
+    }
 }

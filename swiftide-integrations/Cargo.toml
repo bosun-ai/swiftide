@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.22" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.22" }
+swiftide-core = { path = "../swiftide-core", version = "0.23" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.23" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -153,9 +153,9 @@ openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
 # Groq prompting
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Ollama prompting, embedding, chatcompletion
-ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Openrouter prompting, embedding, chatcompletion
-open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # FastEmbed (by qdrant) for fast, local embeddings
 fastembed = [
   "dep:fastembed",
@@ -163,7 +163,7 @@ fastembed = [
   "fastembed/hf-hub",
 ]
 # Dashscope prompting
-dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest"]
+dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Scraping via spider as loader and a html to markdown transformer
 scraping = ["dep:spider", "dep:htmd"]
 # AWS Bedrock for prompting

@@ -3,7 +3,12 @@
 //! processing and generating responses as part of the Swiftide system.
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, util::debug_long_utf8, SimplePrompt};
+use swiftide_core::{
+    chat_completion::errors::LanguageModelError, prompt::Prompt, util::debug_long_utf8,
+    SimplePrompt,
+};
+
+use crate::openai::openai_error_to_language_model_error;
 
 use super::Ollama;
 use anyhow::{Context as _, Result};
@@ -26,7 +31,7 @@ impl SimplePrompt for Ollama {
     /// - Returns an error if the request to the Ollama API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
@@ -39,15 +44,18 @@ impl SimplePrompt for Ollama {
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render()?)
-                .build()?
+                .build()
+                .map_err(openai_error_to_language_model_error)?
                 .into()])
-            .build()?;
+            .build()
+            .map_err(openai_error_to_language_model_error)?;
 
         // Log the request for debugging purposes.
         tracing::debug!(
             model = &model,
             messages = debug_long_utf8(
-                serde_json::to_string_pretty(&request.messages.first())?,
+                serde_json::to_string_pretty(&request.messages.first())
+                    .map_err(LanguageModelError::permanent)?,
                 100
             ),
             "[SimplePrompt] Request to ollama"
@@ -58,7 +66,8 @@ impl SimplePrompt for Ollama {
             .client
             .chat()
             .create(request)
-            .await?
+            .await
+            .map_err(openai_error_to_language_model_error)?
             .choices
             .remove(0)
             .message
