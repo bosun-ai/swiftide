@@ -80,7 +80,7 @@ sqlx = { version = "0.8", features = [
 aws-config = { version = "1.6", default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
 aws-credential-types = { version = "1.2", default-features = false }
-aws-sdk-bedrockruntime = { version = "1.81", default-features = false }
+aws-sdk-bedrockruntime = { version = "1.82", default-features = false }
 criterion = { version = "0.5", default-features = false }
 darling = { version = "0.20", default-features = false }
 deadpool = { version = "0.12", default-features = false }
