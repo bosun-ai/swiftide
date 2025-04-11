@@ -33,7 +33,7 @@ pub enum ToolFilter {
 /// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
 #[derive(Clone)]
 pub struct McpToolbox {
-    service: Arc<RunningService<RoleClient, InitializeRequestParam>>,
+    service: Option<Arc<RunningService<RoleClient, InitializeRequestParam>>>,
 
     /// Optional human readable name for the toolbox
     name: Option<String>,
@@ -90,7 +90,7 @@ impl McpToolbox {
         transport: impl IntoTransport<RoleClient, E, A>,
     ) -> Result<Self> {
         let info = Self::default_client_info();
-        let service = Arc::new(info.serve(transport).await?);
+        let service = Some(Arc::new(info.serve(transport).await?));
 
         Ok(Self {
             service,
@@ -104,7 +104,7 @@ impl McpToolbox {
         service: RunningService<RoleClient, InitializeRequestParam>,
     ) -> Self {
         Self {
-            service: service.into(),
+            service: Some(service.into()),
             filter: None.into(),
             name: None,
         }
@@ -121,6 +121,23 @@ impl McpToolbox {
     }
 }
 
+// Stop the service if there are no more references to it
+impl Drop for McpToolbox {
+    fn drop(&mut self) {
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(async {
+                let service = std::mem::take(&mut self.service);
+                if let Some(service) = service.and_then(Arc::into_inner) {
+                    if let Err(err) = service.cancel().await {
+                        tracing::error!(name = self.name(), "Failed to stop mcp server: {err}");
+                    }
+                    tracing::debug!(name = self.name(), "Stopping mcp server");
+                }
+            });
+        });
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct ToolInputSchema {
     #[serde(rename = "type")]
@@ -134,13 +151,15 @@ struct ToolInputSchema {
 impl ToolBox for McpToolbox {
     #[tracing::instrument(skip_all)]
     async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+        let Some(service) = &self.service else {
+            anyhow::bail!("No service available");
+        };
         tracing::debug!(name = self.name(), "Connecting to mcp server");
-        let peer_info = self.service.peer_info();
+        let peer_info = service.peer_info();
         tracing::debug!(?peer_info, name = self.name(), "Connected to mcp server");
 
         tracing::debug!(name = self.name(), "Listing tools from mcp server");
-        let tools = self
-            .service
+        let tools = service
             .list_all_tools()
             .await
             .context("Failed to list tools")?;
@@ -185,7 +204,7 @@ impl ToolBox for McpToolbox {
                 let tool_spec = tool_spec.build().context("Failed to build tool spec")?;
 
                 Ok(Box::new(McpTool {
-                    client: self.service.clone(),
+                    client: Arc::clone(service),
                     tool_name: t.name.into(),
                     tool_spec,
                 }) as Box<dyn Tool>)
@@ -292,8 +311,7 @@ mod tests {
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
 
     #[allow(clippy::similar_names)]
-    // #[test_log::test(tokio::test(flavor = "multi_thread"))]
-    #[test_log::test(tokio::test)]
+    #[test_log::test(tokio::test(flavor = "multi_thread"))]
     async fn test_socket() {
         let _ = std::fs::remove_file(SOCKET_PATH);
 
