@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744131334678,
+  "lastUpdate": 1744364270992,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19373,6 +19373,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252969,
             "range": "± 3824",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@tinco.nl",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3117fc62c146b0bf0949adb3cfe4e6c7f40427f7",
+          "message": "feat: Introduce LanguageModelError for LLM traits and an optional backoff decorator (#630)",
+          "timestamp": "2025-04-11T11:29:18+02:00",
+          "tree_id": "667c732371e56375e33cdb86062d17d0f723e90a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3117fc62c146b0bf0949adb3cfe4e6c7f40427f7"
+        },
+        "date": 1744364270189,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1297839,
+            "range": "± 931994",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249810,
+            "range": "± 2519",
             "unit": "ns/iter"
           }
         ]
