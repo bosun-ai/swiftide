@@ -1,5 +1,5 @@
 use swiftide_core::chat_completion::{
-    errors::{ChatCompletionError, ToolError},
+    errors::{LanguageModelError, ToolError},
     ChatCompletionRequestBuilderError,
 };
 use thiserror::Error;
@@ -17,7 +17,7 @@ pub enum AgentError {
     FailedToBuildRequest(ChatCompletionRequestBuilderError),
 
     #[error("Error from LLM when running completions {0}")]
-    CompletionsFailed(ChatCompletionError),
+    CompletionsFailed(LanguageModelError),
 
     #[error(transparent)]
     ToolError(#[from] ToolError),

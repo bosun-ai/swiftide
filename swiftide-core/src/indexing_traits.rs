@@ -11,6 +11,7 @@ use crate::{
 use std::fmt::Debug;
 use std::sync::Arc;
 
+use crate::chat_completion::errors::LanguageModelError;
 use crate::prompt::Prompt;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -419,7 +420,7 @@ impl NodeCache for &dyn NodeCache {
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync + Debug + DynClone {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
@@ -436,7 +437,7 @@ mock! {
 
     #[async_trait]
     impl EmbeddingModel for EmbeddingModel {
-        async fn embed(&self, input: Vec<String>) -> Result<Embeddings>;
+        async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError>;
         fn name(&self) -> &'static str;
     }
 
@@ -447,7 +448,7 @@ mock! {
 
 #[async_trait]
 impl EmbeddingModel for Box<dyn EmbeddingModel> {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         self.as_ref().embed(input).await
     }
 
@@ -458,7 +459,7 @@ impl EmbeddingModel for Box<dyn EmbeddingModel> {
 
 #[async_trait]
 impl EmbeddingModel for Arc<dyn EmbeddingModel> {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         self.as_ref().embed(input).await
     }
 
@@ -469,7 +470,7 @@ impl EmbeddingModel for Arc<dyn EmbeddingModel> {
 
 #[async_trait]
 impl EmbeddingModel for &dyn EmbeddingModel {
-    async fn embed(&self, input: Vec<String>) -> Result<Embeddings> {
+    async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         (*self).embed(input).await
     }
 }
@@ -478,7 +479,10 @@ impl EmbeddingModel for &dyn EmbeddingModel {
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
 pub trait SparseEmbeddingModel: Send + Sync + Debug + DynClone {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
@@ -495,7 +499,7 @@ mock! {
 
     #[async_trait]
     impl SparseEmbeddingModel for SparseEmbeddingModel {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings>;
+        async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings, LanguageModelError>;
         fn name(&self) -> &'static str;
     }
 
@@ -506,7 +510,10 @@ mock! {
 
 #[async_trait]
 impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError> {
         self.as_ref().sparse_embed(input).await
     }
 
@@ -517,7 +524,10 @@ impl SparseEmbeddingModel for Box<dyn SparseEmbeddingModel> {
 
 #[async_trait]
 impl SparseEmbeddingModel for Arc<dyn SparseEmbeddingModel> {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError> {
         self.as_ref().sparse_embed(input).await
     }
 
@@ -528,7 +538,10 @@ impl SparseEmbeddingModel for Arc<dyn SparseEmbeddingModel> {
 
 #[async_trait]
 impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
-    async fn sparse_embed(&self, input: Vec<String>) -> Result<SparseEmbeddings> {
+    async fn sparse_embed(
+        &self,
+        input: Vec<String>,
+    ) -> Result<SparseEmbeddings, LanguageModelError> {
         (*self).sparse_embed(input).await
     }
 }
@@ -537,7 +550,7 @@ impl SparseEmbeddingModel for &dyn SparseEmbeddingModel {
 /// Given a string prompt, queries an LLM
 pub trait SimplePrompt: Debug + Send + Sync + DynClone {
     // Takes a simple prompt, prompts the llm and returns the response
-    async fn prompt(&self, prompt: Prompt) -> Result<String>;
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
@@ -554,7 +567,7 @@ mock! {
 
     #[async_trait]
     impl SimplePrompt for SimplePrompt {
-        async fn prompt(&self, prompt: Prompt) -> Result<String>;
+        async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError>;
         fn name(&self) -> &'static str;
     }
 
@@ -565,7 +578,7 @@ mock! {
 
 #[async_trait]
 impl SimplePrompt for Box<dyn SimplePrompt> {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         self.as_ref().prompt(prompt).await
     }
 
@@ -576,7 +589,7 @@ impl SimplePrompt for Box<dyn SimplePrompt> {
 
 #[async_trait]
 impl SimplePrompt for Arc<dyn SimplePrompt> {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         self.as_ref().prompt(prompt).await
     }
 
@@ -587,7 +600,7 @@ impl SimplePrompt for Arc<dyn SimplePrompt> {
 
 #[async_trait]
 impl SimplePrompt for &dyn SimplePrompt {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         (*self).prompt(prompt).await
     }
 }

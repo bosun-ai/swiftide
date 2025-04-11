@@ -1,13 +1,15 @@
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{prompt::Prompt, SimplePrompt};
+use swiftide_core::{chat_completion::errors::LanguageModelError, prompt::Prompt, SimplePrompt};
+
+use crate::openai::openai_error_to_language_model_error;
 
 use super::Dashscope;
 use anyhow::{Context as _, Result};
 
 #[async_trait]
 impl SimplePrompt for Dashscope {
-    async fn prompt(&self, prompt: Prompt) -> Result<String> {
+    async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let model = self
             .default_options
             .prompt_model
@@ -19,19 +21,28 @@ impl SimplePrompt for Dashscope {
             .model(model)
             .messages(vec![ChatCompletionRequestUserMessageArgs::default()
                 .content(prompt.render()?)
-                .build()?
+                .build()
+                .map_err(openai_error_to_language_model_error)?
                 .into()])
-            .build()?;
+            .build()
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
-            messages = serde_json::to_string_pretty(&request)?,
+            messages =
+                serde_json::to_string_pretty(&request).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Request to qwen"
         );
 
-        let mut response = self.client.chat().create(request).await?;
+        let mut response = self
+            .client
+            .chat()
+            .create(request)
+            .await
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::debug!(
-            response = serde_json::to_string_pretty(&response)?,
+            response =
+                serde_json::to_string_pretty(&response).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Response from qwen"
         );
 
@@ -41,6 +52,8 @@ impl SimplePrompt for Dashscope {
             .message
             .content
             .take()
-            .context("Expected content in response")
+            .ok_or(LanguageModelError::PermanentError(
+                "Expected content in response".into(),
+            ))
     }
 }
