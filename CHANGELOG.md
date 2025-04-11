@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.0](https://github.com/bosun-ai/swiftide/compare/v0.23.0...v0.24.0) - 2025-04-11
+
+### New features
+
+- [3117fc6](https://github.com/bosun-ai/swiftide/commit/3117fc62c146b0bf0949adb3cfe4e6c7f40427f7)  Introduce LanguageModelError for LLM traits and an optional backoff decorator ([#630](https://github.com/bosun-ai/swiftide/pull/630))
+
+### Bug fixes
+
+- [0134dae](https://github.com/bosun-ai/swiftide/commit/0134daebef5d47035e986d30e1fa8f2c751c2c48) *(agents)*  Gracefully stop mcp service on drop ([#734](https://github.com/bosun-ai/swiftide/pull/734))
+
+### Miscellaneous
+
+- [e872c5b](https://github.com/bosun-ai/swiftide/commit/e872c5b24388754b371d9f0c7faad8647ad4733b)  Core test utils available behind feature flag ([#730](https://github.com/bosun-ai/swiftide/pull/730))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.23.0...0.24.0
+
+
+
 ## [0.23.0](https://github.com/bosun-ai/swiftide/compare/v0.22.8...v0.23.0) - 2025-04-08
 
 ### New features
