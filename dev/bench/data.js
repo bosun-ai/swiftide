@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744366306962,
+  "lastUpdate": 1744366630875,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19481,6 +19481,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249981,
             "range": "± 1385",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0134daebef5d47035e986d30e1fa8f2c751c2c48",
+          "message": "fix(agents): Gracefully stop mcp service on drop (#734)",
+          "timestamp": "2025-04-11T12:08:24+02:00",
+          "tree_id": "9a0145395cc0be1a75d959c071c1fbceddeec36e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0134daebef5d47035e986d30e1fa8f2c751c2c48"
+        },
+        "date": 1744366629421,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1306343,
+            "range": "± 990855",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255231,
+            "range": "± 6294",
             "unit": "ns/iter"
           }
         ]
