@@ -7,6 +7,7 @@
 
 pub mod agent_traits;
 pub mod chat_completion;
+pub mod indexing_decorators;
 mod indexing_defaults;
 mod indexing_stream;
 pub mod indexing_traits;
@@ -32,7 +33,11 @@ pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
 pub use crate::tokenizer::*;
 
+// Decorators are available from the root
+pub use crate::indexing_decorators::*;
+
 pub mod indexing {
+    pub use crate::indexing_decorators::*;
     pub use crate::indexing_defaults::*;
     pub use crate::indexing_stream::IndexingStream;
     pub use crate::indexing_traits::*;

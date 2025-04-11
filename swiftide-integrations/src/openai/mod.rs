@@ -3,8 +3,10 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
+use async_openai::error::OpenAIError;
 use derive_builder::Builder;
 use std::sync::Arc;
+use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
@@ -211,9 +213,37 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
     }
 }
 
+pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelError {
+    match e {
+        OpenAIError::ApiError(api_error) => {
+            // If the response is an ApiError, it could be a context length exceeded error
+            if api_error.code == Some("context_length_exceeded".to_string()) {
+                LanguageModelError::context_length_exceeded(OpenAIError::ApiError(api_error))
+            } else {
+                LanguageModelError::permanent(OpenAIError::ApiError(api_error))
+            }
+        }
+        OpenAIError::Reqwest(e) => {
+            // async_openai passes any network errors as reqwest errors, so we just assume they are
+            // recoverable
+            LanguageModelError::transient(e)
+        }
+        OpenAIError::JSONDeserialize(_) => {
+            // OpenAI generated a non-json response, probably a temporary problem on their side
+            // (i.e. reverse proxy can't find an available backend)
+            LanguageModelError::transient(e)
+        }
+        OpenAIError::FileSaveError(_)
+        | OpenAIError::FileReadError(_)
+        | OpenAIError::StreamError(_)
+        | OpenAIError::InvalidArgument(_) => LanguageModelError::permanent(e),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+    use async_openai::error::{ApiError, OpenAIError};
 
     /// test default embed model
     #[test]
@@ -245,5 +275,97 @@ mod test {
             openai.default_options.embed_model,
             Some("gpt-3".to_string())
         );
+    }
+
+    #[test]
+    fn test_context_length_exceeded_error() {
+        // Create an API error with the context_length_exceeded code
+        let api_error = ApiError {
+            message: "This model's maximum context length is 8192 tokens".to_string(),
+            r#type: Some("invalid_request_error".to_string()),
+            param: Some("messages".to_string()),
+            code: Some("context_length_exceeded".to_string()),
+        };
+
+        let openai_error = OpenAIError::ApiError(api_error);
+        let result = openai_error_to_language_model_error(openai_error);
+
+        // Verify it's categorized as ContextLengthExceeded
+        match result {
+            LanguageModelError::ContextLengthExceeded(_) => {} // Expected
+            _ => panic!("Expected ContextLengthExceeded error, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_api_error_permanent() {
+        // Create a generic API error (not context length exceeded)
+        let api_error = ApiError {
+            message: "Invalid API key".to_string(),
+            r#type: Some("invalid_request_error".to_string()),
+            param: Some("api_key".to_string()),
+            code: Some("invalid_api_key".to_string()),
+        };
+
+        let openai_error = OpenAIError::ApiError(api_error);
+        let result = openai_error_to_language_model_error(openai_error);
+
+        // Verify it's categorized as PermanentError
+        match result {
+            LanguageModelError::PermanentError(_) => {} // Expected
+            _ => panic!("Expected PermanentError, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_file_save_error_is_permanent() {
+        // Create a file save error
+        let openai_error = OpenAIError::FileSaveError("Failed to save file".to_string());
+        let result = openai_error_to_language_model_error(openai_error);
+
+        // Verify it's categorized as PermanentError
+        match result {
+            LanguageModelError::PermanentError(_) => {} // Expected
+            _ => panic!("Expected PermanentError, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_file_read_error_is_permanent() {
+        // Create a file read error
+        let openai_error = OpenAIError::FileReadError("Failed to read file".to_string());
+        let result = openai_error_to_language_model_error(openai_error);
+
+        // Verify it's categorized as PermanentError
+        match result {
+            LanguageModelError::PermanentError(_) => {} // Expected
+            _ => panic!("Expected PermanentError, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_stream_error_is_permanent() {
+        // Create a stream error
+        let openai_error = OpenAIError::StreamError("Stream failed".to_string());
+        let result = openai_error_to_language_model_error(openai_error);
+
+        // Verify it's categorized as PermanentError
+        match result {
+            LanguageModelError::PermanentError(_) => {} // Expected
+            _ => panic!("Expected PermanentError, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_invalid_argument_is_permanent() {
+        // Create an invalid argument error
+        let openai_error = OpenAIError::InvalidArgument("Invalid argument".to_string());
+        let result = openai_error_to_language_model_error(openai_error);
+
+        // Verify it's categorized as PermanentError
+        match result {
+            LanguageModelError::PermanentError(_) => {} // Expected
+            _ => panic!("Expected PermanentError, got {result:?}"),
+        }
     }
 }
