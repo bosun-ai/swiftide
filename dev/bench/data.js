@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744364270992,
+  "lastUpdate": 1744366306962,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19427,6 +19427,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249810,
             "range": "± 2519",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e872c5b24388754b371d9f0c7faad8647ad4733b",
+          "message": "chore: Core test utils available behind feature flag (#730)",
+          "timestamp": "2025-04-11T12:03:08+02:00",
+          "tree_id": "5e897491aeba45513748e0ef1a1276af06724815",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e872c5b24388754b371d9f0c7faad8647ad4733b"
+        },
+        "date": 1744366305844,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1291859,
+            "range": "± 975713",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249981,
+            "range": "± 1385",
             "unit": "ns/iter"
           }
         ]
