@@ -116,6 +116,10 @@ pub struct Agent {
     /// Tools loaded from toolboxes
     #[builder(private, default)]
     pub(crate) toolbox_tools: HashSet<Box<dyn Tool>>,
+
+    /// The name of the agent; used in tasks to identify the agent
+    #[builder(default = "unnamed_agent".into())]
+    pub(crate) name: String,
 }
 
 impl std::fmt::Debug for Agent {
@@ -269,6 +273,11 @@ impl Agent {
 }
 
 impl Agent {
+    /// The name of the agent. This is used to identify the agent in tasks.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     /// Default tools for the agent that it always includes
     fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
