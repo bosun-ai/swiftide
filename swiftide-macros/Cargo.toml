@@ -14,7 +14,7 @@ homepage.workspace = true
 proc-macro = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core/", version = "0.23.0" }
+swiftide-core = { path = "../swiftide-core/", version = "0.24.0" }
 
 quote = { workspace = true }
 syn = { workspace = true }
