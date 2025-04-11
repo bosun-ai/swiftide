@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744366733365,
+  "lastUpdate": 1744379600610,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19643,6 +19643,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249031,
             "range": "± 1658",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2adfbae77da49d98a625495fa30547f11602c1b0",
+          "message": "chore: release v0.24.0 (#735)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.23.0 -> 0.24.0 (⚠ API breaking changes)\n* `swiftide-agents`: 0.23.0 -> 0.24.0 (✓ API compatible changes)\n* `swiftide-macros`: 0.23.0 -> 0.24.0\n* `swiftide-indexing`: 0.23.0 -> 0.24.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.23.0 -> 0.24.0 (✓ API compatible changes)\n* `swiftide-query`: 0.23.0 -> 0.24.0\n* `swiftide`: 0.23.0 -> 0.24.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure enum_missing: pub enum removed or renamed ---\n\nDescription:\nA publicly-visible enum cannot be imported by its prior path. A `pub use` may have been removed, or the enum itself may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/enum_missing.ron\n\nFailed in:\n  enum swiftide_core::chat_completion::errors::ChatCompletionError, previously in file /tmp/.tmpMSYWXs/swiftide-core/src/chat_completion/errors.rs:24\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.24.0](https://github.com/bosun-ai/swiftide/compare/v0.23.0...v0.24.0)\n- 2025-04-11\n\n### New features\n\n-\n[3117fc6](https://github.com/bosun-ai/swiftide/commit/3117fc62c146b0bf0949adb3cfe4e6c7f40427f7)\nIntroduce LanguageModelError for LLM traits and an optional backoff\ndecorator ([#630](https://github.com/bosun-ai/swiftide/pull/630))\n\n### Bug fixes\n\n-\n[0134dae](https://github.com/bosun-ai/swiftide/commit/0134daebef5d47035e986d30e1fa8f2c751c2c48)\n*(agents)* Gracefully stop mcp service on drop\n([#734](https://github.com/bosun-ai/swiftide/pull/734))\n\n### Miscellaneous\n\n-\n[e872c5b](https://github.com/bosun-ai/swiftide/commit/e872c5b24388754b371d9f0c7faad8647ad4733b)\nCore test utils available behind feature flag\n([#730](https://github.com/bosun-ai/swiftide/pull/730))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.23.0...0.24.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-04-11T15:44:24+02:00",
+          "tree_id": "a3b966f4f7a905863b98bb969b6a3ad841231e59",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2adfbae77da49d98a625495fa30547f11602c1b0"
+        },
+        "date": 1744379599422,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1310489,
+            "range": "± 1336945",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254120,
+            "range": "± 4437",
             "unit": "ns/iter"
           }
         ]
