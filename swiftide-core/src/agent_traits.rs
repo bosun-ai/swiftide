@@ -158,7 +158,7 @@ pub trait AgentContext: Send + Sync {
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self);
 
-    /// Clones the context with all its confugration, but without any messages
+    /// Clones the context with all its configuration, but without any messages
     fn clone_empty(&self) -> Box<dyn AgentContext>;
 }
 
