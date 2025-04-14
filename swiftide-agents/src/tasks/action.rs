@@ -11,11 +11,15 @@
 // If and_back is not provided, the DelegateActionBuilder can be converted
 // into an Action (with and_back false) via the From/Into trait.
 
+use swiftide_core::Tool;
 use thiserror::Error;
 
-use crate::tasks::delegate_tool::DelegateAgentBuilder;
+use crate::{tasks::delegate_tool::DelegateAgentBuilder, Agent};
 
-use super::task::{Task, TaskBuilder};
+use super::{
+    delegate_tool::DelegateAgentBuilderError,
+    task::{Task, TaskBuilder},
+};
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -49,6 +53,12 @@ pub struct DelegateActionBuilder {
 enum ActionError {
     #[error("Failed to apply action")]
     ApplyFailed,
+
+    #[error("Failed to find agent: {0}")]
+    AgentNotFound(String),
+
+    #[error(transparent)]
+    FailedBuildingDelegateTool(#[from] DelegateAgentBuilderError),
 }
 
 impl Action {
@@ -63,16 +73,40 @@ impl Action {
     async fn apply(self, task: &mut Task) -> Result<(), ActionError> {
         match self {
             Action::Delegate(delegate_action) => {
+                // TODO: Add the task to the tool, also missing toolspec. Defaults with overwrite
+                // or required?
+                //
                 // Build the delegate tool base on the action
-                let source = task.find_agent(&delegate_action.from_agent).await.unwrap();
-                let target = task.find_agent(&delegate_action.to_agent).await.unwrap();
+                let source = task
+                    .find_agent(&delegate_action.from_agent)
+                    .await
+                    .ok_or_else(|| {
+                        ActionError::AgentNotFound(delegate_action.from_agent.clone())
+                    })?;
+                let target = task
+                    .find_agent(&delegate_action.to_agent)
+                    .await
+                    .ok_or_else(|| ActionError::AgentNotFound(delegate_action.to_agent.clone()))?;
 
-                let tool = DelegateAgentBuilder::default().delegates_to(target).build()?;
+                let tool = DelegateAgentBuilder::default()
+                    .delegates_to(target.clone())
+                    .build()?;
 
-                source.lock().await();
-                // Add the delegate tool to the agent
-                // If `and_back` is set, also add a delegate tool to the other agent
-                todo!()
+                {
+                    let mut source_agent = source.lock().await;
+                    source_agent.add_tool(tool.boxed());
+                }
+
+                if delegate_action.and_back {
+                    let tool = DelegateAgentBuilder::default()
+                        .delegates_to(source)
+                        .build()?;
+
+                    let mut target_agent = target.lock().await;
+
+                    target_agent.add_tool(tool.boxed());
+                }
+                Ok(())
             }
             Action::Complete(complete_action) => todo!(),
         }
