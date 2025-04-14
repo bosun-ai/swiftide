@@ -157,6 +157,9 @@ pub trait AgentContext: Send + Sync {
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self);
+
+    /// Clones the context with all its confugration, but without any messages
+    fn clone_empty(&self) -> Box<dyn AgentContext>;
 }
 
 #[async_trait]
@@ -187,6 +190,9 @@ impl AgentContext for Box<dyn AgentContext> {
 
     async fn redrive(&self) {
         (**self).redrive().await;
+    }
+    fn clone_empty(&self) -> Box<dyn AgentContext> {
+        (**self).clone_empty()
     }
 }
 
@@ -219,6 +225,10 @@ impl AgentContext for Arc<dyn AgentContext> {
     async fn redrive(&self) {
         (**self).redrive().await;
     }
+
+    fn clone_empty(&self) -> Box<dyn AgentContext> {
+        (**self).clone_empty()
+    }
 }
 
 #[async_trait]
@@ -250,6 +260,10 @@ impl AgentContext for &dyn AgentContext {
     async fn redrive(&self) {
         (**self).redrive().await;
     }
+
+    fn clone_empty(&self) -> Box<dyn AgentContext> {
+        (**self).clone_empty()
+    }
 }
 
 /// Convenience implementation for empty agent context
@@ -280,4 +294,8 @@ impl AgentContext for () {
     }
 
     async fn redrive(&self) {}
+
+    fn clone_empty(&self) -> Box<dyn AgentContext> {
+        Box::new(())
+    }
 }
