@@ -14,12 +14,9 @@
 use swiftide_core::Tool;
 use thiserror::Error;
 
-use crate::{tasks::delegate_tool::DelegateAgentBuilder, Agent};
+use crate::tasks::delegate_tool::DelegateAgentBuilder;
 
-use super::{
-    delegate_tool::DelegateAgentBuilderError,
-    task::{Task, TaskBuilder},
-};
+use super::{delegate_tool::DelegateAgentBuilderError, task::Task};
 
 #[derive(Debug, Clone)]
 pub enum Action {

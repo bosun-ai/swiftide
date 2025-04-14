@@ -21,10 +21,7 @@
 //!     .await?;
 //! ```
 use crate::errors::AgentError;
-use crate::Agent;
 use derive_builder::{Builder, UninitializedFieldError};
-use std::collections::HashSet;
-use std::ops::Deref;
 use std::sync::atomic::{self, AtomicUsize};
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
