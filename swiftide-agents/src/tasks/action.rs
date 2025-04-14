@@ -50,7 +50,7 @@ pub struct DelegateActionBuilder {
 }
 
 #[derive(Debug, Error)]
-enum ActionError {
+pub enum ActionError {
     #[error("Failed to apply action")]
     ApplyFailed,
 
@@ -70,7 +70,7 @@ impl Action {
 
     /// Applies this action to the task. Tasks apply all their configured actions
     /// after the build.
-    async fn apply(self, task: &mut Task) -> Result<(), ActionError> {
+    pub async fn apply(self, task: &Task) -> Result<(), ActionError> {
         match self {
             Action::Delegate(delegate_action) => {
                 // TODO: Add the task to the tool, also missing toolspec. Defaults with overwrite
