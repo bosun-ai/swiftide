@@ -11,6 +11,12 @@
 // If and_back is not provided, the DelegateActionBuilder can be converted
 // into an Action (with and_back false) via the From/Into trait.
 
+use thiserror::Error;
+
+use crate::tasks::delegate_tool::DelegateAgentBuilder;
+
+use super::task::{Task, TaskBuilder};
+
 #[derive(Debug, Clone)]
 pub enum Action {
     Delegate(DelegateAction),
@@ -39,10 +45,36 @@ pub struct DelegateActionBuilder {
     and_back: bool,
 }
 
+#[derive(Debug, Error)]
+enum ActionError {
+    #[error("Failed to apply action")]
+    ApplyFailed,
+}
+
 impl Action {
     pub fn for_agent<S: Into<String>>(agent: S) -> ActionBuilder {
         ActionBuilder {
             agent: agent.into(),
+        }
+    }
+
+    /// Applies this action to the task. Tasks apply all their configured actions
+    /// after the build.
+    async fn apply(self, task: &mut Task) -> Result<(), ActionError> {
+        match self {
+            Action::Delegate(delegate_action) => {
+                // Build the delegate tool base on the action
+                let source = task.find_agent(&delegate_action.from_agent).await.unwrap();
+                let target = task.find_agent(&delegate_action.to_agent).await.unwrap();
+
+                let tool = DelegateAgentBuilder::default().delegates_to(target).build()?;
+
+                source.lock().await();
+                // Add the delegate tool to the agent
+                // If `and_back` is set, also add a delegate tool to the other agent
+                todo!()
+            }
+            Action::Complete(complete_action) => todo!(),
         }
     }
 }

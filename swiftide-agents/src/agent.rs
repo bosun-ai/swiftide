@@ -38,7 +38,10 @@ use tracing::{debug, Instrument};
 /// - A default `stop` tool is provided for agents to explicitly stop if needed
 /// - The default `SystemPrompt` instructs the agent with chain of thought and some common
 ///   safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
-#[derive(Clone, Builder)]
+///
+///   Agents are *not* cheap to clone. However, if an agent gets cloned, it will operate on the
+///   same context.
+#[derive(Builder)]
 pub struct Agent {
     /// Hooks are functions that are called at specific points in the agent's lifecycle.
     #[builder(default, setter(into))]
@@ -120,6 +123,29 @@ pub struct Agent {
     /// The name of the agent; used in tasks to identify the agent
     #[builder(default = "unnamed_agent".into())]
     pub(crate) name: String,
+}
+
+/// Cloning an agent is expensive
+///
+/// It's intended use is to have an identically configured agent
+/// operating on a new context. This allows spawning many agents from a single configuration.
+impl Clone for Agent {
+    fn clone(&self) -> Self {
+        Agent {
+            hooks: self.hooks.clone(),
+            context: Arc::new(self.context.clone_empty()),
+            tools: self.tools.clone(),
+            toolboxes: self.toolboxes.clone(),
+            llm: self.llm.clone(),
+            system_prompt: self.system_prompt.clone(),
+            state: self.state.clone(),
+            limit: self.limit,
+            tool_retry_limit: self.tool_retry_limit,
+            tool_retries_counter: HashMap::new(),
+            toolbox_tools: HashSet::new(),
+            name: self.name.clone(),
+        }
+    }
 }
 
 impl std::fmt::Debug for Agent {

@@ -1,5 +1,7 @@
-use std::{borrow::Cow, sync::Arc};
+//! Generic delegation tool that enables the agent to delegate tasks to other agents.
+use std::borrow::Cow;
 
+use anyhow::Context as _;
 use async_trait::async_trait;
 use derive_builder::Builder;
 use serde::Deserialize;
@@ -8,12 +10,13 @@ use swiftide_core::{
     AgentContext, Tool,
 };
 
-use super::task::Task;
+use super::task::{RunningAgent, Task};
 
 #[derive(Clone, Builder)]
 pub struct DelegateAgent {
+    // TODO: Might be possible to borrow task/running agent (event though cheap to clone)
     task: Task,
-    delegates_to_agent: String,
+    delegates_to: RunningAgent,
 
     tool_spec: ToolSpec,
 }
@@ -29,11 +32,18 @@ impl DelegateAgent {
         _context: &dyn AgentContext,
         instructions: &str,
     ) -> Result<ToolOutput, ToolError> {
-        // TODO: Should we figure out a way to just stop the agent right here?
-        // Or run the agent non blockin parallel?
-        self.task.swap_active_agent(&self.agent)?;
-        self.task.invoke(instructions).await?;
+        self.task
+            .swap_active_agent(&self.delegates_to)
+            .await
+            .map_err(anyhow::Error::from)?;
 
+        // TODO: Should be a proper error
+        self.task
+            .invoke(instructions)
+            .await
+            .context("Failed to invoke task")?;
+
+        // NOTE: We can make stopping optional, that's pretty cool
         tracing::info!("Delegated task to agent");
         Ok(ToolOutput::Stop)
     }
@@ -58,7 +68,7 @@ impl Tool for DelegateAgent {
             )));
         };
 
-        let args: DelegateArgs = serde_json::from_str(&args)?;
+        let args: DelegateArgs = serde_json::from_str(args)?;
         return self.delegate_agent(agent_context, &args.task).await;
     }
 
