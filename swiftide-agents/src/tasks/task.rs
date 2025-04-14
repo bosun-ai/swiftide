@@ -7,8 +7,9 @@
 //! It is also possible to hook into various lifecycle stages of the task.
 //!
 //! # Example
+//! TODO: no_run me when this works
 //!
-//! ```no_run
+//! ```ignore
 //! Task::builder()
 //!     .agents(vec![
 //!               Agent::builder().name("agent1").build()?,
@@ -40,10 +41,11 @@ use super::running_agent::RunningAgent;
 #[derive(Builder, Clone, Debug)]
 #[builder(build_fn(skip, error = TaskBuilderError))]
 pub struct Task {
-    #[builder(field(ty = "Option<Vec<RunningAgent>>"))]
+    #[builder(field(ty = "Option<Vec<RunningAgent>>"), setter(custom))]
     agents: Arc<tokio::sync::RwLock<Vec<RunningAgent>>>,
     #[builder(field(ty = "Option<Vec<Action>>"))]
     actions: Arc<Vec<Action>>,
+    #[builder(setter(custom))]
     starts_with: Arc<String>,
     state: Arc<TaskState>,
     #[builder(private, default)]
@@ -77,6 +79,22 @@ impl TaskBuilder {
         self.actions
             .get_or_insert_with(Vec::new)
             .push(action.into());
+        self
+    }
+
+    pub fn starts_with(&mut self, starts_with: impl Into<String>) -> &mut Self {
+        self.starts_with = Some(Arc::new(starts_with.into()));
+        self
+    }
+
+    pub fn agents<I, AGENT>(&mut self, agents: I) -> &mut Self
+    where
+        I: IntoIterator<Item = AGENT>,
+        AGENT: Into<RunningAgent>,
+    {
+        self.agents
+            .get_or_insert_with(Vec::new)
+            .extend(agents.into_iter().map(Into::into));
         self
     }
 
@@ -130,11 +148,18 @@ pub enum TaskError {
 }
 
 impl Task {
+    /// Build a new task
+    pub fn builder() -> TaskBuilder {
+        TaskBuilder::default()
+    }
+
     /// Queries the current active agent with the given instructions and waits for all agents to
     /// complete
     /// TODO: Maybe return a stop reason, ie from the last agent that ran?
     /// Should also return an abort handle on the full join set
     /// Naming: Maybe invoke_blocking and invoke?
+    /// Should probably take a `Prompt`
+    /// How can we avoid agents calling this, as it will deadlock
     #[tracing::instrument(skip(self))]
     pub async fn invoke(&self, instructions: &str) -> Result<(), TaskError> {
         let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;
@@ -146,6 +171,7 @@ impl Task {
     }
 
     /// Queries the current active agent without waiting for the result.
+    /// TODO: Should probably take a `Prompt`
     #[tracing::instrument(skip(self))]
     pub async fn query_current(&self, instructions: &str) -> Result<(), TaskError> {
         let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;

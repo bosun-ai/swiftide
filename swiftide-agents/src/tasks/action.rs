@@ -11,12 +11,19 @@
 // If and_back is not provided, the DelegateActionBuilder can be converted
 // into an Action (with and_back false) via the From/Into trait.
 
-use swiftide_core::Tool;
+use swiftide_core::{
+    chat_completion::{ToolSpec, ToolSpecBuilderError},
+    Tool,
+};
 use thiserror::Error;
 
 use crate::tasks::delegate_tool::DelegateAgentBuilder;
 
-use super::{delegate_tool::DelegateAgentBuilderError, task::Task};
+use super::{
+    delegate_tool::DelegateAgentBuilderError,
+    task::Task,
+    task_completed_tool::{TaskCompleted, TaskCompletedBuilderError},
+};
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -56,6 +63,12 @@ pub enum ActionError {
 
     #[error(transparent)]
     FailedBuildingDelegateTool(#[from] DelegateAgentBuilderError),
+
+    #[error(transparent)]
+    FailedBuildingCompleteTool(#[from] TaskCompletedBuilderError),
+
+    #[error(transparent)]
+    FailedBuildingToolSpec(#[from] ToolSpecBuilderError),
 }
 
 impl Action {
@@ -68,6 +81,7 @@ impl Action {
     /// Applies this action to the task. Tasks apply all their configured actions
     /// after the build.
     pub async fn apply(self, task: &Task) -> Result<(), ActionError> {
+        tracing::trace!("Applying action: {:?}", self);
         match self {
             Action::Delegate(delegate_action) => {
                 // TODO: Add the task to the tool, also missing toolspec. Defaults with overwrite
@@ -85,8 +99,15 @@ impl Action {
                     .await
                     .ok_or_else(|| ActionError::AgentNotFound(delegate_action.to_agent.clone()))?;
 
+                let tool_spec = ToolSpec::builder()
+                    .name("delegate_agent")
+                    .description("Delegates to another agent")
+                    .build()
+                    .map_err(ActionError::FailedBuildingToolSpec)?;
                 let tool = DelegateAgentBuilder::default()
                     .delegates_to(target.clone())
+                    .task(task.clone())
+                    .tool_spec(tool_spec.clone())
                     .build()?;
 
                 {
@@ -97,6 +118,8 @@ impl Action {
                 if delegate_action.and_back {
                     let tool = DelegateAgentBuilder::default()
                         .delegates_to(source)
+                        .task(task.clone())
+                        .tool_spec(tool_spec)
                         .build()?;
 
                     let mut target_agent = target.lock().await;
@@ -105,7 +128,27 @@ impl Action {
                 }
                 Ok(())
             }
-            Action::Complete(complete_action) => todo!(),
+            Action::Complete(complete_action) => {
+                let tool_spec = ToolSpec::builder()
+                    .name("task_completed")
+                    .description("Marks the task as completed")
+                    .build()
+                    .map_err(ActionError::FailedBuildingToolSpec)?;
+
+                let tool = TaskCompleted::builder()
+                    .tool_spec(tool_spec)
+                    .build()
+                    .map_err(ActionError::FailedBuildingCompleteTool)?;
+
+                let agent = task
+                    .find_agent(&complete_action.agent)
+                    .await
+                    .ok_or_else(|| ActionError::AgentNotFound(complete_action.agent.clone()))?;
+
+                agent.lock().await.add_tool(tool.boxed());
+
+                Ok(())
+            }
         }
     }
 }

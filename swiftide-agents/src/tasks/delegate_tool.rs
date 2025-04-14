@@ -51,7 +51,7 @@ impl DelegateAgent {
 
 #[derive(Deserialize)]
 struct DelegateArgs {
-    task: String,
+    instructions: String,
 }
 
 #[async_trait]
@@ -69,7 +69,7 @@ impl Tool for DelegateAgent {
         };
 
         let args: DelegateArgs = serde_json::from_str(args)?;
-        return self.delegate_agent(agent_context, &args.task).await;
+        return self.delegate_agent(agent_context, &args.instructions).await;
     }
 
     fn tool_spec(&self) -> chat_completion::ToolSpec {

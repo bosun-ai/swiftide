@@ -121,7 +121,7 @@ pub struct Agent {
     pub(crate) toolbox_tools: HashSet<Box<dyn Tool>>,
 
     /// The name of the agent; used in tasks to identify the agent
-    #[builder(default = "unnamed_agent".into())]
+    #[builder(default = "unnamed_agent".into(), setter(into))]
     pub(crate) name: String,
 }
 
@@ -305,7 +305,7 @@ impl Agent {
     }
 
     /// Default tools for the agent that it always includes
-    fn default_tools() -> HashSet<Box<dyn Tool>> {
+    pub fn default_tools() -> HashSet<Box<dyn Tool>> {
         HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
     }
 
