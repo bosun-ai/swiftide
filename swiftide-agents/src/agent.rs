@@ -320,6 +320,19 @@ impl Agent {
         self.run_agent(Some(query), false).await
     }
 
+    /// Adds a tool to an agent at run time
+    pub fn add_tool(&mut self, tool: Box<dyn Tool>) {
+        self.tools.insert(tool);
+    }
+
+    /// Modify the tools of the agent at runtime
+    ///
+    /// Note that any mcp tools are added to the agent after the first start, and will only then
+    /// also be available here.
+    pub fn tools_mut(&mut self) -> &mut HashSet<Box<dyn Tool>> {
+        &mut self.tools
+    }
+
     /// Run the agent with a user message once.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
     pub async fn query_once(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
