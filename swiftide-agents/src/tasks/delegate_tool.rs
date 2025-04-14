@@ -10,7 +10,7 @@ use swiftide_core::{
     AgentContext, Tool,
 };
 
-use super::task::{RunningAgent, Task};
+use super::{running_agent::RunningAgent, task::Task};
 
 #[derive(Clone, Builder)]
 pub struct DelegateAgent {
