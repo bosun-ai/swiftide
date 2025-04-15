@@ -27,4 +27,7 @@ pub enum AgentError {
 
     #[error("Failed to load tools from toolbox {0}")]
     ToolBoxFailedToLoad(anyhow::Error),
+
+    #[error("Failed to render prompt {0}")]
+    FailedToRenderPrompt(anyhow::Error),
 }
