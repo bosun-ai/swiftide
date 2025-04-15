@@ -1093,4 +1093,93 @@ mod tests {
         assert!(result.unwrap_err().to_string().contains("missing `query`"));
         assert!(agent.is_stopped());
     }
+
+    #[test_log::test(tokio::test)]
+    async fn test_recovering_agent_existing_history() {
+        // First, let's run an agent
+        let prompt = "Write a poem";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("mock_tool");
+
+        let chat_request = chat_request! {
+            user!("Write a poem");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let mock_tool_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["mock_tool"]
+
+        };
+
+        mock_llm.expect_complete(chat_request.clone(), Ok(mock_tool_response));
+
+        let chat_request = chat_request! {
+            user!("Write a poem"),
+            assistant!("Roses are red", ["mock_tool"]),
+            tool_output!("mock_tool", "Great!");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let stop_response = chat_response! {
+            "Roses are red";
+            tool_calls = ["stop"]
+        };
+
+        mock_llm.expect_complete(chat_request, Ok(stop_response));
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool.clone()])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        agent.query(prompt).await.unwrap();
+
+        // Let's retrieve the history of the agent
+        let history = agent.history().await;
+
+        // Store it as a string somewhere
+        let serialized = serde_json::to_string(&history).unwrap();
+
+        // Retrieve it
+        let history: Vec<ChatMessage> = serde_json::from_str(&serialized).unwrap();
+
+        // Build a context from the history
+        let context = DefaultContext::default()
+            .with_message_history(history)
+            .to_owned();
+
+        let expected_chat_request = chat_request! {
+            user!("Write a poem"),
+            assistant!("Roses are red", ["mock_tool"]),
+            tool_output!("mock_tool", "Great!"),
+            assistant!("Roses are red", ["stop"]),
+            tool_output!("stop", ToolOutput::Stop),
+            user!("Try again!");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let stop_response = chat_response! {
+            "Really stopping now";
+            tool_calls = ["stop"]
+        };
+
+        mock_llm.expect_complete(expected_chat_request, Ok(stop_response));
+
+        let mut agent = Agent::builder()
+            .context(context)
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        agent.query_once("Try again!").await.unwrap();
+    }
 }

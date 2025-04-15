@@ -79,7 +79,7 @@ macro_rules! tool_output {
                 .id("1")
                 .build()
                 .unwrap(),
-            ToolOutput::Text($message.to_string()),
+            $message.into(),
         )
     }};
 }
