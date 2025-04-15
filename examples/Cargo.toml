@@ -122,3 +122,7 @@ path = "reranking.rs"
 [[example]]
 name = "agents-mcp"
 path = "agents_mcp_tools.rs"
+
+[[example]]
+name = "agents-resume"
+path = "agents_resume.rs"
