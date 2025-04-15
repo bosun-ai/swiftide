@@ -306,6 +306,7 @@ mod tests {
     use super::*;
     use copied_from_rmcp::Calculator;
     use rmcp::serve_server;
+    use serde_json::json;
     use tokio::net::{UnixListener, UnixStream};
 
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
@@ -361,6 +362,10 @@ mod tests {
         dbg!(optional_tool.tool_spec());
         assert_eq!(optional_tool.tool_spec().name, "optional");
         assert_eq!(optional_tool.tool_spec().parameters.len(), 1);
+        assert_eq!(
+            serde_json::to_string(&optional_tool.tool_spec().parameters[0].ty).unwrap(),
+            json!(["string", "null"]).to_string()
+        );
 
         let result = optional_tool
             .invoke(&(), Some(r#"{"b": "hello"}"#))

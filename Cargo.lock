@@ -9071,6 +9071,7 @@ dependencies = [
  "strum_macros 0.27.1",
  "tera",
  "test-case",
+ "test-log",
  "thiserror 2.0.12",
  "tokio",
  "tokio-stream",
