@@ -157,7 +157,7 @@ impl Task {
     /// complete
     /// TODO: Maybe return a stop reason, ie from the last agent that ran?
     /// Should also return an abort handle on the full join set
-    /// Naming: Maybe invoke_blocking and invoke?
+    /// Naming: Maybe invoke_blocking and invoke? blocking implies blocking thread though
     /// Should probably take a `Prompt`
     /// How can we avoid agents calling this, as it will deadlock
     #[tracing::instrument(skip(self))]
