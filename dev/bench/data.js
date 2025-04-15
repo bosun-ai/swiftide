@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744731523867,
+  "lastUpdate": 1744739552707,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19751,6 +19751,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250805,
             "range": "± 2180",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@tinco.nl",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0f2605a61240d2c99e10ce6f5a91e6568343a78b",
+          "message": "chore: Pretty print RAGAS output (#745)\n\nIt's a bit unreadable without the formatting.",
+          "timestamp": "2025-04-15T19:43:48+02:00",
+          "tree_id": "d2cfdd2661d9b5d3f57faf225cb2f5f27254bef2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0f2605a61240d2c99e10ce6f5a91e6568343a78b"
+        },
+        "date": 1744739551381,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 13",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1290739,
+            "range": "± 954697",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249149,
+            "range": "± 3089",
             "unit": "ns/iter"
           }
         ]
