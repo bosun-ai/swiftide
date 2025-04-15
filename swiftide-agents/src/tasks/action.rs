@@ -12,7 +12,7 @@
 // into an Action (with and_back false) via the From/Into trait.
 
 use swiftide_core::{
-    chat_completion::{ToolSpec, ToolSpecBuilderError},
+    chat_completion::{ParamSpec, ToolSpec, ToolSpecBuilderError},
     Tool,
 };
 use thiserror::Error;
@@ -102,6 +102,11 @@ impl Action {
                 let tool_spec = ToolSpec::builder()
                     .name("delegate_agent")
                     .description("Delegates to another agent")
+                    .parameters(vec![ParamSpec::builder()
+                        .name("instructions")
+                        .description("Detailed instructions for the agent")
+                        .build()
+                        .unwrap()])
                     .build()
                     .map_err(ActionError::FailedBuildingToolSpec)?;
                 let tool = DelegateAgentBuilder::default()
