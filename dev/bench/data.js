@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744379600610,
+  "lastUpdate": 1744731523867,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19697,6 +19697,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254120,
             "range": "± 4437",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5db4de2f0deb2028f5ffaf28b4d26336840e908c",
+          "message": "fix(agents): Properly support nullable types for MCP tools (#740)\n\nMakes me wonder if using i.e schemars for the tool_spec across swiftide\nis a better option. Writing custom serializers is time consuming.\n\nFixes #738",
+          "timestamp": "2025-04-15T17:29:48+02:00",
+          "tree_id": "6cc6da80a0cb978085b3a867e748dcc443ea365a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5db4de2f0deb2028f5ffaf28b4d26336840e908c"
+        },
+        "date": 1744731522729,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1310052,
+            "range": "± 1014728",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250805,
+            "range": "± 2180",
             "unit": "ns/iter"
           }
         ]
