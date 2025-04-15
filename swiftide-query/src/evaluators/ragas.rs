@@ -160,7 +160,8 @@ impl EvaluationDataSet {
     /// ]
     /// ```
     pub(crate) fn to_json(&self) -> String {
-        json!(self.0.values().collect::<Vec<_>>()).to_string()
+        let json_value = json!(self.0.values().collect::<Vec<_>>());
+        serde_json::to_string_pretty(&json_value).unwrap_or_else(|_| json_value.to_string())
     }
 }
 
@@ -289,7 +290,7 @@ mod tests {
         };
 
         let json_output = ragas.to_json().await;
-        let expected_json = "[{\"answer\":\"\",\"contexts\":[],\"ground_truth\":\"A programming language\",\"question\":\"What is Rust?\"}]";
+        let expected_json = "[\n  {\n    \"answer\": \"\",\n    \"contexts\": [],\n    \"ground_truth\": \"A programming language\",\n    \"question\": \"What is Rust?\"\n  }\n]";
         assert_eq!(json_output, expected_json);
     }
 
@@ -355,7 +356,7 @@ mod tests {
         )]);
 
         let json_output = dataset.to_json();
-        let expected_json = "[{\"answer\":\"\",\"contexts\":[],\"ground_truth\":\"A programming language\",\"question\":\"What is Rust?\"}]";
+        let expected_json = "[\n  {\n    \"answer\": \"\",\n    \"contexts\": [],\n    \"ground_truth\": \"A programming language\",\n    \"question\": \"What is Rust?\"\n  }\n]";
         assert_eq!(json_output, expected_json);
     }
 
