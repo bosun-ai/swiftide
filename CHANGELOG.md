@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.25.0](https://github.com/bosun-ai/swiftide/compare/v0.24.0...v0.25.0) - 2025-04-15
+
+### Bug fixes
+
+- [5db4de2](https://github.com/bosun-ai/swiftide/commit/5db4de2f0deb2028f5ffaf28b4d26336840e908c) *(agents)*  Properly support nullable types for MCP tools ([#740](https://github.com/bosun-ai/swiftide/pull/740))
+
+````text
+Makes me wonder if using i.e schemars for the tool_spec across swiftide
+  is a better option. Writing custom serializers is time consuming.
+````
+
+### Miscellaneous
+
+- [0f2605a](https://github.com/bosun-ai/swiftide/commit/0f2605a61240d2c99e10ce6f5a91e6568343a78b)  Pretty print RAGAS output ([#745](https://github.com/bosun-ai/swiftide/pull/745))
+
+````text
+It's a bit unreadable without the formatting.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.24.0...0.25.0
+
+
+
 ## [0.24.0](https://github.com/bosun-ai/swiftide/compare/v0.23.0...v0.24.0) - 2025-04-11
 
 ### New features
