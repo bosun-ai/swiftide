@@ -306,6 +306,7 @@ mod tests {
     use super::*;
     use copied_from_rmcp::Calculator;
     use rmcp::serve_server;
+    use serde_json::json;
     use tokio::net::{UnixListener, UnixStream};
 
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
@@ -328,11 +329,11 @@ mod tests {
         let client = client().await.unwrap();
 
         let t = client.available_tools().await.unwrap();
-        assert_eq!(client.available_tools().await.unwrap().len(), 2);
+        assert_eq!(client.available_tools().await.unwrap().len(), 3);
 
         let mut names = t.iter().map(|t| t.name()).collect::<Vec<_>>();
         names.sort();
-        assert_eq!(names, ["sub", "sum"]);
+        assert_eq!(names, ["optional", "sub", "sum"]);
 
         let sum_tool = t.iter().find(|t| t.name() == "sum").unwrap();
         assert_eq!(sum_tool.tool_spec().name, "sum");
@@ -355,6 +356,34 @@ mod tests {
             .unwrap()
             .to_string();
         assert_eq!(result, "-10");
+
+        // The input schema type for the input param is ["string", "null"]
+        let optional_tool = t.iter().find(|t| t.name() == "optional").unwrap();
+        dbg!(optional_tool.tool_spec());
+        assert_eq!(optional_tool.tool_spec().name, "optional");
+        assert_eq!(optional_tool.tool_spec().parameters.len(), 1);
+        assert_eq!(
+            serde_json::to_string(&optional_tool.tool_spec().parameters[0].ty).unwrap(),
+            json!(["string", "null"]).to_string()
+        );
+
+        let result = optional_tool
+            .invoke(&(), Some(r#"{"b": "hello"}"#))
+            .await
+            .unwrap()
+            .content()
+            .unwrap()
+            .to_string();
+        assert_eq!(result, "hello");
+
+        let result = optional_tool
+            .invoke(&(), Some(r#"{ "b": null }"#))
+            .await
+            .unwrap()
+            .content()
+            .unwrap()
+            .to_string();
+        assert_eq!(result, "");
 
         // Clean up socket file
         let _ = std::fs::remove_file(SOCKET_PATH);
@@ -424,6 +453,16 @@ mod tests {
                 b: i32,
             ) -> String {
                 (a - b).to_string()
+            }
+
+            #[tool(description = "Optional echo")]
+            fn optional(
+                &self,
+                #[tool(param)]
+                #[schemars(description = "Optional text")]
+                b: Option<String>,
+            ) -> String {
+                b.unwrap_or_default()
             }
         }
 
