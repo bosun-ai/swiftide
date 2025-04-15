@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744739552707,
+  "lastUpdate": 1744739581388,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19805,6 +19805,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249149,
             "range": "± 3089",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6efd15bf7b88d8f8656c4017676baf03a3bb510e",
+          "message": "feat(agents): Agents now take an Into<Prompt> when queried (#743)",
+          "timestamp": "2025-04-15T19:44:03+02:00",
+          "tree_id": "7285505cb4b683ee0c430cd81e3d7fc1d5987692",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6efd15bf7b88d8f8656c4017676baf03a3bb510e"
+        },
+        "date": 1744739580299,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1315434,
+            "range": "± 1191297",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252381,
+            "range": "± 2548",
             "unit": "ns/iter"
           }
         ]
