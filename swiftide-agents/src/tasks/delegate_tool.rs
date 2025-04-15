@@ -39,7 +39,7 @@ impl DelegateAgent {
 
         // TODO: Should be a proper error
         self.task
-            .invoke(instructions)
+            .query_current(instructions)
             .await
             .context("Failed to invoke task")?;
 

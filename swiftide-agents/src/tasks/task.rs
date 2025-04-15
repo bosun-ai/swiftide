@@ -161,7 +161,7 @@ impl Task {
     /// Should probably take a `Prompt`
     /// How can we avoid agents calling this, as it will deadlock
     #[tracing::instrument(skip(self))]
-    pub async fn invoke(&self, instructions: &str) -> Result<(), TaskError> {
+    pub async fn invoke(&mut self, instructions: &str) -> Result<(), TaskError> {
         let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;
 
         self.spawn_agent(current_agent, instructions);
@@ -183,7 +183,7 @@ impl Task {
 
     /// Awaits for all agents to complete
     #[tracing::instrument(skip(self))]
-    pub async fn join_all(&self) -> Result<(), TaskError> {
+    pub async fn join_all(&mut self) -> Result<(), TaskError> {
         let join_set = {
             // Swap the existing join set with a new one, then join all tasks
             std::mem::replace(&mut *self.running_agents.lock().unwrap(), JoinSet::new())
