@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744739581388,
+  "lastUpdate": 1744739582953,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19859,6 +19859,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252381,
             "range": "± 2548",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4959ddfe00e0424215dd9bd3e8a6acb579cc056c",
+          "message": "feat(agents): Restore agents from an existing message history (#742)",
+          "timestamp": "2025-04-15T19:44:19+02:00",
+          "tree_id": "276ae21c3b6887dfaee63305b50282be5367a57a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4959ddfe00e0424215dd9bd3e8a6acb579cc056c"
+        },
+        "date": 1744739580929,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293884,
+            "range": "± 937650",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250037,
+            "range": "± 2428",
             "unit": "ns/iter"
           }
         ]
