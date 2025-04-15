@@ -1,3 +1,7 @@
+use std::pin::Pin;
+use std::sync::Arc;
+use std::sync::Mutex;
+
 use anyhow::{Context as _, Result};
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
@@ -6,6 +10,8 @@ use async_openai::types::{
     ChatCompletionToolType, CreateChatCompletionRequestArgs, FunctionCall, FunctionObjectArgs,
 };
 use async_trait::async_trait;
+use futures_util::Stream;
+use futures_util::StreamExt as _;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::chat_completion::{
@@ -108,6 +114,104 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             )
             .build()
             .map_err(LanguageModelError::from)
+    }
+
+    #[tracing::instrument(skip_all)]
+    async fn complete_stream(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>> {
+        let Some(model) = self.default_options.prompt_model.as_ref() else {
+            return LanguageModelError::permanent("Model not set").into();
+        };
+
+        let messages = match request
+            .messages()
+            .iter()
+            .map(message_to_openai)
+            .collect::<Result<Vec<_>>>()
+        {
+            Ok(messages) => messages,
+            Err(e) => return LanguageModelError::from(e).into(),
+        };
+
+        // Build the request to be sent to the OpenAI API.
+        let mut openai_request = CreateChatCompletionRequestArgs::default()
+            .model(model)
+            .messages(messages)
+            .to_owned();
+
+        if !request.tools_spec.is_empty() {
+            openai_request
+                .tools(
+                    match request
+                        .tools_spec()
+                        .iter()
+                        .map(tools_to_openai)
+                        .collect::<Result<Vec<_>>>()
+                    {
+                        Ok(tools) => tools,
+                        Err(e) => {
+                            return LanguageModelError::from(e).into();
+                        }
+                    },
+                )
+                .tool_choice("auto");
+            if let Some(par) = self.default_options.parallel_tool_calls {
+                openai_request.parallel_tool_calls(par);
+            }
+        }
+
+        let request = match openai_request.build() {
+            Ok(request) => request,
+            Err(e) => {
+                return openai_error_to_language_model_error(e).into();
+            }
+        };
+
+        tracing::debug!(
+            model = &model,
+            request = serde_json::to_string_pretty(&request).expect("infallible"),
+            "Sending request to OpenAI"
+        );
+
+        let response = match self.client.chat().create_stream(request).await {
+            Ok(response) => response,
+            Err(e) => return openai_error_to_language_model_error(e).into(),
+        };
+
+        let incremental_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
+        response
+            .map(move |chunk| match chunk {
+                Ok(chunk) => {
+                    let incremental_response = incremental_response.clone();
+
+                    let delta_message = chunk.choices[0].delta.content.as_deref();
+                    let delta_tool_calls = chunk.choices[0].delta.tool_calls.as_deref();
+
+                    let chat_completion_response = {
+                        let mut lock = incremental_response.lock().unwrap();
+                        lock.append_message_delta(delta_message);
+
+                        if let Some(delta_tool_calls) = delta_tool_calls {
+                            for tc in delta_tool_calls {
+                                lock.append_tool_call_delta(
+                                    tc.index,
+                                    tc.id.as_deref(),
+                                    tc.function.as_ref().and_then(|f| f.name.as_deref()),
+                                    tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
+                                );
+                            }
+                        }
+
+                        lock.clone()
+                    };
+
+                    Ok(chat_completion_response)
+                }
+                Err(e) => Err(openai_error_to_language_model_error(e)),
+            })
+            .boxed()
     }
 }
 

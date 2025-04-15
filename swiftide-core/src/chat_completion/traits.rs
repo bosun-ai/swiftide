@@ -1,7 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
-use std::{borrow::Cow, sync::Arc};
+use futures_util::Stream;
+use std::{borrow::Cow, pin::Pin, sync::Arc};
 
 use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
 
@@ -47,6 +48,15 @@ pub trait ChatCompletion: Send + Sync + DynClone {
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError>;
+
+    /// Stream the completion response. If it's not supported, it will return a single
+    /// response
+    async fn complete_stream(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>> {
+        Box::pin(tokio_stream::iter(vec![self.complete(request).await]))
+    }
 }
 
 #[async_trait]
@@ -146,6 +156,7 @@ mod tests {
                 Ok(ChatCompletionResponse {
                     message: Some("Success response".to_string()),
                     tool_calls: None,
+                    delta: None,
                 })
             }
         }
