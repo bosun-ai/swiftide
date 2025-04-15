@@ -277,20 +277,22 @@ impl Agent {
     /// Run the agent with a user message. The agent will loop completions, make tool calls, until
     /// no new messages are available.
     #[tracing::instrument(skip_all, name = "agent.query")]
-    pub async fn query(
-        &mut self,
-        query: impl Into<String> + std::fmt::Debug,
-    ) -> Result<(), AgentError> {
-        self.run_agent(Some(query.into()), false).await
+    pub async fn query(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
+        let query = query
+            .into()
+            .render()
+            .map_err(AgentError::FailedToRenderPrompt)?;
+        self.run_agent(Some(query), false).await
     }
 
     /// Run the agent with a user message once.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
-    pub async fn query_once(
-        &mut self,
-        query: impl Into<String> + std::fmt::Debug,
-    ) -> Result<(), AgentError> {
-        self.run_agent(Some(query.into()), true).await
+    pub async fn query_once(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
+        let query = query
+            .into()
+            .render()
+            .map_err(AgentError::FailedToRenderPrompt)?;
+        self.run_agent(Some(query), true).await
     }
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
