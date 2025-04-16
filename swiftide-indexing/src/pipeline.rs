@@ -393,7 +393,7 @@ impl Pipeline {
         tokio::spawn(
             async move {
                 stream
-                    .for_each(move |item| {
+                    .for_each_concurrent(self.concurrency, move |item| {
                         let predicate = Arc::clone(&predicate);
                         let left_tx = left_tx.clone();
                         let right_tx = right_tx.clone();
