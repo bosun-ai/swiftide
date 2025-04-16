@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744802802980,
+  "lastUpdate": 1744803244684,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20021,6 +20021,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253146,
             "range": "± 3861",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "e83eebbecf912eb08efe3d0a1191a03a2fc2c32a",
+          "message": "chore: Remove commit body from changelog",
+          "timestamp": "2025-04-16T13:25:12+02:00",
+          "tree_id": "396efeba51441da9840671aee842d62846e926b4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e83eebbecf912eb08efe3d0a1191a03a2fc2c32a"
+        },
+        "date": 1744803243679,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293383,
+            "range": "± 953030",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251007,
+            "range": "± 1613",
             "unit": "ns/iter"
           }
         ]
