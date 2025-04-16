@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - [4959ddf](https://github.com/bosun-ai/swiftide/commit/4959ddfe00e0424215dd9bd3e8a6acb579cc056c) *(agents)*  Restore agents from an existing message history ([#742](https://github.com/bosun-ai/swiftide/pull/742))
 
-- [6efd15b](https://github.com/bosun-ai/swiftide/commit/6efd15bf7b88d8f8656c4017676baf03a3bb510e) *(agents)*  Agents now take an Into<Prompt> when queried ([#743](https://github.com/bosun-ai/swiftide/pull/743))
+- [6efd15b](https://github.com/bosun-ai/swiftide/commit/6efd15bf7b88d8f8656c4017676baf03a3bb510e) *(agents)*  Agents now take an Into Prompt when queried ([#743](https://github.com/bosun-ai/swiftide/pull/743))
 
 ### Bug fixes
 
