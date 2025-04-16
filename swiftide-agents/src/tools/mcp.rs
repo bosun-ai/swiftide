@@ -130,6 +130,7 @@ impl Drop for McpToolbox {
                 if let Some(service) = service.and_then(Arc::into_inner) {
                     if let Err(err) = service.cancel().await {
                         tracing::error!(name = self.name(), "Failed to stop mcp server: {err}");
+                        return;
                     }
                     tracing::debug!(name = self.name(), "Stopping mcp server");
                 }
