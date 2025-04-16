@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.25.0](https://github.com/bosun-ai/swiftide/compare/v0.24.0...v0.25.0) - 2025-04-16
+
+### New features
+
+- [4959ddf](https://github.com/bosun-ai/swiftide/commit/4959ddfe00e0424215dd9bd3e8a6acb579cc056c) *(agents)*  Restore agents from an existing message history ([#742](https://github.com/bosun-ai/swiftide/pull/742))
+
+- [6efd15b](https://github.com/bosun-ai/swiftide/commit/6efd15bf7b88d8f8656c4017676baf03a3bb510e) *(agents)*  Agents now take an Into<Prompt> when queried ([#743](https://github.com/bosun-ai/swiftide/pull/743))
+
+### Bug fixes
+
+- [5db4de2](https://github.com/bosun-ai/swiftide/commit/5db4de2f0deb2028f5ffaf28b4d26336840e908c) *(agents)*  Properly support nullable types for MCP tools ([#740](https://github.com/bosun-ai/swiftide/pull/740))
+
+````text
+Makes me wonder if using i.e schemars for the tool_spec across swiftide
+  is a better option. Writing custom serializers is time consuming.
+````
+
+- [dd2ca86](https://github.com/bosun-ai/swiftide/commit/dd2ca86b214e8268262075a513711d6b9c793115) *(agents)*  Do not log twice if mcp failed to stop
+
+### Miscellaneous
+
+- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000)  Update Cargo.toml dependencies
+
+- [0f2605a](https://github.com/bosun-ai/swiftide/commit/0f2605a61240d2c99e10ce6f5a91e6568343a78b)  Pretty print RAGAS output ([#745](https://github.com/bosun-ai/swiftide/pull/745))
+
+````text
+It's a bit unreadable without the formatting.
+````
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.24.0...0.25.0
+
+
+
 ## [0.24.0](https://github.com/bosun-ai/swiftide/compare/v0.23.0...v0.24.0) - 2025-04-11
 
 ### New features
