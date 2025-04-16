@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744803940640,
+  "lastUpdate": 1744807897351,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20129,6 +20129,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254218,
             "range": "± 2052",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dd5e683e26d04fedf427ec8e8722829a457d1185",
+          "message": "chore: release v0.25.0 (#750)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.24.0 -> 0.25.0 (⚠ API breaking changes)\n* `swiftide-agents`: 0.24.0 -> 0.25.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.24.0 -> 0.25.0\n* `swiftide-indexing`: 0.24.0 -> 0.25.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.24.0 -> 0.25.0 (✓ API compatible changes)\n* `swiftide-query`: 0.24.0 -> 0.25.0 (✓ API compatible changes)\n* `swiftide`: 0.24.0 -> 0.25.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure enum_discriminants_undefined_non_unit_variant: enum's variants no longer have defined discriminants due to non-unit variant ---\n\nDescription:\nAn enum's variants no longer have well-defined discriminant values due to a tuple or struct variant in the enum. This breaks downstream code that accesses discriminants via a numeric cast like `as isize`.\n        ref: https://doc.rust-lang.org/reference/items/enumerations.html#assigning-discriminant-values\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/enum_discriminants_undefined_non_unit_variant.ron\n\nFailed in:\n  enum ParamType in /tmp/.tmpZFCy9K/swiftide/swiftide-core/src/chat_completion/tools.rs:118\n\n--- failure enum_variant_added: enum variant added on exhaustive enum ---\n\nDescription:\nA publicly-visible enum without #[non_exhaustive] has a new variant.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#enum-variant-new\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/enum_variant_added.ron\n\nFailed in:\n  variant ParamType:Nullable in /tmp/.tmpZFCy9K/swiftide/swiftide-core/src/chat_completion/tools.rs:124\n```\n\n### ⚠ `swiftide-agents` breaking changes\n\n```text\n--- failure enum_variant_added: enum variant added on exhaustive enum ---\n\nDescription:\nA publicly-visible enum without #[non_exhaustive] has a new variant.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#enum-variant-new\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.40.0/src/lints/enum_variant_added.ron\n\nFailed in:\n  variant AgentError:FailedToRenderPrompt in /tmp/.tmpZFCy9K/swiftide/swiftide-agents/src/errors.rs:32\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.25.0](https://github.com/bosun-ai/swiftide/compare/v0.24.0...v0.25.0)\n- 2025-04-16\n\n### New features\n\n-\n[4959ddf](https://github.com/bosun-ai/swiftide/commit/4959ddfe00e0424215dd9bd3e8a6acb579cc056c)\n*(agents)* Restore agents from an existing message history\n([#742](https://github.com/bosun-ai/swiftide/pull/742))\n\n-\n[6efd15b](https://github.com/bosun-ai/swiftide/commit/6efd15bf7b88d8f8656c4017676baf03a3bb510e)\n*(agents)* Agents now take an Into<Prompt> when queried\n([#743](https://github.com/bosun-ai/swiftide/pull/743))\n\n### Bug fixes\n\n-\n[5db4de2](https://github.com/bosun-ai/swiftide/commit/5db4de2f0deb2028f5ffaf28b4d26336840e908c)\n*(agents)* Properly support nullable types for MCP tools\n([#740](https://github.com/bosun-ai/swiftide/pull/740))\n\n-\n[dd2ca86](https://github.com/bosun-ai/swiftide/commit/dd2ca86b214e8268262075a513711d6b9c793115)\n*(agents)* Do not log twice if mcp failed to stop\n\n-\n[5fea2e2](https://github.com/bosun-ai/swiftide/commit/5fea2e2acdca0782f88d4274bb8e106b48e1efe4)\n*(indexing)* Split pipeline concurrently\n([#749](https://github.com/bosun-ai/swiftide/pull/749))\n\n### Miscellaneous\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n-\n[0f2605a](https://github.com/bosun-ai/swiftide/commit/0f2605a61240d2c99e10ce6f5a91e6568343a78b)\nPretty print RAGAS output\n([#745](https://github.com/bosun-ai/swiftide/pull/745))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.24.0...0.25.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).\n\n---------\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2025-04-16T14:43:05+02:00",
+          "tree_id": "46612a4d5b063f96ac682937e944114f70b5661e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dd5e683e26d04fedf427ec8e8722829a457d1185"
+        },
+        "date": 1744807896564,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1307040,
+            "range": "± 937015",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253546,
+            "range": "± 5956",
             "unit": "ns/iter"
           }
         ]
