@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744794459451,
+  "lastUpdate": 1744802802980,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19967,6 +19967,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249341,
             "range": "± 1196",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "dd2ca86b214e8268262075a513711d6b9c793115",
+          "message": "fix(agents): Do not log twice if mcp failed to stop",
+          "timestamp": "2025-04-16T13:17:19+02:00",
+          "tree_id": "9c3e8290f7afdbd38e33c17647bb170b454a6966",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dd2ca86b214e8268262075a513711d6b9c793115"
+        },
+        "date": 1744802801817,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1290505,
+            "range": "± 1028213",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253146,
+            "range": "± 3861",
             "unit": "ns/iter"
           }
         ]
