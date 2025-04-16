@@ -59,12 +59,6 @@ body = """
 {%- if commit.links %} \
    in {% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}\
 {% endif %}
-{%- if commit.body %}
-
-````text {#- 4 backticks escape any backticks in body #}
-{{commit.body | indent(prefix="  ") }}
-````
-{%- endif %}
 {%- if commit.breaking_description %}
 
 **BREAKING CHANGE**: {{ commit.breaking_description }}
