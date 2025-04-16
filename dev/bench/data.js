@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744803244684,
+  "lastUpdate": 1744803940640,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20075,6 +20075,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251007,
             "range": "± 1613",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5fea2e2acdca0782f88d4274bb8e106b48e1efe4",
+          "message": "fix(indexing): Split pipeline concurrently (#749)",
+          "timestamp": "2025-04-16T13:37:02+02:00",
+          "tree_id": "3b59dc00d8aaeb39d86d616d785b817ceb773b75",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5fea2e2acdca0782f88d4274bb8e106b48e1efe4"
+        },
+        "date": 1744803939136,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1303975,
+            "range": "± 942092",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254218,
+            "range": "± 2052",
             "unit": "ns/iter"
           }
         ]
