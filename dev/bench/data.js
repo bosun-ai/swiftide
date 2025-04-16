@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744739582953,
+  "lastUpdate": 1744794459451,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -19913,6 +19913,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250037,
             "range": "± 2428",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2831a2354e360d6cb7d4db795816fa81ab9fde0f",
+          "message": "chore(deps): bump the minor group with 2 updates (#747)\n\nBumps the minor group with 2 updates:\n[sqlx](https://github.com/launchbadge/sqlx) and\n[proc-macro2](https://github.com/dtolnay/proc-macro2).\n\nUpdates `sqlx` from 0.8.4 to 0.8.5\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/launchbadge/sqlx/blob/main/CHANGELOG.md\">sqlx's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>0.8.5 - 2025-04-14</h2>\n<p>Hotfix release to address two new issues:</p>\n<ul>\n<li>[<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3823\">#3823</a>]:\n<code>sqlx-cli@0.8.4</code> broke <code>.env</code> default resolution\nmechanism</li>\n<li>[<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3825\">#3825</a>]:\n<code>sqlx@0.8.4</code> broke test fixture setup</li>\n</ul>\n<p>The <code>0.8.4</code> release will be yanked as of publishing this\none.</p>\n<h3>Added</h3>\n<ul>\n<li>In release PR: <code>sqlx-cli</code> now accepts\n<code>--no-dotenv</code> in subcommand arguments.</li>\n<li>In release PR: added functionality tests for <code>sqlx-cli</code>\nto CI.</li>\n<li>In release PR: test <code>#[sqlx::test]</code> twice in CI to cover\ncleanup.</li>\n</ul>\n<h3>Fixed</h3>\n<ul>\n<li>In release PR: <code>sqlx-cli</code> correctly reads\n<code>.env</code> files by default again.\n<ul>\n<li>Addresses [<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3823\">#3823</a>].</li>\n</ul>\n</li>\n<li>In release PR: fix bugs in MySQL implementation of\n<code>#[sqlx::test]</code>.\n<ul>\n<li>Addresses [<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3825\">#3825</a>].</li>\n</ul>\n</li>\n</ul>\n<p><a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3823\">#3823</a>:\n<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3823\">launchbadge/sqlx#3823</a>\n<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3825\">#3825</a>:\n<a\nhref=\"https://redirect.github.com/launchbadge/sqlx/issues/3825\">launchbadge/sqlx#3825</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/launchbadge/sqlx/commits/v0.8.5\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `proc-macro2` from 1.0.94 to 1.0.95\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/dtolnay/proc-macro2/releases\">proc-macro2's\nreleases</a>.</em></p>\n<blockquote>\n<h2>1.0.95</h2>\n<ul>\n<li>Update semver-exempt API under\n<code>RUSTFLAGS=--cfg=procmacro2_semver_exempt</code> to that of\nnightly-2025-04-16 (<a\nhref=\"https://redirect.github.com/dtolnay/proc-macro2/issues/497\">#497</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/24bbf16d9df01d5f7d9ac39bdfbaea85f4c194fb\"><code>24bbf16</code></a>\nRelease 1.0.95</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/835c5bd540373ceed913bfb4d68a7f56279f0a2a\"><code>835c5bd</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/dtolnay/proc-macro2/issues/497\">#497</a>\nfrom dtolnay/nosourcefile</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/7bc363c50931c5d3e6de1f785b9b6bc0b53c8866\"><code>7bc363c</code></a>\nUpdate semver-exempt API to nightly-2025-04-16</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/b867aa73a8b3c3b4015e2573c66899bf13a1d512\"><code>b867aa7</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/dtolnay/proc-macro2/issues/496\">#496</a>\nfrom PaulGrandperrin/master</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/c605e8e2d913dd7512a62e4622cfb05bbe52e2db\"><code>c605e8e</code></a>\nRevert &quot;Merge pull request <a\nhref=\"https://redirect.github.com/dtolnay/proc-macro2/issues/495\">#495</a>\nfrom dtolnay/fuzzlld&quot;</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/1993cd32113f06046e610146effb6671bf5a0edc\"><code>1993cd3</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/dtolnay/proc-macro2/issues/495\">#495</a>\nfrom dtolnay/fuzzlld</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/cfdb5677eeee37ab8f76dd01f49ceea281fbff0c\"><code>cfdb567</code></a>\nLink to honggfuzz-rs issue</li>\n<li><a\nhref=\"https://github.com/dtolnay/proc-macro2/commit/b09a5b0e452c34824a389ecc6b94b080b413c220\"><code>b09a5b0</code></a>\nWork around cargo-hfuzz nostart-stop-gc gold link failure</li>\n<li>See full diff in <a\nhref=\"https://github.com/dtolnay/proc-macro2/compare/1.0.94...1.0.95\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-04-16T10:58:27+02:00",
+          "tree_id": "4be6531b277bd9989399f1f3a9cef7496c9cf09e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2831a2354e360d6cb7d4db795816fa81ab9fde0f"
+        },
+        "date": 1744794457717,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1306345,
+            "range": "± 948785",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249341,
+            "range": "± 1196",
             "unit": "ns/iter"
           }
         ]
