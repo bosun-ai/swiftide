@@ -254,9 +254,9 @@ impl AgentBuilder {
     ///
     /// Agents can have many toolboxes.
     pub fn add_toolbox(&mut self, toolbox: impl ToolBox + 'static) -> &mut Self {
-        self.toolboxes.get_or_insert_with(Vec::new);
+        let toolboxes = self.toolboxes.get_or_insert_with(Vec::new);
+        toolboxes.push(Box::new(toolbox));
 
-        self.toolboxes.as_mut().unwrap().push(Box::new(toolbox));
         self
     }
 }
