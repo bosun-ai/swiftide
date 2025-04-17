@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.25.1](https://github.com/bosun-ai/swiftide/compare/v0.25.0...v0.25.1) - 2025-04-17
+
+### Bug fixes
+
+- [7102091](https://github.com/bosun-ai/swiftide/commit/710209123ba6972cd11fb0f3d364c9c83478e184) *(agents)*  AgentBuilder and AgentBuilderError should be public
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.25.0...0.25.1
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [0.25.0](https://github.com/bosun-ai/swiftide/compare/v0.24.0...v0.25.0) - 2025-04-16
 
 ### New features
