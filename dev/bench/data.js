@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744807897351,
+  "lastUpdate": 1744891479677,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20183,6 +20183,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253546,
             "range": "± 5956",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "710209123ba6972cd11fb0f3d364c9c83478e184",
+          "message": "fix(agents): AgentBuilder and AgentBuilderError should be public",
+          "timestamp": "2025-04-17T13:55:20+02:00",
+          "tree_id": "b25ab1c5f373372e21e11b69e54d3b815d69c100",
+          "url": "https://github.com/bosun-ai/swiftide/commit/710209123ba6972cd11fb0f3d364c9c83478e184"
+        },
+        "date": 1744891478476,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1297352,
+            "range": "± 974564",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254051,
+            "range": "± 4691",
             "unit": "ns/iter"
           }
         ]
