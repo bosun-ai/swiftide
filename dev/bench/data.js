@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1744897107973,
+  "lastUpdate": 1744899148486,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20291,6 +20291,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 255206,
             "range": "± 7859",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9dc2cc1efe1787d4c08e686f683c53fa2745c67c",
+          "message": "chore: release v0.25.1 (#752)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.25.0 -> 0.25.1\n* `swiftide-agents`: 0.25.0 -> 0.25.1 (✓ API compatible changes)\n* `swiftide-macros`: 0.25.0 -> 0.25.1\n* `swiftide-indexing`: 0.25.0 -> 0.25.1\n* `swiftide-integrations`: 0.25.0 -> 0.25.1\n* `swiftide-query`: 0.25.0 -> 0.25.1\n* `swiftide`: 0.25.0 -> 0.25.1 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.25.1](https://github.com/bosun-ai/swiftide/compare/v0.25.0...v0.25.1)\n- 2025-04-17\n\n### Bug fixes\n\n-\n[7102091](https://github.com/bosun-ai/swiftide/commit/710209123ba6972cd11fb0f3d364c9c83478e184)\n*(agents)* AgentBuilder and AgentBuilderError should be public\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.25.0...0.25.1\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-04-17T14:03:37Z",
+          "tree_id": "49d9a93d10c9b2e1203554128318cb50bfc1d47e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9dc2cc1efe1787d4c08e686f683c53fa2745c67c"
+        },
+        "date": 1744899147253,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1365521,
+            "range": "± 971009",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249951,
+            "range": "± 1433",
             "unit": "ns/iter"
           }
         ]
