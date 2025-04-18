@@ -58,7 +58,7 @@ pub mod system_prompt;
 pub mod tools;
 mod util;
 
-pub use agent::Agent;
+pub use agent::{Agent, AgentBuilder, AgentBuilderError};
 pub use default_context::DefaultContext;
 
 #[cfg(test)]

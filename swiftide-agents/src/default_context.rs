@@ -76,6 +76,23 @@ impl DefaultContext {
         self.stop_on_assistant = stop;
         self
     }
+
+    /// Build a context from an existing message history
+    ///
+    /// # Panics
+    ///
+    /// Panics if the inner mutex is poisoned
+    pub fn with_message_history<I: IntoIterator<Item = ChatMessage>>(
+        &mut self,
+        message_history: I,
+    ) -> &mut Self {
+        self.completion_history
+            .lock()
+            .unwrap()
+            .extend(message_history);
+
+        self
+    }
 }
 #[async_trait]
 impl AgentContext for DefaultContext {
@@ -171,7 +188,7 @@ mod tests {
     use crate::{assistant, tool_output, user};
 
     use super::*;
-    use swiftide_core::chat_completion::{ChatMessage, ToolCall, ToolOutput};
+    use swiftide_core::chat_completion::{ChatMessage, ToolCall};
 
     #[tokio::test]
     async fn test_iteration_tracking() {

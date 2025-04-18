@@ -30,4 +30,7 @@ pub enum AgentError {
 
     #[error("Chat completion stream was empty")]
     EmptyStream,
+
+    #[error("Failed to render prompt {0}")]
+    FailedToRenderPrompt(anyhow::Error),
 }
