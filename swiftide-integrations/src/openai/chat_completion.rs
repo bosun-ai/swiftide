@@ -308,8 +308,6 @@ mod tests {
     use crate::openai::OpenAI;
 
     use super::*;
-    use async_openai::config::Config;
-    use tokio_stream::StreamExt;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 

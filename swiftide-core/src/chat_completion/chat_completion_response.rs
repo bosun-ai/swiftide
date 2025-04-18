@@ -61,17 +61,17 @@ impl ChatCompletionResponse {
     }
 
     /// Adds a streaming chunk to the message and also the delta
-    pub fn append_message_delta(&mut self, message: Option<&str>) -> &mut Self {
+    pub fn append_message_delta(&mut self, message_delta: Option<&str>) -> &mut Self {
         // let message: Option<String> = message;
-        let Some(message) = message else {
+        let Some(message_delta) = message_delta else {
             return self;
         };
 
         if let Some(delta) = &mut self.delta {
-            delta.message_chunk = Some(message.to_string());
+            delta.message_chunk = Some(message_delta.to_string());
         } else {
             self.delta = Some(ChatCompletionResponseDelta {
-                message_chunk: Some(message.to_string()),
+                message_chunk: Some(message_delta.to_string()),
                 tool_calls_chunk: None,
             });
         }
@@ -79,10 +79,10 @@ impl ChatCompletionResponse {
         self.message
             .as_mut()
             .map(|m| {
-                m.push_str(message);
+                m.push_str(message_delta);
             })
             .unwrap_or_else(|| {
-                self.message = Some(message.to_string());
+                self.message = Some(message_delta.to_string());
             });
         self
     }
