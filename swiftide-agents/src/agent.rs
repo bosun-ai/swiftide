@@ -424,18 +424,14 @@ impl Agent {
 
         let mut response = if self.streaming {
             let mut last_response = None;
-            while let Some(response) = self
-                .llm
-                .complete_stream(&chat_completion_request)
-                .await
-                .next()
-                .await
-            {
-                let response = response.map_err(AgentError::CompletionsFailed)?;
+            let mut stream = self.llm.complete_stream(&chat_completion_request).await;
+            while let Some(response) = stream.next().await {
                 tracing::trace!(?response, "Agent received streaming response");
+                let response = response.map_err(AgentError::CompletionsFailed)?;
                 invoke_hooks!(OnStream, self, &response);
                 last_response = Some(response);
             }
+            tracing::trace!(?last_response, "Streaming completed");
             last_response.ok_or(AgentError::EmptyStream)
         } else {
             self.llm
@@ -1127,7 +1123,7 @@ mod tests {
         assert!(agent.is_stopped());
     }
 
-    #[test_log::test(tokio::test)]
+    #[test_log::test(tokio::test(flavor = "multi_thread"))]
     async fn test_streaming() {
         let prompt = "Generate content"; // Example prompt
         let mock_llm = MockChatCompletion::new();
@@ -1156,6 +1152,8 @@ mod tests {
 
         // Run the agent
         agent.query(prompt).await.unwrap();
+
+        tracing::debug!("Agent finished running");
 
         // Assert that the agent is stopped after reaching the loop limit
         assert!(agent.is_stopped());

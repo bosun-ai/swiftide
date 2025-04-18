@@ -108,6 +108,11 @@ impl ChatCompletion for MockChatCompletion {
                 .unwrap()
                 .push((expected_request, Ok(response.clone())));
 
+            tracing::debug!(
+                "[MockChatCompletion] Received request:\n{}\nResponse:\n{}",
+                pretty_request(request),
+                pretty_response(&response)
+            );
             Ok(response)
         } else {
             let err = response.unwrap_err();
@@ -142,7 +147,7 @@ impl ChatCompletion for MockChatCompletion {
                 tracing::debug!("[MockChatCompletion] Sending chunk: {chunk}");
 
                 let chunk_response = chunk_response.append_message_delta(Some(chunk)).clone();
-                tx.send(Ok(chunk_response)).unwrap();
+                let _ = tx.send(Ok(chunk_response));
                 tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
             }
         });
