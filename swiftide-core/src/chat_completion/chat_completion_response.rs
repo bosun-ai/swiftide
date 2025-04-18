@@ -5,6 +5,7 @@ use super::tools::ToolCall;
 #[derive(Clone, Builder, Debug)]
 #[builder(setter(strip_option, into), build_fn(error = anyhow::Error))]
 pub struct ChatCompletionResponse {
+    #[builder(default)]
     pub message: Option<String>,
 
     #[builder(default)]
