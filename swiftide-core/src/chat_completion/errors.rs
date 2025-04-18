@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::CommandError;
 
-use super::ChatCompletionResponse;
+use super::{ChatCompletionResponse, ChatCompletionStream};
 
 #[derive(Error, Debug)]
 pub enum ToolError {
@@ -65,9 +65,7 @@ impl From<anyhow::Error> for LanguageModelError {
 
 // Make it easier to use the error in streaming functions
 
-impl From<LanguageModelError>
-    for Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>>
-{
+impl From<LanguageModelError> for ChatCompletionStream {
     fn from(val: LanguageModelError) -> Self {
         Box::pin(futures_util::stream::once(async move { Err(val) }))
     }

@@ -18,6 +18,7 @@ use swiftide_core::chat_completion::{
     errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
     ChatMessage, ToolCall, ToolSpec,
 };
+use swiftide_core::ChatCompletionStream;
 
 use super::openai_error_to_language_model_error;
 use super::GenericOpenAI;
@@ -117,10 +118,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
     }
 
     #[tracing::instrument(skip_all)]
-    async fn complete_stream(
-        &self,
-        request: &ChatCompletionRequest,
-    ) -> Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>> {
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
         let Some(model) = self.default_options.prompt_model.as_ref() else {
             return LanguageModelError::permanent("Model not set").into();
         };

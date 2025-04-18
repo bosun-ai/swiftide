@@ -43,7 +43,7 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
 }
 
 pub type ChatCompletionStream =
-    Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>>;
+    Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>> + Send>>;
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(
