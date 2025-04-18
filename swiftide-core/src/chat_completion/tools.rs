@@ -91,6 +91,23 @@ impl ToolCall {
     }
 }
 
+impl ToolCallBuilder {
+    pub fn maybe_args<T: Into<Option<String>>>(&mut self, args: T) -> &mut Self {
+        self.args = Some(args.into());
+        self
+    }
+
+    pub fn maybe_id<T: Into<Option<String>>>(&mut self, id: T) -> &mut Self {
+        self.id = id.into();
+        self
+    }
+
+    pub fn maybe_name<T: Into<Option<String>>>(&mut self, name: T) -> &mut Self {
+        self.name = name.into();
+        self
+    }
+}
+
 /// A typed tool specification intended to be usable for multiple LLMs
 ///
 /// i.e. the json spec `OpenAI` uses to define their tools

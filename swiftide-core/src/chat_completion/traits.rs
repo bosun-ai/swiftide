@@ -1,7 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
-use std::{borrow::Cow, sync::Arc};
+use futures_util::Stream;
+use std::{borrow::Cow, pin::Pin, sync::Arc};
 
 use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
 
@@ -41,12 +42,20 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
     }
 }
 
+pub type ChatCompletionStream =
+    Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>> + Send>>;
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError>;
+
+    /// Stream the completion response. If it's not supported, it will return a single
+    /// response
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        Box::pin(tokio_stream::iter(vec![self.complete(request).await]))
+    }
 }
 
 #[async_trait]
@@ -57,6 +66,10 @@ impl ChatCompletion for Box<dyn ChatCompletion> {
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
+
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        (**self).complete_stream(request).await
+    }
 }
 
 #[async_trait]
@@ -66,6 +79,10 @@ impl ChatCompletion for &dyn ChatCompletion {
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
+    }
+
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        (**self).complete_stream(request).await
     }
 }
 
@@ -79,6 +96,10 @@ where
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
+    }
+
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        (**self).complete_stream(request).await
     }
 }
 
@@ -95,6 +116,8 @@ dyn_clone::clone_trait_object!(ChatCompletion);
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::*;
     use crate::BackoffConfiguration;
     use std::{
@@ -144,8 +167,10 @@ mod tests {
                 }
             } else {
                 Ok(ChatCompletionResponse {
+                    id: Uuid::new_v4(),
                     message: Some("Success response".to_string()),
                     tool_calls: None,
+                    delta: None,
                 })
             }
         }

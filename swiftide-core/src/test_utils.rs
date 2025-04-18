@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use crate::chat_completion::{
     errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
 };
+use crate::ChatCompletionStream;
 use anyhow::Result;
 use pretty_assertions::assert_eq;
 
@@ -107,6 +108,11 @@ impl ChatCompletion for MockChatCompletion {
                 .unwrap()
                 .push((expected_request, Ok(response.clone())));
 
+            tracing::debug!(
+                "[MockChatCompletion] Received request:\n{}\nResponse:\n{}",
+                pretty_request(request),
+                pretty_response(&response)
+            );
             Ok(response)
         } else {
             let err = response.unwrap_err();
@@ -117,6 +123,36 @@ impl ChatCompletion for MockChatCompletion {
 
             Err(LanguageModelError::PermanentError(err.into()))
         }
+    }
+
+    /// Fakes a stream, first it checks the expectations, then it streams the response
+    /// instantly in small chunks
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        let response = match self.complete(request).await {
+            Ok(response) => response,
+            Err(err) => return err.into(),
+        };
+
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<
+            Result<ChatCompletionResponse, LanguageModelError>,
+        >();
+
+        tokio::spawn(async move {
+            let mut chunk_response = ChatCompletionResponse::builder()
+                .maybe_tool_calls(response.tool_calls.clone())
+                .build()
+                .unwrap();
+
+            for chunk in response.message().unwrap().split_whitespace() {
+                tracing::debug!("[MockChatCompletion] Sending chunk: {chunk}");
+
+                let chunk_response = chunk_response.append_message_delta(Some(chunk)).clone();
+                let _ = tx.send(Ok(chunk_response));
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            }
+        });
+
+        Box::pin(tokio_stream::wrappers::UnboundedReceiverStream::new(rx))
     }
 }
 
