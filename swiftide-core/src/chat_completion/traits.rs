@@ -116,6 +116,8 @@ dyn_clone::clone_trait_object!(ChatCompletion);
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::*;
     use crate::BackoffConfiguration;
     use std::{
@@ -165,6 +167,7 @@ mod tests {
                 }
             } else {
                 Ok(ChatCompletionResponse {
+                    id: Uuid::new_v4(),
                     message: Some("Success response".to_string()),
                     tool_calls: None,
                     delta: None,

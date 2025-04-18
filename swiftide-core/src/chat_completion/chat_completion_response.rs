@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use super::{tools::ToolCall, ToolCallBuilder};
 
@@ -8,9 +10,15 @@ use super::{tools::ToolCall, ToolCallBuilder};
 ///
 /// When streaming, the delta is available. Every response will have the accumulated message if
 /// present. The final message will also have the final tool calls.
-#[derive(Clone, Builder, Debug, Default)]
+#[derive(Clone, Builder, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[builder(setter(strip_option, into), build_fn(error = anyhow::Error))]
 pub struct ChatCompletionResponse {
+    /// An identifier for the response
+    ///
+    /// Useful when streaming to make sure chunks can be mapped to the right response
+    #[builder(private, default = Uuid::new_v4())]
+    pub id: Uuid,
+
     #[builder(default)]
     pub message: Option<String>,
 
@@ -22,7 +30,7 @@ pub struct ChatCompletionResponse {
     pub delta: Option<ChatCompletionResponseDelta>,
 }
 
-#[derive(Clone, Builder, Debug)]
+#[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ChatCompletionResponseDelta {
     pub message_chunk: Option<String>,
 
@@ -32,7 +40,7 @@ pub struct ChatCompletionResponseDelta {
 }
 
 // Accumulator for streamed tool calls
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 struct ToolCallAccum {
     id: Option<String>,
     name: Option<String>,
