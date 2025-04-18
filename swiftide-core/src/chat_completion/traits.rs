@@ -42,6 +42,8 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
     }
 }
 
+pub type ChatCompletionStream =
+    Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>>;
 #[async_trait]
 pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(
@@ -51,10 +53,7 @@ pub trait ChatCompletion: Send + Sync + DynClone {
 
     /// Stream the completion response. If it's not supported, it will return a single
     /// response
-    async fn complete_stream(
-        &self,
-        request: &ChatCompletionRequest,
-    ) -> Pin<Box<dyn Stream<Item = Result<ChatCompletionResponse, LanguageModelError>>>> {
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
         Box::pin(tokio_stream::iter(vec![self.complete(request).await]))
     }
 }
@@ -67,6 +66,10 @@ impl ChatCompletion for Box<dyn ChatCompletion> {
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
+
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        (**self).complete_stream(request).await
+    }
 }
 
 #[async_trait]
@@ -76,6 +79,10 @@ impl ChatCompletion for &dyn ChatCompletion {
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
+    }
+
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        (**self).complete_stream(request).await
     }
 }
 
@@ -89,6 +96,10 @@ where
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
+    }
+
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        (**self).complete_stream(request).await
     }
 }
 

@@ -26,6 +26,8 @@ serde.workspace = true
 serde_json.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 thiserror.workspace = true
+futures-util.workspace = true
+tokio-stream.workspace = true
 
 # Mcp
 rmcp = { workspace = true, optional = true, default-features = false, features = [

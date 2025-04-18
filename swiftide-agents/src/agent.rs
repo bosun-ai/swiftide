@@ -4,7 +4,7 @@ use crate::{
     errors::AgentError,
     hooks::{
         AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
-        Hook, HookTypes, MessageHookFn, OnStartFn, OnStopFn,
+        Hook, HookTypes, MessageHookFn, OnStartFn, OnStopFn, OnStreamFn,
     },
     invoke_hooks,
     state::{self, StopReason},
@@ -18,9 +18,11 @@ use std::{
 };
 
 use derive_builder::Builder;
+use futures_util::stream::StreamExt;
 use swiftide_core::{
     chat_completion::{
-        ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
+        ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, Tool, ToolCall,
+        ToolOutput,
     },
     prompt::Prompt,
     AgentContext, ToolBox,
@@ -108,6 +110,10 @@ pub struct Agent {
     #[builder(default = 3)]
     pub(crate) tool_retry_limit: usize,
 
+    /// Enables streaming the chat completion responses for the agent.
+    #[builder(default)]
+    pub(crate) streaming: bool,
+
     /// Internally tracks the amount of times a tool has been retried. The key is a hash based on
     /// the name and args of the tool.
     #[builder(private, default)]
@@ -180,6 +186,17 @@ impl AgentBuilder {
     /// `before_completion` hooks.
     pub fn on_start(&mut self, hook: impl OnStartFn + 'static) -> &mut Self {
         self.add_hook(Hook::OnStart(Box::new(hook)))
+    }
+
+    /// Add a hook that runs when the agent receives a streaming response
+    ///
+    /// The response will always include both the current accumulated message and the delta
+    ///
+    /// This will set `self.streaming` to true, there is no need to set it manually for the default
+    /// behaviour.
+    pub fn on_stream(&mut self, hook: impl OnStreamFn + 'static) -> &mut Self {
+        self.streaming = Some(true);
+        self.add_hook(Hook::OnStream(Box::new(hook)))
     }
 
     /// Add a hook that runs before each completion.
@@ -405,11 +422,27 @@ impl Agent {
                 .join(",\n")
         );
 
-        let mut response = self
-            .llm
-            .complete(&chat_completion_request)
-            .await
-            .map_err(AgentError::CompletionsFailed)?;
+        let mut response = if self.streaming {
+            let mut last_response = None;
+            while let Some(response) = self
+                .llm
+                .complete_stream(&chat_completion_request)
+                .await
+                .next()
+                .await
+            {
+                let response = response.map_err(AgentError::CompletionsFailed)?;
+                tracing::trace!(?response, "Agent received streaming response");
+                invoke_hooks!(OnStream, self, &response);
+                last_response = Some(response);
+            }
+            last_response.ok_or(AgentError::EmptyStream)
+        } else {
+            self.llm
+                .complete(&chat_completion_request)
+                .await
+                .map_err(AgentError::CompletionsFailed)
+        }?;
 
         invoke_hooks!(AfterCompletion, self, &mut response);
 
@@ -1091,6 +1124,40 @@ mod tests {
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("missing `query`"));
+        assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_streaming() {
+        let prompt = "Generate content"; // Example prompt
+        let mock_llm = MockChatCompletion::new();
+        let on_stream_fn = MockHook::new("on_stream").expect_calls(3).to_owned();
+
+        let chat_request = chat_request! {
+            user!(prompt);
+
+            tools = []
+        };
+
+        let response = chat_response! {
+            "one two three";
+            tool_calls = ["stop"]
+        };
+
+        // Set expectations for the mock LLM responses
+        mock_llm.expect_complete(chat_request, Ok(response));
+
+        let mut agent = Agent::builder()
+            .llm(&mock_llm)
+            .on_stream(on_stream_fn.on_stream_fn())
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // Run the agent
+        agent.query(prompt).await.unwrap();
+
+        // Assert that the agent is stopped after reaching the loop limit
         assert!(agent.is_stopped());
     }
 }

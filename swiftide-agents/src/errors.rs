@@ -27,4 +27,7 @@ pub enum AgentError {
 
     #[error("Failed to load tools from toolbox {0}")]
     ToolBoxFailedToLoad(anyhow::Error),
+
+    #[error("Chat completion stream was empty")]
+    EmptyStream,
 }
