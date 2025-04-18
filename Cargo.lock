@@ -9183,6 +9183,7 @@ dependencies = [
  "testcontainers",
  "tiktoken-rs",
  "tokio",
+ "tokio-stream",
  "tracing",
  "tree-sitter",
  "tree-sitter-c",

@@ -304,3 +304,83 @@ fn message_to_openai(
 
     Ok(openai_message)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::openai::OpenAI;
+
+    use super::*;
+    use async_openai::config::Config;
+    use tokio_stream::StreamExt;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete() {
+        let mock_server = MockServer::start().await;
+
+        // Mock OpenAI API response
+        let response_body = json!({
+          "id": "chatcmpl-B9MBs8CjcvOU2jLn4n570S5qMJKcT",
+          "object": "chat.completion",
+          "created": 123,
+          "model": "gpt-4o",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "Hello, world!",
+                "refusal": null,
+                "annotations": []
+              },
+              "logprobs": null,
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 19,
+            "completion_tokens": 10,
+            "total_tokens": 29,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "audio_tokens": 0
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 0,
+              "audio_tokens": 0,
+              "accepted_prediction_tokens": 0,
+              "rejected_prediction_tokens": 0
+            }
+          },
+          "service_tier": "default"
+        });
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(response_body))
+            .mount(&mock_server)
+            .await;
+
+        // Create a GenericOpenAI instance with the mock server URL
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4o")
+            .build()
+            .expect("Can create OpenAI client.");
+
+        // Prepare a test request
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hi".to_string())])
+            .build()
+            .unwrap();
+
+        // Call the `complete` method
+        let response = openai.complete(&request).await.unwrap();
+
+        // Assert the response
+        assert_eq!(response.message(), Some("Hello, world!"));
+    }
+}
