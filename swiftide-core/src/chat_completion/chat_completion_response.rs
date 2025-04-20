@@ -10,7 +10,7 @@ use super::{tools::ToolCall, ToolCallBuilder};
 ///
 /// When streaming, the delta is available. Every response will have the accumulated message if
 /// present. The final message will also have the final tool calls.
-#[derive(Clone, Builder, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]
 #[builder(setter(strip_option, into), build_fn(error = anyhow::Error))]
 pub struct ChatCompletionResponse {
     /// An identifier for the response
@@ -28,6 +28,17 @@ pub struct ChatCompletionResponse {
     /// Streaming response
     #[builder(default)]
     pub delta: Option<ChatCompletionResponseDelta>,
+}
+
+impl Default for ChatCompletionResponse {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            message: None,
+            tool_calls: None,
+            delta: None,
+        }
+    }
 }
 
 #[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]

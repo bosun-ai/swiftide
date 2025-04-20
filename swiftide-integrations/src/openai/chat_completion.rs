@@ -178,17 +178,18 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
 
-        let incremental_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
+        let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
+
         response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
-                    let incremental_response = incremental_response.clone();
+                    let accumulating_response = accumulating_response.clone();
 
                     let delta_message = chunk.choices[0].delta.content.as_deref();
                     let delta_tool_calls = chunk.choices[0].delta.tool_calls.as_deref();
 
                     let chat_completion_response = {
-                        let mut lock = incremental_response.lock().unwrap();
+                        let mut lock = accumulating_response.lock().unwrap();
                         lock.append_message_delta(delta_message);
 
                         if let Some(delta_tool_calls) = delta_tool_calls {

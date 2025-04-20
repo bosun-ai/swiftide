@@ -427,9 +427,10 @@ impl Agent {
         let mut response = if self.streaming {
             let mut last_response = None;
             let mut stream = self.llm.complete_stream(&chat_completion_request).await;
+
             while let Some(response) = stream.next().await {
-                tracing::trace!(?response, "Agent received streaming response");
                 let response = response.map_err(AgentError::CompletionsFailed)?;
+                // tracing::warn!(?response, "Streaming response");
                 invoke_hooks!(OnStream, self, &response);
                 last_response = Some(response);
             }
