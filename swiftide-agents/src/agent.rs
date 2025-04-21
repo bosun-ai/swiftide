@@ -21,8 +21,7 @@ use derive_builder::Builder;
 use futures_util::stream::StreamExt;
 use swiftide_core::{
     chat_completion::{
-        ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, Tool, ToolCall,
-        ToolOutput,
+        ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
     },
     prompt::Prompt,
     AgentContext, ToolBox,

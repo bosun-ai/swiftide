@@ -1,5 +1,4 @@
 //! This example demonstrates how to stream responses from an agent
-//!
 use anyhow::Result;
 use swiftide::agents;
 

@@ -1,4 +1,3 @@
-use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -10,7 +9,6 @@ use async_openai::types::{
     ChatCompletionToolType, CreateChatCompletionRequestArgs, FunctionCall, FunctionObjectArgs,
 };
 use async_trait::async_trait;
-use futures_util::Stream;
 use futures_util::StreamExt as _;
 use itertools::Itertools;
 use serde_json::json;

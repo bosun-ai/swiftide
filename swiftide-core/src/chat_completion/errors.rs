@@ -1,11 +1,8 @@
-use std::pin::Pin;
-
-use futures_util::Stream;
 use thiserror::Error;
 
 use crate::CommandError;
 
-use super::{ChatCompletionResponse, ChatCompletionStream};
+use super::ChatCompletionStream;
 
 #[derive(Error, Debug)]
 pub enum ToolError {
