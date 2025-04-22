@@ -72,7 +72,7 @@ lancedb = { version = "0.18", default-features = false, features = [
 # Needs to stay in sync with whatever lancdb uses, nice
 arrow-array = { version = "54.2", default-features = false }
 parquet = { version = "54.2", default-features = false, features = ["async"] }
-redb = { version = "2.4", default-features = false }
+redb = { version = "2.5", default-features = false }
 sqlx = { version = "0.8", features = [
   "postgres",
   "uuid",
