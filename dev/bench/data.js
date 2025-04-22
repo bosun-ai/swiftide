@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1745154280320,
+  "lastUpdate": 1745329316699,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20399,6 +20399,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254851,
             "range": "± 1880",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7f5b345115a3443afc9b32ca54a292fae3f5d38b",
+          "message": "feat(integrations): Streaming chat completions for OpenAI (#741)\n\nExtends the `ChatCompletion` trait with a `complete_stream` method,\nwhich returns a stream of `ChatCompletionResponse`. If the client does\nnot implement streaming, a one shot is returned. Making a small\nconcession on performance such that each chatcompletion response also\nincludes the full accumulated response. Each streaming message tries to\nrebuild the tools.\n\nDefinately some room for performance improvements. Might or might not do\nthat for an initial release.\n\nIn a future PR, we can let use this to add a query/query_once stream\nvariant, or always stream (lazilly) if the user has taken a stream\nhandle from the agent. Still need to decide on that implementation.\ntl&dr; streaming is cool we can do it.\n\nNeeds tests.",
+          "timestamp": "2025-04-22T15:32:54+02:00",
+          "tree_id": "2e2e72c4548f5fbf7da35797bbeccbe4e66a8401",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7f5b345115a3443afc9b32ca54a292fae3f5d38b"
+        },
+        "date": 1745329315630,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1319472,
+            "range": "± 1003854",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255774,
+            "range": "± 1624",
             "unit": "ns/iter"
           }
         ]
