@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1745329316699,
+  "lastUpdate": 1745329330745,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20453,6 +20453,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 255774,
             "range": "± 1624",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d8f02296c5f79525822b4c9cb8c5de9b545edcdb",
+          "message": "chore(deps): bump the minor group across 1 directory with 2 updates (#755)\n\nBumps the minor group with 2 updates in the / directory:\n[spider](https://github.com/spider-rs/spider) and\n[redb](https://github.com/cberner/redb).\n\nUpdates `spider` from 2.36.64 to 2.36.90\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v2.36.88</h2>\n<h1>Whats Changed</h1>\n<p>Major fix for http or smart mode request adding the Host header\npreventing proper redirects.</p>\n<ul>\n<li>chore(website): fix client host header</li>\n<li>chore(chrome,sitemap): fix sitemap handling xml</li>\n<li>feat(antibot): add antibot detection</li>\n<li>chore(chrome): fix viewport browser handling pages</li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/spider-rs/spider/compare/v2.36.67...v2.36.88\">https://github.com/spider-rs/spider/compare/v2.36.67...v2.36.88</a></p>\n<h2>v2.36.67</h2>\n<h1>Whats Changed</h1>\n<p>Fix xml parsing initial links.</p>\n<ul>\n<li>chore(real_browser,chrome): add missing chrome headers</li>\n<li>chore(chrome): add real browser loading</li>\n<li>chore(chrome): fix request_timeout default</li>\n<li>chore(chrome): fix timeout subtracting</li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/spider-rs/spider/compare/v2.35.18...v2.36.67\">https://github.com/spider-rs/spider/compare/v2.35.18...v2.36.67</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `redb` from 2.4.0 to 2.5.0\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/cberner/redb/releases\">redb's\nreleases</a>.</em></p>\n<blockquote>\n<h2>2.5.0</h2>\n<ul>\n<li>Add <code>rename_table()</code> and\n<code>rename_multimap_table()</code></li>\n<li>Add <code>Key</code> and <code>Value</code> implementations for the\nunary tuple type (i.e. <code>(T,)</code>)</li>\n<li>Fix an issue which could cause a panic when concurrently performing\nread and write transactions,\nwhen <code>debug_assertions</code> were enabled</li>\n<li>Optimize <code>retain()</code> and <code>retain_in()</code> to use\nless space in the database file</li>\n<li>Improve handling of some internal errors to return\n<code>LockPoisoned</code> instead of panicking</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/cberner/redb/blob/master/CHANGELOG.md\">redb's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>2.5.0 - 2025-04-21</h2>\n<ul>\n<li>Add <code>rename_table()</code> and\n<code>rename_multimap_table()</code></li>\n<li>Add <code>Key</code> and <code>Value</code> implementations for the\nunary tuple type (i.e. <code>(T,)</code>)</li>\n<li>Fix an issue which could cause a panic when concurrently performing\nread and write transactions,\nwhen <code>debug_assertions</code> were enabled</li>\n<li>Optimize <code>retain()</code> and <code>retain_in()</code> to use\nless space in the database file</li>\n<li>Improve handling of some internal errors to return\n<code>LockPoisoned</code> instead of panicking</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/18ab034e14d51de9ddd7044e06df746bf0e72785\"><code>18ab034</code></a>\nBump version to 2.5.0</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/19a7d7ba16e78432b292af618a39f4d438504f2b\"><code>19a7d7b</code></a>\nUpdate changelog</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/211a1e174b3bdcc421a36f39639a64aae201e22e\"><code>211a1e1</code></a>\nFix drop order in Btree</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/24d16d5bd692c2534ca07351e3cc056db0f25085\"><code>24d16d5</code></a>\nReturn LockPoisoned instead of panicking</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/67890b946185b9faa9810a2edb5244a2b88af90f\"><code>67890b9</code></a>\nUpdate pyo3 dependency</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/13b48232733c57bf5d82538979f4121c75cc186c\"><code>13b4823</code></a>\nEnable cache_leak() test on wasi</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/6410b160f5f7577a1a1879d260023787105de005\"><code>6410b16</code></a>\nFix deprecation warning</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/5427e4f698b53e03c03e1e30319d1a420a51134e\"><code>5427e4f</code></a>\nSmall improvements to the benchmarks</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/9e8d34a75b9b2085ac3363e66b9524a5b1663c35\"><code>9e8d34a</code></a>\nUpdate example to bincode 2.0</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/1afb93f51652f9d0b8970d224e143694b710c9be\"><code>1afb93f</code></a>\nUpdate io-uring version</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/cberner/redb/compare/v2.4.0...v2.5.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-04-22T15:33:10+02:00",
+          "tree_id": "d28a0c9341653589d54893154678a59283a8bc62",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d8f02296c5f79525822b4c9cb8c5de9b545edcdb"
+        },
+        "date": 1745329329212,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1308634,
+            "range": "± 943322",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249699,
+            "range": "± 1625",
             "unit": "ns/iter"
           }
         ]
