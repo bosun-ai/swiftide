@@ -181,7 +181,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
-                    let accumulating_response = accumulating_response.clone();
+                    let accumulating_response = Arc::clone(&accumulating_response);
 
                     let delta_message = chunk.choices[0].delta.content.as_deref();
                     let delta_tool_calls = chunk.choices[0].delta.tool_calls.as_deref();
@@ -211,8 +211,6 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .boxed()
     }
 }
-
-// TODO: Maybe just into the whole thing? Types are not in this crate
 
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
     let mut properties = serde_json::Map::new();

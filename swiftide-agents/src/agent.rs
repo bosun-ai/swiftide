@@ -429,7 +429,6 @@ impl Agent {
 
             while let Some(response) = stream.next().await {
                 let response = response.map_err(AgentError::CompletionsFailed)?;
-                // tracing::warn!(?response, "Streaming response");
                 invoke_hooks!(OnStream, self, &response);
                 last_response = Some(response);
             }
