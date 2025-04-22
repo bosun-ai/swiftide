@@ -2,6 +2,8 @@ use thiserror::Error;
 
 use crate::CommandError;
 
+use super::ChatCompletionStream;
+
 #[derive(Error, Debug)]
 pub enum ToolError {
     /// I.e. the llm calls the tool with the wrong arguments
@@ -55,5 +57,13 @@ impl From<BoxedError> for LanguageModelError {
 impl From<anyhow::Error> for LanguageModelError {
     fn from(e: anyhow::Error) -> Self {
         LanguageModelError::PermanentError(e.into())
+    }
+}
+
+// Make it easier to use the error in streaming functions
+
+impl From<LanguageModelError> for ChatCompletionStream {
+    fn from(val: LanguageModelError) -> Self {
+        Box::pin(futures_util::stream::once(async move { Err(val) }))
     }
 }

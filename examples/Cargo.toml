@@ -126,3 +126,7 @@ path = "agents_mcp_tools.rs"
 [[example]]
 name = "agents-resume"
 path = "agents_resume.rs"
+
+[[example]]
+name = "streaming-agents"
+path = "streaming_agents.rs"

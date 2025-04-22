@@ -163,6 +163,19 @@ pub trait OnStopFn:
 
 dyn_clone::clone_trait_object!(OnStopFn);
 
+pub trait OnStreamFn:
+    for<'a> Fn(
+        &'a Agent,
+        &ChatCompletionResponse,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    + Send
+    + Sync
+    + DynClone
+{
+}
+
+dyn_clone::clone_trait_object!(OnStreamFn);
+
 /// Wrapper around the different types of hooks
 #[derive(Clone, strum_macros::EnumDiscriminants, strum_macros::Display)]
 #[strum_discriminants(name(HookTypes), derive(strum_macros::Display))]
@@ -186,6 +199,8 @@ pub enum Hook {
     OnStart(Box<dyn OnStartFn>),
     /// Runs when the agent stops
     OnStop(Box<dyn OnStopFn>),
+    /// Runs when the agent streams a response
+    OnStream(Box<dyn OnStreamFn>),
 }
 
 impl<F> BeforeAllFn for F where
@@ -269,6 +284,17 @@ impl<F> OnStopFn for F where
             &'a Agent,
             StopReason,
             Option<&AgentError>,
+        ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+        + Send
+        + Sync
+        + DynClone
+{
+}
+
+impl<F> OnStreamFn for F where
+    F: for<'a> Fn(
+            &'a Agent,
+            &ChatCompletionResponse,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync

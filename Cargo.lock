@@ -9034,6 +9034,7 @@ dependencies = [
  "derive_builder 0.20.2",
  "dyn-clone",
  "fs-err",
+ "futures-util",
  "indoc",
  "insta",
  "mockall",
@@ -9048,6 +9049,7 @@ dependencies = [
  "test-log",
  "thiserror 2.0.12",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 
@@ -9184,6 +9186,7 @@ dependencies = [
  "testcontainers",
  "tiktoken-rs",
  "tokio",
+ "tokio-stream",
  "tracing",
  "tree-sitter",
  "tree-sitter-c",

@@ -122,6 +122,7 @@ test-case = { workspace = true }
 indoc = { workspace = true }
 insta = { workspace = true }
 wiremock = { workspace = true }
+tokio-stream = { workspace = true }
 
 
 [features]

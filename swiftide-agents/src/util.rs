@@ -13,7 +13,7 @@ macro_rules! invoke_hooks {
                     "hook",
                     "otel.name" = format!("hook.{:?}", HookTypes::$hook_type)
                 );
-                tracing::info!("Calling {} hook", HookTypes::$hook_type);
+                tracing::debug!("Calling {} hook", HookTypes::$hook_type);
 
                 // Call the hook, instrument, and log on failure
                 if let Err(err) = hook_fn($self_expr $(, $arg)*)
