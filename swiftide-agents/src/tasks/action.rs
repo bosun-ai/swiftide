@@ -11,6 +11,7 @@
 // If and_back is not provided, the DelegateActionBuilder can be converted
 // into an Action (with and_back false) via the From/Into trait.
 
+use serde::{Deserialize, Serialize};
 use swiftide_core::{
     chat_completion::{ParamSpec, ToolSpec, ToolSpecBuilderError},
     Tool,
@@ -25,20 +26,21 @@ use super::{
     task_completed_tool::{TaskCompleted, TaskCompletedBuilderError},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
     Delegate(DelegateAction),
     Complete(CompleteAction),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DelegateAction {
     from_agent: String,
     to_agent: String,
+    #[serde(default)]
     and_back: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteAction {
     agent: String,
 }
