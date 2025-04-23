@@ -62,7 +62,7 @@ schemars = { version = "0.8", default-features = false }
 # Integrations
 spider = { version = "2.36", default-features = false }
 async-openai = { version = "0.28", default-features = false }
-qdrant-client = { version = "1.13", default-features = false, features = [
+qdrant-client = { version = "1.14", default-features = false, features = [
   "serde",
 ] }
 fluvio = { version = "0.26.2", default-features = false }
