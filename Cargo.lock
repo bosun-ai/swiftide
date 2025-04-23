@@ -7190,9 +7190,9 @@ dependencies = [
 
 [[package]]
 name = "qdrant-client"
-version = "1.13.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b585625d1ef06478e97fe8d7170a3f32a1cba5dbf986ff136095a85a0ec3d91"
+checksum = "f7b17bc17a707188d378d8643af36c499b7a3c8ece72c9341d7eff4c1eb49a33"
 dependencies = [
  "anyhow",
  "derive_builder 0.20.2",
@@ -8598,9 +8598,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.36.90"
+version = "2.36.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05ca87defaa1325fa885cca560238d6fde2d40204af0fa08501545e978eab1bd"
+checksum = "33b8293e4351be90f8fa15489d7c3d327ad21c44d130cbacfd213bbe523f3b7d"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
