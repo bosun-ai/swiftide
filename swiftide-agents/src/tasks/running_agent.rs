@@ -9,7 +9,7 @@ use std::{ops::Deref, sync::Arc};
 
 use crate::Agent;
 #[derive(Clone, Debug)]
-pub(crate) struct RunningAgent(Arc<tokio::sync::Mutex<Agent>>, Arc<String>);
+pub struct RunningAgent(Arc<tokio::sync::Mutex<Agent>>, Arc<String>);
 
 impl RunningAgent {
     pub fn name(&self) -> &str {
