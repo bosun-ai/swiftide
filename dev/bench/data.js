@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1745403519214,
+  "lastUpdate": 1745508307511,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20561,6 +20561,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256054,
             "range": "± 2844",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "11051d5a1df6ea158ee84de274767fbdc70cc74e",
+          "message": "feat(agents): `tools` on `Agent` is now public and can be used in hooks",
+          "timestamp": "2025-04-24T17:15:24+02:00",
+          "tree_id": "f699405136a8505e5f4e0e8712a1469ec13f284f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/11051d5a1df6ea158ee84de274767fbdc70cc74e"
+        },
+        "date": 1745508306044,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1307213,
+            "range": "± 864651",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251590,
+            "range": "± 1777",
             "unit": "ns/iter"
           }
         ]
