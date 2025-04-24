@@ -130,15 +130,11 @@ pub struct Agent {
     pub(crate) name: String,
 }
 
-/// Cloning an agent is expensive
-///
-/// It's intended use is to have an identically configured agent
-/// operating on a new context. This allows spawning many agents from a single configuration.
 impl Clone for Agent {
     fn clone(&self) -> Self {
         Agent {
             hooks: self.hooks.clone(),
-            context: Arc::new(self.context.clone_empty()),
+            context: Arc::new(self.context.clone()),
             tools: self.tools.clone(),
             toolboxes: self.toolboxes.clone(),
             llm: self.llm.clone(),

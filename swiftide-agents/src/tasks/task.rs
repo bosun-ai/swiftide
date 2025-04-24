@@ -31,13 +31,6 @@ use tokio::task::{AbortHandle, JoinSet};
 use super::action::{Action, ActionError};
 use super::running_agent::RunningAgent;
 
-// TODO:
-// - [ ] What if the agent is already running
-// - [ ] deadlockdouble check
-// - [ ] Check if possible to run in parallel (fine if not in current)
-// - [ ] Double check after all changes tokio lock variants are still needed
-// - [ ] Maybe store the abort handle optionally in the running agent?
-//
 #[derive(Builder, Clone, Debug)]
 #[builder(build_fn(skip, error = TaskBuilderError))]
 pub struct Task {
