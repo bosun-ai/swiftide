@@ -623,7 +623,7 @@ impl Agent {
     }
 
     /// Get a list of tools available to the agent
-    fn tools(&self) -> &HashSet<Box<dyn Tool>> {
+    pub fn tools(&self) -> &HashSet<Box<dyn Tool>> {
         &self.tools
     }
 
