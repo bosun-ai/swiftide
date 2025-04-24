@@ -43,7 +43,7 @@ use super::running_agent::RunningAgent;
 pub struct Task {
     #[builder(field(ty = "Option<Vec<RunningAgent>>"), setter(custom))]
     agents: Arc<tokio::sync::RwLock<Vec<RunningAgent>>>,
-    #[builder(field(ty = "Option<Vec<Action>>"))]
+    #[builder(field(ty = "Option<Vec<Action>>"), setter(custom))]
     actions: Arc<Vec<Action>>,
     #[builder(setter(custom))]
     starts_with: Arc<String>,
@@ -79,6 +79,17 @@ impl TaskBuilder {
         self.actions
             .get_or_insert_with(Vec::new)
             .push(action.into());
+        self
+    }
+
+    pub fn actions<I, ACTION>(&mut self, actions: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ACTION>,
+        ACTION: Into<Action>,
+    {
+        self.actions
+            .get_or_insert_with(Vec::new)
+            .extend(actions.into_iter().map(Into::into));
         self
     }
 
