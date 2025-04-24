@@ -83,8 +83,8 @@ pub struct Agent {
     ///         .build().unwrap())
     ///     .build().unwrap();
     /// ```
-    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default().into()))]
-    pub(crate) system_prompt: Option<Prompt>,
+    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default()))]
+    pub(crate) system_prompt: Option<SystemPrompt>,
 
     /// Initial state of the agent
     #[builder(private, default = state::State::default())]
@@ -344,6 +344,7 @@ impl Agent {
                 self.context
                     .add_messages(vec![ChatMessage::System(
                         system_prompt
+                            .to_prompt()
                             .render()
                             .map_err(AgentError::FailedToRenderSystemPrompt)?,
                     )])

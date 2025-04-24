@@ -35,6 +35,37 @@ impl SystemPrompt {
     pub fn builder() -> SystemPromptBuilder {
         SystemPromptBuilder::default()
     }
+
+    pub fn to_prompt(&self) -> Prompt {
+        self.clone().into()
+    }
+
+    pub fn with_role(&mut self, role: impl Into<String>) -> &mut Self {
+        self.role = Some(role.into());
+        self
+    }
+
+    pub fn with_guidelines<T: IntoIterator<Item = S>, S: AsRef<str>>(
+        &mut self,
+        guidelines: T,
+    ) -> &mut Self {
+        self.guidelines = guidelines
+            .into_iter()
+            .map(|s| s.as_ref().to_string())
+            .collect();
+        self
+    }
+
+    pub fn with_constraints<T: IntoIterator<Item = S>, S: AsRef<str>>(
+        &mut self,
+        constraints: T,
+    ) -> &mut Self {
+        self.constraints = constraints
+            .into_iter()
+            .map(|s| s.as_ref().to_string())
+            .collect();
+        self
+    }
 }
 
 impl Default for SystemPrompt {
@@ -44,6 +75,17 @@ impl Default for SystemPrompt {
             guidelines: Vec::new(),
             constraints: Vec::new(),
             template: default_prompt_template(),
+        }
+    }
+}
+
+impl<S: AsRef<str>> From<S> for SystemPrompt {
+    fn from(default: S) -> Self {
+        SystemPrompt {
+            role: None,
+            guidelines: Vec::new(),
+            constraints: Vec::new(),
+            template: default.as_ref().into(),
         }
     }
 }
