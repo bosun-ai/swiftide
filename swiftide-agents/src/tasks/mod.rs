@@ -5,4 +5,4 @@ mod task;
 mod task_completed_tool;
 
 pub use action::Action;
-pub use task::Task;
+pub use task::{Task, TaskBuilder, TaskBuilderError, TaskError};
