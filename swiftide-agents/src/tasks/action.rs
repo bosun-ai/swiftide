@@ -27,7 +27,6 @@ use super::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[non_exhaustive]
 pub enum Action {
     Delegate(DelegateAction),
     Complete(CompleteAction),
