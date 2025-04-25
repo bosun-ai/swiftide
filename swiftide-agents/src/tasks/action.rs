@@ -13,7 +13,7 @@
 
 use serde::{Deserialize, Serialize};
 use swiftide_core::{
-    chat_completion::{ParamSpec, ToolSpec, ToolSpecBuilderError},
+    chat_completion::{ParamSpec, ToolSpec, ToolSpecBuilder, ToolSpecBuilderError},
     Tool,
 };
 use thiserror::Error;
@@ -27,6 +27,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum Action {
     Delegate(DelegateAction),
     Complete(CompleteAction),
@@ -38,11 +39,37 @@ pub struct DelegateAction {
     pub to_agent: String,
     #[serde(default)]
     pub and_back: bool,
+
+    #[serde(default = "default_delegate_toolspec")]
+    pub tool_spec: ToolSpecBuilder,
+    #[serde(default)]
+    pub back_tool_spec: Option<ToolSpecBuilder>,
+}
+
+fn default_delegate_toolspec() -> ToolSpecBuilder {
+    ToolSpec::builder()
+        .name("delegate_agent")
+        .description("Delegates to another agent")
+        .parameters(vec![ParamSpec::builder()
+            .name("instructions")
+            .description("Detailed instructions for the agent")
+            .build()
+            .unwrap()])
+        .to_owned()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteAction {
     pub agent: String,
+    #[serde(default = "default_complete_toolspec")]
+    pub tool_spec: ToolSpecBuilder,
+}
+
+fn default_complete_toolspec() -> ToolSpecBuilder {
+    ToolSpec::builder()
+        .name("task_completed")
+        .description("Marks the task as completed")
+        .to_owned()
 }
 
 pub struct ActionBuilder {
@@ -53,6 +80,16 @@ pub struct DelegateActionBuilder {
     pub from_agent: String,
     pub to_agent: String,
     pub and_back: bool,
+
+    /// The tool specification when delegating to another agent
+    pub tool_spec: Option<ToolSpecBuilder>,
+    /// The tool specification when delegating back to the original agent
+    pub back_tool_spec: Option<ToolSpecBuilder>,
+}
+
+pub struct CompleteActionBuilder {
+    pub agent: String,
+    pub tool_spec: Option<ToolSpecBuilder>,
 }
 
 #[derive(Debug, Error)]
@@ -82,6 +119,10 @@ impl Action {
 
     /// Applies this action to the task. Tasks apply all their configured actions
     /// after the build.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the apply failed, the agent does not exist, or any of the building steps fail
     pub async fn apply(self, task: &Task) -> Result<(), ActionError> {
         tracing::trace!("Applying action: {:?}", self);
         match self {
@@ -101,16 +142,11 @@ impl Action {
                     .await
                     .ok_or_else(|| ActionError::AgentNotFound(delegate_action.to_agent.clone()))?;
 
-                let tool_spec = ToolSpec::builder()
-                    .name("delegate_agent")
-                    .description("Delegates to another agent")
-                    .parameters(vec![ParamSpec::builder()
-                        .name("instructions")
-                        .description("Detailed instructions for the agent")
-                        .build()
-                        .unwrap()])
+                let tool_spec = delegate_action
+                    .tool_spec
                     .build()
                     .map_err(ActionError::FailedBuildingToolSpec)?;
+
                 let tool = DelegateAgentBuilder::default()
                     .delegates_to(target.clone())
                     .task(task.clone())
@@ -123,6 +159,12 @@ impl Action {
                 }
 
                 if delegate_action.and_back {
+                    let tool_spec = delegate_action
+                        .back_tool_spec
+                        .unwrap_or_else(default_delegate_toolspec)
+                        .build()
+                        .map_err(ActionError::FailedBuildingToolSpec)?;
+
                     let tool = DelegateAgentBuilder::default()
                         .delegates_to(source)
                         .task(task.clone())
@@ -136,9 +178,8 @@ impl Action {
                 Ok(())
             }
             Action::Complete(complete_action) => {
-                let tool_spec = ToolSpec::builder()
-                    .name("task_completed")
-                    .description("Marks the task as completed")
+                let tool_spec = complete_action
+                    .tool_spec
                     .build()
                     .map_err(ActionError::FailedBuildingToolSpec)?;
 
@@ -166,18 +207,43 @@ impl ActionBuilder {
             from_agent: self.agent,
             to_agent: to_agent.into(),
             and_back: false,
+
+            tool_spec: None,
+            back_tool_spec: None,
         }
     }
 
-    pub fn can_complete(self) -> Action {
-        Action::Complete(CompleteAction { agent: self.agent })
+    pub fn can_complete(self) -> CompleteActionBuilder {
+        CompleteActionBuilder {
+            agent: self.agent,
+            tool_spec: None,
+        }
     }
 }
 
 impl DelegateActionBuilder {
-    pub fn and_back(mut self) -> Action {
+    pub fn and_back(&mut self) -> &mut Self {
         self.and_back = true;
-        self.into()
+        self
+    }
+
+    /// Customize the tool specification for the initial delegate action
+    pub fn tool_spec(&mut self, tool_spec: ToolSpecBuilder) -> &mut Self {
+        self.tool_spec = Some(tool_spec);
+        self
+    }
+
+    /// Customize the tool specification for delegating back
+    pub fn back_tool_spec(&mut self, tool_spec: ToolSpecBuilder) -> &mut Self {
+        self.back_tool_spec = Some(tool_spec);
+        self
+    }
+}
+
+impl CompleteActionBuilder {
+    pub fn tool_spec(&mut self, tool_spec: ToolSpecBuilder) -> &mut Self {
+        self.tool_spec = Some(tool_spec);
+        self
     }
 }
 
@@ -187,6 +253,44 @@ impl From<DelegateActionBuilder> for Action {
             from_agent: builder.from_agent,
             to_agent: builder.to_agent,
             and_back: builder.and_back,
+            tool_spec: builder.tool_spec.unwrap_or_else(default_delegate_toolspec),
+            back_tool_spec: builder.back_tool_spec,
+        })
+    }
+}
+
+impl From<&mut DelegateActionBuilder> for Action {
+    fn from(builder: &mut DelegateActionBuilder) -> Self {
+        Action::Delegate(DelegateAction {
+            from_agent: builder.from_agent.clone(),
+            to_agent: builder.to_agent.clone(),
+            and_back: builder.and_back,
+            tool_spec: builder
+                .tool_spec
+                .clone()
+                .unwrap_or_else(default_delegate_toolspec),
+            back_tool_spec: builder.back_tool_spec.clone(),
+        })
+    }
+}
+
+impl From<CompleteActionBuilder> for Action {
+    fn from(builder: CompleteActionBuilder) -> Self {
+        Action::Complete(CompleteAction {
+            agent: builder.agent,
+            tool_spec: builder.tool_spec.unwrap_or_else(default_complete_toolspec),
+        })
+    }
+}
+
+impl From<&mut CompleteActionBuilder> for Action {
+    fn from(builder: &mut CompleteActionBuilder) -> Self {
+        Action::Complete(CompleteAction {
+            agent: builder.agent.clone(),
+            tool_spec: builder
+                .tool_spec
+                .clone()
+                .unwrap_or_else(default_complete_toolspec),
         })
     }
 }
@@ -202,7 +306,8 @@ mod tests {
 
         let action = Action::for_agent(planning_agent)
             .delegates_to(research_agent)
-            .and_back();
+            .and_back()
+            .into();
 
         match action {
             Action::Delegate(da) => {
@@ -238,11 +343,74 @@ mod tests {
     fn test_complete_action() {
         let jsonspec_agent = "jsonspec_agent";
 
-        let action = Action::for_agent(jsonspec_agent).can_complete();
+        let action = Action::for_agent(jsonspec_agent).can_complete().into();
 
         match action {
             Action::Complete(ca) => {
                 assert_eq!(ca.agent, jsonspec_agent);
+            }
+            _ => panic!("Expected a CompleteAction"),
+        }
+    }
+
+    #[test]
+    fn test_delegate_action_with_custom_tool_spec() {
+        let planning_agent = "planning_agent";
+        let research_agent = "research_agent";
+
+        let custom_tool_spec = ToolSpec::builder()
+            .name("custom_delegate_tool")
+            .description("Custom delegation tool")
+            .parameters(vec![ParamSpec::builder()
+                .name("custom_param")
+                .description("A custom parameter for delegation")
+                .build()
+                .unwrap()])
+            .to_owned();
+
+        let action = Action::for_agent(planning_agent)
+            .delegates_to(research_agent)
+            .tool_spec(custom_tool_spec.clone())
+            .into();
+
+        match action {
+            Action::Delegate(da) => {
+                assert_eq!(da.from_agent, planning_agent);
+                assert_eq!(da.to_agent, research_agent);
+                let built_tool_spec = da.tool_spec.build().unwrap();
+                assert_eq!(built_tool_spec.name, "custom_delegate_tool");
+                assert_eq!(built_tool_spec.description, "Custom delegation tool");
+                assert_eq!(built_tool_spec.parameters.len(), 1);
+                assert_eq!(built_tool_spec.parameters[0].name, "custom_param");
+                assert_eq!(
+                    built_tool_spec.parameters[0].description,
+                    "A custom parameter for delegation"
+                );
+            }
+            _ => panic!("Expected a DelegateAction"),
+        }
+    }
+
+    #[test]
+    fn test_complete_action_with_custom_tool_spec() {
+        let jsonspec_agent = "jsonspec_agent";
+
+        let custom_tool_spec = ToolSpec::builder()
+            .name("custom_complete_tool")
+            .description("Custom completion tool")
+            .to_owned();
+
+        let action = Action::for_agent(jsonspec_agent)
+            .can_complete()
+            .tool_spec(custom_tool_spec.clone())
+            .into();
+
+        match action {
+            Action::Complete(ca) => {
+                assert_eq!(ca.agent, jsonspec_agent);
+                let built_tool_spec = ca.tool_spec.build().unwrap();
+                assert_eq!(built_tool_spec.name, "custom_complete_tool");
+                assert_eq!(built_tool_spec.description, "Custom completion tool");
             }
             _ => panic!("Expected a CompleteAction"),
         }
