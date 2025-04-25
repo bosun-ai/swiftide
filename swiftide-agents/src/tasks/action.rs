@@ -34,25 +34,25 @@ pub enum Action {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DelegateAction {
-    from_agent: String,
-    to_agent: String,
+    pub from_agent: String,
+    pub to_agent: String,
     #[serde(default)]
-    and_back: bool,
+    pub and_back: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteAction {
-    agent: String,
+    pub agent: String,
 }
 
 pub struct ActionBuilder {
-    agent: String,
+    pub agent: String,
 }
 
 pub struct DelegateActionBuilder {
-    from_agent: String,
-    to_agent: String,
-    and_back: bool,
+    pub from_agent: String,
+    pub to_agent: String,
+    pub and_back: bool,
 }
 
 #[derive(Debug, Error)]
