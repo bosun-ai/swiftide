@@ -121,10 +121,6 @@ pub struct Agent {
     #[builder(private, default)]
     pub(crate) tool_retries_counter: HashMap<u64, usize>,
 
-    /// Tools loaded from toolboxes
-    #[builder(private, default)]
-    pub(crate) toolbox_tools: HashSet<Box<dyn Tool>>,
-
     /// The name of the agent; used in tasks to identify the agent
     #[builder(default = "unnamed_agent".into(), setter(into))]
     pub(crate) name: String,
@@ -143,7 +139,7 @@ impl Clone for Agent {
             limit: self.limit,
             tool_retry_limit: self.tool_retry_limit,
             tool_retries_counter: HashMap::new(),
-            toolbox_tools: HashSet::new(),
+            streaming: self.streaming,
             name: self.name.clone(),
         }
     }
@@ -197,6 +193,19 @@ impl AgentBuilder {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
         hooks.push(hook);
 
+        self
+    }
+
+    /// Adds a tool to the agent
+    pub fn add_tool(&mut self, tool: impl Tool + 'static) -> &mut Self {
+        self.tools = Some(
+            self.tools
+                .take()
+                .unwrap_or_default()
+                .into_iter()
+                .chain([Box::new(tool) as Box<dyn Tool>])
+                .collect(),
+        );
         self
     }
 
@@ -677,10 +686,8 @@ impl Agent {
                 .available_tools()
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
-            self.toolbox_tools.extend(tools);
+            self.tools.extend(tools);
         }
-
-        self.tools.extend(self.toolbox_tools.clone());
 
         Ok(())
     }
