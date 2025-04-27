@@ -1,8 +1,8 @@
 use convert_case::{Case, Casing as _};
-use darling::{ast::NestedMeta, Error, FromMeta};
+use darling::{Error, FromMeta, ast::NestedMeta};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens as _};
-use syn::{parse_quote, FnArg, Ident, ItemFn, Pat, PatType};
+use quote::{ToTokens as _, quote};
+use syn::{FnArg, Ident, ItemFn, Pat, PatType, parse_quote};
 
 use super::rust_to_json_type::rust_type_to_json_type;
 
@@ -338,9 +338,9 @@ fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Re
             .collect::<Vec<_>>();
 
         if !missing_args.is_empty() {
-            errors.push(Error::custom(
-                format!("The following parameters are missing from the function signature: {missing_args:?}")
-            ));
+            errors.push(Error::custom(format!(
+                "The following parameters are missing from the function signature: {missing_args:?}"
+            )));
         }
 
         if !missing_params.is_empty() {

@@ -1,8 +1,8 @@
 //! Implements a flexible vector search strategy framework using closure-based configuration.
 //! Supports both synchronous and asynchronous query generation for different retrieval backends.
 
-use crate::querying::{self, states, Query};
-use anyhow::{anyhow, Result};
+use crate::querying::{self, Query, states};
+use anyhow::{Result, anyhow};
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;

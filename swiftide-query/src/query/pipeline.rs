@@ -16,12 +16,12 @@
 use futures_util::TryFutureExt as _;
 use std::sync::Arc;
 use swiftide_core::{
+    EvaluateQuery,
     prelude::*,
     querying::{
-        search_strategies::SimilaritySingleEmbedding, states, Answer, Query, QueryState,
-        QueryStream, Retrieve, SearchStrategy, TransformQuery, TransformResponse,
+        Answer, Query, QueryState, QueryStream, Retrieve, SearchStrategy, TransformQuery,
+        TransformResponse, search_strategies::SimilaritySingleEmbedding, states,
     },
-    EvaluateQuery,
 };
 use tokio::sync::mpsc::Sender;
 
@@ -416,7 +416,7 @@ impl<STRATEGY: SearchStrategy> Pipeline<'_, STRATEGY, states::Answered> {
 #[cfg(test)]
 mod test {
     use swiftide_core::{
-        querying::search_strategies, MockAnswer, MockTransformQuery, MockTransformResponse,
+        MockAnswer, MockTransformQuery, MockTransformResponse, querying::search_strategies,
     };
 
     use super::*;

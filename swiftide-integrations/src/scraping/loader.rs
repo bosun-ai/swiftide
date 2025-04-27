@@ -2,8 +2,8 @@ use derive_builder::Builder;
 use spider::website::Website;
 
 use swiftide_core::{
-    indexing::{IndexingStream, Node},
     Loader,
+    indexing::{IndexingStream, Node},
 };
 
 #[derive(Debug, Builder, Clone)]

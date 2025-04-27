@@ -5,7 +5,7 @@ resolver = "2"
 
 [workspace.package]
 version = "0.25.1"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 readme = "README.md"
 keywords = ["llm", "rag", "ai", "data", "openai"]
@@ -66,9 +66,7 @@ qdrant-client = { version = "1.14", default-features = false, features = [
   "serde",
 ] }
 fluvio = { version = "0.26.2", default-features = false }
-lancedb = { version = "0.18", default-features = false, features = [
-  "remote",
-] }
+lancedb = { version = "0.18", default-features = false, features = ["remote"] }
 # Needs to stay in sync with whatever lancdb uses, nice
 arrow-array = { version = "54.2", default-features = false }
 parquet = { version = "54.2", default-features = false, features = ["async"] }
@@ -91,7 +89,7 @@ htmd = { version = "0.1", default-features = false }
 ignore = { version = "0.4", default-features = false }
 proc-macro2 = { version = "1.0", default-features = false }
 quote = { version = "1.0", default-features = false }
-redis = { version = "0.29", default-features = false }
+redis = { version = "0.30", default-features = false }
 reqwest = { version = "0.12", default-features = false }
 secrecy = { version = "0.10", default-features = false }
 syn = { version = "2.0", default-features = false }

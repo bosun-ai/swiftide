@@ -21,9 +21,9 @@
 
 use derive_builder::Builder;
 
+use fluvio::FluvioConfig;
 /// Re-export the fluvio config builder
 pub use fluvio::consumer::{ConsumerConfigExt, ConsumerConfigExtBuilder};
-use fluvio::FluvioConfig;
 
 mod loader;
 

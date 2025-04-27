@@ -84,7 +84,7 @@ impl NodeCache for Redis {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("DEL")
                 .arg(format!("{}*", self.cache_key_prefix))
-                .query_async(&mut cm)
+                .query_async::<()>(&mut cm)
                 .await?;
 
             Ok(())

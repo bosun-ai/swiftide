@@ -10,11 +10,11 @@
 //! The implementation ensures thread-safe concurrent access and handles
 //! connection management automatically.
 use crate::pgvector::PgVector;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use swiftide_core::{
-    indexing::{IndexingStream, Node},
     Persist,
+    indexing::{IndexingStream, Node},
 };
 
 #[async_trait]
@@ -75,7 +75,7 @@ impl Persist for PgVector {
 mod tests {
     use crate::pgvector::fixtures::TestContext;
     use std::collections::HashSet;
-    use swiftide_core::{indexing::EmbeddedField, Persist};
+    use swiftide_core::{Persist, indexing::EmbeddedField};
 
     #[test_log::test(tokio::test)]
     async fn test_persist_setup_no_error_when_table_exists() {

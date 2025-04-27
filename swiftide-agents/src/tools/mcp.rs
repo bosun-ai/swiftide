@@ -8,16 +8,16 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
+use rmcp::RoleClient;
 use rmcp::model::{ClientInfo, Implementation, InitializeRequestParam};
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
-use rmcp::RoleClient;
-use rmcp::{model::CallToolRequestParam, ServiceExt};
+use rmcp::{ServiceExt, model::CallToolRequestParam};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use swiftide_core::{
-    chat_completion::{errors::ToolError, ParamSpec, ParamType, ToolSpec},
     Tool, ToolBox,
+    chat_completion::{ParamSpec, ParamType, ToolSpec, errors::ToolError},
 };
 
 /// A filter to apply to the available tools
@@ -424,8 +424,9 @@ mod tests {
     #[allow(clippy::unused_self)]
     mod copied_from_rmcp {
         use rmcp::{
+            ServerHandler,
             model::{ServerCapabilities, ServerInfo},
-            schemars, tool, ServerHandler,
+            schemars, tool,
         };
 
         #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]

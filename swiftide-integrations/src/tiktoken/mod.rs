@@ -9,7 +9,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::tokenizer::{Estimatable, EstimateTokens};
-use tiktoken_rs::{get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer, CoreBPE};
+use tiktoken_rs::{CoreBPE, get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer};
 
 /// A tiktoken based tokenizer for openai models. Can also be used for other models.
 ///

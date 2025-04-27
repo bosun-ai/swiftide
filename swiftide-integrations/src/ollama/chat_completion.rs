@@ -9,8 +9,8 @@ use async_trait::async_trait;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
-    ChatMessage, ToolCall, ToolSpec,
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+    errors::LanguageModelError,
 };
 
 use crate::openai::openai_error_to_language_model_error;

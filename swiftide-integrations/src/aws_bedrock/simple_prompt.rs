@@ -31,8 +31,8 @@ impl SimplePrompt for AwsBedrock {
 
 #[cfg(test)]
 mod test {
-    use crate::aws_bedrock::models::*;
     use crate::aws_bedrock::MockBedrockPrompt;
+    use crate::aws_bedrock::models::*;
 
     use super::*;
     use anyhow::Context as _;

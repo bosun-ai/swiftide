@@ -2,7 +2,7 @@ use std::string::ToString;
 
 use anyhow::Context as _;
 use futures_util::{StreamExt as _, TryStreamExt as _};
-use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
+use swiftide_core::{Loader, indexing::IndexingStream, indexing::Node};
 use tokio::runtime::Handle;
 
 use super::Fluvio;
@@ -51,14 +51,14 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use fluvio::{
+        RecordKey,
         consumer::ConsumerConfigExt,
         metadata::{customspu::CustomSpuSpec, topic::TopicSpec},
-        RecordKey,
     };
     use flv_util::socket_helpers::ServerAddress;
     use futures_util::TryStreamExt;
     use regex::Regex;
-    use testcontainers::{runners::AsyncRunner, ContainerAsync, GenericImage, ImageExt};
+    use testcontainers::{ContainerAsync, GenericImage, ImageExt, runners::AsyncRunner};
     use tokio::io::{AsyncBufRead, AsyncBufReadExt};
 
     // NOTE: Move to test-utils / upstream to testcontainers if needed elsewhere

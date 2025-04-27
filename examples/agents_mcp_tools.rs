@@ -3,9 +3,9 @@
 //! The agent in this example prints all messages using a channel.
 use anyhow::Result;
 use rmcp::{
+    ServiceExt as _,
     model::{ClientInfo, Implementation},
     transport::TokioChildProcess,
-    ServiceExt as _,
 };
 use swiftide::agents::{self, tools::mcp::McpToolbox};
 
@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
 
     tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
-            println!("{}", msg);
+            println!("{msg}");
         }
     });
 

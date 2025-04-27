@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{Transformer, indexing::Node};
 
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
 /// This struct integrates with the indexing pipeline to enhance the metadata of each code chunk
@@ -61,7 +61,7 @@ impl Transformer for MetadataQACode {
 
 #[cfg(test)]
 mod test {
-    use swiftide_core::{assert_default_prompt_snapshot, MockSimplePrompt};
+    use swiftide_core::{MockSimplePrompt, assert_default_prompt_snapshot};
 
     use super::*;
 

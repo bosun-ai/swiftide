@@ -7,7 +7,7 @@
 //! `states::Answered`: The query has been answered
 use derive_builder::Builder;
 
-use crate::{document::Document, util::debug_long_utf8, Embedding, SparseEmbedding};
+use crate::{Embedding, SparseEmbedding, document::Document, util::debug_long_utf8};
 
 /// A query is the main object going through a query pipeline
 ///

@@ -4,8 +4,8 @@ use std::{collections::VecDeque, sync::Arc};
 use anyhow::bail;
 use async_trait::async_trait;
 use swiftide_core::{
-    indexing::{IndexingStream, Node},
     BatchableTransformer, EmbeddingModel, WithBatchIndexingDefaults, WithIndexingDefaults,
+    indexing::{IndexingStream, Node},
 };
 
 /// A transformer that can generate embeddings for an `Node`

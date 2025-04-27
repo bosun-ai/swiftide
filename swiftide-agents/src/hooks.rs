@@ -48,11 +48,11 @@ use std::{future::Future, pin::Pin};
 
 use dyn_clone::DynClone;
 use swiftide_core::chat_completion::{
-    errors::ToolError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall,
-    ToolOutput,
+    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolOutput,
+    errors::ToolError,
 };
 
-use crate::{errors::AgentError, state::StopReason, Agent};
+use crate::{Agent, errors::AgentError, state::StopReason};
 
 pub trait BeforeAllFn:
     for<'a> Fn(&'a Agent) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>

@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 use async_trait::async_trait;
-use swiftide_core::{indexing::Node, NodeCache};
+use swiftide_core::{NodeCache, indexing::Node};
 
 use super::Duckdb;
 
@@ -24,10 +24,11 @@ macro_rules! unwrap_or_log {
 #[async_trait]
 impl NodeCache for Duckdb {
     async fn get(&self, node: &Node) -> bool {
-        unwrap_or_log!(self
-            .lazy_create_cache()
-            .await
-            .context("failed to create cache table"));
+        unwrap_or_log!(
+            self.lazy_create_cache()
+                .await
+                .context("failed to create cache table")
+        );
 
         let sql = format!(
             "SELECT EXISTS(SELECT 1 FROM {} WHERE uuid = ?)",
@@ -35,13 +36,15 @@ impl NodeCache for Duckdb {
         );
 
         let lock = self.connection.lock().unwrap();
-        let mut stmt = unwrap_or_log!(lock
-            .prepare(&sql)
-            .context("Failed to prepare duckdb statement for persist"));
+        let mut stmt = unwrap_or_log!(
+            lock.prepare(&sql)
+                .context("Failed to prepare duckdb statement for persist")
+        );
 
-        let present = unwrap_or_log!(stmt
-            .query_map([self.node_key(node)], |row| row.get::<_, bool>(0))
-            .context("failed to query for documents"))
+        let present = unwrap_or_log!(
+            stmt.query_map([self.node_key(node)], |row| row.get::<_, bool>(0))
+                .context("failed to query for documents")
+        )
         .next()
         .transpose();
 

@@ -1,8 +1,8 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 
@@ -12,8 +12,8 @@ use derive_builder::Builder;
 use tokio::sync::RwLock;
 
 use swiftide_core::{
-    indexing::{IndexingStream, Node},
     Persist,
+    indexing::{IndexingStream, Node},
 };
 
 #[derive(Debug, Default, Builder, Clone)]

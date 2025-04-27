@@ -1,6 +1,6 @@
 use crate::querying;
 
-use super::{SearchFilter, DEFAULT_TOP_K};
+use super::{DEFAULT_TOP_K, SearchFilter};
 
 /// A simple, single vector similarity search where it takes the embedding on the current query
 /// and returns `top_k` documents.

@@ -1,11 +1,12 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use swiftide_core::{
-    querying::{
-        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
-        states, Document, Query,
-    },
     Retrieve,
+    querying::{
+        Document, Query,
+        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        states,
+    },
 };
 
 use super::Duckdb;
@@ -115,7 +116,7 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
 #[cfg(test)]
 mod tests {
     use indexing::{EmbeddedField, Node};
-    use swiftide_core::{indexing, Persist as _};
+    use swiftide_core::{Persist as _, indexing};
 
     use super::*;
 

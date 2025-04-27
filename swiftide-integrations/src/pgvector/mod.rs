@@ -195,10 +195,10 @@ mod tests {
     use futures_util::TryStreamExt;
     use std::collections::HashSet;
     use swiftide_core::{
+        Persist, Retrieve,
         document::Document,
         indexing::{self, EmbedMode, EmbeddedField},
-        querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
-        Persist, Retrieve,
+        querying::{Query, search_strategies::SimilaritySingleEmbedding, states},
     };
     use test_case::test_case;
 

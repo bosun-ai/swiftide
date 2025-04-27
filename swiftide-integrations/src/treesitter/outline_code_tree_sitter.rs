@@ -2,8 +2,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use swiftide_core::indexing::Node;
 use swiftide_core::Transformer;
+use swiftide_core::indexing::Node;
 
 use crate::treesitter::{CodeOutliner, SupportedLanguages};
 

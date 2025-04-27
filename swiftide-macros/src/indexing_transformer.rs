@@ -1,4 +1,4 @@
-use darling::{ast::NestedMeta, Error, FromMeta};
+use darling::{Error, FromMeta, ast::NestedMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Fields, Ident, ItemStruct};
@@ -204,7 +204,7 @@ fn extract_existing_fields(fields: Fields) -> impl Iterator<Item = proc_macro2::
 mod tests {
     use super::*;
     use quote::quote;
-    use syn::{parse_quote, ItemStruct};
+    use syn::{ItemStruct, parse_quote};
 
     #[test]
     fn test_includes_doc_comments() {

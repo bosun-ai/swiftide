@@ -4,10 +4,10 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 
-use crate::chat_completion::{
-    errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
-};
 use crate::ChatCompletionStream;
+use crate::chat_completion::{
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, errors::LanguageModelError,
+};
 use anyhow::Result;
 use pretty_assertions::assert_eq;
 
@@ -185,7 +185,9 @@ impl Drop for MockChatCompletion {
                 .collect::<Vec<_>>()
                 .join("---\n");
 
-            panic!("[MockChatCompletion] Not all expectations were met\n received:\n{received}\n\npending:\n{pending}");
+            panic!(
+                "[MockChatCompletion] Not all expectations were met\n received:\n{received}\n\npending:\n{pending}"
+            );
         }
     }
 }

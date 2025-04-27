@@ -2,18 +2,18 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use anyhow::Result;
-use arrow_array::types::Float32Type;
-use arrow_array::types::UInt8Type;
-use arrow_array::types::Utf8Type;
 use arrow_array::Array;
 use arrow_array::FixedSizeListArray;
 use arrow_array::GenericByteArray;
 use arrow_array::RecordBatch;
 use arrow_array::RecordBatchIterator;
+use arrow_array::types::Float32Type;
+use arrow_array::types::UInt8Type;
+use arrow_array::types::Utf8Type;
 use async_trait::async_trait;
+use swiftide_core::Persist;
 use swiftide_core::indexing::IndexingStream;
 use swiftide_core::indexing::Node;
-use swiftide_core::Persist;
 
 use super::FieldConfig;
 use super::LanceDB;
@@ -67,8 +67,10 @@ impl LanceDB {
         let batches = self.extract_arrow_batches_from_nodes(nodes)?;
 
         let data = RecordBatchIterator::new(
-            vec![RecordBatch::try_new(schema.clone(), batches)
-                .context("Could not create batches")?]
+            vec![
+                RecordBatch::try_new(schema.clone(), batches)
+                    .context("Could not create batches")?,
+            ]
             .into_iter()
             .map(Ok),
             schema.clone(),
@@ -162,7 +164,7 @@ impl LanceDB {
 
 #[cfg(test)]
 mod test {
-    use swiftide_core::{indexing::EmbeddedField, Persist as _};
+    use swiftide_core::{Persist as _, indexing::EmbeddedField};
     use temp_dir::TempDir;
 
     use super::*;

@@ -3,8 +3,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::borrow::Cow;
 use swiftide_core::{
-    chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec},
     AgentContext,
+    chat_completion::{Tool, ToolOutput, ToolSpec, errors::ToolError},
 };
 
 // TODO: Cannot use macros in our own crates because of import shenanigans

@@ -4,8 +4,8 @@
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
 use swiftide_core::{
-    chat_completion::errors::LanguageModelError, prompt::Prompt, util::debug_long_utf8,
-    SimplePrompt,
+    SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
+    util::debug_long_utf8,
 };
 
 use crate::openai::openai_error_to_language_model_error;
@@ -44,11 +44,13 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         // Build the request to be sent to the OpenAI API.
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
-            .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render()?)
-                .build()
-                .map_err(LanguageModelError::permanent)?
-                .into()])
+            .messages(vec![
+                ChatCompletionRequestUserMessageArgs::default()
+                    .content(prompt.render()?)
+                    .build()
+                    .map_err(LanguageModelError::permanent)?
+                    .into(),
+            ])
             .build()
             .map_err(LanguageModelError::permanent)?;
 

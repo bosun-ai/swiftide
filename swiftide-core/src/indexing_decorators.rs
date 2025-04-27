@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{prompt::Prompt, EmbeddingModel, Embeddings, SimplePrompt};
+use crate::{EmbeddingModel, Embeddings, SimplePrompt, prompt::Prompt};
 
 use crate::chat_completion::errors::LanguageModelError;
 use anyhow::Result;
@@ -102,8 +102,8 @@ impl<P: EmbeddingModel + Clone> EmbeddingModel for LanguageModelWithBackOff<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[derive(Debug, Clone)]
     struct MockSimplePrompt {

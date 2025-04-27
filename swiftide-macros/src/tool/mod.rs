@@ -4,7 +4,7 @@ use args::ToolArgs;
 use darling::{Error, FromDeriveInput};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_quote, DeriveInput, FnArg, ItemFn, Pat, PatType};
+use syn::{DeriveInput, FnArg, ItemFn, Pat, PatType, parse_quote};
 
 mod args;
 mod rust_to_json_type;
@@ -196,7 +196,7 @@ fn boxed_from(struct_ident: &syn::Ident, generics: &syn::Generics) -> TokenStrea
 mod tests {
     use super::*;
     use quote::quote;
-    use syn::{parse_quote, ItemFn};
+    use syn::{ItemFn, parse_quote};
 
     #[test]
     fn test_snapshot_single_arg() {

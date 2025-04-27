@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{indexing::IndexingStream, indexing::Node, ChunkerTransformer};
+use swiftide_core::{ChunkerTransformer, indexing::IndexingStream, indexing::Node};
 use text_splitter::{Characters, ChunkConfig, TextSplitter};
 
 const DEFAULT_MAX_CHAR_SIZE: usize = 2056;

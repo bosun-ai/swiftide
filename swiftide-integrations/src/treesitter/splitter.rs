@@ -276,9 +276,11 @@ mod test {
         let chunks = splitter.split(text).unwrap();
 
         assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
-        assert!(chunks
-            .windows(2)
-            .all(|pair| pair.iter().map(String::len).sum::<usize>() >= 50));
+        assert!(
+            chunks
+                .windows(2)
+                .all(|pair| pair.iter().map(String::len).sum::<usize>() >= 50)
+        );
 
         assert_eq!(
             chunks,
@@ -347,9 +349,11 @@ mod test {
         let chunks = splitter.split(text).unwrap();
 
         assert!(chunks.iter().all(|chunk| chunk.len() <= 50));
-        assert!(chunks
-            .windows(2)
-            .all(|pair| pair.iter().map(String::len).sum::<usize>() > 50));
+        assert!(
+            chunks
+                .windows(2)
+                .all(|pair| pair.iter().map(String::len).sum::<usize>() > 50)
+        );
         assert!(chunks.iter().all(|chunk| chunk.len() >= 20));
 
         assert_eq!(

@@ -3,7 +3,7 @@
 //! for efficient vector similarity search. The module handles metadata augmentation and ensures
 //! data compatibility with Qdrant's required format.
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::{
     collections::{HashMap, HashSet},
     string::ToString,
@@ -13,7 +13,7 @@ use qdrant_client::{
     client::Payload,
     qdrant::{self, Value},
 };
-use swiftide_core::{indexing::EmbeddedField, Embedding, SparseEmbedding};
+use swiftide_core::{Embedding, SparseEmbedding, indexing::EmbeddedField};
 
 use super::NodeWithVectors;
 

@@ -2,15 +2,15 @@ use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{errors::ToolError, Tool, ToolOutput, ToolSpec};
+use swiftide_core::chat_completion::{Tool, ToolOutput, ToolSpec, errors::ToolError};
 
 use swiftide_core::AgentContext;
 
+use crate::Agent;
 use crate::hooks::{
     AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn, MessageHookFn,
     OnStartFn, OnStopFn, OnStreamFn,
 };
-use crate::Agent;
 
 #[macro_export]
 macro_rules! chat_request {
@@ -238,7 +238,7 @@ impl MockHook {
         self
     }
 
-    pub fn hook_fn(&self) -> impl BeforeAllFn {
+    pub fn hook_fn(&self) -> impl BeforeAllFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent| {
             let called = Arc::clone(&called);
@@ -250,7 +250,7 @@ impl MockHook {
         }
     }
 
-    pub fn on_start_fn(&self) -> impl OnStartFn {
+    pub fn on_start_fn(&self) -> impl OnStartFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent| {
             let called = Arc::clone(&called);
@@ -261,7 +261,7 @@ impl MockHook {
             })
         }
     }
-    pub fn before_completion_fn(&self) -> impl BeforeCompletionFn {
+    pub fn before_completion_fn(&self) -> impl BeforeCompletionFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
             let called = Arc::clone(&called);
@@ -273,7 +273,7 @@ impl MockHook {
         }
     }
 
-    pub fn after_completion_fn(&self) -> impl AfterCompletionFn {
+    pub fn after_completion_fn(&self) -> impl AfterCompletionFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
             let called = Arc::clone(&called);
@@ -285,7 +285,7 @@ impl MockHook {
         }
     }
 
-    pub fn after_tool_fn(&self) -> impl AfterToolFn {
+    pub fn after_tool_fn(&self) -> impl AfterToolFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _, _| {
             let called = Arc::clone(&called);
@@ -297,7 +297,7 @@ impl MockHook {
         }
     }
 
-    pub fn before_tool_fn(&self) -> impl BeforeToolFn {
+    pub fn before_tool_fn(&self) -> impl BeforeToolFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
             let called = Arc::clone(&called);
@@ -309,7 +309,7 @@ impl MockHook {
         }
     }
 
-    pub fn message_hook_fn(&self) -> impl MessageHookFn {
+    pub fn message_hook_fn(&self) -> impl MessageHookFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
             let called = Arc::clone(&called);
@@ -321,7 +321,7 @@ impl MockHook {
         }
     }
 
-    pub fn stop_hook_fn(&self) -> impl OnStopFn {
+    pub fn stop_hook_fn(&self) -> impl OnStopFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _, _| {
             let called = Arc::clone(&called);
@@ -333,7 +333,7 @@ impl MockHook {
         }
     }
 
-    pub fn on_stream_fn(&self) -> impl OnStreamFn {
+    pub fn on_stream_fn(&self) -> impl OnStreamFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
             let called = Arc::clone(&called);

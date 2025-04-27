@@ -1,13 +1,14 @@
 use qdrant_client::qdrant::{self, PrefetchQueryBuilder, ScoredPoint, SearchPointsBuilder};
 use swiftide_core::{
+    Retrieve,
     document::Document,
     indexing::{EmbeddedField, Metadata},
     prelude::{Result, *},
     querying::{
+        Query,
         search_strategies::{HybridSearch, SimilaritySingleEmbedding},
-        states, Query,
+        states,
     },
-    Retrieve,
 };
 
 use super::Qdrant;
@@ -156,8 +157,8 @@ fn scored_point_into_document(scored_point: ScoredPoint) -> Result<Document> {
 mod tests {
     use itertools::Itertools as _;
     use swiftide_core::{
-        indexing::{self, EmbeddedField},
         Persist as _,
+        indexing::{self, EmbeddedField},
     };
 
     use super::*;

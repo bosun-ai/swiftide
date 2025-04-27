@@ -6,21 +6,20 @@ use swiftide_core::document::Document;
 use swiftide_integrations::treesitter::metadata_qa_code;
 use temp_dir::TempDir;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide::{
     indexing::{
-        self, loaders,
+        self, EmbeddedField, Pipeline, loaders,
         transformers::{
-            self, metadata_qa_code::NAME as METADATA_QA_CODE_NAME, ChunkCode, MetadataQACode,
+            self, ChunkCode, MetadataQACode, metadata_qa_code::NAME as METADATA_QA_CODE_NAME,
         },
-        EmbeddedField, Pipeline,
     },
     integrations::{
         self,
         pgvector::{FieldConfig, PgVector, PgVectorBuilder, VectorConfig},
     },
-    query::{self, answers, query_transformers, response_transformers, states, Query},
+    query::{self, Query, answers, query_transformers, response_transformers, states},
 };
 use swiftide_test_utils::{mock_chat_completions, openai_client};
 use wiremock::MockServer;

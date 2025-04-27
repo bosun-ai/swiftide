@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use swiftide_core::{
+    TransformResponse,
     indexing::SimplePrompt,
     prelude::*,
     prompt::Prompt,
-    querying::{states, Query},
-    TransformResponse,
+    querying::{Query, states},
 };
 
 #[derive(Debug, Clone, Builder)]

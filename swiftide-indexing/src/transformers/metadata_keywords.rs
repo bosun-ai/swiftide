@@ -5,7 +5,7 @@
 //! the keywords based on the text chunk in a `Node`.
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{Transformer, indexing::Node};
 
 /// `MetadataKeywords` is responsible for generating keywords
 /// for a given text chunk. It uses a templated prompt to interact with a client

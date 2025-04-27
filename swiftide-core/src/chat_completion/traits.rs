@@ -7,10 +7,10 @@ use std::{borrow::Cow, pin::Pin, sync::Arc};
 use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
 
 use super::{
+    ToolOutput, ToolSpec,
     chat_completion_request::ChatCompletionRequest,
     chat_completion_response::ChatCompletionResponse,
     errors::{LanguageModelError, ToolError},
-    ToolOutput, ToolSpec,
 };
 
 #[async_trait]
@@ -123,8 +123,8 @@ mod tests {
     use std::{
         collections::HashSet,
         sync::{
-            atomic::{AtomicUsize, Ordering},
             Arc,
+            atomic::{AtomicUsize, Ordering},
         },
     };
 
