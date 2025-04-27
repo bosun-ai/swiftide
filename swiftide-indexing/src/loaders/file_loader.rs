@@ -6,8 +6,8 @@ use std::{
 
 use anyhow::Context as _;
 use ignore::{DirEntry, Walk};
-use swiftide_core::{indexing::IndexingStream, indexing::Node, Loader};
-use tracing::{debug_span, instrument, Span};
+use swiftide_core::{Loader, indexing::IndexingStream, indexing::Node};
+use tracing::{Span, debug_span, instrument};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory, filtering
 /// them based on their extensions, and creating a stream of these files for further processing.
@@ -74,7 +74,7 @@ impl FileLoader {
     }
 
     /// Iterates over the files in the directory
-    pub fn iter(&self) -> impl Iterator<Item = anyhow::Result<Node>> {
+    pub fn iter(&self) -> impl Iterator<Item = anyhow::Result<Node>> + use<> {
         Iter::new(&self.root, self.extensions.clone()).fuse()
     }
 }

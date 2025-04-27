@@ -41,8 +41,8 @@
 use crate::pgvector::PgVector;
 use std::collections::HashSet;
 use swiftide_core::{
-    indexing::{self, EmbeddedField},
     Persist,
+    indexing::{self, EmbeddedField},
 };
 use testcontainers::{ContainerAsync, GenericImage};
 

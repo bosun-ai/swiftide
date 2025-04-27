@@ -20,8 +20,8 @@
 use swiftide::{
     indexing::loaders::FileLoader,
     indexing::transformers::{
-        metadata_keywords, metadata_qa_text, metadata_summary, metadata_title, ChunkMarkdown,
-        Embed, MetadataKeywords, MetadataQAText, MetadataSummary, MetadataTitle,
+        ChunkMarkdown, Embed, MetadataKeywords, MetadataQAText, MetadataSummary, MetadataTitle,
+        metadata_keywords, metadata_qa_text, metadata_summary, metadata_title,
     },
     indexing::{self, EmbedMode, EmbeddedField},
     integrations::{

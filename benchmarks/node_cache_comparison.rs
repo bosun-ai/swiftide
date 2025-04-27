@@ -1,16 +1,16 @@
 use anyhow::Result;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use swiftide::indexing::transformers::ChunkCode;
 use swiftide::{
-    indexing::{loaders::FileLoader, persist::MemoryStorage, Pipeline},
+    indexing::{Pipeline, loaders::FileLoader, persist::MemoryStorage},
     traits::NodeCache,
 };
 use temp_dir::TempDir;
 use testcontainers::Container;
 use testcontainers::{
+    GenericImage,
     core::{IntoContainerPort, WaitFor},
     runners::SyncRunner,
-    GenericImage,
 };
 
 async fn run_pipeline(node_cache: Box<dyn NodeCache>) -> Result<()> {

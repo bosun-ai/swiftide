@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{Transformer, indexing::Node};
 
 /// `CompressCodeChunk` rewrites the "Outline" metadata field of a chunk to
 /// condense it and make it more relevant to the chunk in question. It is useful as a

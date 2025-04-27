@@ -8,8 +8,8 @@
 //! system prompt. This is useful for maintaining focus in long conversations or managing token
 //! limits.
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
+    atomic::{AtomicUsize, Ordering},
 };
 
 use anyhow::Result;

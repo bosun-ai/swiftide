@@ -2,8 +2,8 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
 use swiftide_core::{
-    indexing::{IndexingStream, Node},
     Persist,
+    indexing::{IndexingStream, Node},
 };
 
 use super::Redis;
@@ -31,7 +31,7 @@ impl Persist for Redis {
             redis::cmd("SET")
                 .arg(self.persist_key_for_node(&node)?)
                 .arg(self.persist_value_for_node(&node)?)
-                .query_async(&mut cm)
+                .query_async::<()>(&mut cm)
                 .await
                 .context("Error persisting to redis")?;
 
@@ -88,7 +88,7 @@ impl Persist for Redis {
 mod tests {
     use super::*;
     use futures_util::TryStreamExt;
-    use testcontainers::{runners::AsyncRunner, ContainerAsync, GenericImage};
+    use testcontainers::{ContainerAsync, GenericImage, runners::AsyncRunner};
 
     async fn start_redis() -> ContainerAsync<GenericImage> {
         testcontainers::GenericImage::new("redis", "7.2.4")

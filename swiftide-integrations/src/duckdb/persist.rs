@@ -3,13 +3,12 @@ use std::{borrow::Cow, path::Path};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duckdb::{
-    params_from_iter,
+    Statement, ToSql, params_from_iter,
     types::{ToSqlOutput, Value},
-    Statement, ToSql,
 };
 use swiftide_core::{
-    indexing::{self, Metadata, Node},
     Persist,
+    indexing::{self, Metadata, Node},
 };
 use uuid::Uuid;
 
@@ -250,7 +249,7 @@ mod tests {
         }
     }
 
-    #[ignore]
+    #[ignore = "json types are acting up in duckdb at the moment"]
     #[test_log::test(tokio::test)]
     async fn test_with_metadata() {
         let client = Duckdb::builder()

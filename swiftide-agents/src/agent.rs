@@ -20,13 +20,13 @@ use std::{
 use derive_builder::Builder;
 use futures_util::stream::StreamExt;
 use swiftide_core::{
+    AgentContext, ToolBox,
     chat_completion::{
         ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
     },
     prompt::Prompt,
-    AgentContext, ToolBox,
 };
-use tracing::{debug, Instrument};
+use tracing::{Instrument, debug};
 
 /// Agents are the main interface for building agentic systems.
 ///

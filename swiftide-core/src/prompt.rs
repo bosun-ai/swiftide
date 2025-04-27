@@ -137,7 +137,7 @@ impl Prompt {
                 tera::Tera::one_off(template.as_ref(), &context, false)
                     .context("Failed to render one-off template")
             }
-            TemplateRef::Tera(ref template) => SWIFTIDE_TERA
+            TemplateRef::Tera(template) => SWIFTIDE_TERA
                 .read()
                 .unwrap()
                 .render(template.as_ref(), &context)

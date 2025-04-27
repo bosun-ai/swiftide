@@ -132,13 +132,15 @@ async fn test_indexing_pipeline() {
     let first = search_response.result.first().unwrap();
 
     dbg!(first);
-    assert!(first
-        .payload
-        .get("path")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .ends_with("main.rs"));
+    assert!(
+        first
+            .payload
+            .get("path")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .ends_with("main.rs")
+    );
     assert_eq!(
         first.payload.get("content").unwrap().as_str().unwrap(),
         "fn main() { println!(\"Hello, World!\"); }"
@@ -218,13 +220,15 @@ async fn test_named_vectors() {
 
     let first = search_response.result.into_iter().next().unwrap();
 
-    assert!(first
-        .payload
-        .get("path")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .ends_with("main.rs"));
+    assert!(
+        first
+            .payload
+            .get("path")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .ends_with("main.rs")
+    );
     assert_eq!(
         first.payload.get("content").unwrap().as_str().unwrap(),
         "fn main() { println!(\"Hello, World!\"); }"

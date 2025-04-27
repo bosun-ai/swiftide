@@ -4,13 +4,13 @@ use async_anthropic::types::{
     MessageRole, ToolChoice, ToolResultBuilder, ToolUseBuilder,
 };
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use swiftide_core::{
-    chat_completion::{
-        errors::LanguageModelError, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
-        ToolCall, ToolSpec,
-    },
     ChatCompletion,
+    chat_completion::{
+        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+        errors::LanguageModelError,
+    },
 };
 
 use super::Anthropic;
@@ -196,12 +196,12 @@ mod tests {
 
     use super::*;
     use swiftide_core::{
-        chat_completion::{ChatCompletionRequest, ChatMessage, ParamSpec},
         AgentContext, Tool,
+        chat_completion::{ChatCompletionRequest, ChatMessage, ParamSpec},
     };
     use wiremock::{
-        matchers::{body_partial_json, method, path},
         Mock, MockServer, ResponseTemplate,
+        matchers::{body_partial_json, method, path},
     };
 
     #[derive(Clone)]
@@ -228,12 +228,14 @@ mod tests {
             ToolSpec::builder()
                 .description("Gets the weather")
                 .name("get_weather")
-                .parameters(vec![ParamSpec::builder()
-                    .description("Location")
-                    .name("location")
-                    .required(true)
-                    .build()
-                    .unwrap()])
+                .parameters(vec![
+                    ParamSpec::builder()
+                        .description("Location")
+                        .name("location")
+                        .required(true)
+                        .build()
+                        .unwrap(),
+                ])
                 .build()
                 .unwrap()
         }
@@ -411,12 +413,14 @@ mod tests {
         let tool_spec = ToolSpec::builder()
             .description("Gets the weather")
             .name("get_weather")
-            .parameters(vec![ParamSpec::builder()
-                .description("Location")
-                .name("location")
-                .required(true)
-                .build()
-                .unwrap()])
+            .parameters(vec![
+                ParamSpec::builder()
+                    .description("Location")
+                    .name("location")
+                    .required(true)
+                    .build()
+                    .unwrap(),
+            ])
             .build()
             .unwrap();
 

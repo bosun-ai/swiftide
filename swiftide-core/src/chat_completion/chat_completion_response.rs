@@ -4,7 +4,7 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{tools::ToolCall, ToolCallBuilder};
+use super::{ToolCallBuilder, tools::ToolCall};
 
 /// A generic response from chat completions
 ///

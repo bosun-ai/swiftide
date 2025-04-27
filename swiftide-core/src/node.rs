@@ -29,7 +29,7 @@ use derive_builder::Builder;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{metadata::Metadata, util::debug_long_utf8, Embedding, SparseEmbedding};
+use crate::{Embedding, SparseEmbedding, metadata::Metadata, util::debug_long_utf8};
 
 /// Represents a unit of data in the indexing process.
 ///

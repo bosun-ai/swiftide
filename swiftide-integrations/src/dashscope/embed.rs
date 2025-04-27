@@ -2,7 +2,7 @@ use super::Dashscope;
 use anyhow::{Context as _, Result};
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
-use swiftide_core::{chat_completion::errors::LanguageModelError, EmbeddingModel, Embeddings};
+use swiftide_core::{EmbeddingModel, Embeddings, chat_completion::errors::LanguageModelError};
 
 use crate::openai::openai_error_to_language_model_error;
 

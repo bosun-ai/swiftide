@@ -6,12 +6,12 @@
 //! - HNSW index creation for similarity search optimization
 //! - Bulk data preparation and SQL query generation
 use crate::pgvector::PgVector;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use pgvector as ExtPgVector;
 use regex::Regex;
+use sqlx::PgPool;
 use sqlx::postgres::PgArguments;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
 use std::collections::BTreeMap;
 use swiftide_core::indexing::{EmbeddedField, Node};
 use tokio::time::sleep;

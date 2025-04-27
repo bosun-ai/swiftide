@@ -13,7 +13,7 @@ mod indexing_transformer;
 mod test_utils;
 mod tool;
 use indexing_transformer::indexing_transformer_impl;
-use syn::{parse_macro_input, DeriveInput, ItemFn, ItemStruct};
+use syn::{DeriveInput, ItemFn, ItemStruct, parse_macro_input};
 use tool::{tool_attribute_impl, tool_derive_impl};
 
 /// Generates boilerplate for an indexing transformer.

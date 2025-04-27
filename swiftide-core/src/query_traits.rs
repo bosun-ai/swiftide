@@ -6,8 +6,8 @@ use dyn_clone::DynClone;
 
 use crate::{
     query::{
-        states::{self, Retrieved},
         Query,
+        states::{self, Retrieved},
     },
     querying::QueryEvaluation,
 };
@@ -160,7 +160,7 @@ where
 #[async_trait]
 pub trait TransformResponse: Send + Sync + DynClone {
     async fn transform_response(&self, query: Query<Retrieved>)
-        -> Result<Query<states::Retrieved>>;
+    -> Result<Query<states::Retrieved>>;
 
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();

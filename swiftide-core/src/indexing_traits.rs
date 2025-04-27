@@ -3,10 +3,10 @@
 //! All steps defined in the indexing pipeline and the generic transformers can also take a
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
-use crate::node::Node;
 use crate::Embeddings;
+use crate::node::Node;
 use crate::{
-    indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream, SparseEmbeddings,
+    SparseEmbeddings, indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream,
 };
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -208,7 +208,9 @@ pub trait Loader: DynClone {
     ///  }
     /// ```
     fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
-        unimplemented!("Please implement into_stream_boxed for your loader, it needs to be implemented on the concrete type")
+        unimplemented!(
+            "Please implement into_stream_boxed for your loader, it needs to be implemented on the concrete type"
+        )
     }
 
     fn name(&self) -> &'static str {

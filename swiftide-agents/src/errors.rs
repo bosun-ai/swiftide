@@ -1,6 +1,6 @@
 use swiftide_core::chat_completion::{
-    errors::{LanguageModelError, ToolError},
     ChatCompletionRequestBuilderError,
+    errors::{LanguageModelError, ToolError},
 };
 use thiserror::Error;
 use tokio::task::JoinError;

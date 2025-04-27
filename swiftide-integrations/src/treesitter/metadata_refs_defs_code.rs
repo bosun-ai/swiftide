@@ -36,7 +36,7 @@
 //! ```
 use std::sync::Arc;
 
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{Transformer, indexing::Node};
 
 use crate::treesitter::{CodeParser, SupportedLanguages};
 use anyhow::{Context as _, Result};

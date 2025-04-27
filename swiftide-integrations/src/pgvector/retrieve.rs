@@ -1,17 +1,18 @@
 use crate::pgvector::{FieldConfig, PgVector, PgVectorBuilder};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use pgvector::Vector;
-use sqlx::{prelude::FromRow, types::Uuid, Column, Row};
+use sqlx::{Column, Row, prelude::FromRow, types::Uuid};
 use std::fmt::Write as _;
 use swiftide_core::{
+    Retrieve,
     document::Document,
     indexing::Metadata,
     querying::{
+        Query,
         search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
-        states, Query,
+        states,
     },
-    Retrieve,
 };
 
 #[allow(dead_code)]
@@ -186,10 +187,10 @@ mod tests {
     use crate::pgvector::fixtures::TestContext;
     use futures_util::TryStreamExt;
     use std::collections::HashSet;
-    use swiftide_core::{indexing, indexing::EmbeddedField, Persist};
+    use swiftide_core::{Persist, indexing, indexing::EmbeddedField};
     use swiftide_core::{
-        querying::{search_strategies::SimilaritySingleEmbedding, states, Query},
         Retrieve,
+        querying::{Query, search_strategies::SimilaritySingleEmbedding, states},
     };
 
     #[test_log::test(tokio::test)]
@@ -264,13 +265,15 @@ mod tests {
         .await
         .expect("Test setup failed");
 
-        let nodes = vec![indexing::Node::new("test_query1")
-            .with_metadata([
-                ("other", serde_json::Value::from(10)),
-                ("text", serde_json::Value::from("some text")),
-            ])
-            .with_vectors([(EmbeddedField::Combined, vec![1.0; 384])])
-            .to_owned()];
+        let nodes = vec![
+            indexing::Node::new("test_query1")
+                .with_metadata([
+                    ("other", serde_json::Value::from(10)),
+                    ("text", serde_json::Value::from("some text")),
+                ])
+                .with_vectors([(EmbeddedField::Combined, vec![1.0; 384])])
+                .to_owned(),
+        ];
 
         test_context
             .pgv_storage

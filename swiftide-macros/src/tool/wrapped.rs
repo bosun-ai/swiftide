@@ -52,7 +52,7 @@ mod tests {
 
     use super::*;
     use quote::quote;
-    use syn::{parse_quote, ItemFn};
+    use syn::{ItemFn, parse_quote};
 
     #[test]
     fn test_wrap_tool_fn() {

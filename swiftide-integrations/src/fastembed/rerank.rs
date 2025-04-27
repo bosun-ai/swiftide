@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use fastembed::{RerankInitOptions, TextRerank};
 use swiftide_core::{
-    querying::{states, Query},
     TransformResponse,
+    querying::{Query, states},
 };
 
 const TOP_K: usize = 10;

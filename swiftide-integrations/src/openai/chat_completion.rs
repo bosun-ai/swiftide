@@ -12,14 +12,14 @@ use async_trait::async_trait;
 use futures_util::StreamExt as _;
 use itertools::Itertools;
 use serde_json::json;
-use swiftide_core::chat_completion::{
-    errors::LanguageModelError, ChatCompletion, ChatCompletionRequest, ChatCompletionResponse,
-    ChatMessage, ToolCall, ToolSpec,
-};
 use swiftide_core::ChatCompletionStream;
+use swiftide_core::chat_completion::{
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+    errors::LanguageModelError,
+};
 
-use super::openai_error_to_language_model_error;
 use super::GenericOpenAI;
+use super::openai_error_to_language_model_error;
 
 #[async_trait]
 impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>

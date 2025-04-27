@@ -4,8 +4,8 @@ use fs_err::tokio::File;
 use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
 use swiftide_core::{
-    indexing::{IndexingStream, Node},
     Loader,
+    indexing::{IndexingStream, Node},
 };
 use tokio::runtime::Handle;
 

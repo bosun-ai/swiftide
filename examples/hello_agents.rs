@@ -20,7 +20,7 @@
 use anyhow::Result;
 use swiftide::{
     agents,
-    chat_completion::{errors::ToolError, ToolOutput},
+    chat_completion::{ToolOutput, errors::ToolError},
     traits::{AgentContext, Command},
 };
 
@@ -91,7 +91,7 @@ async fn main() -> Result<()> {
 
     tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
-            println!("{}", msg);
+            println!("{msg}");
         }
     });
 

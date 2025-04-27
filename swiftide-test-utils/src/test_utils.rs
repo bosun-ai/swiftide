@@ -3,9 +3,9 @@
 
 use serde_json::json;
 use testcontainers::{
-    core::{wait::HttpWaitStrategy, IntoContainerPort, WaitFor},
-    runners::AsyncRunner,
     ContainerAsync, GenericImage, ImageExt,
+    core::{IntoContainerPort, WaitFor, wait::HttpWaitStrategy},
+    runners::AsyncRunner,
 };
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -89,10 +89,7 @@ pub async fn start_postgres() -> (ContainerAsync<GenericImage>, String) {
 
     // Construct the connection URL using the dynamically assigned port
     let host_port = postgres.get_host_port_ipv4(5432).await.unwrap();
-    let postgres_url = format!(
-        "postgresql://myuser:mypassword@127.0.0.1:{}/mydatabase",
-        host_port
-    );
+    let postgres_url = format!("postgresql://myuser:mypassword@127.0.0.1:{host_port}/mydatabase");
 
     (postgres, postgres_url)
 }

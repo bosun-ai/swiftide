@@ -5,13 +5,14 @@ use futures_util::TryStreamExt;
 use itertools::Itertools;
 use lancedb::query::{ExecutableQuery, QueryBase};
 use swiftide_core::{
+    Retrieve,
     document::Document,
     indexing::Metadata,
     querying::{
+        Query,
         search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
-        states, Query,
+        states,
     },
-    Retrieve,
 };
 
 use super::{FieldConfig, LanceDB};
@@ -177,8 +178,8 @@ impl LanceDB {
 #[cfg(test)]
 mod test {
     use swiftide_core::{
-        indexing::{self, EmbeddedField},
         Persist as _,
+        indexing::{self, EmbeddedField},
     };
     use temp_dir::TempDir;
 

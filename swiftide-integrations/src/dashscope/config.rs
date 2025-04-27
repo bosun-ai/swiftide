@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, AUTHORIZATION};
+use reqwest::header::{AUTHORIZATION, HeaderMap};
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 

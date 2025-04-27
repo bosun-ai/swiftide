@@ -42,11 +42,13 @@ impl SimplePrompt for OpenRouter {
         // Build the request to be sent to the OpenRouter API.
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
-            .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render()?)
-                .build()
-                .map_err(LanguageModelError::permanent)?
-                .into()])
+            .messages(vec![
+                ChatCompletionRequestUserMessageArgs::default()
+                    .content(prompt.render()?)
+                    .build()
+                    .map_err(LanguageModelError::permanent)?
+                    .into(),
+            ])
             .build()
             .map_err(LanguageModelError::permanent)?;
 

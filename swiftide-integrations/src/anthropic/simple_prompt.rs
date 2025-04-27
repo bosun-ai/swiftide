@@ -68,8 +68,8 @@ impl SimplePrompt for Anthropic {
 #[cfg(test)]
 mod tests {
     use wiremock::{
-        matchers::{method, path},
         Mock, MockServer, ResponseTemplate,
+        matchers::{method, path},
     };
 
     use super::*;

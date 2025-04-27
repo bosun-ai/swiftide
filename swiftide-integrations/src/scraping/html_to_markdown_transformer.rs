@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use htmd::HtmlToMarkdown;
 
-use swiftide_core::{indexing::Node, Transformer};
+use swiftide_core::{Transformer, indexing::Node};
 
 /// Transforms HTML content into markdown.
 ///

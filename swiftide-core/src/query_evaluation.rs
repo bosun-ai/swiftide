@@ -1,4 +1,4 @@
-use crate::querying::{states, Query};
+use crate::querying::{Query, states};
 
 /// Wraps a query for evaluation. Used by the [`crate::query_traits::EvaluateQuery`] trait.
 pub enum QueryEvaluation {

@@ -1,6 +1,6 @@
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_trait::async_trait;
-use swiftide_core::{chat_completion::errors::LanguageModelError, prompt::Prompt, SimplePrompt};
+use swiftide_core::{SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt};
 
 use crate::openai::openai_error_to_language_model_error;
 
@@ -19,11 +19,13 @@ impl SimplePrompt for Dashscope {
 
         let request = CreateChatCompletionRequestArgs::default()
             .model(model)
-            .messages(vec![ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt.render()?)
-                .build()
-                .map_err(openai_error_to_language_model_error)?
-                .into()])
+            .messages(vec![
+                ChatCompletionRequestUserMessageArgs::default()
+                    .content(prompt.render()?)
+                    .build()
+                    .map_err(openai_error_to_language_model_error)?
+                    .into(),
+            ])
             .build()
             .map_err(openai_error_to_language_model_error)?;
 

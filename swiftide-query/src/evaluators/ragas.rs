@@ -41,8 +41,8 @@ use std::{collections::HashMap, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 
 use swiftide_core::{
-    querying::{states, Query, QueryEvaluation},
     EvaluateQuery,
+    querying::{Query, QueryEvaluation, states},
 };
 
 /// Ragas evaluator to be used in a pipeline

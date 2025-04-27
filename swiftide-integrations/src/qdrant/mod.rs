@@ -11,7 +11,7 @@ use std::collections::{HashMap, HashSet};
 
 use std::sync::Arc;
 
-use anyhow::{bail, Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use derive_builder::Builder;
 use qdrant_client::qdrant::{self, SparseVectorParamsBuilder, SparseVectorsConfigBuilder};
 

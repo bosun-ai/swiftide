@@ -2,11 +2,11 @@ use anyhow::Context;
 use lancedb::query::{self as lance_query_builder, QueryBase};
 use swiftide::indexing;
 use swiftide::indexing::{
-    transformers::{metadata_qa_code::NAME as METADATA_QA_CODE_NAME, ChunkCode, MetadataQACode},
     EmbeddedField,
+    transformers::{ChunkCode, MetadataQACode, metadata_qa_code::NAME as METADATA_QA_CODE_NAME},
 };
-use swiftide::query::{self as swift_query_pipeline, states, Query};
-use swiftide_indexing::{loaders, transformers, Pipeline};
+use swiftide::query::{self as swift_query_pipeline, Query, states};
+use swiftide_indexing::{Pipeline, loaders, transformers};
 use swiftide_integrations::{
     fastembed::FastEmbed,
     lancedb::{self as lance_integration, LanceDB},

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{chat_completion::errors::LanguageModelError, EmbeddingModel, Embeddings};
+use swiftide_core::{EmbeddingModel, Embeddings, chat_completion::errors::LanguageModelError};
 
 use super::{EmbeddingModelType, FastEmbed};
 #[async_trait]

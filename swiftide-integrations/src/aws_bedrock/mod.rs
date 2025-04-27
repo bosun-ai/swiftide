@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use aws_sdk_bedrockruntime::{error::SdkError, primitives::Blob, Client};
+use aws_sdk_bedrockruntime::{Client, error::SdkError, primitives::Blob};
 use derive_builder::Builder;
 use serde::Serialize;
 use tokio::runtime::Handle;
