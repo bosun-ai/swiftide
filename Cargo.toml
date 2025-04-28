@@ -78,12 +78,12 @@ sqlx = { version = "0.8", features = [
 aws-config = { version = "1.6", default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
 aws-credential-types = { version = "1.2", default-features = false }
-aws-sdk-bedrockruntime = { version = "1.83", default-features = false }
+aws-sdk-bedrockruntime = { version = "1.84", default-features = false }
 criterion = { version = "0.5", default-features = false }
 darling = { version = "0.20", default-features = false }
 deadpool = { version = "0.12", default-features = false }
 document-features = { version = "0.2" }
-fastembed = { version = "4.7", default-features = false }
+fastembed = { version = "4.8", default-features = false }
 flv-util = { version = "0.5", default-features = false }
 htmd = { version = "0.1", default-features = false }
 ignore = { version = "0.4", default-features = false }
@@ -120,7 +120,7 @@ temp-dir = { version = "0.1" }
 wiremock = { version = "0.6" }
 test-case = { version = "3.3" }
 pretty_assertions = { version = "1.4" }
-insta = { version = "1.42", features = ["yaml"] }
+insta = { version = "1.43", features = ["yaml"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
