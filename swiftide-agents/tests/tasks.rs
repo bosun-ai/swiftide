@@ -68,7 +68,7 @@ async fn test_simple_delegate_task() {
     agent2_llm.expect_complete(expected_request, Ok(response));
 
     // Now we run the task and see if it works
-    let mut task = Task::builder()
+    let task = Task::builder()
         .agents([
             Agent::builder()
                 .name("agent1")
@@ -91,4 +91,6 @@ async fn test_simple_delegate_task() {
         .unwrap();
 
     task.invoke("Do a task thing").await.unwrap();
+
+    task.join_all().await.unwrap();
 }

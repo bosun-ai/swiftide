@@ -26,7 +26,9 @@ use derive_builder::{Builder, UninitializedFieldError};
 use std::sync::atomic::{self, AtomicUsize};
 use std::sync::Arc;
 use thiserror::Error;
+use tokio::runtime::Handle;
 use tokio::sync::RwLock;
+use tokio::task::JoinHandle;
 
 use super::action::{Action, ActionError};
 use super::backend::{Backend, DefaultBackend};
@@ -160,38 +162,39 @@ impl Task {
         TaskBuilder::default()
     }
 
-    /// Queries the current active agent with the given instructions and waits for all agents to
-    /// complete
-    /// TODO: Maybe return a stop reason, ie from the last agent that ran?
-    /// Should also return an abort handle on the full join set
-    /// Naming: Maybe invoke_blocking and invoke? blocking implies blocking thread though
-    /// Should probably take a `Prompt`
-    /// How can we avoid agents calling this, as it will deadlock
+    /// Invokes the task, finding the current agent and querying it with the instructions
+    ///
+    /// Note that this is a non-blocking call, and the task will return immediately.
+    ///
+    /// Use `join_all` to wait for all agents to complete.
     #[tracing::instrument(skip(self))]
-    pub async fn invoke(&mut self, instructions: &str) -> Result<(), TaskError> {
-        let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;
+    pub async fn invoke(&self, instructions: &str) -> Result<(), TaskError> {
+        let current_agent_index = self.current_agent.load(atomic::Ordering::Relaxed);
+        let current_agent = self
+            .agents
+            .read()
+            .await
+            .get(current_agent_index)
+            .cloned()
+            .ok_or(TaskError::NoActiveAgent)?;
 
         self.backend.spawn_agent(current_agent, instructions).await;
-        self.backend.try_join_all().await?;
 
         Ok(())
     }
 
-    /// Queries the current active agent without waiting for the result.
-    /// TODO: Should probably take a `Prompt`
-    #[tracing::instrument(skip(self))]
-    pub async fn query_current(&self, instructions: &str) -> Result<(), TaskError> {
-        let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;
+    /// Consumes the task and waiting for all agents to complete
+    pub async fn join_all(self) -> Result<(), TaskError> {
+        self.backend.join_all().await
+    }
 
-        tracing::debug!("Spawning agent: {}", current_agent.name());
-        self.backend.spawn_agent(current_agent, instructions).await;
-        tracing::debug!("Spawned agent");
-
-        Ok(())
+    /// Forcibly aborts the task and all agents
+    pub async fn abort(&self) {
+        self.backend.abort().await;
     }
 
     #[tracing::instrument(skip(self))]
-    pub(crate) async fn swap_active_agent(&self, agent: &RunningAgent) -> Result<(), TaskError> {
+    pub(crate) async fn switch_to_agent(&self, agent: &RunningAgent) -> Result<(), TaskError> {
         let locked_agents = self.agents.write().await;
         let agent_index = locked_agents
             .iter()
@@ -203,8 +206,7 @@ impl Task {
         Ok(())
     }
 
-    /// Spawns an agent with instructions, non-blocking onto the current join set
-    /// Retrieves a copy of an agent by name
+    /// Find an agent by name
     pub(crate) async fn find_agent(&self, name: &str) -> Option<RunningAgent> {
         self.agents
             .read()
@@ -212,11 +214,6 @@ impl Task {
             .iter()
             .find(|agent| agent.name() == name)
             .cloned()
-    }
-
-    pub(crate) async fn current_agent(&self) -> Option<RunningAgent> {
-        let current_agent_index = self.current_agent.load(atomic::Ordering::Relaxed);
-        self.agents.read().await.get(current_agent_index).cloned()
     }
 }
 

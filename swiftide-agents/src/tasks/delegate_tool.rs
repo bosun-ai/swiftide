@@ -33,13 +33,13 @@ impl DelegateAgent {
         instructions: &str,
     ) -> Result<ToolOutput, ToolError> {
         self.task
-            .swap_active_agent(&self.delegates_to)
+            .switch_to_agent(&self.delegates_to)
             .await
             .map_err(anyhow::Error::from)?;
 
         // TODO: Should be a proper error
         self.task
-            .query_current(instructions)
+            .invoke(instructions)
             .await
             .context("Failed to invoke task")?;
 

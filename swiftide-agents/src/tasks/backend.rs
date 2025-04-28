@@ -6,7 +6,10 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use tokio::sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore};
+use tokio::{
+    sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore},
+    task::JoinHandle,
+};
 use tokio_util::sync::CancellationToken;
 
 use crate::errors::AgentError;
@@ -16,8 +19,8 @@ use super::{running_agent::RunningAgent, TaskError};
 #[async_trait]
 pub trait Backend: Clone + Send + Sync + 'static {
     async fn spawn_agent(&self, agent: RunningAgent, instructions: &str) -> CancellationToken;
-    async fn try_join_all(&self) -> Result<(), TaskError>;
-    async fn try_join_next(&self) -> Result<(), TaskError>;
+    async fn join_all(&self) -> Result<(), TaskError>;
+    async fn join_next(&self) -> Result<(), TaskError>;
     async fn abort(&self);
 }
 
@@ -59,6 +62,11 @@ impl Default for DefaultBackend {
 
 #[async_trait]
 impl Backend for DefaultBackend {
+    /// Spawn an agent
+    ///
+    /// Returns a cancellation token that can be used to cancel the agent.
+    ///
+    /// Note that if the backend drops or is aborted, all agents are cancelled.
     #[tracing::instrument(skip(self, agent, instructions))]
     async fn spawn_agent(&self, agent: RunningAgent, instructions: &str) -> CancellationToken {
         // 1) Acquire one permit (awaits if we're already at max_concurrent).
@@ -114,23 +122,31 @@ impl Backend for DefaultBackend {
         cancel_token
     }
 
+    /// Returns a handle that is resolved when all agents are done.
+    ///
+    /// Agents are run immediately, and this function returns a handle that is resolved when all agents are done.
     #[tracing::instrument(skip(self))]
-    async fn try_join_all(&self) -> Result<(), TaskError> {
-        // just wait until outstanding → 0
+    async fn join_all(&self) -> Result<(), TaskError> {
+        let outstanding = self.outstanding.clone();
+        let notify = self.notify.clone();
+        let first_error = self.first_error.clone();
+
         loop {
-            self.try_join_next().await?;
-
-            if self.outstanding.load(Ordering::SeqCst) == 0 {
-                break;
+            if let Some(e) = { first_error.lock().await.take() } {
+                return Err(TaskError::AgentError(e));
             }
-        }
 
-        tracing::info!("All agents completed");
-        Ok(())
+            if outstanding.load(Ordering::SeqCst) == 0 {
+                tracing::info!("All agents completed");
+                return Ok(());
+            }
+
+            notify.notified().await;
+        }
     }
 
     #[tracing::instrument(skip(self))]
-    async fn try_join_next(&self) -> Result<(), TaskError> {
+    async fn join_next(&self) -> Result<(), TaskError> {
         // If there already is an error, return it immediately.
         if let Some(e) = self.first_error.lock().await.take() {
             return Err(TaskError::AgentError(e));
