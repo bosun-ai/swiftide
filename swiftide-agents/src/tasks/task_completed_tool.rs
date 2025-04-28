@@ -1,16 +1,13 @@
 //! Generic delegation tool that enables the agent to delegate tasks to other agents.
 use std::borrow::Cow;
 
-use anyhow::Context as _;
 use async_trait::async_trait;
 use derive_builder::Builder;
-use serde::Deserialize;
 use swiftide_core::{
     chat_completion::{self, errors::ToolError, ToolOutput, ToolSpec},
     AgentContext, Tool,
 };
 
-use super::{running_agent::RunningAgent, task::Task};
 
 #[derive(Clone, Builder)]
 pub struct TaskCompleted {
@@ -49,4 +46,12 @@ impl Tool for TaskCompleted {
     fn name(&self) -> Cow<'_, str> {
         self.tool_spec().name.into()
     }
+}
+
+pub fn default_complete_toolspec(tool_name: &str) -> ToolSpec {
+    ToolSpec::builder()
+        .name(tool_name)
+        .description("Marks the task as completed")
+        .build()
+        .expect("infallible; failed to build default complete tool spec")
 }

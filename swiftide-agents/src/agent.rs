@@ -545,7 +545,9 @@ impl Agent {
         }
 
         for (handle, tool_call) in handles {
-            let mut output = handle.await.map_err(AgentError::ToolFailedToJoin)?;
+            let mut output = handle
+                .await
+                .map_err(|err| AgentError::ToolFailedToJoin(tool_call.name().to_string(), err))?;
 
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 

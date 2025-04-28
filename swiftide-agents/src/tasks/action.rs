@@ -14,12 +14,15 @@
 use convert_case::{Case, Casing as _};
 use serde::{Deserialize, Serialize};
 use swiftide_core::{
-    chat_completion::{ParamSpec, ToolSpec, ToolSpecBuilder, ToolSpecBuilderError},
+    chat_completion::{ToolSpec, ToolSpecBuilderError},
     Tool,
 };
 use thiserror::Error;
 
-use crate::tasks::delegate_tool::DelegateAgentBuilder;
+use crate::tasks::{
+    delegate_tool::DelegateAgentBuilder,
+    tools::{default_complete_toolspec, default_delegate_toolspec},
+};
 
 use super::{
     delegate_tool::DelegateAgentBuilderError,
@@ -46,32 +49,11 @@ pub struct DelegateAction {
     pub back_tool_spec: Option<ToolSpec>,
 }
 
-fn default_delegate_toolspec(tool_name: &str) -> ToolSpec {
-    ToolSpec::builder()
-        .name(tool_name)
-        .description("Delegates to another agent")
-        .parameters(vec![ParamSpec::builder()
-            .name("instructions")
-            .description("Detailed instructions for the agent")
-            .build()
-            .unwrap()])
-        .build()
-        .expect("infallible; failed to build default delegate tool spec")
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompleteAction {
     pub agent: String,
     #[serde(default)]
     pub tool_spec: Option<ToolSpec>,
-}
-
-fn default_complete_toolspec(tool_name: &str) -> ToolSpec {
-    ToolSpec::builder()
-        .name(tool_name)
-        .description("Marks the task as completed")
-        .build()
-        .expect("infallible; failed to build default complete tool spec")
 }
 
 pub struct ActionBuilder {
@@ -299,6 +281,8 @@ impl From<&mut CompleteActionBuilder> for Action {
 
 #[cfg(test)]
 mod tests {
+    use swiftide_core::chat_completion::ParamSpec;
+
     use super::*;
 
     #[test]

@@ -7,7 +7,7 @@
 //! It is also possible to hook into various lifecycle stages of the task.
 //!
 //! # Example
-//! TODO: no_run me when this works
+//! TODO: `no_run` me when this works
 //!
 //! ```ignore
 //! Task::builder()
@@ -24,18 +24,19 @@
 use crate::errors::AgentError;
 use derive_builder::{Builder, UninitializedFieldError};
 use std::sync::atomic::{self, AtomicUsize};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use thiserror::Error;
-use tokio::task::{AbortHandle, JoinSet};
+use tokio::sync::RwLock;
 
 use super::action::{Action, ActionError};
+use super::backend::{Backend, DefaultBackend};
 use super::running_agent::RunningAgent;
 
 #[derive(Builder, Clone, Debug)]
 #[builder(build_fn(skip, error = TaskBuilderError))]
-pub struct Task {
+pub struct Task<B: Backend = DefaultBackend> {
     #[builder(field(ty = "Option<Vec<RunningAgent>>"), setter(custom))]
-    agents: Arc<tokio::sync::RwLock<Vec<RunningAgent>>>,
+    agents: Arc<RwLock<Vec<RunningAgent>>>,
     #[builder(field(ty = "Option<Vec<Action>>"), setter(custom))]
     actions: Arc<Vec<Action>>,
     #[builder(setter(custom))]
@@ -44,9 +45,8 @@ pub struct Task {
     #[builder(private, default)]
     current_agent: Arc<AtomicUsize>,
 
-    #[builder(private, default = Arc::new(Mutex::new(JoinSet::new())))]
-    // All spawned agents
-    running_agents: Arc<std::sync::Mutex<JoinSet<Result<(), TaskError>>>>,
+    #[builder(private, default = Arc::new(DefaultBackend::default()))]
+    backend: Arc<B>,
 }
 
 #[derive(Error, Debug)]
@@ -122,12 +122,12 @@ impl TaskBuilder {
             ))?;
 
         let task = Task {
-            agents: Arc::new(tokio::sync::RwLock::new(agents)),
+            agents: Arc::new(RwLock::new(agents)),
             actions: Arc::new(self.actions.clone().unwrap_or_default()),
             current_agent: Arc::new(current_agent.into()),
             starts_with,
             state: Arc::new(TaskState::Pending),
-            running_agents: Arc::new(Mutex::new(JoinSet::new())),
+            backend: self.backend.clone().unwrap_or_default(),
         };
 
         if let Some(actions) = self.actions.take() {
@@ -149,6 +149,9 @@ pub enum TaskError {
 
     #[error(transparent)]
     AgentError(#[from] AgentError),
+
+    #[error(transparent)]
+    JoinSetError(#[from] tokio::task::JoinError),
 }
 
 impl Task {
@@ -168,8 +171,8 @@ impl Task {
     pub async fn invoke(&mut self, instructions: &str) -> Result<(), TaskError> {
         let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;
 
-        self.spawn_agent(current_agent, instructions);
-        self.join_all().await?;
+        self.backend.spawn_agent(current_agent, instructions).await;
+        self.backend.try_join_all().await?;
 
         Ok(())
     }
@@ -180,19 +183,9 @@ impl Task {
     pub async fn query_current(&self, instructions: &str) -> Result<(), TaskError> {
         let current_agent = self.current_agent().await.ok_or(TaskError::NoActiveAgent)?;
 
-        self.spawn_agent(current_agent, instructions);
-
-        Ok(())
-    }
-
-    /// Awaits for all agents to complete
-    #[tracing::instrument(skip(self))]
-    pub async fn join_all(&mut self) -> Result<(), TaskError> {
-        let join_set = {
-            // Swap the existing join set with a new one, then join all tasks
-            std::mem::replace(&mut *self.running_agents.lock().unwrap(), JoinSet::new())
-        };
-        join_set.join_all().await;
+        tracing::debug!("Spawning agent: {}", current_agent.name());
+        self.backend.spawn_agent(current_agent, instructions).await;
+        tracing::debug!("Spawned agent");
 
         Ok(())
     }
@@ -211,18 +204,6 @@ impl Task {
     }
 
     /// Spawns an agent with instructions, non-blocking onto the current join set
-    fn spawn_agent(&self, agent: RunningAgent, instructions: &str) -> AbortHandle {
-        let instructions = instructions.to_string();
-
-        // Clone the task to avoid lifetime issues
-        let cloned_task = self.clone();
-
-        let running_agents = self.running_agents.clone();
-        let mut join_set = running_agents.lock().unwrap();
-
-        join_set.spawn(async move { cloned_task.query_agent(agent, &instructions).await })
-    }
-
     /// Retrieves a copy of an agent by name
     pub(crate) async fn find_agent(&self, name: &str) -> Option<RunningAgent> {
         self.agents
@@ -236,18 +217,6 @@ impl Task {
     pub(crate) async fn current_agent(&self) -> Option<RunningAgent> {
         let current_agent_index = self.current_agent.load(atomic::Ordering::Relaxed);
         self.agents.read().await.get(current_agent_index).cloned()
-    }
-
-    /// Finds an agent by name and queries it with the given instructions
-    ///
-    /// Intended to be spawned on the internal joinset
-    async fn query_agent(&self, agent: RunningAgent, instructions: &str) -> Result<(), TaskError> {
-        let mut lock = agent.lock().await;
-        lock.query(instructions)
-            .await
-            .map_err(TaskError::AgentError)?;
-
-        Ok(())
     }
 }
 

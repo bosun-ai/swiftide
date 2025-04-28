@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use serde::Deserialize;
 use swiftide_core::{
-    chat_completion::{self, errors::ToolError, ToolOutput, ToolSpec},
+    chat_completion::{self, errors::ToolError, ParamSpec, ToolOutput, ToolSpec},
     AgentContext, Tool,
 };
 
@@ -79,4 +79,17 @@ impl Tool for DelegateAgent {
     fn name(&self) -> Cow<'_, str> {
         self.tool_spec().name.into()
     }
+}
+
+pub fn default_delegate_toolspec(tool_name: &str) -> ToolSpec {
+    ToolSpec::builder()
+        .name(tool_name)
+        .description("Delegates to another agent")
+        .parameters(vec![ParamSpec::builder()
+            .name("instructions")
+            .description("Detailed instructions for the agent")
+            .build()
+            .unwrap()])
+        .build()
+        .expect("infallible; failed to build default delegate tool spec")
 }

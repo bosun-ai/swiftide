@@ -1,11 +1,15 @@
 use serde_json::json;
 use swiftide_agents::{
     chat_request,
-    tasks::{self, Task},
+    tasks::{
+        self,
+        tools::{default_complete_toolspec, default_delegate_toolspec},
+        Task,
+    },
     user, Agent,
 };
 use swiftide_core::{
-    chat_completion::{ChatCompletionResponse, ToolCall, ToolSpec},
+    chat_completion::{ChatCompletionResponse, ToolCall},
     test_utils::MockChatCompletion,
 };
 
@@ -22,13 +26,13 @@ async fn test_simple_delegate_task() {
     let expected_request = chat_request! {
         user!("Do a task thing");
 
-        tool_specs = [ToolSpec::builder().name("delegate_agent").description("Delegates to another agent").build().unwrap()]
+        tool_specs = [default_delegate_toolspec("delegate_agent_1")]
     };
 
     let response = ChatCompletionResponse::builder()
         .tool_calls(vec![ToolCall::builder()
             .id("1")
-            .name("delegate_agent")
+            .name("delegate_agent_1")
             .args(
                 json!({
                     "instructions": "Hello agent2"
@@ -49,7 +53,7 @@ async fn test_simple_delegate_task() {
     let expected_request = chat_request! {
         user!("Hello agent2");
 
-        tool_specs = [ToolSpec::builder().name("complete_task").description("Marks the task as complete").build().unwrap()]
+        tool_specs = [default_complete_toolspec("complete_task")]
     };
 
     let response = ChatCompletionResponse::builder()
