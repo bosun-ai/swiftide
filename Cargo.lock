@@ -1410,7 +1410,7 @@ dependencies = [
  "bitflags 2.9.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.10.5",
  "lazy_static",
  "lazycell",
  "log",
@@ -7098,7 +7098,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.14.0",
  "log",
  "multimap",
@@ -8547,7 +8547,7 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03c3c6b7927ffe7ecaa769ee0e3994da3b8cafc8f444578982c83ecb161af917"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn 2.0.101",
@@ -8592,9 +8592,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.36.119"
+version = "2.36.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "440e41475445e8c335ded12b1cca3681201d364b46ad2fdd8e4774d3a2fe9326"
+checksum = "dec40d05b4409e5d4488c68ba2a87f134482671e5790cb6f49659b7b6073031e"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
