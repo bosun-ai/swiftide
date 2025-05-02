@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1745834783485,
+  "lastUpdate": 1746192687733,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20777,6 +20777,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251322,
             "range": "± 1616",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "18dc99ca1f597586ffed36e163f04f7c3689d2be",
+          "message": "refactor(integrations): Use generics for all openai variants (#764)",
+          "timestamp": "2025-05-02T15:22:45+02:00",
+          "tree_id": "b0124c4e04f0a2f2f7810bbd1d855fee50427b32",
+          "url": "https://github.com/bosun-ai/swiftide/commit/18dc99ca1f597586ffed36e163f04f7c3689d2be"
+        },
+        "date": 1746192686830,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1291866,
+            "range": "± 865522",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250449,
+            "range": "± 1186",
             "unit": "ns/iter"
           }
         ]
