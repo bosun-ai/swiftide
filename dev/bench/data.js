@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746196832906,
+  "lastUpdate": 1746221408691,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20885,6 +20885,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253952,
             "range": "± 3565",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ebe68c104b8198b80ee5ee1f451c3272ce36841c",
+          "message": "feat(integrations): Streaming chat completions for anthropic (#773)",
+          "timestamp": "2025-05-02T23:21:26+02:00",
+          "tree_id": "2de2ea578e751193aa437435629ef03c545109e6",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ebe68c104b8198b80ee5ee1f451c3272ce36841c"
+        },
+        "date": 1746221407850,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1306395,
+            "range": "± 874922",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253908,
+            "range": "± 3047",
             "unit": "ns/iter"
           }
         ]
