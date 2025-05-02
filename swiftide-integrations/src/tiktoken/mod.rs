@@ -43,6 +43,13 @@ impl std::fmt::Debug for TikToken {
     }
 }
 
+impl Default for TikToken {
+    fn default() -> Self {
+        Self::try_from_model("gpt-4o")
+            .expect("infallible; gpt-4o should be valid model for tiktoken")
+    }
+}
+
 impl TikToken {
     /// Build a `TikToken` from an openai model name
     ///
