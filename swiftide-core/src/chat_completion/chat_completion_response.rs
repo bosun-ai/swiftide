@@ -25,6 +25,9 @@ pub struct ChatCompletionResponse {
     #[builder(default)]
     pub tool_calls: Option<Vec<ToolCall>>,
 
+    #[builder(default)]
+    pub usage: Option<Usage>,
+
     /// Streaming response
     #[builder(default)]
     pub delta: Option<ChatCompletionResponseDelta>,
@@ -37,7 +40,21 @@ impl Default for ChatCompletionResponse {
             message: None,
             tool_calls: None,
             delta: None,
+            usage: None,
         }
+    }
+}
+
+#[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Usage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+    pub total_tokens: u32,
+}
+
+impl Usage {
+    pub fn builder() -> UsageBuilder {
+        UsageBuilder::default()
     }
 }
 

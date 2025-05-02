@@ -13,6 +13,7 @@ use futures_util::StreamExt as _;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
+use swiftide_core::chat_completion::UsageBuilder;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
     errors::LanguageModelError,
@@ -85,7 +86,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             "Received response from OpenAI"
         );
 
-        ChatCompletionResponse::builder()
+        let mut builder = ChatCompletionResponse::builder()
             .maybe_message(
                 response
                     .choices
@@ -111,8 +112,20 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                             .collect_vec()
                     }),
             )
-            .build()
-            .map_err(LanguageModelError::from)
+            .to_owned();
+
+        if let Some(usage) = response.usage {
+            let usage = UsageBuilder::default()
+                .prompt_tokens(usage.prompt_tokens)
+                .completion_tokens(usage.completion_tokens)
+                .total_tokens(usage.total_tokens)
+                .build()
+                .map_err(LanguageModelError::permanent)?;
+
+            builder.usage(usage);
+        }
+
+        builder.build().map_err(LanguageModelError::from)
     }
 
     #[tracing::instrument(skip_all)]
@@ -185,6 +198,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
 
                     let delta_message = chunk.choices[0].delta.content.as_deref();
                     let delta_tool_calls = chunk.choices[0].delta.tool_calls.as_deref();
+                    let usage = chunk.usage.as_ref();
 
                     let chat_completion_response = {
                         let mut lock = accumulating_response.lock().unwrap();
@@ -199,6 +213,22 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                                     tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
                                 );
                             }
+                        }
+
+                        if let Some(usage) = usage {
+                            lock.usage = UsageBuilder::default()
+                                .prompt_tokens(usage.prompt_tokens)
+                                .completion_tokens(usage.completion_tokens)
+                                .total_tokens(usage.total_tokens)
+                                .build()
+                                .ok()
+                                .or_else(|| {
+                                    tracing::error!(
+                                        ?chunk,
+                                        "failed to get usage for streaming response"
+                                    );
+                                    None
+                                });
                         }
 
                         lock.clone()
@@ -375,5 +405,11 @@ mod tests {
 
         // Assert the response
         assert_eq!(response.message(), Some("Hello, world!"));
+
+        // Usage
+        let usage = response.usage.unwrap();
+        assert_eq!(usage.prompt_tokens, 19);
+        assert_eq!(usage.completion_tokens, 10);
+        assert_eq!(usage.total_tokens, 29);
     }
 }
