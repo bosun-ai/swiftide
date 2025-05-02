@@ -21,7 +21,6 @@ async fn main() -> anyhow::Result<()> {
     let client = DashscopeBuilder::default()
         .default_embed_model("text-embedding-v2")
         .default_prompt_model("qwen-long")
-        .default_dimensions(1536)
         .build()?;
     let tempdir = TempDir::new().unwrap();
     let lancedb = LanceDB::builder()

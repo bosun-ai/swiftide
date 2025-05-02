@@ -26,17 +26,6 @@ impl Groq {
     }
 }
 
-impl Groq {
-    #[deprecated(since = "0.21.2", note = "Use Groq::builder instead")]
-    pub fn with_default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
-        self.default_options = openai::Options {
-            prompt_model: Some(model.into()),
-            ..self.default_options.clone()
-        };
-        self
-    }
-}
-
 impl Default for Groq {
     fn default() -> Self {
         Self::builder().build().unwrap()
