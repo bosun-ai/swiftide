@@ -69,7 +69,7 @@ pub struct GenericOpenAI<
     pub(crate) default_options: Options,
 
     #[cfg(feature = "tiktoken")]
-    #[cfg_attr(feature = "tiktoken", builder( default = self.default_tiktoken()))]
+    #[cfg_attr(feature = "tiktoken", builder(default))]
     pub(crate) tiktoken: TikToken,
 }
 
@@ -186,18 +186,6 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
         self
     }
 }
-impl<C: async_openai::config::Config + Default> GenericOpenAIBuilder<C> {
-    #[cfg(feature = "tiktoken")]
-    fn default_tiktoken(&self) -> TikToken {
-        let model = self
-            .default_options
-            .as_ref()
-            .and_then(|o| o.prompt_model.as_deref())
-            .unwrap_or("gpt-4");
-
-        TikToken::try_from_model(model).expect("Failed to build default model; infallible")
-    }
-}
 
 impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
     /// Estimates the number of tokens for implementors of the `Estimatable` trait.
@@ -210,6 +198,22 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
     #[cfg(feature = "tiktoken")]
     pub async fn estimate_tokens(&self, value: impl Estimatable) -> Result<usize> {
         self.tiktoken.estimate(value).await
+    }
+
+    pub fn with_default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
+        self.default_options = Options {
+            prompt_model: Some(model.into()),
+            ..self.default_options.clone()
+        };
+        self
+    }
+
+    pub fn with_default_embed_model(&mut self, model: impl Into<String>) -> &mut Self {
+        self.default_options = Options {
+            embed_model: Some(model.into()),
+            ..self.default_options.clone()
+        };
+        self
     }
 }
 
