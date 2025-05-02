@@ -4,13 +4,17 @@ use swiftide::agents;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let openai = swiftide::integrations::openai::OpenAI::builder()
-        .default_embed_model("text-embeddings-3-small")
-        .default_prompt_model("gpt-4o-mini")
+    // let openai = swiftide::integrations::openai::OpenAI::builder()
+    //     .default_embed_model("text-embeddings-3-small")
+    //     .default_prompt_model("gpt-4o-mini")
+    //     .build()?;
+    //
+    let anthropic = swiftide::integrations::anthropic::Anthropic::builder()
+        .default_prompt_model("claude-3-7-sonnet-latest")
         .build()?;
 
     agents::Agent::builder()
-        .llm(&openai)
+        .llm(&anthropic)
         .on_stream(|_agent, response| {
             // We print the message chunk if it exists. Streamed responses also include
             // the full response (without tool calls) in `message` and an `id` to map them to

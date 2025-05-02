@@ -25,6 +25,7 @@ swiftide = { path = "../swiftide/", features = [
   "swiftide-agents",
   "dashscope",
   "mcp",
+  "anthropic",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true }

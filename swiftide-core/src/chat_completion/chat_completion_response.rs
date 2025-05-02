@@ -47,7 +47,7 @@ pub struct ChatCompletionResponseDelta {
 
     // These are not public as the assumption is they are not usable
     // until the tool calls are valid
-    tool_calls_chunk: Option<HashMap<u32, ToolCallAccum>>,
+    tool_calls_chunk: Option<HashMap<usize, ToolCallAccum>>,
 }
 
 // Accumulator for streamed tool calls
@@ -102,7 +102,7 @@ impl ChatCompletionResponse {
     /// otherwise it will remain in the delta and retried on the next call
     pub fn append_tool_call_delta(
         &mut self,
-        index: u32,
+        index: usize,
         id: Option<&str>,
         name: Option<&str>,
         arguments: Option<&str>,

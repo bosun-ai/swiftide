@@ -193,7 +193,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                         if let Some(delta_tool_calls) = delta_tool_calls {
                             for tc in delta_tool_calls {
                                 lock.append_tool_call_delta(
-                                    tc.index,
+                                    tc.index as usize,
                                     tc.id.as_deref(),
                                     tc.function.as_ref().and_then(|f| f.name.as_deref()),
                                     tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
