@@ -1,12 +1,15 @@
+use futures_util::{StreamExt as _, TryStreamExt as _};
+use std::sync::{Arc, Mutex};
+
 use anyhow::{Context as _, Result};
 use async_anthropic::types::{
     CreateMessagesRequestBuilder, Message, MessageBuilder, MessageContent, MessageContentList,
-    MessageRole, ToolChoice, ToolResultBuilder, ToolUseBuilder,
+    MessageRole, MessagesStreamEvent, ToolChoice, ToolResultBuilder, ToolUseBuilder,
 };
 use async_trait::async_trait;
 use serde_json::{Value, json};
 use swiftide_core::{
-    ChatCompletion,
+    ChatCompletion, ChatCompletionStream,
     chat_completion::{
         ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
         errors::LanguageModelError,
@@ -23,42 +26,9 @@ impl ChatCompletion for Anthropic {
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = &self.default_options.prompt_model;
-        let mut messages = request.messages().to_vec();
-
-        let maybe_system = messages
-            .iter()
-            .position(ChatMessage::is_system)
-            .map(|idx| messages.remove(idx));
-
-        let messages = messages
-            .iter()
-            .map(message_to_antropic)
-            .collect::<Result<Vec<_>>>()?;
-
-        let mut anthropic_request = CreateMessagesRequestBuilder::default()
-            .model(model)
-            .messages(messages)
-            .to_owned();
-
-        if let Some(ChatMessage::System(system)) = maybe_system {
-            anthropic_request.system(system);
-        }
-
-        if !request.tools_spec.is_empty() {
-            anthropic_request
-                .tools(
-                    request
-                        .tools_spec()
-                        .iter()
-                        .map(tools_to_anthropic)
-                        .collect::<Result<Vec<_>>>()?,
-                )
-                .tool_choice(ToolChoice::Auto);
-        }
-
-        let request = anthropic_request
-            .build()
-            .map_err(LanguageModelError::permanent)?;
+        let request = self
+            .build_request(request)
+            .and_then(|b| b.build().map_err(LanguageModelError::permanent))?;
 
         tracing::debug!(
             model = &model,
@@ -102,6 +72,111 @@ impl ChatCompletion for Anthropic {
             .maybe_tool_calls(maybe_tool_calls)
             .build()
             .map_err(LanguageModelError::from)
+    }
+
+    #[tracing::instrument(skip_all)]
+    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+        let model = &self.default_options.prompt_model;
+        let request = match self
+            .build_request(request)
+            .and_then(|b| b.build().map_err(LanguageModelError::permanent))
+        {
+            Ok(request) => request,
+            Err(e) => {
+                return e.into();
+            }
+        };
+
+        tracing::debug!(
+            model = &model,
+            messages = serde_json::to_string_pretty(&request).expect("Infallible"),
+            "[ChatCompletion] Request to anthropic"
+        );
+
+        let response = self.client.messages().create_stream(request).await;
+
+        let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
+
+        (response
+            .map_ok(move |chunk| {
+                let accumulating_response = Arc::clone(&accumulating_response);
+
+                let mut lock = accumulating_response.lock().unwrap();
+
+                append_delta_from_chunk(&chunk, &mut lock);
+                lock.clone()
+            })
+            .map_err(LanguageModelError::permanent)
+            .boxed()) as _
+    }
+}
+
+fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletionResponse) {
+    match chunk {
+        MessagesStreamEvent::ContentBlockStart {
+            index,
+            content_block,
+        } => match content_block {
+            MessageContent::ToolUse(tool_use) => {
+                lock.append_tool_call_delta(*index, Some(&tool_use.id), Some(&tool_use.name), None);
+            }
+            MessageContent::Text(text) => {
+                lock.append_message_delta(Some(&text.text));
+            }
+            MessageContent::ToolResult(_tool_result) => (),
+        },
+        MessagesStreamEvent::ContentBlockDelta { index, delta } => match delta {
+            async_anthropic::types::ContentBlockDelta::TextDelta { text } => {
+                lock.append_message_delta(Some(text));
+            }
+            async_anthropic::types::ContentBlockDelta::InputJsonDelta { partial_json } => {
+                lock.append_tool_call_delta(*index, None, None, Some(partial_json));
+            }
+        },
+        _ => {}
+    }
+}
+
+impl Anthropic {
+    fn build_request(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<async_anthropic::types::CreateMessagesRequestBuilder, LanguageModelError> {
+        let model = &self.default_options.prompt_model;
+        let mut messages = request.messages().to_vec();
+
+        let maybe_system = messages
+            .iter()
+            .position(ChatMessage::is_system)
+            .map(|idx| messages.remove(idx));
+
+        let messages = messages
+            .iter()
+            .map(message_to_antropic)
+            .collect::<Result<Vec<_>>>()?;
+
+        let mut anthropic_request = CreateMessagesRequestBuilder::default()
+            .model(model)
+            .messages(messages)
+            .to_owned();
+
+        if let Some(ChatMessage::System(system)) = maybe_system {
+            anthropic_request.system(system);
+        }
+
+        if !request.tools_spec.is_empty() {
+            anthropic_request
+                .tools(
+                    request
+                        .tools_spec()
+                        .iter()
+                        .map(tools_to_anthropic)
+                        .collect::<Result<Vec<_>>>()?,
+                )
+                .tool_choice(ToolChoice::Auto);
+        }
+
+        Ok(anthropic_request)
     }
 }
 

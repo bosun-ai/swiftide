@@ -1,7 +1,5 @@
 use anyhow::Context as _;
-use async_anthropic::{
-    errors::AnthropicError, errors::CreateMessagesError, types::CreateMessagesRequestBuilder,
-};
+use async_anthropic::{errors::AnthropicError, types::CreateMessagesRequestBuilder};
 use async_trait::async_trait;
 use swiftide_core::{chat_completion::errors::LanguageModelError, indexing::SimplePrompt};
 
@@ -30,18 +28,13 @@ impl SimplePrompt for Anthropic {
         );
 
         let response = self.client.messages().create(request).await.map_err(|e| {
-            let CreateMessagesError::AnthropicError(e) = e;
-            match e {
+            match &e {
                 AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
                 // TODO: The Rust Anthropic client is not documented well, we should figure out
                 // which of these errors are client errors and which are server errors.
                 // And which would be the ContextLengthExceeded error
                 // For now, we'll just map all of them to client errors so we get feedback.
-                AnthropicError::BadRequest(_)
-                | AnthropicError::ApiError(_)
-                | AnthropicError::UnexpectedError
-                | AnthropicError::Unauthorized
-                | AnthropicError::Unknown(_) => LanguageModelError::PermanentError(e.into()),
+                _ => LanguageModelError::PermanentError(e.into()),
             }
         })?;
 
