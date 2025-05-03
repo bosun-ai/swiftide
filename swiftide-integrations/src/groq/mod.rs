@@ -19,6 +19,9 @@ mod config;
 /// Under the hood it uses [`async_openai`], with the Groq openai mapping. This means
 /// some features might not work as expected. See the Groq documentation for details.
 pub type Groq = openai::GenericOpenAI<GroqConfig>;
+pub type GroqBuilder = openai::GenericOpenAIBuilder<GroqConfig>;
+pub type GroqBuilderError = openai::GenericOpenAIBuilderError;
+pub use openai::{Options, OptionsBuilder, OptionsBuilderError};
 
 impl Groq {
     pub fn builder() -> GroqBuilder {
@@ -31,5 +34,3 @@ impl Default for Groq {
         Self::builder().build().unwrap()
     }
 }
-
-pub type GroqBuilder = openai::GenericOpenAIBuilder<GroqConfig>;

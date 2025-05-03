@@ -12,6 +12,8 @@ impl Dashscope {
 }
 
 pub type DashscopeBuilder = openai::GenericOpenAIBuilder<DashscopeConfig>;
+pub type DashscopeBuilderError = openai::GenericOpenAIBuilderError;
+pub use openai::{Options, OptionsBuilder, OptionsBuilderError};
 
 impl Default for Dashscope {
     fn default() -> Self {

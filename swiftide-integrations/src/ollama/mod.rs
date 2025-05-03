@@ -21,6 +21,8 @@ pub mod config;
 /// some features might not work as expected. See the Ollama documentation for details.
 pub type Ollama = openai::GenericOpenAI<OllamaConfig>;
 pub type OllamaBuilder = openai::GenericOpenAIBuilder<OllamaConfig>;
+pub type OllamaBuilderError = openai::GenericOpenAIBuilderError;
+pub use openai::{Options, OptionsBuilder, OptionsBuilderError};
 
 impl Ollama {
     /// Build a new `Ollama` instance

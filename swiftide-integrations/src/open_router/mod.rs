@@ -21,6 +21,8 @@ pub mod config;
 /// some features might not work as expected. See the `OpenRouter` documentation for details.
 pub type OpenRouter = openai::GenericOpenAI<OpenRouterConfig>;
 pub type OpenRouterBuilder = openai::GenericOpenAIBuilder<OpenRouterConfig>;
+pub type OpenRouterBuilderError = openai::GenericOpenAIBuilderError;
+pub use openai::{Options, OptionsBuilder, OptionsBuilderError};
 
 impl OpenRouter {
     /// Creates a new `OpenRouterBuilder` for constructing `OpenRouter` instances.
