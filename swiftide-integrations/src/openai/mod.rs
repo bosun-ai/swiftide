@@ -4,6 +4,9 @@
 //! on the "openai" feature flag.
 
 use async_openai::error::OpenAIError;
+use async_openai::types::CreateChatCompletionRequestArgs;
+use async_openai::types::CreateEmbeddingRequestArgs;
+use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
 use std::sync::Arc;
 use swiftide_core::chat_completion::errors::LanguageModelError;
@@ -31,7 +34,7 @@ use swiftide_core::EstimateTokens;
 /// # Example
 ///
 /// ```no_run
-/// # use swiftide_integrations::openai::OpenAI;
+/// # use swiftide_integrations::openai::{OpenAI, Options};
 /// # use swiftide_integrations::openai::OpenAIConfig;
 ///
 /// // Create an OpenAI client with default options. The client will use the OPENAI_API_KEY environment variable.
@@ -45,6 +48,18 @@ use swiftide_core::EstimateTokens;
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
 ///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
+///     .build().unwrap();
+///
+/// // Create an OpenAI client with custom options
+/// let openai = OpenAI::builder()
+///     .default_embed_model("text-embedding-3-small")
+///     .default_prompt_model("gpt-4")
+///     .default_options(
+///         Options::builder()
+///           .temperature(1.0)
+///           .parallel_tool_calls(false)
+///           .user("MyUserId")
+///     )
 ///     .build().unwrap();
 /// ```
 pub type OpenAI = GenericOpenAI<OpenAIConfig>;
@@ -65,7 +80,7 @@ pub struct GenericOpenAI<
     client: Arc<async_openai::Client<C>>,
 
     /// Default options for embedding and prompt models.
-    #[builder(default)]
+    #[builder(default, setter(custom))]
     pub(crate) default_options: Options,
 
     #[cfg(feature = "tiktoken")]
@@ -76,13 +91,13 @@ pub struct GenericOpenAI<
 /// The `Options` struct holds configuration options for the `OpenAI` client.
 /// It includes optional fields for specifying the embedding and prompt models.
 #[derive(Debug, Clone, Builder)]
-#[builder(setter(into, strip_option))]
+#[builder(setter(strip_option))]
 pub struct Options {
     /// The default embedding model to use, if specified.
-    #[builder(default)]
+    #[builder(default, setter(into))]
     pub embed_model: Option<String>,
     /// The default prompt model to use, if specified.
-    #[builder(default)]
+    #[builder(default, setter(into))]
     pub prompt_model: Option<String>,
 
     #[builder(default = Some(true))]
@@ -90,6 +105,46 @@ pub struct Options {
     ///
     /// At this moment, o1 and o3-mini do not support it and should be set to `None`.
     pub parallel_tool_calls: Option<bool>,
+
+    /// Maximum number of tokens to generate in the completion.
+    ///
+    /// By default, the limit is disabled
+    #[builder(default)]
+    pub max_completion_tokens: Option<u32>,
+
+    /// Temperature setting for the model.
+    #[builder(default)]
+    pub temperature: Option<f32>,
+
+    /// Reasoning effor for reasoning models.
+    #[builder(default, setter(into))]
+    pub reasoning_effort: Option<ReasoningEffort>,
+
+    /// This feature is in Beta. If specified, our system will make a best effort to sample
+    /// deterministically, such that repeated requests with the same seed and parameters should
+    /// return the same result. Determinism is not guaranteed, and you should refer to the
+    /// `system_fingerprint` response parameter to monitor changes in the backend.
+    #[builder(default)]
+    pub seed: Option<i64>,
+
+    /// Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
+    /// appear in the text so far, increasing the model’s likelihood to talk about new topics.
+    #[builder(default)]
+    pub presence_penalty: Option<f32>,
+
+    /// Developer-defined tags and values used for filtering completions in the dashboard.
+    #[builder(default, setter(into))]
+    pub metadata: Option<serde_json::Value>,
+
+    /// A unique identifier representing your end-user, which can help `OpenAI` to monitor and
+    /// detect abuse.
+    #[builder(default, setter(into))]
+    pub user: Option<String>,
+
+    #[builder(default)]
+    /// The number of dimensions the resulting output embeddings should have. Only supported in
+    /// text-embedding-3 and later models.
+    pub dimensions: Option<u32>,
 }
 
 impl Default for Options {
@@ -98,6 +153,14 @@ impl Default for Options {
             embed_model: None,
             prompt_model: None,
             parallel_tool_calls: Some(true),
+            max_completion_tokens: None,
+            temperature: None,
+            reasoning_effort: None,
+            seed: None,
+            presence_penalty: None,
+            metadata: None,
+            user: None,
+            dimensions: None,
         }
     }
 }
@@ -106,6 +169,77 @@ impl Options {
     /// Creates a new `OptionsBuilder` for constructing `Options` instances.
     pub fn builder() -> OptionsBuilder {
         OptionsBuilder::default()
+    }
+
+    /// Extends options with other options
+    pub fn merge(&mut self, other: &Options) {
+        if let Some(embed_model) = &other.embed_model {
+            self.embed_model = Some(embed_model.clone());
+        }
+        if let Some(prompt_model) = &other.prompt_model {
+            self.prompt_model = Some(prompt_model.clone());
+        }
+        if let Some(parallel_tool_calls) = other.parallel_tool_calls {
+            self.parallel_tool_calls = Some(parallel_tool_calls);
+        }
+        if let Some(max_completion_tokens) = other.max_completion_tokens {
+            self.max_completion_tokens = Some(max_completion_tokens);
+        }
+        if let Some(temperature) = other.temperature {
+            self.temperature = Some(temperature);
+        }
+        if let Some(reasoning_effort) = &other.reasoning_effort {
+            self.reasoning_effort = Some(reasoning_effort.clone());
+        }
+        if let Some(seed) = other.seed {
+            self.seed = Some(seed);
+        }
+        if let Some(presence_penalty) = other.presence_penalty {
+            self.presence_penalty = Some(presence_penalty);
+        }
+        if let Some(metadata) = &other.metadata {
+            self.metadata = Some(metadata.clone());
+        }
+        if let Some(user) = &other.user {
+            self.user = Some(user.clone());
+        }
+    }
+}
+
+impl From<OptionsBuilder> for Options {
+    fn from(value: OptionsBuilder) -> Self {
+        Self {
+            embed_model: value.embed_model.flatten(),
+            prompt_model: value.prompt_model.flatten(),
+            parallel_tool_calls: value.parallel_tool_calls.flatten(),
+            max_completion_tokens: value.max_completion_tokens.flatten(),
+            temperature: value.temperature.flatten(),
+            reasoning_effort: value.reasoning_effort.flatten(),
+            presence_penalty: value.presence_penalty.flatten(),
+            seed: value.seed.flatten(),
+            metadata: value.metadata.flatten(),
+            user: value.user.flatten(),
+            dimensions: value.dimensions.flatten(),
+        }
+    }
+}
+
+impl From<&mut OptionsBuilder> for Options {
+    fn from(value: &mut OptionsBuilder) -> Self {
+        let value = value.clone();
+        Self {
+            embed_model: value.embed_model.flatten(),
+            prompt_model: value.prompt_model.flatten(),
+            parallel_tool_calls: value.parallel_tool_calls.flatten(),
+            max_completion_tokens: value.max_completion_tokens.flatten(),
+            temperature: value.temperature.flatten(),
+            reasoning_effort: value.reasoning_effort.flatten(),
+            presence_penalty: value.presence_penalty.flatten(),
+            seed: value.seed.flatten(),
+            metadata: value.metadata.flatten(),
+            user: value.user.flatten(),
+            dimensions: value.dimensions.flatten(),
+        }
     }
 }
 
@@ -185,6 +319,18 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
         }
         self
     }
+
+    /// Sets the default options to use for requests to the `OpenAI` API.
+    ///
+    /// Merges with any existing options
+    pub fn default_options(&mut self, options: impl Into<Options>) -> &mut Self {
+        if let Some(existing_options) = self.default_options.as_mut() {
+            existing_options.merge(&options.into());
+        } else {
+            self.default_options = Some(options.into());
+        }
+        self
+    }
 }
 
 impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
@@ -214,6 +360,77 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
             ..self.default_options.clone()
         };
         self
+    }
+
+    /// Retrieve a reference to the inner `OpenAI` client.
+    pub fn client(&self) -> &Arc<async_openai::Client<C>> {
+        &self.client
+    }
+
+    /// Retrieve a reference to the default options for the `OpenAI` instance.
+    pub fn options(&self) -> &Options {
+        &self.default_options
+    }
+
+    /// Retrieve a mutable reference to the default options for the `OpenAI` instance.
+    pub fn options_mut(&mut self) -> &mut Options {
+        &mut self.default_options
+    }
+
+    fn chat_completion_request_defaults(&self) -> CreateChatCompletionRequestArgs {
+        let mut args = CreateChatCompletionRequestArgs::default();
+
+        let options = &self.default_options;
+
+        if let Some(parallel_tool_calls) = options.parallel_tool_calls {
+            args.parallel_tool_calls(parallel_tool_calls);
+        }
+
+        if let Some(max_tokens) = options.max_completion_tokens {
+            args.max_completion_tokens(max_tokens);
+        }
+
+        if let Some(temperature) = options.temperature {
+            args.temperature(temperature);
+        }
+
+        if let Some(reasoning_effort) = &options.reasoning_effort {
+            args.reasoning_effort(reasoning_effort.clone());
+        }
+
+        if let Some(seed) = options.seed {
+            args.seed(seed);
+        }
+
+        if let Some(presence_penalty) = options.presence_penalty {
+            args.presence_penalty(presence_penalty);
+        }
+
+        if let Some(metadata) = &options.metadata {
+            args.metadata(metadata.clone());
+        }
+
+        if let Some(user) = &options.user {
+            args.user(user.clone());
+        }
+
+        args
+    }
+
+    fn embed_request_defaults(&self) -> CreateEmbeddingRequestArgs {
+        let mut args = CreateEmbeddingRequestArgs::default();
+
+        let options = &self.default_options;
+
+        if let Some(user) = &options.user {
+            args.user(user.clone());
+        }
+
+        if let Some(dimensions) = options.dimensions {
+            args.dimensions(dimensions);
+        }
+
+        args
     }
 }
 
