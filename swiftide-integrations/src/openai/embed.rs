@@ -1,4 +1,3 @@
-use async_openai::types::CreateEmbeddingRequestArgs;
 use async_trait::async_trait;
 
 use swiftide_core::{EmbeddingModel, Embeddings, chat_completion::errors::LanguageModelError};
@@ -17,7 +16,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .as_ref()
             .ok_or(LanguageModelError::PermanentError("Model not set".into()))?;
 
-        let request = CreateEmbeddingRequestArgs::default()
+        let request = self
+            .embed_request_defaults()
             .model(model)
             .input(&input)
             .build()
