@@ -168,6 +168,28 @@ impl ChatCompletionResponse {
         self
     }
 
+    pub fn append_usage_delta(
+        &mut self,
+        prompt_tokens: u32,
+        completion_tokens: u32,
+        total_tokens: u32,
+    ) -> &mut Self {
+        debug_assert!(prompt_tokens + completion_tokens == total_tokens);
+
+        if let Some(usage) = &mut self.usage {
+            usage.prompt_tokens += prompt_tokens;
+            usage.completion_tokens += completion_tokens;
+            usage.total_tokens += total_tokens;
+        } else {
+            self.usage = Some(Usage {
+                prompt_tokens,
+                completion_tokens,
+                total_tokens,
+            });
+        }
+        self
+    }
+
     fn finalize_tools_from_stream(&mut self) {
         if let Some(values) = self
             .delta

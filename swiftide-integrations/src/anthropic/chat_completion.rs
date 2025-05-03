@@ -126,6 +126,7 @@ impl ChatCompletion for Anthropic {
     }
 }
 
+#[allow(clippy::collapsible_match)]
 fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletionResponse) {
     match chunk {
         MessagesStreamEvent::ContentBlockStart {
@@ -150,20 +151,27 @@ fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletio
         },
         #[allow(clippy::cast_possible_truncation)]
         MessagesStreamEvent::MessageDelta { usage, .. } => {
-            let input_tokens = 0; // Missing from response?
-            let output_tokens = usage.output_tokens;
-            let total_tokens = input_tokens + output_tokens;
+            if let Some(usage) = usage {
+                let input_tokens = usage.input_tokens.unwrap_or_default();
+                let output_tokens = usage.output_tokens.unwrap_or_default();
+                let total_tokens = input_tokens + output_tokens;
+                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+            }
+        }
 
-            lock.usage = UsageBuilder::default()
-                .prompt_tokens(input_tokens as u32)
-                .completion_tokens(output_tokens as u32)
-                .total_tokens(total_tokens as u32)
-                .build()
-                .ok()
-                .or_else(|| {
-                    tracing::error!(?chunk, "failed to get usage for streaming response");
-                    None
-                });
+        MessagesStreamEvent::MessageStart { message, usage } => {
+            if let Some(usage) = usage {
+                let input_tokens = usage.input_tokens.unwrap_or_default();
+                let output_tokens = usage.output_tokens.unwrap_or_default();
+                let total_tokens = input_tokens + output_tokens;
+                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+            }
+            if let Some(message_usage) = &message.usage {
+                let input_tokens = message_usage.input_tokens.unwrap_or_default();
+                let output_tokens = message_usage.output_tokens.unwrap_or_default();
+                let total_tokens = input_tokens + output_tokens;
+                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+            }
         }
         _ => {}
     }

@@ -216,19 +216,11 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                         }
 
                         if let Some(usage) = usage {
-                            lock.usage = UsageBuilder::default()
-                                .prompt_tokens(usage.prompt_tokens)
-                                .completion_tokens(usage.completion_tokens)
-                                .total_tokens(usage.total_tokens)
-                                .build()
-                                .ok()
-                                .or_else(|| {
-                                    tracing::error!(
-                                        ?chunk,
-                                        "failed to get usage for streaming response"
-                                    );
-                                    None
-                                });
+                            lock.append_usage_delta(
+                                usage.prompt_tokens,
+                                usage.completion_tokens,
+                                usage.total_tokens,
+                            );
                         }
 
                         lock.clone()
