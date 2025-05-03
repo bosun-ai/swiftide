@@ -12,7 +12,7 @@ use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
         ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
-        errors::LanguageModelError,
+        UsageBuilder, errors::LanguageModelError,
     },
 };
 
@@ -67,11 +67,26 @@ impl ChatCompletion for Anthropic {
             Some(maybe_tool_calls)
         };
 
-        ChatCompletionResponse::builder()
+        let mut builder = ChatCompletionResponse::builder()
             .maybe_message(response.messages().iter().find_map(Message::text))
             .maybe_tool_calls(maybe_tool_calls)
-            .build()
-            .map_err(LanguageModelError::from)
+            .to_owned();
+
+        if let Some(usage) = response.usage {
+            let input_tokens = usage.input_tokens.unwrap_or_default();
+            let output_tokens = usage.output_tokens.unwrap_or_default();
+            let total_tokens = input_tokens + output_tokens;
+
+            let usage = UsageBuilder::default()
+                .prompt_tokens(input_tokens)
+                .completion_tokens(output_tokens)
+                .total_tokens(total_tokens)
+                .build()
+                .map_err(LanguageModelError::permanent)?;
+
+            builder.usage(usage);
+        }
+        builder.build().map_err(LanguageModelError::from)
     }
 
     #[tracing::instrument(skip_all)]
@@ -111,6 +126,7 @@ impl ChatCompletion for Anthropic {
     }
 }
 
+#[allow(clippy::collapsible_match)]
 fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletionResponse) {
     match chunk {
         MessagesStreamEvent::ContentBlockStart {
@@ -133,6 +149,30 @@ fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletio
                 lock.append_tool_call_delta(*index, None, None, Some(partial_json));
             }
         },
+        #[allow(clippy::cast_possible_truncation)]
+        MessagesStreamEvent::MessageDelta { usage, .. } => {
+            if let Some(usage) = usage {
+                let input_tokens = usage.input_tokens.unwrap_or_default();
+                let output_tokens = usage.output_tokens.unwrap_or_default();
+                let total_tokens = input_tokens + output_tokens;
+                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+            }
+        }
+
+        MessagesStreamEvent::MessageStart { message, usage } => {
+            if let Some(usage) = usage {
+                let input_tokens = usage.input_tokens.unwrap_or_default();
+                let output_tokens = usage.output_tokens.unwrap_or_default();
+                let total_tokens = input_tokens + output_tokens;
+                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+            }
+            if let Some(message_usage) = &message.usage {
+                let input_tokens = message_usage.input_tokens.unwrap_or_default();
+                let output_tokens = message_usage.output_tokens.unwrap_or_default();
+                let total_tokens = input_tokens + output_tokens;
+                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+            }
+        }
         _ => {}
     }
 }
@@ -443,7 +483,11 @@ mod tests {
 
         // Create a mock response
         let mock_response = ResponseTemplate::new(200).set_body_json(serde_json::json!({
-            "content": [{"type": "text", "text": "Response with system prompt"}]
+            "content": [{"type": "text", "text": "Response with system prompt"}],
+            "usage": {
+                "input_tokens": 19,
+                "output_tokens": 10,
+            }
         }));
 
         // Mock the expected endpoint
@@ -477,10 +521,15 @@ mod tests {
             .unwrap();
 
         // Call the complete method
-        let result = client.complete(&request).await.unwrap();
+        let response = client.complete(&request).await.unwrap();
 
         // Assert the result
-        assert_eq!(result.message, Some("Response with system prompt".into()));
+        assert_eq!(response.message, Some("Response with system prompt".into()));
+
+        let usage = response.usage.unwrap();
+        assert_eq!(usage.prompt_tokens, 19);
+        assert_eq!(usage.completion_tokens, 10);
+        assert_eq!(usage.total_tokens, 29);
     }
 
     #[test]
