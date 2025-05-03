@@ -25,6 +25,9 @@ pub struct ChatCompletionResponse {
     #[builder(default)]
     pub tool_calls: Option<Vec<ToolCall>>,
 
+    #[builder(default)]
+    pub usage: Option<Usage>,
+
     /// Streaming response
     #[builder(default)]
     pub delta: Option<ChatCompletionResponseDelta>,
@@ -37,7 +40,21 @@ impl Default for ChatCompletionResponse {
             message: None,
             tool_calls: None,
             delta: None,
+            usage: None,
         }
+    }
+}
+
+#[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Usage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+    pub total_tokens: u32,
+}
+
+impl Usage {
+    pub fn builder() -> UsageBuilder {
+        UsageBuilder::default()
     }
 }
 
@@ -148,6 +165,28 @@ impl ChatCompletionResponse {
         // Performance wise very meh but it works, in reality it's only a couple of tool calls most
         self.finalize_tools_from_stream();
 
+        self
+    }
+
+    pub fn append_usage_delta(
+        &mut self,
+        prompt_tokens: u32,
+        completion_tokens: u32,
+        total_tokens: u32,
+    ) -> &mut Self {
+        debug_assert!(prompt_tokens + completion_tokens == total_tokens);
+
+        if let Some(usage) = &mut self.usage {
+            usage.prompt_tokens += prompt_tokens;
+            usage.completion_tokens += completion_tokens;
+            usage.total_tokens += total_tokens;
+        } else {
+            self.usage = Some(Usage {
+                prompt_tokens,
+                completion_tokens,
+                total_tokens,
+            });
+        }
         self
     }
 

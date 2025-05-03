@@ -6,13 +6,14 @@ use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
     ChatCompletionRequestUserMessageArgs, ChatCompletionTool, ChatCompletionToolArgs,
-    ChatCompletionToolType, CreateChatCompletionRequestArgs, FunctionCall, FunctionObjectArgs,
+    ChatCompletionToolType, FunctionCall, FunctionObjectArgs,
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
+use swiftide_core::chat_completion::UsageBuilder;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
     errors::LanguageModelError,
@@ -43,7 +44,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .collect::<Result<Vec<_>>>()?;
 
         // Build the request to be sent to the OpenAI API.
-        let mut openai_request = CreateChatCompletionRequestArgs::default()
+        let mut openai_request = self
+            .chat_completion_request_defaults()
             .model(model)
             .messages(messages)
             .to_owned();
@@ -85,7 +87,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             "Received response from OpenAI"
         );
 
-        ChatCompletionResponse::builder()
+        let mut builder = ChatCompletionResponse::builder()
             .maybe_message(
                 response
                     .choices
@@ -111,8 +113,20 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                             .collect_vec()
                     }),
             )
-            .build()
-            .map_err(LanguageModelError::from)
+            .to_owned();
+
+        if let Some(usage) = response.usage {
+            let usage = UsageBuilder::default()
+                .prompt_tokens(usage.prompt_tokens)
+                .completion_tokens(usage.completion_tokens)
+                .total_tokens(usage.total_tokens)
+                .build()
+                .map_err(LanguageModelError::permanent)?;
+
+            builder.usage(usage);
+        }
+
+        builder.build().map_err(LanguageModelError::from)
     }
 
     #[tracing::instrument(skip_all)]
@@ -132,7 +146,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         };
 
         // Build the request to be sent to the OpenAI API.
-        let mut openai_request = CreateChatCompletionRequestArgs::default()
+        let mut openai_request = self
+            .chat_completion_request_defaults()
             .model(model)
             .messages(messages)
             .to_owned();
@@ -185,6 +200,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
 
                     let delta_message = chunk.choices[0].delta.content.as_deref();
                     let delta_tool_calls = chunk.choices[0].delta.tool_calls.as_deref();
+                    let usage = chunk.usage.as_ref();
 
                     let chat_completion_response = {
                         let mut lock = accumulating_response.lock().unwrap();
@@ -199,6 +215,14 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                                     tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
                                 );
                             }
+                        }
+
+                        if let Some(usage) = usage {
+                            lock.append_usage_delta(
+                                usage.prompt_tokens,
+                                usage.completion_tokens,
+                                usage.total_tokens,
+                            );
                         }
 
                         lock.clone()
@@ -302,7 +326,7 @@ fn message_to_openai(
 
 #[cfg(test)]
 mod tests {
-    use crate::openai::OpenAI;
+    use crate::openai::{OpenAI, Options};
 
     use super::*;
     use wiremock::matchers::{method, path};
@@ -375,5 +399,109 @@ mod tests {
 
         // Assert the response
         assert_eq!(response.message(), Some("Hello, world!"));
+
+        // Usage
+        let usage = response.usage.unwrap();
+        assert_eq!(usage.prompt_tokens, 19);
+        assert_eq!(usage.completion_tokens, 10);
+        assert_eq!(usage.total_tokens, 29);
+    }
+
+    #[test_log::test(tokio::test)]
+    #[allow(clippy::items_after_statements)]
+    async fn test_complete_with_all_default_settings() {
+        use serde_json::Value;
+        use wiremock::{Request, Respond, ResponseTemplate};
+
+        let mock_server = wiremock::MockServer::start().await;
+
+        // Custom matcher to validate all settings in the incoming request
+        struct ValidateAllSettings;
+
+        impl Respond for ValidateAllSettings {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let v: Value = serde_json::from_slice(&request.body).unwrap();
+
+                // Validate required fields
+                assert_eq!(v["model"], "gpt-4-turbo");
+                let arr = v["messages"].as_array().unwrap();
+                assert_eq!(arr.len(), 1);
+                assert_eq!(arr[0]["content"], "Test");
+
+                assert_eq!(v["parallel_tool_calls"], true);
+                assert_eq!(v["max_completion_tokens"], 77);
+                assert!((v["temperature"].as_f64().unwrap() - 0.42).abs() < 1e-5);
+                assert_eq!(v["reasoning_effort"], "low");
+                assert_eq!(v["seed"], 42);
+                assert!((v["presence_penalty"].as_f64().unwrap() - 1.1).abs() < 1e-5);
+
+                // Metadata as JSON object and user string
+                assert_eq!(v["metadata"], serde_json::json!({"key": "value"}));
+                assert_eq!(v["user"], "test-user");
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": "chatcmpl-xxx",
+                "object": "chat.completion",
+                "created": 123,
+                "model": "gpt-4-turbo",
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "All settings validated",
+                        "refusal": null,
+                        "annotations": []
+                    },
+                    "logprobs": null,
+                    "finish_reason": "stop"
+                }],
+                "usage": {
+                    "prompt_tokens": 19,
+                    "completion_tokens": 10,
+                    "total_tokens": 29,
+                    "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                    "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}
+                },
+                "service_tier": "default"
+            }))
+            }
+        }
+
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .and(wiremock::matchers::path("/chat/completions"))
+            .respond_with(ValidateAllSettings)
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = crate::openai::OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4-turbo")
+            .default_embed_model("not-used")
+            .parallel_tool_calls(Some(true))
+            .default_options(
+                Options::builder()
+                    .max_completion_tokens(77)
+                    .temperature(0.42)
+                    .reasoning_effort(async_openai::types::ReasoningEffort::Low)
+                    .seed(42)
+                    .presence_penalty(1.1)
+                    .metadata(serde_json::json!({"key": "value"}))
+                    .user("test-user"),
+            )
+            .build()
+            .expect("Can create OpenAI client.");
+
+        let request = swiftide_core::chat_completion::ChatCompletionRequest::builder()
+            .messages(vec![swiftide_core::chat_completion::ChatMessage::User(
+                "Test".to_string(),
+            )])
+            .build()
+            .unwrap();
+
+        let response = openai.complete(&request).await.unwrap();
+
+        assert_eq!(response.message(), Some("All settings validated"));
     }
 }

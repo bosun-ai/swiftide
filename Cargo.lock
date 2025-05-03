@@ -434,9 +434,9 @@ dependencies = [
 
 [[package]]
 name = "async-anthropic"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fd43581abc10c90605709f68a3d89d974f64c5b7b04c8444bc39adb16cc686e"
+checksum = "b55f84bfda9889ff5e5052bbe16e681e90142eeb28e4c61cf380b1fed104dc73"
 dependencies = [
  "backoff",
  "derive_builder 0.20.2",

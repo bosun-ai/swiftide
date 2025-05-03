@@ -1,7 +1,7 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `OpenAI` struct.
 //! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt
 //! processing and generating responses as part of the Swiftide system.
-use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
+use async_openai::types::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
 use swiftide_core::{
     SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
@@ -42,7 +42,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
         // Build the request to be sent to the OpenAI API.
-        let request = CreateChatCompletionRequestArgs::default()
+        let request = self
+            .chat_completion_request_defaults()
             .model(model)
             .messages(vec![
                 ChatCompletionRequestUserMessageArgs::default()

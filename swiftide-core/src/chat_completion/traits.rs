@@ -171,6 +171,7 @@ mod tests {
                     message: Some("Success response".to_string()),
                     tool_calls: None,
                     delta: None,
+                    usage: None,
                 })
             }
         }
