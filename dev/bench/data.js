@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746291121896,
+  "lastUpdate": 1746294697817,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21047,6 +21047,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250506,
             "range": "± 6772",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "2a9d062c6e19721c49c6233690ac71e9e28b6a04",
+          "message": "refactor(openai): Consistent exports across providers",
+          "timestamp": "2025-05-03T19:42:26+02:00",
+          "tree_id": "1b23d61df342b2b3da31eb3aee3e3f207afa56ef",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2a9d062c6e19721c49c6233690ac71e9e28b6a04"
+        },
+        "date": 1746294696608,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1292257,
+            "range": "± 866239",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 248992,
+            "range": "± 3510",
             "unit": "ns/iter"
           }
         ]
