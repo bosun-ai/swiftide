@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746291106057,
+  "lastUpdate": 1746291121896,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -20993,6 +20993,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249685,
             "range": "± 2325",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e2278fb133e51f15025e114135a2bc29157242ee",
+          "message": "feat(integrations): Customize common default settings for OpenAI requests (#775)",
+          "timestamp": "2025-05-03T18:43:28+02:00",
+          "tree_id": "a4ec2d01c8fb1ff3d375d3d46f55e09bf9fc326c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e2278fb133e51f15025e114135a2bc29157242ee"
+        },
+        "date": 1746291121081,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1300433,
+            "range": "± 874638",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250506,
+            "range": "± 6772",
             "unit": "ns/iter"
           }
         ]
