@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746294697817,
+  "lastUpdate": 1746350676284,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21101,6 +21101,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 248992,
             "range": "± 3510",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c563cf270c60957dbb948113fb2299ec5eb7ed58",
+          "message": "feat(treesitter): Add elixir support (#776)",
+          "timestamp": "2025-05-04T11:15:43+02:00",
+          "tree_id": "b98de63483bc05b07f6a47d0694f1da14cfbfbcc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c563cf270c60957dbb948113fb2299ec5eb7ed58"
+        },
+        "date": 1746350675003,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1293949,
+            "range": "± 878847",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249539,
+            "range": "± 2428",
             "unit": "ns/iter"
           }
         ]
