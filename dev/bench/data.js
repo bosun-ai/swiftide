@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746350676284,
+  "lastUpdate": 1746384481408,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21155,6 +21155,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249539,
             "range": "± 2428",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4df6dbf17fd4b87afc2cf7159c6518fcebc27438",
+          "message": "chore: Export macros from main crate and enable them by default (#778)",
+          "timestamp": "2025-05-04T20:39:15+02:00",
+          "tree_id": "f687fc5b5786f9b09859cdf28f3556a277864a0a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4df6dbf17fd4b87afc2cf7159c6518fcebc27438"
+        },
+        "date": 1746384480492,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1314982,
+            "range": "± 944613",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249922,
+            "range": "± 1818",
             "unit": "ns/iter"
           }
         ]
