@@ -24,7 +24,7 @@ use swiftide::{
     traits::{AgentContext, Command},
 };
 
-#[swiftide_macros::tool(
+#[swiftide::tool(
     description = "Searches code",
     param(name = "code_query", description = "The code query")
 )]
@@ -41,7 +41,7 @@ async fn search_code(
 
 const READ_FILE: &str = "Read a file";
 
-#[swiftide_macros::tool(
+#[swiftide::tool(
     description = READ_FILE,
     param(name = "path", description = "Path to the file")
 )]
@@ -61,7 +61,7 @@ async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput,
 // and prove the Json spec yourself. Builders are available.
 //
 // For non-string types, the `json_type` is required to be specified.
-#[swiftide_macros::tool(
+#[swiftide::tool(
     description = "Guess a number",
     param(name = "number", description = "Number to guess")
 )]

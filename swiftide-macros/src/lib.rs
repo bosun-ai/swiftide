@@ -24,7 +24,7 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 }
 
 #[proc_macro_attribute]
-/// Creates a tool from an async function.
+/// Creates a `Tool` from an async function.
 ///
 /// # Example
 /// ```ignore
@@ -46,8 +46,7 @@ pub fn tool(args: TokenStream, input: TokenStream) -> TokenStream {
     tool_attribute_impl(&args.into(), &input).into()
 }
 
-/// Derive tool on a struct. The macro expects a snake case method on the struct that takes the
-/// equally named params as `&str` arguments.
+/// Derive `Tool` on a struct.
 ///
 /// Useful if your structs have internal state and you want to use it in your tool.
 ///
