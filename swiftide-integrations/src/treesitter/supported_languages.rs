@@ -65,6 +65,8 @@ pub enum SupportedLanguages {
         to_string = "C++"
     )]
     Cpp,
+    #[serde(alias = "elixir")]
+    Elixir,
 }
 
 /// Static array of file extensions for Rust files.
@@ -97,6 +99,8 @@ static C_EXTENSIONS: &[&str] = &["c", "h", "o"];
 /// Static array of file extensions for C++ files.
 static CPP_EXTENSIONS: &[&str] = &["c", "h", "o", "cc", "cpp"];
 
+static ELIXIR_EXTENSIONS: &[&str] = &["ex", "exs"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -114,6 +118,7 @@ impl SupportedLanguages {
             SupportedLanguages::Solidity => SOLIDITY_EXTENSIONS,
             SupportedLanguages::C => C_EXTENSIONS,
             SupportedLanguages::Cpp => CPP_EXTENSIONS,
+            &SupportedLanguages::Elixir => ELIXIR_EXTENSIONS,
         }
     }
 }
@@ -142,6 +147,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Solidity => tree_sitter_solidity::LANGUAGE,
             SupportedLanguages::C => tree_sitter_c::LANGUAGE,
             SupportedLanguages::Cpp => tree_sitter_cpp::LANGUAGE,
+            SupportedLanguages::Elixir => tree_sitter_elixir::LANGUAGE,
         }
         .into()
     }
@@ -192,6 +198,11 @@ mod test {
         assert_eq!(
             SupportedLanguages::from_str("cpp"),
             Ok(SupportedLanguages::Cpp)
+        );
+
+        assert_eq!(
+            SupportedLanguages::from_str("elixir"),
+            Ok(SupportedLanguages::Elixir)
         );
     }
 

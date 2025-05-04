@@ -123,6 +123,7 @@ impl CodeOutliner {
             SupportedLanguages::Solidity => unimplemented!(),
             SupportedLanguages::C => unimplemented!(),
             SupportedLanguages::Cpp => unimplemented!(),
+            SupportedLanguages::Elixir => unimplemented!(),
         }
     }
 
