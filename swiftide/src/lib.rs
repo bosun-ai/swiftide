@@ -155,6 +155,9 @@ pub mod indexing {
     }
 }
 
+#[cfg(feature = "macros")]
+#[doc(inline)]
+pub use swiftide_macros::*;
 /// # Querying pipelines
 ///
 /// Swiftide allows you to define sophisticated query pipelines.

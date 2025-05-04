@@ -9117,6 +9117,7 @@ dependencies = [
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
+ "swiftide-macros",
  "swiftide-query",
  "swiftide-test-utils",
  "temp-dir",

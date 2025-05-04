@@ -169,12 +169,27 @@ query::Pipeline::default()
 Running an agent that can search code:
 
 ```rust
-    agents::Agent::builder()
-        .llm(&openai)
-        .tools(vec![search_code()])
-        .build()?
-        .query("In what file can I find an example of a swiftide agent?")
+#[swiftide::tool(
+    description = "Searches code",
+    param(name = "code_query", description = "The code query")
+)]
+async fn search_code(
+    context: &dyn AgentContext,
+    code_query: &str,
+) -> Result<ToolOutput, ToolError> {
+    let command_output = context
+        .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
         .await?;
+
+    Ok(command_output.into())
+}
+
+agents::Agent::builder()
+    .llm(&openai)
+    .tools(vec![search_code()])
+    .build()?
+    .query("In what file can I find an example of a swiftide agent?")
+    .await?;
 ```
 
 _You can find more detailed examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
