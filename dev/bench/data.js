@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746384481408,
+  "lastUpdate": 1746519533843,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21209,6 +21209,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249922,
             "range": "± 1818",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "34a0bff0ac8adb5192d01d1f0d9e97609ad2451e",
+          "message": "chore(deps): bump the minor group across 1 directory with 3 updates (#781)\n\nBumps the minor group with 3 updates in the / directory:\n[tokio](https://github.com/tokio-rs/tokio),\n[spider](https://github.com/spider-rs/spider) and\n[aws-sdk-bedrockruntime](https://github.com/awslabs/aws-sdk-rust).\n\nUpdates `tokio` from 1.44.2 to 1.45.0\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/tokio-rs/tokio/releases\">tokio's\nreleases</a>.</em></p>\n<blockquote>\n<h2>Tokio v1.45.0</h2>\n<h3>Added</h3>\n<ul>\n<li>metrics: stabilize <code>worker_total_busy_duration</code>,\n<code>worker_park_count</code>, and <code>worker_unpark_count</code> (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/6899\">#6899</a>,\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7276\">#7276</a>)</li>\n<li>process: add <code>Command::spawn_with</code> (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7249\">#7249</a>)</li>\n</ul>\n<h3>Changed</h3>\n<ul>\n<li>io: do not require <code>Unpin</code> for some trait impls (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7204\">#7204</a>)</li>\n<li>rt: mark <code>runtime::Handle</code> as unwind safe (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7230\">#7230</a>)</li>\n<li>time: revert internal sharding implementation (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7226\">#7226</a>)</li>\n</ul>\n<h3>Unstable</h3>\n<ul>\n<li>rt: remove alt multi-threaded runtime (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7275\">#7275</a>)</li>\n</ul>\n<p><a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/6899\">#6899</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/6899\">tokio-rs/tokio#6899</a>\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7276\">#7276</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7276\">tokio-rs/tokio#7276</a>\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7249\">#7249</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7249\">tokio-rs/tokio#7249</a>\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7204\">#7204</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7204\">tokio-rs/tokio#7204</a>\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7230\">#7230</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7230\">tokio-rs/tokio#7230</a>\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7226\">#7226</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7226\">tokio-rs/tokio#7226</a>\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7275\">#7275</a>:\n<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/pull/7275\">tokio-rs/tokio#7275</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/00754c8f9c8cd0c10fd54e5304cb9cb95a759d53\"><code>00754c8</code></a>\nchore: prepare Tokio v1.45.0 (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7308\">#7308</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/1ae9434e8e4a419ce25644e6c8d2b2e2e8c34750\"><code>1ae9434</code></a>\ntime: revert &quot;use sharding for timer implementation&quot; related\nchanges (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7226\">#7226</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/8895bba448534a4eb159f18e57fd845c740e1d38\"><code>8895bba</code></a>\nci: Test AArch64 Windows (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7288\">#7288</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/48ca254d92d4408accd7b1c1beab188288fadb00\"><code>48ca254</code></a>\ntime: update <code>sleep</code> documentation to reflect maximum allowed\nduration (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7302\">#7302</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/a0af02a396274b30ec1d0a27e18ac9ae6eaa2186\"><code>a0af02a</code></a>\ncompat: add more documentation to <code>tokio_util::compat</code> (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7279\">#7279</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/0ce3a1188a56c4c133d5b789eb366c0752e9b22c\"><code>0ce3a11</code></a>\nmetrics: stabilize <code>worker_park_count</code> and\n<code>worker_unpark_count</code> (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7276\">#7276</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/1ea9ce11d4317d767136d489041548408348be77\"><code>1ea9ce1</code></a>\nci: fix cfg!(miri) declarations in tests (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7286\">#7286</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/4d4d12613bb30f6b550421d6ce2c2c54eb5d341d\"><code>4d4d126</code></a>\nchore: prepare tokio-util v0.7.15 (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7283\">#7283</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/5490267a79a894c22cc014367e0fcd43f4ad2bb6\"><code>5490267</code></a>\nfs: update the mockall dev dependency to 0.13.0 (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7234\">#7234</a>)</li>\n<li><a\nhref=\"https://github.com/tokio-rs/tokio/commit/1434b32b5a0df3b38a0d588485cd9a20a8e92a89\"><code>1434b32</code></a>\nexamples: improve echo example consistency (<a\nhref=\"https://redirect.github.com/tokio-rs/tokio/issues/7256\">#7256</a>)</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/tokio-rs/tokio/compare/tokio-1.44.2...tokio-1.45.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `spider` from 2.36.121 to 2.36.122\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `aws-sdk-bedrockruntime` from 1.85.0 to 1.86.0\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/awslabs/aws-sdk-rust/commits\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-05-06T10:10:06+02:00",
+          "tree_id": "8a6ccaca2f4920bf8dd167a115edf301ec2e6394",
+          "url": "https://github.com/bosun-ai/swiftide/commit/34a0bff0ac8adb5192d01d1f0d9e97609ad2451e"
+        },
+        "date": 1746519532796,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1318028,
+            "range": "± 899012",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250129,
+            "range": "± 1685",
             "unit": "ns/iter"
           }
         ]
