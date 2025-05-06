@@ -100,7 +100,7 @@ pub struct Options {
     #[builder(default, setter(into))]
     pub prompt_model: Option<String>,
 
-    #[builder(default = Some(true))]
+    #[builder(default)]
     /// Option to enable or disable parallel tool calls for completions.
     ///
     /// At this moment, o1 and o3-mini do not support it and should be set to `None`.
