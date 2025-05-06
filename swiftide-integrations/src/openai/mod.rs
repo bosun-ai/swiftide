@@ -90,7 +90,7 @@ pub struct GenericOpenAI<
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
 /// It includes optional fields for specifying the embedding and prompt models.
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone, Builder, Default)]
 #[builder(setter(strip_option))]
 pub struct Options {
     /// The default embedding model to use, if specified.
@@ -100,7 +100,7 @@ pub struct Options {
     #[builder(default, setter(into))]
     pub prompt_model: Option<String>,
 
-    #[builder(default = Some(true))]
+    #[builder(default)]
     /// Option to enable or disable parallel tool calls for completions.
     ///
     /// At this moment, o1 and o3-mini do not support it and should be set to `None`.
@@ -145,24 +145,6 @@ pub struct Options {
     /// The number of dimensions the resulting output embeddings should have. Only supported in
     /// text-embedding-3 and later models.
     pub dimensions: Option<u32>,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        Self {
-            embed_model: None,
-            prompt_model: None,
-            parallel_tool_calls: Some(true),
-            max_completion_tokens: None,
-            temperature: None,
-            reasoning_effort: None,
-            seed: None,
-            presence_penalty: None,
-            metadata: None,
-            user: None,
-            dimensions: None,
-        }
-    }
 }
 
 impl Options {
