@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746522953257,
+  "lastUpdate": 1746523201936,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21317,6 +21317,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252912,
             "range": "± 1768",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "0831c982cd6bb0b442396268c0681c908b6dadc2",
+          "message": "fix(openai): Disable parallel tool calls by default",
+          "timestamp": "2025-05-06T11:11:05+02:00",
+          "tree_id": "cc7c52d96d719809fa4b53db8e483e2d70253732",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0831c982cd6bb0b442396268c0681c908b6dadc2"
+        },
+        "date": 1746523200313,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1313622,
+            "range": "± 976858",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251293,
+            "range": "± 1980",
             "unit": "ns/iter"
           }
         ]
