@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.0](https://github.com/bosun-ai/swiftide/compare/v0.25.1...v0.26.0) - 2025-05-06
+
+### New features
+
+- [11051d5](https://github.com/bosun-ai/swiftide/commit/11051d5a1df6ea158ee84de274767fbdc70cc74e) *(agents)*  `tools` on `Agent` is now public and can be used in hooks
+
+- [ebe68c1](https://github.com/bosun-ai/swiftide/commit/ebe68c104b8198b80ee5ee1f451c3272ce36841c) *(integrations)*  Streaming chat completions for anthropic ([#773](https://github.com/bosun-ai/swiftide/pull/773))
+
+- [7f5b345](https://github.com/bosun-ai/swiftide/commit/7f5b345115a3443afc9b32ca54a292fae3f5d38b) *(integrations)*  Streaming chat completions for OpenAI ([#741](https://github.com/bosun-ai/swiftide/pull/741))
+
+- [e2278fb](https://github.com/bosun-ai/swiftide/commit/e2278fb133e51f15025e114135a2bc29157242ee) *(integrations)*  Customize common default settings for OpenAI requests ([#775](https://github.com/bosun-ai/swiftide/pull/775))
+
+- [c563cf2](https://github.com/bosun-ai/swiftide/commit/c563cf270c60957dbb948113fb2299ec5eb7ed58) *(treesitter)*  Add elixir support ([#776](https://github.com/bosun-ai/swiftide/pull/776))
+
+- [13ae991](https://github.com/bosun-ai/swiftide/commit/13ae991b632cc95d1ae0bc7107146a145af59c74)  Add usage to chat completion response ([#774](https://github.com/bosun-ai/swiftide/pull/774))
+
+### Bug fixes
+
+- [7836f9f](https://github.com/bosun-ai/swiftide/commit/7836f9ff31f2abeab966f80a91eab32054e61ff1) *(agents)*  Use an RwLock to properly close a running MCP server
+
+- [0831c98](https://github.com/bosun-ai/swiftide/commit/0831c982cd6bb0b442396268c0681c908b6dadc2) *(openai)*  Disable parallel tool calls by default
+
+### Miscellaneous
+
+- [18dc99c](https://github.com/bosun-ai/swiftide/commit/18dc99ca1f597586ffed36e163f04f7c3689d2be) *(integrations)*  Use generics for all openai variants ([#764](https://github.com/bosun-ai/swiftide/pull/764))
+
+- [2a9d062](https://github.com/bosun-ai/swiftide/commit/2a9d062c6e19721c49c6233690ac71e9e28b6a04) *(openai)*  Consistent exports across providers
+
+- [4df6dbf](https://github.com/bosun-ai/swiftide/commit/4df6dbf17fd4b87afc2cf7159c6518fcebc27438)  Export macros from main crate and enable them by default ([#778](https://github.com/bosun-ai/swiftide/pull/778))
+
+- [8b30fde](https://github.com/bosun-ai/swiftide/commit/8b30fde5e20ecbd4f0387c26e441d39f78ddca32)  Rust like its 2024 ([#763](https://github.com/bosun-ai/swiftide/pull/763))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.25.1...0.26.0
+
+
+
 ## [0.25.1](https://github.com/bosun-ai/swiftide/compare/v0.25.0...v0.25.1) - 2025-04-17
 
 ### Bug fixes
