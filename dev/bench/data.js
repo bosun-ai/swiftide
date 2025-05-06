@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746525836348,
+  "lastUpdate": 1746526456718,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21479,6 +21479,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250813,
             "range": "± 2733",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "7836f9ff31f2abeab966f80a91eab32054e61ff1",
+          "message": "fix(agents): Use an RwLock to properly close a running MCP server",
+          "timestamp": "2025-05-06T12:05:16+02:00",
+          "tree_id": "93c3a8b622b4ace6158354c6291fb3296aef83d7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7836f9ff31f2abeab966f80a91eab32054e61ff1"
+        },
+        "date": 1746526454666,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1314006,
+            "range": "± 894962",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 247845,
+            "range": "± 3094",
             "unit": "ns/iter"
           }
         ]
