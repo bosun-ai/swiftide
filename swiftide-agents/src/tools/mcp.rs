@@ -15,10 +15,12 @@ use rmcp::transport::IntoTransport;
 use rmcp::{ServiceExt, model::CallToolRequestParam};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use swiftide_core::CommandError;
 use swiftide_core::{
     Tool, ToolBox,
     chat_completion::{ParamSpec, ParamType, ToolSpec, errors::ToolError},
 };
+use tokio::sync::RwLock;
 
 /// A filter to apply to the available tools
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -33,7 +35,7 @@ pub enum ToolFilter {
 /// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
 #[derive(Clone)]
 pub struct McpToolbox {
-    service: Option<Arc<RunningService<RoleClient, InitializeRequestParam>>>,
+    service: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParam>>>>,
 
     /// Optional human readable name for the toolbox
     name: Option<String>,
@@ -90,7 +92,7 @@ impl McpToolbox {
         transport: impl IntoTransport<RoleClient, E, A>,
     ) -> Result<Self> {
         let info = Self::default_client_info();
-        let service = Some(Arc::new(info.serve(transport).await?));
+        let service = Arc::new(RwLock::new(Some(info.serve(transport).await?)));
 
         Ok(Self {
             service,
@@ -104,7 +106,7 @@ impl McpToolbox {
         service: RunningService<RoleClient, InitializeRequestParam>,
     ) -> Self {
         Self {
-            service: Some(service.into()),
+            service: Arc::new(RwLock::new(Some(service))),
             filter: None.into(),
             name: None,
         }
@@ -119,23 +121,29 @@ impl McpToolbox {
             ..Default::default()
         }
     }
-}
 
-// Stop the service if there are no more references to it
-impl Drop for McpToolbox {
-    fn drop(&mut self) {
-        tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                let service = std::mem::take(&mut self.service);
-                if let Some(service) = service.and_then(Arc::into_inner) {
-                    if let Err(err) = service.cancel().await {
-                        tracing::error!(name = self.name(), "Failed to stop mcp server: {err}");
-                        return;
-                    }
-                    tracing::debug!(name = self.name(), "Stopping mcp server");
-                }
-            });
-        });
+    /// Disconnects from the MCP server if it is running
+    ///
+    /// If it is not running, an Ok is returned and it logs a tracing message
+    ///
+    /// # Errors
+    ///
+    /// Errors if the service is running but cannot be stopped
+    pub async fn cancel(&mut self) -> Result<()> {
+        let mut lock = self.service.write().await;
+        let Some(service) = std::mem::take(&mut *lock) else {
+            tracing::warn!("mcp server is not running");
+            return Ok(());
+        };
+
+        tracing::debug!(name = self.name(), "Stopping mcp server");
+
+        service
+            .cancel()
+            .await
+            .context("failed to stop mcp server")?;
+
+        Ok(())
     }
 }
 
@@ -152,7 +160,7 @@ struct ToolInputSchema {
 impl ToolBox for McpToolbox {
     #[tracing::instrument(skip_all)]
     async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
-        let Some(service) = &self.service else {
+        let Some(service) = &*self.service.read().await else {
             anyhow::bail!("No service available");
         };
         tracing::debug!(name = self.name(), "Connecting to mcp server");
@@ -205,7 +213,7 @@ impl ToolBox for McpToolbox {
                 let tool_spec = tool_spec.build().context("Failed to build tool spec")?;
 
                 Ok(Box::new(McpTool {
-                    client: Arc::clone(service),
+                    client: Arc::clone(&self.service),
                     tool_name: t.name.into(),
                     tool_spec,
                 }) as Box<dyn Tool>)
@@ -242,7 +250,7 @@ impl ToolBox for McpToolbox {
 
 #[derive(Clone)]
 struct McpTool {
-    client: Arc<RunningService<RoleClient, InitializeRequestParam>>,
+    client: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParam>>>>,
     tool_name: String,
     tool_spec: ToolSpec,
 }
@@ -267,9 +275,14 @@ impl Tool for McpTool {
             arguments: args,
         };
 
+        let Some(service) = &*self.client.read().await else {
+            return Err(
+                CommandError::ExecutorError(anyhow::anyhow!("mcp server is not running")).into(),
+            );
+        };
+
         tracing::debug!(request = ?request, tool = self.name().as_ref(), "Invoking mcp tool");
-        let response = self
-            .client
+        let response = service
             .call_tool(request)
             .await
             .context("Failed to call tool")?;
