@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746525689338,
+  "lastUpdate": 1746525836348,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21425,6 +21425,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254169,
             "range": "± 2511",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "2689ca535cf57c9457fa722a99d3f03836509be6",
+          "message": "docs(agents): If the toolbox is dropped, the connection to the mcp server will be closed",
+          "timestamp": "2025-05-06T11:54:47+02:00",
+          "tree_id": "0b738e6f9050925b35d468d957a527724b2a981b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2689ca535cf57c9457fa722a99d3f03836509be6"
+        },
+        "date": 1746525835035,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1294969,
+            "range": "± 880005",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250813,
+            "range": "± 2733",
             "unit": "ns/iter"
           }
         ]
