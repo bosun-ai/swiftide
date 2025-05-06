@@ -33,6 +33,8 @@ pub enum ToolFilter {
 ///
 /// WARN: The rmcp has a quirky feature to serve from `()`. This does not work; serve from
 /// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
+///
+/// If the toolbox is dropped, the connection to the MCP server will be closed.
 #[derive(Clone)]
 pub struct McpToolbox {
     service: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParam>>>>,
