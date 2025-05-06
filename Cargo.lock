@@ -9173,6 +9173,7 @@ dependencies = [
  "pin-project",
  "pretty_assertions",
  "qdrant-client",
+ "schemars",
  "serde",
  "serde_json",
  "strum 0.27.1",
@@ -10123,7 +10124,7 @@ dependencies = [
  "futures-io",
  "futures-sink",
  "futures-util",
- "hashbrown 0.14.5",
+ "hashbrown 0.15.3",
  "pin-project-lite",
  "tokio",
 ]

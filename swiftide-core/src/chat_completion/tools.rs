@@ -113,6 +113,7 @@ impl ToolCallBuilder {
 /// i.e. the json spec `OpenAI` uses to define their tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder, Serialize, Deserialize)]
 #[builder(setter(into), derive(Debug, Serialize, Deserialize))]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct ToolSpec {
     /// Name of the tool
     pub name: String,
@@ -132,6 +133,7 @@ impl ToolSpec {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr)]
 #[strum(serialize_all = "camelCase")]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum ParamType {
     #[default]
     String,
@@ -276,6 +278,7 @@ impl<'de> Visitor<'de> for ParamTypeVisitor {
 /// Parameters for tools
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Builder, Serialize, Deserialize)]
 #[builder(setter(into))]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct ParamSpec {
     /// Name of the parameter
     pub name: String,

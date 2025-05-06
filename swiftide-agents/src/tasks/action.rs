@@ -14,8 +14,8 @@
 use convert_case::{Case, Casing as _};
 use serde::{Deserialize, Serialize};
 use swiftide_core::{
-    chat_completion::{ToolSpec, ToolSpecBuilderError},
     Tool,
+    chat_completion::{ToolSpec, ToolSpecBuilderError},
 };
 use thiserror::Error;
 
@@ -31,12 +31,14 @@ use super::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum Action {
     Delegate(DelegateAction),
     Complete(CompleteAction),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct DelegateAction {
     pub from_agent: String,
     pub to_agent: String,
@@ -50,6 +52,7 @@ pub struct DelegateAction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub struct CompleteAction {
     pub agent: String,
     #[serde(default)]
@@ -347,11 +350,13 @@ mod tests {
         let custom_tool_spec = ToolSpec::builder()
             .name("custom_delegate_tool")
             .description("Custom delegation tool")
-            .parameters(vec![ParamSpec::builder()
-                .name("custom_param")
-                .description("A custom parameter for delegation")
-                .build()
-                .unwrap()])
+            .parameters(vec![
+                ParamSpec::builder()
+                    .name("custom_param")
+                    .description("A custom parameter for delegation")
+                    .build()
+                    .unwrap(),
+            ])
             .build()
             .unwrap();
 
