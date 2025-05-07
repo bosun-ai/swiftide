@@ -6,24 +6,24 @@ use async_trait::async_trait;
 use derive_builder::Builder;
 use serde::Deserialize;
 use swiftide_core::{
-    chat_completion::{self, errors::ToolError, ParamSpec, ToolOutput, ToolSpec},
     AgentContext, Tool,
+    chat_completion::{self, ParamSpec, ToolOutput, ToolSpec, errors::ToolError},
 };
 
-use super::{running_agent::RunningAgent, task::Task};
+use super::{TaskState, backend::Backend, running_agent::RunningAgent, task::Task};
 
 #[derive(Clone, Builder)]
-pub struct DelegateAgent {
+pub struct DelegateAgent<B: Backend, S: TaskState> {
     // TODO: Might be possible to borrow task/running agent (event though cheap to clone)
-    task: Task,
+    task: Task<B, S>,
     delegates_to: RunningAgent,
 
     tool_spec: ToolSpec,
 }
 
-impl DelegateAgent {
+impl<B: Backend, S: TaskState> DelegateAgent<B, S> {
     #[must_use]
-    pub fn builder() -> DelegateAgentBuilder {
+    pub fn builder() -> DelegateAgentBuilder<B, S> {
         DelegateAgentBuilder::default()
     }
 
@@ -55,7 +55,7 @@ struct DelegateArgs {
 }
 
 #[async_trait]
-impl Tool for DelegateAgent {
+impl<B: Backend, S: TaskState> Tool for DelegateAgent<B, S> {
     async fn invoke(
         &self,
         agent_context: &dyn AgentContext,
@@ -85,11 +85,13 @@ pub fn default_delegate_toolspec(tool_name: &str) -> ToolSpec {
     ToolSpec::builder()
         .name(tool_name)
         .description("Delegates to another agent")
-        .parameters(vec![ParamSpec::builder()
-            .name("instructions")
-            .description("Detailed instructions for the agent")
-            .build()
-            .unwrap()])
+        .parameters(vec![
+            ParamSpec::builder()
+                .name("instructions")
+                .description("Detailed instructions for the agent")
+                .build()
+                .unwrap(),
+        ])
         .build()
         .expect("infallible; failed to build default delegate tool spec")
 }

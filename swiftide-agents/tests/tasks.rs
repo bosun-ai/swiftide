@@ -1,12 +1,14 @@
+use std::{collections::HashMap, sync::Arc};
+
+use futures_util::lock::Mutex;
 use serde_json::json;
 use swiftide_agents::{
-    chat_request,
+    Agent, chat_request,
     tasks::{
-        self,
+        self, Task,
         tools::{default_complete_toolspec, default_delegate_toolspec},
-        Task,
     },
-    user, Agent,
+    user,
 };
 use swiftide_core::{
     chat_completion::{ChatCompletionResponse, ToolCall},
@@ -30,18 +32,20 @@ async fn test_simple_delegate_task() {
     };
 
     let response = ChatCompletionResponse::builder()
-        .tool_calls(vec![ToolCall::builder()
-            .id("1")
-            .name("delegate_agent_1")
-            .args(
-                json!({
-                    "instructions": "Hello agent2"
+        .tool_calls(vec![
+            ToolCall::builder()
+                .id("1")
+                .name("delegate_agent_1")
+                .args(
+                    json!({
+                        "instructions": "Hello agent2"
 
-                })
-                .to_string(),
-            )
-            .build()
-            .unwrap()])
+                    })
+                    .to_string(),
+                )
+                .build()
+                .unwrap(),
+        ])
         .build()
         .unwrap();
 
@@ -57,15 +61,20 @@ async fn test_simple_delegate_task() {
     };
 
     let response = ChatCompletionResponse::builder()
-        .tool_calls(vec![ToolCall::builder()
-            .id("1")
-            .name("complete_task")
-            .build()
-            .unwrap()])
+        .tool_calls(vec![
+            ToolCall::builder()
+                .id("1")
+                .name("complete_task")
+                .build()
+                .unwrap(),
+        ])
         .build()
         .unwrap();
 
     agent2_llm.expect_complete(expected_request, Ok(response));
+
+    // Quick double check on builder generics
+    let _builder = Task::builder().state(Arc::new(Mutex::new(HashMap::<String, String>::new())));
 
     // Now we run the task and see if it works
     let task = Task::builder()

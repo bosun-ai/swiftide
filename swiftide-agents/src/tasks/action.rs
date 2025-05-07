@@ -25,6 +25,8 @@ use crate::tasks::{
 };
 
 use super::{
+    TaskState,
+    backend::Backend,
     delegate_tool::DelegateAgentBuilderError,
     task::Task,
     task_completed_tool::{TaskCompleted, TaskCompletedBuilderError},
@@ -114,7 +116,10 @@ impl Action {
     /// # Errors
     ///
     /// Errors if the apply failed, the agent does not exist, or any of the building steps fail
-    pub async fn apply(self, task: &Task) -> Result<(), ActionError> {
+    pub async fn apply<B: Backend, S: TaskState + 'static>(
+        self,
+        task: &Task<B, S>,
+    ) -> Result<(), ActionError> {
         tracing::trace!("Applying action: {:?}", self);
         match self {
             Action::Delegate(delegate_action) => {

@@ -23,8 +23,9 @@
 //! ```
 use crate::errors::AgentError;
 use derive_builder::{Builder, UninitializedFieldError};
-use std::sync::atomic::{self, AtomicUsize};
+use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{self, AtomicUsize};
 use thiserror::Error;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
@@ -34,20 +35,32 @@ use super::action::{Action, ActionError};
 use super::backend::{Backend, DefaultBackend};
 use super::running_agent::RunningAgent;
 
+/// Marker (for now) trait for a mutable state that agents and hooks can use to progress the task.
+///
+/// A task state must always be owned.
+pub trait TaskState: Send + Sync + Clone + 'static {}
+
+/// Implementations for some common types
+///
+/// Allow everything that is `Send + Sync + Clone + 'static` to be used as a task state.
+impl<T> TaskState for T where T: Send + Sync + Clone + 'static {}
+
 #[derive(Builder, Clone, Debug)]
 #[builder(build_fn(skip, error = TaskBuilderError))]
-pub struct Task<B: Backend = DefaultBackend> {
+pub struct Task<B: Backend = DefaultBackend, S: TaskState = ()> {
     #[builder(field(ty = "Option<Vec<RunningAgent>>"), setter(custom))]
     agents: Arc<RwLock<Vec<RunningAgent>>>,
     #[builder(field(ty = "Option<Vec<Action>>"), setter(custom))]
     actions: Arc<Vec<Action>>,
     #[builder(setter(custom))]
     starts_with: Arc<String>,
-    state: Arc<TaskState>,
+
+    #[builder(setter(custom), default = ())]
+    state: S,
     #[builder(private, default)]
     current_agent: Arc<AtomicUsize>,
 
-    #[builder(private, default = Arc::new(DefaultBackend::default()))]
+    #[builder(setter(custom), default = Arc::new(DefaultBackend::default()))]
     backend: Arc<B>,
 }
 
@@ -69,7 +82,31 @@ impl From<UninitializedFieldError> for TaskBuilderError {
     }
 }
 
-impl TaskBuilder {
+impl<B: Backend, S: TaskState> TaskBuilder<B, S> {
+    #[must_use]
+    pub fn backend<N: Backend>(self, backend: N) -> TaskBuilder<N, S> {
+        TaskBuilder {
+            agents: self.agents,
+            actions: self.actions,
+            starts_with: self.starts_with,
+            state: self.state,
+            current_agent: self.current_agent,
+            backend: Some(Arc::new(backend)),
+        }
+    }
+
+    #[must_use]
+    pub fn state<N: TaskState>(self, state: N) -> TaskBuilder<B, N> {
+        TaskBuilder {
+            agents: self.agents,
+            actions: self.actions,
+            starts_with: self.starts_with,
+            state: Some(state),
+            current_agent: self.current_agent,
+            backend: self.backend,
+        }
+    }
+
     pub fn with(&mut self, action: impl Into<Action>) -> &mut Self {
         self.actions
             .get_or_insert_with(Vec::new)
@@ -104,16 +141,16 @@ impl TaskBuilder {
         self
     }
 
-    pub async fn build(&mut self) -> Result<Task, TaskBuilderError> {
+    pub async fn build(&mut self) -> Result<Task<B, S>, TaskBuilderError> {
         // TODO: Validate that all names are unique
         let agents = self
             .agents
-            .clone()
+            .take()
             .ok_or(TaskBuilderError::UninitializedField("agents"))?;
 
         let starts_with = self
             .starts_with
-            .clone()
+            .take()
             .ok_or(TaskBuilderError::UninitializedField("starts_with"))?;
 
         let current_agent = agents
@@ -123,13 +160,23 @@ impl TaskBuilder {
                 "Could not find starting agent in agents".to_string(),
             ))?;
 
+        let state = self
+            .state
+            .take()
+            .ok_or(TaskBuilderError::UninitializedField("state"))?;
+
+        let backend = self
+            .backend
+            .take()
+            .ok_or(TaskBuilderError::UninitializedField("backend"))?;
+
         let task = Task {
             agents: Arc::new(RwLock::new(agents)),
             actions: Arc::new(self.actions.clone().unwrap_or_default()),
             current_agent: Arc::new(current_agent.into()),
             starts_with,
-            state: Arc::new(TaskState::Pending),
-            backend: self.backend.clone().unwrap_or_default(),
+            state,
+            backend,
         };
 
         if let Some(actions) = self.actions.take() {
@@ -158,10 +205,12 @@ pub enum TaskError {
 
 impl Task {
     /// Build a new task
-    pub fn builder() -> TaskBuilder {
-        TaskBuilder::default()
+    pub fn builder() -> TaskBuilder<DefaultBackend, ()> {
+        TaskBuilder::<DefaultBackend, ()>::default()
     }
+}
 
+impl<B: Backend, S: TaskState> Task<B, S> {
     /// Invokes the task, finding the current agent and querying it with the instructions
     ///
     /// Note that this is a non-blocking call, and the task will return immediately.
@@ -215,12 +264,4 @@ impl Task {
             .find(|agent| agent.name() == name)
             .cloned()
     }
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum TaskState {
-    #[default]
-    Pending,
-    Running,
-    Completed,
 }
