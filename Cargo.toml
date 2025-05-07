@@ -60,7 +60,7 @@ rmcp = { version = "0.1", default-features = false }
 schemars = { version = "0.8", default-features = false }
 
 # Integrations
-spider = { version = "2.36", default-features = false }
+spider = { version = "2.37", default-features = false }
 async-openai = { version = "0.28", default-features = false }
 qdrant-client = { version = "1.14", default-features = false, features = [
   "serde",

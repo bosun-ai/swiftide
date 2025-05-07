@@ -8607,9 +8607,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.36.122"
+version = "2.37.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c70796c2c041db9ea10e52bc19fd787229fd419be871ef32d56c326ee3f8776"
+checksum = "8f624740d0f4a020b051b31b975f2cadd1a859ce0ab7c78fea1549faae425065"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -9654,9 +9654,9 @@ checksum = "1ac9aa371f599d22256307c24a9d748c041e548cbf599f35d890f9d365361790"
 
 [[package]]
 name = "temp-dir"
-version = "0.1.14"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc1ee6eef34f12f765cb94725905c6312b6610ab2b0940889cfe58dae7bc3c72"
+checksum = "83176759e9416cf81ee66cb6508dbfe9c96f20b8b56265a39917551c23c70964"
 
 [[package]]
 name = "tempfile"
