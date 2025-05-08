@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1746529144786,
+  "lastUpdate": 1746720748542,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21587,6 +21587,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 248626,
             "range": "± 2390",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f08716f0574c99330b7425b5d4e182efcc5fb0cb",
+          "message": "chore(deps): bump the minor group with 2 updates (#785)\n\nBumps the minor group with 2 updates:\n[spider](https://github.com/spider-rs/spider) and\n[temp-dir](https://gitlab.com/leonhard-llc/ops).\n\nUpdates `spider` from 2.36.122 to 2.37.3\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v2.37.2</h2>\n<h1>Whats Changed</h1>\n<p>The page streaming rewriter now handles built in metadata extracting\nby default. You can access it by using <code>page.metadata</code> or\n<code>page.get_metadata()</code>.</p>\n<p>Some of the metadata properties are set as placeholders unused.</p>\n<ul>\n<li>feat(page): add metadata extracting</li>\n</ul>\n<pre lang=\"rust\"><code>/// Page-level metadata extracted from HTML.\npub struct Metadata {\n   /// The meta title\n    pub title: Option&lt;compact_str::CompactString&gt;,\n   /// The meta description\n    pub description: Option&lt;compact_str::CompactString&gt;,\n    /// The og:image\n    pub image: Option&lt;Box&lt;compact_str::CompactString&gt;&gt;,\n}\n</code></pre>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/spider-rs/spider/compare/v2.36.123...v2.37.1\">https://github.com/spider-rs/spider/compare/v2.36.123...v2.37.1</a></p>\n<h2>v2.36.123</h2>\n<h1>Whats Changed</h1>\n<p>Major fix for http or smart mode request adding the Host header\npreventing proper redirects.\nFix openai automation usage.</p>\n<ul>\n<li>chore(website): fix client host header</li>\n<li>chore(chrome,sitemap): fix sitemap handling xml</li>\n<li>feat(antibot): add antibot detection</li>\n<li>chore(chrome): fix viewport browser handling pages</li>\n<li>chore(chrome): fix fingerprint execution script</li>\n<li>chore(sitemap): add auto sitemap adding whitelisting</li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/spider-rs/spider/compare/v2.36.67...v2.36.123\">https://github.com/spider-rs/spider/compare/v2.36.67...v2.36.123</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `temp-dir` from 0.1.14 to 0.1.16\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/98464d3c929edbe22f117a7b1d3489c83457b7cd\"><code>98464d3</code></a>\ntemp-dir: dont_delete_on_drop().</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/7adcf33a3c3ac94901a4ce44dd3ab7c40e28d54c\"><code>7adcf33</code></a>\nbuild-data: Return <code>Result</code> and don't panic. <a\nhref=\"https://gitlab.com/leonhard-llc\">https://gitlab.com/leonhard-llc</a>...</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/7ade52cd06665ef1e7c89e466ca60e97f0c3d028\"><code>7ade52c</code></a>\nbuild-data: Fix bug where get_source_time() was not caching the\nvalue.</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/6beeafa77fb404019394b9d98aec22e8d429c2bd\"><code>6beeafa</code></a>\nLint.</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/7be2acf682be6fed665adf5afc5cb09dee248f5b\"><code>7be2acf</code></a>\ntemp-dir: Remove a dev dep.</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/01f2c18f8d4a55abd2d5ea33d6c727498b3b862f\"><code>01f2c18</code></a>\ndns-server: Update readme. Add NS tests.</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/b3798d7fe353df6fd96d287465d5297d00660aa1\"><code>b3798d7</code></a>\nMerge branch 'add-in-ns-rr' into 'main'</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/859924ebe6f989278d8a7b979574c9132cf8b100\"><code>859924e</code></a>\nAdded NS record responses</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/780e23c069809c25295bb03db2b422be6159fb58\"><code>780e23c</code></a>\nbuild-data: Release 0.2.3. Add\n<code>rerun_if_git_commit_or_branch_changed</code>. Cov...</li>\n<li><a\nhref=\"https://gitlab.com/leonhard-llc/ops/commit/6d13c957f2b043071dd883355fdb393b27fefcc9\"><code>6d13c95</code></a>\nUpdate readmes.</li>\n<li>Additional commits viewable in <a\nhref=\"https://gitlab.com/leonhard-llc/ops/compare/temp-dir-v0.1.14...temp-dir-v0.1.16\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-05-08T18:02:30+02:00",
+          "tree_id": "c3924c4ddcd3735234abae0e79202a28a76cf965",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f08716f0574c99330b7425b5d4e182efcc5fb0cb"
+        },
+        "date": 1746720747524,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1342541,
+            "range": "± 1049781",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250393,
+            "range": "± 1538",
             "unit": "ns/iter"
           }
         ]
