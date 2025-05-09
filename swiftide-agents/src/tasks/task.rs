@@ -55,12 +55,12 @@ pub struct Task<B: Backend = DefaultBackend, S: TaskState = ()> {
     #[builder(setter(custom))]
     starts_with: Arc<String>,
 
-    #[builder(setter(custom), default = ())]
+    #[builder(setter(custom))]
     state: S,
     #[builder(private, default)]
     current_agent: Arc<AtomicUsize>,
 
-    #[builder(setter(custom), default = Arc::new(DefaultBackend::default()))]
+    #[builder(setter(custom))]
     backend: Arc<B>,
 }
 
@@ -207,6 +207,8 @@ impl Task {
     /// Build a new task
     pub fn builder() -> TaskBuilder<DefaultBackend, ()> {
         TaskBuilder::<DefaultBackend, ()>::default()
+            .state(())
+            .backend(DefaultBackend::default())
     }
 }
 
