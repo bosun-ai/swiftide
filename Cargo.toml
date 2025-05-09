@@ -32,6 +32,7 @@ tokio = { version = "1.45", features = [
 tokio-stream = { version = "0.1", default-features = false, features = [
   "time",
 ] }
+tokio-util = { version = "0.7", default-features = false }
 tracing = { version = "0.1", features = [
   "log",
   "attributes",

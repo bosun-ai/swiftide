@@ -160,6 +160,10 @@ impl AgentContext for DefaultContext {
         // delete everything after the last completion
         history.truncate(redrive_ptr);
     }
+
+    fn clone_empty(&self) -> Box<dyn AgentContext> {
+        Box::new(DefaultContext::from_executor(self.tool_executor.clone()))
+    }
 }
 
 fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage> {
