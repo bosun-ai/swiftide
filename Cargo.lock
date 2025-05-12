@@ -930,9 +930,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-bedrockruntime"
-version = "1.86.0"
+version = "1.87.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db14a0566037a6c686ef075c406dec4b067537af3d76950522e9e89848ce7a5a"
+checksum = "11a1802bca531821b4e412b012fb05eb27e49fb6bf89a0ae5ddd27c8383b4cdb"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -8607,9 +8607,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.3"
+version = "2.37.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f624740d0f4a020b051b31b975f2cadd1a859ce0ab7c78fea1549faae425065"
+checksum = "6130319069730b0789df483e0dcd87c18932085afb26714fc8b22e80e9c965e6"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -10313,9 +10313,9 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.25.3"
+version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9ac5ea5e7f2f1700842ec071401010b9c59bf735295f6e9fa079c3dc035b167"
+checksum = "69aff09fea9a41fb061ae6b206cb87cac1b8db07df31be3ba271fbc26760f213"
 dependencies = [
  "cc",
  "regex",
