@@ -1,29 +1,23 @@
-//! This is an example of how to build a Swiftide agent
+//! This is an example of using a human in the loop pattern with switfide agents.
 //!
-//! A swiftide agent runs completions in a loop, optionally with tools, to complete a task
-//! autonomously. Agents stop when either the LLM calls the always included `stop` tool, or
-//! (configurable) if the last message in the completion chain was from the assistant.
+//! In the example we send the tool call over an channel, and then manually approve it.
 //!
-//! Tools can be created by using the `tool` attribute macro as shown here. For more control (i.e.
-//! internal state), there
-//! is also a `Tool` derive macro for convenience. Anything that implements the `Tool` trait can
-//! act as a tool.
+//! In a more realistic example, you can use other rust primitives to make it work for your
+//! usecase. I.e., make an api request with a callback url that will add the feedback.
 //!
-//! Agents operate on an `AgentContext`, which is responsible for managaging the completion history
-//! and providing access to the outside world. For the latter, the context is expected to have a
-//! `ToolExecutor`, which by default runs locally.
+//! Both requesting feedback and providing feedback support an optional payload (as a `serde_json::Value`).
 //!
-//! When building the agent, hooks are available to influence the state, completions, and general
-//! behaviour of the agent. Hooks are also traits.
+//! This allows for more custom workflows, to either display or provide more input to the
+//! underlying tool call.
 //!
-//! Refer to the api documentation for more detailed information.
-use std::pin::Pin;
+//! For an example on how to implement your own custom wrappers, refer to
+//! `tools::control::ApprovalRequired`
 
 use anyhow::Result;
 use swiftide::{
     agents::{self, StopReason, tools::control::ApprovalRequired},
     chat_completion::{ToolCall, ToolOutput, errors::ToolError},
-    traits::{AgentContext, Command},
+    traits::AgentContext,
 };
 
 // The macro supports strings/strs, vectors/slices, booleans and numbers.
@@ -67,7 +61,7 @@ async fn main() -> Result<()> {
     // flows by returning a `ToolOutput::FeedbackRequired` in a tool,
     // you can then use `has_received_feedback` and `received_feedback` on the context
     // to build your custom workflow.
-    let guess_with_approval = ApprovalRequired(guess_a_number());
+    let guess_with_approval = ApprovalRequired::new(guess_a_number());
 
     let mut agent = agents::Agent::builder()
         .llm(&openai)

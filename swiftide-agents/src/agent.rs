@@ -449,6 +449,13 @@ impl Agent {
                 .map_err(AgentError::CompletionsFailed)
         }?;
 
+        // The arg preprocessor helps avoid common llm errors.
+        // This must happen as early as possible
+        response
+            .tool_calls
+            .as_deref_mut()
+            .map(ArgPreprocessor::preprocess_tool_calls);
+
         invoke_hooks!(AfterCompletion, self, &mut response);
 
         self.add_message(ChatMessage::Assistant(
@@ -538,8 +545,14 @@ impl Agent {
 
             let output = output?;
             self.handle_control_tools(tool_call, &output).await;
-            self.add_message(ChatMessage::ToolOutput(tool_call.to_owned(), output))
-                .await?;
+
+            // Feedback required leaves the tool call open
+            //
+            // It assumes a follow up invocation of the agent will have the feedback approved
+            if !output.is_feedback_required() {
+                self.add_message(ChatMessage::ToolOutput(tool_call.to_owned(), output))
+                    .await?;
+            }
         }
 
         Ok(())
@@ -1280,8 +1293,8 @@ mod tests {
     async fn test_agent_with_approval_required_tool() {
         use super::*;
         use crate::tools::control::ApprovalRequired;
-        use crate::{assistant, chat_request, chat_response, tool_output, user};
-        use swiftide_core::chat_completion::{ToolCall, ToolOutput, errors::ToolError};
+        use crate::{assistant, chat_request, chat_response, user};
+        use swiftide_core::chat_completion::ToolCall;
 
         // Step 1: Build a tool that needs approval.
         let mock_tool = MockTool::default();
@@ -1302,11 +1315,12 @@ mod tests {
         };
         mock_llm.expect_complete(chat_req1.clone(), Ok(chat_resp1));
 
+        // The response will include the previous request, but no tool output
+        // from the required tool
         let chat_req2 = chat_request! {
             user!("Request with approval"),
-            assistant!("Completion message", ["mock_tool"]),
+            assistant!("Completion message", ["mock_tool"]);
             // Simulate feedback required output
-            tool_output!("mock_tool", ToolOutput::FeedbackRequired(None));
             tools = [approval_tool.clone()]
         };
         let chat_resp2 = chat_response! {

@@ -6,7 +6,7 @@ use serde::ser::{Error as SerError, SerializeSeq, Serializer};
 use serde::{Deserialize, Serialize};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
 #[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
@@ -93,6 +93,10 @@ impl ToolCall {
 
     pub fn args(&self) -> Option<&str> {
         self.args.as_deref()
+    }
+
+    pub fn with_args(&mut self, args: Option<String>) {
+        self.args = args;
     }
 }
 

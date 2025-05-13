@@ -11,7 +11,7 @@ use std::{
     collections::HashMap,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
 };
 
@@ -99,6 +99,21 @@ impl DefaultContext {
 
         self
     }
+
+    /// Add existing tool feedback to the context
+    ///
+    /// # Panics
+    ///
+    /// Panics if the inner mutex is poisoned
+    pub fn with_tool_feedback(
+        &mut self,
+        feedback: impl Into<HashMap<ToolCall, Option<serde_json::Value>>>,
+    ) {
+        self.feedback_received
+            .lock()
+            .unwrap()
+            .extend(feedback.into());
+    }
 }
 #[async_trait]
 impl AgentContext for DefaultContext {
@@ -110,8 +125,10 @@ impl AgentContext for DefaultContext {
 
         if history[current..].is_empty()
             || (self.stop_on_assistant
-                && matches!(history.last(), Some(ChatMessage::Assistant(_, _))))
+                && matches!(history.last(), Some(ChatMessage::Assistant(_, _)))
+                && self.feedback_received.lock().unwrap().is_empty())
         {
+            tracing::debug!(?history, "No new messages for completion");
             None
         } else {
             let previous = self.completions_ptr.swap(history.len(), Ordering::SeqCst);
@@ -188,6 +205,13 @@ impl AgentContext for DefaultContext {
         payload: Option<serde_json::Value>,
     ) -> Result<()> {
         let mut lock = self.feedback_received.lock().unwrap();
+        // Set the message counter one back so that on a next try, the agent can resume by
+        // trying the tool calls first. Only does this if there are no other approvals
+        if lock.is_empty() {
+            let previous = self.current_completions_ptr.load(Ordering::SeqCst);
+            self.completions_ptr.swap(previous, Ordering::SeqCst);
+        }
+        tracing::debug!(?tool_call, context = ?self, "feedback received");
         lock.insert(tool_call.clone(), payload);
 
         Ok(())
