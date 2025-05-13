@@ -327,7 +327,7 @@ mod tests {
         async fn invoke(
             &self,
             _agent_context: &dyn AgentContext,
-            _raw_args: Option<&str>,
+            _tool_call: &ToolCall,
         ) -> std::result::Result<
             swiftide_core::chat_completion::ToolOutput,
             swiftide_core::chat_completion::errors::ToolError,

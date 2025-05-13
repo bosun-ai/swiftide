@@ -21,6 +21,10 @@ pub(crate) enum State {
 pub enum StopReason {
     RequestedByTool(ToolCall),
     ToolCallsOverLimit(ToolCall),
+    FeedbackRequired {
+        tool_call: ToolCall,
+        payload: Option<serde_json::Value>,
+    },
     Error,
     NoNewMessages,
     Other(String),

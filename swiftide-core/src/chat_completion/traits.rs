@@ -7,7 +7,7 @@ use std::{borrow::Cow, pin::Pin, sync::Arc};
 use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
 
 use super::{
-    ToolOutput, ToolSpec,
+    ToolCall, ToolOutput, ToolSpec,
     chat_completion_request::ChatCompletionRequest,
     chat_completion_response::ChatCompletionResponse,
     errors::{LanguageModelError, ToolError},
@@ -300,7 +300,7 @@ pub trait Tool: Send + Sync + DynClone {
     async fn invoke(
         &self,
         agent_context: &dyn AgentContext,
-        raw_args: Option<&str>,
+        tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError>;
 
     fn name(&self) -> Cow<'_, str>;
@@ -387,9 +387,9 @@ impl Tool for Box<dyn Tool> {
     async fn invoke(
         &self,
         agent_context: &dyn AgentContext,
-        raw_args: Option<&str>,
+        tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        (**self).invoke(agent_context, raw_args).await
+        (**self).invoke(agent_context, tool_call).await
     }
     fn name(&self) -> Cow<'_, str> {
         (**self).name()

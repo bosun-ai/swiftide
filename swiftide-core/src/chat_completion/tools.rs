@@ -12,6 +12,8 @@ pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
     Text(String),
 
+    FeedbackRequired(Option<serde_json::Value>),
+
     /// Indicates that the toolcall failed, but can be handled by the llm
     Fail(String),
     /// Stops an agent
@@ -39,6 +41,9 @@ impl std::fmt::Display for ToolOutput {
             ToolOutput::Text(value) => write!(f, "{value}"),
             ToolOutput::Fail(value) => write!(f, "Tool call failed: {value}"),
             ToolOutput::Stop => write!(f, "Stop"),
+            ToolOutput::FeedbackRequired(_) => {
+                write!(f, "Feedback required")
+            }
         }
     }
 }

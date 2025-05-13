@@ -462,14 +462,14 @@ impl Agent {
         debug!("LLM returned tool calls: {:?}", tool_calls);
 
         let mut handles = vec![];
-        for tool_call in tool_calls {
+        for tool_call in &tool_calls {
             let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
                 tracing::warn!("Tool {} not found", tool_call.name());
                 continue;
             };
             tracing::info!("Calling tool `{}`", tool_call.name());
 
-            let tool_args = tool_call.args().map(String::from);
+            // let tool_args = tool_call.args().map(String::from);
             let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
             invoke_hooks!(BeforeTool, self, &tool_call);
@@ -479,11 +479,14 @@ impl Agent {
                 "otel.name" = format!("tool.{}", tool.name().as_ref())
             );
 
+            let handle_tool_call = tool_call.clone();
             let handle = tokio::spawn(async move {
-                    let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
-                    let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
+                    // TODO: Add back preprocessor
+                    // let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
+                    let handle_tool_call = handle_tool_call;
+                    let output = tool.invoke(&*context, &handle_tool_call).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
-                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name().as_ref(), "Completed tool call");
+                    tracing::debug!(output = output.to_string(), args = ?handle_tool_call.args(), tool_name = tool.name().as_ref(), "Completed tool call");
 
                     Ok(output)
                 }.instrument(tool_span.or_current()));
@@ -497,7 +500,7 @@ impl Agent {
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
             if let Err(error) = output {
-                let stop = self.tool_calls_over_limit(&tool_call);
+                let stop = self.tool_calls_over_limit(tool_call);
                 if stop {
                     tracing::error!(
                         ?error,
@@ -516,15 +519,16 @@ impl Agent {
                 ))
                 .await?;
                 if stop {
-                    self.stop(StopReason::ToolCallsOverLimit(tool_call)).await;
+                    self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
+                        .await;
                     return Err(error.into());
                 }
                 continue;
             }
 
             let output = output?;
-            self.handle_control_tools(&tool_call, &output).await;
-            self.add_message(ChatMessage::ToolOutput(tool_call, output))
+            self.handle_control_tools(tool_call, &output).await;
+            self.add_message(ChatMessage::ToolOutput(tool_call.to_owned(), output))
                 .await?;
         }
 
@@ -547,10 +551,22 @@ impl Agent {
 
     // Handle any tool specific output (e.g. stop)
     async fn handle_control_tools(&mut self, tool_call: &ToolCall, output: &ToolOutput) {
-        if let ToolOutput::Stop = output {
-            tracing::warn!("Stop tool called, stopping agent");
-            self.stop(StopReason::RequestedByTool(tool_call.clone()))
+        match output {
+            ToolOutput::Stop => {
+                tracing::warn!("Stop tool called, stopping agent");
+                self.stop(StopReason::RequestedByTool(tool_call.clone()))
+                    .await;
+            }
+
+            ToolOutput::FeedbackRequired(maybe_payload) => {
+                tracing::warn!("Feedback required, stopping agent");
+                self.stop(StopReason::FeedbackRequired {
+                    tool_call: tool_call.clone(),
+                    payload: maybe_payload.clone(),
+                })
                 .await;
+            }
+            _ => (),
         }
     }
 
