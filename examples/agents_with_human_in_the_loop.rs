@@ -5,7 +5,8 @@
 //! In a more realistic example, you can use other rust primitives to make it work for your
 //! usecase. I.e., make an api request with a callback url that will add the feedback.
 //!
-//! Both requesting feedback and providing feedback support an optional payload (as a `serde_json::Value`).
+//! Both requesting feedback and providing feedback support an optional payload (as a
+//! `serde_json::Value`).
 //!
 //! This allows for more custom workflows, to either display or provide more input to the
 //! underlying tool call.
