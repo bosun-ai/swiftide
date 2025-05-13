@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::chat_completion::ChatMessage;
+use crate::chat_completion::{ChatMessage, ToolCall};
 use anyhow::Result;
 use async_trait::async_trait;
 use thiserror::Error;
@@ -157,6 +157,19 @@ pub trait AgentContext: Send + Sync {
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self);
+
+    /// Tools that require feedback or approval (i.e. from a human) can use this to check if the
+    /// feedback is received
+    async fn has_received_feedback(
+        &self,
+        tool_call: &ToolCall,
+    ) -> (bool, Option<serde_json::Value>);
+
+    async fn feedback_received(
+        &self,
+        tool_call: &ToolCall,
+        payload: Option<serde_json::Value>,
+    ) -> Result<()>;
 }
 
 #[async_trait]
@@ -187,6 +200,21 @@ impl AgentContext for Box<dyn AgentContext> {
 
     async fn redrive(&self) {
         (**self).redrive().await;
+    }
+
+    async fn has_received_feedback(
+        &self,
+        tool_call: &ToolCall,
+    ) -> (bool, Option<serde_json::Value>) {
+        (**self).has_received_feedback(tool_call).await
+    }
+
+    async fn feedback_received(
+        &self,
+        tool_call: &ToolCall,
+        payload: Option<serde_json::Value>,
+    ) -> Result<()> {
+        (**self).feedback_received(tool_call, payload).await
     }
 }
 
@@ -219,6 +247,21 @@ impl AgentContext for Arc<dyn AgentContext> {
     async fn redrive(&self) {
         (**self).redrive().await;
     }
+
+    async fn has_received_feedback(
+        &self,
+        tool_call: &ToolCall,
+    ) -> (bool, Option<serde_json::Value>) {
+        (**self).has_received_feedback(tool_call).await
+    }
+
+    async fn feedback_received(
+        &self,
+        tool_call: &ToolCall,
+        payload: Option<serde_json::Value>,
+    ) -> Result<()> {
+        (**self).feedback_received(tool_call, payload).await
+    }
 }
 
 #[async_trait]
@@ -250,6 +293,21 @@ impl AgentContext for &dyn AgentContext {
     async fn redrive(&self) {
         (**self).redrive().await;
     }
+
+    async fn has_received_feedback(
+        &self,
+        tool_call: &ToolCall,
+    ) -> (bool, Option<serde_json::Value>) {
+        (**self).has_received_feedback(tool_call).await
+    }
+
+    async fn feedback_received(
+        &self,
+        tool_call: &ToolCall,
+        payload: Option<serde_json::Value>,
+    ) -> Result<()> {
+        (**self).feedback_received(tool_call, payload).await
+    }
 }
 
 /// Convenience implementation for empty agent context
@@ -280,4 +338,19 @@ impl AgentContext for () {
     }
 
     async fn redrive(&self) {}
+
+    async fn has_received_feedback(
+        &self,
+        _tool_call: &ToolCall,
+    ) -> (bool, Option<serde_json::Value>) {
+        (false, None)
+    }
+
+    async fn feedback_received(
+        &self,
+        _tool_call: &ToolCall,
+        _payload: Option<serde_json::Value>,
+    ) -> Result<()> {
+        Ok(())
+    }
 }

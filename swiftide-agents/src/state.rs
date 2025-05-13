@@ -3,11 +3,10 @@
 use swiftide_core::chat_completion::ToolCall;
 
 #[derive(Clone, Debug, Default, strum_macros::EnumDiscriminants, strum_macros::EnumIs)]
-pub(crate) enum State {
+pub enum State {
     #[default]
     Pending,
     Running,
-    #[allow(dead_code)]
     Stopped(StopReason),
 }
 

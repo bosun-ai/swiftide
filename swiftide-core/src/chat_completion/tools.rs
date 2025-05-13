@@ -49,7 +49,7 @@ impl std::fmt::Display for ToolOutput {
 }
 
 /// A tool call that can be executed by the executor
-#[derive(Clone, Debug, Builder, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Builder, PartialEq, Serialize, Deserialize, Eq)]
 #[builder(setter(into, strip_option))]
 pub struct ToolCall {
     id: String,
@@ -59,7 +59,7 @@ pub struct ToolCall {
 }
 
 /// Hash is used for finding tool calls that have been retried by agents
-impl std::hash::Hash for &ToolCall {
+impl std::hash::Hash for ToolCall {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.args.hash(state);

@@ -131,3 +131,7 @@ path = "agents_resume.rs"
 [[example]]
 name = "streaming-agents"
 path = "streaming_agents.rs"
+
+[[example]]
+name = "agents-hitl"
+path = "agents_with_human_in_the_loop.rs"

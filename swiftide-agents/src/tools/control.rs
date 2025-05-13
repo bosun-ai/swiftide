@@ -41,16 +41,29 @@ impl From<Stop> for Box<dyn Tool> {
 }
 
 #[derive(Clone)]
-pub struct FeedbackRequired(pub Box<dyn Tool>);
+/// Wraps a tool and requires approval before it can be used
+pub struct ApprovalRequired(pub Box<dyn Tool>);
+
+impl ApprovalRequired {
+    /// Creates a new `ApprovalRequired` tool
+    pub fn new(tool: impl Tool + 'static) -> Self {
+        Self(Box::new(tool))
+    }
+}
 
 #[async_trait]
-impl Tool for FeedbackRequired {
+impl Tool for ApprovalRequired {
     async fn invoke(
         &self,
-        _agent_context: &dyn AgentContext,
-        _tool_call: &ToolCall,
+        context: &dyn AgentContext,
+        tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        Ok(ToolOutput::Stop)
+        let (approved, _) = context.has_received_feedback(tool_call).await;
+        if approved {
+            return self.0.invoke(context, tool_call).await;
+        }
+
+        Ok(ToolOutput::FeedbackRequired(None))
     }
 
     fn name(&self) -> Cow<'_, str> {
@@ -63,5 +76,11 @@ impl Tool for FeedbackRequired {
             .description("When you have completed, or cannot complete, your task, call this")
             .build()
             .unwrap()
+    }
+}
+
+impl From<ApprovalRequired> for Box<dyn Tool> {
+    fn from(val: ApprovalRequired) -> Self {
+        Box::new(val)
     }
 }

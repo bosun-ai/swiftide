@@ -7,14 +7,17 @@
 //! If chat messages include a `ChatMessage::Summary`, all previous messages are ignored except the
 //! system prompt. This is useful for maintaining focus in long conversations or managing token
 //! limits.
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicUsize, Ordering},
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::ChatMessage;
+use swiftide_core::chat_completion::{ChatMessage, ToolCall};
 use swiftide_core::{AgentContext, Command, CommandError, CommandOutput, ToolExecutor};
 
 use crate::tools::local_executor::LocalExecutor;
@@ -35,6 +38,8 @@ pub struct DefaultContext {
 
     /// Stop if last message is from the assistant
     stop_on_assistant: bool,
+
+    feedback_received: Arc<Mutex<HashMap<ToolCall, Option<serde_json::Value>>>>,
 }
 
 impl Default for DefaultContext {
@@ -45,6 +50,7 @@ impl Default for DefaultContext {
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>,
             stop_on_assistant: true,
+            feedback_received: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }
@@ -159,6 +165,32 @@ impl AgentContext for DefaultContext {
 
         // delete everything after the last completion
         history.truncate(redrive_ptr);
+    }
+
+    async fn has_received_feedback(
+        &self,
+        tool_call: &ToolCall,
+    ) -> (bool, Option<serde_json::Value>) {
+        // If feedback is present, return true with the optional payload,
+        // and remove it
+        // otherwise return false
+        let mut lock = self.feedback_received.lock().unwrap();
+        if let Some(payload) = lock.remove(tool_call) {
+            (true, payload)
+        } else {
+            (false, None)
+        }
+    }
+
+    async fn feedback_received(
+        &self,
+        tool_call: &ToolCall,
+        payload: Option<serde_json::Value>,
+    ) -> Result<()> {
+        let mut lock = self.feedback_received.lock().unwrap();
+        lock.insert(tool_call.clone(), payload);
+
+        Ok(())
     }
 }
 
