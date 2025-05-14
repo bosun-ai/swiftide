@@ -10,13 +10,22 @@ pub enum State {
     Stopped(StopReason),
 }
 
+impl State {
+    pub fn stop_reason(&self) -> Option<&StopReason> {
+        match self {
+            State::Stopped(reason) => Some(reason),
+            _ => None,
+        }
+    }
+}
+
 /// The reason the agent stopped
 ///
 /// `StopReason::Other` has some convenience methods to convert from any `AsRef<str>`
 ///
 /// A default is also provided for `StopReason`
 #[non_exhaustive]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, strum_macros::EnumIs)]
 pub enum StopReason {
     RequestedByTool(ToolCall),
     ToolCallsOverLimit(ToolCall),
@@ -29,6 +38,55 @@ pub enum StopReason {
     Other(String),
 }
 
+impl StopReason {
+    pub fn requested_by_tool(&self) -> Option<&ToolCall> {
+        if let StopReason::RequestedByTool(t) = self {
+            Some(t)
+        } else {
+            None
+        }
+    }
+
+    pub fn tool_calls_over_limit(&self) -> Option<&ToolCall> {
+        if let StopReason::ToolCallsOverLimit(t) = self {
+            Some(t)
+        } else {
+            None
+        }
+    }
+
+    pub fn feedback_required(&self) -> Option<(&ToolCall, Option<&serde_json::Value>)> {
+        if let StopReason::FeedbackRequired { tool_call, payload } = self {
+            Some((tool_call, payload.as_ref()))
+        } else {
+            None
+        }
+    }
+
+    pub fn error(&self) -> Option<()> {
+        if matches!(self, StopReason::Error) {
+            Some(())
+        } else {
+            None
+        }
+    }
+
+    pub fn no_new_messages(&self) -> Option<()> {
+        if matches!(self, StopReason::NoNewMessages) {
+            Some(())
+        } else {
+            None
+        }
+    }
+
+    pub fn other(&self) -> Option<&str> {
+        if let StopReason::Other(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+}
 impl Default for StopReason {
     fn default() -> Self {
         StopReason::Other("No reason provided".to_string())

@@ -21,14 +21,6 @@ use swiftide::{
     traits::{AgentContext, ToolFeedback},
 };
 
-// The macro supports strings/strs, vectors/slices, booleans and numbers.
-//
-// This is currently only supported for the attribute macro, not the derive macro.
-//
-// If you need more control or need to use full objects, we recommend to implement the `Tool` trait
-// and prove the Json spec yourself. Builders are available.
-//
-// For non-string types, the `json_type` is required to be specified.
 #[swiftide::tool(
     description = "Guess a number",
     param(name = "number", description = "Number to guess")
@@ -74,6 +66,8 @@ async fn main() -> Result<()> {
             Box::pin(async move { Ok(()) })
         })
         .on_stop(move |_agent, reason, _| {
+            // If you implement your own feedback flow, you can ofcourse also do it directly in the
+            // tool.
             if let StopReason::FeedbackRequired { tool_call, .. } = reason {
                 tx.send(tool_call).unwrap();
             }
@@ -90,6 +84,9 @@ async fn main() -> Result<()> {
     let Some(tool_call) = rx.recv().await else {
         panic!("expected a tool call to approve")
     };
+
+    // Alternatively, you can also get the stop reason from the agent state
+    // agent.state().stop_reason().unwrap().feedback_required().unwrap()
 
     // Register that this tool call is ok.
     println!("Approving number guessing");
