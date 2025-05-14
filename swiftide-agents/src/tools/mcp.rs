@@ -395,7 +395,7 @@ mod tests {
             json!(["string", "null"]).to_string()
         );
 
-        let tool_call = builder.build().unwrap();
+        let tool_call = builder.args(r#"{"b": "hello"}"#).build().unwrap();
 
         let result = optional_tool
             .invoke(&(), &tool_call)
