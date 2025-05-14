@@ -11,6 +11,33 @@ use std::{sync::Arc, time::Duration};
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 
+macro_rules! trace_span {
+    ($op:literal, $step:expr) => {
+        tracing::trace_span!($op, "otel.name" = format!("{}.{}", $op, $step.name()),)
+    };
+
+    ($op:literal) => {
+        tracing::trace_span!($op, "otel.name" = format!("{}", $op),)
+    };
+}
+
+macro_rules! node_trace_log {
+    ($step:expr, $node:expr, $msg:literal) => {
+        tracing::trace!(
+            node = ?$node,
+            node_id = ?$node.id(),
+            step = $step.name(),
+            $msg
+        )
+    };
+}
+
+macro_rules! batch_node_trace_log {
+    ($step:expr, $nodes:expr, $msg:literal) => {
+        tracing::trace!(batch_size = $nodes.len(), nodes = ?$nodes, step = $step.name(), $msg)
+    };
+}
+
 /// The default batch size for batch processing.
 const DEFAULT_BATCH_SIZE: usize = 256;
 
@@ -147,15 +174,15 @@ impl Pipeline {
             .stream
             .try_filter_map(move |node| {
                 let cache = Arc::clone(&cache);
-                let span =
-                    tracing::trace_span!("filter_cached", node_cache = ?cache, node = ?node );
+                let span = trace_span!("filter_cached", cache);
+
                 async move {
                     if cache.get(&node).await {
-                        tracing::debug!(node = ?node, node_cache = cache.name(), "Node in cache, skipping");
+                        node_trace_log!(cache, node, "node in cache, skipping");
                         Ok(None)
                     } else {
+                        node_trace_log!(cache, node, "node not in cache, processing");
                         cache.set(&node).await;
-                        tracing::debug!(node = ?node, node_cache = cache.name(), "Node not in cache, processing");
                         Ok(Some(node))
                     }
                 }
@@ -191,12 +218,14 @@ impl Pipeline {
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
-                let span = tracing::trace_span!("then", node = ?node);
+                let span = trace_span!("then", transformer);
 
-                task::spawn(async move {
-                    tracing::debug!(node = ?node, transformer = transformer.name(), "Transforming node");
-                    transformer.transform_node(node).await
-                }.instrument(span.or_current())
+                task::spawn(
+                    async move {
+                        node_trace_log!(transformer, node, "Transforming node");
+                        transformer.transform_node(node).await
+                    }
+                    .instrument(span.or_current()),
                 )
                 .err_into::<anyhow::Error>()
             })
@@ -236,15 +265,11 @@ impl Pipeline {
             .try_chunks(transformer.batch_size().unwrap_or(self.batch_size))
             .map_ok(move |nodes| {
                 let transformer = Arc::clone(&transformer);
-                let span = tracing::trace_span!("then_in_batch",  nodes = ?nodes );
+                let span = trace_span!("then_in_batch", transformer);
 
                 tokio::spawn(
                     async move {
-                        tracing::debug!(
-                            batch_transformer = transformer.name(),
-                            num_nodes = nodes.len(),
-                            "Batch transforming nodes"
-                        );
+                        batch_node_trace_log!(transformer, nodes, "batch transforming nodes");
                         transformer.batch_transform(nodes).await
                     }
                     .instrument(span.or_current()),
@@ -277,11 +302,11 @@ impl Pipeline {
             .stream
             .map_ok(move |node| {
                 let chunker = Arc::clone(&chunker);
-                let span = tracing::trace_span!("then_chunk", chunker = ?chunker, node = ?node );
+                let span = trace_span!("then_chunk", chunker);
 
                 tokio::spawn(
                     async move {
-                        tracing::debug!(chunker = chunker.name(), "Chunking node");
+                        node_trace_log!(chunker, node, "Chunking node");
                         chunker.transform_node(node).await
                     }
                     .instrument(span.or_current()),
@@ -322,32 +347,32 @@ impl Pipeline {
                 .try_chunks(storage.batch_size().unwrap())
                 .map_ok(move |nodes| {
                     let storage = Arc::clone(&storage);
-                    let span = tracing::trace_span!("then_store_with_batched", storage = ?storage, nodes = ?nodes );
+                    let span = trace_span!("then_store_with_batched", storage);
 
-                tokio::spawn(async move {
-                        tracing::debug!(storage = storage.name(), num_nodes = nodes.len(), "Batch Storing nodes");
-                        storage.batch_store(nodes).await
-                    }
-                    .instrument(span.or_current())
+                    tokio::spawn(
+                        async move {
+                            batch_node_trace_log!(storage, nodes, "batch storing nodes");
+                            storage.batch_store(nodes).await
+                        }
+                        .instrument(span.or_current()),
                     )
                     .map_err(anyhow::Error::from)
-
                 })
                 .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(None)
-                .boxed().into();
+                .boxed()
+                .into();
         } else {
             self.stream = self
                 .stream
                 .map_ok(move |node| {
                     let storage = Arc::clone(&storage);
-                    let span =
-                        tracing::trace_span!("then_store_with", storage = ?storage, node = ?node );
+                    let span = trace_span!("then_store_with", storage);
 
                     tokio::spawn(
                         async move {
-                            tracing::debug!(storage = storage.name(), "Storing node");
+                            node_trace_log!(storage, node, "Storing node");
 
                             storage.store(node).await
                         }
@@ -389,7 +414,7 @@ impl Pipeline {
         let (right_tx, right_rx) = mpsc::channel(1000);
 
         let stream = self.stream;
-        let span = tracing::trace_span!("split_by");
+        let span = trace_span!("split_by");
         tokio::spawn(
             async move {
                 stream
@@ -399,13 +424,13 @@ impl Pipeline {
                         let right_tx = right_tx.clone();
                         async move {
                             if predicate(&item) {
-                                tracing::debug!(?item, "Sending to left stream");
+                                tracing::trace!(?item, "Sending to left stream");
                                 left_tx
                                     .send(item)
                                     .await
                                     .expect("Failed to send to left stream");
                             } else {
-                                tracing::debug!(?item, "Sending to right stream");
+                                tracing::trace!(?item, "Sending to right stream");
                                 right_tx
                                     .send(item)
                                     .await
@@ -520,7 +545,7 @@ impl Pipeline {
     pub fn log_errors(mut self) -> Self {
         self.stream = self
             .stream
-            .inspect_err(|e| tracing::error!("Error processing node: {:?}", e))
+            .inspect_err(|e| tracing::error!(?e, "Error processing node"))
             .boxed()
             .into();
         self
@@ -533,7 +558,7 @@ impl Pipeline {
     pub fn log_nodes(mut self) -> Self {
         self.stream = self
             .stream
-            .inspect_ok(|node| tracing::debug!("Processed node: {:?}", node))
+            .inspect_ok(|node| tracing::debug!(?node, "Processed node: {:?}", node))
             .boxed()
             .into();
         self
@@ -576,7 +601,7 @@ impl Pipeline {
         }
 
         let elapsed_in_seconds = now.elapsed().as_secs();
-        tracing::warn!(
+        tracing::info!(
             elapsed_in_seconds,
             "Processed {} nodes in {} seconds",
             total_nodes,
