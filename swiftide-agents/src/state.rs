@@ -46,7 +46,7 @@ pub enum StopReason {
 }
 
 impl StopReason {
-    pub fn requested_by_tool(&self) -> Option<&ToolCall> {
+    pub fn as_requested_by_tool(&self) -> Option<&ToolCall> {
         if let StopReason::RequestedByTool(t) = self {
             Some(t)
         } else {
@@ -54,7 +54,7 @@ impl StopReason {
         }
     }
 
-    pub fn tool_calls_over_limit(&self) -> Option<&ToolCall> {
+    pub fn as_tool_calls_over_limit(&self) -> Option<&ToolCall> {
         if let StopReason::ToolCallsOverLimit(t) = self {
             Some(t)
         } else {
@@ -62,7 +62,7 @@ impl StopReason {
         }
     }
 
-    pub fn feedback_required(&self) -> Option<(&ToolCall, Option<&serde_json::Value>)> {
+    pub fn as_feedback_required(&self) -> Option<(&ToolCall, Option<&serde_json::Value>)> {
         if let StopReason::FeedbackRequired { tool_call, payload } = self {
             Some((tool_call, payload.as_ref()))
         } else {
@@ -70,7 +70,7 @@ impl StopReason {
         }
     }
 
-    pub fn error(&self) -> Option<()> {
+    pub fn as_error(&self) -> Option<()> {
         if matches!(self, StopReason::Error) {
             Some(())
         } else {
@@ -78,7 +78,7 @@ impl StopReason {
         }
     }
 
-    pub fn no_new_messages(&self) -> Option<()> {
+    pub fn as_no_new_messages(&self) -> Option<()> {
         if matches!(self, StopReason::NoNewMessages) {
             Some(())
         } else {
@@ -86,7 +86,7 @@ impl StopReason {
         }
     }
 
-    pub fn other(&self) -> Option<&str> {
+    pub fn as_other(&self) -> Option<&str> {
         if let StopReason::Other(s) = self {
             Some(s)
         } else {
