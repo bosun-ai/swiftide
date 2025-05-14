@@ -22,19 +22,26 @@ impl State {
 /// The reason the agent stopped
 ///
 /// `StopReason::Other` has some convenience methods to convert from any `AsRef<str>`
-///
-/// A default is also provided for `StopReason`
 #[non_exhaustive]
 #[derive(Clone, Debug, strum_macros::EnumIs)]
 pub enum StopReason {
+    /// A tool called stop
     RequestedByTool(ToolCall),
+
+    /// A tool repeatedly failed
     ToolCallsOverLimit(ToolCall),
+
+    /// A tool requires feedback before it will continue
     FeedbackRequired {
         tool_call: ToolCall,
         payload: Option<serde_json::Value>,
     },
+    /// There was an error
     Error,
+
+    /// No new messages; stopping completions
     NoNewMessages,
+
     Other(String),
 }
 
