@@ -12,6 +12,7 @@ pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
     Text(String),
 
+    /// Indicates that the toolcall requires feedback, i.e. in a human-in-the-loop
     FeedbackRequired(Option<serde_json::Value>),
 
     /// Indicates that the toolcall failed, but can be handled by the llm
@@ -21,6 +22,22 @@ pub enum ToolOutput {
 }
 
 impl ToolOutput {
+    pub fn text(text: impl Into<String>) -> Self {
+        ToolOutput::Text(text.into())
+    }
+
+    pub fn feedback_required(feedback: Option<serde_json::Value>) -> Self {
+        ToolOutput::FeedbackRequired(feedback)
+    }
+
+    pub fn stop() -> Self {
+        ToolOutput::Stop
+    }
+
+    pub fn fail(text: impl Into<String>) -> Self {
+        ToolOutput::Fail(text.into())
+    }
+
     pub fn content(&self) -> Option<&str> {
         match self {
             ToolOutput::Fail(s) | ToolOutput::Text(s) => Some(s),

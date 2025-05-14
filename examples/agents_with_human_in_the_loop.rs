@@ -18,7 +18,7 @@ use anyhow::Result;
 use swiftide::{
     agents::{self, StopReason, tools::control::ApprovalRequired},
     chat_completion::{ToolCall, ToolOutput, errors::ToolError},
-    traits::AgentContext,
+    traits::{AgentContext, ToolFeedback},
 };
 
 // The macro supports strings/strs, vectors/slices, booleans and numbers.
@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
     println!("Approving number guessing");
     agent
         .context()
-        .feedback_received(&tool_call, None)
+        .feedback_received(&tool_call, &ToolFeedback::approved())
         .await
         .unwrap();
 

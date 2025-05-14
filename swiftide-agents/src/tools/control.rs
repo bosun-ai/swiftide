@@ -3,7 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use std::borrow::Cow;
 use swiftide_core::{
-    AgentContext,
+    AgentContext, ToolFeedback,
     chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
 };
 
@@ -58,9 +58,13 @@ impl Tool for ApprovalRequired {
         context: &dyn AgentContext,
         tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        let (approved, _) = context.has_received_feedback(tool_call).await;
-        if approved {
-            return self.0.invoke(context, tool_call).await;
+        if let Some(feedback) = context.has_received_feedback(tool_call).await {
+            match feedback {
+                ToolFeedback::Approved { .. } => return self.0.invoke(context, tool_call).await,
+                ToolFeedback::Refused { .. } => {
+                    return Ok(ToolOutput::text("This tool call was refused"));
+                }
+            }
         }
 
         Ok(ToolOutput::FeedbackRequired(None))

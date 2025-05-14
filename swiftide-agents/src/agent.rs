@@ -685,6 +685,7 @@ impl Agent {
 mod tests {
 
     use serde::ser::Error;
+    use swiftide_core::ToolFeedback;
     use swiftide_core::chat_completion::errors::ToolError;
     use swiftide_core::chat_completion::{ChatCompletionResponse, ToolCall};
     use swiftide_core::test_utils::MockChatCompletion;
@@ -1353,12 +1354,96 @@ mod tests {
         // Step 5: Simulate feedback, run again and assert finish.
         agent
             .context
-            .feedback_received(&tool_call, None)
+            .feedback_received(&tool_call, &ToolFeedback::approved())
             .await
             .unwrap();
 
         tracing::debug!("running after approval");
         agent.run_once().await.unwrap();
+        assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_with_approval_required_tool_denied() {
+        use super::*;
+        use crate::tools::control::ApprovalRequired;
+        use crate::{assistant, chat_request, chat_response, user};
+        use swiftide_core::chat_completion::ToolCall;
+
+        // Step 1: Build a tool that needs approval.
+        let mock_tool = MockTool::default();
+
+        let approval_tool = ApprovalRequired(mock_tool.boxed());
+
+        // Step 2: Set up the mock LLM.
+        let mock_llm = MockChatCompletion::new();
+
+        let chat_req1 = chat_request! {
+            user!("Request with approval");
+            tools = [approval_tool.clone()]
+        };
+        let chat_resp1 = chat_response! {
+            "Completion message";
+            tool_calls = ["mock_tool"]
+        };
+        mock_llm.expect_complete(chat_req1.clone(), Ok(chat_resp1));
+
+        // The response will include the previous request, but no tool output
+        // from the required tool
+        let chat_req2 = chat_request! {
+            user!("Request with approval"),
+            assistant!("Completion message", ["mock_tool"]);
+            // Simulate feedback required output
+            tools = [approval_tool.clone()]
+        };
+        let chat_resp2 = chat_response! {
+            "Post-feedback message";
+            tool_calls = ["stop"]
+        };
+        mock_llm.expect_complete(chat_req2.clone(), Ok(chat_resp2));
+
+        // Step 3: Wire up the agent.
+        let mut agent = Agent::builder()
+            .tools([approval_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // Step 4: Run agent to trigger approval.
+        agent.query_once("Request with approval").await.unwrap();
+
+        assert!(matches!(
+            agent.state,
+            crate::state::State::Stopped(crate::state::StopReason::FeedbackRequired { .. })
+        ));
+
+        let State::Stopped(StopReason::FeedbackRequired { tool_call, .. }) = agent.state.clone()
+        else {
+            panic!("Expected feedback required");
+        };
+
+        // Step 5: Simulate feedback, run again and assert finish.
+        agent
+            .context
+            .feedback_received(&tool_call, &ToolFeedback::refused())
+            .await
+            .unwrap();
+
+        tracing::debug!("running after approval");
+        agent.run_once().await.unwrap();
+
+        let history = agent.context().history().await;
+        history
+            .iter()
+            .rfind(|m| {
+                let ChatMessage::ToolOutput(.., ToolOutput::Text(msg)) = m else {
+                    return false;
+                };
+                msg.contains("refused")
+            })
+            .expect("Could not find refusal message");
+
         assert!(agent.is_stopped());
     }
 }

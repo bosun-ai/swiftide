@@ -17,8 +17,11 @@ use std::{
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::chat_completion::{ChatMessage, ToolCall};
 use swiftide_core::{AgentContext, Command, CommandError, CommandOutput, ToolExecutor};
+use swiftide_core::{
+    ToolFeedback,
+    chat_completion::{ChatMessage, ToolCall},
+};
 
 use crate::tools::local_executor::LocalExecutor;
 
@@ -39,7 +42,7 @@ pub struct DefaultContext {
     /// Stop if last message is from the assistant
     stop_on_assistant: bool,
 
-    feedback_received: Arc<Mutex<HashMap<ToolCall, Option<serde_json::Value>>>>,
+    feedback_received: Arc<Mutex<HashMap<ToolCall, ToolFeedback>>>,
 }
 
 impl Default for DefaultContext {
@@ -105,10 +108,7 @@ impl DefaultContext {
     /// # Panics
     ///
     /// Panics if the inner mutex is poisoned
-    pub fn with_tool_feedback(
-        &mut self,
-        feedback: impl Into<HashMap<ToolCall, Option<serde_json::Value>>>,
-    ) {
+    pub fn with_tool_feedback(&mut self, feedback: impl Into<HashMap<ToolCall, ToolFeedback>>) {
         self.feedback_received
             .lock()
             .unwrap()
@@ -184,26 +184,15 @@ impl AgentContext for DefaultContext {
         history.truncate(redrive_ptr);
     }
 
-    async fn has_received_feedback(
-        &self,
-        tool_call: &ToolCall,
-    ) -> (bool, Option<serde_json::Value>) {
+    async fn has_received_feedback(&self, tool_call: &ToolCall) -> Option<ToolFeedback> {
         // If feedback is present, return true with the optional payload,
         // and remove it
         // otherwise return false
         let mut lock = self.feedback_received.lock().unwrap();
-        if let Some(payload) = lock.remove(tool_call) {
-            (true, payload)
-        } else {
-            (false, None)
-        }
+        lock.remove(tool_call)
     }
 
-    async fn feedback_received(
-        &self,
-        tool_call: &ToolCall,
-        payload: Option<serde_json::Value>,
-    ) -> Result<()> {
+    async fn feedback_received(&self, tool_call: &ToolCall, feedback: &ToolFeedback) -> Result<()> {
         let mut lock = self.feedback_received.lock().unwrap();
         // Set the message counter one back so that on a next try, the agent can resume by
         // trying the tool calls first. Only does this if there are no other approvals
@@ -212,7 +201,7 @@ impl AgentContext for DefaultContext {
             self.completions_ptr.swap(previous, Ordering::SeqCst);
         }
         tracing::debug!(?tool_call, context = ?self, "feedback received");
-        lock.insert(tool_call.clone(), payload);
+        lock.insert(tool_call.clone(), feedback.clone());
 
         Ok(())
     }
