@@ -127,6 +127,7 @@ impl<T: Into<String>> From<T> for CommandOutput {
 
 /// Feedback that can be given on a tool, i.e. with a human in the loop
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum ToolFeedback {
     Approved { payload: Option<serde_json::Value> },
     Refused { payload: Option<serde_json::Value> },

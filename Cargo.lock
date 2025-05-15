@@ -9133,6 +9133,7 @@ version = "0.26.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "convert_case 0.8.0",
  "derive_builder 0.20.2",
  "dyn-clone",
  "fs-err",
@@ -9152,6 +9153,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "tracing",
 ]
 
@@ -9171,6 +9173,7 @@ dependencies = [
  "pin-project",
  "pretty_assertions",
  "qdrant-client",
+ "schemars",
  "serde",
  "serde_json",
  "strum 0.27.1",
@@ -10120,6 +10123,8 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-sink",
+ "futures-util",
+ "hashbrown 0.15.3",
  "pin-project-lite",
  "tokio",
 ]
