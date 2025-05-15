@@ -60,6 +60,7 @@ mod util;
 
 pub use agent::{Agent, AgentBuilder, AgentBuilderError};
 pub use default_context::DefaultContext;
+pub use state::{State, StopReason};
 
 #[cfg(test)]
 mod test_utils;

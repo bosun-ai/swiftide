@@ -7,7 +7,7 @@ impl swiftide::chat_completion::Tool for HelloDerive {
     async fn invoke(
         &self,
         agent_context: &dyn swiftide::traits::AgentContext,
-        raw_args: Option<&str>,
+        tool_call: &swiftide::chat_completion::ToolCall,
     ) -> std::result::Result<
         swiftide::chat_completion::ToolOutput,
         ::swiftide::chat_completion::errors::ToolError,

@@ -16,6 +16,7 @@ use rmcp::{ServiceExt, model::CallToolRequestParam};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use swiftide_core::CommandError;
+use swiftide_core::chat_completion::ToolCall;
 use swiftide_core::{
     Tool, ToolBox,
     chat_completion::{ParamSpec, ParamType, ToolSpec, errors::ToolError},
@@ -260,12 +261,12 @@ impl Tool for McpTool {
     async fn invoke(
         &self,
         _agent_context: &dyn swiftide_core::AgentContext,
-        raw_args: Option<&str>,
+        tool_call: &ToolCall,
     ) -> Result<
         swiftide_core::chat_completion::ToolOutput,
         swiftide_core::chat_completion::errors::ToolError,
     > {
-        let args = match raw_args {
+        let args = match tool_call.args() {
             Some(args) => Some(serde_json::from_str(args).map_err(ToolError::WrongArguments)?),
             None => None,
         };
@@ -350,9 +351,19 @@ mod tests {
         assert_eq!(names, ["optional", "sub", "sum"]);
 
         let sum_tool = t.iter().find(|t| t.name() == "sum").unwrap();
+        let mut builder = ToolCall::builder()
+            .id("some")
+            .args(r#"{"b": "hello"}"#)
+            .name("test")
+            .name("test")
+            .to_owned();
+
         assert_eq!(sum_tool.tool_spec().name, "sum");
+
+        let tool_call = builder.args(r#"{"a": 10, "b": 20}"#).build().unwrap();
+
         let result = sum_tool
-            .invoke(&(), Some(r#"{"a": 10, "b": 20}"#))
+            .invoke(&(), &tool_call)
             .await
             .unwrap()
             .content()
@@ -362,8 +373,11 @@ mod tests {
 
         let sub_tool = t.iter().find(|t| t.name() == "sub").unwrap();
         assert_eq!(sub_tool.tool_spec().name, "sub");
+
+        let tool_call = builder.args(r#"{"a": 10, "b": 20}"#).build().unwrap();
+
         let result = sub_tool
-            .invoke(&(), Some(r#"{"a": 10, "b": 20}"#))
+            .invoke(&(), &tool_call)
             .await
             .unwrap()
             .content()
@@ -381,8 +395,10 @@ mod tests {
             json!(["string", "null"]).to_string()
         );
 
+        let tool_call = builder.args(r#"{"b": "hello"}"#).build().unwrap();
+
         let result = optional_tool
-            .invoke(&(), Some(r#"{"b": "hello"}"#))
+            .invoke(&(), &tool_call)
             .await
             .unwrap()
             .content()
@@ -390,8 +406,9 @@ mod tests {
             .to_string();
         assert_eq!(result, "hello");
 
+        let tool_call = builder.args(r#"{"b": null}"#).build().unwrap();
         let result = optional_tool
-            .invoke(&(), Some(r#"{ "b": null }"#))
+            .invoke(&(), &tool_call)
             .await
             .unwrap()
             .content()

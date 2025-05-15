@@ -6,11 +6,14 @@ use serde::ser::{Error as SerError, SerializeSeq, Serializer};
 use serde::{Deserialize, Serialize};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
 #[non_exhaustive]
 pub enum ToolOutput {
     /// Adds the result of the toolcall to messages
     Text(String),
+
+    /// Indicates that the toolcall requires feedback, i.e. in a human-in-the-loop
+    FeedbackRequired(Option<serde_json::Value>),
 
     /// Indicates that the toolcall failed, but can be handled by the llm
     Fail(String),
@@ -19,6 +22,22 @@ pub enum ToolOutput {
 }
 
 impl ToolOutput {
+    pub fn text(text: impl Into<String>) -> Self {
+        ToolOutput::Text(text.into())
+    }
+
+    pub fn feedback_required(feedback: Option<serde_json::Value>) -> Self {
+        ToolOutput::FeedbackRequired(feedback)
+    }
+
+    pub fn stop() -> Self {
+        ToolOutput::Stop
+    }
+
+    pub fn fail(text: impl Into<String>) -> Self {
+        ToolOutput::Fail(text.into())
+    }
+
     pub fn content(&self) -> Option<&str> {
         match self {
             ToolOutput::Fail(s) | ToolOutput::Text(s) => Some(s),
@@ -39,12 +58,15 @@ impl std::fmt::Display for ToolOutput {
             ToolOutput::Text(value) => write!(f, "{value}"),
             ToolOutput::Fail(value) => write!(f, "Tool call failed: {value}"),
             ToolOutput::Stop => write!(f, "Stop"),
+            ToolOutput::FeedbackRequired(_) => {
+                write!(f, "Feedback required")
+            }
         }
     }
 }
 
 /// A tool call that can be executed by the executor
-#[derive(Clone, Debug, Builder, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Builder, PartialEq, Serialize, Deserialize, Eq)]
 #[builder(setter(into, strip_option))]
 pub struct ToolCall {
     id: String,
@@ -54,7 +76,7 @@ pub struct ToolCall {
 }
 
 /// Hash is used for finding tool calls that have been retried by agents
-impl std::hash::Hash for &ToolCall {
+impl std::hash::Hash for ToolCall {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.args.hash(state);
@@ -88,6 +110,10 @@ impl ToolCall {
 
     pub fn args(&self) -> Option<&str> {
         self.args.as_deref()
+    }
+
+    pub fn with_args(&mut self, args: Option<String>) {
+        self.args = args;
     }
 }
 

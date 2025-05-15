@@ -372,6 +372,14 @@ impl Agent {
                     break;
                 }
             }
+
+            // If the last message contains tool calls that have not been completed,
+            // run the tools first
+            if let Some(&ChatMessage::Assistant(.., Some(ref tool_calls))) = messages.last() {
+                tracing::debug!("Uncompleted tool calls found; invoking tools");
+                self.invoke_tools(tool_calls).await?;
+            }
+
             let result = self.run_completions(&messages).await;
 
             if let Err(err) = result {
@@ -441,6 +449,13 @@ impl Agent {
                 .map_err(AgentError::CompletionsFailed)
         }?;
 
+        // The arg preprocessor helps avoid common llm errors.
+        // This must happen as early as possible
+        response
+            .tool_calls
+            .as_deref_mut()
+            .map(ArgPreprocessor::preprocess_tool_calls);
+
         invoke_hooks!(AfterCompletion, self, &mut response);
 
         self.add_message(ChatMessage::Assistant(
@@ -450,7 +465,7 @@ impl Agent {
         .await?;
 
         if let Some(tool_calls) = response.tool_calls {
-            self.invoke_tools(tool_calls).await?;
+            self.invoke_tools(&tool_calls).await?;
         }
 
         invoke_hooks!(AfterEach, self);
@@ -458,8 +473,8 @@ impl Agent {
         Ok(())
     }
 
-    async fn invoke_tools(&mut self, tool_calls: Vec<ToolCall>) -> Result<(), AgentError> {
-        debug!("LLM returned tool calls: {:?}", tool_calls);
+    async fn invoke_tools(&mut self, tool_calls: &[ToolCall]) -> Result<(), AgentError> {
+        tracing::debug!("LLM returned tool calls: {:?}", tool_calls);
 
         let mut handles = vec![];
         for tool_call in tool_calls {
@@ -469,7 +484,7 @@ impl Agent {
             };
             tracing::info!("Calling tool `{}`", tool_call.name());
 
-            let tool_args = tool_call.args().map(String::from);
+            // let tool_args = tool_call.args().map(String::from);
             let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
             invoke_hooks!(BeforeTool, self, &tool_call);
@@ -479,11 +494,16 @@ impl Agent {
                 "otel.name" = format!("tool.{}", tool.name().as_ref())
             );
 
+            let handle_tool_call = tool_call.clone();
             let handle = tokio::spawn(async move {
-                    let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
-                    let output = tool.invoke(&*context, tool_args.as_deref()).await.map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
+                    // TODO: Add back preprocessor
+                    // let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
+                    let handle_tool_call = handle_tool_call;
+                    let output = tool.invoke(&*context, &handle_tool_call)
+                        .await
+                        .map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
-                    tracing::debug!(output = output.to_string(), args = ?tool_args, tool_name = tool.name().as_ref(), "Completed tool call");
+                    tracing::debug!(output = output.to_string(), args = ?handle_tool_call.args(), tool_name = tool.name().as_ref(), "Completed tool call");
 
                     Ok(output)
                 }.instrument(tool_span.or_current()));
@@ -497,7 +517,7 @@ impl Agent {
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
             if let Err(error) = output {
-                let stop = self.tool_calls_over_limit(&tool_call);
+                let stop = self.tool_calls_over_limit(tool_call);
                 if stop {
                     tracing::error!(
                         ?error,
@@ -516,16 +536,23 @@ impl Agent {
                 ))
                 .await?;
                 if stop {
-                    self.stop(StopReason::ToolCallsOverLimit(tool_call)).await;
+                    self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
+                        .await;
                     return Err(error.into());
                 }
                 continue;
             }
 
             let output = output?;
-            self.handle_control_tools(&tool_call, &output).await;
-            self.add_message(ChatMessage::ToolOutput(tool_call, output))
-                .await?;
+            self.handle_control_tools(tool_call, &output).await;
+
+            // Feedback required leaves the tool call open
+            //
+            // It assumes a follow up invocation of the agent will have the feedback approved
+            if !output.is_feedback_required() {
+                self.add_message(ChatMessage::ToolOutput(tool_call.to_owned(), output))
+                    .await?;
+            }
         }
 
         Ok(())
@@ -547,10 +574,22 @@ impl Agent {
 
     // Handle any tool specific output (e.g. stop)
     async fn handle_control_tools(&mut self, tool_call: &ToolCall, output: &ToolOutput) {
-        if let ToolOutput::Stop = output {
-            tracing::warn!("Stop tool called, stopping agent");
-            self.stop(StopReason::RequestedByTool(tool_call.clone()))
+        match output {
+            ToolOutput::Stop => {
+                tracing::warn!("Stop tool called, stopping agent");
+                self.stop(StopReason::RequestedByTool(tool_call.clone()))
+                    .await;
+            }
+
+            ToolOutput::FeedbackRequired(maybe_payload) => {
+                tracing::warn!("Feedback required, stopping agent");
+                self.stop(StopReason::FeedbackRequired {
+                    tool_call: tool_call.clone(),
+                    payload: maybe_payload.clone(),
+                })
                 .await;
+            }
+            _ => (),
         }
     }
 
@@ -646,13 +685,15 @@ impl Agent {
 mod tests {
 
     use serde::ser::Error;
+    use swiftide_core::ToolFeedback;
     use swiftide_core::chat_completion::errors::ToolError;
     use swiftide_core::chat_completion::{ChatCompletionResponse, ToolCall};
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
     use crate::{
-        assistant, chat_request, chat_response, summary, system, tool_failed, tool_output, user,
+        State, assistant, chat_request, chat_response, summary, system, tool_failed, tool_output,
+        user,
     };
 
     use crate::test_utils::{MockHook, MockTool};
@@ -1247,5 +1288,162 @@ mod tests {
             .unwrap();
 
         agent.query_once("Try again!").await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_with_approval_required_tool() {
+        use super::*;
+        use crate::tools::control::ApprovalRequired;
+        use crate::{assistant, chat_request, chat_response, user};
+        use swiftide_core::chat_completion::ToolCall;
+
+        // Step 1: Build a tool that needs approval.
+        let mock_tool = MockTool::default();
+        mock_tool.expect_invoke_ok("Great!".into(), None);
+
+        let approval_tool = ApprovalRequired(mock_tool.boxed());
+
+        // Step 2: Set up the mock LLM.
+        let mock_llm = MockChatCompletion::new();
+
+        let chat_req1 = chat_request! {
+            user!("Request with approval");
+            tools = [approval_tool.clone()]
+        };
+        let chat_resp1 = chat_response! {
+            "Completion message";
+            tool_calls = ["mock_tool"]
+        };
+        mock_llm.expect_complete(chat_req1.clone(), Ok(chat_resp1));
+
+        // The response will include the previous request, but no tool output
+        // from the required tool
+        let chat_req2 = chat_request! {
+            user!("Request with approval"),
+            assistant!("Completion message", ["mock_tool"]);
+            // Simulate feedback required output
+            tools = [approval_tool.clone()]
+        };
+        let chat_resp2 = chat_response! {
+            "Post-feedback message";
+            tool_calls = ["stop"]
+        };
+        mock_llm.expect_complete(chat_req2.clone(), Ok(chat_resp2));
+
+        // Step 3: Wire up the agent.
+        let mut agent = Agent::builder()
+            .tools([approval_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // Step 4: Run agent to trigger approval.
+        agent.query_once("Request with approval").await.unwrap();
+
+        assert!(matches!(
+            agent.state,
+            crate::state::State::Stopped(crate::state::StopReason::FeedbackRequired { .. })
+        ));
+
+        let State::Stopped(StopReason::FeedbackRequired { tool_call, .. }) = agent.state.clone()
+        else {
+            panic!("Expected feedback required");
+        };
+
+        // Step 5: Simulate feedback, run again and assert finish.
+        agent
+            .context
+            .feedback_received(&tool_call, &ToolFeedback::approved())
+            .await
+            .unwrap();
+
+        tracing::debug!("running after approval");
+        agent.run_once().await.unwrap();
+        assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_agent_with_approval_required_tool_denied() {
+        use super::*;
+        use crate::tools::control::ApprovalRequired;
+        use crate::{assistant, chat_request, chat_response, user};
+        use swiftide_core::chat_completion::ToolCall;
+
+        // Step 1: Build a tool that needs approval.
+        let mock_tool = MockTool::default();
+
+        let approval_tool = ApprovalRequired(mock_tool.boxed());
+
+        // Step 2: Set up the mock LLM.
+        let mock_llm = MockChatCompletion::new();
+
+        let chat_req1 = chat_request! {
+            user!("Request with approval");
+            tools = [approval_tool.clone()]
+        };
+        let chat_resp1 = chat_response! {
+            "Completion message";
+            tool_calls = ["mock_tool"]
+        };
+        mock_llm.expect_complete(chat_req1.clone(), Ok(chat_resp1));
+
+        // The response will include the previous request, but no tool output
+        // from the required tool
+        let chat_req2 = chat_request! {
+            user!("Request with approval"),
+            assistant!("Completion message", ["mock_tool"]);
+            // Simulate feedback required output
+            tools = [approval_tool.clone()]
+        };
+        let chat_resp2 = chat_response! {
+            "Post-feedback message";
+            tool_calls = ["stop"]
+        };
+        mock_llm.expect_complete(chat_req2.clone(), Ok(chat_resp2));
+
+        // Step 3: Wire up the agent.
+        let mut agent = Agent::builder()
+            .tools([approval_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // Step 4: Run agent to trigger approval.
+        agent.query_once("Request with approval").await.unwrap();
+
+        assert!(matches!(
+            agent.state,
+            crate::state::State::Stopped(crate::state::StopReason::FeedbackRequired { .. })
+        ));
+
+        let State::Stopped(StopReason::FeedbackRequired { tool_call, .. }) = agent.state.clone()
+        else {
+            panic!("Expected feedback required");
+        };
+
+        // Step 5: Simulate feedback, run again and assert finish.
+        agent
+            .context
+            .feedback_received(&tool_call, &ToolFeedback::refused())
+            .await
+            .unwrap();
+
+        tracing::debug!("running after approval");
+        agent.run_once().await.unwrap();
+
+        let history = agent.context().history().await;
+        history
+            .iter()
+            .rfind(|m| {
+                let ChatMessage::ToolOutput(.., ToolOutput::Text(msg)) = m else {
+                    return false;
+                };
+                msg.contains("refused")
+            })
+            .expect("Could not find refusal message");
+
+        assert!(agent.is_stopped());
     }
 }

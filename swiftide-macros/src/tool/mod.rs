@@ -58,7 +58,7 @@ pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> T
         }
     } else {
         quote! {
-            let Some(args) = raw_args
+            let Some(args) = tool_call.args()
             else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #tool_name))) };
 
             let args: #args_struct_ident = ::swiftide::reexports::serde_json::from_str(&args)?;
@@ -75,7 +75,7 @@ pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> T
 
         #[::swiftide::reexports::async_trait::async_trait]
         impl ::swiftide::chat_completion::Tool for #tool_struct {
-            async fn invoke(&self, agent_context: &dyn ::swiftide::traits::AgentContext, raw_args: Option<&str>) -> ::std::result::Result<::swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
+            async fn invoke(&self, agent_context: &dyn ::swiftide::traits::AgentContext, tool_call: &swiftide::chat_completion::ToolCall) -> ::std::result::Result<::swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                 #invoke_body
             }
 
@@ -133,7 +133,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         quote! { return self.#expected_fn_ident(agent_context).await }
     } else {
         quote! {
-            let Some(args) = raw_args
+            let Some(args) = tool_call.args()
             else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #expected_fn_name))) };
 
             let args: #args_struct_ident = ::swiftide::reexports::serde_json::from_str(&args)?;
@@ -153,7 +153,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         #[async_trait::async_trait]
         impl #impl_generics swiftide::chat_completion::Tool for #struct_ident #ty_generics #where_clause {
-            async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, raw_args: Option<&str>) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
+            async fn invoke(&self, agent_context: &dyn swiftide::traits::AgentContext, tool_call: &swiftide::chat_completion::ToolCall) -> std::result::Result<swiftide::chat_completion::ToolOutput, ::swiftide::chat_completion::errors::ToolError> {
                 #invoke_body
             }
 

@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
+use swiftide_core::chat_completion::ToolCall;
 use swiftide_core::chat_completion::{Tool, ToolOutput, ToolSpec, errors::ToolError};
 
 use swiftide_core::AgentContext;
@@ -157,12 +158,12 @@ impl Tool for MockTool {
     async fn invoke(
         &self,
         _agent_context: &dyn AgentContext,
-        raw_args: Option<&str>,
+        tool_call: &ToolCall,
     ) -> std::result::Result<ToolOutput, ToolError> {
         tracing::debug!(
             "[MockTool] Invoked `{}` with args: {:?}",
             self.name,
-            raw_args
+            tool_call
         );
         let expectation = self
             .expectations
@@ -171,7 +172,7 @@ impl Tool for MockTool {
             .pop()
             .unwrap_or_else(|| panic!("[MockTool] No expectations left for `{}`", self.name));
 
-        assert_eq!(expectation.1, raw_args);
+        assert_eq!(expectation.1, tool_call.args());
 
         expectation.0
     }

@@ -1,12 +1,25 @@
 use std::borrow::Cow;
 
 use serde_json::{Map, Value};
+use swiftide_core::chat_completion::ToolCall;
 
 /// Preprocesses arguments for tool calls and tries to fix common errors
 /// This must be infallible and the result is always forwarded to the tool
 pub struct ArgPreprocessor;
 
 impl ArgPreprocessor {
+    pub fn preprocess_tool_calls(tool_calls: &mut [ToolCall]) {
+        for tool_call in tool_calls.iter_mut() {
+            let args = Self::preprocess(tool_call.args());
+
+            if args.as_ref().is_some_and(|a| match a {
+                Cow::Borrowed(_) => false,
+                Cow::Owned(_) => true,
+            }) {
+                tool_call.with_args(args.map(|a| a.to_string()));
+            }
+        }
+    }
     pub fn preprocess(value: Option<&str>) -> Option<Cow<'_, str>> {
         Some(take_first_occurrence_in_object(value?))
     }
