@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1747047848922,
+  "lastUpdate": 1747317008916,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21695,6 +21695,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250135,
             "range": "± 1728",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9e831d3eb072748ebb21c9a16cd7d807b4d42469",
+          "message": "feat(agents)!: Easy human-in-the-loop flows by decorating tools (#790)\n\nTools can now return a FeedbackRequired with an optional Value payload.\nThe agent will stop, with the tool call and optional payload in the\nreason. Possible to use either the stop reason returned by the agent or\na hook to act on this, or use it in your own tools.\n\nFeedback is given on the context of the agent with the tool call and an\noptional payload. The payload offers flexibility to provide feedback to\nthe tool, or to provide context to the user.\n\nBREAKING CHANGE: The `Tool` trait now receives a `ToolCall` as argument\ninstead of an `Option<&str>`. The latter is still accessible via\n`tool_call.args()`.",
+          "timestamp": "2025-05-15T15:41:15+02:00",
+          "tree_id": "9b56f12e3a59442d5ec98d7bf4b302be99c27899",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9e831d3eb072748ebb21c9a16cd7d807b4d42469"
+        },
+        "date": 1747317007346,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1294245,
+            "range": "± 963837",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 249662,
+            "range": "± 2292",
             "unit": "ns/iter"
           }
         ]
