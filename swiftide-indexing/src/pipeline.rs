@@ -704,6 +704,7 @@ mod tests {
             .expect_transform_node()
             .returning(|_node| Err(anyhow::anyhow!("Error transforming node")));
         transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "mock");
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
         storage.expect_store().times(0).returning(Ok);
@@ -906,22 +907,26 @@ mod tests {
         let mut transformer = MockTransformer::new();
         transformer.expect_transform_node().returning(Ok);
         transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "mock");
 
         let mut batch_transformer = MockBatchableTransformer::new();
         batch_transformer
             .expect_batch_transform()
             .returning(std::convert::Into::into);
         batch_transformer.expect_concurrency().returning(|| None);
+        batch_transformer.expect_name().returning(|| "mock");
         let mut chunker = MockChunkerTransformer::new();
         chunker
             .expect_transform_node()
             .returning(|node| vec![node].into());
         chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "mock");
 
         let mut storage = MockPersist::new();
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_store().returning(Ok);
         storage.expect_batch_size().returning(|| None);
+        storage.expect_name().returning(|| "mock");
 
         let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader>)
             .then(Box::new(transformer) as Box<dyn Transformer>)
