@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1747317008916,
+  "lastUpdate": 1747415422759,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21749,6 +21749,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 249662,
             "range": "± 2292",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7ac92a4f2ff4b1d1ba7e86c90c4f6c5c025cabc9",
+          "message": "refactor(agents): Direct access to executor via context (#794)\n\nCurrent solution leaks information of the executor through the context.\nInstead, access the executor directly. This also offers more flexibility\nto do more creative stuff in tools and elsewhere.",
+          "timestamp": "2025-05-16T19:01:27+02:00",
+          "tree_id": "b4152f681a796ad14d6b74d187c90d255ea1e31b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7ac92a4f2ff4b1d1ba7e86c90c4f6c5c025cabc9"
+        },
+        "date": 1747415421270,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1303068,
+            "range": "± 1031723",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253740,
+            "range": "± 1279",
             "unit": "ns/iter"
           }
         ]
