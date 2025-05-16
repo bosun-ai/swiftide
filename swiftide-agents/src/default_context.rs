@@ -171,6 +171,10 @@ impl AgentContext for DefaultContext {
         self.tool_executor.exec_cmd(cmd).await
     }
 
+    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+        &self.tool_executor
+    }
+
     /// Pops the last messages up until the previous completion
     ///
     /// LLMs failing completion for various reasons is unfortunately a common occurrence

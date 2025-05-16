@@ -178,6 +178,7 @@ async fn search_code(
     code_query: &str,
 ) -> Result<ToolOutput, ToolError> {
     let command_output = context
+        .executor()
         .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
         .await?;
 

@@ -178,7 +178,12 @@ pub trait AgentContext: Send + Sync {
     async fn add_message(&self, item: ChatMessage);
 
     /// Execute a command if the context supports it
+    ///
+    /// Deprecated: use executor instead to access the executor directly
+    #[deprecated(note = "use executor instead")]
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
+
+    fn executor(&self) -> &Arc<dyn ToolExecutor>;
 
     async fn history(&self) -> Vec<ChatMessage>;
 
@@ -213,8 +218,13 @@ impl AgentContext for Box<dyn AgentContext> {
         (**self).add_message(item).await;
     }
 
+    #[allow(deprecated)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
+    }
+
+    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+        (**self).executor()
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
@@ -252,8 +262,13 @@ impl AgentContext for Arc<dyn AgentContext> {
         (**self).add_message(item).await;
     }
 
+    #[allow(deprecated)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
+    }
+
+    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+        (**self).executor()
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
@@ -291,8 +306,13 @@ impl AgentContext for &dyn AgentContext {
         (**self).add_message(item).await;
     }
 
+    #[allow(deprecated)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
+    }
+
+    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+        (**self).executor()
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
@@ -333,6 +353,10 @@ impl AgentContext for () {
         Err(CommandError::ExecutorError(anyhow::anyhow!(
             "Empty agent context does not have a tool executor"
         )))
+    }
+
+    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+        unimplemented!("Empty agent context does not have a tool executor")
     }
 
     async fn history(&self) -> Vec<ChatMessage> {
