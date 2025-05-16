@@ -33,6 +33,7 @@ async fn search_code(
     code_query: &str,
 ) -> Result<ToolOutput, ToolError> {
     let command_output = context
+        .executor()
         .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
         .await?;
 
@@ -47,6 +48,7 @@ const READ_FILE: &str = "Read a file";
 )]
 async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput, ToolError> {
     let command_output = context
+        .executor()
         .exec_cmd(&Command::shell(format!("cat {path}")))
         .await?;
 
