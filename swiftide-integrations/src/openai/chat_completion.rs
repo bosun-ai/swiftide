@@ -69,11 +69,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .build()
             .map_err(openai_error_to_language_model_error)?;
 
-        tracing::debug!(
-            model = &model,
-            request = serde_json::to_string_pretty(&request).expect("infallible"),
-            "Sending request to OpenAI"
-        );
+        tracing::debug!(model, ?request, "Sending request to OpenAI");
 
         let response = self
             .client
@@ -82,10 +78,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        tracing::debug!(
-            response = serde_json::to_string_pretty(&response).expect("infallible"),
-            "Received response from OpenAI"
-        );
+        tracing::debug!(?response, "Received response from OpenAI");
 
         let mut builder = ChatCompletionResponse::builder()
             .maybe_message(
@@ -180,11 +173,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             }
         };
 
-        tracing::debug!(
-            model = &model,
-            request = serde_json::to_string_pretty(&request).expect("infallible"),
-            "Sending request to OpenAI"
-        );
+        tracing::debug!(model, ?request, "Sending request to OpenAI");
 
         let response = match self.client.chat().create_stream(request).await {
             Ok(response) => response,

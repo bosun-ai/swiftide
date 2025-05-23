@@ -375,9 +375,13 @@ impl Agent {
 
             // If the last message contains tool calls that have not been completed,
             // run the tools first
-            if let Some(&ChatMessage::Assistant(.., Some(ref tool_calls))) = messages.last() {
+            if let Some(&ChatMessage::Assistant(.., Some(ref tool_calls))) =
+                maybe_tool_call_without_output(&messages)
+            {
                 tracing::debug!("Uncompleted tool calls found; invoking tools");
                 self.invoke_tools(tool_calls).await?;
+                // Move on to the next tick, so that the
+                continue;
             }
 
             let result = self.run_completions(&messages).await;
@@ -403,7 +407,13 @@ impl Agent {
     #[tracing::instrument(skip_all, err)]
     async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<(), AgentError> {
         debug!(
-            "Running completion for agent with {} messages",
+            tools = ?self
+                .tools
+                .iter()
+                .map(|t| t.name())
+                .collect::<Vec<_>>()
+                ,
+            "Running completion for agent with {} new messages",
             messages.len()
         );
 
@@ -496,8 +506,6 @@ impl Agent {
 
             let handle_tool_call = tool_call.clone();
             let handle = tokio::spawn(async move {
-                    // TODO: Add back preprocessor
-                    // let tool_args = ArgPreprocessor::preprocess(tool_args.as_deref());
                     let handle_tool_call = handle_tool_call;
                     let output = tool.invoke(&*context, &handle_tool_call)
                         .await
@@ -666,6 +674,14 @@ impl Agent {
         &self.tools
     }
 
+    pub fn state(&self) -> &state::State {
+        &self.state
+    }
+
+    pub fn stop_reason(&self) -> Option<&StopReason> {
+        self.state.stop_reason()
+    }
+
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
         for toolbox in &self.toolboxes {
             let tools = toolbox
@@ -679,6 +695,24 @@ impl Agent {
 
         Ok(())
     }
+}
+
+/// Reverse searches through messages, if it encounters a tool call before encountering an output,
+/// it will return the chat message with the tool calls, otherwise it returns None
+fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessage> {
+    for message in messages.iter().rev() {
+        if let ChatMessage::ToolOutput(..) = message {
+            return None;
+        }
+
+        if let ChatMessage::Assistant(.., Some(tool_calls)) = message {
+            if !tool_calls.is_empty() {
+                return Some(message);
+            }
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -1320,7 +1354,8 @@ mod tests {
         // from the required tool
         let chat_req2 = chat_request! {
             user!("Request with approval"),
-            assistant!("Completion message", ["mock_tool"]);
+            assistant!("Completion message", ["mock_tool"]),
+            tool_output!("mock_tool", "Great!");
             // Simulate feedback required output
             tools = [approval_tool.clone()]
         };
@@ -1392,7 +1427,8 @@ mod tests {
         // from the required tool
         let chat_req2 = chat_request! {
             user!("Request with approval"),
-            assistant!("Completion message", ["mock_tool"]);
+            assistant!("Completion message", ["mock_tool"]),
+            tool_output!("mock_tool", "This tool call was refused");
             // Simulate feedback required output
             tools = [approval_tool.clone()]
         };
