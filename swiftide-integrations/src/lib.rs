@@ -18,6 +18,8 @@ pub mod duckdb;
 pub mod fastembed;
 #[cfg(feature = "fluvio")]
 pub mod fluvio;
+#[cfg(feature = "gemini")]
+pub mod gemini;
 #[cfg(feature = "groq")]
 pub mod groq;
 #[cfg(feature = "lancedb")]
