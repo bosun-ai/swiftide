@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1747415422759,
+  "lastUpdate": 1748031794054,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21803,6 +21803,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253740,
             "range": "± 1279",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ca119bdc473140437abb1bf14b496bb7bd9378de",
+          "message": "fix(agents):  Ensure approved / refused tool calls are in new completions (#799)",
+          "timestamp": "2025-05-23T22:14:33+02:00",
+          "tree_id": "77322331d12e6f86eb30a0d5a6f0ded87eea144f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ca119bdc473140437abb1bf14b496bb7bd9378de"
+        },
+        "date": 1748031792910,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1323424,
+            "range": "± 902875",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256292,
+            "range": "± 1716",
             "unit": "ns/iter"
           }
         ]
