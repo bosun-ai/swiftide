@@ -75,11 +75,7 @@ impl Tool for ApprovalRequired {
     }
 
     fn tool_spec(&self) -> ToolSpec {
-        ToolSpec::builder()
-            .name("stop")
-            .description("When you have completed, or cannot complete, your task, call this")
-            .build()
-            .unwrap()
+        self.0.tool_spec()
     }
 }
 

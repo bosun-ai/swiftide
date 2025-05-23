@@ -17,9 +17,10 @@
 use anyhow::Result;
 use swiftide::{
     agents::{self, StopReason, tools::control::ApprovalRequired},
-    chat_completion::{ToolCall, ToolOutput, errors::ToolError},
+    chat_completion::{ToolOutput, errors::ToolError},
     traits::{AgentContext, ToolFeedback},
 };
+use tracing_subscriber::EnvFilter;
 
 #[swiftide::tool(
     description = "Guess a number",
@@ -40,15 +41,16 @@ async fn guess_a_number(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt().compact().init();
+    tracing_subscriber::fmt()
+        .compact()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     println!("Hello, agents!");
 
     let openai = swiftide::integrations::openai::OpenAI::builder()
-        .default_prompt_model("gpt-4o-mini")
+        .default_prompt_model("gpt-4o")
         .build()?;
-
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<ToolCall>();
 
     // ApprovalRequired is a simple wrapper. You can also implement your own approval
     // flows by returning a `ToolOutput::FeedbackRequired` in a tool,
@@ -65,23 +67,16 @@ async fn main() -> Result<()> {
 
             Box::pin(async move { Ok(()) })
         })
-        .on_stop(move |_agent, reason, _| {
-            // If you implement your own feedback flow, you can ofcourse also do it directly in the
-            // tool.
-            if let StopReason::FeedbackRequired { tool_call, .. } = reason {
-                tx.send(tool_call).unwrap();
-            }
-
-            Box::pin(async { Ok(()) })
-        })
         .limit(5)
         .build()?;
 
     // First query the agent, the agent will stop with a reason that feedback is required
-    agent.query("Guess a number between 0 and 100").await?;
+    agent
+        .query("Guess a number between 0 and 100 using the `guess_a_number` tool")
+        .await?;
 
     // The agent stopped, lets get the tool call
-    let Some(tool_call) = rx.recv().await else {
+    let Some(StopReason::FeedbackRequired { tool_call, .. }) = agent.stop_reason() else {
         panic!("expected a tool call to approve")
     };
 
@@ -92,7 +87,7 @@ async fn main() -> Result<()> {
     println!("Approving number guessing");
     agent
         .context()
-        .feedback_received(&tool_call, &ToolFeedback::approved())
+        .feedback_received(tool_call, &ToolFeedback::approved())
         .await
         .unwrap();
 
