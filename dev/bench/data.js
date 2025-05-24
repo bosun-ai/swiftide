@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1748031794054,
+  "lastUpdate": 1748082193510,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21857,6 +21857,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256292,
             "range": "± 1716",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e2727e012d22891fe96b30bea6283b4dc1b120a9",
+          "message": "chore(deps): bump the minor group across 1 directory with 6 updates (#798)",
+          "timestamp": "2025-05-24T12:14:30+02:00",
+          "tree_id": "0fb92b73c9dfdc802bc06cb8f88b7c80c428450a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e2727e012d22891fe96b30bea6283b4dc1b120a9"
+        },
+        "date": 1748082191644,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1317537,
+            "range": "± 891244",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253039,
+            "range": "± 2387",
             "unit": "ns/iter"
           }
         ]
