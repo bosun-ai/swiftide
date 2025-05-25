@@ -1,13 +1,17 @@
 use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
-    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
-    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults, indexing::IndexingDefaults,
+    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, PendingNodeCache, Persist,
+    SimplePrompt, Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
+    indexing::IndexingDefaults,
 };
 use tokio::{sync::mpsc, task};
 use tracing::Instrument;
 
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 
@@ -56,6 +60,7 @@ const DEFAULT_BATCH_SIZE: usize = 256;
 pub struct Pipeline {
     stream: IndexingStream,
     storage: Vec<Arc<dyn Persist>>,
+    caches: Arc<Mutex<Vec<PendingNodeCache>>>,
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
     batch_size: usize,
@@ -68,6 +73,7 @@ impl Default for Pipeline {
         Self {
             stream: IndexingStream::empty(),
             storage: Vec::default(),
+            caches: Arc::default(),
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
             batch_size: DEFAULT_BATCH_SIZE,
@@ -170,11 +176,13 @@ impl Pipeline {
     #[must_use]
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
+        let self_caches = self.caches.clone();
         self.stream = self
             .stream
             .try_filter_map(move |node| {
                 let cache = Arc::clone(&cache);
                 let span = trace_span!("filter_cached", cache);
+                let self_caches = self_caches.clone();
 
                 async move {
                     if cache.get(&node).await {
@@ -182,7 +190,12 @@ impl Pipeline {
                         Ok(None)
                     } else {
                         node_trace_log!(cache, node, "node not in cache, processing");
-                        cache.set(&node).await;
+                        if let Ok(mut ops) = self_caches.lock() {
+                            ops.push(PendingNodeCache {
+                                cache: cache.clone(),
+                                node: node.clone(),
+                            });
+                        }
                         Ok(Some(node))
                     }
                 }
@@ -190,6 +203,7 @@ impl Pipeline {
             })
             .boxed()
             .into();
+
         self
     }
 
@@ -449,6 +463,7 @@ impl Pipeline {
             concurrency: self.concurrency,
             indexing_defaults: self.indexing_defaults.clone(),
             batch_size: self.batch_size,
+            caches: self.caches.clone(),
         };
 
         let right_pipeline = Self {
@@ -457,6 +472,7 @@ impl Pipeline {
             concurrency: self.concurrency,
             indexing_defaults: self.indexing_defaults.clone(),
             batch_size: self.batch_size,
+            caches: self.caches.clone(),
         };
 
         (left_pipeline, right_pipeline)
@@ -596,8 +612,20 @@ impl Pipeline {
         futures_util::future::try_join_all(setup_futures).await?;
 
         let mut total_nodes = 0;
-        while self.stream.try_next().await?.is_some() {
+
+        while let Some(node) = self.stream.try_next().await? {
             total_nodes += 1;
+            let pending_node_cache = {
+                let caches = self
+                    .caches
+                    .lock()
+                    .map_err(|err| anyhow::anyhow!("Failed to acquire cache lock: {err}"))?;
+                caches.iter().find(|cache| cache.node == node).cloned()
+            };
+
+            if let Some(pending_node_cache) = pending_node_cache {
+                pending_node_cache.cache.set(&node).await;
+            }
         }
 
         let elapsed_in_seconds = now.elapsed().as_secs();
@@ -933,6 +961,64 @@ mod tests {
             .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer>)
             .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
             .then_store_with(Box::new(storage) as Box<dyn Persist>);
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_nodes_only_cached_on_success() {
+        let mut loader = MockLoader::new();
+        let mut cache = MockNodeCache::new();
+        let mut storage = MockPersist::new();
+        let mut transformer = MockTransformer::new();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::default())].into());
+
+        cache.expect_get().times(1).returning(|_| false);
+        cache.expect_name().returning(|| "test_cache");
+
+        transformer
+            .expect_transform_node()
+            .returning(|_| Err(anyhow::anyhow!("Transformation failed")));
+        transformer.expect_concurrency().returning(|| None);
+        transformer
+            .expect_name()
+            .returning(|| "failing_transformer");
+
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+
+        cache.expect_set().times(0);
+
+        let pipeline = Pipeline::from_loader(loader)
+            .filter_cached(cache)
+            .then(transformer)
+            .then_store_with(storage)
+            .filter_errors();
+
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_nodes_cached_on_successful_storage() {
+        let mut loader = MockLoader::new();
+        let mut cache = MockNodeCache::new();
+        let storage = MemoryStorage::default();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::default())].into());
+
+        cache.expect_name().returning(|| "test_cache");
+        cache.expect_get().times(1).returning(|_| false);
+
+        cache.expect_set().times(1).returning(|_| ());
+
+        let pipeline = Pipeline::from_loader(loader)
+            .filter_cached(cache)
+            .then_store_with(storage);
+
         pipeline.run().await.unwrap();
     }
 }
