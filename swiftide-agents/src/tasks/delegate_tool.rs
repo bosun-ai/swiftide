@@ -44,7 +44,7 @@ impl<B: Backend, S: TaskState> DelegateAgent<B, S> {
             .context("Failed to invoke task")?;
 
         // NOTE: We can make stopping optional, that's pretty cool
-        tracing::info!("Delegated task to agent");
+        tracing::debug!("Delegated task to agent");
         Ok(ToolOutput::Stop)
     }
 }

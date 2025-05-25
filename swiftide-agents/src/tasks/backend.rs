@@ -167,9 +167,3 @@ impl Backend for DefaultBackend {
         self.cancel_token.cancel();
     }
 }
-
-impl Drop for DefaultBackend {
-    fn drop(&mut self) {
-        self.cancel_token.cancel();
-    }
-}
