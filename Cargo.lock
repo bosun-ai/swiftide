@@ -1411,7 +1411,7 @@ dependencies = [
  "bitflags 2.9.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "lazy_static",
  "lazycell",
  "log",
@@ -4451,7 +4451,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.9",
  "tokio",
  "tower-service",
  "tracing",
@@ -8608,9 +8608,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.79"
+version = "2.37.91"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acfffead1790ead1cd5c0fa68fb2cbdeebb0b679a5a0e62fe6dc6a0c622eaadc"
+checksum = "f27c3303eaed2649e8d9b83763fd40755b6671379642c62a5ef1a02371f9a740"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -10032,9 +10032,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.45.0"
+version = "1.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2513ca694ef9ede0fb23fe71a4ee4107cb102b9dc1930f6d0fd77aae068ae165"
+checksum = "75ef51a33ef1da925cea3e4eb122833cb377c61439ca401b770f54902b806779"
 dependencies = [
  "backtrace",
  "bytes",
@@ -10332,9 +10332,9 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.25.4"
+version = "0.25.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69aff09fea9a41fb061ae6b206cb87cac1b8db07df31be3ba271fbc26760f213"
+checksum = "ac5fff5c47490dfdf473b5228039bfacad9d765d9b6939d26bf7cc064c1c7822"
 dependencies = [
  "cc",
  "regex",
