@@ -113,6 +113,7 @@ async-anthropic = { version = "0.6.0", default-features = false }
 duckdb = { version = "1", default-features = false }
 libduckdb-sys = { version = "1", default-features = false }
 tiktoken-rs = { version = "0.6", default-features = false }
+metrics = { version = "0.24", default-features = false }
 
 # Testing
 test-log = { version = "0.2" }

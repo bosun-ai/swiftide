@@ -116,6 +116,9 @@ duckdb = ["swiftide-integrations/duckdb"]
 ## MCP tool support for agents (tools only)
 mcp = ["swiftide-agents", "swiftide-agents/mcp"]
 
+## Metrics for usage, pipeline and agent performance
+metrics = []
+
 ## Various mocking and testing utilities
 test-utils = ["swiftide-core/test-utils"]
 

@@ -4,7 +4,7 @@
 use async_openai::types::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
 use swiftide_core::{
-    SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
+    SimplePrompt, chat_completion::errors::LanguageModelError, metrics::emit_usage, prompt::Prompt,
     util::debug_long_utf8,
 };
 
@@ -72,7 +72,9 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .chat()
             .create(request)
             .await
-            .map_err(openai_error_to_language_model_error)?
+            .map_err(openai_error_to_language_model_error)?;
+
+        let message = response
             .choices
             .remove(0)
             .message
@@ -82,13 +84,25 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                 LanguageModelError::PermanentError("Expected content in response".into())
             })?;
 
+        #[cfg(feature = "metrics")]
+        {
+            if let Some(usage) = response.usage.as_ref() {
+                emit_usage(
+                    &model,
+                    usage.prompt_tokens,
+                    usage.completion_tokens,
+                    usage.total_tokens,
+                );
+            }
+        }
+
         // Log the response for debugging purposes.
         tracing::debug!(
-            response = debug_long_utf8(&response, 100),
+            message = debug_long_utf8(&response, 100),
             "[SimplePrompt] Response from openai"
         );
 
         // Extract and return the content of the response, returning an error if not found.
-        Ok(response)
+        Ok(message)
     }
 }
