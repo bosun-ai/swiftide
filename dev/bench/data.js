@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1748082193510,
+  "lastUpdate": 1748609412576,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21911,6 +21911,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253039,
             "range": "± 2387",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "19a2e94d262cc68c629d88b6b02a72bb9b159036",
+          "message": "feat(integrations): Add support for Google Gemini (#754)\n\nGoogle is now properly compatible with openai, so it works right away.\nWinning 🎉",
+          "timestamp": "2025-05-30T14:41:17+02:00",
+          "tree_id": "be0b539cbc2ec23a9317933cfbc88dc422973355",
+          "url": "https://github.com/bosun-ai/swiftide/commit/19a2e94d262cc68c629d88b6b02a72bb9b159036"
+        },
+        "date": 1748609411060,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1343702,
+            "range": "± 947140",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252463,
+            "range": "± 1622",
             "unit": "ns/iter"
           }
         ]
