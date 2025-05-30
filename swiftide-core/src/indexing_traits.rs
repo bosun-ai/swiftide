@@ -331,6 +331,12 @@ impl ChunkerTransformer for &dyn ChunkerTransformer {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct PendingNodeCache {
+    pub cache: Arc<dyn NodeCache>,
+    pub node: Node,
+}
+
 // #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Caches nodes, typically by their path and hash
