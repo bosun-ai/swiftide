@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.0](https://github.com/bosun-ai/swiftide/compare/v0.26.0...v0.27.0) - 2025-05-30
+
+### New features
+
+- [9e831d3](https://github.com/bosun-ai/swiftide/commit/9e831d3eb072748ebb21c9a16cd7d807b4d42469) *(agents)*  [**breaking**] Easy human-in-the-loop flows by decorating tools ([#790](https://github.com/bosun-ai/swiftide/pull/790))
+
+**BREAKING CHANGE**: The `Tool` trait now receives a `ToolCall` as argument
+instead of an `Option<&str>`. The latter is still accessible via
+`tool_call.args()`.
+
+- [19a2e94](https://github.com/bosun-ai/swiftide/commit/19a2e94d262cc68c629d88b6b02a72bb9b159036) *(integrations)*  Add support for Google Gemini ([#754](https://github.com/bosun-ai/swiftide/pull/754))
+
+### Bug fixes
+
+- [ca119bd](https://github.com/bosun-ai/swiftide/commit/ca119bdc473140437abb1bf14b496bb7bd9378de) *(agents)*  Ensure approved / refused tool calls are in new completions ([#799](https://github.com/bosun-ai/swiftide/pull/799))
+
+### Miscellaneous
+
+- [7ac92a4](https://github.com/bosun-ai/swiftide/commit/7ac92a4f2ff4b1d1ba7e86c90c4f6c5c025cabc9) *(agents)*  Direct access to executor via context ([#794](https://github.com/bosun-ai/swiftide/pull/794))
+
+- [04ec29d](https://github.com/bosun-ai/swiftide/commit/04ec29d7240a8542ccd1d530bb9b104bcd57631e)  Consistent logging for indexing pipeline ([#792](https://github.com/bosun-ai/swiftide/pull/792))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.26.0...0.27.0
+
+
+
 ## [0.26.0](https://github.com/bosun-ai/swiftide/compare/v0.25.1...v0.26.0) - 2025-05-06
 
 ### New features
