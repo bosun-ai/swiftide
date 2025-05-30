@@ -153,8 +153,10 @@ tree-sitter = [
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
-# Groq prompting
+# Groq 
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Goolge Gemini
+gemini = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Ollama prompting, embedding, chatcompletion
 ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Openrouter prompting, embedding, chatcompletion

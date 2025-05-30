@@ -84,9 +84,11 @@ async fn guess_a_number(
 async fn main() -> Result<()> {
     println!("Hello, agents!");
 
-    let openai = swiftide::integrations::openai::OpenAI::builder()
-        .default_embed_model("text-embeddings-3-small")
-        .default_prompt_model("gpt-4o-mini")
+    tracing_subscriber::fmt::init();
+
+    let openai = swiftide::integrations::gemini::Gemini::builder()
+        .default_embed_model("gemini-embedding-exp-03-07")
+        .default_prompt_model("gemini-2.0-flash")
         .build()?;
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
