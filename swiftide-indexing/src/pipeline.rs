@@ -1,13 +1,19 @@
 use anyhow::Result;
-use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
+use futures_util::{
+    FutureExt, StreamExt, TryFutureExt, TryStreamExt,
+    future::{BoxFuture, Shared},
+};
 use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
     Transformer, WithBatchIndexingDefaults, WithIndexingDefaults, indexing::IndexingDefaults,
 };
-use tokio::{sync::mpsc, task};
+use tokio::{
+    sync::mpsc,
+    task::{self},
+};
 use tracing::Instrument;
 
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 
@@ -59,6 +65,8 @@ pub struct Pipeline {
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
     batch_size: usize,
+    cache_sender: Option<mpsc::Sender<uuid::Uuid>>,
+    cache_handle: Option<Shared<BoxFuture<'static, ()>>>,
 }
 
 impl Default for Pipeline {
@@ -71,6 +79,8 @@ impl Default for Pipeline {
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
             batch_size: DEFAULT_BATCH_SIZE,
+            cache_sender: None,
+            cache_handle: None,
         }
     }
 }
@@ -170,6 +180,31 @@ impl Pipeline {
     #[must_use]
     pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
         let cache = Arc::new(cache);
+        let (cache_sender, mut cache_receiver) = mpsc::channel(1000);
+
+        let cache_for_task = Arc::clone(&cache);
+
+        let handle = tokio::spawn(async move {
+            while let Some(cache_key) = cache_receiver.recv().await {
+                let cache_node = Node {
+                    parent_id: Some(cache_key),
+                    ..Default::default()
+                };
+                cache_for_task.set(&cache_node).await;
+            }
+        });
+
+        self.cache_handle = Some(
+            handle
+                .map(|result| {
+                    if let Err(err) = result {
+                        tracing::error!("Cache task failed: {err}");
+                    }
+                })
+                .boxed()
+                .shared(),
+        );
+
         self.stream = self
             .stream
             .try_filter_map(move |node| {
@@ -182,7 +217,6 @@ impl Pipeline {
                         Ok(None)
                     } else {
                         node_trace_log!(cache, node, "node not in cache, processing");
-                        cache.set(&node).await;
                         Ok(Some(node))
                     }
                 }
@@ -190,6 +224,7 @@ impl Pipeline {
             })
             .boxed()
             .into();
+        self.cache_sender = Some(cache_sender);
         self
     }
 
@@ -449,6 +484,8 @@ impl Pipeline {
             concurrency: self.concurrency,
             indexing_defaults: self.indexing_defaults.clone(),
             batch_size: self.batch_size,
+            cache_sender: self.cache_sender.clone(),
+            cache_handle: self.cache_handle.clone(),
         };
 
         let right_pipeline = Self {
@@ -457,6 +494,8 @@ impl Pipeline {
             concurrency: self.concurrency,
             indexing_defaults: self.indexing_defaults.clone(),
             batch_size: self.batch_size,
+            cache_sender: self.cache_sender.clone(),
+            cache_handle: self.cache_handle.clone(),
         };
 
         (left_pipeline, right_pipeline)
@@ -595,19 +634,36 @@ impl Pipeline {
             .collect::<Vec<_>>();
         futures_util::future::try_join_all(setup_futures).await?;
 
+        let mut cache_keys = HashSet::new();
+
         let mut total_nodes = 0;
-        while self.stream.try_next().await?.is_some() {
+
+        while let Some(node) = self.stream.try_next().await? {
             total_nodes += 1;
+
+            let cache_key = node.parent_id().unwrap_or(node.id());
+
+            if let Some(sender) = &self.cache_sender {
+                if cache_keys.insert(cache_key) {
+                    let _ = sender.send(cache_key).await;
+                }
+            }
         }
 
         let elapsed_in_seconds = now.elapsed().as_secs();
         tracing::info!(
             elapsed_in_seconds,
-            "Processed {} nodes in {} seconds",
-            total_nodes,
-            elapsed_in_seconds
+            "Processed {total_nodes} nodes in {elapsed_in_seconds} seconds",
         );
+
         tracing::Span::current().record("total_nodes", total_nodes);
+
+        // Drop the sender to signal that no more cache keys will be sent
+        drop(self.cache_sender);
+
+        if let Some(handle) = self.cache_handle {
+            handle.await;
+        }
 
         Ok(())
     }
@@ -933,6 +989,64 @@ mod tests {
             .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer>)
             .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
             .then_store_with(Box::new(storage) as Box<dyn Persist>);
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_nodes_only_cached_on_success() {
+        let mut loader = MockLoader::new();
+        let mut cache = MockNodeCache::new();
+        let mut storage = MockPersist::new();
+        let mut transformer = MockTransformer::new();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::default())].into());
+
+        cache.expect_get().times(1).returning(|_| false);
+        cache.expect_name().returning(|| "test_cache");
+
+        transformer
+            .expect_transform_node()
+            .returning(|_| Err(anyhow::anyhow!("Transformation failed")));
+        transformer.expect_concurrency().returning(|| None);
+        transformer
+            .expect_name()
+            .returning(|| "failing_transformer");
+
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+
+        cache.expect_set().times(0);
+
+        let pipeline = Pipeline::from_loader(loader)
+            .filter_cached(cache)
+            .then(transformer)
+            .then_store_with(storage)
+            .filter_errors();
+
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_nodes_cached_on_successful_storage() {
+        let mut loader = MockLoader::new();
+        let mut cache = MockNodeCache::new();
+        let storage = MemoryStorage::default();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::default())].into());
+
+        cache.expect_name().returning(|| "test_cache");
+        cache.expect_get().times(1).returning(|_| false);
+
+        cache.expect_set().times(1).returning(|_| ());
+
+        let pipeline = Pipeline::from_loader(loader)
+            .filter_cached(cache)
+            .then_store_with(storage);
+
         pipeline.run().await.unwrap();
     }
 }

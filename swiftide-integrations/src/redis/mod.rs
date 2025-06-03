@@ -138,7 +138,8 @@ impl Redis {
     ///
     /// A `String` representing the Redis key for the node.
     fn cache_key_for_node(&self, node: &Node) -> String {
-        format!("{}:{}", self.cache_key_prefix, node.id())
+        let cache_id = node.parent_id().unwrap_or_else(|| node.id());
+        format!("{}:{}", self.cache_key_prefix, cache_id)
     }
 
     /// Generates a key for a given node to be persisted in Redis.
