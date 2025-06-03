@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1748609412576,
+  "lastUpdate": 1748963615184,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -21965,6 +21965,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252463,
             "range": "± 1622",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "45b898b846a33a483e50a9a7aa795c5ad755b45b",
+          "message": "chore(deps): bump the minor group across 1 directory with 6 updates (#803)",
+          "timestamp": "2025-06-03T17:04:09+02:00",
+          "tree_id": "1f86182aa796a77d35894625c6f7f6321fbd076e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/45b898b846a33a483e50a9a7aa795c5ad755b45b"
+        },
+        "date": 1748963613050,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1325256,
+            "range": "± 1027470",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250359,
+            "range": "± 1975",
             "unit": "ns/iter"
           }
         ]
