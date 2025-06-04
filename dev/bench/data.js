@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749046602822,
+  "lastUpdate": 1749071247691,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22073,6 +22073,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254009,
             "range": "± 9707",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "c8d7ab90c86e674d5df5f4985121e4e81d1e4a37",
+          "message": "chore(integrations): Improved warning when a qdrant collection exists",
+          "timestamp": "2025-06-04T22:57:57+02:00",
+          "tree_id": "e7f672b44ce267dc1c6bdb9097b473708169e8c2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c8d7ab90c86e674d5df5f4985121e4e81d1e4a37"
+        },
+        "date": 1749071246592,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1315991,
+            "range": "± 983734",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250260,
+            "range": "± 4435",
             "unit": "ns/iter"
           }
         ]
