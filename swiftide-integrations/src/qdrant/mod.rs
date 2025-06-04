@@ -106,7 +106,9 @@ impl Qdrant {
 
         tracing::debug!("Checking if collection {collection_name} exists");
         if self.client.collection_exists(collection_name).await? {
-            tracing::debug!("Collection {collection_name} exists");
+            tracing::warn!(
+                "Collection {collection_name} exists, skipping collection creation; if vector configurations have not changed, you can ignore this message"
+            );
             return Ok(());
         }
 
