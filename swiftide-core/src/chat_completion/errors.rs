@@ -4,6 +4,10 @@ use crate::CommandError;
 
 use super::ChatCompletionStream;
 
+/// A `ToolError` is an error that occurs when a tool is invoked.
+///
+/// Depending on the agent configuration, the tool might be retried with feedback to the LLM, up to
+/// a limit.
 #[derive(Error, Debug)]
 pub enum ToolError {
     /// I.e. the llm calls the tool with the wrong arguments
@@ -20,6 +24,28 @@ pub enum ToolError {
 
     #[error(transparent)]
     Unknown(#[from] anyhow::Error),
+}
+
+impl ToolError {
+    /// Tool received arguments that it could not parse
+    pub fn wrong_arguments(e: impl Into<serde_json::Error>) -> Self {
+        ToolError::WrongArguments(e.into())
+    }
+
+    /// Tool is missing required arguments
+    pub fn missing_arguments(tool_name: impl Into<String>) -> Self {
+        ToolError::MissingArguments(tool_name.into())
+    }
+
+    /// Tool execution failed
+    pub fn execution_failed(e: impl Into<CommandError>) -> Self {
+        ToolError::ExecutionFailed(e.into())
+    }
+
+    /// Tool failed with an unknown error
+    pub fn unknown(e: impl Into<anyhow::Error>) -> Self {
+        ToolError::Unknown(e.into())
+    }
 }
 
 type BoxedError = Box<dyn std::error::Error + Send + Sync>;
