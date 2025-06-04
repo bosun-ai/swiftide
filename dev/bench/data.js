@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1748963615184,
+  "lastUpdate": 1749046602822,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22019,6 +22019,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250359,
             "range": "± 1975",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3c937a8ed4f7d28798a24b0d893f1613cd298493",
+          "message": "feat(agents): Add helpers for creating tool errors (#805)",
+          "timestamp": "2025-06-04T16:07:37+02:00",
+          "tree_id": "3aeead869807fe618ddb60ebde7ec286b531a293",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3c937a8ed4f7d28798a24b0d893f1613cd298493"
+        },
+        "date": 1749046601125,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1342815,
+            "range": "± 1103862",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254009,
+            "range": "± 9707",
             "unit": "ns/iter"
           }
         ]
