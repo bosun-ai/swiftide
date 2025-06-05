@@ -14,6 +14,3 @@ CREATE TABLE IF NOT EXISTS {{table_name}} (
   {% endfor %}
 );
 
-PRAGMA create_fts_index('{{table_name}}', 'uuid', 'chunk', stemmer = 'porter',
-                 stopwords = 'english', ignore = '(\\.|[^a-z])+',
-                 strip_accents = 1, lower = 1, overwrite = 0);

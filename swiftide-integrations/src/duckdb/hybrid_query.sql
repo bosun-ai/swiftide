@@ -3,9 +3,9 @@ with fts as (
         uuid, 
         chunk, 
         path,
-        fts_main_movies.match_bm25(
+        fts_main_{{table_name}}.match_bm25(
             uuid,
-            ?1,
+            {{query}},
             fields := chunk
         ) as score
     from {{table_name}}
@@ -16,7 +16,7 @@ embd as (
         uuid, 
         chunk, 
         path,
-        array_cosine_similarity({{embedding_name}}, cast([?2] as float[{{embedding_size}}])) as score
+        array_cosine_similarity({{embedding_name}}, cast([{{embedding}}] as float[{{embedding_size}}])) as score
     from {{table_name}}
     limit {{top_n}}
 ),

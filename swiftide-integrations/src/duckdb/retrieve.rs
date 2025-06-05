@@ -1,6 +1,5 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use duckdb::params;
 use swiftide_core::{
     Retrieve,
     querying::{
@@ -126,7 +125,7 @@ impl Retrieve<HybridSearch> for Duckdb {
         };
 
         let sql = self
-            .hybrid_query_sql(search_strategy)
+            .hybrid_query_sql(search_strategy, query.current(), embedding)
             .context("Failed to build query")?;
 
         tracing::debug!("[duckdb] Executing query: {}", sql);
@@ -138,14 +137,9 @@ impl Retrieve<HybridSearch> for Duckdb {
 
         tracing::debug!("[duckdb] Prepared statement");
 
-        let embedding = embedding
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(",");
-
         let documents = stmt
-            .query_map(params![query.current(), embedding], |row| {
+            // DuckDB has issues with using `params!` :(
+            .query_map([], |row| {
                 Ok(Document::builder()
                     .metadata([("id", row.get::<_, String>(0)?), ("path", row.get(2)?)])
                     .content(row.get::<_, String>(1)?)

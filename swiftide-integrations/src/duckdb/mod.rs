@@ -5,7 +5,6 @@ use std::{
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
-use duckdb::arrow::json;
 use swiftide_core::{indexing::EmbeddedField, querying::search_strategies::HybridSearch};
 use tera::Context;
 use tokio::sync::RwLock;
@@ -21,6 +20,11 @@ const DEFAULT_HYBRID_QUERY: &str = include_str!("hybrid_query.sql");
 /// Provides `Persist`, `Retrieve`, and `NodeCache` for duckdb
 ///
 /// Unfortunately Metadata is not stored.
+///
+/// Supports the following search strategies:
+/// - `SimilaritySingleEmbedding`
+/// - `HybridSearch` (<https://motherduck.com/blog/search-using-duckdb-part-3>/)
+/// - Custom
 ///
 /// NOTE: The integration is not optimized for ultra large datasets / load. It might work, if it
 /// doesn't let us know <3.
@@ -180,7 +184,12 @@ impl Duckdb {
         format!("{}.{}", self.cache_key_prefix, node.id())
     }
 
-    fn hybrid_query_sql(&self, search_strategy: &HybridSearch) -> Result<String> {
+    fn hybrid_query_sql(
+        &self,
+        search_strategy: &HybridSearch,
+        query: &str,
+        embedding: &[f32],
+    ) -> Result<String> {
         let table_name = &self.table_name;
 
         // Silently ignores multiple vector fields
@@ -197,12 +206,20 @@ impl Duckdb {
             );
         }
 
+        let embedding = embedding
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+
         let context = Context::from_value(serde_json::json!({
             "table_name": table_name,
             "top_n": search_strategy.top_n(),
             "top_k": search_strategy.top_k(),
             "embedding_name": field_name,
             "embedding_size": embedding_size,
+            "query": wrap_and_escape(query),
+            "embedding": embedding,
 
 
         }))?;
@@ -212,6 +229,22 @@ impl Duckdb {
     }
 }
 
+fn wrap_and_escape(s: &str) -> String {
+    let quote = '\'';
+    let mut buf = String::new();
+    buf.push(quote);
+    let chars = s.chars();
+    for ch in chars {
+        // escape `quote` by doubling it
+        if ch == quote {
+            buf.push(ch);
+        }
+        buf.push(ch);
+    }
+    buf.push(quote);
+
+    buf
+}
 impl DuckdbBuilder {
     pub fn connection(&mut self, connection: impl Into<duckdb::Connection>) -> &mut Self {
         self.connection = Some(Arc::new(Mutex::new(connection.into())));

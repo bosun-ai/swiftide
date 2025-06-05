@@ -90,6 +90,15 @@ impl Persist for Duckdb {
 
         tracing::debug!(schema = &self.schema, "Indexing table created");
 
+        // We need to run this separately to ensure the table is created before we create the index
+        conn.execute_batch(&format!(
+            "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
+                 stopwords = 'english', ignore = '(\\.|[^a-z])+',
+                 strip_accents = 1, lower = 1, overwrite = 0);
+",
+            self.table_name
+        ))?;
+
         tracing::info!("Setup completed");
 
         Ok(())
