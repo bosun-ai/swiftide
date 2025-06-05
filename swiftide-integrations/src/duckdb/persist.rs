@@ -82,11 +82,13 @@ impl Duckdb {
 #[async_trait]
 impl Persist for Duckdb {
     async fn setup(&self) -> Result<()> {
-        self.connection
-            .lock()
-            .unwrap()
-            .execute_batch(&self.schema)
+        tracing::debug!("Setting up duckdb schema");
+
+        let conn = self.connection.lock().unwrap();
+        conn.execute_batch(&self.schema)
             .context("Failed to create indexing table")?;
+
+        tracing::debug!(schema = &self.schema, "Indexing table created");
 
         tracing::info!("Setup completed");
 

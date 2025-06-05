@@ -5,7 +5,8 @@ use std::{
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
-use swiftide_core::indexing::EmbeddedField;
+use duckdb::arrow::json;
+use swiftide_core::{indexing::EmbeddedField, querying::search_strategies::HybridSearch};
 use tera::Context;
 use tokio::sync::RwLock;
 
@@ -15,6 +16,7 @@ pub mod retrieve;
 
 const DEFAULT_INDEXING_SCHEMA: &str = include_str!("schema.sql");
 const DEFAULT_UPSERT_QUERY: &str = include_str!("upsert.sql");
+const DEFAULT_HYBRID_QUERY: &str = include_str!("hybrid_query.sql");
 
 /// Provides `Persist`, `Retrieve`, and `NodeCache` for duckdb
 ///
@@ -176,6 +178,37 @@ impl Duckdb {
     /// Formats a node key for the cache table
     pub fn node_key(&self, node: &swiftide_core::indexing::Node) -> String {
         format!("{}.{}", self.cache_key_prefix, node.id())
+    }
+
+    fn hybrid_query_sql(&self, search_strategy: &HybridSearch) -> Result<String> {
+        let table_name = &self.table_name;
+
+        // Silently ignores multiple vector fields
+        let (field_name, embedding_size) = self
+            .vectors
+            .iter()
+            .next()
+            .context("No vectors configured")?;
+
+        if self.vectors.len() > 1 {
+            tracing::warn!(
+                "Multiple vectors configured, but only the first one will be used: {:?}",
+                self.vectors
+            );
+        }
+
+        let context = Context::from_value(serde_json::json!({
+            "table_name": table_name,
+            "top_n": search_strategy.top_n(),
+            "top_k": search_strategy.top_k(),
+            "embedding_name": field_name,
+            "embedding_size": embedding_size,
+
+
+        }))?;
+
+        let rendered = tera::Tera::one_off(DEFAULT_HYBRID_QUERY, &context, false)?;
+        Ok(rendered)
     }
 }
 
