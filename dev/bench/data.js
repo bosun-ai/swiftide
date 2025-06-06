@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749240592589,
+  "lastUpdate": 1749244162320,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22181,6 +22181,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252282,
             "range": "± 5647",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "df6a12dabe855f351acc3e0d104048321cb9bc0e",
+          "message": "fix(agents): Ensure agents with no tools still have the stop tool",
+          "timestamp": "2025-06-06T22:59:21+02:00",
+          "tree_id": "3c3350965effe027163e1368b01df9e6e5c06f85",
+          "url": "https://github.com/bosun-ai/swiftide/commit/df6a12dabe855f351acc3e0d104048321cb9bc0e"
+        },
+        "date": 1749244160814,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1355800,
+            "range": "± 1253494",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251636,
+            "range": "± 2883",
             "unit": "ns/iter"
           }
         ]
