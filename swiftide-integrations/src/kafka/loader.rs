@@ -82,6 +82,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use crate::kafka::Kafka;
     use anyhow::Result;
     use futures_util::TryStreamExt;
     use rdkafka::{
@@ -92,9 +93,6 @@ mod tests {
     };
     use testcontainers::{ContainerAsync, runners::AsyncRunner};
     use testcontainers_modules::kafka::apache::{self};
-    use tokio::time::sleep;
-
-    use crate::kafka::Kafka;
 
     struct KafkaBroker {
         _broker: ContainerAsync<apache::Kafka>,
@@ -109,8 +107,6 @@ mod tests {
             static REPLICAS: i32 = 1;
 
             let kafka_node = apache::Kafka::default().start().await?;
-
-            sleep(Duration::from_secs(2)).await;
             let bootstrap_servers = format!(
                 "127.0.0.1:{}",
                 kafka_node.get_host_port_ipv4(apache::KAFKA_PORT).await?
