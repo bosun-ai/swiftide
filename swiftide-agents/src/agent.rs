@@ -281,13 +281,14 @@ impl Agent {
     /// Build a new agent
     pub fn builder() -> AgentBuilder {
         AgentBuilder::default()
+            .tools(Agent::default_tools())
+            .to_owned()
     }
-}
 
-impl Agent {
     /// Default tools for the agent that it always includes
-    fn default_tools() -> HashSet<Box<dyn Tool>> {
-        HashSet::from([Box::new(Stop::default()) as Box<dyn Tool>])
+    /// Right now this is the `stop` tool, which allows the agent to stop itself.
+    pub fn default_tools() -> HashSet<Box<dyn Tool>> {
+        HashSet::from([Stop::default().boxed()])
     }
 
     /// Run the agent with a user message. The agent will loop completions, make tool calls, until
