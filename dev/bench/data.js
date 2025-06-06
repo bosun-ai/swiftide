@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749071247691,
+  "lastUpdate": 1749240592589,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22127,6 +22127,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250260,
             "range": "± 4435",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "814c2174c742ff4277246505537070726ce8af92",
+          "message": "feat(duckdb): Hybrid Search (#807)",
+          "timestamp": "2025-06-06T22:00:42+02:00",
+          "tree_id": "7dbd17815cf53dff92c623eef43570e1cbbe3692",
+          "url": "https://github.com/bosun-ai/swiftide/commit/814c2174c742ff4277246505537070726ce8af92"
+        },
+        "date": 1749240590852,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1351715,
+            "range": "± 1079432",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252282,
+            "range": "± 5647",
             "unit": "ns/iter"
           }
         ]
