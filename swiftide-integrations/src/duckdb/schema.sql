@@ -1,5 +1,8 @@
 INSTALL vss;
 LOAD vss;
+INSTALL fts;
+LOAD fts;
+
 
 CREATE TABLE IF NOT EXISTS {{table_name}} (
   uuid TEXT PRIMARY KEY,
@@ -10,3 +13,4 @@ CREATE TABLE IF NOT EXISTS {{table_name}} (
     {{vector}} FLOAT[{{size}}],
   {% endfor %}
 );
+

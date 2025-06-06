@@ -4,7 +4,7 @@ use swiftide_core::{
     Retrieve,
     querying::{
         Document, Query,
-        search_strategies::{CustomStrategy, SimilaritySingleEmbedding},
+        search_strategies::{CustomStrategy, HybridSearch, SimilaritySingleEmbedding},
         states,
     },
 };
@@ -113,6 +113,49 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
     }
 }
 
+#[async_trait]
+impl Retrieve<HybridSearch> for Duckdb {
+    async fn retrieve(
+        &self,
+        search_strategy: &HybridSearch,
+        query: Query<states::Pending>,
+    ) -> Result<Query<states::Retrieved>> {
+        let Some(embedding) = query.embedding.as_ref() else {
+            return Err(anyhow::Error::msg("Missing embedding in query state"));
+        };
+
+        let sql = self
+            .hybrid_query_sql(search_strategy, query.current(), embedding)
+            .context("Failed to build query")?;
+
+        tracing::debug!("[duckdb] Executing query: {}", sql);
+
+        let conn = self.connection().lock().unwrap();
+        let mut stmt = conn
+            .prepare(&sql)
+            .context("Failed to prepare duckdb statement for persist")?;
+
+        tracing::debug!("[duckdb] Prepared statement");
+
+        let documents = stmt
+            // DuckDB has issues with using `params!` :(
+            .query_map([], |row| {
+                Ok(Document::builder()
+                    .metadata([("id", row.get::<_, String>(0)?), ("path", row.get(2)?)])
+                    .content(row.get::<_, String>(1)?)
+                    .build()
+                    .expect("Failed to build document; should never happen"))
+            })
+            .context("failed to query for documents")?
+            .collect::<Result<Vec<Document>, _>>()
+            .context("failed to build documents")?;
+
+        tracing::debug!("[duckdb] Retrieved documents");
+
+        Ok(query.retrieved_documents(documents))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use indexing::{EmbeddedField, Node};
@@ -146,6 +189,45 @@ mod tests {
 
         let result = client
             .retrieve(&SimilaritySingleEmbedding::default(), query)
+            .await
+            .unwrap();
+
+        assert_eq!(result.documents().len(), 1);
+        let document = result.documents().first().unwrap();
+
+        assert_eq!(document.content(), "Hello duckdb!");
+        assert_eq!(
+            document.metadata().get("id").unwrap().as_str(),
+            Some(node.id().to_string().as_str())
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_duckdb_retrieving_documents_hybrid() {
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open_in_memory().unwrap())
+            .table_name("test".to_string())
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+
+        let node = Node::new("Hello duckdb!")
+            .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
+            .to_owned();
+
+        client.setup().await.unwrap();
+        client.store(node.clone()).await.unwrap();
+
+        tracing::info!("Stored node");
+
+        let query = Query::<states::Pending>::builder()
+            .embedding(vec![1.0, 2.0, 3.0])
+            .original("Some query")
+            .build()
+            .unwrap();
+
+        let result = client
+            .retrieve(&HybridSearch::default(), query)
             .await
             .unwrap();
 
