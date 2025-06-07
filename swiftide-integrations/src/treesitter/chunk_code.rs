@@ -118,6 +118,7 @@ impl ChunkerTransformer for ChunkCode {
                 let node = Node::build_from_other(&node)
                     .chunk(chunk)
                     .offset(offset)
+                    .origin_id(node.id())
                     .build();
 
                 offset += chunk_size;

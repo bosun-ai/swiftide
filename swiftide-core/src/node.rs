@@ -63,6 +63,9 @@ pub struct Node {
     /// from in bytes
     #[builder(default)]
     pub offset: usize,
+    /// Optional parent id
+    #[builder(default)]
+    pub origin_id: Option<uuid::Uuid>,
 }
 
 impl NodeBuilder {
@@ -79,6 +82,11 @@ impl NodeBuilder {
         vectors: Option<HashMap<EmbeddedField, Embedding>>,
     ) -> &mut Self {
         self.vectors = Some(vectors);
+        self
+    }
+
+    pub fn maybe_origin_id(&mut self, origin_id: Option<uuid::Uuid>) -> &mut Self {
+        self.origin_id = Some(origin_id);
         self
     }
 }
@@ -136,6 +144,7 @@ impl Node {
             .embed_mode(node.embed_mode)
             .original_size(node.original_size)
             .offset(node.offset)
+            .maybe_origin_id(node.origin_id)
             .to_owned()
     }
 
@@ -240,6 +249,10 @@ impl Node {
         let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
 
         uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
+    }
+
+    pub fn origin_id(&self) -> Option<uuid::Uuid> {
+        self.origin_id
     }
 }
 
