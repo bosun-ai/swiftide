@@ -33,4 +33,7 @@ pub enum AgentError {
 
     #[error("Failed to render prompt {0}")]
     FailedToRenderPrompt(anyhow::Error),
+
+    #[error("Error with message history {0}")]
+    MessageHistoryError(anyhow::Error),
 }

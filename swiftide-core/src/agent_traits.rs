@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use crate::chat_completion::{ChatMessage, ToolCall};
 use anyhow::Result;
@@ -166,16 +169,16 @@ pub trait AgentContext: Send + Sync {
     ///
     /// TODO: Figure out a nice way to return a reference instead while still supporting i.e.
     /// mutexes
-    async fn next_completion(&self) -> Option<Vec<ChatMessage>>;
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>>;
 
     /// Lists only the new messages after calling `new_completion`
-    async fn current_new_messages(&self) -> Vec<ChatMessage>;
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>>;
 
     /// Add messages for the next completion
-    async fn add_messages(&self, item: Vec<ChatMessage>);
+    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()>;
 
     /// Add messages for the next completion
-    async fn add_message(&self, item: ChatMessage);
+    async fn add_message(&self, item: ChatMessage) -> Result<()>;
 
     /// Execute a command if the context supports it
     ///
@@ -185,13 +188,13 @@ pub trait AgentContext: Send + Sync {
 
     fn executor(&self) -> &Arc<dyn ToolExecutor>;
 
-    async fn history(&self) -> Vec<ChatMessage>;
+    async fn history(&self) -> Result<Vec<ChatMessage>>;
 
     /// Pops the last messages up until the last completion
     ///
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
-    async fn redrive(&self);
+    async fn redrive(&self) -> Result<()>;
 
     /// Tools that require feedback or approval (i.e. from a human) can use this to check if the
     /// feedback is received
@@ -202,20 +205,20 @@ pub trait AgentContext: Send + Sync {
 
 #[async_trait]
 impl AgentContext for Box<dyn AgentContext> {
-    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
         (**self).next_completion().await
     }
 
-    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
         (**self).current_new_messages().await
     }
 
-    async fn add_messages(&self, item: Vec<ChatMessage>) {
-        (**self).add_messages(item).await;
+    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()> {
+        (**self).add_messages(item).await
     }
 
-    async fn add_message(&self, item: ChatMessage) {
-        (**self).add_message(item).await;
+    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+        (**self).add_message(item).await
     }
 
     #[allow(deprecated)]
@@ -227,12 +230,12 @@ impl AgentContext for Box<dyn AgentContext> {
         (**self).executor()
     }
 
-    async fn history(&self) -> Vec<ChatMessage> {
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
         (**self).history().await
     }
 
-    async fn redrive(&self) {
-        (**self).redrive().await;
+    async fn redrive(&self) -> Result<()> {
+        (**self).redrive().await
     }
 
     async fn has_received_feedback(&self, tool_call: &ToolCall) -> Option<ToolFeedback> {
@@ -246,20 +249,20 @@ impl AgentContext for Box<dyn AgentContext> {
 
 #[async_trait]
 impl AgentContext for Arc<dyn AgentContext> {
-    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
         (**self).next_completion().await
     }
 
-    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
         (**self).current_new_messages().await
     }
 
-    async fn add_messages(&self, item: Vec<ChatMessage>) {
-        (**self).add_messages(item).await;
+    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()> {
+        (**self).add_messages(item).await
     }
 
-    async fn add_message(&self, item: ChatMessage) {
-        (**self).add_message(item).await;
+    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+        (**self).add_message(item).await
     }
 
     #[allow(deprecated)]
@@ -271,12 +274,12 @@ impl AgentContext for Arc<dyn AgentContext> {
         (**self).executor()
     }
 
-    async fn history(&self) -> Vec<ChatMessage> {
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
         (**self).history().await
     }
 
-    async fn redrive(&self) {
-        (**self).redrive().await;
+    async fn redrive(&self) -> Result<()> {
+        (**self).redrive().await
     }
 
     async fn has_received_feedback(&self, tool_call: &ToolCall) -> Option<ToolFeedback> {
@@ -290,20 +293,20 @@ impl AgentContext for Arc<dyn AgentContext> {
 
 #[async_trait]
 impl AgentContext for &dyn AgentContext {
-    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
         (**self).next_completion().await
     }
 
-    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
         (**self).current_new_messages().await
     }
 
-    async fn add_messages(&self, item: Vec<ChatMessage>) {
-        (**self).add_messages(item).await;
+    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()> {
+        (**self).add_messages(item).await
     }
 
-    async fn add_message(&self, item: ChatMessage) {
-        (**self).add_message(item).await;
+    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+        (**self).add_message(item).await
     }
 
     #[allow(deprecated)]
@@ -315,12 +318,12 @@ impl AgentContext for &dyn AgentContext {
         (**self).executor()
     }
 
-    async fn history(&self) -> Vec<ChatMessage> {
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
         (**self).history().await
     }
 
-    async fn redrive(&self) {
-        (**self).redrive().await;
+    async fn redrive(&self) -> Result<()> {
+        (**self).redrive().await
     }
 
     async fn has_received_feedback(&self, tool_call: &ToolCall) -> Option<ToolFeedback> {
@@ -337,17 +340,21 @@ impl AgentContext for &dyn AgentContext {
 /// Errors if tools attempt to execute commands
 #[async_trait]
 impl AgentContext for () {
-    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
-        None
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+        Ok(None)
     }
 
-    async fn current_new_messages(&self) -> Vec<ChatMessage> {
-        Vec::new()
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
+        Ok(Vec::new())
     }
 
-    async fn add_messages(&self, _item: Vec<ChatMessage>) {}
+    async fn add_messages(&self, _item: Vec<ChatMessage>) -> Result<()> {
+        Ok(())
+    }
 
-    async fn add_message(&self, _item: ChatMessage) {}
+    async fn add_message(&self, _item: ChatMessage) -> Result<()> {
+        Ok(())
+    }
 
     async fn exec_cmd(&self, _cmd: &Command) -> Result<CommandOutput, CommandError> {
         Err(CommandError::ExecutorError(anyhow::anyhow!(
@@ -359,11 +366,13 @@ impl AgentContext for () {
         unimplemented!("Empty agent context does not have a tool executor")
     }
 
-    async fn history(&self) -> Vec<ChatMessage> {
-        Vec::new()
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
+        Ok(Vec::new())
     }
 
-    async fn redrive(&self) {}
+    async fn redrive(&self) -> Result<()> {
+        Ok(())
+    }
 
     async fn has_received_feedback(&self, _tool_call: &ToolCall) -> Option<ToolFeedback> {
         Some(ToolFeedback::Approved { payload: None })
@@ -374,6 +383,50 @@ impl AgentContext for () {
         _tool_call: &ToolCall,
         _feedback: &ToolFeedback,
     ) -> Result<()> {
+        Ok(())
+    }
+}
+
+/// A backend for the agent context. A default is provided for Arc<Mutex<Vec<ChatMessage>>>
+///
+/// If you want to use for instance a database, implement this trait and pass it to the agent
+/// context when creating it.
+#[async_trait]
+pub trait MessageHistory: Send + Sync + std::fmt::Debug {
+    async fn history(&self) -> Result<Vec<ChatMessage>>;
+
+    async fn push_owned(&self, item: ChatMessage) -> Result<()>;
+
+    async fn push(&self, item: &ChatMessage) -> Result<()> {
+        self.push_owned(item.clone()).await
+    }
+
+    async fn extend(&self, items: &[ChatMessage]) -> Result<()> {
+        for item in items {
+            self.push(item).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn extend_owned(&self, items: Vec<ChatMessage>) -> Result<()> {
+        for item in items {
+            self.push_owned(item).await?;
+        }
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl MessageHistory for Mutex<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
+        Ok(self.lock().unwrap().clone())
+    }
+
+    async fn push_owned(&self, item: ChatMessage) -> Result<()> {
+        self.lock().unwrap().push(item);
+
         Ok(())
     }
 }
