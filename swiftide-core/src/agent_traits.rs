@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use crate::chat_completion::{ChatMessage, ToolCall};
 use anyhow::Result;
@@ -375,5 +378,43 @@ impl AgentContext for () {
         _feedback: &ToolFeedback,
     ) -> Result<()> {
         Ok(())
+    }
+}
+
+/// A backend for the agent context. A default is provided for Arc<Mutex<Vec<ChatMessage>>>
+///
+/// If you want to use for instance a database, implement this trait and pass it to the agent context
+/// when creating it.
+#[async_trait]
+pub trait AgentContextBackend: Send + Sync + std::fmt::Debug {
+    async fn history(&self) -> Vec<ChatMessage>;
+
+    async fn push_owned(&self, item: ChatMessage);
+
+    async fn push(&self, item: &ChatMessage) {
+        self.push_owned(item.clone()).await;
+    }
+
+    async fn extend(&self, items: &[ChatMessage]) {
+        for item in items {
+            self.push(item).await;
+        }
+    }
+
+    async fn extend_owned(&self, items: Vec<ChatMessage>) {
+        for item in items {
+            self.push_owned(item).await;
+        }
+    }
+}
+
+#[async_trait]
+impl AgentContextBackend for Mutex<Vec<ChatMessage>> {
+    async fn history(&self) -> Vec<ChatMessage> {
+        self.lock().unwrap().clone()
+    }
+
+    async fn push_owned(&self, item: ChatMessage) {
+        self.lock().unwrap().push(item);
     }
 }

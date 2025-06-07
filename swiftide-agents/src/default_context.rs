@@ -17,7 +17,9 @@ use std::{
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{AgentContext, Command, CommandError, CommandOutput, ToolExecutor};
+use swiftide_core::{
+    AgentContext, AgentContextBackend, Command, CommandError, CommandOutput, ToolExecutor,
+};
 use swiftide_core::{
     ToolFeedback,
     chat_completion::{ChatMessage, ToolCall},
@@ -28,7 +30,7 @@ use crate::tools::local_executor::LocalExecutor;
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
 pub struct DefaultContext {
-    completion_history: Arc<Mutex<Vec<ChatMessage>>>,
+    completion_history: Arc<dyn AgentContextBackend>,
     /// Index in the conversation history where the next completion will start
     completions_ptr: Arc<AtomicUsize>,
 
@@ -86,19 +88,23 @@ impl DefaultContext {
         self
     }
 
+    pub fn with_agent_backend(&mut self, backend: impl AgentContextBackend + 'static) -> &mut Self {
+        self.completion_history = Arc::new(backend) as Arc<dyn AgentContextBackend>;
+        self
+    }
+
     /// Build a context from an existing message history
     ///
     /// # Panics
     ///
     /// Panics if the inner mutex is poisoned
-    pub fn with_message_history<I: IntoIterator<Item = ChatMessage>>(
+    pub async fn with_message_history<I: IntoIterator<Item = ChatMessage>>(
         &mut self,
         message_history: I,
     ) -> &mut Self {
         self.completion_history
-            .lock()
-            .unwrap()
-            .extend(message_history);
+            .extend_owned(message_history.into_iter().collect::<Vec<_>>())
+            .await;
 
         self
     }
@@ -119,7 +125,7 @@ impl DefaultContext {
 impl AgentContext for DefaultContext {
     /// Retrieve messages for the next completion
     async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
-        let history = self.completion_history.lock().unwrap();
+        let history = self.completion_history.history().await;
 
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
@@ -144,14 +150,14 @@ impl AgentContext for DefaultContext {
         let current = self.current_completions_ptr.load(Ordering::SeqCst);
         let end = self.completions_ptr.load(Ordering::SeqCst);
 
-        let history = self.completion_history.lock().unwrap();
+        let history = self.completion_history.history().await;
 
         filter_messages_since_summary(history[current..end].to_vec())
     }
 
     /// Retrieve all messages in the conversation history
     async fn history(&self) -> Vec<ChatMessage> {
-        self.completion_history.lock().unwrap().clone()
+        self.completion_history.history().await
     }
 
     /// Add multiple messages to the conversation history
@@ -163,7 +169,7 @@ impl AgentContext for DefaultContext {
 
     /// Add a single message to the conversation history
     async fn add_message(&self, item: ChatMessage) {
-        self.completion_history.lock().unwrap().push(item);
+        self.completion_history.push_owned(item).await;
     }
 
     /// Execute a command in the tool executor
@@ -180,7 +186,7 @@ impl AgentContext for DefaultContext {
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
     async fn redrive(&self) {
-        let mut history = self.completion_history.lock().unwrap();
+        let mut history = self.completion_history.history().await;
         let previous = self.current_completions_ptr.load(Ordering::SeqCst);
         let redrive_ptr = self.completions_ptr.swap(previous, Ordering::SeqCst);
 

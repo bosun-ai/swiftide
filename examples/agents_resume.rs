@@ -21,6 +21,7 @@ async fn main() -> Result<()> {
 
     let restored_context = DefaultContext::default()
         .with_message_history(retrieved_history)
+        .await
         .to_owned();
 
     let mut second_agent = agents::Agent::builder()
