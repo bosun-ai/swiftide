@@ -1294,6 +1294,7 @@ mod tests {
         // Build a context from the history
         let context = DefaultContext::default()
             .with_message_history(history)
+            .await
             .to_owned();
 
         let expected_chat_request = chat_request! {
