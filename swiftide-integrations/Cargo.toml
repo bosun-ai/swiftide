@@ -84,6 +84,7 @@ deadpool = { workspace = true, features = [
   "rt_tokio_1",
 ], optional = true }
 fluvio = { workspace = true, optional = true }
+rdkafka = { workspace = true, optional = true }
 arrow-array = { workspace = true, optional = true }
 lancedb = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true, features = [
@@ -119,6 +120,7 @@ flv-util = { workspace = true }
 mockall = { workspace = true }
 test-log = { workspace = true }
 testcontainers = { workspace = true }
+testcontainers-modules = { workspace = true, features = ["kafka"] }
 test-case = { workspace = true }
 indoc = { workspace = true }
 insta = { workspace = true }
@@ -180,6 +182,8 @@ aws-bedrock = [
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 # Fluvio loader
 fluvio = ["dep:fluvio"]
+# Kafka loader
+kafka = ["dep:rdkafka"]
 # Paruqet loader
 parquet = ["dep:arrow-array", "dep:parquet"]
 # Anthropic for prompting and completions

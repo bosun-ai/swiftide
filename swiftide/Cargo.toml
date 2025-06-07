@@ -101,6 +101,9 @@ lancedb = ["swiftide-integrations/lancedb"]
 ## Fluvio loader
 fluvio = ["swiftide-integrations/fluvio"]
 
+## Kafka loader
+kafka = ["swiftide-integrations/kafka"]
+
 ## Parquet loader
 parquet = ["swiftide-integrations/parquet"]
 

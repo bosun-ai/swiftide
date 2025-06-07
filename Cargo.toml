@@ -66,6 +66,7 @@ qdrant-client = { version = "1.14", default-features = false, features = [
   "serde",
 ] }
 fluvio = { version = "0.26.2", default-features = false }
+rdkafka = { version = "0.37.0", features = ["cmake-build"] }
 lancedb = { version = "0.18", default-features = false, features = ["remote"] }
 # Needs to stay in sync with whatever lancdb uses, nice
 arrow-array = { version = "54.2", default-features = false }
@@ -116,6 +117,7 @@ tiktoken-rs = { version = "0.6", default-features = false }
 # Testing
 test-log = { version = "0.2" }
 testcontainers = { version = "0.23", features = ["http_wait"] }
+testcontainers-modules = { version = "0.11.6"}
 mockall = { version = "0.13" }
 temp-dir = { version = "0.1" }
 wiremock = { version = "0.6" }

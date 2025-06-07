@@ -20,6 +20,7 @@ swiftide = { path = "../swiftide/", features = [
   "groq",
   "ollama",
   "fluvio",
+  "kafka",
   "lancedb",
   "pgvector",
   "swiftide-agents",
@@ -100,6 +101,10 @@ path = "hybrid_search.rs"
 [[example]]
 name = "fluvio"
 path = "fluvio.rs"
+
+[[example]]
+name = "kakfa"
+path = "kafka.rs"
 
 [[example]]
 name = "lancedb"
