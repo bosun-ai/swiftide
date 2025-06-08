@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749384199876,
+  "lastUpdate": 1749386790739,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22289,6 +22289,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253049,
             "range": "± 2725",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c636ebaa2eb8d4ace1b5a370698c5f2817fc9c99",
+          "message": "feat(agents)!: Context is now generic over its backend (#810)\n\nBREAKING CHANGE: The signature is now slightly different for the\nAgentContext. If you have implemented your own for i.e. a persisted\nsolution, if it's *just that*, the implementation is now a lot more\nstraightforward with the `MessageHistory` trait.",
+          "timestamp": "2025-06-08T14:37:17+02:00",
+          "tree_id": "ca14ec567bda3d800ad734653df8c57a56530d6f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c636ebaa2eb8d4ace1b5a370698c5f2817fc9c99"
+        },
+        "date": 1749386789284,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1330698,
+            "range": "± 1668836",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253566,
+            "range": "± 1261",
             "unit": "ns/iter"
           }
         ]
