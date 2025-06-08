@@ -220,8 +220,9 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                         if stream_full {
                             lock.clone()
                         } else {
-                            // If we are not streaming the full response, we return a clone of the current state
-                            // to avoid holding the lock for too long.
+                            // If we are not streaming the full response, we return a clone of the
+                            // current state to avoid holding the lock
+                            // for too long.
                             ChatCompletionResponse {
                                 id: lock.id,
                                 message: None,
