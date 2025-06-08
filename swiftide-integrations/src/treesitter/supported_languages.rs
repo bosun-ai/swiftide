@@ -14,6 +14,7 @@
 //! - Javascript
 //! - Solidity
 
+use std::hash::Hash;
 #[allow(unused_imports)]
 pub use std::str::FromStr as _;
 
@@ -28,6 +29,7 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug,
     PartialEq,
+    Eq,
     Clone,
     Copy,
     Deserialize,
@@ -35,6 +37,7 @@ use serde::{Deserialize, Serialize};
     strum_macros::EnumString,
     strum_macros::Display,
     strum_macros::EnumIter,
+    strum_macros::AsRefStr,
 )]
 #[strum(ascii_case_insensitive)]
 #[non_exhaustive]
@@ -67,6 +70,18 @@ pub enum SupportedLanguages {
     Cpp,
     #[serde(alias = "elixir")]
     Elixir,
+}
+
+impl Hash for SupportedLanguages {
+    /// Implements the `Hash` trait for `SupportedLanguages`.
+    ///
+    /// This allows instances of `SupportedLanguages` to be used as keys in hash maps and sets.
+    ///
+    /// # Parameters
+    /// - `state`: The mutable state to which the hash is added.
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.as_ref().hash(state);
+    }
 }
 
 /// Static array of file extensions for Rust files.
