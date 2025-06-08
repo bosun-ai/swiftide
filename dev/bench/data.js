@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749244162320,
+  "lastUpdate": 1749384199876,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22235,6 +22235,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251636,
             "range": "± 2883",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cd57d1207ced8651a277526d706bc3b7703912c0",
+          "message": "fix(openai): Opt-out streaming accumulated response and only get the delta (#809)",
+          "timestamp": "2025-06-08T13:54:32+02:00",
+          "tree_id": "87b0b7f7930f38c4e9a687f6b63723035b193039",
+          "url": "https://github.com/bosun-ai/swiftide/commit/cd57d1207ced8651a277526d706bc3b7703912c0"
+        },
+        "date": 1749384197897,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 8",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1334931,
+            "range": "± 887867",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253049,
+            "range": "± 2725",
             "unit": "ns/iter"
           }
         ]
