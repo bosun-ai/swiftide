@@ -86,6 +86,12 @@ pub struct GenericOpenAI<
     #[cfg(feature = "tiktoken")]
     #[cfg_attr(feature = "tiktoken", builder(default))]
     pub(crate) tiktoken: TikToken,
+
+    /// Convenience option to stream the full response. Defaults to true, because nobody has time
+    /// to reconstruct the delta. Disabling this will make the streamed content only return the
+    /// delta, for when performance matters. This only has effect when streaming is enabled.
+    #[builder(default = true)]
+    pub stream_full: bool,
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.

@@ -10,6 +10,7 @@ use async_openai::types::{
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
+use futures_util::stream;
 use itertools::Itertools;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
@@ -181,6 +182,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         };
 
         let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
+        let final_response = accumulating_response.clone();
+        let stream_full = self.stream_full;
 
         response
             .map(move |chunk| match chunk {
@@ -214,13 +217,32 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                             );
                         }
 
-                        lock.clone()
+                        if stream_full {
+                            lock.clone()
+                        } else {
+                            // If we are not streaming the full response, we return a clone of the
+                            // current state to avoid holding the lock
+                            // for too long.
+                            ChatCompletionResponse {
+                                id: lock.id,
+                                message: None,
+                                tool_calls: None,
+                                usage: None,
+                                delta: lock.delta.clone(),
+                            }
+                        }
                     };
 
                     Ok(chat_completion_response)
                 }
                 Err(e) => Err(openai_error_to_language_model_error(e)),
             })
+            .chain(
+                stream::iter(vec![final_response]).map(move |accumulating_response| {
+                    let lock = accumulating_response.lock().unwrap();
+                    Ok(lock.clone())
+                }),
+            )
             .boxed()
     }
 }
