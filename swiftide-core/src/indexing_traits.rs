@@ -263,7 +263,7 @@ impl Loader for &dyn Loader {
 
 #[async_trait]
 /// Turns one node into many nodes
-pub trait ChunkerTransformer: Send + Sync + Debug + DynClone {
+pub trait ChunkerTransformer: Send + Sync + DynClone {
     async fn transform_node(&self, node: Node) -> IndexingStream;
 
     /// Overrides the default concurrency of the pipeline
@@ -328,6 +328,16 @@ impl ChunkerTransformer for &dyn ChunkerTransformer {
     }
     fn concurrency(&self) -> Option<usize> {
         (*self).concurrency()
+    }
+}
+
+#[async_trait]
+impl<F> ChunkerTransformer for F
+where
+    F: Fn(Node) -> IndexingStream + Send + Sync + Clone,
+{
+    async fn transform_node(&self, node: Node) -> IndexingStream {
+        self(node)
     }
 }
 
