@@ -30,7 +30,7 @@ pub use rdkafka::config::ClientConfig;
 mod loader;
 mod persist;
 
-#[derive(Clone, Builder)]
+#[derive(Debug, Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Kafka {
     client_config: ClientConfig,
@@ -40,17 +40,15 @@ pub struct Kafka {
     persist_key_fn: Option<fn(&Node) -> Result<String>>,
     #[builder(default)]
     /// Customize the value used for persisting nodes
-    persist_value_fn: Option<fn(&Node) -> Result<String>>,
+    persist_payload_fn: Option<fn(&Node) -> Result<String>>,
     #[builder(default = "1")]
     partition: i32,
     #[builder(default = "1")]
     factor: i32,
-}
-
-impl std::fmt::Debug for Kafka {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Kafka").field("topic", &self.topic).finish()
-    }
+    #[builder(default)]
+    create_topic_if_not_exists: bool,
+    #[builder(default = "32")]
+    batch_size: usize,
 }
 
 impl Kafka {
@@ -59,9 +57,11 @@ impl Kafka {
             client_config: config.into(),
             topic: topic.into(),
             persist_key_fn: None,
-            persist_value_fn: None,
+            persist_payload_fn: None,
             partition: 1,
             factor: 1,
+            create_topic_if_not_exists: false,
+            batch_size: 32,
         }
     }
 
@@ -75,28 +75,30 @@ impl Kafka {
             .context("Failed to create producer")
     }
 
-    async fn create_topic_if_not_exists(&self) -> Result<()> {
+    fn topic_exists(&self) -> Result<bool> {
         let consumer: StreamConsumer = self
             .client_config
             .create()
             .context("Failed to create consumer")?;
         let metadata = consumer.fetch_metadata(Some(&self.topic), None)?;
-        if metadata.topics().is_empty() {
-            let admin_client: AdminClient<DefaultClientContext> = self
-                .client_config
-                .create()
-                .context("Failed to create admin client")?;
-            admin_client
-                .create_topics(
-                    vec![&NewTopic::new(
-                        &self.topic,
-                        self.partition,
-                        TopicReplication::Fixed(self.factor),
-                    )],
-                    &AdminOptions::new(),
-                )
-                .await?;
-        }
+        Ok(!metadata.topics().is_empty())
+    }
+
+    async fn create_topic(&self) -> Result<()> {
+        let admin_client: AdminClient<DefaultClientContext> = self
+            .client_config
+            .create()
+            .context("Failed to create admin client")?;
+        admin_client
+            .create_topics(
+                vec![&NewTopic::new(
+                    &self.topic,
+                    self.partition,
+                    TopicReplication::Fixed(self.factor),
+                )],
+                &AdminOptions::new(),
+            )
+            .await?;
         Ok(())
     }
 
@@ -115,10 +117,21 @@ impl Kafka {
     /// If a custom function is provided, it is used to generate the value.
     /// Otherwise, the node is serialized as JSON.
     fn persist_value_for_node(&self, node: &Node) -> Result<String> {
-        if let Some(value_fn) = self.persist_value_fn {
+        if let Some(value_fn) = self.persist_payload_fn {
             value_fn(node)
         } else {
             Ok(serde_json::to_string(node)?)
         }
+    }
+
+    fn node_to_key_payload(&self, node: &Node) -> Result<(String, String)> {
+        let key = self.persist_key_for_node(node).map_err(|e| {
+            anyhow::anyhow!("persist_key_for_node failed: {:?} (node: {:?})", e, node)
+        })?;
+        let payload = self.persist_value_for_node(node).map_err(|e| {
+            anyhow::anyhow!("persist_value_for_node failed: {:?} (node: {:?})", e, node)
+        })?;
+
+        Ok((key, payload))
     }
 }

@@ -1,7 +1,7 @@
 use futures_util::{StreamExt as _, stream};
 use rdkafka::{
     Message,
-    consumer::{CommitMode, Consumer, StreamConsumer},
+    consumer::{Consumer, StreamConsumer},
     message::BorrowedMessage,
 };
 use swiftide_core::{Loader, indexing::IndexingStream, indexing::Node};
@@ -20,7 +20,7 @@ impl Loader for Kafka {
 
         consumer
             .subscribe(&[&topic])
-            .unwrap_or_else(|_| panic!("Failed to subscribe to topic: {topic}"));
+            .expect("Failed to subscribe to topic");
 
         let swiftide_stream = stream::unfold(consumer, |consumer| async move {
             loop {
@@ -28,18 +28,12 @@ impl Loader for Kafka {
                     Ok(message) => {
                         // only handle Some(Ok(s))
                         if let Some(Ok(payload)) = message.payload_view::<str>() {
-                            tracing::debug!("Received message: {}", payload);
                             let mut node = Node::new(payload);
                             msg_metadata(&mut node, &message);
-                            tracing::debug!("Node: {:?}", node);
-
-                            // manually commit offset (if needed)
-                            if let Err(e) = consumer.commit_message(&message, CommitMode::Async) {
-                                tracing::warn!("Failed to commit offset: {:?}", e);
-                            }
-
+                            tracing::trace!(?node, ?payload, "received message");
                             return Some((Ok(node), consumer));
                         }
+                        // otherwise, like a message with an invalid payload or payload is None
                         tracing::debug!("Skipping message with invalid payload");
                     }
                     Err(e) => return Some((Err(anyhow::Error::from(e)), consumer)),
@@ -127,12 +121,12 @@ mod tests {
             Ok(broker)
         }
 
-        pub async fn create_topic(&self, topic: impl Into<String>) -> Result<()> {
+        pub async fn create_topic(&self, topic: impl AsRef<str>) -> Result<()> {
             let admin = self.admin_client();
             admin
                 .create_topics(
                     &[NewTopic {
-                        name: topic.into().as_str(),
+                        name: topic.as_ref(),
                         num_partitions: self.partitions,
                         replication: TopicReplication::Fixed(self.replicas),
                         config: vec![],

@@ -40,6 +40,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let storage = Kafka::builder()
         .client_config(client_config)
         .topic(STORAGE_TOPIC)
+        .create_topic_if_not_exists(true)
+        .batch_size(2usize)
         .build()
         .unwrap();
 
