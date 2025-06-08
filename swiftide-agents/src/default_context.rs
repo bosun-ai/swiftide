@@ -91,7 +91,7 @@ impl DefaultContext {
         self
     }
 
-    pub fn with_agent_backend(&mut self, backend: impl MessageHistory + 'static) -> &mut Self {
+    pub fn with_message_history(&mut self, backend: impl MessageHistory + 'static) -> &mut Self {
         self.message_history = Arc::new(backend) as Arc<dyn MessageHistory>;
         self
     }
@@ -105,7 +105,7 @@ impl DefaultContext {
     /// # Panics
     ///
     /// Panics if the inner mutex is poisoned
-    pub async fn with_message_history<I: IntoIterator<Item = ChatMessage>>(
+    pub async fn with_existing_messages<I: IntoIterator<Item = ChatMessage>>(
         &mut self,
         message_history: I,
     ) -> Result<&mut Self> {

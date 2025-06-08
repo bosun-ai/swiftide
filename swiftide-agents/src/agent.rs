@@ -1316,7 +1316,7 @@ mod tests {
 
         // Build a context from the history
         let context = DefaultContext::default()
-            .with_message_history(history)
+            .with_existing_messages(history)
             .await
             .unwrap()
             .to_owned();

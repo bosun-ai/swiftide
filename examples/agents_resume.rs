@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     let retrieved_history: Vec<_> = serde_json::from_str(&stored_history)?;
 
     let restored_context = DefaultContext::default()
-        .with_message_history(retrieved_history)
+        .with_existing_messages(retrieved_history)
         .await?
         .to_owned();
 
