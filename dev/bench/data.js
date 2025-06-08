@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749394227714,
+  "lastUpdate": 1749398084853,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22505,6 +22505,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251922,
             "range": "± 1658",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "a21883b219a0079c1edc1d3c36d1d06ac906ba18",
+          "message": "refactor(agents)!: Improved naming for existing messages and message history in default context",
+          "timestamp": "2025-06-08T17:44:19+02:00",
+          "tree_id": "e68f50af250a3a7b3d467b790e6ad4d3161ad968",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a21883b219a0079c1edc1d3c36d1d06ac906ba18"
+        },
+        "date": 1749398083608,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796680,
+            "range": "± 20060",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253023,
+            "range": "± 1637",
             "unit": "ns/iter"
           }
         ]
