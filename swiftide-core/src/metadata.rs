@@ -54,6 +54,14 @@ impl Metadata {
         self.inner.into_values()
     }
 
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.inner.keys().map(String::as_str)
+    }
+
+    pub fn values(&self) -> impl Iterator<Item = &serde_json::Value> {
+        self.inner.values()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }

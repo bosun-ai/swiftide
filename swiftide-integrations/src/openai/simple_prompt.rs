@@ -1,10 +1,14 @@
 //! This module provides an implementation of the `SimplePrompt` trait for the `OpenAI` struct.
 //! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt
 //! processing and generating responses as part of the Swiftide system.
+use std::collections::HashMap;
+
 use async_openai::types::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
+#[cfg(feature = "metrics")]
+use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
-    SimplePrompt, chat_completion::errors::LanguageModelError, metrics::emit_usage, prompt::Prompt,
+    SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
     util::debug_long_utf8,
 };
 
@@ -67,7 +71,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         );
 
         // Send the request to the OpenAI API and await the response.
-        let response = self
+        let mut response = self
             .client
             .chat()
             .create(request)
@@ -88,17 +92,18 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         {
             if let Some(usage) = response.usage.as_ref() {
                 emit_usage(
-                    &model,
-                    usage.prompt_tokens,
-                    usage.completion_tokens,
-                    usage.total_tokens,
+                    model,
+                    usage.prompt_tokens.into(),
+                    usage.completion_tokens.into(),
+                    usage.total_tokens.into(),
+                    self.metric_metadata.as_ref(),
                 );
             }
         }
 
         // Log the response for debugging purposes.
         tracing::debug!(
-            message = debug_long_utf8(&response, 100),
+            message = debug_long_utf8(&message, 100),
             "[SimplePrompt] Response from openai"
         );
 
