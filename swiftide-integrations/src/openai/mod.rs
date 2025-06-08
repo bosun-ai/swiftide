@@ -8,6 +8,7 @@ use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
+use std::borrow::Cow;
 use std::sync::Arc;
 use swiftide_core::chat_completion::errors::LanguageModelError;
 
@@ -101,10 +102,10 @@ pub struct GenericOpenAI<
 pub struct Options {
     /// The default embedding model to use, if specified.
     #[builder(default, setter(into))]
-    pub embed_model: Option<String>,
+    pub embed_model: Option<Cow<'static, str>>,
     /// The default prompt model to use, if specified.
     #[builder(default, setter(into))]
-    pub prompt_model: Option<String>,
+    pub prompt_model: Option<Cow<'static, str>>,
 
     #[builder(default)]
     /// Option to enable or disable parallel tool calls for completions.
@@ -260,7 +261,7 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     ///
     /// # Returns
     /// A mutable reference to the `OpenAIBuilder`.
-    pub fn default_embed_model(&mut self, model: impl Into<String>) -> &mut Self {
+    pub fn default_embed_model(&mut self, model: impl Into<Cow<'static, str>>) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             options.embed_model = Some(model.into());
         } else {
@@ -296,7 +297,7 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     ///
     /// # Returns
     /// A mutable reference to the `OpenAIBuilder`.
-    pub fn default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
+    pub fn default_prompt_model(&mut self, model: impl Into<Cow<'static, str>>) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             options.prompt_model = Some(model.into());
         } else {
@@ -334,7 +335,7 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
         self.tiktoken.estimate(value).await
     }
 
-    pub fn with_default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
+    pub fn with_default_prompt_model(&mut self, model: impl Into<Cow<'static, str>>) -> &mut Self {
         self.default_options = Options {
             prompt_model: Some(model.into()),
             ..self.default_options.clone()
@@ -342,7 +343,7 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
         self
     }
 
-    pub fn with_default_embed_model(&mut self, model: impl Into<String>) -> &mut Self {
+    pub fn with_default_embed_model(&mut self, model: impl Into<Cow<'static, str>>) -> &mut Self {
         self.default_options = Options {
             embed_model: Some(model.into()),
             ..self.default_options.clone()

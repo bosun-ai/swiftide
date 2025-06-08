@@ -14,7 +14,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .default_options
             .embed_model
             .as_ref()
-            .ok_or(LanguageModelError::PermanentError("Model not set".into()))?;
+            .ok_or(LanguageModelError::PermanentError("Model not set".into()))?
+            .as_ref();
 
         let request = self
             .embed_request_defaults()

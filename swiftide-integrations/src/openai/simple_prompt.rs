@@ -39,7 +39,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .default_options
             .prompt_model
             .as_ref()
-            .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+            .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?
+            .as_ref();
 
         // Build the request to be sent to the OpenAI API.
         let request = self

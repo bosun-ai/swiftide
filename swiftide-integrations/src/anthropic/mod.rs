@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use derive_builder::Builder;
 
@@ -21,13 +21,13 @@ pub struct Anthropic {
 #[builder(setter(into, strip_option))]
 pub struct Options {
     #[builder(default)]
-    pub prompt_model: String,
+    pub prompt_model: Cow<'static, str>,
 }
 
 impl Default for Options {
     fn default() -> Self {
         Self {
-            prompt_model: "claude-3-5-sonnet-20241022".to_string(),
+            prompt_model: "claude-3-5-sonnet-20241022".into(),
         }
     }
 }
@@ -60,7 +60,7 @@ impl AnthropicBuilder {
     ///
     /// # Returns
     /// A mutable reference to the `AnthropicBuilder`.
-    pub fn default_prompt_model(&mut self, model: impl Into<String>) -> &mut Self {
+    pub fn default_prompt_model(&mut self, model: impl Into<Cow<'static, str>>) -> &mut Self {
         if let Some(options) = self.default_options.as_mut() {
             options.prompt_model = model.into();
         } else {

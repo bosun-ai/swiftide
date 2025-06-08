@@ -25,13 +25,13 @@ impl ChatCompletion for Anthropic {
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
-        let model = &self.default_options.prompt_model;
+        let model = self.default_options.prompt_model.as_ref();
         let request = self
             .build_request(request)
             .and_then(|b| b.build().map_err(LanguageModelError::permanent))?;
 
         tracing::debug!(
-            model = &model,
+            model,
             messages = serde_json::to_string_pretty(&request).expect("Infallible"),
             "[ChatCompletion] Request to anthropic"
         );
@@ -91,7 +91,7 @@ impl ChatCompletion for Anthropic {
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
-        let model = &self.default_options.prompt_model;
+        let model = self.default_options.prompt_model.as_ref();
         let request = match self
             .build_request(request)
             .and_then(|b| b.build().map_err(LanguageModelError::permanent))
@@ -182,7 +182,7 @@ impl Anthropic {
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<async_anthropic::types::CreateMessagesRequestBuilder, LanguageModelError> {
-        let model = &self.default_options.prompt_model;
+        let model = self.default_options.prompt_model.as_ref();
         let mut messages = request.messages().to_vec();
 
         let maybe_system = messages

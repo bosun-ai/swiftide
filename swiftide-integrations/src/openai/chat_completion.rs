@@ -36,7 +36,8 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .default_options
             .prompt_model
             .as_ref()
-            .context("Model not set")?;
+            .context("Model not set")?
+            .as_ref();
 
         let messages = request
             .messages()
@@ -125,7 +126,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
-        let Some(model) = self.default_options.prompt_model.as_ref() else {
+        let Some(model) = self.default_options.prompt_model.as_deref() else {
             return LanguageModelError::permanent("Model not set").into();
         };
 

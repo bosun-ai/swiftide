@@ -12,7 +12,7 @@ impl SimplePrompt for Anthropic {
         &self,
         prompt: swiftide_core::prompt::Prompt,
     ) -> Result<String, LanguageModelError> {
-        let model = &self.default_options.prompt_model;
+        let model = self.default_options.prompt_model.as_ref();
 
         let request = CreateMessagesRequestBuilder::default()
             .model(model)
@@ -21,7 +21,7 @@ impl SimplePrompt for Anthropic {
             .map_err(LanguageModelError::permanent)?;
 
         tracing::debug!(
-            model = &model,
+            model,
             messages =
                 serde_json::to_string_pretty(&request).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Request to anthropic"
