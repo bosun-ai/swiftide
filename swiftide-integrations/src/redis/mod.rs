@@ -6,14 +6,16 @@
 //!
 //! # Overview
 //!
-//! The `Redis` struct provides methods for:
-//! - Connecting to a Redis database
-//! - Checking if a node is cached
-//! - Setting a node in the cache
-//! - Resetting the cache (primarily for testing purposes)
+//! Redis implements the following `Swiftide` traits:
+//! - `NodeCache`
+//! - `Persist`
+//! - `MessageHistory`
 //!
-//! This integration is essential for ensuring efficient node management and caching in the Swiftide
-//! system.
+//! Additionally it provides various helper and utility functions for managing the Redis connection
+//! and key management. The connection is managed using a connection manager. When
+//! cloned, the connection manager is shared across all instances.
+
+use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
@@ -21,6 +23,7 @@ use tokio::sync::RwLock;
 
 use swiftide_core::indexing::Node;
 
+mod message_history;
 mod node_cache;
 mod persist;
 
@@ -32,14 +35,15 @@ mod persist;
 /// * `client` - The Redis client used to interact with the Redis server.
 /// * `connection_manager` - Manages the Redis connections asynchronously.
 /// * `key_prefix` - A prefix used for keys stored in Redis to avoid collisions.
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 #[builder(pattern = "owned", setter(strip_option))]
 pub struct Redis {
-    client: redis::Client,
+    #[builder(setter(into))]
+    client: Arc<redis::Client>,
     #[builder(default, setter(skip))]
-    connection_manager: RwLock<Option<redis::aio::ConnectionManager>>,
-    #[builder(default)]
-    cache_key_prefix: String,
+    connection_manager: Arc<RwLock<Option<redis::aio::ConnectionManager>>>,
+    #[builder(default, setter(into))]
+    cache_key_prefix: Arc<String>,
     #[builder(default = "10")]
     /// The batch size used for persisting nodes. Defaults to a safe 10.
     batch_size: usize,
@@ -49,6 +53,8 @@ pub struct Redis {
     #[builder(default)]
     /// Customize the value used for persisting nodes
     persist_value_fn: Option<fn(&Node) -> Result<String>>,
+    #[builder(default = "message_history".to_string().into(), setter(into))]
+    message_history_key: Arc<String>,
 }
 
 impl Redis {
@@ -69,12 +75,13 @@ impl Redis {
     pub fn try_from_url(url: impl AsRef<str>, prefix: impl AsRef<str>) -> Result<Self> {
         let client = redis::Client::open(url.as_ref()).context("Failed to open redis client")?;
         Ok(Self {
-            client,
-            connection_manager: RwLock::new(None),
-            cache_key_prefix: prefix.as_ref().to_string(),
+            client: client.into(),
+            connection_manager: Arc::new(RwLock::new(None)),
+            cache_key_prefix: prefix.as_ref().to_string().into(),
             batch_size: 10,
             persist_key_fn: None,
             persist_value_fn: None,
+            message_history_key: format!("{}:message_history", prefix.as_ref()).into(),
         })
     }
 
@@ -89,6 +96,12 @@ impl Redis {
     /// Builds a new `Redis` instance from the builder.
     pub fn builder() -> RedisBuilder {
         RedisBuilder::default()
+    }
+
+    /// Set the key to be used for the message history
+    pub fn with_message_history_key(&mut self, prefix: impl Into<String>) -> &mut Self {
+        self.message_history_key = Arc::new(prefix.into());
+        self
     }
 
     /// Lazily connects to the Redis server and returns the connection manager.
@@ -200,18 +213,5 @@ impl std::fmt::Debug for Redis {
         f.debug_struct("Redis")
             .field("client", &self.client)
             .finish()
-    }
-}
-
-impl Clone for Redis {
-    fn clone(&self) -> Self {
-        Self {
-            client: self.client.clone(),
-            connection_manager: RwLock::new(None),
-            cache_key_prefix: self.cache_key_prefix.clone(),
-            batch_size: self.batch_size,
-            persist_key_fn: self.persist_key_fn,
-            persist_value_fn: self.persist_value_fn,
-        }
     }
 }

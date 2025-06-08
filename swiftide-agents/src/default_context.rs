@@ -110,7 +110,7 @@ impl DefaultContext {
         message_history: I,
     ) -> Result<&mut Self> {
         self.message_history
-            .extend_owned(message_history.into_iter().collect::<Vec<_>>())
+            .overwrite(message_history.into_iter().collect())
             .await?;
 
         Ok(self)
@@ -199,6 +199,8 @@ impl AgentContext for DefaultContext {
 
         // delete everything after the last completion
         history.truncate(redrive_ptr);
+
+        self.message_history.overwrite(history).await?;
 
         Ok(())
     }

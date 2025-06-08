@@ -393,22 +393,26 @@ impl AgentContext for () {
 /// context when creating it.
 #[async_trait]
 pub trait MessageHistory: Send + Sync + std::fmt::Debug {
+    /// Returns the history of messages
     async fn history(&self) -> Result<Vec<ChatMessage>>;
 
+    /// Add a message to the history
     async fn push_owned(&self, item: ChatMessage) -> Result<()>;
 
+    /// Overwrite the history with the given items
+    async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()>;
+
+    /// Add a message to the history
     async fn push(&self, item: &ChatMessage) -> Result<()> {
         self.push_owned(item.clone()).await
     }
 
+    /// Extend the history with the given items
     async fn extend(&self, items: &[ChatMessage]) -> Result<()> {
-        for item in items {
-            self.push(item).await?;
-        }
-
-        Ok(())
+        self.extend_owned(items.to_vec()).await
     }
 
+    /// Extend the history with the given items, taking ownership of them
     async fn extend_owned(&self, items: Vec<ChatMessage>) -> Result<()> {
         for item in items {
             self.push_owned(item).await?;
@@ -426,6 +430,13 @@ impl MessageHistory for Mutex<Vec<ChatMessage>> {
 
     async fn push_owned(&self, item: ChatMessage) -> Result<()> {
         self.lock().unwrap().push(item);
+
+        Ok(())
+    }
+
+    async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()> {
+        let mut lock = self.lock().unwrap();
+        *lock = items;
 
         Ok(())
     }
