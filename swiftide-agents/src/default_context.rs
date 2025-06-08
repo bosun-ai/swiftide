@@ -17,7 +17,9 @@ use std::{
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{AgentContext, Command, CommandError, CommandOutput, ToolExecutor};
+use swiftide_core::{
+    AgentContext, Command, CommandError, CommandOutput, MessageHistory, ToolExecutor,
+};
 use swiftide_core::{
     ToolFeedback,
     chat_completion::{ChatMessage, ToolCall},
@@ -28,7 +30,10 @@ use crate::tools::local_executor::LocalExecutor;
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
 pub struct DefaultContext {
-    completion_history: Arc<Mutex<Vec<ChatMessage>>>,
+    /// Responsible for managing the conversation history
+    ///
+    /// By default, this is a `Arc<Mutex<Vec<ChatMessage>>>`.
+    message_history: Arc<dyn MessageHistory>,
     /// Index in the conversation history where the next completion will start
     completions_ptr: Arc<AtomicUsize>,
 
@@ -48,7 +53,7 @@ pub struct DefaultContext {
 impl Default for DefaultContext {
     fn default() -> Self {
         DefaultContext {
-            completion_history: Arc::new(Mutex::new(Vec::new())),
+            message_history: Arc::new(Mutex::new(Vec::new())),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
             tool_executor: Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>,
@@ -61,7 +66,7 @@ impl Default for DefaultContext {
 impl std::fmt::Debug for DefaultContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DefaultContext")
-            .field("completion_history", &self.completion_history)
+            .field("completion_history", &self.message_history)
             .field("completions_ptr", &self.completions_ptr)
             .field("current_completions_ptr", &self.current_completions_ptr)
             .field("tool_executor", &"Arc<dyn ToolExecutor>")
@@ -86,21 +91,29 @@ impl DefaultContext {
         self
     }
 
+    pub fn with_agent_backend(&mut self, backend: impl MessageHistory + 'static) -> &mut Self {
+        self.message_history = Arc::new(backend) as Arc<dyn MessageHistory>;
+        self
+    }
+
     /// Build a context from an existing message history
+    ///
+    /// # Errors
+    ///
+    /// Errors if the message history cannot be extended
     ///
     /// # Panics
     ///
     /// Panics if the inner mutex is poisoned
-    pub fn with_message_history<I: IntoIterator<Item = ChatMessage>>(
+    pub async fn with_message_history<I: IntoIterator<Item = ChatMessage>>(
         &mut self,
         message_history: I,
-    ) -> &mut Self {
-        self.completion_history
-            .lock()
-            .unwrap()
-            .extend(message_history);
+    ) -> Result<&mut Self> {
+        self.message_history
+            .extend_owned(message_history.into_iter().collect::<Vec<_>>())
+            .await?;
 
-        self
+        Ok(self)
     }
 
     /// Add existing tool feedback to the context
@@ -118,8 +131,8 @@ impl DefaultContext {
 #[async_trait]
 impl AgentContext for DefaultContext {
     /// Retrieve messages for the next completion
-    async fn next_completion(&self) -> Option<Vec<ChatMessage>> {
-        let history = self.completion_history.lock().unwrap();
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+        let history = self.message_history.history().await?;
 
         let current = self.completions_ptr.load(Ordering::SeqCst);
 
@@ -129,41 +142,41 @@ impl AgentContext for DefaultContext {
                 && self.feedback_received.lock().unwrap().is_empty())
         {
             tracing::debug!(?history, "No new messages for completion");
-            None
+            Ok(None)
         } else {
             let previous = self.completions_ptr.swap(history.len(), Ordering::SeqCst);
             self.current_completions_ptr
                 .store(previous, Ordering::SeqCst);
 
-            Some(filter_messages_since_summary(history.clone()))
+            Ok(Some(filter_messages_since_summary(history)))
         }
     }
 
     /// Returns the messages the agent is currently completing on
-    async fn current_new_messages(&self) -> Vec<ChatMessage> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
         let current = self.current_completions_ptr.load(Ordering::SeqCst);
         let end = self.completions_ptr.load(Ordering::SeqCst);
 
-        let history = self.completion_history.lock().unwrap();
+        let history = self.message_history.history().await?;
 
-        filter_messages_since_summary(history[current..end].to_vec())
+        Ok(filter_messages_since_summary(
+            history[current..end].to_vec(),
+        ))
     }
 
     /// Retrieve all messages in the conversation history
-    async fn history(&self) -> Vec<ChatMessage> {
-        self.completion_history.lock().unwrap().clone()
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
+        self.message_history.history().await
     }
 
     /// Add multiple messages to the conversation history
-    async fn add_messages(&self, messages: Vec<ChatMessage>) {
-        for item in messages {
-            self.add_message(item).await;
-        }
+    async fn add_messages(&self, messages: Vec<ChatMessage>) -> Result<()> {
+        self.message_history.extend_owned(messages).await
     }
 
     /// Add a single message to the conversation history
-    async fn add_message(&self, item: ChatMessage) {
-        self.completion_history.lock().unwrap().push(item);
+    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+        self.message_history.push_owned(item).await
     }
 
     /// Execute a command in the tool executor
@@ -179,13 +192,15 @@ impl AgentContext for DefaultContext {
     ///
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
     /// This gives a way to redrive the last completion in a generic way
-    async fn redrive(&self) {
-        let mut history = self.completion_history.lock().unwrap();
+    async fn redrive(&self) -> Result<()> {
+        let mut history = self.message_history.history().await?;
         let previous = self.current_completions_ptr.load(Ordering::SeqCst);
         let redrive_ptr = self.completions_ptr.swap(previous, Ordering::SeqCst);
 
         // delete everything after the last completion
         history.truncate(redrive_ptr);
+
+        Ok(())
     }
 
     async fn has_received_feedback(&self, tool_call: &ToolCall) -> Option<ToolFeedback> {
@@ -249,28 +264,33 @@ mod tests {
                 ChatMessage::System("You are awesome".into()),
                 ChatMessage::User("Hello".into()),
             ])
-            .await;
+            .await
+            .unwrap();
 
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 2);
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         context
             .add_messages(vec![assistant!("Hey?"), user!("How are you?")])
-            .await;
+            .await
+            .unwrap();
 
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 4);
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         // If the last message is from the assistant, we should not get any more completions
-        context.add_messages(vec![assistant!("I am fine")]).await;
+        context
+            .add_messages(vec![assistant!("I am fine")])
+            .await
+            .unwrap();
 
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         context.with_stop_on_assistant(false);
 
-        assert!(context.next_completion().await.is_some());
+        assert!(context.next_completion().await.unwrap().is_some());
     }
 
     #[tokio::test]
@@ -282,24 +302,26 @@ mod tests {
                 ChatMessage::System("You are awesome".into()),
                 ChatMessage::User("Hello".into()),
             ])
-            .await;
-        let messages = context.next_completion().await.unwrap();
+            .await
+            .unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 2);
-        assert_eq!(context.current_new_messages().await.len(), 2);
-        assert!(context.next_completion().await.is_none());
+        assert_eq!(context.current_new_messages().await.unwrap().len(), 2);
+        assert!(context.next_completion().await.unwrap().is_none());
 
         context
             .add_messages(vec![
                 assistant!("Hey?", ["test"]),
                 tool_output!("test", "Hoi"),
             ])
-            .await;
+            .await
+            .unwrap();
 
-        let messages = context.next_completion().await.unwrap();
-        assert_eq!(context.current_new_messages().await.len(), 2);
+        let messages = context.next_completion().await.unwrap().unwrap();
+        assert_eq!(context.current_new_messages().await.unwrap().len(), 2);
         assert_eq!(messages.len(), 4);
 
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
     }
 
     #[tokio::test]
@@ -313,22 +335,22 @@ mod tests {
         ];
         let context = DefaultContext::default();
         // Record initial chat messages
-        context.add_messages(messages).await;
+        context.add_messages(messages).await.unwrap();
 
-        let new_messages = context.next_completion().await.unwrap();
+        let new_messages = context.next_completion().await.unwrap().unwrap();
 
         assert_eq!(new_messages.len(), 3);
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
         assert!(matches!(new_messages[1], ChatMessage::Summary(_)));
         assert!(matches!(new_messages[2], ChatMessage::User(_)));
 
-        let current_new_messages = context.current_new_messages().await;
+        let current_new_messages = context.current_new_messages().await.unwrap();
         assert_eq!(current_new_messages.len(), 3);
         assert!(matches!(current_new_messages[0], ChatMessage::System(_)));
         assert!(matches!(current_new_messages[1], ChatMessage::Summary(_)));
         assert!(matches!(current_new_messages[2], ChatMessage::User(_)));
 
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
     }
 
     #[tokio::test]
@@ -341,9 +363,9 @@ mod tests {
         let mut context = DefaultContext::default();
         context.with_stop_on_assistant(false);
         // Record initial chat messages
-        context.add_messages(messages).await;
+        context.add_messages(messages).await.unwrap();
 
-        let new_messages = context.next_completion().await.unwrap();
+        let new_messages = context.next_completion().await.unwrap().unwrap();
 
         assert_eq!(new_messages.len(), 3);
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
@@ -352,9 +374,10 @@ mod tests {
 
         context
             .add_message(ChatMessage::Summary("Summary message 1".into()))
-            .await;
+            .await
+            .unwrap();
 
-        let new_messages = context.next_completion().await.unwrap();
+        let new_messages = context.next_completion().await.unwrap().unwrap();
         dbg!(&new_messages);
         assert_eq!(new_messages.len(), 2);
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
@@ -363,16 +386,16 @@ mod tests {
             ChatMessage::Summary("Summary message 1".into())
         );
 
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         let messages = vec![
             ChatMessage::User("Hello again".into()),
             ChatMessage::Assistant(Some("Hello there again".into()), None),
         ];
 
-        context.add_messages(messages).await;
+        context.add_messages(messages).await.unwrap();
 
-        let new_messages = context.next_completion().await.unwrap();
+        let new_messages = context.next_completion().await.unwrap().unwrap();
 
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
         assert_eq!(
@@ -387,9 +410,10 @@ mod tests {
 
         context
             .add_message(ChatMessage::Summary("Summary message 2".into()))
-            .await;
+            .await
+            .unwrap();
 
-        let new_messages = context.next_completion().await.unwrap();
+        let new_messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(new_messages.len(), 2);
 
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
@@ -409,43 +433,46 @@ mod tests {
                 ChatMessage::System("System message".into()),
                 ChatMessage::User("Hello".into()),
             ])
-            .await;
+            .await
+            .unwrap();
 
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 2);
-        assert!(context.next_completion().await.is_none());
-        context.redrive().await;
+        assert!(context.next_completion().await.unwrap().is_none());
+        context.redrive().await.unwrap();
 
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 2);
 
         context
             .add_messages(vec![ChatMessage::User("Hey?".into())])
-            .await;
+            .await
+            .unwrap();
 
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 3);
-        assert!(context.next_completion().await.is_none());
-        context.redrive().await;
+        assert!(context.next_completion().await.unwrap().is_none());
+        context.redrive().await.unwrap();
 
         // Add more messages
         context
             .add_messages(vec![ChatMessage::User("How are you?".into())])
-            .await;
+            .await
+            .unwrap();
 
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 4);
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         // Redrive should remove the last set of messages
         dbg!(&context);
-        context.redrive().await;
+        context.redrive().await.unwrap();
         dbg!(&context);
 
         // We just redrove with the same messages
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 4);
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         // Add more messages
         context
@@ -453,20 +480,21 @@ mod tests {
                 ChatMessage::User("How are you really?".into()),
                 ChatMessage::User("How are you really?".into()),
             ])
-            .await;
+            .await
+            .unwrap();
 
         // This should remove any additional messages
-        context.redrive().await;
+        context.redrive().await.unwrap();
 
         // We just redrove with the same messages
-        let messages = context.next_completion().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 4);
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
 
         // Redrive again
-        context.redrive().await;
-        let messages = context.next_completion().await.unwrap();
+        context.redrive().await.unwrap();
+        let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 4);
-        assert!(context.next_completion().await.is_none());
+        assert!(context.next_completion().await.unwrap().is_none());
     }
 }

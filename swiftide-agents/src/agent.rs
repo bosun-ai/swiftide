@@ -327,8 +327,16 @@ impl Agent {
     }
 
     /// Retrieve the message history of the agent
-    pub async fn history(&self) -> Vec<ChatMessage> {
-        self.context.history().await
+    ///
+    /// # Errors
+    ///
+    /// Error if the message history cannot be retrieved, e.g. if the context is not set up or a
+    /// connection fails
+    pub async fn history(&self) -> Result<Vec<ChatMessage>, AgentError> {
+        self.context
+            .history()
+            .await
+            .map_err(AgentError::MessageHistoryError)
     }
 
     async fn run_agent(
@@ -348,7 +356,8 @@ impl Agent {
                             .render()
                             .map_err(AgentError::FailedToRenderSystemPrompt)?,
                     )])
-                    .await;
+                    .await
+                    .map_err(AgentError::MessageHistoryError)?;
             }
 
             invoke_hooks!(BeforeAll, self);
@@ -361,12 +370,20 @@ impl Agent {
         self.state = state::State::Running;
 
         if let Some(query) = maybe_query {
-            self.context.add_message(ChatMessage::User(query)).await;
+            self.context
+                .add_message(ChatMessage::User(query))
+                .await
+                .map_err(AgentError::MessageHistoryError)?;
         }
 
         let mut loop_counter = 0;
 
-        while let Some(messages) = self.context.next_completion().await {
+        while let Some(messages) = self
+            .context
+            .next_completion()
+            .await
+            .map_err(AgentError::MessageHistoryError)?
+        {
             if let Some(limit) = self.limit {
                 if loop_counter >= limit {
                     tracing::warn!("Agent loop limit reached");
@@ -436,6 +453,7 @@ impl Agent {
             self.context
                 .current_new_messages()
                 .await
+                .map_err(AgentError::MessageHistoryError)?
                 .iter()
                 .map(ToString::to_string)
                 .collect::<Vec<_>>()
@@ -626,7 +644,10 @@ impl Agent {
     pub async fn add_message(&self, mut message: ChatMessage) -> Result<(), AgentError> {
         invoke_hooks!(OnNewMessage, self, &mut message);
 
-        self.context.add_message(message).await;
+        self.context
+            .add_message(message)
+            .await
+            .map_err(AgentError::MessageHistoryError)?;
         Ok(())
     }
 
@@ -766,7 +787,7 @@ mod tests {
         assert!(agent.find_tool_by_name("mock_tool").is_some());
         assert!(agent.find_tool_by_name("stop").is_some());
 
-        assert!(agent.context().history().await.is_empty());
+        assert!(agent.context().history().await.unwrap().is_empty());
     }
 
     #[test_log::test(tokio::test)]
@@ -996,7 +1017,8 @@ mod tests {
         agent
             .context
             .add_message(ChatMessage::new_summary("Summary"))
-            .await;
+            .await
+            .unwrap();
 
         let expected_chat_request = chat_request! {
             system!("My system prompt"),
@@ -1011,7 +1033,8 @@ mod tests {
         agent
             .context
             .add_message(ChatMessage::new_summary("Summary 2"))
-            .await;
+            .await
+            .unwrap();
 
         let expected_chat_request = chat_request! {
             system!("My system prompt"),
@@ -1283,7 +1306,7 @@ mod tests {
         agent.query(prompt).await.unwrap();
 
         // Let's retrieve the history of the agent
-        let history = agent.history().await;
+        let history = agent.history().await.unwrap();
 
         // Store it as a string somewhere
         let serialized = serde_json::to_string(&history).unwrap();
@@ -1294,6 +1317,8 @@ mod tests {
         // Build a context from the history
         let context = DefaultContext::default()
             .with_message_history(history)
+            .await
+            .unwrap()
             .to_owned();
 
         let expected_chat_request = chat_request! {
@@ -1470,7 +1495,7 @@ mod tests {
         tracing::debug!("running after approval");
         agent.run_once().await.unwrap();
 
-        let history = agent.context().history().await;
+        let history = agent.context().history().await.unwrap();
         history
             .iter()
             .rfind(|m| {

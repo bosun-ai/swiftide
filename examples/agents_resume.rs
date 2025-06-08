@@ -16,11 +16,12 @@ async fn main() -> Result<()> {
     first_agent.query("Say hello!").await?;
 
     // Let's store the messages in a database, retrieve them back, and start a new agent
-    let stored_history = serde_json::to_string(&first_agent.history().await)?;
+    let stored_history = serde_json::to_string(&first_agent.history().await?)?;
     let retrieved_history: Vec<_> = serde_json::from_str(&stored_history)?;
 
     let restored_context = DefaultContext::default()
         .with_message_history(retrieved_history)
+        .await?
         .to_owned();
 
     let mut second_agent = agents::Agent::builder()
