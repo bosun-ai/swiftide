@@ -19,6 +19,8 @@ use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
+#[cfg(feature = "metrics")]
+use swiftide_core::metrics::emit_usage;
 
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
@@ -109,7 +111,7 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             )
             .to_owned();
 
-        if let Some(usage) = response.usage {
+        if let Some(usage) = &response.usage {
             let usage = UsageBuilder::default()
                 .prompt_tokens(usage.prompt_tokens)
                 .completion_tokens(usage.completion_tokens)
@@ -118,6 +120,19 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
                 .map_err(LanguageModelError::permanent)?;
 
             builder.usage(usage);
+
+            #[cfg(feature = "metrics")]
+            {
+                if let Some(usage) = response.usage.as_ref() {
+                    emit_usage(
+                        model,
+                        usage.prompt_tokens.into(),
+                        usage.completion_tokens.into(),
+                        usage.total_tokens.into(),
+                        self.metric_metadata.as_ref(),
+                    );
+                }
+            }
         }
 
         builder.build().map_err(LanguageModelError::from)
@@ -185,6 +200,11 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
         let final_response = accumulating_response.clone();
         let stream_full = self.stream_full;
 
+        #[cfg(feature = "metrics")]
+        let metric_metadata = self.metric_metadata.clone();
+        #[cfg(feature = "metrics")]
+        let model = model.to_string();
+
         response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
@@ -240,6 +260,19 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .chain(
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
+
+                    #[cfg(feature = "metrics")]
+                    {
+                        if let Some(usage) = lock.usage.as_ref() {
+                            emit_usage(
+                                &model,
+                                usage.prompt_tokens.into(),
+                                usage.completion_tokens.into(),
+                                usage.total_tokens.into(),
+                                metric_metadata.as_ref(),
+                            );
+                        }
+                    }
                     Ok(lock.clone())
                 }),
             )

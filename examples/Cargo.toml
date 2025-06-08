@@ -28,6 +28,7 @@ swiftide = { path = "../swiftide/", features = [
   "mcp",
   "anthropic",
   "gemini",
+  "metrics",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
@@ -41,6 +42,7 @@ swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
 serde = { workspace = true }
 rmcp = { workspace = true, features = ["transport-child-process", "client"] }
+metrics = { workspace = true }
 
 
 [[example]]
@@ -141,3 +143,7 @@ path = "streaming_agents.rs"
 [[example]]
 name = "agents-hitl"
 path = "agents_with_human_in_the_loop.rs"
+
+[[example]]
+name = "usage-metrics"
+path = "usage_metrics.rs"

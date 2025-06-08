@@ -1,4 +1,4 @@
-use futures_util::{StreamExt as _, TryStreamExt as _};
+use futures_util::{StreamExt as _, TryStreamExt as _, stream};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context as _, Result};
@@ -17,6 +17,9 @@ use swiftide_core::{
 };
 
 use super::Anthropic;
+
+#[cfg(feature = "metrics")]
+use swiftide_core::metrics::emit_usage;
 
 #[async_trait]
 impl ChatCompletion for Anthropic {
@@ -72,10 +75,19 @@ impl ChatCompletion for Anthropic {
             .maybe_tool_calls(maybe_tool_calls)
             .to_owned();
 
-        if let Some(usage) = response.usage {
+        if let Some(usage) = &response.usage {
             let input_tokens = usage.input_tokens.unwrap_or_default();
             let output_tokens = usage.output_tokens.unwrap_or_default();
             let total_tokens = input_tokens + output_tokens;
+
+            #[cfg(feature = "metrics")]
+            emit_usage(
+                model,
+                input_tokens.into(),
+                output_tokens.into(),
+                total_tokens.into(),
+                self.metric_metadata.as_ref(),
+            );
 
             let usage = UsageBuilder::default()
                 .prompt_tokens(input_tokens)
@@ -111,8 +123,13 @@ impl ChatCompletion for Anthropic {
         let response = self.client.messages().create_stream(request).await;
 
         let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
+        let final_response = Arc::clone(&accumulating_response);
+        #[cfg(feature = "metrics")]
+        let model = model.clone();
+        #[cfg(feature = "metrics")]
+        let metric_metadata = self.metric_metadata.clone();
 
-        (response
+        response
             .map_ok(move |chunk| {
                 let accumulating_response = Arc::clone(&accumulating_response);
 
@@ -122,7 +139,23 @@ impl ChatCompletion for Anthropic {
                 lock.clone()
             })
             .map_err(LanguageModelError::permanent)
-            .boxed()) as _
+            .chain(
+                stream::iter(vec![final_response]).map(move |final_response| {
+                    if let Some(usage) = final_response.lock().unwrap().usage.as_ref() {
+                        #[cfg(feature = "metrics")]
+                        emit_usage(
+                            &model,
+                            usage.prompt_tokens.into(),
+                            usage.completion_tokens.into(),
+                            usage.total_tokens.into(),
+                            metric_metadata.as_ref(),
+                        );
+                    }
+
+                    Ok(final_response.lock().unwrap().clone())
+                }),
+            )
+            .boxed()
     }
 }
 

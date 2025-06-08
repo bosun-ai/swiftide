@@ -9283,6 +9283,7 @@ version = "0.27.2"
 dependencies = [
  "anyhow",
  "fluvio",
+ "metrics",
  "rmcp",
  "serde",
  "serde_json",
