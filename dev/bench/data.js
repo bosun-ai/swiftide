@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749398084853,
+  "lastUpdate": 1749410996401,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22559,6 +22559,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253023,
             "range": "± 1637",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "da2d604e7e6209c83f382cf6de44f5f5c2042596",
+          "message": "fix(redb): Explicit lifetime in table definition",
+          "timestamp": "2025-06-08T21:21:02+02:00",
+          "tree_id": "7566c3b3f9d32f9fe0daddcd70f2c7fa8f1284b8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/da2d604e7e6209c83f382cf6de44f5f5c2042596"
+        },
+        "date": 1749410995456,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 10",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 776312,
+            "range": "± 15988",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253314,
+            "range": "± 2065",
             "unit": "ns/iter"
           }
         ]
