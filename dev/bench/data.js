@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749390927074,
+  "lastUpdate": 1749391165843,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22397,6 +22397,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250837,
             "range": "± 1144",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "d6769eba0b87750fd3173ba73315973f720263ec",
+          "message": "chore(tree-sitter): Implement Eq, Hash and AsRefStr for SupportedLanguages",
+          "timestamp": "2025-06-08T15:49:08+02:00",
+          "tree_id": "07c8c63478e54c303c9ad750b533d099377f6b4a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d6769eba0b87750fd3173ba73315973f720263ec"
+        },
+        "date": 1749391164514,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1346410,
+            "range": "± 912574",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251969,
+            "range": "± 1598",
             "unit": "ns/iter"
           }
         ]
