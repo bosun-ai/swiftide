@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749386790739,
+  "lastUpdate": 1749390927074,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22343,6 +22343,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253566,
             "range": "± 1261",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "40bfa9c2d5685e54f247becb49698f8fdc347172",
+          "message": "chore(indexing): Implement ChunkerTransformer for closures",
+          "timestamp": "2025-06-08T15:46:09+02:00",
+          "tree_id": "60142c2d949dad7a69c8b5f7f6aa6f262d81f187",
+          "url": "https://github.com/bosun-ai/swiftide/commit/40bfa9c2d5685e54f247becb49698f8fdc347172"
+        },
+        "date": 1749390925931,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1345044,
+            "range": "± 929955",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250837,
+            "range": "± 1144",
             "unit": "ns/iter"
           }
         ]
