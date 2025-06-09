@@ -594,9 +594,9 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.28.2"
+version = "0.28.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ac0334b0fef1ddaf141154a3ef6d55a95b5b1a52c720753554b0a1ca670e68"
+checksum = "4df839a6643e1e3248733b01f229dc4f462d7256f808bbaf04cac40739b345c2"
 dependencies = [
  "async-openai-macros",
  "backoff",
@@ -1411,7 +1411,7 @@ dependencies = [
  "bitflags 2.9.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.11.0",
  "lazy_static",
  "lazycell",
  "log",
@@ -3799,9 +3799,9 @@ checksum = "28dd6caf6059519a65843af8fe2a3ae298b14b80179855aeb4adc2c1934ee619"
 
 [[package]]
 name = "fs-err"
-version = "3.1.0"
+version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f89bda4c2a21204059a977ed3bfe746677dfd137b83c339e702b0ac91d482aa"
+checksum = "88d7be93788013f265201256d58f04936a8079ad5dc898743aa20525f503b683"
 dependencies = [
  "autocfg",
  "tokio",
@@ -8603,9 +8603,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.103"
+version = "2.37.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e02e1db628d8cf5f15a2cad47636384c5fea9e150ff889a9c45768fab79ece7"
+checksum = "0b7d3c560e5da062265833cf972e9611c69b6112f08ebaa91041af045ea1fecf"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
@@ -9118,7 +9118,7 @@ version = "0.26.0"
 dependencies = [
  "anyhow",
  "arrow-array",
- "async-openai 0.28.2",
+ "async-openai 0.28.3",
  "async-trait",
  "document-features",
  "lancedb",
@@ -9256,7 +9256,7 @@ dependencies = [
  "anyhow",
  "arrow-array",
  "async-anthropic",
- "async-openai 0.28.2",
+ "async-openai 0.28.3",
  "async-trait",
  "aws-config",
  "aws-credential-types",
@@ -9366,7 +9366,7 @@ dependencies = [
 name = "swiftide-test-utils"
 version = "0.26.0"
 dependencies = [
- "async-openai 0.28.2",
+ "async-openai 0.28.3",
  "serde",
  "serde_json",
  "swiftide-integrations",
