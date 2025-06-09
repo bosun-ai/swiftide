@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.0](https://github.com/bosun-ai/swiftide/compare/v0.26.0...v0.27.0) - 2025-06-09
+
+### New features
+
+- [c636eba](https://github.com/bosun-ai/swiftide/commit/c636ebaa2eb8d4ace1b5a370698c5f2817fc9c99) *(agents)*  [**breaking**] Context is now generic over its backend ([#810](https://github.com/bosun-ai/swiftide/pull/810))
+
+**BREAKING CHANGE**: The signature is now slightly different for the
+AgentContext. If you have implemented your own for i.e. a persisted
+solution, if it's *just that*, the implementation is now a lot more
+straightforward with the `MessageHistory` trait.
+
+- [3c937a8](https://github.com/bosun-ai/swiftide/commit/3c937a8ed4f7d28798a24b0d893f1613cd298493) *(agents)*  Add helpers for creating tool errors ([#805](https://github.com/bosun-ai/swiftide/pull/805))
+
+- [9e831d3](https://github.com/bosun-ai/swiftide/commit/9e831d3eb072748ebb21c9a16cd7d807b4d42469) *(agents)*  [**breaking**] Easy human-in-the-loop flows by decorating tools ([#790](https://github.com/bosun-ai/swiftide/pull/790))
+
+**BREAKING CHANGE**: The `Tool` trait now receives a `ToolCall` as argument
+instead of an `Option<&str>`. The latter is still accessible via
+`tool_call.args()`.
+
+- [814c217](https://github.com/bosun-ai/swiftide/commit/814c2174c742ff4277246505537070726ce8af92) *(duckdb)*  Hybrid Search ([#807](https://github.com/bosun-ai/swiftide/pull/807))
+
+- [19a2e94](https://github.com/bosun-ai/swiftide/commit/19a2e94d262cc68c629d88b6b02a72bb9b159036) *(integrations)*  Add support for Google Gemini ([#754](https://github.com/bosun-ai/swiftide/pull/754))
+
+- [990fa5e](https://github.com/bosun-ai/swiftide/commit/990fa5e9edffebd9b70da6b57fa454f7318d642d) *(redis)*  Support `MessageHistory` for redis ([#811](https://github.com/bosun-ai/swiftide/pull/811))
+
+### Bug fixes
+
+- [ca119bd](https://github.com/bosun-ai/swiftide/commit/ca119bdc473140437abb1bf14b496bb7bd9378de) *(agents)*  Ensure approved / refused tool calls are in new completions ([#799](https://github.com/bosun-ai/swiftide/pull/799))
+
+- [df6a12d](https://github.com/bosun-ai/swiftide/commit/df6a12dabe855f351acc3e0d104048321cb9bc0e) *(agents)*  Ensure agents with no tools still have the stop tool
+
+- [cd57d12](https://github.com/bosun-ai/swiftide/commit/cd57d1207ced8651a277526d706bc3b7703912c0) *(openai)*  Opt-out streaming accumulated response and only get the delta ([#809](https://github.com/bosun-ai/swiftide/pull/809))
+
+- [da2d604](https://github.com/bosun-ai/swiftide/commit/da2d604e7e6209c83f382cf6de44f5f5c2042596) *(redb)*  Explicit lifetime in table definition
+
+### Miscellaneous
+
+- [7ac92a4](https://github.com/bosun-ai/swiftide/commit/7ac92a4f2ff4b1d1ba7e86c90c4f6c5c025cabc9) *(agents)*  Direct access to executor via context ([#794](https://github.com/bosun-ai/swiftide/pull/794))
+
+- [a21883b](https://github.com/bosun-ai/swiftide/commit/a21883b219a0079c1edc1d3c36d1d06ac906ba18) *(agents)*  [**breaking**] Improved naming for existing messages and message history in default context
+
+**BREAKING CHANGE**: Improved naming for existing messages and message history in default context
+
+- [40bfa9c](https://github.com/bosun-ai/swiftide/commit/40bfa9c2d5685e54f247becb49698f8fdc347172) *(indexing)*  Implement ChunkerTransformer for closures
+
+- [c8d7ab9](https://github.com/bosun-ai/swiftide/commit/c8d7ab90c86e674d5df5f4985121e4e81d1e4a37) *(integrations)*  Improved warning when a qdrant collection exists
+
+- [d6769eb](https://github.com/bosun-ai/swiftide/commit/d6769eba0b87750fd3173ba73315973f720263ec) *(tree-sitter)*  Implement Eq, Hash and AsRefStr for SupportedLanguages
+
+- [04ec29d](https://github.com/bosun-ai/swiftide/commit/04ec29d7240a8542ccd1d530bb9b104bcd57631e)  Consistent logging for indexing pipeline ([#792](https://github.com/bosun-ai/swiftide/pull/792))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.26.0...0.27.0
+
+
+
 ## [0.26.0](https://github.com/bosun-ai/swiftide/compare/v0.25.1...v0.26.0) - 2025-05-06
 
 ### New features
