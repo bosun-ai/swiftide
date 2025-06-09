@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749410996401,
+  "lastUpdate": 1749466059409,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22613,6 +22613,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 253314,
             "range": "± 2065",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "011f6e9ff625ce4076b4e64c97d93036ad390c75",
+          "message": "chore(deps): bump the minor group with 3 updates (#815)\n\nBumps the minor group with 3 updates:\n[fs-err](https://github.com/andrewhickman/fs-err),\n[spider](https://github.com/spider-rs/spider) and\n[async-openai](https://github.com/64bit/async-openai).\n\nUpdates `fs-err` from 3.1.0 to 3.1.1\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/andrewhickman/fs-err/blob/main/CHANGELOG.md\">fs-err's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>3.1.1</h2>\n<ul>\n<li>Added <code>File::into_file</code> and <code>File::into_path</code>\n(<a\nhref=\"https://redirect.github.com/andrewhickman/fs-err/pull/73\">#73</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/andrewhickman/fs-err/commits\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `spider` from 2.37.103 to 2.37.107\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/spider-rs/spider/releases\">spider's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v2.37.104</h2>\n<h2>What's Changed</h2>\n<p>Major spoof emulations for chrome moved to\n<code>spider_fingerprint</code>.</p>\n<ul>\n<li>chore(fingerprint): add navigator.hardwareConcurrency spoof</li>\n<li>chore(examples): fix anti_bot with_user_agent</li>\n<li>chore(fingerprint): fix device_pixel_ratio mac defaults</li>\n<li>chore(fingerprint): fix hide chrome</li>\n<li>chore(fingerprint): prep fingerprint canvas noise</li>\n<li>chore(fingerprint): add profiles start</li>\n<li>chore(fingerprint): add env section</li>\n<li>chore(fingerprint): fix userAgentData getHighEntropyValues</li>\n<li>chore(chrome): add to block list</li>\n<li>chore(fingerprint): fix webgl worker spoof gpu</li>\n<li>chore(chrome): default enable service_workers</li>\n<li>chore(fingerprint): fix navigator.userAgentData prototype</li>\n<li>chore(fingerprint): fix plugins spoof toJSON</li>\n<li>chore(fingerprint): revert plugins</li>\n<li>chore(fingerprint): fix plugins spoof</li>\n<li>chore(spider_chrome): add rust-tls flag</li>\n<li>chore(fingerprint): fix firefox spoof</li>\n<li>chore(fingerprint): allow reference viewport</li>\n<li>chore(chrome): add scroll method</li>\n<li>chore(fingerprint): fix referer defaulting</li>\n<li>chore(chrome): add screencast</li>\n<li>chrome_remote.rs: Add note about headless-browser by <a\nhref=\"https://github.com/jkoppel\"><code>@​jkoppel</code></a> in <a\nhref=\"https://redirect.github.com/spider-rs/spider/pull/296\">spider-rs/spider#296</a></li>\n<li>feat(chrome): add max_page_bytes control</li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a href=\"https://github.com/jkoppel\"><code>@​jkoppel</code></a> made\ntheir first contribution in <a\nhref=\"https://redirect.github.com/spider-rs/spider/pull/296\">spider-rs/spider#296</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/spider-rs/spider/compare/v2.37.18...v2.37.104\">https://github.com/spider-rs/spider/compare/v2.37.18...v2.37.104</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a\nhref=\"https://github.com/spider-rs/spider/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\nUpdates `async-openai` from 0.28.2 to 0.28.3\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/64bit/async-openai/releases\">async-openai's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v0.28.3</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>Fix: regression with 0.28.2; web search options causes error when\nusing reasoning models; add skip serializing if none to fix. by <a\nhref=\"https://github.com/spencerbart\"><code>@​spencerbart</code></a> in\n<a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/379\">64bit/async-openai#379</a></li>\n<li>added copyright material links, Resolves <a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/346\">#346</a>\nby <a\nhref=\"https://github.com/DarshanVanol\"><code>@​DarshanVanol</code></a>\nin <a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/380\">64bit/async-openai#380</a></li>\n<li>Responses API - add missing completed state by <a\nhref=\"https://github.com/JensWalter\"><code>@​JensWalter</code></a> in <a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/384\">64bit/async-openai#384</a></li>\n<li>refactor: adds Default to CompletionUsage, PromptTokensDetails,\nCompletionTokensDetails structs by <a\nhref=\"https://github.com/paulhendricks\"><code>@​paulhendricks</code></a>\nin <a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/387\">64bit/async-openai#387</a></li>\n<li>add flex service tier to chat completions by <a\nhref=\"https://github.com/spencerbart\"><code>@​spencerbart</code></a> in\n<a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/385\">64bit/async-openai#385</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a\nhref=\"https://github.com/spencerbart\"><code>@​spencerbart</code></a>\nmade their first contribution in <a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/379\">64bit/async-openai#379</a></li>\n<li><a\nhref=\"https://github.com/paulhendricks\"><code>@​paulhendricks</code></a>\nmade their first contribution in <a\nhref=\"https://redirect.github.com/64bit/async-openai/pull/387\">64bit/async-openai#387</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/64bit/async-openai/compare/async-openai-v0.28.2...async-openai-v0.28.3\">https://github.com/64bit/async-openai/compare/async-openai-v0.28.2...async-openai-v0.28.3</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/64bit/async-openai/commit/097945b703fca7eae33112616fbb2d0e691e24ae\"><code>097945b</code></a>\nchore: Release</li>\n<li><a\nhref=\"https://github.com/64bit/async-openai/commit/2d072281430250ceaaf318845cd9891b38e3e5da\"><code>2d07228</code></a>\nadd flex service tier to chat completions (<a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/385\">#385</a>)</li>\n<li><a\nhref=\"https://github.com/64bit/async-openai/commit/7bb433a510f4bd469a4ce4260ae73a80dc1164fb\"><code>7bb433a</code></a>\nfeat: adds Default to CompletionUsage (<a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/387\">#387</a>)</li>\n<li><a\nhref=\"https://github.com/64bit/async-openai/commit/19c9ba005f63dff5cb4db71d965523ea4a89a937\"><code>19c9ba0</code></a>\nadd completed state (<a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/384\">#384</a>)</li>\n<li><a\nhref=\"https://github.com/64bit/async-openai/commit/de53c00ebee36b569b017e4cd7f09539504e1b36\"><code>de53c00</code></a>\nadded copyright material links, Resolves <a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/346\">#346</a>\n(<a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/380\">#380</a>)</li>\n<li><a\nhref=\"https://github.com/64bit/async-openai/commit/8a05a5385c59d573d77554611ba89e621ddf9d5c\"><code>8a05a53</code></a>\nfix web search options; skip serializing if none (<a\nhref=\"https://redirect.github.com/64bit/async-openai/issues/379\">#379</a>)</li>\n<li>See full diff in <a\nhref=\"https://github.com/64bit/async-openai/compare/async-openai-v0.28.2...async-openai-v0.28.3\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-06-09T12:38:58+02:00",
+          "tree_id": "89855974e9b49f4abbda9039d11bb66ac8fc15db",
+          "url": "https://github.com/bosun-ai/swiftide/commit/011f6e9ff625ce4076b4e64c97d93036ad390c75"
+        },
+        "date": 1749466058232,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 782543,
+            "range": "± 53373",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250782,
+            "range": "± 1932",
             "unit": "ns/iter"
           }
         ]
