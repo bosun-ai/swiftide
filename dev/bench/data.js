@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749466059409,
+  "lastUpdate": 1749466327543,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22667,6 +22667,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250782,
             "range": "± 1932",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "126633241+wulawulu@users.noreply.github.com",
+            "name": "wulawulu",
+            "username": "wulawulu"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "254bd3a32ffbd4d06abd6a4f3950a2b8556dc310",
+          "message": "feat(integrations): Add kafka as loader and persist support (#808)\n\nAdds Kafka as a loader and persist support, enabling Swiftide indexing\nstreams to process messages from a Kafka topic to a Kafka topic.\n\nCloses https://github.com/bosun-ai/swiftide/issues/155\n\n---------\n\nCo-authored-by: wulawulu <wutuobangbang@gmail.com>",
+          "timestamp": "2025-06-09T12:43:15+02:00",
+          "tree_id": "e85e0aa81b0c92c06a0e0d4c1947c70b64f33426",
+          "url": "https://github.com/bosun-ai/swiftide/commit/254bd3a32ffbd4d06abd6a4f3950a2b8556dc310"
+        },
+        "date": 1749466325503,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 791232,
+            "range": "± 19476",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252505,
+            "range": "± 6616",
             "unit": "ns/iter"
           }
         ]
