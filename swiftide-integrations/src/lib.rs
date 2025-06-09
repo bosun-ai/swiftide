@@ -22,6 +22,8 @@ pub mod fluvio;
 pub mod gemini;
 #[cfg(feature = "groq")]
 pub mod groq;
+#[cfg(feature = "kafka")]
+pub mod kafka;
 #[cfg(feature = "lancedb")]
 pub mod lancedb;
 #[cfg(feature = "ollama")]
