@@ -128,6 +128,12 @@ impl<T: Into<String>> From<T> for CommandOutput {
     }
 }
 
+impl AsRef<str> for CommandOutput {
+    fn as_ref(&self) -> &str {
+        &self.output
+    }
+}
+
 /// Feedback that can be given on a tool, i.e. with a human in the loop
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ToolFeedback {
