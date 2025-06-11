@@ -280,12 +280,6 @@ mod tests {
     }
 }
 
-impl From<CommandOutput> for ToolOutput {
-    fn from(value: CommandOutput) -> Self {
-        ToolOutput::Text(value.output)
-    }
-}
-
 /// The `Tool` trait is the main interface for chat completion and agent tools.
 ///
 /// `swiftide-macros` provides a set of macros to generate implementations of this trait. If you
