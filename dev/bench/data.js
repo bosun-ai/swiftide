@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749656975447,
+  "lastUpdate": 1749666391828,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22937,6 +22937,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 250796,
             "range": "± 2722",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "081592334f2bd8c2da30535b4e1b51e8ddd15834",
+          "message": "fix(tool-executor): Remove conflicting implementation of AsRef<str> for Output",
+          "timestamp": "2025-06-11T20:12:47+02:00",
+          "tree_id": "cc5d4de5a2e4f3167b282b4cb33df61e365951e8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/081592334f2bd8c2da30535b4e1b51e8ddd15834"
+        },
+        "date": 1749666390311,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 10",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 798661,
+            "range": "± 14525",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252084,
+            "range": "± 1534",
             "unit": "ns/iter"
           }
         ]
