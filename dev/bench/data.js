@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749656962821,
+  "lastUpdate": 1749656975447,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22883,6 +22883,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 255273,
             "range": "± 1898",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fad0fd60fd3c751b39a277612d0c60c6c8a4f0b1",
+          "message": "chore(deps): bump syn from 2.0.101 to 2.0.102 in the minor group (#817)\n\nBumps the minor group with 1 update:\n[syn](https://github.com/dtolnay/syn).\n\nUpdates `syn` from 2.0.101 to 2.0.102\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/dtolnay/syn/releases\">syn's\nreleases</a>.</em></p>\n<blockquote>\n<h2>2.0.102</h2>\n<ul>\n<li>Fix printing of nested Expr::Index and Expr::Tuple in non-full mode\n(<a\nhref=\"https://redirect.github.com/dtolnay/syn/issues/1869\">#1869</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/b1cc55995dc2ff30ffdf10fc428f9df0bb85f28d\"><code>b1cc559</code></a>\nRelease 2.0.102</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/0df2d5bef1f9b6dbf593830601c4412381961a56\"><code>0df2d5b</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/dtolnay/syn/issues/1869\">#1869</a>\nfrom dtolnay/print</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/f7d4038c4a5f905e4395261667ca14d09434d6aa\"><code>f7d4038</code></a>\nFix printing of nested Expr::Index and Expr::Tuple in non-full mode</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/6744b73a34edd740cc3c9c81f1534026046bb259\"><code>6744b73</code></a>\nIgnore unnecessary_box_returns pedantic clippy lint in test</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/4d2978a7cf9cd1a8dd4de75b14475dc64351db4b\"><code>4d2978a</code></a>\nUpdate test suite to nightly-2025-06-08</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/7ff53751f0c7b81b65df9bf136745bf4677d0c22\"><code>7ff5375</code></a>\nIgnore mismatched_lifetime_syntaxes lint</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/c5843647dc70044e1c8b98832aee71caba7353de\"><code>c584364</code></a>\nResolve needless_return clippy lint</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/07dc272d8c0e4d0a55f6941ba3f42be44ad71c6f\"><code>07dc272</code></a>\nUpdate test suite to nightly-2025-05-31</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/abfcd60a0c8391184d3e8ff1bc136ab21d9a515f\"><code>abfcd60</code></a>\nPin nightly toolchain used for miri job</li>\n<li><a\nhref=\"https://github.com/dtolnay/syn/commit/4ae637a80e069b669e60e1d760803dbb11adc17c\"><code>4ae637a</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/dtolnay/syn/issues/1862\">#1862</a>\nfrom martician1/docs/fix-local-semi</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/dtolnay/syn/compare/2.0.101...2.0.102\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=syn&package-manager=cargo&previous-version=2.0.101&new-version=2.0.102)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore <dependency name> major version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's major version (unless you unignore this specific\ndependency's major version or upgrade to it yourself)\n- `@dependabot ignore <dependency name> minor version` will close this\ngroup update PR and stop Dependabot creating any more for the specific\ndependency's minor version (unless you unignore this specific\ndependency's minor version or upgrade to it yourself)\n- `@dependabot ignore <dependency name>` will close this group update PR\nand stop Dependabot creating any more for the specific dependency\n(unless you unignore this specific dependency or upgrade to it yourself)\n- `@dependabot unignore <dependency name>` will remove all of the ignore\nconditions of the specified dependency\n- `@dependabot unignore <dependency name> <ignore condition>` will\nremove the ignore condition of the specified dependency and ignore\nconditions\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-06-11T17:41:08+02:00",
+          "tree_id": "4229545aa9a608303027b5980d94fdda9fd1f223",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fad0fd60fd3c751b39a277612d0c60c6c8a4f0b1"
+        },
+        "date": 1749656974487,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 781776,
+            "range": "± 16705",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 250796,
+            "range": "± 2722",
             "unit": "ns/iter"
           }
         ]
