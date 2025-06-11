@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749466327543,
+  "lastUpdate": 1749627031222,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22721,6 +22721,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252505,
             "range": "± 6616",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0547d6c383eaa86e5342c771f86db20d25ee35b7",
+          "message": "chore: release v0.27.0 (#816)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.26.0 -> 0.27.0 (⚠ API breaking changes)\n* `swiftide-agents`: 0.26.0 -> 0.27.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.26.0 -> 0.27.0\n* `swiftide-indexing`: 0.26.0 -> 0.27.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.26.0 -> 0.27.0 (⚠ API breaking changes)\n* `swiftide-query`: 0.26.0 -> 0.27.0 (✓ API compatible changes)\n* `swiftide`: 0.26.0 -> 0.27.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure trait_method_added: pub trait method added ---\n\nDescription:\nA non-sealed public trait added a new method without a default implementation, which breaks downstream implementations of the trait\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#trait-new-item-no-default\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/trait_method_added.ron\n\nFailed in:\n  trait method swiftide_core::agent_traits::AgentContext::executor in file /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:189\n  trait method swiftide_core::agent_traits::AgentContext::has_received_feedback in file /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:201\n  trait method swiftide_core::agent_traits::AgentContext::feedback_received in file /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:203\n  trait method swiftide_core::AgentContext::executor in file /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:189\n  trait method swiftide_core::AgentContext::has_received_feedback in file /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:201\n  trait method swiftide_core::AgentContext::feedback_received in file /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:203\n\n--- failure trait_method_marked_deprecated: trait method #[deprecated] added ---\n\nDescription:\nA trait method is now #[deprecated]. Downstream crates will get a compiler warning when using this method.\n        ref: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-deprecated-attribute\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/trait_method_marked_deprecated.ron\n\nFailed in:\n  method exec_cmd in trait swiftide_core::agent_traits::AgentContext in /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:162\n  method exec_cmd in trait swiftide_core::AgentContext in /tmp/.tmpgKnodX/swiftide/swiftide-core/src/agent_traits.rs:162\n```\n\n### ⚠ `swiftide-agents` breaking changes\n\n```text\n--- failure enum_variant_added: enum variant added on exhaustive enum ---\n\nDescription:\nA publicly-visible enum without #[non_exhaustive] has a new variant.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#enum-variant-new\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/enum_variant_added.ron\n\nFailed in:\n  variant AgentError:MessageHistoryError in /tmp/.tmpgKnodX/swiftide/swiftide-agents/src/errors.rs:38\n\n--- failure method_requires_different_generic_type_params: method now requires a different number of generic type parameters ---\n\nDescription:\nA method now requires a different number of generic type parameters than it used to. Uses of this method that supplied the previous number of generic types will be broken.\n        ref: https://doc.rust-lang.org/reference/items/generics.html\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/method_requires_different_generic_type_params.ron\n\nFailed in:\n  swiftide_agents::DefaultContext::with_message_history takes 0 generic types instead of 1, in /tmp/.tmpgKnodX/swiftide/swiftide-agents/src/default_context.rs:94\n```\n\n### ⚠ `swiftide-integrations` breaking changes\n\n```text\n--- failure method_requires_different_generic_type_params: method now requires a different number of generic type parameters ---\n\nDescription:\nA method now requires a different number of generic type parameters than it used to. Uses of this method that supplied the previous number of generic types will be broken.\n        ref: https://doc.rust-lang.org/reference/items/generics.html\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/method_requires_different_generic_type_params.ron\n\nFailed in:\n  swiftide_integrations::redis::RedisBuilder::client takes 1 generic types instead of 0, in /tmp/.tmpgKnodX/swiftide/swiftide-integrations/src/redis/mod.rs:38\n  swiftide_integrations::redis::RedisBuilder::cache_key_prefix takes 1 generic types instead of 0, in /tmp/.tmpgKnodX/swiftide/swiftide-integrations/src/redis/mod.rs:38\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.27.0](https://github.com/bosun-ai/swiftide/compare/v0.26.0...v0.27.0)\n- 2025-06-09\n\n### New features\n\n-\n[c636eba](https://github.com/bosun-ai/swiftide/commit/c636ebaa2eb8d4ace1b5a370698c5f2817fc9c99)\n*(agents)* [**breaking**] Context is now generic over its backend\n([#810](https://github.com/bosun-ai/swiftide/pull/810))\n\n**BREAKING CHANGE**: The signature is now slightly different for the\nAgentContext. If you have implemented your own for i.e. a persisted\nsolution, if it's *just that*, the implementation is now a lot more\nstraightforward with the `MessageHistory` trait.\n\n-\n[3c937a8](https://github.com/bosun-ai/swiftide/commit/3c937a8ed4f7d28798a24b0d893f1613cd298493)\n*(agents)* Add helpers for creating tool errors\n([#805](https://github.com/bosun-ai/swiftide/pull/805))\n\n-\n[9e831d3](https://github.com/bosun-ai/swiftide/commit/9e831d3eb072748ebb21c9a16cd7d807b4d42469)\n*(agents)* [**breaking**] Easy human-in-the-loop flows by decorating\ntools ([#790](https://github.com/bosun-ai/swiftide/pull/790))\n\n**BREAKING CHANGE**: The `Tool` trait now receives a `ToolCall` as\nargument\ninstead of an `Option<&str>`. The latter is still accessible via\n`tool_call.args()`.\n\n-\n[814c217](https://github.com/bosun-ai/swiftide/commit/814c2174c742ff4277246505537070726ce8af92)\n*(duckdb)* Hybrid Search\n([#807](https://github.com/bosun-ai/swiftide/pull/807))\n\n-\n[254bd3a](https://github.com/bosun-ai/swiftide/commit/254bd3a32ffbd4d06abd6a4f3950a2b8556dc310)\n*(integrations)* Add kafka as loader and persist support\n([#808](https://github.com/bosun-ai/swiftide/pull/808))\n\n-\n[19a2e94](https://github.com/bosun-ai/swiftide/commit/19a2e94d262cc68c629d88b6b02a72bb9b159036)\n*(integrations)* Add support for Google Gemini\n([#754](https://github.com/bosun-ai/swiftide/pull/754))\n\n-\n[990fa5e](https://github.com/bosun-ai/swiftide/commit/990fa5e9edffebd9b70da6b57fa454f7318d642d)\n*(redis)* Support `MessageHistory` for redis\n([#811](https://github.com/bosun-ai/swiftide/pull/811))\n\n### Bug fixes\n\n-\n[ca119bd](https://github.com/bosun-ai/swiftide/commit/ca119bdc473140437abb1bf14b496bb7bd9378de)\n*(agents)* Ensure approved / refused tool calls are in new completions\n([#799](https://github.com/bosun-ai/swiftide/pull/799))\n\n-\n[df6a12d](https://github.com/bosun-ai/swiftide/commit/df6a12dabe855f351acc3e0d104048321cb9bc0e)\n*(agents)* Ensure agents with no tools still have the stop tool\n\n-\n[cd57d12](https://github.com/bosun-ai/swiftide/commit/cd57d1207ced8651a277526d706bc3b7703912c0)\n*(openai)* Opt-out streaming accumulated response and only get the delta\n([#809](https://github.com/bosun-ai/swiftide/pull/809))\n\n-\n[da2d604](https://github.com/bosun-ai/swiftide/commit/da2d604e7e6209c83f382cf6de44f5f5c2042596)\n*(redb)* Explicit lifetime in table definition\n\n### Miscellaneous\n\n-\n[7ac92a4](https://github.com/bosun-ai/swiftide/commit/7ac92a4f2ff4b1d1ba7e86c90c4f6c5c025cabc9)\n*(agents)* Direct access to executor via context\n([#794](https://github.com/bosun-ai/swiftide/pull/794))\n\n-\n[a21883b](https://github.com/bosun-ai/swiftide/commit/a21883b219a0079c1edc1d3c36d1d06ac906ba18)\n*(agents)* [**breaking**] Improved naming for existing messages and\nmessage history in default context\n\n**BREAKING CHANGE**: Improved naming for existing messages and message\nhistory in default context\n\n-\n[40bfa9c](https://github.com/bosun-ai/swiftide/commit/40bfa9c2d5685e54f247becb49698f8fdc347172)\n*(indexing)* Implement ChunkerTransformer for closures\n\n-\n[c8d7ab9](https://github.com/bosun-ai/swiftide/commit/c8d7ab90c86e674d5df5f4985121e4e81d1e4a37)\n*(integrations)* Improved warning when a qdrant collection exists\n\n-\n[d6769eb](https://github.com/bosun-ai/swiftide/commit/d6769eba0b87750fd3173ba73315973f720263ec)\n*(tree-sitter)* Implement Eq, Hash and AsRefStr for SupportedLanguages\n\n-\n[04ec29d](https://github.com/bosun-ai/swiftide/commit/04ec29d7240a8542ccd1d530bb9b104bcd57631e)\nConsistent logging for indexing pipeline\n([#792](https://github.com/bosun-ai/swiftide/pull/792))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.26.0...0.27.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-06-11T09:21:26+02:00",
+          "tree_id": "32e5837988b369458ab8a218360b860141350ee7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0547d6c383eaa86e5342c771f86db20d25ee35b7"
+        },
+        "date": 1749627030038,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 177,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 783249,
+            "range": "± 13889",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257343,
+            "range": "± 5088",
             "unit": "ns/iter"
           }
         ]
