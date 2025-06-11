@@ -3,7 +3,7 @@ use std::{borrow::Cow, path::Path};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use duckdb::{
-    Statement, ToSql, params_from_iter,
+    Statement, ToSql, params, params_from_iter,
     types::{ToSqlOutput, Value},
 };
 use swiftide_core::{
@@ -85,6 +85,19 @@ impl Persist for Duckdb {
         tracing::debug!("Setting up duckdb schema");
 
         let conn = self.connection.lock().unwrap();
+
+        // Create if not exists does not seem to work with duckdb, so we check first
+        if conn
+            // Duckdb has issues with params it seems.
+            .query_row(&format!("SHOW {}", self.table_name()), params![], |row| {
+                row.get::<_, String>(0)
+            })
+            .is_ok()
+        {
+            tracing::debug!("Indexing table already exists, skipping creation");
+            return Ok(());
+        }
+
         conn.execute_batch(&self.schema)
             .context("Failed to create indexing table")?;
 
@@ -314,5 +327,18 @@ mod tests {
             metadata.get(&Value::Text("filter".into())).unwrap(),
             &Value::Text("true".into())
         );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_running_setup_twice() {
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open_in_memory().unwrap())
+            .table_name("test".to_string())
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+
+        client.setup().await.unwrap();
+        client.setup().await.unwrap(); // Should not panic or error
     }
 }
