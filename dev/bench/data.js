@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749627031222,
+  "lastUpdate": 1749646646681,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -22775,6 +22775,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257343,
             "range": "± 5088",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "86caba7e391e26e0b7055c9396ef5050be95e662",
+          "message": "fix(kafka): Set minimum cmake to fix OSX builds",
+          "timestamp": "2025-06-11T14:47:51+02:00",
+          "tree_id": "a0fa2e3e2ca6c8ccae8599096c7a3a8c429394a3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/86caba7e391e26e0b7055c9396ef5050be95e662"
+        },
+        "date": 1749646644993,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 801082,
+            "range": "± 21964",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 253593,
+            "range": "± 1099",
             "unit": "ns/iter"
           }
         ]
