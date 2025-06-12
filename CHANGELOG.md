@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.1](https://github.com/bosun-ai/swiftide/compare/v0.27.0...v0.27.1) - 2025-06-12
+
+### Bug fixes
+
+- [0892151](https://github.com/bosun-ai/swiftide/commit/0892151d2d02c30e38fa8629c386eaf4475da7f8) *(duckdb)*  Avoid panic if duckdb gets created twice ([#818](https://github.com/bosun-ai/swiftide/pull/818))
+
+- [0815923](https://github.com/bosun-ai/swiftide/commit/081592334f2bd8c2da30535b4e1b51e8ddd15834) *(tool-executor)*  Remove conflicting implementation of AsRef<str> for Output
+
+### Miscellaneous
+
+- [2b64410](https://github.com/bosun-ai/swiftide/commit/2b644109796c8870d29fa1b54f6a0802cae9aaf8) *(tool-executor)*  Implement AsRef<str> for CommandOutput
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.27.0...0.27.1
+
+
+
 ## [0.27.0](https://github.com/bosun-ai/swiftide/compare/v0.26.0...v0.27.0) - 2025-06-09
 
 ### New features
