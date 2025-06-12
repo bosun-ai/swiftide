@@ -4,7 +4,7 @@ use dyn_clone::DynClone;
 use futures_util::Stream;
 use std::{borrow::Cow, pin::Pin, sync::Arc};
 
-use crate::{AgentContext, CommandOutput, LanguageModelWithBackOff};
+use crate::{AgentContext, LanguageModelWithBackOff};
 
 use super::{
     ToolCall, ToolOutput, ToolSpec,
