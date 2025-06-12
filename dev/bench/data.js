@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749717874263,
+  "lastUpdate": 1749720446512,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23045,6 +23045,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 252681,
             "range": "± 2875",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e6cdfbf588f450b2c222d813f322fdf8d5971278",
+          "message": "chore: release v0.27.1 (#820)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.27.0 -> 0.27.1 (✓ API compatible changes)\n* `swiftide-agents`: 0.27.0 -> 0.27.1\n* `swiftide-macros`: 0.27.0 -> 0.27.1\n* `swiftide-indexing`: 0.27.0 -> 0.27.1\n* `swiftide-integrations`: 0.27.0 -> 0.27.1 (✓ API compatible changes)\n* `swiftide-query`: 0.27.0 -> 0.27.1\n* `swiftide`: 0.27.0 -> 0.27.1 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.27.1](https://github.com/bosun-ai/swiftide/compare/v0.27.0...v0.27.1)\n- 2025-06-12\n\n### Bug fixes\n\n-\n[0892151](https://github.com/bosun-ai/swiftide/commit/0892151d2d02c30e38fa8629c386eaf4475da7f8)\n*(duckdb)* Avoid panic if duckdb gets created twice\n([#818](https://github.com/bosun-ai/swiftide/pull/818))\n\n-\n[0815923](https://github.com/bosun-ai/swiftide/commit/081592334f2bd8c2da30535b4e1b51e8ddd15834)\n*(tool-executor)* Remove conflicting implementation of AsRef<str> for\nOutput\n\n### Miscellaneous\n\n-\n[2b64410](https://github.com/bosun-ai/swiftide/commit/2b644109796c8870d29fa1b54f6a0802cae9aaf8)\n*(tool-executor)* Implement AsRef<str> for CommandOutput\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.27.0...0.27.1\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-06-12T09:18:38Z",
+          "tree_id": "aaa01b90d4f571bb14243a4a2659330608a8ac36",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e6cdfbf588f450b2c222d813f322fdf8d5971278"
+        },
+        "date": 1749720444804,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 793555,
+            "range": "± 16081",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254600,
+            "range": "± 1363",
             "unit": "ns/iter"
           }
         ]
