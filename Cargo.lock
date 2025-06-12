@@ -1411,7 +1411,7 @@ dependencies = [
  "bitflags 2.9.0",
  "cexpr",
  "clang-sys",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "lazy_static",
  "lazycell",
  "log",
@@ -4446,7 +4446,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.9",
  "tokio",
  "tower-service",
  "tracing",
@@ -8667,9 +8667,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.107"
+version = "2.37.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b7d3c560e5da062265833cf972e9611c69b6112f08ebaa91041af045ea1fecf"
+checksum = "810f81aaa6b60f5f2ece430190e8c4e7df4aa279922c3564d04576f530508f9b"
 dependencies = [
  "ahash 0.8.11",
  "aho-corasick",
