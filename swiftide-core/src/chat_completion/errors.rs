@@ -52,11 +52,11 @@ type BoxedError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Error, Debug)]
 pub enum LanguageModelError {
-    #[error("Context length exceeded: {0}")]
+    #[error("Context length exceeded: {0:#}")]
     ContextLengthExceeded(BoxedError),
-    #[error("Permanent error: {0}")]
+    #[error("Permanent error: {0:#}")]
     PermanentError(BoxedError),
-    #[error("Transient error: {0}")]
+    #[error("Transient error: {0:#}")]
     TransientError(BoxedError),
 }
 
