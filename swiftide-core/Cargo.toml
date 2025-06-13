@@ -28,6 +28,7 @@ derive_builder = { workspace = true }
 dyn-clone = { workspace = true }
 pin-project = { workspace = true }
 thiserror = { workspace = true }
+metrics = { workspace = true, optional = true }
 
 tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }
@@ -48,6 +49,7 @@ test-utils = ["dep:mockall", "dep:pretty_assertions"]
 qdrant = ["dep:qdrant-client"]
 # Truncates large debug outputs on pipeline nodes
 truncate-debug = []
+metrics = ["dep:metrics"]
 
 [lints]
 workspace = true

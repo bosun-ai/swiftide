@@ -8,8 +8,10 @@ use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
+use std::collections::HashMap;
 use std::sync::Arc;
 use swiftide_core::chat_completion::errors::LanguageModelError;
+use swiftide_core::indexing::Metadata;
 
 mod chat_completion;
 mod embed;
@@ -92,6 +94,11 @@ pub struct GenericOpenAI<
     /// delta, for when performance matters. This only has effect when streaming is enabled.
     #[builder(default = true)]
     pub stream_full: bool,
+
+    #[cfg(feature = "metrics")]
+    #[builder(default)]
+    /// Optional metadata to attach to metrics emitted by this client.
+    metric_metadata: Option<HashMap<String, String>>,
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.

@@ -29,6 +29,7 @@ regex = { workspace = true }
 futures-util = { workspace = true }
 tera = { workspace = true }
 uuid = { workspace = true }
+metrics = { workspace = true, optional = true }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
@@ -130,6 +131,8 @@ tokio-stream = { workspace = true }
 
 [features]
 default = ["rustls"]
+
+metrics = ["dep:metrics"]
 # Ensures rustls is used
 rustls = ["reqwest?/rustls-tls-native-roots", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
