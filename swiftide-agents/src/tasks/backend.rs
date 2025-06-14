@@ -12,7 +12,7 @@ use std::sync::{
 use tokio::sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 
-use crate::errors::AgentError;
+use crate::{StopReason, errors::AgentError};
 
 use super::{TaskError, running_agent::RunningAgent};
 
@@ -28,6 +28,9 @@ pub trait Backend: Clone + Send + Sync + 'static {
     async fn join_all(&self) -> Result<(), Self::Error>;
     async fn join_next(&self) -> Result<(), Self::Error>;
     async fn abort(&mut self);
+
+    /// Returns the number of agents that are currently running.
+    fn outstanding(&self) -> usize;
 }
 
 /// A backend that tracks active tasks with an atomic counter + Notify,
@@ -115,6 +118,10 @@ impl Backend for DefaultBackend {
             tokio::select! {
                 biased;
                 () = agent_cancel_token.cancelled() => {
+                    // TODO: Verify I don't deadlock
+                    let mut lock = agent.lock().await;
+                    lock.stop(StopReason::TaskAborted).await;
+
                     tracing::warn!("Agent {} aborted", agent.name());
                 }
                 result = work => {
@@ -181,5 +188,9 @@ impl Backend for DefaultBackend {
     async fn abort(&mut self) {
         self.cancel_token.cancel();
         self.cancel_token = CancellationToken::new();
+    }
+
+    fn outstanding(&self) -> usize {
+        self.outstanding.load(Ordering::Relaxed)
     }
 }
