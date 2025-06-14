@@ -21,13 +21,12 @@
 //!     .invoke("Do a task thing")
 //!     .await?;
 //! ```
-use crate::Agent;
 use crate::errors::AgentError;
 use derive_builder::{Builder, UninitializedFieldError};
 use std::sync::Arc;
 use std::sync::atomic::{self, AtomicUsize};
 use thiserror::Error;
-use tokio::sync::{MutexGuard, OwnedMutexGuard, RwLock};
+use tokio::sync::RwLock;
 
 use super::action::{Action, ActionError};
 use super::backend::{Backend, DefaultBackend};
@@ -257,6 +256,11 @@ impl<B: Backend, S: TaskState> Task<B, S> {
             .get(current_index)
             .cloned()
             .ok_or(TaskError::NoActiveAgent)
+    }
+
+    /// Returns the number of agents that are currently running
+    pub fn outstanding(&self) -> usize {
+        self.backend.outstanding()
     }
 
     #[tracing::instrument(skip(self))]
