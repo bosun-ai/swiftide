@@ -4,10 +4,10 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
 
-//! Swiftide is a data indexing and processing library, tailored for Retrieval Augmented Generation
-//! (RAG). When building applications with large language models (LLM), these LLMs need access to
-//! external resources. Data needs to be transformed, enriched, split up, embedded, and persisted.
-//! It is build in Rust, using parallel, asynchronous streams and is blazingly fast.
+//! Swiftide is a Rust library for building LLM applications, enabling fast data ingestion,
+//! transformation, and indexing for effective querying and prompt injection, known as Retrieval
+//! Augmented Generation. It provides flexible building blocks for creating various agents, allowing
+//! rapid development from concept to production with minimal code.
 //!
 //! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
 //!
@@ -16,17 +16,13 @@
 //!
 //! Read more about the project on the [swiftide website](https://swiftide.rs)
 //!
-//! # Features
+//! ### High level features
 //!
-//! - Extremely fast streaming indexing pipeline with async, parallel processing
-//! - Integrations with `OpenAI`, `Redis`, `Qdrant`, `FastEmbed`, `Treesitter` and more
-//! - A variety of loaders, transformers, and embedders and other common, generic tools
-//! - Bring your own transformers by extending straightforward traits
-//! - Splitting and merging pipelines
-//! - Jinja-like templating for prompts
-//! - Store into multiple backends
-//! - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more
-//!   information.
+//! - Build fast, streaming indexing and querying pipelines
+//! - Easily build agents, mix and match with previously built pipelines
+//! - A modular and extendable API, with minimal abstractions
+//! - Integrations with popular LLMs and storage providers
+//! - Ready to use pipeline transformations
 //!
 //! # Querying
 //!
@@ -97,7 +93,33 @@
 //! # Ok(())
 //! # }
 //! ```
+//! ## Agents with tools
 //!
+//!
+//! ```ignore
+//! #[swiftide::tool(
+//!     description = "Searches code",
+//!     param(name = "code_query", description = "The code query")
+//! )]
+//! async fn search_code(
+//!     context: &dyn AgentContext,
+//!     code_query: &str,
+//! ) -> Result<ToolOutput, ToolError> {
+//!     let command_output = context
+//!         .executor()
+//!         .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
+//!         .await?;
+//!
+//!     Ok(command_output.into())
+//! }
+//!
+//! agents::Agent::builder()
+//!     .llm(&openai)
+//!     .tools(vec![search_code()])
+//!     .build()?
+//!     .query("In what file can I find an example of a swiftide agent?")
+//!     .await?;
+//! ```
 //! # Feature flags
 //!
 //! Swiftide has little features enabled by default, as there are some dependency heavy
