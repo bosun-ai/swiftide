@@ -2,6 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
+
 ## [0.27.1](https://github.com/bosun-ai/swiftide/compare/v0.27.0...v0.27.1) - 2025-06-12
 
 ### Bug fixes
