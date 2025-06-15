@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749720446512,
+  "lastUpdate": 1749985912504,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23099,6 +23099,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254600,
             "range": "± 1363",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "8468e8c1df1b4beb7537c701cbc95a2ec33fec91",
+          "message": "docs: Update landing page on docs.rs",
+          "timestamp": "2025-06-15T13:02:52+02:00",
+          "tree_id": "2b09955f7432a285da03f90ee90eb1fa243c8fe4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8468e8c1df1b4beb7537c701cbc95a2ec33fec91"
+        },
+        "date": 1749985911216,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 772424,
+            "range": "± 14548",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251834,
+            "range": "± 2440",
             "unit": "ns/iter"
           }
         ]
