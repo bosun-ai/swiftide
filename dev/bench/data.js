@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1749985912504,
+  "lastUpdate": 1750880910085,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23153,6 +23153,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251834,
             "range": "± 2440",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "66cd7e9349673a77d8cc79e6b5acab8d56078a42",
+          "message": "feat(qdrant): Add support for a filter in hybrid search (#830)",
+          "timestamp": "2025-06-25T21:39:52+02:00",
+          "tree_id": "82ba1b67ab44cbb8564402d493c8ac7deed5bd68",
+          "url": "https://github.com/bosun-ai/swiftide/commit/66cd7e9349673a77d8cc79e6b5acab8d56078a42"
+        },
+        "date": 1750880907905,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 176,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 792041,
+            "range": "± 25626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251650,
+            "range": "± 1464",
             "unit": "ns/iter"
           }
         ]
