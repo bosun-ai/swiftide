@@ -2,7 +2,7 @@ use derive_builder::Builder;
 
 use crate::{indexing::EmbeddedField, querying};
 
-use super::{DEFAULT_TOP_K, DEFAULT_TOP_N};
+use super::{DEFAULT_TOP_K, DEFAULT_TOP_N, SearchFilter};
 
 /// A hybrid search strategy that combines a similarity search with a
 /// keyword search / sparse search.
@@ -10,7 +10,7 @@ use super::{DEFAULT_TOP_K, DEFAULT_TOP_N};
 /// Defaults to a a maximum of 10 documents and `EmbeddedField::Combined` for the field(s).
 #[derive(Debug, Clone, Builder)]
 #[builder(setter(into))]
-pub struct HybridSearch {
+pub struct HybridSearch<FILTER: SearchFilter = ()> {
     /// Maximum number of documents to return
     #[builder(default)]
     top_k: u64,
@@ -26,22 +26,47 @@ pub struct HybridSearch {
     /// TODO: I.e. lancedb does not use sparse embeddings for hybrid search
     #[builder(default)]
     sparse_vector_field: EmbeddedField,
+
+    #[builder(default)]
+    filter: Option<FILTER>,
 }
 
-impl querying::SearchStrategy for HybridSearch {}
+impl<FILTER: SearchFilter> querying::SearchStrategy for HybridSearch<FILTER> {}
 
-impl Default for HybridSearch {
+impl<FILTER: SearchFilter> Default for HybridSearch<FILTER> {
     fn default() -> Self {
         Self {
             top_k: DEFAULT_TOP_K,
             top_n: DEFAULT_TOP_N,
             dense_vector_field: EmbeddedField::Combined,
             sparse_vector_field: EmbeddedField::Combined,
+            filter: None,
         }
     }
 }
 
-impl HybridSearch {
+impl<FILTER: SearchFilter> HybridSearch<FILTER> {
+    /// Creates a new hybrid search strategy that uses the provided filter
+    pub fn from_filter(filter: FILTER) -> Self {
+        Self {
+            filter: Some(filter),
+            ..Default::default()
+        }
+    }
+
+    pub fn with_filter<NEWFILTER: SearchFilter>(
+        self,
+        filter: NEWFILTER,
+    ) -> HybridSearch<NEWFILTER> {
+        HybridSearch {
+            top_k: self.top_k,
+            top_n: self.top_n,
+            dense_vector_field: self.dense_vector_field,
+            sparse_vector_field: self.sparse_vector_field,
+            filter: Some(filter),
+        }
+    }
+
     /// Sets the maximum amount of total documents retrieved
     pub fn with_top_k(&mut self, top_k: u64) -> &mut Self {
         self.top_k = top_k;
@@ -90,5 +115,9 @@ impl HybridSearch {
     /// Returns the field for the dense vector
     pub fn sparse_vector_field(&self) -> &EmbeddedField {
         &self.sparse_vector_field
+    }
+
+    pub fn filter(&self) -> Option<&FILTER> {
+        self.filter.as_ref()
     }
 }

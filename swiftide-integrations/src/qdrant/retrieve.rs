@@ -85,11 +85,11 @@ impl Retrieve<SimilaritySingleEmbedding> for Qdrant {
 ///
 /// Expects both a dense and sparse embedding to be set on the query.
 #[async_trait]
-impl Retrieve<HybridSearch> for Qdrant {
+impl Retrieve<HybridSearch<qdrant::Filter>> for Qdrant {
     #[tracing::instrument]
     async fn retrieve(
         &self,
-        search_strategy: &HybridSearch,
+        search_strategy: &HybridSearch<qdrant::Filter>,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
         let Some(dense) = &query.embedding else {
@@ -100,32 +100,33 @@ impl Retrieve<HybridSearch> for Qdrant {
             anyhow::bail!("No sparse embedding for query")
         };
 
+        let mut sparse_prefetch = PrefetchQueryBuilder::default()
+            .query(qdrant::Query::new_nearest(qdrant::VectorInput::new_sparse(
+                sparse.indices.clone(),
+                sparse.values.clone(),
+            )))
+            .using(search_strategy.sparse_vector_field().sparse_field_name())
+            .limit(search_strategy.top_n());
+
+        let mut dense_prefetch = PrefetchQueryBuilder::default()
+            .query(qdrant::Query::new_nearest(dense.clone()))
+            .using(search_strategy.dense_vector_field().field_name())
+            .limit(search_strategy.top_n());
+
+        if let Some(filter) = search_strategy.filter() {
+            sparse_prefetch = sparse_prefetch.filter(filter.clone());
+            dense_prefetch = dense_prefetch.filter(filter.clone());
+        }
+
+        let query_points = qdrant::QueryPointsBuilder::new(&self.collection_name)
+            .with_payload(true)
+            .add_prefetch(sparse_prefetch)
+            .add_prefetch(dense_prefetch)
+            .query(qdrant::Query::new_fusion(qdrant::Fusion::Rrf))
+            .limit(search_strategy.top_k());
+
         // NOTE: Potential improvement to consume the vectors instead of cloning
-        let result = self
-            .client
-            .query(
-                qdrant::QueryPointsBuilder::new(&self.collection_name)
-                    .with_payload(true)
-                    .add_prefetch(
-                        PrefetchQueryBuilder::default()
-                            .query(qdrant::Query::new_nearest(qdrant::VectorInput::new_sparse(
-                                sparse.indices.clone(),
-                                sparse.values.clone(),
-                            )))
-                            .using(search_strategy.sparse_vector_field().sparse_field_name())
-                            .limit(search_strategy.top_n()),
-                    )
-                    .add_prefetch(
-                        PrefetchQueryBuilder::default()
-                            .query(qdrant::Query::new_nearest(dense.clone()))
-                            .using(search_strategy.dense_vector_field().field_name())
-                            .limit(search_strategy.top_n()),
-                    )
-                    .query(qdrant::Query::new_fusion(qdrant::Fusion::Rrf))
-                    .limit(search_strategy.top_k()),
-            )
-            .await?
-            .result;
+        let result = self.client.query(query_points).await?.result;
 
         let documents = result
             .into_iter()
@@ -283,5 +284,27 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result.documents().len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_hybrid_search_with_filter() {
+        let (_guard, qdrant_client) = setup().await;
+        let mut query = Query::<states::Pending>::new("test_query");
+
+        query.embedding = Some(vec![1.0; 384]);
+        query.sparse_embedding = Some(swiftide_core::SparseEmbedding {
+            indices: vec![0, 1],
+            values: vec![1.0, 1.0],
+        });
+        let search_strategy =
+            HybridSearch::from_filter(qdrant::Filter::must([qdrant::Condition::matches(
+                "filter",
+                "true".to_string(),
+            )]));
+        let result = qdrant_client
+            .retrieve(&search_strategy, query.clone())
+            .await
+            .unwrap();
+        assert_eq!(result.documents().len(), 2);
     }
 }
