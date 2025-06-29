@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.2](https://github.com/bosun-ai/swiftide/compare/v0.27.1...v0.27.2) - 2025-06-26
+
+### New features
+
+- [66cd7e9](https://github.com/bosun-ai/swiftide/commit/66cd7e9349673a77d8cc79e6b5acab8d56078a42) *(qdrant)*  Add support for a filter in hybrid search ([#830](https://github.com/bosun-ai/swiftide/pull/830))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.27.1...0.27.2
+
+
+
 ## [0.27.1](https://github.com/bosun-ai/swiftide/compare/v0.27.0...v0.27.1) - 2025-06-12
 
 ### Bug fixes
