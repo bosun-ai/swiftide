@@ -24,3 +24,7 @@ tmp
 **/.fastembed_cache
 .idea/
 .history
+
+# MacOS specific files
+.DS_Store
+**/.DS_Store
