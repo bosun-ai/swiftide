@@ -193,7 +193,7 @@ impl BatchableTransformer for &dyn BatchableTransformer {
 }
 
 /// Starting point of a stream
-pub trait Loader: DynClone {
+pub trait Loader: DynClone + Send + Sync {
     fn into_stream(self) -> IndexingStream;
 
     /// Intended for use with Box<dyn Loader>
