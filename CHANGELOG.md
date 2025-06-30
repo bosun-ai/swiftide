@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.0](https://github.com/bosun-ai/swiftide/compare/v0.27.2...v0.28.0) - 2025-06-30
+
+### New features
+
+- [9d11386](https://github.com/bosun-ai/swiftide/commit/9d11386c155773fcc77a60591cd57bc366044c71)  Token usage metrics for embeddings, SimplePrompt and ChatCompletion with metric-rs ([#813](https://github.com/bosun-ai/swiftide/pull/813))
+
+- [59c8b9c](https://github.com/bosun-ai/swiftide/commit/59c8b9cef721c3861a9d352c7fbef28e27d2f649)  Stream files from tool executor for indexing ([#835](https://github.com/bosun-ai/swiftide/pull/835))
+
+### Bug fixes
+
+- [ba6ec04](https://github.com/bosun-ai/swiftide/commit/ba6ec0485dc950e83e91e6a8102becc0e8a13158) *(pipeline)*  Cache nodes after they've been successfully ran ([#800](https://github.com/bosun-ai/swiftide/pull/800))
+
+- [d98827c](https://github.com/bosun-ai/swiftide/commit/d98827c9cd7bb476fdda0ef2ebb6939150b8781c) *(qdrant)*  Re-export qdrant::Filter
+
+- [275efcd](https://github.com/bosun-ai/swiftide/commit/275efcdf91e85ed4327ffa948dcebe5903b178fa)  Mark Loader as Send + Sync
+
+### Miscellaneous
+
+- [2f8c7cc](https://github.com/bosun-ai/swiftide/commit/2f8c7cc96b194264a47a8fe21abb7af5c63204f6) *(deps)*  Up all crates ([#837](https://github.com/bosun-ai/swiftide/pull/837))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.27.2...0.28.0
+
+
+
 ## [0.27.2](https://github.com/bosun-ai/swiftide/compare/v0.27.1...v0.27.2) - 2025-06-26
 
 ### New features
