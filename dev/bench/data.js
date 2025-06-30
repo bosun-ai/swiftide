@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751279433016,
+  "lastUpdate": 1751279528523,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23531,6 +23531,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 328542,
             "range": "± 6958",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2f8c7cc96b194264a47a8fe21abb7af5c63204f6",
+          "message": "chore(deps): Up all crates (#837)\n\n- **chore(deps): Cargo update everything**\n- **Clippy**",
+          "timestamp": "2025-06-30T12:23:16+02:00",
+          "tree_id": "0ea0dd0839f1300b5a14563ecba4ba1a4643a66b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2f8c7cc96b194264a47a8fe21abb7af5c63204f6"
+        },
+        "date": 1751279527562,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 842783,
+            "range": "± 17275",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 331918,
+            "range": "± 13630",
             "unit": "ns/iter"
           }
         ]
