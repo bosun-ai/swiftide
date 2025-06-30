@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751223413092,
+  "lastUpdate": 1751271728353,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23369,6 +23369,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258613,
             "range": "± 1739",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "cpaadrian2@gmail.com",
+            "name": "adrianncovaci",
+            "username": "adrianncovaci"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ba6ec0485dc950e83e91e6a8102becc0e8a13158",
+          "message": "fix(pipeline): Cache nodes after they've been successfully ran (#800)\n\nSee #151",
+          "timestamp": "2025-06-30T10:13:20+02:00",
+          "tree_id": "d07752dfcf9622f5f7243d659305f33e6417650e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ba6ec0485dc950e83e91e6a8102becc0e8a13158"
+        },
+        "date": 1751271727221,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 676,
+            "range": "± 12",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 841385,
+            "range": "± 17304",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 329558,
+            "range": "± 8290",
             "unit": "ns/iter"
           }
         ]
