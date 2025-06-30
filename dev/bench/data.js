@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751284054015,
+  "lastUpdate": 1751286423821,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23693,6 +23693,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 332450,
             "range": "± 12764",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "5974b72de4da2fc18d1f76adde02d02035104d5c",
+          "message": "fix: Integrations metrics depends on core/metrics",
+          "timestamp": "2025-06-30T14:17:51+02:00",
+          "tree_id": "3a23cd1b4edb9431cf1e72cc074cbb4f4185f321",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5974b72de4da2fc18d1f76adde02d02035104d5c"
+        },
+        "date": 1751286422761,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 848360,
+            "range": "± 25294",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 327159,
+            "range": "± 7550",
             "unit": "ns/iter"
           }
         ]
