@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751271728353,
+  "lastUpdate": 1751274121802,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23423,6 +23423,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 329558,
             "range": "± 8290",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "59c8b9cef721c3861a9d352c7fbef28e27d2f649",
+          "message": "feat: Stream files from tool executor for indexing (#835)",
+          "timestamp": "2025-06-30T10:53:20+02:00",
+          "tree_id": "c6446753d258f3c0898bca165e105c4b8b6075c5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/59c8b9cef721c3861a9d352c7fbef28e27d2f649"
+        },
+        "date": 1751274120214,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 675,
+            "range": "± 37",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 839261,
+            "range": "± 17009",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 331514,
+            "range": "± 7357",
             "unit": "ns/iter"
           }
         ]
