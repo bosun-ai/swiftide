@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751279528523,
+  "lastUpdate": 1751279680325,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23585,6 +23585,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 331918,
             "range": "± 13630",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "be37999246b0fbb970f5dfbae8ab222c42b67a63",
+          "message": "fix(qdrant): Re-export qdrant::Filter",
+          "timestamp": "2025-06-30T12:25:43+02:00",
+          "tree_id": "881359906aaba279d04d5b68f9fae176c622b5be",
+          "url": "https://github.com/bosun-ai/swiftide/commit/be37999246b0fbb970f5dfbae8ab222c42b67a63"
+        },
+        "date": 1751279678600,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 830385,
+            "range": "± 15665",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 329423,
+            "range": "± 8359",
             "unit": "ns/iter"
           }
         ]
