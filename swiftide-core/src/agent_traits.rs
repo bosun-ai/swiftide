@@ -1,9 +1,12 @@
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 
-use crate::chat_completion::{ChatMessage, ToolCall};
+use crate::{
+    chat_completion::{ChatMessage, ToolCall},
+    indexing::IndexingStream,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -13,12 +16,25 @@ use thiserror::Error;
 #[async_trait]
 pub trait ToolExecutor: Send + Sync {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream>;
 }
 
 #[async_trait]
 impl<T: ToolExecutor> ToolExecutor for &T {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (*self).exec_cmd(cmd).await
+    }
+
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
     }
 }
 
@@ -27,6 +43,13 @@ impl ToolExecutor for Arc<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
     }
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
+    }
 }
 
 #[async_trait]
@@ -34,12 +57,26 @@ impl ToolExecutor for Box<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
     }
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
+    }
 }
 
 #[async_trait]
 impl ToolExecutor for &dyn ToolExecutor {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
+    }
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
     }
 }
 
