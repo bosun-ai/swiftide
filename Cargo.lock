@@ -9227,6 +9227,7 @@ dependencies = [
  "strum 0.27.1",
  "strum_macros 0.27.1",
  "swiftide-core",
+ "swiftide-indexing",
  "temp-dir",
  "test-log",
  "thiserror 2.0.12",

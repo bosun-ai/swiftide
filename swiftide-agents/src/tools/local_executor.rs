@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{Command, CommandError, CommandOutput, ToolExecutor};
+use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
+use swiftide_indexing::loaders::FileLoader;
 
 #[derive(Debug, Clone, Builder)]
 pub struct LocalExecutor {
@@ -86,11 +87,26 @@ impl ToolExecutor for LocalExecutor {
             _ => unimplemented!("Unsupported command: {cmd:?}"),
         }
     }
+
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<swiftide_core::indexing::IndexingStream> {
+        let mut loader = FileLoader::new(path);
+
+        if let Some(extensions) = extensions {
+            loader = loader.with_extensions(&extensions);
+        }
+
+        Ok(loader.into_stream())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures_util::StreamExt as _;
     use indoc::indoc;
     use swiftide_core::{Command, ToolExecutor};
     use temp_dir::TempDir;
@@ -234,6 +250,39 @@ mod tests {
 
         // Verify that the content read from the file matches the expected content
         assert_eq!(output, file_content);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_stream_files() -> anyhow::Result<()> {
+        // Create a temporary directory
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        // Create some test files in the temporary directory
+        fs_err::write(temp_path.join("file1.txt"), "Content of file 1")?;
+        fs_err::write(temp_path.join("file2.txt"), "Content of file 2")?;
+        fs_err::write(temp_path.join("file3.rs"), "Content of file 3")?;
+
+        // Instantiate LocalExecutor with the temporary directory as workdir
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+        };
+
+        // Stream files with no extensions filter
+        let stream = executor.stream_files(temp_path, None).await?;
+        let files: Vec<_> = stream.collect().await;
+
+        assert_eq!(files.len(), 3);
+
+        // Stream files with a specific extension filter
+        let stream = executor
+            .stream_files(temp_path, Some(vec!["txt".to_string()]))
+            .await?;
+        let txt_files: Vec<_> = stream.collect().await;
+
+        assert_eq!(txt_files.len(), 2);
 
         Ok(())
     }

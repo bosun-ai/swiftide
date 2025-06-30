@@ -1,24 +1,53 @@
 use std::{
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 
-use crate::chat_completion::{ChatMessage, ToolCall};
+use crate::{
+    chat_completion::{ChatMessage, ToolCall},
+    indexing::IndexingStream,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// A tool executor that can be used within an `AgentContext`
+/// A ToolExecutor provides an interface for agents to interact with a system
+/// in an isolated context.
+///
+/// When starting up an agent, it's context expects an executor. For example,
+/// you might want your coding agent to work with a fresh, isolated set of files,
+/// separated from the rest of the system.
+///
+/// See `swiftide-docker-executor` for an executor that uses Docker. By default
+/// the executor is a local executor.
+///
+/// Additionally, the executor can be used stream files files for indexing.
 #[async_trait]
 pub trait ToolExecutor: Send + Sync {
+    /// Execute a command in the executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
+
+    /// Stream files from the executor
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream>;
 }
 
 #[async_trait]
 impl<T: ToolExecutor> ToolExecutor for &T {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (*self).exec_cmd(cmd).await
+    }
+
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
     }
 }
 
@@ -27,6 +56,13 @@ impl ToolExecutor for Arc<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
     }
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
+    }
 }
 
 #[async_trait]
@@ -34,12 +70,26 @@ impl ToolExecutor for Box<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
     }
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
+    }
 }
 
 #[async_trait]
 impl ToolExecutor for &dyn ToolExecutor {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         (**self).exec_cmd(cmd).await
+    }
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream> {
+        (*self).stream_files(path, extensions).await
     }
 }
 
