@@ -132,7 +132,7 @@ tokio-stream = { workspace = true }
 [features]
 default = ["rustls"]
 
-metrics = ["dep:metrics"]
+metrics = ["dep:metrics", "swiftide-core/metrics"]
 # Ensures rustls is used
 rustls = ["reqwest?/rustls-tls-native-roots", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
