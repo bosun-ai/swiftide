@@ -12,10 +12,23 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// A tool executor that can be used within an `AgentContext`
+/// A ToolExecutor provides an interface for agents to interact with a system
+/// in an isolated context.
+///
+/// When starting up an agent, it's context expects an executor. For example,
+/// you might want your coding agent to work with a fresh, isolated set of files,
+/// separated from the rest of the system.
+///
+/// See `swiftide-docker-executor` for an executor that uses Docker. By default
+/// the executor is a local executor.
+///
+/// Additionally, the executor can be used stream files files for indexing.
 #[async_trait]
 pub trait ToolExecutor: Send + Sync {
+    /// Execute a command in the executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
+
+    /// Stream files from the executor
     async fn stream_files(
         &self,
         path: &Path,
