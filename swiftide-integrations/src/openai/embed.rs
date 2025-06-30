@@ -6,8 +6,9 @@ use super::GenericOpenAI;
 use crate::openai::openai_error_to_language_model_error;
 
 #[async_trait]
-impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    EmbeddingModel for GenericOpenAI<C>
+impl<
+    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+> EmbeddingModel for GenericOpenAI<C>
 {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
         let model = self
