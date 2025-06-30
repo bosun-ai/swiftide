@@ -26,8 +26,9 @@ use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
 
 #[async_trait]
-impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    ChatCompletion for GenericOpenAI<C>
+impl<
+    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+> ChatCompletion for GenericOpenAI<C>
 {
     #[tracing::instrument(skip_all)]
     async fn complete(

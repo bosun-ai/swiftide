@@ -293,6 +293,10 @@ impl Agent {
 
     /// Run the agent with a user message. The agent will loop completions, make tool calls, until
     /// no new messages are available.
+    ///
+    /// # Errors
+    ///
+    /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.query")]
     pub async fn query(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
         let query = query
@@ -303,6 +307,10 @@ impl Agent {
     }
 
     /// Run the agent with a user message once.
+    ///
+    /// # Errors
+    ///
+    /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
     pub async fn query_once(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
         let query = query
@@ -314,6 +322,10 @@ impl Agent {
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
     /// until no new messages are available.
+    ///
+    /// # Errors
+    ///
+    /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.run")]
     pub async fn run(&mut self) -> Result<(), AgentError> {
         self.run_agent(None, false).await
@@ -321,6 +333,10 @@ impl Agent {
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
     /// until
+    ///
+    /// # Errors
+    ///
+    /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<(), AgentError> {
         self.run_agent(None, true).await
@@ -640,6 +656,11 @@ impl Agent {
     /// This will trigger a `OnNewMessage` hook if its present.
     ///
     /// If you want to add a message without triggering the hook, use the context directly.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the message cannot be added to the context. With the default in memory context
+    /// that is not supposed to happen.
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
     pub async fn add_message(&self, mut message: ChatMessage) -> Result<(), AgentError> {
         invoke_hooks!(OnNewMessage, self, &mut message);

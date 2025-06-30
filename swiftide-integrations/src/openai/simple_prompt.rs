@@ -19,8 +19,9 @@ use anyhow::Result;
 /// The `SimplePrompt` trait defines a method for sending a prompt to an AI model and receiving a
 /// response.
 #[async_trait]
-impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug>
-    SimplePrompt for GenericOpenAI<C>
+impl<
+    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+> SimplePrompt for GenericOpenAI<C>
 {
     /// Sends a prompt to the OpenAI API and returns the response content.
     ///

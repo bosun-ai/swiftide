@@ -3,6 +3,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
+#![allow(unused_imports, reason = "that is what we do here")]
 
 //! Swiftide is a Rust library for building LLM applications, enabling fast data ingestion,
 //! transformation, and indexing for effective querying and prompt injection, known as Retrieval

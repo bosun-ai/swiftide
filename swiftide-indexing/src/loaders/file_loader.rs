@@ -106,7 +106,7 @@ impl Iterator for Iter {
                 Err(err) => return Some(Err(err.into())),
             };
 
-            if let Some(node) = self.load(entry) {
+            if let Some(node) = self.load(&entry) {
                 return Some(node);
             }
         }
@@ -126,7 +126,7 @@ impl Iter {
     }
 
     #[instrument(skip_all, fields(path = %entry.path().display()))]
-    fn load(&self, entry: DirEntry) -> Option<anyhow::Result<Node>> {
+    fn load(&self, entry: &DirEntry) -> Option<anyhow::Result<Node>> {
         if entry.file_type().is_some_and(|ft| !ft.is_file()) {
             // Skip directories and non-files
             return None;
@@ -143,7 +143,7 @@ impl Iter {
             }
         }
         tracing::debug!("Loading file");
-        match read_node(&entry) {
+        match read_node(entry) {
             Ok(node) => {
                 tracing::debug!(node_id = %node.id(), "Loaded file");
                 Some(Ok(node))
