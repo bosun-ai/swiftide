@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751286423821,
+  "lastUpdate": 1751289956210,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23747,6 +23747,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 327159,
             "range": "± 7550",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "71a61ce6d7b4c02ec6ceb7160bf6e0f84eb0448b",
+          "message": "chore: release v0.28.0 (#841)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.27.2 -> 0.28.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.27.2 -> 0.28.0\n* `swiftide-indexing`: 0.27.2 -> 0.28.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.27.2 -> 0.28.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.27.2 -> 0.28.0 (✓ API compatible changes)\n* `swiftide-query`: 0.27.2 -> 0.28.0\n* `swiftide`: 0.27.2 -> 0.28.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure constructible_struct_adds_field: externally-constructible struct adds field ---\n\nDescription:\nA pub struct constructible with a struct literal has a new pub field. Existing struct literals must be updated to include the new field.\n        ref: https://doc.rust-lang.org/reference/expressions/struct-expr.html\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/constructible_struct_adds_field.ron\n\nFailed in:\n  field Node.parent_id in /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/node.rs:68\n\n--- failure inherent_method_missing: pub method removed or renamed ---\n\nDescription:\nA publicly-visible method or associated fn is no longer available under its prior name. It may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/inherent_method_missing.ron\n\nFailed in:\n  Node::build_from_other, previously in file /tmp/.tmpWz1L7D/swiftide-core/src/node.rs:129\n\n--- failure trait_added_supertrait: non-sealed trait added new supertraits ---\n\nDescription:\nA non-sealed trait added one or more supertraits, which breaks downstream implementations of the trait\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#generic-bounds-tighten\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/trait_added_supertrait.ron\n\nFailed in:\n  trait swiftide_core::indexing_traits::Loader gained Send in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/indexing_traits.rs:196\n  trait swiftide_core::indexing_traits::Loader gained Sync in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/indexing_traits.rs:196\n  trait swiftide_core::indexing::Loader gained Send in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/indexing_traits.rs:196\n  trait swiftide_core::indexing::Loader gained Sync in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/indexing_traits.rs:196\n  trait swiftide_core::Loader gained Send in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/indexing_traits.rs:196\n  trait swiftide_core::Loader gained Sync in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/indexing_traits.rs:196\n\n--- failure trait_method_added: pub trait method added ---\n\nDescription:\nA non-sealed public trait added a new method without a default implementation, which breaks downstream implementations of the trait\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#trait-new-item-no-default\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/trait_method_added.ron\n\nFailed in:\n  trait method swiftide_core::agent_traits::ToolExecutor::stream_files in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/agent_traits.rs:32\n  trait method swiftide_core::ToolExecutor::stream_files in file /tmp/.tmpPCTd3w/swiftide/swiftide-core/src/agent_traits.rs:32\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.28.0](https://github.com/bosun-ai/swiftide/compare/v0.27.2...v0.28.0)\n- 2025-06-30\n\n### New features\n\n-\n[9d11386](https://github.com/bosun-ai/swiftide/commit/9d11386c155773fcc77a60591cd57bc366044c71)\nToken usage metrics for embeddings, SimplePrompt and ChatCompletion with\nmetric-rs ([#813](https://github.com/bosun-ai/swiftide/pull/813))\n\n-\n[59c8b9c](https://github.com/bosun-ai/swiftide/commit/59c8b9cef721c3861a9d352c7fbef28e27d2f649)\nStream files from tool executor for indexing\n([#835](https://github.com/bosun-ai/swiftide/pull/835))\n\n### Bug fixes\n\n-\n[ba6ec04](https://github.com/bosun-ai/swiftide/commit/ba6ec0485dc950e83e91e6a8102becc0e8a13158)\n*(pipeline)* Cache nodes after they've been successfully ran\n([#800](https://github.com/bosun-ai/swiftide/pull/800))\n\n-\n[d98827c](https://github.com/bosun-ai/swiftide/commit/d98827c9cd7bb476fdda0ef2ebb6939150b8781c)\n*(qdrant)* Re-export qdrant::Filter\n\n-\n[275efcd](https://github.com/bosun-ai/swiftide/commit/275efcdf91e85ed4327ffa948dcebe5903b178fa)\nMark Loader as Send + Sync\n\n-\n[5974b72](https://github.com/bosun-ai/swiftide/commit/5974b72de4da2fc18d1f76adde02d02035104d5c)\nIntegrations metrics depends on core/metrics\n\n### Miscellaneous\n\n-\n[2f8c7cc](https://github.com/bosun-ai/swiftide/commit/2f8c7cc96b194264a47a8fe21abb7af5c63204f6)\n*(deps)* Up all crates\n([#837](https://github.com/bosun-ai/swiftide/pull/837))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.27.2...0.28.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-06-30T15:17:05+02:00",
+          "tree_id": "0a47312a05d5a12b363a5e43b1fe37c2e8bb3994",
+          "url": "https://github.com/bosun-ai/swiftide/commit/71a61ce6d7b4c02ec6ceb7160bf6e0f84eb0448b"
+        },
+        "date": 1751289955122,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 836212,
+            "range": "± 20911",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 328864,
+            "range": "± 6899",
             "unit": "ns/iter"
           }
         ]
