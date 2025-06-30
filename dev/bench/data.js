@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751274121802,
+  "lastUpdate": 1751279433016,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23477,6 +23477,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 331514,
             "range": "± 7357",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9d11386c155773fcc77a60591cd57bc366044c71",
+          "message": "feat: Token usage metrics for embeddings, SimplePrompt and ChatCompletion with metric-rs (#813)",
+          "timestamp": "2025-06-30T12:21:56+02:00",
+          "tree_id": "958b916093501456a2dd42fdbbe37f507ccd9d36",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9d11386c155773fcc77a60591cd57bc366044c71"
+        },
+        "date": 1751279431615,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 7,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 675,
+            "range": "± 18",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 837018,
+            "range": "± 18392",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 328542,
+            "range": "± 6958",
             "unit": "ns/iter"
           }
         ]
