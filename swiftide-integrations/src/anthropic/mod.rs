@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use derive_builder::Builder;
 
@@ -15,6 +15,11 @@ pub struct Anthropic {
 
     #[builder(default)]
     default_options: Options,
+
+    #[cfg(feature = "metrics")]
+    #[builder(default)]
+    /// Optional metadata to attach to metrics emitted by this client.
+    metric_metadata: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Builder)]

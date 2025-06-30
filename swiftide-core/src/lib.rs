@@ -63,3 +63,6 @@ pub mod prelude;
 pub mod test_utils;
 
 pub mod util;
+
+#[cfg(feature = "metrics")]
+pub mod metrics;

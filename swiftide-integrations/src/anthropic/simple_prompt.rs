@@ -3,6 +3,9 @@ use async_anthropic::{errors::AnthropicError, types::CreateMessagesRequestBuilde
 use async_trait::async_trait;
 use swiftide_core::{chat_completion::errors::LanguageModelError, indexing::SimplePrompt};
 
+#[cfg(feature = "metrics")]
+use swiftide_core::metrics::emit_usage;
+
 use super::Anthropic;
 
 #[async_trait]
@@ -43,6 +46,18 @@ impl SimplePrompt for Anthropic {
                 serde_json::to_string_pretty(&response).map_err(LanguageModelError::permanent)?,
             "[SimplePrompt] Response from anthropic"
         );
+
+        #[cfg(feature = "metrics")]
+        if let Some(usage) = response.usage.as_ref() {
+            emit_usage(
+                model,
+                usage.input_tokens.unwrap_or_default().into(),
+                usage.output_tokens.unwrap_or_default().into(),
+                (usage.input_tokens.unwrap_or_default() + usage.output_tokens.unwrap_or_default())
+                    .into(),
+                self.metric_metadata.as_ref(),
+            );
+        }
 
         let message = response
             .messages()

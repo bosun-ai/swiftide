@@ -35,6 +35,17 @@ impl<C: async_openai::config::Config + std::default::Default + Sync + Send + std
             .await
             .map_err(openai_error_to_language_model_error)?;
 
+        #[cfg(feature = "metrics")]
+        {
+            swiftide_core::metrics::emit_usage(
+                model,
+                response.usage.prompt_tokens.into(),
+                0,
+                response.usage.total_tokens.into(),
+                self.metric_metadata.as_ref(),
+            );
+        }
+
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");
 

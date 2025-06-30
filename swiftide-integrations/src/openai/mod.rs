@@ -92,6 +92,11 @@ pub struct GenericOpenAI<
     /// delta, for when performance matters. This only has effect when streaming is enabled.
     #[builder(default = true)]
     pub stream_full: bool,
+
+    #[cfg(feature = "metrics")]
+    #[builder(default)]
+    /// Optional metadata to attach to metrics emitted by this client.
+    metric_metadata: Option<std::collections::HashMap<String, String>>,
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
