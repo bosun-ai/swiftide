@@ -98,7 +98,7 @@ impl Persist for Duckdb {
             return Ok(());
         }
 
-        // Install the extensions separetely from the schema to avoid duckdb issues with random
+        // Install the extensions separately from the schema to avoid duckdb issues with random
         // 'extension exists' errors
         let _ = conn.execute_batch(include_str!("extensions.sql"));
 
