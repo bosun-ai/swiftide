@@ -11,9 +11,6 @@ use swiftide_core::{
     },
 };
 
-#[allow(unused_imports)]
-pub use qdrant::Filter;
-
 use super::Qdrant;
 
 /// Implement the `Retrieve` trait for `SimilaritySingleEmbedding` search strategy.

@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use anyhow::{Context as _, Result, bail};
 use derive_builder::Builder;
+pub use qdrant::Filter;
 use qdrant_client::qdrant::{self, SparseVectorParamsBuilder, SparseVectorsConfigBuilder};
 
 use swiftide_core::indexing::{EmbeddedField, Node};
