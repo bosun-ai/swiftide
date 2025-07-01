@@ -1,6 +1,4 @@
-INSTALL vss;
 LOAD vss;
-INSTALL fts;
 LOAD fts;
 
 

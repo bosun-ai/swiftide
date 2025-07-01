@@ -98,6 +98,10 @@ impl Persist for Duckdb {
             return Ok(());
         }
 
+        // Install the extensions separetely from the schema to avoid duckdb issues with random
+        // 'extension exists' errors
+        let _ = conn.execute_batch(include_str!("extensions.sql"));
+
         conn.execute_batch(&self.schema)
             .context("Failed to create indexing table")?;
 

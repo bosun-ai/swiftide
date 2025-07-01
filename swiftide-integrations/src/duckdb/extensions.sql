@@ -1,0 +1,2 @@
+INSTALL vss;
+INSTALL fts;
