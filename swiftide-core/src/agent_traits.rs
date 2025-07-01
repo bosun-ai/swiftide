@@ -54,35 +54,35 @@ impl<T: ToolExecutor> ToolExecutor for &T {
 #[async_trait]
 impl ToolExecutor for Arc<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
-        (**self).exec_cmd(cmd).await
+        self.as_ref().exec_cmd(cmd).await
     }
     async fn stream_files(
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream> {
-        (*self).stream_files(path, extensions).await
+        self.as_ref().stream_files(path, extensions).await
     }
 }
 
 #[async_trait]
 impl ToolExecutor for Box<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
-        (**self).exec_cmd(cmd).await
+        self.as_ref().exec_cmd(cmd).await
     }
     async fn stream_files(
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream> {
-        (*self).stream_files(path, extensions).await
+        self.as_ref().stream_files(path, extensions).await
     }
 }
 
 #[async_trait]
 impl ToolExecutor for &dyn ToolExecutor {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
-        (**self).exec_cmd(cmd).await
+        (*self).exec_cmd(cmd).await
     }
     async fn stream_files(
         &self,
