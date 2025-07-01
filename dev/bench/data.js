@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751369775532,
+  "lastUpdate": 1751375372392,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24071,6 +24071,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 332386,
             "range": "± 14706",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "883defa6569a2252536b82f19edc37e659a6a263",
+          "message": "chore: release v0.28.1 (#842)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.28.0 -> 0.28.1 (✓ API compatible changes)\n* `swiftide-macros`: 0.28.0 -> 0.28.1\n* `swiftide-indexing`: 0.28.0 -> 0.28.1\n* `swiftide-agents`: 0.28.0 -> 0.28.1\n* `swiftide-integrations`: 0.28.0 -> 0.28.1 (✓ API compatible changes)\n* `swiftide-query`: 0.28.0 -> 0.28.1\n* `swiftide`: 0.28.0 -> 0.28.1 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.28.1](https://github.com/bosun-ai/swiftide/compare/v0.28.0...v0.28.1)\n- 2025-07-01\n\n### New features\n\n-\n[c671e6a](https://github.com/bosun-ai/swiftide/commit/c671e6aec7b381235f8450a8be0cbc766df72985)\n*(agents)* Add is_approved() and is_refused() to ToolFeedback\n\n### Bug fixes\n\n-\n[68c5cda](https://github.com/bosun-ai/swiftide/commit/68c5cdafc6e457739bcfeb12d2810350659f2979)\n*(agents)* Prevent stack overflow when ToolExecutor has ambigious refs\n\n-\n[07198d2](https://github.com/bosun-ai/swiftide/commit/07198d26389e1606e6e0f552e411196f42cf6600)\n*(duckdb)* Resolve 'x is an existing extension'\n\n-\n[e8ecc2f](https://github.com/bosun-ai/swiftide/commit/e8ecc2ff532efd07bd21e5350b8d2b6f600ca1c6)\n*(qdrant)* Re-export the full qdrant client\n\n-\n[242b8f5](https://github.com/bosun-ai/swiftide/commit/242b8f5e3d427967aa238115047a58bb9debad3b)\n*(qdrant)* Re-export qdrant::Filter properly\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.28.0...0.28.1\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-07-01T15:00:50+02:00",
+          "tree_id": "7ba14bddb88e9d8cd5f0139d7d938f8fc1f4d99d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/883defa6569a2252536b82f19edc37e659a6a263"
+        },
+        "date": 1751375370912,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 836039,
+            "range": "± 16742",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 332220,
+            "range": "± 6094",
             "unit": "ns/iter"
           }
         ]
