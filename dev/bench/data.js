@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751289956210,
+  "lastUpdate": 1751357399338,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -23801,6 +23801,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 328864,
             "range": "± 6899",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "07198d26389e1606e6e0f552e411196f42cf6600",
+          "message": "fix(duckdb): Resolve 'x is an existing extension'",
+          "timestamp": "2025-07-01T10:00:05+02:00",
+          "tree_id": "9cf82f2f30cc4ff77698a02aa3ee38a78d1dcffc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/07198d26389e1606e6e0f552e411196f42cf6600"
+        },
+        "date": 1751357398332,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 831188,
+            "range": "± 18328",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 330665,
+            "range": "± 30743",
             "unit": "ns/iter"
           }
         ]
