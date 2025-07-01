@@ -122,6 +122,9 @@ metrics = ["swiftide-integrations/metrics", "swiftide-core/metrics"]
 ## Various mocking and testing utilities
 test-utils = ["swiftide-core/test-utils"]
 
+## Json schema for various types
+json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
+
 #! ### Experimental
 swiftide-agents = ["dep:swiftide-agents"]
 
