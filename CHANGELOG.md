@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.1](https://github.com/bosun-ai/swiftide/compare/v0.28.0...v0.28.1) - 2025-07-01
+
+### New features
+
+- [c671e6a](https://github.com/bosun-ai/swiftide/commit/c671e6aec7b381235f8450a8be0cbc766df72985) *(agents)*  Add is_approved() and is_refused() to ToolFeedback
+
+### Bug fixes
+
+- [68c5cda](https://github.com/bosun-ai/swiftide/commit/68c5cdafc6e457739bcfeb12d2810350659f2979) *(agents)*  Prevent stack overflow when ToolExecutor has ambigious refs
+
+- [07198d2](https://github.com/bosun-ai/swiftide/commit/07198d26389e1606e6e0f552e411196f42cf6600) *(duckdb)*  Resolve 'x is an existing extension'
+
+- [e8ecc2f](https://github.com/bosun-ai/swiftide/commit/e8ecc2ff532efd07bd21e5350b8d2b6f600ca1c6) *(qdrant)*  Re-export the full qdrant client
+
+- [242b8f5](https://github.com/bosun-ai/swiftide/commit/242b8f5e3d427967aa238115047a58bb9debad3b) *(qdrant)*  Re-export qdrant::Filter properly
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.28.0...0.28.1
+
+
+
 ## [0.28.0](https://github.com/bosun-ai/swiftide/compare/v0.27.2...v0.28.0) - 2025-06-30
 
 ### New features
