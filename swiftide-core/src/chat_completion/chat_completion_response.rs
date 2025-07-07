@@ -60,19 +60,19 @@ impl Usage {
 
 #[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ChatCompletionResponseDelta {
+    #[builder(default)]
     pub message_chunk: Option<String>,
 
-    // These are not public as the assumption is they are not usable
-    // until the tool calls are valid
-    tool_calls_chunk: Option<HashMap<usize, ToolCallAccum>>,
+    #[builder(default)]
+    pub tool_calls_chunk: Option<HashMap<usize, ToolCallAccum>>,
 }
 
 // Accumulator for streamed tool calls
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-struct ToolCallAccum {
-    id: Option<String>,
-    name: Option<String>,
-    arguments: Option<String>,
+pub struct ToolCallAccum {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub arguments: Option<String>,
 }
 
 impl ChatCompletionResponse {
