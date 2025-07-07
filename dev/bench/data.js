@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751375372392,
+  "lastUpdate": 1751893070436,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24125,6 +24125,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 332220,
             "range": "± 6094",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "0a8ce373325fac53946c245209afcd8bb7b2caa9",
+          "message": "chore: Public chat completion streaming types",
+          "timestamp": "2025-07-07T14:48:58+02:00",
+          "tree_id": "b4f75b0b7305c630f7bbf8e6f61a1992735d58c0",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0a8ce373325fac53946c245209afcd8bb7b2caa9"
+        },
+        "date": 1751893069427,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 839612,
+            "range": "± 17745",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 329083,
+            "range": "± 6264",
             "unit": "ns/iter"
           }
         ]
