@@ -186,6 +186,7 @@ impl AsRef<str> for CommandOutput {
 
 /// Feedback that can be given on a tool, i.e. with a human in the loop
 #[derive(Debug, Clone, Serialize, Deserialize, strum_macros::EnumIs)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum ToolFeedback {
     Approved { payload: Option<serde_json::Value> },
     Refused { payload: Option<serde_json::Value> },
@@ -198,6 +199,14 @@ impl ToolFeedback {
 
     pub fn refused() -> Self {
         ToolFeedback::Refused { payload: None }
+    }
+
+    pub fn payload(&self) -> Option<&serde_json::Value> {
+        match self {
+            ToolFeedback::Refused { payload } | ToolFeedback::Approved { payload } => {
+                payload.as_ref()
+            }
+        }
     }
 
     #[must_use]
