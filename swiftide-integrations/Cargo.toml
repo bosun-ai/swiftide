@@ -65,6 +65,7 @@ tree-sitter-solidity = { workspace = true, optional = true }
 tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-cpp = { workspace = true, optional = true }
 tree-sitter-elixir = { workspace = true, optional = true }
+tree-sitter-html = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true, default-features = true }
