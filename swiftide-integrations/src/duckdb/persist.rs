@@ -345,4 +345,49 @@ mod tests {
         client.setup().await.unwrap();
         client.setup().await.unwrap(); // Should not panic or error
     }
+
+    #[test_log::test(tokio::test)]
+    async fn test_persisted() {
+        let temp_db_path = temp_dir::TempDir::new().unwrap();
+        let temp_db_path = temp_db_path.path().join("test_duckdb.db");
+
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open(temp_db_path).unwrap())
+            .table_name("test".to_string())
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+
+        let mut node = Node::new("Hello duckdb!")
+            .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
+            .to_owned();
+
+        node.metadata
+            .insert("filter".to_string(), "true".to_string());
+
+        client.setup().await.unwrap();
+        client.store(node).await.unwrap();
+
+        tracing::info!("Stored node");
+
+        let connection = client.connection.lock().unwrap();
+        let mut stmt = connection
+            .prepare("SELECT uuid,path,chunk FROM test")
+            .unwrap();
+
+        let node_iter = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0).unwrap(), // id
+                    row.get::<_, String>(1).unwrap(), // chunk
+                    row.get::<_, String>(2).unwrap(), // path
+                ))
+            })
+            .unwrap();
+
+        let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
+        dbg!(&retrieved);
+        //
+        assert_eq!(retrieved.len(), 1);
+    }
 }
