@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751893070436,
+  "lastUpdate": 1751989251621,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24179,6 +24179,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 329083,
             "range": "± 6264",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "977829550d58301f53f663b4c25fa5650ab15359",
+          "message": "fix(agents): Ensure error causes are always accessible",
+          "timestamp": "2025-07-08T17:31:47+02:00",
+          "tree_id": "b97870c1c7febe7ec78b5953d226ce106c0a0cdb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/977829550d58301f53f663b4c25fa5650ab15359"
+        },
+        "date": 1751989250237,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 838747,
+            "range": "± 20121",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 330738,
+            "range": "± 6484",
             "unit": "ns/iter"
           }
         ]
