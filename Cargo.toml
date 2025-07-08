@@ -32,6 +32,7 @@ tokio = { version = "1.45", features = [
 tokio-stream = { version = "0.1", default-features = false, features = [
   "time",
 ] }
+tokio-util = { version = "0.7", default-features = false }
 tracing = { version = "0.1", features = [
   "log",
   "attributes",
@@ -39,8 +40,11 @@ tracing = { version = "0.1", features = [
 num_cpus = { version = "1.17", default-features = false }
 pin-project = { version = "1.1", default-features = false }
 itertools = { version = "0.14", default-features = true }
-serde = { version = "1.0", features = ["derive"], default-features = false }
-serde_json = { version = "1.0", default-features = false }
+serde = { version = "1.0", features = [
+  "derive",
+  "std",
+], default-features = false }
+serde_json = { version = "1.0", default-features = false, features = ["std"] }
 strum = { version = "0.27", default-features = false }
 strum_macros = { version = "0.27", default-features = false }
 lazy_static = { version = "1.5", default-features = false }
@@ -57,7 +61,7 @@ convert_case = { version = "0.8", default-features = false }
 
 # Mcp
 rmcp = { version = "0.1", default-features = false }
-schemars = { version = "1.0", default-features = false }
+schemars = { version = "0.8", default-features = false }
 
 # Integrations
 spider = { version = "2.37", default-features = false }

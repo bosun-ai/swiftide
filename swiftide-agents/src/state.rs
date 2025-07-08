@@ -23,7 +23,7 @@ impl State {
 ///
 /// `StopReason::Other` has some convenience methods to convert from any `AsRef<str>`
 #[non_exhaustive]
-#[derive(Clone, Debug, strum_macros::EnumIs)]
+#[derive(Clone, Debug, strum_macros::EnumIs, PartialEq)]
 pub enum StopReason {
     /// A tool called stop
     RequestedByTool(ToolCall),
@@ -41,6 +41,9 @@ pub enum StopReason {
 
     /// No new messages; stopping completions
     NoNewMessages,
+
+    /// Aborted by a task
+    TaskAborted,
 
     Other(String),
 }

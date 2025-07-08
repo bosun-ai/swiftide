@@ -8278,18 +8278,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "schemars"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1375ba8ef45a6f15d83fa8748f1079428295d403d6ea991d09ab100155fbc06d"
-dependencies = [
- "dyn-clone",
- "ref-cast",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "schemars_derive"
 version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9300,6 +9288,7 @@ version = "0.28.1"
 dependencies = [
  "anyhow",
  "async-trait",
+ "convert_case",
  "derive_builder 0.20.2",
  "dyn-clone",
  "fs-err",
@@ -9308,7 +9297,7 @@ dependencies = [
  "insta",
  "mockall",
  "rmcp",
- "schemars 1.0.3",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "strum 0.27.1",
@@ -9320,6 +9309,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "tracing",
 ]
 
@@ -9340,6 +9330,7 @@ dependencies = [
  "pin-project",
  "pretty_assertions",
  "qdrant-client",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "strum 0.27.1",
@@ -10304,6 +10295,8 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-sink",
+ "futures-util",
+ "hashbrown 0.15.4",
  "pin-project-lite",
  "tokio",
 ]

@@ -441,6 +441,9 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
 }
 
 pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelError {
+    // TODO: Remove me
+    tracing::error!(error = ?e, "error from openai");
+
     match e {
         OpenAIError::ApiError(api_error) => {
             // If the response is an ApiError, it could be a context length exceeded error

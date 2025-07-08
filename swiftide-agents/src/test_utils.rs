@@ -16,45 +16,57 @@ use crate::hooks::{
 #[macro_export]
 macro_rules! chat_request {
     ($($message:expr),+; tools = [$($tool:expr),*]) => {
-        ChatCompletionRequest::builder()
+        swiftide_core::chat_completion::ChatCompletionRequest::builder()
             .messages(vec![$($message),*])
             .tools_spec(
                 vec![$(Box::new($tool) as Box<dyn Tool>),*]
                     .into_iter()
                     .chain(Agent::default_tools())
                     .map(|tool| tool.tool_spec())
-                    .collect::<HashSet<_>>(),
+                    .collect::<std::collections::HashSet<_>>(),
             )
             .build()
             .unwrap()
     };
+    ($($message:expr),+; tool_specs = [$($tool:expr),*]) => {
+        swiftide_core::chat_completion::ChatCompletionRequest::builder()
+            .messages(vec![$($message),*])
+            .tools_spec(
+                vec![$(($tool)),*]
+                    .into_iter()
+                    .chain(Agent::default_tools().into_iter().map(|tool| tool.tool_spec()))
+                    .collect::<std::collections::HashSet<_>>(),
+            )
+            .build()
+            .unwrap()
+    }
 }
 
 #[macro_export]
 macro_rules! user {
     ($message:expr) => {
-        ChatMessage::User($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::User($message.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! system {
     ($message:expr) => {
-        ChatMessage::System($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::System($message.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! summary {
     ($message:expr) => {
-        ChatMessage::Summary($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::Summary($message.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! assistant {
     ($message:expr) => {
-        ChatMessage::Assistant(Some($message.to_string()), None)
+        swiftide_core::chat_completion::ChatMessage::Assistant(Some($message.to_string()), None)
     };
     ($message:expr, [$($tool_call_name:expr),*]) => {{
         let tool_calls = vec![
@@ -109,6 +121,17 @@ macro_rules! chat_response {
 
         ChatCompletionResponse::builder()
             .message($message)
+            .tool_calls(tool_calls)
+            .build()
+            .unwrap()
+    }};
+    (tool_calls = [$($tool_name:expr),*]) => {{
+
+        let tool_calls = vec![
+            $(ToolCall::builder().name($tool_name).id("1").build().unwrap()),*
+        ];
+
+        ChatCompletionResponse::builder()
             .tool_calls(tool_calls)
             .build()
             .unwrap()
