@@ -364,13 +364,6 @@ impl Agent {
             return Err(AgentError::AlreadyRunning);
         }
 
-        if let Some(query) = maybe_query {
-            self.context
-                .add_message(ChatMessage::User(query))
-                .await
-                .map_err(AgentError::MessageHistoryError)?;
-        }
-
         if self.state.is_pending() {
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
@@ -386,6 +379,13 @@ impl Agent {
             invoke_hooks!(BeforeAll, self);
 
             self.load_toolboxes().await?;
+        }
+
+        if let Some(query) = maybe_query {
+            self.context
+                .add_message(ChatMessage::User(query))
+                .await
+                .map_err(AgentError::MessageHistoryError)?;
         }
 
         invoke_hooks!(OnStart, self);
