@@ -4,7 +4,7 @@
 #[macro_export]
 macro_rules! invoke_hooks {
     (OnStream, $self_expr:expr $(, $arg:expr)* ) => {{
-        // For streamining we log less and only on the trace level
+        // For streaming we log less and only on the trace level
         for hook in $self_expr.hooks_by_type(HookTypes::OnStream) {
             // Downcast to the correct closure variant
             if let Hook::OnStream(hook_fn) = hook {
