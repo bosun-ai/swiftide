@@ -381,16 +381,16 @@ impl Agent {
             self.load_toolboxes().await?;
         }
 
-        invoke_hooks!(OnStart, self);
-
-        self.state = state::State::Running;
-
         if let Some(query) = maybe_query {
             self.context
                 .add_message(ChatMessage::User(query))
                 .await
                 .map_err(AgentError::MessageHistoryError)?;
         }
+
+        invoke_hooks!(OnStart, self);
+
+        self.state = state::State::Running;
 
         let mut loop_counter = 0;
 
