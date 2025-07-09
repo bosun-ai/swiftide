@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1752046987218,
+  "lastUpdate": 1752052888618,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24287,6 +24287,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 320509,
             "range": "± 9012",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "592be049b798d80d6dadce6317889a14404643c8",
+          "message": "fix(agents): Reduce verbosity of streaming hook (#854)",
+          "timestamp": "2025-07-09T11:12:40+02:00",
+          "tree_id": "5cdf88a9568acf2a810b7edcd229648ea06073b2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/592be049b798d80d6dadce6317889a14404643c8"
+        },
+        "date": 1752052886917,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 847309,
+            "range": "± 14645",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 331174,
+            "range": "± 5920",
             "unit": "ns/iter"
           }
         ]
