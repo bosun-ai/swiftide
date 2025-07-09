@@ -215,7 +215,7 @@ impl<B: Backend, S: TaskState> Task<B, S> {
     /// Note that this is a non-blocking call, and the task will return immediately.
     ///
     /// Use `join_all` to wait for all agents to complete.
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self), err)]
     pub async fn query(&self, instructions: &str) -> Result<(), TaskError> {
         self.backend
             .spawn_agent(self.current_agent().await?, Some(instructions))
@@ -231,6 +231,7 @@ impl<B: Backend, S: TaskState> Task<B, S> {
     /// Note that this is a non-blocking call, and the task will return immediately.
     ///
     /// Use `join_all` to wait for all agents to complete.
+    #[tracing::instrument(skip(self), err)]
     pub async fn run(&self) -> Result<(), TaskError> {
         self.backend
             .spawn_agent(self.current_agent().await?, None)
@@ -240,15 +241,18 @@ impl<B: Backend, S: TaskState> Task<B, S> {
     }
 
     /// Consumes the task and waiting for all agents to complete
+    #[tracing::instrument(skip(self))]
     pub async fn join_all(&self) -> Result<(), B::Error> {
         self.backend.join_all().await
     }
 
     /// Forcibly aborts the task and all agents
+    #[tracing::instrument(skip(self))]
     pub async fn abort(&mut self) {
         self.backend.abort().await;
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn current_agent(&self) -> Result<RunningAgent, TaskError> {
         let current_index = self.current_agent.load(atomic::Ordering::Relaxed);
         let agents = self.agents.read().await;
@@ -258,6 +262,7 @@ impl<B: Backend, S: TaskState> Task<B, S> {
             .ok_or(TaskError::NoActiveAgent)
     }
 
+    #[tracing::instrument(skip(self))]
     /// Returns the number of agents that are currently running
     pub fn outstanding(&self) -> usize {
         self.backend.outstanding()

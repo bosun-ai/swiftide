@@ -11,6 +11,7 @@ use std::sync::{
 };
 use tokio::sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
+use tracing::{Instrument as _, info_span};
 
 use crate::{StopReason, errors::AgentError};
 
@@ -105,62 +106,61 @@ impl Backend for DefaultBackend {
 
         // 4) Spawn the real work, moving in the permit so it isn’t released until the future
         //    completes or is aborted.
-        tokio::spawn(async move {
-            // hold permit until this async block finishes:
-            let _permit = permit;
+        let agent_span =
+            info_span!("agent", "otel.name" = format!("agent.{}", agent.name())).or_current();
 
-            // run the agent, but allow aborts
-            let work = async {
-                let mut lock = agent.lock().await;
-                lock.run_agent(instructions, false).await
-            };
+        tokio::spawn(
+            async move {
+                // hold permit until this async block finishes:
+                let _permit = permit;
 
-            tokio::select! {
-                biased;
-                () = agent_cancel_token.cancelled() => {
-                    // TODO: Verify I don't deadlock
+                // run the agent, but allow aborts
+                let work = async {
                     let mut lock = agent.lock().await;
-                    lock.stop(StopReason::TaskAborted).await;
+                    lock.run_agent(instructions, false).await
+                };
 
-                    tracing::warn!("Agent {} aborted", agent.name());
-                }
-                result = work => {
-                    match result {
-                        Ok(()) => tracing::info!("Agent {} completed", agent.name()),
-                        Err(e)  => { first_error.lock().await.replace(e); },
+                tokio::select! {
+                    biased;
+                    () = agent_cancel_token.cancelled() => {
+                        // TODO: Verify I don't deadlock
+                        let mut lock = agent.lock().await;
+                        lock.stop(StopReason::TaskAborted).await;
+
+                        tracing::warn!("Agent {} aborted", agent.name());
+                    }
+                    result = work => {
+                        match result {
+                            Ok(()) => tracing::info!("Agent {} completed", agent.name()),
+                            Err(e)  => { first_error.lock().await.replace(e); },
+                        }
                     }
                 }
-            }
 
-            // 5) Task is definitely done — drop the permit, decrement counter, notify joiners.
-            outstanding.fetch_sub(1, Ordering::SeqCst);
-            notify.notify_waiters();
-        });
+                // 5) Task is definitely done — drop the permit, decrement counter, notify joiners.
+                outstanding.fetch_sub(1, Ordering::SeqCst);
+                notify.notify_waiters();
+            }
+            .instrument(agent_span),
+        );
 
         cancel_token
     }
 
-    /// Returns a handle that is resolved when all agents are done.
-    ///
-    /// Agents are run immediately, and this function returns a handle that is resolved when all
-    /// agents are done.
+    /// Waits for all agents to complete, returning the first error if any agent failed.
     #[tracing::instrument(skip(self))]
     async fn join_all(&self) -> Result<(), Self::Error> {
-        let outstanding = self.outstanding.clone();
-        let notify = self.notify.clone();
-        let first_error = self.first_error.clone();
-
         loop {
-            if let Some(e) = { first_error.lock().await.take() } {
+            if let Some(e) = { self.first_error.lock().await.take() } {
                 return Err(TaskError::AgentError(e));
             }
 
-            if outstanding.load(Ordering::SeqCst) == 0 {
+            if self.outstanding.load(Ordering::SeqCst) == 0 {
                 tracing::info!("All agents completed");
                 return Ok(());
             }
 
-            notify.notified().await;
+            self.notify.notified().await;
         }
     }
 
