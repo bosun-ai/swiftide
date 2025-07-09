@@ -156,6 +156,7 @@ tree-sitter = [
   "dep:tree-sitter-c",
   "dep:tree-sitter-cpp",
   "dep:tree-sitter-elixir",
+  "dep:tree-sitter-html",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
