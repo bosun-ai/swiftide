@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.2](https://github.com/bosun-ai/swiftide/compare/v0.28.1...v0.28.2) - 2025-07-09
+
+### Bug fixes
+
+- [aaa5cd9](https://github.com/bosun-ai/swiftide/commit/aaa5cd99d0316dcdc46afb922bbcefdfaa97da86) *(agents)*  Add user message before invoking hooks ([#853](https://github.com/bosun-ai/swiftide/pull/853))
+
+- [592be04](https://github.com/bosun-ai/swiftide/commit/592be049b798d80d6dadce6317889a14404643c8) *(agents)*  Reduce verbosity of streaming hook ([#854](https://github.com/bosun-ai/swiftide/pull/854))
+
+- [9778295](https://github.com/bosun-ai/swiftide/commit/977829550d58301f53f663b4c25fa5650ab15359) *(agents)*  Ensure error causes are always accessible
+
+- [6a7ea3b](https://github.com/bosun-ai/swiftide/commit/6a7ea3b1472df209669fdf1231f0bdf4ebe6007f) *(redis)*  Redis instrumentation only at trace level
+
+### Miscellaneous
+
+- [0a8ce37](https://github.com/bosun-ai/swiftide/commit/0a8ce373325fac53946c245209afcd8bb7b2caa9)  Public chat completion streaming types
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.28.1...0.28.2
+
+
+
 ## [0.28.1](https://github.com/bosun-ai/swiftide/compare/v0.28.0...v0.28.1) - 2025-07-01
 
 ### New features
