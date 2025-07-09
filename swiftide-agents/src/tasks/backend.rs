@@ -109,8 +109,8 @@ impl Backend for DefaultBackend {
 
         // 4) Spawn the real work, moving in the permit so it isn’t released until the future
         //    completes or is aborted.
-        // let agent_span =
-        //     info_span!("agent", "otel.name" = format!("agent.{}", agent.name())).or_current();
+        let agent_span =
+            info_span!("agent", "otel.name" = format!("agent.{}", agent.name())).or_current();
 
         tokio::spawn(async move {
             // hold permit until this async block finishes:
@@ -119,7 +119,9 @@ impl Backend for DefaultBackend {
             // run the agent, but allow aborts
             let work = async {
                 let mut lock = agent.lock().await;
-                lock.run_agent(instructions, false).await
+                lock.run_agent(instructions, false)
+                    .instrument(agent_span)
+                    .await
             };
 
             tokio::select! {
