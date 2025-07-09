@@ -9,7 +9,10 @@ use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
 };
-use tokio::sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore};
+use tokio::{
+    sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore},
+    task::yield_now,
+};
 use tokio_util::sync::CancellationToken;
 use tracing::{Instrument as _, info_span};
 
@@ -109,40 +112,39 @@ impl Backend for DefaultBackend {
         let agent_span =
             info_span!("agent", "otel.name" = format!("agent.{}", agent.name())).or_current();
 
-        tokio::spawn(
-            async move {
-                // hold permit until this async block finishes:
-                let _permit = permit;
+        tokio::spawn(async move {
+            // hold permit until this async block finishes:
+            let _permit = permit;
 
-                // run the agent, but allow aborts
-                let work = async {
+            // run the agent, but allow aborts
+            let work = async {
+                let mut lock = agent.lock().await;
+                lock.run_agent(instructions, false)
+                    .instrument(agent_span)
+                    .await
+            };
+
+            tokio::select! {
+                biased;
+                () = agent_cancel_token.cancelled() => {
+                    // TODO: Verify I don't deadlock
                     let mut lock = agent.lock().await;
-                    lock.run_agent(instructions, false).await
-                };
+                    lock.stop(StopReason::TaskAborted).await;
 
-                tokio::select! {
-                    biased;
-                    () = agent_cancel_token.cancelled() => {
-                        // TODO: Verify I don't deadlock
-                        let mut lock = agent.lock().await;
-                        lock.stop(StopReason::TaskAborted).await;
-
-                        tracing::warn!("Agent {} aborted", agent.name());
-                    }
-                    result = work => {
-                        match result {
-                            Ok(()) => tracing::info!("Agent {} completed", agent.name()),
-                            Err(e)  => { first_error.lock().await.replace(e); },
-                        }
+                    tracing::warn!("Agent {} aborted", agent.name());
+                }
+                result = work => {
+                    match result {
+                        Ok(()) => tracing::info!("Agent {} completed", agent.name()),
+                        Err(e)  => { first_error.lock().await.replace(e); },
                     }
                 }
-
-                // 5) Task is definitely done — drop the permit, decrement counter, notify joiners.
-                outstanding.fetch_sub(1, Ordering::SeqCst);
-                notify.notify_waiters();
             }
-            .instrument(agent_span),
-        );
+
+            // 5) Task is definitely done — drop the permit, decrement counter, notify joiners.
+            outstanding.fetch_sub(1, Ordering::SeqCst);
+            notify.notify_waiters();
+        });
 
         cancel_token
     }
@@ -151,6 +153,8 @@ impl Backend for DefaultBackend {
     #[tracing::instrument(skip(self))]
     async fn join_all(&self) -> Result<(), Self::Error> {
         loop {
+            yield_now().await;
+
             if let Some(e) = { self.first_error.lock().await.take() } {
                 return Err(TaskError::AgentError(e));
             }
