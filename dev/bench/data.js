@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1752052888618,
+  "lastUpdate": 1752054768890,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24341,6 +24341,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 331174,
             "range": "± 5920",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "aaa5cd99d0316dcdc46afb922bbcefdfaa97da86",
+          "message": "fix(agents): Add user message before invoking hooks (#853)",
+          "timestamp": "2025-07-09T11:43:50+02:00",
+          "tree_id": "fe1d9a9ae7de5685b9a4ca31e78f91e9cc1a87ae",
+          "url": "https://github.com/bosun-ai/swiftide/commit/aaa5cd99d0316dcdc46afb922bbcefdfaa97da86"
+        },
+        "date": 1752054767243,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 851654,
+            "range": "± 17076",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 334566,
+            "range": "± 6825",
             "unit": "ns/iter"
           }
         ]
