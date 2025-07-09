@@ -124,6 +124,7 @@ impl CodeOutliner {
             SupportedLanguages::C => unimplemented!(),
             SupportedLanguages::Cpp => unimplemented!(),
             SupportedLanguages::Elixir => unimplemented!(),
+            SupportedLanguages::HTML => unimplemented!(),
         }
     }
 

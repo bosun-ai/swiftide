@@ -108,7 +108,7 @@ impl CodeTree<'_> {
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
     use SupportedLanguages::{
-        C, Cpp, Elixir, Go, Java, Javascript, Python, Ruby, Rust, Solidity, Typescript,
+        C, Cpp, Elixir, Go, HTML, Java, Javascript, Python, Ruby, Rust, Solidity, Typescript,
     };
 
     match language {
@@ -121,7 +121,7 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Java => (java::DEFS, java::REFS),
         Go => (go::DEFS, go::REFS),
         Solidity => (solidity::DEFS, solidity::REFS),
-        C | Cpp | Elixir => unimplemented!(),
+        C | Cpp | Elixir | HTML => unimplemented!(),
     }
 }
 
