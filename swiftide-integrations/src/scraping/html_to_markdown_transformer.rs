@@ -46,10 +46,7 @@ impl Transformer for HtmlToMarkdownTransformer {
     async fn transform_node(&self, node: Node) -> Result<Node> {
         let chunk = self.htmd.convert(&node.chunk)?;
 
-        Node::chunking_from(&node)
-            .chunk(chunk)
-            .parent_id(node.id())
-            .build()
+        Node::build_from_other(&node).chunk(chunk).build()
     }
 
     fn concurrency(&self) -> Option<usize> {

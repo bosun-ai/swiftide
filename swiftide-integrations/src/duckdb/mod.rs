@@ -181,8 +181,7 @@ impl Duckdb {
 
     /// Formats a node key for the cache table
     pub fn node_key(&self, node: &swiftide_core::indexing::Node) -> String {
-        let cache_id = node.parent_id().unwrap_or_else(|| node.id());
-        format!("{}:{}", self.cache_key_prefix, cache_id)
+        format!("{}.{}", self.cache_key_prefix, node.id())
     }
 
     fn hybrid_query_sql(
