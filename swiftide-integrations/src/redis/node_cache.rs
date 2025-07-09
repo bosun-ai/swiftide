@@ -21,7 +21,7 @@ impl NodeCache for Redis {
     /// # Errors
     ///
     /// Logs an error and returns `false` if the cache check fails.
-    #[tracing::instrument(skip_all, name = "node_cache.redis.get", fields(hit))]
+    #[tracing::instrument(skip_all, fields(hit), level = "trace")]
     async fn get(&self, node: &Node) -> bool {
         let cache_result = if let Some(mut cm) = self.lazy_connect().await {
             let result = redis::cmd("EXISTS")
@@ -59,7 +59,7 @@ impl NodeCache for Redis {
     /// # Errors
     ///
     /// Logs an error if the node cannot be set in the cache.
-    #[tracing::instrument(skip_all, name = "node_cache.redis.get")]
+    #[tracing::instrument(skip_all, level = "trace")]
     async fn set(&self, node: &Node) {
         if let Some(mut cm) = self.lazy_connect().await {
             let result: Result<(), redis::RedisError> = redis::cmd("SET")
