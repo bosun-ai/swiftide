@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1751989251621,
+  "lastUpdate": 1752046987218,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24233,6 +24233,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 330738,
             "range": "± 6484",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "6a7ea3b1472df209669fdf1231f0bdf4ebe6007f",
+          "message": "fix(redis): Redis instrumentation only at trace level",
+          "timestamp": "2025-07-09T09:34:09+02:00",
+          "tree_id": "f431e95ac4d367f3717f9c1049f0d2d40542c23a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6a7ea3b1472df209669fdf1231f0bdf4ebe6007f"
+        },
+        "date": 1752046985744,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 836472,
+            "range": "± 16222",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 320509,
+            "range": "± 9012",
             "unit": "ns/iter"
           }
         ]
