@@ -121,12 +121,11 @@ impl ChunkerTransformer for ChunkText {
             })
             .collect::<Vec<String>>();
 
-        IndexingStream::iter(chunks.into_iter().map(move |chunk| {
-            Node::chunking_from(&node)
-                .chunk(chunk)
-                .parent_id(node.id())
-                .build()
-        }))
+        IndexingStream::iter(
+            chunks
+                .into_iter()
+                .map(move |chunk| Node::build_from_other(&node).chunk(chunk).build()),
+        )
     }
 
     fn concurrency(&self) -> Option<usize> {

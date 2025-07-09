@@ -63,9 +63,6 @@ pub struct Node {
     /// from in bytes
     #[builder(default)]
     pub offset: usize,
-    /// Optional parent id
-    #[builder(default)]
-    pub parent_id: Option<uuid::Uuid>,
 }
 
 impl NodeBuilder {
@@ -129,7 +126,7 @@ impl Debug for Node {
 impl Node {
     /// Builds a new instance of `Node`, returning a `NodeBuilder`. Copies
     /// over the fields from the provided `Node`.
-    pub fn chunking_from(node: &Node) -> NodeBuilder {
+    pub fn build_from_other(node: &Node) -> NodeBuilder {
         NodeBuilder::default()
             .path(node.path.clone())
             .chunk(node.chunk.clone())
@@ -139,7 +136,6 @@ impl Node {
             .embed_mode(node.embed_mode)
             .original_size(node.original_size)
             .offset(node.offset)
-            .parent_id(node.id())
             .to_owned()
     }
 
@@ -245,10 +241,6 @@ impl Node {
 
         uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
     }
-
-    pub fn parent_id(&self) -> Option<uuid::Uuid> {
-        self.parent_id
-    }
 }
 
 impl Hash for Node {
@@ -347,21 +339,10 @@ mod tests {
             .with_sparse_vectors(HashMap::new())
             .to_owned();
 
-        let builder = Node::chunking_from(&original_node);
-        let chunked_node = builder.build().unwrap();
+        let builder = Node::build_from_other(&original_node);
+        let new_node = builder.build().unwrap();
 
-        assert_eq!(chunked_node.parent_id(), Some(original_node.id()));
-
-        assert_eq!(original_node.parent_id(), None);
-
-        assert_eq!(original_node.chunk, chunked_node.chunk);
-        assert_eq!(original_node.path, chunked_node.path);
-        assert_eq!(original_node.metadata, chunked_node.metadata);
-        assert_eq!(original_node.vectors, chunked_node.vectors);
-        assert_eq!(original_node.sparse_vectors, chunked_node.sparse_vectors);
-        assert_eq!(original_node.embed_mode, chunked_node.embed_mode);
-        assert_eq!(original_node.original_size, chunked_node.original_size);
-        assert_eq!(original_node.offset, chunked_node.offset);
+        assert_eq!(original_node, new_node);
     }
 
     #[test]
@@ -384,20 +365,9 @@ mod tests {
             .with_sparse_vectors(sparse_vectors.clone())
             .to_owned();
 
-        let builder = Node::chunking_from(&original_node);
-        let chunked_node = builder.build().unwrap();
+        let builder = Node::build_from_other(&original_node);
+        let new_node = builder.build().unwrap();
 
-        assert_eq!(chunked_node.parent_id(), Some(original_node.id()));
-
-        assert_eq!(original_node.parent_id(), None);
-
-        assert_eq!(original_node.chunk, chunked_node.chunk);
-        assert_eq!(original_node.path, chunked_node.path);
-        assert_eq!(original_node.metadata, chunked_node.metadata);
-        assert_eq!(original_node.vectors, chunked_node.vectors);
-        assert_eq!(original_node.sparse_vectors, chunked_node.sparse_vectors);
-        assert_eq!(original_node.embed_mode, chunked_node.embed_mode);
-        assert_eq!(original_node.original_size, chunked_node.original_size);
-        assert_eq!(original_node.offset, chunked_node.offset);
+        assert_eq!(original_node, new_node);
     }
 }
