@@ -10,7 +10,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 use tokio::{
-    sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore},
+    sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore, mpsc::channel},
     task::yield_now,
 };
 use tokio_util::sync::CancellationToken;
@@ -18,15 +18,16 @@ use tracing::{Instrument as _, info_span};
 
 use crate::{StopReason, errors::AgentError};
 
-use super::{TaskError, running_agent::RunningAgent};
+use super::{Task, TaskError, TaskState, running_agent::RunningAgent, step::Step};
 
 #[async_trait]
 pub trait Backend: Clone + Send + Sync + 'static {
     type Error: std::error::Error;
 
-    async fn spawn_agent(
+    async fn invoke<S: TaskState>(
         &self,
-        agent: RunningAgent,
+        step: Step<Self, S>,
+        task: Task<Self, S>,
         maybe_instructions: Option<&str>,
     ) -> CancellationToken;
     async fn join_all(&self) -> Result<(), Self::Error>;
@@ -45,7 +46,9 @@ pub struct DefaultBackend {
     notify: Arc<Notify>,
     semaphore: Arc<Semaphore>, // cap on concurrent agents
     cancel_token: CancellationToken,
-    first_error: Arc<Mutex<Option<AgentError>>>,
+    first_error: Arc<Mutex<Option<TaskError>>>,
+    // work_rx: Option<tokio::sync::mpsc::Receiver<Step<Self, S>>>,
+    // work_tx: tokio::sync::mpsc::Sender<Step<Self, S>>,
 }
 
 impl DefaultBackend {
@@ -82,19 +85,14 @@ impl Backend for DefaultBackend {
     /// Returns a cancellation token that can be used to cancel the agent.
     ///
     /// Note that if the backend drops or is aborted, all agents are cancelled.
-    #[tracing::instrument(skip(self, agent, instructions))]
-    async fn spawn_agent(
+    #[tracing::instrument(skip(self, step, instructions))]
+    async fn invoke<S: TaskState>(
         &self,
-        agent: RunningAgent,
+        step: Step<Self, S>,
+        task: Task<Self, S>,
         instructions: Option<&str>,
     ) -> CancellationToken {
         // 1) Acquire one permit (awaits if we're already at max_concurrent).
-        let permit: OwnedSemaphorePermit = self
-            .semaphore
-            .clone()
-            .acquire_owned()
-            .await
-            .expect("Semaphore closed");
 
         // 2) Bump the “outstanding” counter.
         self.outstanding.fetch_add(1, Ordering::SeqCst);
@@ -106,11 +104,17 @@ impl Backend for DefaultBackend {
         let instructions = instructions.map(str::to_string);
         let agent_cancel_token = cancel_token.clone();
         let first_error = self.first_error.clone();
+        let semaphore = self.semaphore.clone();
 
         // 4) Spawn the real work, moving in the permit so it isn’t released until the future
         //    completes or is aborted.
-        let agent_span =
-            info_span!("agent", "otel.name" = format!("agent.{}", agent.name())).or_current();
+        // TODO: Span can be better
+
+        let permit = semaphore
+            .clone()
+            .acquire_owned()
+            .await
+            .expect("Semaphore closed");
 
         tokio::spawn(async move {
             // hold permit until this async block finishes:
@@ -118,24 +122,34 @@ impl Backend for DefaultBackend {
 
             // run the agent, but allow aborts
             let work = async {
-                let mut lock = agent.lock().await;
-                lock.run_agent(instructions, false)
-                    .instrument(agent_span)
-                    .await
+                match &step {
+                    Step::Agent(agent) => {
+                        let mut lock = agent.lock().await;
+                        lock.run_agent(instructions, false)
+                            .await
+                            .map_err(TaskError::from)
+                    }
+                    Step::StepFn(step_fn) => step_fn(&task).await,
+                }
             };
 
             tokio::select! {
                 biased;
                 () = agent_cancel_token.cancelled() => {
                     // TODO: Verify I don't deadlock
-                    let mut lock = agent.lock().await;
-                    lock.stop(StopReason::TaskAborted).await;
+                    if let Some(agent) = step.as_agent() {
+                        // If the agent is running, stop it with an abort reason.
+                        // This will also release the permit.
+                        // If the agent is not running, this is a no-op.
+                        let mut lock = agent.lock().await;
+                        lock.stop(StopReason::TaskAborted).await;
+                        tracing::warn!("Agent {} aborted", agent.name());
+                    }
 
-                    tracing::warn!("Agent {} aborted", agent.name());
                 }
                 result = work => {
                     match result {
-                        Ok(()) => tracing::info!("Agent {} completed", agent.name()),
+                        Ok(()) => tracing::info!("Step completed"),
                         Err(e)  => { first_error.lock().await.replace(e); },
                     }
                 }
@@ -156,7 +170,7 @@ impl Backend for DefaultBackend {
             yield_now().await;
 
             if let Some(e) = { self.first_error.lock().await.take() } {
-                return Err(TaskError::AgentError(e));
+                return Err(e);
             }
 
             if self.outstanding.load(Ordering::SeqCst) == 0 {
@@ -172,7 +186,7 @@ impl Backend for DefaultBackend {
     async fn join_next(&self) -> Result<(), Self::Error> {
         // If there already is an error, return it immediately.
         if let Some(e) = self.first_error.lock().await.take() {
-            return Err(TaskError::AgentError(e));
+            return Err(e);
         }
 
         if self.outstanding.load(Ordering::SeqCst) == 0 {
@@ -183,7 +197,7 @@ impl Backend for DefaultBackend {
 
         // If the last notification was due to an error, return it.
         if let Some(e) = self.first_error.lock().await.take() {
-            return Err(TaskError::AgentError(e));
+            return Err(e);
         }
 
         Ok(())
