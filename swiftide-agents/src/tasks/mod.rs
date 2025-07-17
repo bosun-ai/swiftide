@@ -8,7 +8,6 @@ mod task_completed_tool;
 
 pub use action::Action;
 pub use task::*;
-pub mod step;
 
 pub mod tools {
     pub use super::delegate_tool::*;
