@@ -49,6 +49,20 @@ impl Default for SystemPrompt {
 }
 
 impl SystemPromptBuilder {
+    pub fn add_guideline(&mut self, guideline: &str) -> &mut Self {
+        self.guidelines
+            .get_or_insert_with(Vec::new)
+            .push(guideline.to_string());
+        self
+    }
+
+    pub fn add_constraint(&mut self, constraint: &str) -> &mut Self {
+        self.constraints
+            .get_or_insert_with(Vec::new)
+            .push(constraint.to_string());
+        self
+    }
+
     pub fn guidelines<T: IntoIterator<Item = S>, S: AsRef<str>>(
         &mut self,
         guidelines: T,

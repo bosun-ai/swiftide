@@ -14,8 +14,6 @@ homepage.workspace = true
 proc-macro = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core/", version = "0.28.1" }
-
 quote = { workspace = true }
 syn = { workspace = true }
 darling = { workspace = true }
@@ -35,6 +33,7 @@ trybuild = "1.0"
 prettyplease = "0.2.25"
 insta.workspace = true
 swiftide = { path = "../swiftide/" }
+swiftide-core = { path = "../swiftide-core/" }
 tokio = { workspace = true, features = ["full"] }
 
 [lints]

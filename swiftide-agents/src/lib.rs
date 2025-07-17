@@ -55,12 +55,14 @@ pub mod errors;
 pub mod hooks;
 mod state;
 pub mod system_prompt;
+pub mod tasks;
 pub mod tools;
 mod util;
 
 pub use agent::{Agent, AgentBuilder, AgentBuilderError};
 pub use default_context::DefaultContext;
 pub use state::{State, StopReason};
+pub use tasks::*;
 
-#[cfg(test)]
-mod test_utils;
+#[cfg(any(test, debug_assertions))]
+pub mod test_utils;
