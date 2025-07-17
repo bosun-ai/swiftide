@@ -31,35 +31,32 @@ use tokio::sync::RwLock;
 use super::action::{Action, ActionError};
 use super::backend::{Backend, DefaultBackend};
 use super::running_agent::RunningAgent;
-use super::step::Step;
 
 /// Marker (for now) trait for a mutable state that agents and hooks can use to progress the task.
 ///
 /// A task state must always be owned.
-pub trait TaskState: Send + Sync + Clone + std::fmt::Debug + 'static {}
+pub trait TaskState: Send + Sync + Clone + 'static {}
 
 /// Implementations for some common types
 ///
 /// Allow everything that is `Send + Sync + Clone + 'static` to be used as a task state.
-impl<T> TaskState for T where T: Send + Sync + Clone + std::fmt::Debug + 'static {}
+impl<T> TaskState for T where T: Send + Sync + Clone + 'static {}
 
 #[derive(Builder, Clone, Debug)]
 #[builder(build_fn(skip, error = TaskBuilderError))]
 pub struct Task<B: Backend = DefaultBackend, S: TaskState = ()> {
-    #[builder(field(ty = "Option<Vec<Step<B,S>>>"), setter(custom))]
-    pub(crate) steps: Arc<Vec<Step<B,S>>>,
-    // #[builder(field(ty = "Option<Vec<RunningAgent>>"), setter(custom))]
-    // agents: Arc<RwLock<Vec<RunningAgent>>>,
-    // #[builder(field(ty = "Option<Vec<Action>>"), setter(custom))]
-    // actions: Arc<Vec<Action>>,
-    // #[builder(setter(custom))]
-    // starts_with: Arc<String>,
-    current_step: Arc<AtomicUsize>,
+    #[builder(field(ty = "Option<Vec<RunningAgent>>"), setter(custom))]
+    agents: Arc<RwLock<Vec<RunningAgent>>>,
+    #[builder(field(ty = "Option<Vec<Action>>"), setter(custom))]
+    actions: Arc<Vec<Action>>,
+    #[builder(setter(custom))]
+    starts_with: Arc<String>,
 
     #[builder(setter(custom))]
     state: S,
-    // #[builder(private, default)]
-    // current_agent: Arc<AtomicUsize>,
+    #[builder(private, default)]
+    current_agent: Arc<AtomicUsize>,
+
     #[builder(setter(custom))]
     backend: B,
 }
@@ -86,99 +83,79 @@ impl<B: Backend, S: TaskState> TaskBuilder<B, S> {
     #[must_use]
     pub fn backend<N: Backend>(self, backend: N) -> TaskBuilder<N, S> {
         TaskBuilder {
-            // agents: self.agents,
-            // actions: self.actions,
-            // starts_with: self.starts_with,
-            // current_agent: self.current_agent,
+            agents: self.agents,
+            actions: self.actions,
+            starts_with: self.starts_with,
             state: self.state,
+            current_agent: self.current_agent,
             backend: Some(backend),
-            steps: self.steps,
-            current_step: self.current_step,
         }
     }
 
     #[must_use]
     pub fn state<N: TaskState>(self, state: N) -> TaskBuilder<B, N> {
         TaskBuilder {
-            // agents: self.agents,
-            // actions: self.actions,
-            // starts_with: self.starts_with,
-            // current_agent: self.current_agent,
+            agents: self.agents,
+            actions: self.actions,
+            starts_with: self.starts_with,
             state: Some(state),
+            current_agent: self.current_agent,
             backend: self.backend,
-            steps: self.steps,
-            current_step: self.current_step,
         }
     }
 
-    pub fn steps<I, STEP>(&mut self, steps: I) -> &mut Self
-    where
-        I: IntoIterator<Item = STEP>,
-        STEP: Into<Step<B,S>>,
-    {
-        self.steps
+    pub fn with(&mut self, action: impl Into<Action>) -> &mut Self {
+        self.actions
             .get_or_insert_with(Vec::new)
-            .extend(steps.into_iter().map(Into::into));
+            .push(action.into());
         self
     }
 
-    pub fn step(&mut self, step: impl Into<Step<B,S>>) -> &mut Self {
-        self.steps.get_or_insert_with(Vec::new).push(step.into());
+    pub fn actions<I, ACTION>(&mut self, actions: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ACTION>,
+        ACTION: Into<Action>,
+    {
+        self.actions
+            .get_or_insert_with(Vec::new)
+            .extend(actions.into_iter().map(Into::into));
         self
     }
 
-    // pub fn with(&mut self, action: impl Into<Action>) -> &mut Self {
-    //     self.actions
-    //         .get_or_insert_with(Vec::new)
-    //         .push(action.into());
-    //     self
-    // }
+    pub fn starts_with(&mut self, starts_with: impl Into<String>) -> &mut Self {
+        self.starts_with = Some(Arc::new(starts_with.into()));
+        self
+    }
 
-    // pub fn actions<I, ACTION>(&mut self, actions: I) -> &mut Self
-    // where
-    //     I: IntoIterator<Item = ACTION>,
-    //     ACTION: Into<Action>,
-    // {
-    //     self.actions
-    //         .get_or_insert_with(Vec::new)
-    //         .extend(actions.into_iter().map(Into::into));
-    //     self
-    // }
-
-    // pub fn starts_with(&mut self, starts_with: impl Into<String>) -> &mut Self {
-    //     self.starts_with = Some(Arc::new(starts_with.into()));
-    //     self
-    // }
-
-    // pub fn agents<I, AGENT>(&mut self, agents: I) -> &mut Self
-    // where
-    //     I: IntoIterator<Item = AGENT>,
-    //     AGENT: Into<RunningAgent>,
-    // {
-    //     self.agents
-    //         .get_or_insert_with(Vec::new)
-    //         .extend(agents.into_iter().map(Into::into));
-    //     self
-    // }
+    pub fn agents<I, AGENT>(&mut self, agents: I) -> &mut Self
+    where
+        I: IntoIterator<Item = AGENT>,
+        AGENT: Into<RunningAgent>,
+    {
+        self.agents
+            .get_or_insert_with(Vec::new)
+            .extend(agents.into_iter().map(Into::into));
+        self
+    }
 
     pub async fn build(&mut self) -> Result<Task<B, S>, TaskBuilderError> {
         // TODO: Validate that all names are unique
-        // let agents = self
-        //     .agents
-        //     .take()
-        //     .ok_or(TaskBuilderError::UninitializedField("agents"))?;
-        //
-        // let starts_with = self
-        //     .starts_with
-        //     .take()
-        //     .ok_or(TaskBuilderError::UninitializedField("starts_with"))?;
-        //
-        // let current_agent = agents
-        //     .iter()
-        //     .position(|agent| agent.name() == starts_with.as_str())
-        //     .ok_or(TaskBuilderError::ValidationError(
-        //         "Could not find starting agent in agents".to_string(),
-        //     ))?;
+        let agents = self
+            .agents
+            .take()
+            .ok_or(TaskBuilderError::UninitializedField("agents"))?;
+
+        let starts_with = self
+            .starts_with
+            .take()
+            .ok_or(TaskBuilderError::UninitializedField("starts_with"))?;
+
+        let current_agent = agents
+            .iter()
+            .position(|agent| agent.name() == starts_with.as_str())
+            .ok_or(TaskBuilderError::ValidationError(
+                "Could not find starting agent in agents".to_string(),
+            ))?;
 
         let state = self
             .state
@@ -190,28 +167,20 @@ impl<B: Backend, S: TaskState> TaskBuilder<B, S> {
             .take()
             .ok_or(TaskBuilderError::UninitializedField("backend"))?;
 
-        let steps: Arc<Vec<Step<B,S>>> = self
-            .steps
-            .take()
-            .ok_or(TaskBuilderError::UninitializedField("steps"))?
-            .into();
-
         let task = Task {
-            // agents: Arc::new(RwLock::new(agents)),
-            // actions: Arc::new(self.actions.clone().unwrap_or_default()),
-            // current_agent: Arc::new(current_agent.into()),
-            // starts_with,
-            steps,
-            current_step: Arc::new(AtomicUsize::new(0)),
+            agents: Arc::new(RwLock::new(agents)),
+            actions: Arc::new(self.actions.clone().unwrap_or_default()),
+            current_agent: Arc::new(current_agent.into()),
+            starts_with,
             state,
             backend,
         };
 
-        // if let Some(actions) = self.actions.take() {
-        //     for action in actions {
-        //         action.apply(&task).await?;
-        //     }
-        // }
+        if let Some(actions) = self.actions.take() {
+            for action in actions {
+                action.apply(&task).await?;
+            }
+        }
         Ok(task)
     }
 }
@@ -249,7 +218,7 @@ impl<B: Backend, S: TaskState> Task<B, S> {
     #[tracing::instrument(skip(self), err)]
     pub async fn query(&self, instructions: &str) -> Result<(), TaskError> {
         self.backend
-            .spawn_agent(self.current_step().await?, Some(instructions))
+            .spawn_agent(self.current_agent().await?, Some(instructions))
             .await;
 
         Ok(())
@@ -283,15 +252,15 @@ impl<B: Backend, S: TaskState> Task<B, S> {
         self.backend.abort().await;
     }
 
-    // #[tracing::instrument(skip(self))]
-    // pub async fn current_agent(&self) -> Result<RunningAgent, TaskError> {
-    //     let current_index = self.current_agent.load(atomic::Ordering::Relaxed);
-    //     let agents = self.agents.read().await;
-    //     agents
-    //         .get(current_index)
-    //         .cloned()
-    //         .ok_or(TaskError::NoActiveAgent)
-    // }
+    #[tracing::instrument(skip(self))]
+    pub async fn current_agent(&self) -> Result<RunningAgent, TaskError> {
+        let current_index = self.current_agent.load(atomic::Ordering::Relaxed);
+        let agents = self.agents.read().await;
+        agents
+            .get(current_index)
+            .cloned()
+            .ok_or(TaskError::NoActiveAgent)
+    }
 
     #[tracing::instrument(skip(self))]
     /// Returns the number of agents that are currently running
@@ -299,37 +268,26 @@ impl<B: Backend, S: TaskState> Task<B, S> {
         self.backend.outstanding()
     }
 
-    pub fn current_step(&self) -> &Step<B,S> {
-        self.steps
-            .get(self.current_step.load(atomic::Ordering::Relaxed))
-            .expect("Current step index is out of bounds; this is a bug")
-    }
+    #[tracing::instrument(skip(self))]
+    pub(crate) async fn switch_to_agent(&self, agent: &RunningAgent) -> Result<(), TaskError> {
+        let locked_agents = self.agents.write().await;
+        let agent_index = locked_agents
+            .iter()
+            .position(|a| a == agent)
+            .ok_or(TaskError::NoActiveAgent)?;
 
-    pub fn next_step(&self) -> Option<&Step<B,S>> {
-        let next_index = self.current_step.load(atomic::Ordering::Relaxed) + 1;
-        self.steps.get(next_index)
+        self.current_agent
+            .store(agent_index, atomic::Ordering::Relaxed);
+        Ok(())
     }
-
-    // #[tracing::instrument(skip(self))]
-    // pub(crate) async fn switch_to_agent(&self, agent: &RunningAgent) -> Result<(), TaskError> {
-    //     let locked_agents = self.agents.write().await;
-    //     let agent_index = locked_agents
-    //         .iter()
-    //         .position(|a| a == agent)
-    //         .ok_or(TaskError::NoActiveAgent)?;
-    //
-    //     self.current_agent
-    //         .store(agent_index, atomic::Ordering::Relaxed);
-    //     Ok(())
-    // }
 
     /// Find an agent by name
-    // pub(crate) async fn find_agent(&self, name: &str) -> Option<RunningAgent> {
-    //     self.agents
-    //         .read()
-    //         .await
-    //         .iter()
-    //         .find(|agent| agent.name() == name)
-    //         .cloned()
-    // }
+    pub(crate) async fn find_agent(&self, name: &str) -> Option<RunningAgent> {
+        self.agents
+            .read()
+            .await
+            .iter()
+            .find(|agent| agent.name() == name)
+            .cloned()
+    }
 }
