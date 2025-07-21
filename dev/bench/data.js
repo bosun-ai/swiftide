@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1752054768890,
+  "lastUpdate": 1753098363452,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24395,6 +24395,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 334566,
             "range": "± 6825",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "a70840b4dca983bd23b54f1f7cf12b33d60b733c",
+          "message": "feat(openai): Add helper to set the end user field for requests",
+          "timestamp": "2025-07-21T13:36:51+02:00",
+          "tree_id": "821378d575f52566bceafde1c508d3f7faf39373",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a70840b4dca983bd23b54f1f7cf12b33d60b733c"
+        },
+        "date": 1753098362078,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 852057,
+            "range": "± 18311",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 334131,
+            "range": "± 7888",
             "unit": "ns/iter"
           }
         ]
