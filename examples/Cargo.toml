@@ -151,3 +151,7 @@ path = "agents_with_human_in_the_loop.rs"
 [[example]]
 name = "usage-metrics"
 path = "usage_metrics.rs"
+
+[[example]]
+name = "tasks"
+path = "tasks.rs"

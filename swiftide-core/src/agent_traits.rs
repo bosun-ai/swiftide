@@ -9,6 +9,7 @@ use crate::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -24,7 +25,7 @@ use thiserror::Error;
 ///
 /// Additionally, the executor can be used stream files files for indexing.
 #[async_trait]
-pub trait ToolExecutor: Send + Sync {
+pub trait ToolExecutor: Send + Sync + DynClone {
     /// Execute a command in the executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
@@ -35,6 +36,8 @@ pub trait ToolExecutor: Send + Sync {
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream>;
 }
+
+dyn_clone::clone_trait_object!(ToolExecutor);
 
 #[async_trait]
 impl<T: ToolExecutor> ToolExecutor for &T {
