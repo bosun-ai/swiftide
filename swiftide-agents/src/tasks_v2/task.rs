@@ -43,17 +43,15 @@ impl<
     }
 
     // // unused
-    // pub fn done_node_id(&self) -> NodeId<NoopNode<Output, E>> {
-    //     NodeId {
-    //         id: 0,
-    //         _marker: std::marker::PhantomData,
-    //     }
-    // }
-    //
-    // // unused
-    // pub fn set_start_node<T: TaskNode<Input = Input> + 'static>(&mut self, node_id: NodeId<T>) {
-    //     self.start_node = node_id.id;
-    // }
+    // TODO: We can make the api nicer
+    pub fn done_node_id(&self) -> NodeId<NoopNode<Output, E>> {
+        NodeId::new(0, &NoopNode::<Output, E>::default())
+    }
+
+    // TODO: We can make the api nicer
+    pub fn set_start_node<T: TaskNode<Input = Input> + 'static>(&mut self, node_id: &NodeId<T>) {
+        self.start_node = node_id.id;
+    }
 
     fn validate_transitions(&self) -> Result<(), TaskError> {
         for node_executor in &self.nodes {
@@ -111,7 +109,7 @@ impl<
     >(
         &mut self,
         from: &NodeId<From>,
-        transition: Box<dyn Fn(&From::Output) -> NodeId<To> + Send + Sync>,
+        transition: impl Fn(&From::Output) -> NodeId<To> + Send + Sync + 'static,
     ) {
         let node_executor = self
             .nodes

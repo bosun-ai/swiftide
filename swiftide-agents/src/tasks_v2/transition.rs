@@ -31,7 +31,7 @@ impl TransitionPayload {
 }
 
 #[async_trait]
-pub trait AnyNodeTransition: Any + Send + Sync {
+pub(crate) trait AnyNodeTransition: Any + Send + Sync {
     fn transition_is_set(&self) -> bool;
 
     async fn evaluate(&self, context: Box<dyn Any + Send>) -> Result<TransitionPayload, NodeError>;
