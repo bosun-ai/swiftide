@@ -131,17 +131,3 @@ impl<I: NodeArg, O: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskN
         (self)(input)
     }
 }
-
-// #[async_trait]
-// impl<T: ChatCompletion> TaskNode for T {
-//     type Input = ChatCompletionRequest;
-//
-//     type Output = ChatCompletionResponse;
-//
-//     type Error = LanguageModelError;
-//
-//     async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
-//         // TODO: Prompt should be borrowed
-//         self.complete(input.clone()).await
-//     }
-// }

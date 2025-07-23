@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use super::transition::TransitionPayload;
 
 #[derive(thiserror::Error, Debug)]
@@ -7,11 +9,25 @@ pub enum TaskError {
 
     #[error("MissingTransition: {0}")]
     MissingTransition(String),
+
+    #[error("MissingNode: {0}")]
+    MissingNode(String),
+
+    #[error("Task failed with wrong output: {0:?}")]
+    TypeError(Box<dyn Any>),
 }
 
 impl TaskError {
     pub fn missing_transition(node_id: usize) -> Self {
         TaskError::MissingTransition(format!("Node {node_id} is missing a transition"))
+    }
+
+    pub fn missing_node(node_id: usize) -> Self {
+        TaskError::MissingNode(format!("Node {node_id} is missing"))
+    }
+
+    pub fn type_error<T: Any>(output: T) -> Self {
+        TaskError::TypeError(Box::new(output))
     }
 }
 

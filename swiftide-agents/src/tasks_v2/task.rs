@@ -32,8 +32,8 @@ impl<
         let noop_executor = Box::new(Transition {
             node: Box::new(noop),
             node_id,
-            transition_fn: Box::new(|_output| unreachable!("Done node should never be evaluated.")),
-            transition_is_set: false,
+            r#fn: Box::new(|_output| unreachable!("Done node should never be evaluated.")),
+            is_set: false,
         });
         Self {
             nodes: vec![noop_executor],
@@ -48,7 +48,7 @@ impl<
         NodeId::new(0, &NoopNode::<Output, E>::default())
     }
 
-    // TODO: We can make the api nicer
+    // TODO: We can make the api nicer, i.e. default to the first node added
     pub fn set_start_node<T: TaskNode<Input = Input> + 'static>(&mut self, node_id: &NodeId<T>) {
         self.start_node = node_id.id;
     }
@@ -77,14 +77,21 @@ impl<
             if node_id == 0 {
                 break;
             }
-            let node_executor = self.nodes.get(node_id).expect("Node not found");
+            let node_executor = self
+                .nodes
+                .get(node_id)
+                .ok_or_else(|| TaskError::missing_node(node_id))?;
             let transition = node_executor.evaluate(input).await?;
 
             node_id = transition.node_id;
             input = transition.context;
         }
 
-        Ok(*input.downcast::<Output>().unwrap())
+        let output = *input
+            .downcast::<Output>()
+            .map_err(|e| TaskError::TypeError(e))?;
+
+        Ok(output)
     }
 
     pub fn register_node<T: TaskNode + 'static>(&mut self, node: T) -> NodeId<T> {
@@ -93,10 +100,8 @@ impl<
         let node_executor = Box::new(Transition::<T> {
             node_id: node_id.clone(),
             node: Box::new(node),
-            transition_fn: Box::new(move |_output| {
-                unreachable!("No transition for node {}.", node_id.id)
-            }),
-            transition_is_set: false,
+            r#fn: Box::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
+            is_set: false,
         });
         self.nodes.push(node_executor);
 
@@ -110,15 +115,20 @@ impl<
         &mut self,
         from: &NodeId<From>,
         transition: impl Fn(&From::Output) -> NodeId<To> + Send + Sync + 'static,
-    ) {
+    ) -> Result<(), TaskError> {
         let node_executor = self
             .nodes
             .get_mut(from.id)
-            .expect("Impossible transition for node not in workflow.");
+            .ok_or_else(|| TaskError::missing_node(from.id))?;
 
         let any_executor: &mut dyn Any = node_executor.as_mut();
         //
-        let node_executor = any_executor.downcast_mut::<Transition<From>>().unwrap();
+        let Some(node_executor) = any_executor.downcast_mut::<Transition<From>>() else {
+            unreachable!(
+                "Node executor at index {} is not a Transition<From>; Mismatched types, should not never happen.",
+                from.id
+            );
+        };
 
         let wrapped = move |output: From::Output| {
             let next_node = transition(&output);
@@ -126,7 +136,9 @@ impl<
             TransitionPayload::new(&next_node, output)
         };
 
-        node_executor.transition_fn = Box::new(wrapped);
-        node_executor.transition_is_set = true;
+        node_executor.r#fn = Box::new(wrapped);
+        node_executor.is_set = true;
+
+        Ok(())
     }
 }

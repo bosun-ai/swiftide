@@ -10,12 +10,12 @@ use super::{
 pub(crate) struct Transition<T: TaskNode> {
     pub(crate) node: Box<dyn TaskNode<Input = T::Input, Output = T::Output, Error = T::Error>>,
     pub(crate) node_id: NodeId<T>,
-    pub(crate) transition_fn: Box<dyn Fn(T::Output) -> TransitionPayload + Send + Sync>,
-    pub(crate) transition_is_set: bool,
+    pub(crate) r#fn: Box<dyn Fn(T::Output) -> TransitionPayload + Send + Sync>,
+    pub(crate) is_set: bool,
 }
 
 #[derive(Debug)]
-pub(crate) struct TransitionPayload {
+pub struct TransitionPayload {
     // If we make this an enum instead, we can support spawning many nodes as well
     pub(crate) node_id: usize,
     pub(crate) context: Box<dyn Any + Send>,
@@ -39,28 +39,19 @@ pub(crate) trait AnyNodeTransition: Any + Send + Sync {
     fn node_id(&self) -> usize;
 }
 
-// The implementation of AnyPassthroughNodeExecutor for PassthroughNodeExecutor
-// enforces that the context is of type Input and guarantees that the output wrapped
-// in the transition payload is of type Output.
 #[async_trait]
 impl<T: TaskNode + 'static> AnyNodeTransition for Transition<T> {
     async fn evaluate(&self, context: Box<dyn Any + Send>) -> Result<TransitionPayload, NodeError> {
         let context = context.downcast::<T::Input>().unwrap();
 
         match self.node.evaluate(&context).await {
-            Ok(output) => Ok((self.transition_fn)(output)),
-            Err(error) => Err(NodeError::new(error, 0, None)), // node_id will be set by caller
+            Ok(output) => Ok((self.r#fn)(output)),
+            Err(error) => Err(NodeError::new(error, self.node_id.id, None)), // node_id will be set by caller
         }
-        // match self.evaluate(*context).await {
-        //     Ok(payload) => Ok(payload),
-        //     Err(workflow_error) => {
-        //         Err(Box::new(workflow_error.node_error) as Box<dyn std::error::Error + Send + Sync>)
-        //     }
-        // }
     }
 
     fn transition_is_set(&self) -> bool {
-        self.transition_is_set
+        self.is_set
     }
 
     fn node_id(&self) -> usize {
