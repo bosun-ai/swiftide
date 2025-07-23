@@ -2,55 +2,50 @@ use std::any::Any;
 
 use super::{
     errors::TaskError,
+    impls::TaskAgent,
     node::{NodeArg, NodeId, NoopNode, TaskNode},
-    transition::{AnyNodeTransition, Transition, TransitionPayload},
+    transition::{AnyNodeTransition, MarkedTransitionPayload, Transition, TransitionPayload},
 };
 
-pub struct Task<Input: NodeArg, Output: NodeArg, E: std::error::Error + Send + Sync> {
+pub struct Task<Input: NodeArg, Output: NodeArg> {
     nodes: Vec<Box<dyn AnyNodeTransition>>,
-    start_node: usize,
-    _marker: std::marker::PhantomData<(Input, Output, E)>,
+    current_node: usize,
+    current_context: Option<Box<dyn Any + Send + Sync>>,
+    _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
-impl Default for Task<(), (), std::convert::Infallible> {
-    fn default() -> Self {
-        Task::new()
-    }
-}
-
-impl<
-    Input: NodeArg + 'static,
-    Output: NodeArg + 'static,
-    E: std::error::Error + Send + Sync + 'static,
-> Task<Input, Output, E>
-{
+impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Output> {
     pub fn new() -> Self {
-        let noop = NoopNode::<Output, E>::default();
+        let noop = NoopNode::<Output>::default();
 
         let node_id = NodeId::new(0, &noop);
 
         let noop_executor = Box::new(Transition {
-            node: Box::new(noop),
+            node: noop,
             node_id,
             r#fn: Box::new(|_output| unreachable!("Done node should never be evaluated.")),
             is_set: false,
         });
         Self {
             nodes: vec![noop_executor],
-            start_node: 0,
+            current_node: 0,
+            current_context: None,
             _marker: std::marker::PhantomData,
         }
     }
 
     // // unused
     // TODO: We can make the api nicer
-    pub fn done_node_id(&self) -> NodeId<NoopNode<Output, E>> {
-        NodeId::new(0, &NoopNode::<Output, E>::default())
+    pub fn done(&self) -> NodeId<NoopNode<()>> {
+        NodeId::new(0, &NoopNode::<()>::default())
     }
 
     // TODO: We can make the api nicer, i.e. default to the first node added
-    pub fn set_start_node<T: TaskNode<Input = Input> + 'static>(&mut self, node_id: &NodeId<T>) {
-        self.start_node = node_id.id;
+    pub fn set_start_node<T: TaskNode<Input = Input> + Clone + 'static>(
+        &mut self,
+        node_id: NodeId<T>,
+    ) {
+        self.current_node = node_id.id;
     }
 
     fn validate_transitions(&self) -> Result<(), TaskError> {
@@ -67,39 +62,67 @@ impl<
         Ok(())
     }
 
-    pub async fn run(&self, input: Input) -> Result<Output, TaskError> {
+    pub async fn run(&mut self, input: impl Into<Input>) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
 
-        let mut node_id = self.start_node;
-        let mut input = Box::new(input) as Box<dyn Any + Send>;
+        self.current_context = Some(Box::new(input.into()) as Box<dyn Any + Send + Sync>);
 
-        loop {
-            if node_id == 0 {
-                break;
-            }
-            let node_executor = self
-                .nodes
-                .get(node_id)
-                .ok_or_else(|| TaskError::missing_node(node_id))?;
-            let transition = node_executor.evaluate(input).await?;
-
-            node_id = transition.node_id;
-            input = transition.context;
-        }
-
-        let output = *input
-            .downcast::<Output>()
-            .map_err(|e| TaskError::TypeError(e))?;
-
-        Ok(output)
+        self.resume().await
     }
 
-    pub fn register_node<T: TaskNode + 'static>(&mut self, node: T) -> NodeId<T> {
+    pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
+        self.validate_transitions()?;
+
+        loop {
+            if self.current_node == 0 {
+                break;
+            }
+            let node_transition = self
+                .nodes
+                .get(self.current_node)
+                .ok_or_else(|| TaskError::missing_node(self.current_node))?;
+
+            let input = self
+                .current_context
+                .take()
+                .ok_or_else(|| TaskError::missing_input(self.current_node))?;
+
+            let transition_payload = node_transition.evaluate_next(input).await?;
+
+            match transition_payload {
+                TransitionPayload::Pause => {
+                    tracing::info!("Task paused at node {}", self.current_node);
+                    return Ok(None);
+                }
+                TransitionPayload::NextNode(transition_payload) => {
+                    self.current_node = transition_payload.node_id;
+                    self.current_context = Some(transition_payload.context);
+                }
+            }
+        }
+
+        let output = self
+            .current_context
+            .take()
+            .ok_or_else(|| TaskError::missing_output(self.current_node))?;
+        let output = *output.downcast::<Output>().map_err(TaskError::type_error)?;
+
+        Ok(Some(output))
+    }
+
+    pub async fn current_agent(&self) -> Option<TaskAgent> {
+        self.nodes
+            .get(self.current_node)
+            .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<TaskAgent>>())
+            .map(|transition| transition.node.clone())
+    }
+
+    pub fn register_node<T: TaskNode + Clone + 'static>(&mut self, node: T) -> NodeId<T> {
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
         let node_executor = Box::new(Transition::<T> {
             node_id: node_id.clone(),
-            node: Box::new(node),
+            node,
             r#fn: Box::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
             is_set: false,
         });
@@ -109,12 +132,12 @@ impl<
     }
 
     pub fn register_transition<
-        From: TaskNode + 'static,
-        To: TaskNode<Input = From::Output> + 'static,
+        From: TaskNode + Clone + 'static,
+        To: TaskNode<Input = From::Output> + Clone + 'static,
     >(
         &mut self,
-        from: &NodeId<From>,
-        transition: impl Fn(&From::Output) -> NodeId<To> + Send + Sync + 'static,
+        from: NodeId<From>,
+        transition: impl Fn(To::Input) -> MarkedTransitionPayload<To> + Send + Sync + 'static,
     ) -> Result<(), TaskError> {
         let node_executor = self
             .nodes
@@ -131,9 +154,8 @@ impl<
         };
 
         let wrapped = move |output: From::Output| {
-            let next_node = transition(&output);
-
-            TransitionPayload::new(&next_node, output)
+            let payload = transition(output);
+            payload.into_inner()
         };
 
         node_executor.r#fn = Box::new(wrapped);

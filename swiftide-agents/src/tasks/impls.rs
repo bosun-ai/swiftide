@@ -12,7 +12,8 @@ use crate::{Agent, errors::AgentError};
 
 use super::node::{NodeArg, TaskNode};
 
-struct TaskAgent(Arc<Mutex<Agent>>);
+#[derive(Clone, Debug)]
+pub struct TaskAgent(Arc<Mutex<Agent>>);
 
 impl From<Agent> for TaskAgent {
     fn from(agent: Agent) -> Self {
@@ -116,7 +117,7 @@ impl TaskNode for Arc<dyn ToolExecutor> {
     }
 }
 
-// TODO: Check if concrete fn works correctly with closures as well
+// Note: This only works for function pointers, not closures.
 #[async_trait]
 impl<I: NodeArg, O: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskNode
     for fn(&I) -> Result<O, E>

@@ -1,17 +1,25 @@
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 
-pub trait NodeArg: Clone + Send + Sync + 'static {}
+use super::{
+    errors::NodeError,
+    transition::{MarkedTransitionPayload, TransitionPayload},
+};
+
+pub trait NodeArg: DynClone + Send + Sync {}
+
+dyn_clone::clone_trait_object!(NodeArg);
+
 impl<T: Clone + Send + Sync + std::fmt::Debug + 'static> NodeArg for T {}
 
-#[derive(Debug)]
-pub struct NoopNode<Context: NodeArg, E: std::error::Error + Send + Sync> {
-    _marker: std::marker::PhantomData<(Context, E)>,
+#[derive(Debug, Clone)]
+pub struct NoopNode<Context: NodeArg> {
+    _marker: std::marker::PhantomData<(Context, Box<dyn std::error::Error + Send + Sync>)>,
 }
 
-impl<Context, E> Default for NoopNode<Context, E>
+impl<Context> Default for NoopNode<Context>
 where
     Context: NodeArg,
-    E: std::error::Error + Send + Sync + 'static,
 {
     fn default() -> Self {
         NoopNode {
@@ -21,12 +29,10 @@ where
 }
 
 #[async_trait]
-impl<Context: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskNode
-    for NoopNode<Context, E>
-{
+impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
     type Output = ();
     type Input = Context;
-    type Error = E;
+    type Error = NodeError;
 
     async fn evaluate(&self, _context: &Context) -> Result<Self::Output, Self::Error> {
         Ok(())
@@ -34,7 +40,7 @@ impl<Context: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskNode
 }
 
 #[async_trait]
-pub trait TaskNode: Send + Sync {
+pub trait TaskNode: Send + Sync + DynClone {
     type Input: NodeArg;
     type Output: NodeArg;
     type Error: std::error::Error + Send + Sync + 'static;
@@ -42,26 +48,36 @@ pub trait TaskNode: Send + Sync {
     async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error>;
 }
 
+dyn_clone::clone_trait_object!(
+    TaskNode<
+        Input = dyn NodeArg,
+        Output = dyn NodeArg,
+        Error = dyn std::error::Error + Send + Sync,
+    >
+);
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct NodeId<T: TaskNode> {
     pub id: usize,
     _marker: std::marker::PhantomData<T>,
 }
 
-impl<T: TaskNode> NodeId<T> {
-    pub fn new(id: usize, node: &T) -> Self {
+impl<T: TaskNode + 'static> NodeId<T> {
+    pub fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
             _marker: std::marker::PhantomData,
         }
     }
+
+    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
+        MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
+    }
 }
 
 impl<T: TaskNode> Clone for NodeId<T> {
     fn clone(&self) -> Self {
-        NodeId {
-            id: self.id,
-            _marker: std::marker::PhantomData,
-        }
+        *self
     }
 }
+impl<T: TaskNode> Copy for NodeId<T> {}
