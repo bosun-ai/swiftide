@@ -39,7 +39,10 @@ use tracing::{Instrument, debug};
 /// - A default `stop` tool is provided for agents to explicitly stop if needed
 /// - The default `SystemPrompt` instructs the agent with chain of thought and some common
 ///   safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
-#[derive(Clone, Builder)]
+///
+///   Agents are *not* cheap to clone. However, if an agent gets cloned, it will operate on the
+///   same context.
+#[derive(Builder)]
 pub struct Agent {
     /// Hooks are functions that are called at specific points in the agent's lifecycle.
     #[builder(default, setter(into))]
@@ -118,14 +121,34 @@ pub struct Agent {
     #[builder(private, default)]
     pub(crate) tool_retries_counter: HashMap<u64, usize>,
 
-    /// Tools loaded from toolboxes
-    #[builder(private, default)]
-    pub(crate) toolbox_tools: HashSet<Box<dyn Tool>>,
+    /// The name of the agent; optional
+    #[builder(default = "unnamed_agent".into(), setter(into))]
+    pub(crate) name: String,
+}
+
+impl Clone for Agent {
+    fn clone(&self) -> Self {
+        Agent {
+            hooks: self.hooks.clone(),
+            context: Arc::new(self.context.clone()),
+            tools: self.tools.clone(),
+            toolboxes: self.toolboxes.clone(),
+            llm: self.llm.clone(),
+            system_prompt: self.system_prompt.clone(),
+            state: self.state.clone(),
+            limit: self.limit,
+            tool_retry_limit: self.tool_retry_limit,
+            tool_retries_counter: HashMap::new(),
+            streaming: self.streaming,
+            name: self.name.clone(),
+        }
+    }
 }
 
 impl std::fmt::Debug for Agent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Agent")
+            .field("name", &self.name)
             // display hooks as a list of type: number of hooks
             .field(
                 "hooks",
@@ -171,6 +194,19 @@ impl AgentBuilder {
         let hooks = self.hooks.get_or_insert_with(Vec::new);
         hooks.push(hook);
 
+        self
+    }
+
+    /// Adds a tool to the agent
+    pub fn add_tool(&mut self, tool: impl Tool + 'static) -> &mut Self {
+        self.tools = Some(
+            self.tools
+                .take()
+                .unwrap_or_default()
+                .into_iter()
+                .chain([Box::new(tool) as Box<dyn Tool>])
+                .collect(),
+        );
         self
     }
 
@@ -285,6 +321,11 @@ impl Agent {
             .to_owned()
     }
 
+    /// The name of the agent
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     /// Default tools for the agent that it always includes
     /// Right now this is the `stop` tool, which allows the agent to stop itself.
     pub fn default_tools() -> HashSet<Box<dyn Tool>> {
@@ -306,6 +347,19 @@ impl Agent {
         self.run_agent(Some(query), false).await
     }
 
+    /// Adds a tool to an agent at run time
+    pub fn add_tool(&mut self, tool: Box<dyn Tool>) {
+        self.tools.insert(tool);
+    }
+
+    /// Modify the tools of the agent at runtime
+    ///
+    /// Note that any mcp tools are added to the agent after the first start, and will only then
+    /// also be available here.
+    pub fn tools_mut(&mut self) -> &mut HashSet<Box<dyn Tool>> {
+        &mut self.tools
+    }
+
     /// Run the agent with a user message once.
     ///
     /// # Errors
@@ -313,10 +367,6 @@ impl Agent {
     /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.query_once")]
     pub async fn query_once(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
-        let query = query
-            .into()
-            .render()
-            .map_err(AgentError::FailedToRenderPrompt)?;
         self.run_agent(Some(query), true).await
     }
 
@@ -328,7 +378,7 @@ impl Agent {
     /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.run")]
     pub async fn run(&mut self) -> Result<(), AgentError> {
-        self.run_agent(None, false).await
+        self.run_agent(None::<Prompt>, false).await
     }
 
     /// Run the agent with without user message. The agent will loop completions, make tool calls,
@@ -339,7 +389,7 @@ impl Agent {
     /// Errors if anything goes wrong, see `AgentError` for more details.
     #[tracing::instrument(skip_all, name = "agent.run_once")]
     pub async fn run_once(&mut self) -> Result<(), AgentError> {
-        self.run_agent(None, true).await
+        self.run_agent(None::<Prompt>, true).await
     }
 
     /// Retrieve the message history of the agent
@@ -355,11 +405,15 @@ impl Agent {
             .map_err(AgentError::MessageHistoryError)
     }
 
-    async fn run_agent(
+    pub(crate) async fn run_agent(
         &mut self,
-        maybe_query: Option<String>,
+        maybe_query: Option<impl Into<Prompt>>,
         just_once: bool,
     ) -> Result<(), AgentError> {
+        let maybe_query = maybe_query
+            .map(|q| q.into().render())
+            .transpose()
+            .map_err(AgentError::FailedToRenderPrompt)?;
         if self.state.is_running() {
             return Err(AgentError::AlreadyRunning);
         }
@@ -555,7 +609,9 @@ impl Agent {
         }
 
         for (handle, tool_call) in handles {
-            let mut output = handle.await.map_err(AgentError::ToolFailedToJoin)?;
+            let mut output = handle
+                .await
+                .map_err(|err| AgentError::ToolFailedToJoin(tool_call.name().to_string(), err))?;
 
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
@@ -731,10 +787,8 @@ impl Agent {
                 .available_tools()
                 .await
                 .map_err(AgentError::ToolBoxFailedToLoad)?;
-            self.toolbox_tools.extend(tools);
+            self.tools.extend(tools);
         }
-
-        self.tools.extend(self.toolbox_tools.clone());
 
         Ok(())
     }

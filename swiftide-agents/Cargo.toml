@@ -29,6 +29,9 @@ fs-err = { workspace = true, features = ["tokio"] }
 thiserror.workspace = true
 futures-util.workspace = true
 tokio-stream.workspace = true
+tokio-util = { workspace = true, features = ["rt"] }
+convert_case.workspace = true
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 # Mcp
 rmcp = { workspace = true, optional = true, default-features = false, features = [
@@ -56,3 +59,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 mcp = ["dep:rmcp"]
+json-schema = ["dep:schemars", "swiftide-core/json-schema"]

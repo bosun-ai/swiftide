@@ -16,45 +16,57 @@ use crate::hooks::{
 #[macro_export]
 macro_rules! chat_request {
     ($($message:expr),+; tools = [$($tool:expr),*]) => {
-        ChatCompletionRequest::builder()
+        swiftide_core::chat_completion::ChatCompletionRequest::builder()
             .messages(vec![$($message),*])
             .tools_spec(
                 vec![$(Box::new($tool) as Box<dyn Tool>),*]
                     .into_iter()
                     .chain(Agent::default_tools())
                     .map(|tool| tool.tool_spec())
-                    .collect::<HashSet<_>>(),
+                    .collect::<std::collections::HashSet<_>>(),
             )
             .build()
             .unwrap()
     };
+    ($($message:expr),+; tool_specs = [$($tool:expr),*]) => {
+        swiftide_core::chat_completion::ChatCompletionRequest::builder()
+            .messages(vec![$($message),*])
+            .tools_spec(
+                vec![$(($tool)),*]
+                    .into_iter()
+                    .chain(Agent::default_tools().into_iter().map(|tool| tool.tool_spec()))
+                    .collect::<std::collections::HashSet<_>>(),
+            )
+            .build()
+            .unwrap()
+    }
 }
 
 #[macro_export]
 macro_rules! user {
     ($message:expr) => {
-        ChatMessage::User($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::User($message.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! system {
     ($message:expr) => {
-        ChatMessage::System($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::System($message.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! summary {
     ($message:expr) => {
-        ChatMessage::Summary($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::Summary($message.to_string())
     };
 }
 
 #[macro_export]
 macro_rules! assistant {
     ($message:expr) => {
-        ChatMessage::Assistant(Some($message.to_string()), None)
+        swiftide_core::chat_completion::ChatMessage::Assistant(Some($message.to_string()), None)
     };
     ($message:expr, [$($tool_call_name:expr),*]) => {{
         let tool_calls = vec![
@@ -113,6 +125,17 @@ macro_rules! chat_response {
             .build()
             .unwrap()
     }};
+    (tool_calls = [$($tool_name:expr),*]) => {{
+
+        let tool_calls = vec![
+            $(ToolCall::builder().name($tool_name).id("1").build().unwrap()),*
+        ];
+
+        ChatCompletionResponse::builder()
+            .tool_calls(tool_calls)
+            .build()
+            .unwrap()
+    }};
 }
 
 type Expectations = Arc<Mutex<Vec<(Result<ToolOutput, ToolError>, Option<&'static str>)>>>;
@@ -124,6 +147,7 @@ pub struct MockTool {
 }
 
 impl MockTool {
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
         Self::new("mock_tool")
     }
@@ -141,6 +165,7 @@ impl MockTool {
         self.expect_invoke(Ok(expected_result), expected_args);
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn expect_invoke(
         &self,
         expected_result: Result<ToolOutput, ToolError>,
@@ -239,6 +264,7 @@ impl MockHook {
         self
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn hook_fn(&self) -> impl BeforeAllFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent| {
@@ -251,6 +277,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn on_start_fn(&self) -> impl OnStartFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent| {
@@ -262,6 +289,7 @@ impl MockHook {
             })
         }
     }
+    #[allow(clippy::missing_panics_doc)]
     pub fn before_completion_fn(&self) -> impl BeforeCompletionFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
@@ -274,6 +302,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn after_completion_fn(&self) -> impl AfterCompletionFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
@@ -286,6 +315,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn after_tool_fn(&self) -> impl AfterToolFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _, _| {
@@ -298,6 +328,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn before_tool_fn(&self) -> impl BeforeToolFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
@@ -310,6 +341,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn message_hook_fn(&self) -> impl MessageHookFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {
@@ -322,6 +354,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn stop_hook_fn(&self) -> impl OnStopFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _, _| {
@@ -334,6 +367,7 @@ impl MockHook {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn on_stream_fn(&self) -> impl OnStreamFn + use<> {
         let called = Arc::clone(&self.called);
         move |_: &Agent, _| {

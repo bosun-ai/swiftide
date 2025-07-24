@@ -29,6 +29,7 @@ dyn-clone = { workspace = true }
 pin-project = { workspace = true }
 thiserror = { workspace = true }
 metrics = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }
@@ -50,6 +51,7 @@ qdrant = ["dep:qdrant-client"]
 # Truncates large debug outputs on pipeline nodes
 truncate-debug = []
 metrics = ["dep:metrics"]
+json-schema = ["dep:schemars"]
 
 [lints]
 workspace = true
