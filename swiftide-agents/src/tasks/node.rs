@@ -36,7 +36,7 @@ impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         _context: &Context,
     ) -> Result<Self::Output, Self::Error> {
         Ok(())
@@ -51,24 +51,26 @@ pub trait TaskNode: Send + Sync + DynClone {
 
     async fn evaluate(
         &self,
-        node_id: &NodeId<Self>,
+        node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error>;
 }
 
-// dyn_clone::clone_trait_object!(
-//     TaskNode<
-//         Input = dyn NodeArg,
-//         Output = dyn NodeArg,
-//         Error = dyn std::error::Error + Send + Sync,
-//     >
-// );
+dyn_clone::clone_trait_object!(
+    TaskNode<
+        Input = dyn NodeArg,
+        Output = dyn NodeArg,
+        Error = dyn std::error::Error + Send + Sync,
+    >
+);
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct NodeId<T: TaskNode + ?Sized> {
     pub id: usize,
     _marker: std::marker::PhantomData<T>,
 }
+
+pub type AnyNodeId = usize;
 
 impl<T: TaskNode + 'static> NodeId<T> {
     pub fn new(id: usize, _node: &T) -> Self {
@@ -80,6 +82,11 @@ impl<T: TaskNode + 'static> NodeId<T> {
 
     pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
         MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
+    }
+
+    /// Returns the internal id of the node without the type information.
+    pub fn as_any(&self) -> AnyNodeId {
+        self.id
     }
 }
 

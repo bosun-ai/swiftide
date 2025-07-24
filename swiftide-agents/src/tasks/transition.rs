@@ -105,7 +105,7 @@ where
     ) -> Result<TransitionPayload, NodeError> {
         let context = context.downcast::<T::Input>().unwrap();
 
-        match self.node.evaluate(&self.node_id, &context).await {
+        match self.node.evaluate(&self.node_id.as_any(), &context).await {
             Ok(output) => Ok((self.r#fn)(output)),
             Err(error) => Err(NodeError::new(error, self.node_id.id, None)), // node_id will be set by caller
         }

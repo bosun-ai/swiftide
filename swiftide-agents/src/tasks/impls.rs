@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 
 use crate::{Agent, errors::AgentError};
 
-use super::node::{NodeArg, NodeId, TaskNode};
+use super::node::{AnyNodeId, NodeArg, NodeId, TaskNode};
 
 #[derive(Clone, Debug)]
 pub struct TaskAgent(Arc<Mutex<Agent>>);
@@ -34,7 +34,7 @@ impl TaskNode for TaskAgent {
 
     async fn evaluate(
         &self,
-        node_id: &NodeId<Self>,
+        node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.0.lock().await.query(input.clone()).await
@@ -51,7 +51,7 @@ impl TaskNode for Box<dyn SimplePrompt> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         // TODO: Prompt should be borrowed
@@ -69,7 +69,7 @@ impl TaskNode for Arc<dyn SimplePrompt> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         // TODO: Prompt should be borrowed
@@ -87,7 +87,7 @@ impl TaskNode for Box<dyn ChatCompletion> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.complete(input).await
@@ -104,7 +104,7 @@ impl TaskNode for Arc<dyn ChatCompletion> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.complete(input).await
@@ -121,7 +121,7 @@ impl TaskNode for Box<dyn ToolExecutor> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.exec_cmd(input).await
@@ -138,7 +138,7 @@ impl TaskNode for Arc<dyn ToolExecutor> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.exec_cmd(input).await
@@ -158,7 +158,7 @@ impl<I: NodeArg, O: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskN
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<Self>,
+        _node_id: &AnyNodeId,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         (self)(input)
