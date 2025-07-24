@@ -6,11 +6,9 @@ use super::{
     transition::{MarkedTransitionPayload, TransitionPayload},
 };
 
-pub trait NodeArg: DynClone + Send + Sync {}
+pub trait NodeArg: Send + Sync {}
 
-dyn_clone::clone_trait_object!(NodeArg);
-
-impl<T: Clone + Send + Sync + std::fmt::Debug + 'static> NodeArg for T {}
+impl<T: Send + Sync + std::fmt::Debug + 'static> NodeArg for T {}
 
 #[derive(Debug, Clone)]
 pub struct NoopNode<Context: NodeArg> {
@@ -29,7 +27,7 @@ where
 }
 
 #[async_trait]
-impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
+impl<Context: NodeArg> TaskNode for NoopNode<Context> {
     type Output = ();
     type Input = Context;
     type Error = NodeError;
@@ -46,7 +44,7 @@ impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
 }
 
 #[async_trait]
-pub trait TaskNode: Send + Sync + DynClone {
+pub trait TaskNode: Send + Sync {
     type Input: NodeArg;
     type Output: NodeArg;
     type Error: std::error::Error + Send + Sync + 'static;
@@ -60,13 +58,13 @@ pub trait TaskNode: Send + Sync + DynClone {
     ) -> Result<Self::Output, Self::Error>;
 }
 
-dyn_clone::clone_trait_object!(
-    TaskNode<
-        Input = dyn NodeArg,
-        Output = dyn NodeArg,
-        Error = dyn std::error::Error + Send + Sync,
-    >
-);
+// dyn_clone::clone_trait_object!(
+//     TaskNode<
+//         Input = dyn NodeArg,
+//         Output = dyn NodeArg,
+//         Error = dyn std::error::Error + Send + Sync,
+//     >
+// );
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct NodeId<T: TaskNode + ?Sized> {
@@ -84,7 +82,7 @@ impl<T: TaskNode + 'static> NodeId<T> {
         }
     }
 
-    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
+    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T::Input> {
         MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
     }
 

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use super::{
     errors::NodeError,
-    node::{NodeId, TaskNode},
+    node::{NodeArg, NodeId, TaskNode},
 };
 
 // pub trait TransitionFn:
@@ -62,9 +62,9 @@ impl TransitionPayload {
     }
 }
 
-pub struct MarkedTransitionPayload<To: TaskNode>(TransitionPayload, std::marker::PhantomData<To>);
+pub struct MarkedTransitionPayload<To: NodeArg>(TransitionPayload, std::marker::PhantomData<To>);
 
-impl<To: TaskNode> MarkedTransitionPayload<To> {
+impl<To: NodeArg> MarkedTransitionPayload<To> {
     pub fn new(payload: TransitionPayload) -> Self {
         MarkedTransitionPayload(payload, std::marker::PhantomData)
     }
@@ -74,7 +74,7 @@ impl<To: TaskNode> MarkedTransitionPayload<To> {
     }
 }
 
-impl<T: TaskNode> std::ops::Deref for MarkedTransitionPayload<T> {
+impl<T: NodeArg> std::ops::Deref for MarkedTransitionPayload<T> {
     type Target = TransitionPayload;
 
     fn deref(&self) -> &Self::Target {

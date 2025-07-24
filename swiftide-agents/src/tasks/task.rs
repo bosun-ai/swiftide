@@ -13,13 +13,13 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
-impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Default for Task<Input, Output> {
+impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Default for Task<Input, Output> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Output> {
+impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
     pub fn new() -> Self {
         let noop = NoopNode::<Output>::default();
 
@@ -123,7 +123,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Ou
             .map(|transition| &transition.node)
     }
 
-    pub fn register_node<T: TaskNode + Clone + 'static>(&mut self, node: T) -> NodeId<T> {
+    pub fn register_node<T: TaskNode + 'static>(&mut self, node: T) -> NodeId<T> {
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
         let node_executor = Box::new(Transition::<T> {
@@ -138,12 +138,12 @@ impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Ou
     }
 
     pub fn register_transition<
-        From: TaskNode + Clone + 'static,
-        To: TaskNode<Input = From::Output> + Clone + 'static,
+        From: TaskNode + 'static,
+        To: TaskNode<Input = From::Output> + 'static,
     >(
         &mut self,
         from: NodeId<From>,
-        transition: impl Fn(To::Input) -> MarkedTransitionPayload<To> + Send + Sync + 'static,
+        transition: impl Fn(To::Input) -> MarkedTransitionPayload<To::Input> + Send + Sync + 'static,
     ) -> Result<(), TaskError> {
         let node_executor = self
             .nodes
