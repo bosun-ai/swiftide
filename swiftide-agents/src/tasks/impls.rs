@@ -34,7 +34,9 @@ impl TaskNode for TaskAgent {
 
     async fn evaluate(
         &self,
-        node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.0.lock().await.query(input.clone()).await
@@ -51,7 +53,9 @@ impl TaskNode for Box<dyn SimplePrompt> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         // TODO: Prompt should be borrowed
@@ -69,7 +73,9 @@ impl TaskNode for Arc<dyn SimplePrompt> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         // TODO: Prompt should be borrowed
@@ -87,7 +93,9 @@ impl TaskNode for Box<dyn ChatCompletion> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.complete(input).await
@@ -104,7 +112,9 @@ impl TaskNode for Arc<dyn ChatCompletion> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.complete(input).await
@@ -121,7 +131,9 @@ impl TaskNode for Box<dyn ToolExecutor> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.exec_cmd(input).await
@@ -138,7 +150,9 @@ impl TaskNode for Arc<dyn ToolExecutor> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         self.exec_cmd(input).await
@@ -158,7 +172,9 @@ impl<I: NodeArg, O: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskN
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         (self)(input)

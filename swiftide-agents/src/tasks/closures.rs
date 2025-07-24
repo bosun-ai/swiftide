@@ -43,7 +43,9 @@ where
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         (self.f)(input)

@@ -36,7 +36,9 @@ impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
 
     async fn evaluate(
         &self,
-        _node_id: &AnyNodeId,
+        _node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         _context: &Context,
     ) -> Result<Self::Output, Self::Error> {
         Ok(())
@@ -51,7 +53,9 @@ pub trait TaskNode: Send + Sync + DynClone {
 
     async fn evaluate(
         &self,
-        node_id: &AnyNodeId,
+        node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error>;
 }
@@ -87,6 +91,15 @@ impl<T: TaskNode + 'static> NodeId<T> {
     /// Returns the internal id of the node without the type information.
     pub fn as_any(&self) -> AnyNodeId {
         self.id
+    }
+
+    pub fn as_dyn(
+        self,
+    ) -> NodeId<dyn TaskNode<Input = T::Input, Output = T::Output, Error = T::Error>> {
+        NodeId {
+            id: self.id,
+            _marker: std::marker::PhantomData,
+        }
     }
 }
 
