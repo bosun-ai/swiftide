@@ -14,6 +14,12 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
+impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Default for Task<Input, Output> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Output> {
     pub fn new() -> Self {
         let noop = NoopNode::<Output>::default();
@@ -70,6 +76,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Ou
         self.resume().await
     }
 
+    // TODO: Use type state to avoid calling this accidentally?
     pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
 
@@ -110,7 +117,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Ou
         Ok(Some(output))
     }
 
-    pub async fn current_agent(&self) -> Option<TaskAgent> {
+    pub fn current_agent(&self) -> Option<TaskAgent> {
         self.nodes
             .get(self.current_node)
             .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<TaskAgent>>())
@@ -121,7 +128,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Ou
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
         let node_executor = Box::new(Transition::<T> {
-            node_id: node_id.clone(),
+            node_id,
             node,
             r#fn: Box::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
             is_set: false,
