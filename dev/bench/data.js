@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753354379841,
+  "lastUpdate": 1753355226527,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24503,6 +24503,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 328541,
             "range": "± 14770",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f8ddebaf57001671516db193140c2e5618000206",
+          "message": "feat(tree-sitter): Add html support for splitting and parsing (#850)",
+          "timestamp": "2025-07-24T12:58:20+02:00",
+          "tree_id": "a29c3b556628a2b72f0f244ab1bcd87beef391d8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f8ddebaf57001671516db193140c2e5618000206"
+        },
+        "date": 1753355225087,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 842292,
+            "range": "± 18649",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 327530,
+            "range": "± 6915",
             "unit": "ns/iter"
           }
         ]
