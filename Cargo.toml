@@ -25,7 +25,7 @@ async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
 fs-err = { version = "3.1", default-features = false }
 futures-util = { version = "0.3", default-features = true }
-tokio = { version = "1.45", features = [
+tokio = { version = "1.46", features = [
   "rt-multi-thread",
   "time",
 ], default-features = false }
@@ -66,10 +66,10 @@ schemars = { version = "0.8", default-features = false }
 # Integrations
 spider = { version = "2.37", default-features = false }
 async-openai = { version = "0.29", default-features = false }
-qdrant-client = { version = "1.14", default-features = false, features = [
+qdrant-client = { version = "1.15", default-features = false, features = [
   "serde",
 ] }
-fluvio = { version = "0.50.0", default-features = false }
+fluvio = { version = "0.50.1", default-features = false }
 rdkafka = { version = "0.37.0", features = ["cmake-build"] }
 lancedb = { version = "0.21", default-features = false, features = ["remote"] }
 # Needs to stay in sync with whatever lancdb uses, nice
@@ -80,12 +80,12 @@ sqlx = { version = "0.8", features = [
   "postgres",
   "uuid",
 ], default-features = false }
-aws-config = { version = "1.6", default-features = false }
+aws-config = { version = "1.8", default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
 aws-credential-types = { version = "1.2", default-features = false }
-aws-sdk-bedrockruntime = { version = "1.87", default-features = false }
+aws-sdk-bedrockruntime = { version = "1.95", default-features = false }
 criterion = { version = "0.6", default-features = false }
-darling = { version = "0.20", default-features = false }
+darling = { version = "0.21", default-features = false }
 deadpool = { version = "0.12", default-features = false }
 document-features = { version = "0.2" }
 fastembed = { version = "4.9", default-features = false }
