@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753098363452,
+  "lastUpdate": 1753354379841,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24449,6 +24449,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 334131,
             "range": "± 7888",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "25a86fa0403581c3c5ddc5bd237bee98f41bc153",
+          "message": "feat(agents): Lots of utility functions for agents (#862)",
+          "timestamp": "2025-07-24T12:44:09+02:00",
+          "tree_id": "1a72b70e0b88b2c7a813d190d052e8b59f68bcc9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/25a86fa0403581c3c5ddc5bd237bee98f41bc153"
+        },
+        "date": 1753354378257,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 842927,
+            "range": "± 26559",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 328541,
+            "range": "± 14770",
             "unit": "ns/iter"
           }
         ]
