@@ -34,7 +34,11 @@ impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
     type Input = Context;
     type Error = NodeError;
 
-    async fn evaluate(&self, _context: &Context) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        _context: &Context,
+    ) -> Result<Self::Output, Self::Error> {
         Ok(())
     }
 }
@@ -45,19 +49,23 @@ pub trait TaskNode: Send + Sync + DynClone {
     type Output: NodeArg;
     type Error: std::error::Error + Send + Sync + 'static;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error>;
+    async fn evaluate(
+        &self,
+        node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error>;
 }
 
-dyn_clone::clone_trait_object!(
-    TaskNode<
-        Input = dyn NodeArg,
-        Output = dyn NodeArg,
-        Error = dyn std::error::Error + Send + Sync,
-    >
-);
+// dyn_clone::clone_trait_object!(
+//     TaskNode<
+//         Input = dyn NodeArg,
+//         Output = dyn NodeArg,
+//         Error = dyn std::error::Error + Send + Sync,
+//     >
+// );
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct NodeId<T: TaskNode> {
+pub struct NodeId<T: TaskNode + ?Sized> {
     pub id: usize,
     _marker: std::marker::PhantomData<T>,
 }

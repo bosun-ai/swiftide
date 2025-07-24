@@ -2,7 +2,6 @@ use std::any::Any;
 
 use super::{
     errors::TaskError,
-    impls::TaskAgent,
     node::{NodeArg, NodeId, NoopNode, TaskNode},
     transition::{AnyNodeTransition, MarkedTransitionPayload, Transition, TransitionPayload},
 };
@@ -117,11 +116,11 @@ impl<Input: NodeArg + 'static, Output: NodeArg + Clone + 'static> Task<Input, Ou
         Ok(Some(output))
     }
 
-    pub fn current_agent(&self) -> Option<TaskAgent> {
+    pub fn current_node<T: TaskNode + 'static>(&self) -> Option<&T> {
         self.nodes
             .get(self.current_node)
-            .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<TaskAgent>>())
-            .map(|transition| transition.node.clone())
+            .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<T>>())
+            .map(|transition| &transition.node)
     }
 
     pub fn register_node<T: TaskNode + Clone + 'static>(&mut self, node: T) -> NodeId<T> {

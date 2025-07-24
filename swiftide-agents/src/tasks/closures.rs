@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use super::{
     errors::NodeError,
-    node::{NodeArg, TaskNode},
+    node::{NodeArg, NodeId, TaskNode},
 };
 
 // TODO: Narly api, maybe use a more generic enum wrapper
@@ -41,7 +41,11 @@ where
     type Output = O;
     type Error = NodeError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         (self.f)(input)
     }
 }

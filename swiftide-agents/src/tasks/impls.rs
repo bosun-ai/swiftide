@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 
 use crate::{Agent, errors::AgentError};
 
-use super::node::{NodeArg, TaskNode};
+use super::node::{NodeArg, NodeId, TaskNode};
 
 #[derive(Clone, Debug)]
 pub struct TaskAgent(Arc<Mutex<Agent>>);
@@ -32,7 +32,11 @@ impl TaskNode for TaskAgent {
 
     type Error = AgentError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         self.0.lock().await.query(input.clone()).await
     }
 }
@@ -45,7 +49,11 @@ impl TaskNode for Box<dyn SimplePrompt> {
 
     type Error = LanguageModelError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         // TODO: Prompt should be borrowed
         self.prompt(input.clone()).await
     }
@@ -59,7 +67,11 @@ impl TaskNode for Arc<dyn SimplePrompt> {
 
     type Error = LanguageModelError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         // TODO: Prompt should be borrowed
         self.prompt(input.clone()).await
     }
@@ -73,7 +85,11 @@ impl TaskNode for Box<dyn ChatCompletion> {
 
     type Error = LanguageModelError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         self.complete(input).await
     }
 }
@@ -86,7 +102,11 @@ impl TaskNode for Arc<dyn ChatCompletion> {
 
     type Error = LanguageModelError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         self.complete(input).await
     }
 }
@@ -99,7 +119,11 @@ impl TaskNode for Box<dyn ToolExecutor> {
 
     type Error = CommandError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         self.exec_cmd(input).await
     }
 }
@@ -112,7 +136,11 @@ impl TaskNode for Arc<dyn ToolExecutor> {
 
     type Error = CommandError;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         self.exec_cmd(input).await
     }
 }
@@ -128,7 +156,11 @@ impl<I: NodeArg, O: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskN
 
     type Error = E;
 
-    async fn evaluate(&self, input: &Self::Input) -> Result<Self::Output, Self::Error> {
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
         (self)(input)
     }
 }
