@@ -138,12 +138,13 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
     }
 
     pub fn register_transition<
+        'a,
         From: TaskNode + 'static,
         To: TaskNode<Input = From::Output> + 'static,
     >(
         &mut self,
         from: NodeId<From>,
-        transition: impl Fn(To::Input) -> MarkedTransitionPayload<To::Input> + Send + Sync + 'static,
+        transition: impl Fn(To::Input) -> MarkedTransitionPayload<'a, To::Input> + Send + Sync + 'static,
     ) -> Result<(), TaskError> {
         let node_executor = self
             .nodes

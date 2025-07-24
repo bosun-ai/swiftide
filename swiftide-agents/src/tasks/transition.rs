@@ -62,9 +62,12 @@ impl TransitionPayload {
     }
 }
 
-pub struct MarkedTransitionPayload<To: NodeArg>(TransitionPayload, std::marker::PhantomData<To>);
+pub struct MarkedTransitionPayload<'a, To: NodeArg>(
+    TransitionPayload,
+    std::marker::PhantomData<&'a To>,
+);
 
-impl<To: NodeArg> MarkedTransitionPayload<To> {
+impl<To: NodeArg> MarkedTransitionPayload<'_, To> {
     pub fn new(payload: TransitionPayload) -> Self {
         MarkedTransitionPayload(payload, std::marker::PhantomData)
     }
@@ -74,7 +77,7 @@ impl<To: NodeArg> MarkedTransitionPayload<To> {
     }
 }
 
-impl<T: NodeArg> std::ops::Deref for MarkedTransitionPayload<T> {
+impl<T: NodeArg> std::ops::Deref for MarkedTransitionPayload<'_, T> {
     type Target = TransitionPayload;
 
     fn deref(&self) -> &Self::Target {
