@@ -26,7 +26,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
         let node_id = NodeId::new(0, &noop);
 
         let noop_executor = Box::new(Transition {
-            node: noop,
+            node: Box::new(noop),
             node_id,
             r#fn: Box::new(|_output| unreachable!("Done node should never be evaluated.")),
             is_set: false,
@@ -120,7 +120,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
         self.nodes
             .get(self.current_node)
             .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<T>>())
-            .map(|transition| &transition.node)
+            .map(|transition| &*transition.node)
     }
 
     pub fn register_node<T: TaskNode + 'static>(&mut self, node: T) -> NodeId<T> {
@@ -128,7 +128,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
         let node_id = NodeId::new(id, &node);
         let node_executor = Box::new(Transition::<T> {
             node_id,
-            node,
+            node: Box::new(node),
             r#fn: Box::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
             is_set: false,
         });
@@ -137,15 +137,16 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
         node_id
     }
 
-    pub fn register_transition<
-        'a,
-        From: TaskNode + 'static,
-        To: TaskNode<Input = From::Output> + 'static,
-    >(
+    pub fn register_transition<'a, From, To, F>(
         &mut self,
         from: NodeId<From>,
-        transition: impl Fn(To::Input) -> MarkedTransitionPayload<'a, To::Input> + Send + Sync + 'static,
-    ) -> Result<(), TaskError> {
+        transition: F,
+    ) -> Result<(), TaskError>
+    where
+        From: TaskNode + ?Sized + 'static,
+        To: TaskNode<Input = From::Output> + ?Sized + 'a,
+        F: Fn(To::Input) -> MarkedTransitionPayload<To> + Send + Sync + 'static,
+    {
         let node_executor = self
             .nodes
             .get_mut(from.id)

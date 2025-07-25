@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use dyn_clone::DynClone;
 
 use super::{
     errors::NodeError,
@@ -74,7 +73,7 @@ pub struct NodeId<T: TaskNode + ?Sized> {
 
 pub type AnyNodeId = usize;
 
-impl<T: TaskNode + 'static> NodeId<T> {
+impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
     pub fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
@@ -82,7 +81,7 @@ impl<T: TaskNode + 'static> NodeId<T> {
         }
     }
 
-    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T::Input> {
+    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
         MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
     }
 
@@ -101,9 +100,9 @@ impl<T: TaskNode + 'static> NodeId<T> {
     }
 }
 
-impl<T: TaskNode> Clone for NodeId<T> {
+impl<T: TaskNode + ?Sized> Clone for NodeId<T> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<T: TaskNode> Copy for NodeId<T> {}
+impl<T: TaskNode + ?Sized> Copy for NodeId<T> {}

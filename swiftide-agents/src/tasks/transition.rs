@@ -12,8 +12,8 @@ use super::{
 // {
 // }
 
-pub(crate) struct Transition<T: TaskNode> {
-    pub(crate) node: T,
+pub(crate) struct Transition<T: TaskNode + ?Sized> {
+    pub(crate) node: Box<T>,
     pub(crate) node_id: NodeId<T>,
     pub(crate) r#fn: Box<dyn Fn(T::Output) -> TransitionPayload + Send + Sync>,
     pub(crate) is_set: bool,
@@ -27,7 +27,7 @@ pub struct NextNode {
 }
 
 impl NextNode {
-    pub fn new<T: TaskNode>(node_id: NodeId<T>, context: T::Input) -> Self
+    pub fn new<T: TaskNode + ?Sized>(node_id: NodeId<T>, context: T::Input) -> Self
     where
         <T as TaskNode>::Input: 'static,
     {
@@ -53,7 +53,10 @@ pub enum TransitionPayload {
 }
 
 impl TransitionPayload {
-    pub fn next_node<T: TaskNode + 'static>(node_id: &NodeId<T>, context: T::Input) -> Self {
+    pub fn next_node<T: TaskNode + 'static + ?Sized>(
+        node_id: &NodeId<T>,
+        context: T::Input,
+    ) -> Self {
         NextNode::new(*node_id, context).into()
     }
 
@@ -62,12 +65,12 @@ impl TransitionPayload {
     }
 }
 
-pub struct MarkedTransitionPayload<'a, To: NodeArg>(
+pub struct MarkedTransitionPayload<To: TaskNode + ?Sized>(
     TransitionPayload,
-    std::marker::PhantomData<&'a To>,
+    std::marker::PhantomData<To>,
 );
 
-impl<To: NodeArg> MarkedTransitionPayload<'_, To> {
+impl<To: TaskNode + ?Sized> MarkedTransitionPayload<To> {
     pub fn new(payload: TransitionPayload) -> Self {
         MarkedTransitionPayload(payload, std::marker::PhantomData)
     }
@@ -77,7 +80,7 @@ impl<To: NodeArg> MarkedTransitionPayload<'_, To> {
     }
 }
 
-impl<T: NodeArg> std::ops::Deref for MarkedTransitionPayload<'_, T> {
+impl<T: TaskNode> std::ops::Deref for MarkedTransitionPayload<T> {
     type Target = TransitionPayload;
 
     fn deref(&self) -> &Self::Target {
