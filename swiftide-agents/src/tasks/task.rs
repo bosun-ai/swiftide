@@ -1,0 +1,206 @@
+use std::{any::Any, rc::Rc, sync::Arc};
+
+use super::{
+    errors::TaskError,
+    node::{NodeArg, NodeId, NoopNode, TaskNode},
+    transition::{AnyNodeTransition, MarkedTransitionPayload, Transition, TransitionPayload},
+};
+
+#[derive(Debug)]
+pub struct Task<Input: NodeArg, Output: NodeArg> {
+    nodes: Vec<Box<dyn AnyNodeTransition>>,
+    current_node: usize,
+    current_context: Option<Box<dyn Any + Send + Sync>>,
+    _marker: std::marker::PhantomData<(Input, Output)>,
+}
+
+impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
+    fn clone(&self) -> Self {
+        Self {
+            nodes: self.nodes.clone(),
+            current_node: 0,
+            current_context: None,
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Default for Task<Input, Output> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
+    pub fn new() -> Self {
+        let noop = NoopNode::<Output>::default();
+
+        let node_id = NodeId::new(0, &noop);
+
+        let noop_executor = Box::new(Transition {
+            node: Box::new(noop),
+            node_id,
+            r#fn: Arc::new(|_output| unreachable!("Done node should never be evaluated.")),
+            is_set: false,
+        });
+        Self {
+            nodes: vec![noop_executor],
+            current_node: 0,
+            current_context: None,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    // unused
+    // TODO: We can make the api nicer
+    pub fn done(&self) -> NodeId<NoopNode<Output>> {
+        NodeId::new(0, &NoopNode::default())
+    }
+
+    // TODO: Same as above
+    pub fn transitions_to_done(
+        &self,
+    ) -> impl Fn(Output) -> MarkedTransitionPayload<NoopNode<Output>> + Send + Sync + 'static {
+        let done = self.done();
+        move |context| done.transitions_with(context)
+    }
+
+    // TODO: We can make the api nicer, i.e. default to the first node added
+    pub fn starts_with<T: TaskNode<Input = Input> + Clone + 'static>(
+        &mut self,
+        node_id: NodeId<T>,
+    ) {
+        self.current_node = node_id.id;
+    }
+
+    pub fn validate_transitions(&self) -> Result<(), TaskError> {
+        for node_executor in &self.nodes {
+            // Skip the done node (index 0)
+            if node_executor.node_id() == 0 {
+                continue;
+            }
+
+            if !node_executor.transition_is_set() {
+                return Err(TaskError::missing_transition(node_executor.node_id()));
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn run(&mut self, input: impl Into<Input>) -> Result<Option<Output>, TaskError> {
+        self.validate_transitions()?;
+
+        self.current_context = Some(Box::new(input.into()) as Box<dyn Any + Send + Sync>);
+
+        self.resume().await
+    }
+
+    // TODO: Use type state to avoid calling this accidentally?
+    pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
+        self.validate_transitions()?;
+
+        loop {
+            if self.current_node == 0 {
+                break;
+            }
+            let node_transition = self
+                .nodes
+                .get(self.current_node)
+                .ok_or_else(|| TaskError::missing_node(self.current_node))?;
+
+            let input = self
+                .current_context
+                .take()
+                .ok_or_else(|| TaskError::missing_input(self.current_node))?;
+
+            let transition_payload = node_transition.evaluate_next(input).await?;
+
+            match transition_payload {
+                TransitionPayload::Pause => {
+                    tracing::info!("Task paused at node {}", self.current_node);
+                    return Ok(None);
+                }
+                TransitionPayload::NextNode(transition_payload) => {
+                    self.current_node = transition_payload.node_id;
+                    self.current_context = Some(transition_payload.context);
+                }
+            }
+        }
+
+        let output = self
+            .current_context
+            .take()
+            .ok_or_else(|| TaskError::missing_output(self.current_node))?;
+        let output = *output.downcast::<Output>().map_err(TaskError::type_error)?;
+
+        Ok(Some(output))
+    }
+
+    pub fn current_node<T: TaskNode + 'static>(&self) -> Option<&T> {
+        self.nodes
+            .get(self.current_node)
+            .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<T>>())
+            .map(|transition| &*transition.node)
+    }
+
+    pub fn node_at<T: TaskNode + 'static>(&self, node_id: NodeId<T>) -> Option<&T> {
+        self.nodes
+            .get(node_id.id)
+            .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<T>>())
+            .map(|transition| &*transition.node)
+    }
+
+    pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
+    where
+        T: TaskNode + 'static + Clone,
+        <T as TaskNode>::Input: Clone,
+        <T as TaskNode>::Output: Clone,
+    {
+        let id = self.nodes.len();
+        let node_id = NodeId::new(id, &node);
+        let node_executor = Box::new(Transition::<T> {
+            node_id,
+            node: Box::new(node),
+            r#fn: Arc::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
+            is_set: false,
+        });
+        self.nodes.push(node_executor);
+
+        node_id
+    }
+
+    pub fn register_transition<'a, From, To, F>(
+        &mut self,
+        from: NodeId<From>,
+        transition: F,
+    ) -> Result<(), TaskError>
+    where
+        From: TaskNode + ?Sized + 'static,
+        To: TaskNode<Input = From::Output> + ?Sized + 'a,
+        F: Fn(To::Input) -> MarkedTransitionPayload<To> + Send + Sync + 'static,
+    {
+        let node_executor = self
+            .nodes
+            .get_mut(from.id)
+            .ok_or_else(|| TaskError::missing_node(from.id))?;
+
+        let any_executor: &mut dyn Any = node_executor.as_mut();
+        //
+        let Some(node_executor) = any_executor.downcast_mut::<Transition<From>>() else {
+            unreachable!(
+                "Node executor at index {} is not a Transition<From>; Mismatched types, should not never happen.",
+                from.id
+            );
+        };
+
+        let wrapped = move |output: From::Output| {
+            let payload = transition(output);
+            payload.into_inner()
+        };
+
+        node_executor.r#fn = Arc::new(wrapped);
+        node_executor.is_set = true;
+
+        Ok(())
+    }
+}
