@@ -51,21 +51,29 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         }
     }
 
-    // // unused
+    // unused
     // TODO: We can make the api nicer
-    pub fn done(&self) -> NodeId<NoopNode<()>> {
-        NodeId::new(0, &NoopNode::<()>::default())
+    pub fn done(&self) -> NodeId<NoopNode<Output>> {
+        NodeId::new(0, &NoopNode::default())
+    }
+
+    // TODO: Same as above
+    pub fn transitions_to_done(
+        &self,
+    ) -> impl Fn(Output) -> MarkedTransitionPayload<NoopNode<Output>> + Send + Sync + 'static {
+        let done = self.done();
+        move |context| done.transitions_with(context)
     }
 
     // TODO: We can make the api nicer, i.e. default to the first node added
-    pub fn set_start_node<T: TaskNode<Input = Input> + Clone + 'static>(
+    pub fn starts_with<T: TaskNode<Input = Input> + Clone + 'static>(
         &mut self,
         node_id: NodeId<T>,
     ) {
         self.current_node = node_id.id;
     }
 
-    fn validate_transitions(&self) -> Result<(), TaskError> {
+    pub fn validate_transitions(&self) -> Result<(), TaskError> {
         for node_executor in &self.nodes {
             // Skip the done node (index 0)
             if node_executor.node_id() == 0 {
@@ -131,6 +139,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     pub fn current_node<T: TaskNode + 'static>(&self) -> Option<&T> {
         self.nodes
             .get(self.current_node)
+            .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<T>>())
+            .map(|transition| &*transition.node)
+    }
+
+    pub fn node_at<T: TaskNode + 'static>(&self, node_id: NodeId<T>) -> Option<&T> {
+        self.nodes
+            .get(node_id.id)
             .and_then(|node| (node as &dyn Any).downcast_ref::<Transition<T>>())
             .map(|transition| &*transition.node)
     }

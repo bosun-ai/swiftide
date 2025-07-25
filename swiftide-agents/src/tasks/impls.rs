@@ -12,6 +12,7 @@ use crate::{Agent, errors::AgentError};
 
 use super::node::{AnyNodeId, NodeArg, NodeId, TaskNode};
 
+// TODO: Consider removing this and providing docs instead
 #[derive(Clone, Debug)]
 pub struct TaskAgent(Arc<Mutex<Agent>>);
 

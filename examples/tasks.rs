@@ -34,11 +34,10 @@ async fn main() -> Result<()> {
         Ok(())
     }));
 
-    task.set_start_node(agent_id);
+    task.starts_with(agent_id);
 
-    let done = task.done();
     task.register_transition(agent_id, move |context| hello_id.transitions_with(context))?;
-    task.register_transition(hello_id, move |context| done.transitions_with(context))?;
+    task.register_transition(hello_id, task.transitions_to_done())?;
 
     task.run("Hello there!").await?;
 
