@@ -1,22 +1,43 @@
-use std::any::Any;
+use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 
 use super::{
     errors::NodeError,
     node::{NodeArg, NodeId, TaskNode},
 };
 
-// pub trait TransitionFn:
-//     for<'a> Fn(&'a NodeArg) -> TransitionPayload<'a> + Send + Sync + DynClone
+pub trait TransitionFn:
+    for<'a> Fn(Box<Self::Input>) -> TransitionPayload + Send + Sync + DynClone
+{
+    type Input: NodeArg + 'static;
+}
+
+// impl<F, I> TransitionFn for F
+// where
+//     F: for<'a> Fn(&'a Self::Input) -> TransitionPayload + Send + Sync + DynClone,
+//     I: NodeArg + 'static,
 // {
+//     type Input = I;
 // }
 
+#[derive(Clone)]
 pub(crate) struct Transition<T: TaskNode + ?Sized> {
     pub(crate) node: Box<T>,
     pub(crate) node_id: NodeId<T>,
-    pub(crate) r#fn: Box<dyn Fn(T::Output) -> TransitionPayload + Send + Sync>,
+    pub(crate) r#fn: Arc<dyn Fn(T::Output) -> TransitionPayload + Send + Sync>,
+    // pub(crate) r#fn: Box<dyn TransitionFn<Input = T::Input> + Send + Sync>,
     pub(crate) is_set: bool,
+}
+
+impl<T: TaskNode + ?Sized> std::fmt::Debug for Transition<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Transition")
+            .field("node_id", &self.node_id)
+            .field("is_set", &self.is_set)
+            .finish()
+    }
 }
 
 #[derive(Debug)]
@@ -89,7 +110,7 @@ impl<T: TaskNode> std::ops::Deref for MarkedTransitionPayload<T> {
 }
 
 #[async_trait]
-pub(crate) trait AnyNodeTransition: Any + Send + Sync {
+pub(crate) trait AnyNodeTransition: Any + Send + Sync + std::fmt::Debug + DynClone {
     fn transition_is_set(&self) -> bool;
 
     async fn evaluate_next(
@@ -100,10 +121,13 @@ pub(crate) trait AnyNodeTransition: Any + Send + Sync {
     fn node_id(&self) -> usize;
 }
 
+dyn_clone::clone_trait_object!(AnyNodeTransition);
+
 #[async_trait]
-impl<T: TaskNode + 'static> AnyNodeTransition for Transition<T>
+impl<T: TaskNode + Clone + 'static> AnyNodeTransition for Transition<T>
 where
-    <T as TaskNode>::Input: 'static,
+    <T as TaskNode>::Input: Clone,
+    <T as TaskNode>::Output: Clone,
 {
     async fn evaluate_next(
         &self,

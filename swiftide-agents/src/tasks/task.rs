@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, rc::Rc, sync::Arc};
 
 use super::{
     errors::TaskError,
@@ -6,6 +6,7 @@ use super::{
     transition::{AnyNodeTransition, MarkedTransitionPayload, Transition, TransitionPayload},
 };
 
+#[derive(Debug)]
 pub struct Task<Input: NodeArg, Output: NodeArg> {
     nodes: Vec<Box<dyn AnyNodeTransition>>,
     current_node: usize,
@@ -13,13 +14,24 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
-impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Default for Task<Input, Output> {
+impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
+    fn clone(&self) -> Self {
+        Self {
+            nodes: self.nodes.clone(),
+            current_node: 0,
+            current_context: None,
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Default for Task<Input, Output> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
+impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     pub fn new() -> Self {
         let noop = NoopNode::<Output>::default();
 
@@ -28,7 +40,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
         let noop_executor = Box::new(Transition {
             node: Box::new(noop),
             node_id,
-            r#fn: Box::new(|_output| unreachable!("Done node should never be evaluated.")),
+            r#fn: Arc::new(|_output| unreachable!("Done node should never be evaluated.")),
             is_set: false,
         });
         Self {
@@ -123,13 +135,18 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
             .map(|transition| &*transition.node)
     }
 
-    pub fn register_node<T: TaskNode + 'static>(&mut self, node: T) -> NodeId<T> {
+    pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
+    where
+        T: TaskNode + 'static + Clone,
+        <T as TaskNode>::Input: Clone,
+        <T as TaskNode>::Output: Clone,
+    {
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
         let node_executor = Box::new(Transition::<T> {
             node_id,
             node: Box::new(node),
-            r#fn: Box::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
+            r#fn: Arc::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
             is_set: false,
         });
         self.nodes.push(node_executor);
@@ -166,7 +183,7 @@ impl<Input: NodeArg + 'static, Output: NodeArg + 'static> Task<Input, Output> {
             payload.into_inner()
         };
 
-        node_executor.r#fn = Box::new(wrapped);
+        node_executor.r#fn = Arc::new(wrapped);
         node_executor.is_set = true;
 
         Ok(())
