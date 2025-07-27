@@ -70,6 +70,8 @@ pub enum SupportedLanguages {
     Cpp,
     #[serde(alias = "elixir")]
     Elixir,
+    #[serde(alias = "html", alias = "Html")]
+    HTML,
 }
 
 impl Hash for SupportedLanguages {
@@ -116,6 +118,8 @@ static CPP_EXTENSIONS: &[&str] = &["c", "h", "o", "cc", "cpp"];
 
 static ELIXIR_EXTENSIONS: &[&str] = &["ex", "exs"];
 
+static HTML_EXTENSIONS: &[&str] = &["html", "htm", "xhtml"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -133,7 +137,8 @@ impl SupportedLanguages {
             SupportedLanguages::Solidity => SOLIDITY_EXTENSIONS,
             SupportedLanguages::C => C_EXTENSIONS,
             SupportedLanguages::Cpp => CPP_EXTENSIONS,
-            &SupportedLanguages::Elixir => ELIXIR_EXTENSIONS,
+            SupportedLanguages::Elixir => ELIXIR_EXTENSIONS,
+            SupportedLanguages::HTML => HTML_EXTENSIONS,
         }
     }
 }
@@ -163,6 +168,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::C => tree_sitter_c::LANGUAGE,
             SupportedLanguages::Cpp => tree_sitter_cpp::LANGUAGE,
             SupportedLanguages::Elixir => tree_sitter_elixir::LANGUAGE,
+            SupportedLanguages::HTML => tree_sitter_html::LANGUAGE,
         }
         .into()
     }

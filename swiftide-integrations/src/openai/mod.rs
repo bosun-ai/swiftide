@@ -277,6 +277,19 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
         self
     }
 
+    /// Sets the `user` field used by `OpenAI` to monitor and detect usage and abuse.
+    pub fn for_end_user(&mut self, user: impl Into<String>) -> &mut Self {
+        if let Some(options) = self.default_options.as_mut() {
+            options.user = Some(user.into());
+        } else {
+            self.default_options = Some(Options {
+                user: Some(user.into()),
+                ..Default::default()
+            });
+        }
+        self
+    }
+
     /// Enable or disable parallel tool calls for completions.
     ///
     /// Note that currently reasoning models do not support parallel tool calls
