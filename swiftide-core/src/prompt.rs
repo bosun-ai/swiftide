@@ -24,11 +24,10 @@
 //! ```
 //! #[tokio::main]
 //! # async fn main() {
-//! # use swiftide_core::template::Template;
-//! let template = Template::try_compiled_from_str("hello {{world}}").await.unwrap();
-//! let prompt = template.to_prompt().with_context_value("world", "swiftide");
+//! # use swiftide_core::prompt::Prompt;
+//! let prompt = Prompt::from("hello {{world}}").with_context_value("world", "swiftide");
 //!
-//! assert_eq!(prompt.render().await.unwrap(), "hello swiftide");
+//! assert_eq!(prompt.render().unwrap(), "hello swiftide");
 //! # }
 //! ```
 use std::{
