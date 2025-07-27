@@ -107,6 +107,8 @@ impl Persist for Duckdb {
 
         tracing::debug!(schema = &self.schema, "Indexing table created");
 
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         // We need to run this separately to ensure the table is created before we create the index
         conn.execute_batch(&format!(
             "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
