@@ -84,39 +84,44 @@ impl Persist for Duckdb {
     async fn setup(&self) -> Result<()> {
         tracing::debug!("Setting up duckdb schema");
 
-        let conn = self.connection.lock().unwrap();
-
-        // Create if not exists does not seem to work with duckdb, so we check first
-        if conn
-            // Duckdb has issues with params it seems.
-            .query_row(&format!("SHOW {}", self.table_name()), params![], |row| {
-                row.get::<_, String>(0)
-            })
-            .is_ok()
         {
-            tracing::debug!("Indexing table already exists, skipping creation");
-            return Ok(());
+            let conn = self.connection.lock().unwrap();
+
+            // Create if not exists does not seem to work with duckdb, so we check first
+            if conn
+                // Duckdb has issues with params it seems.
+                .query_row(&format!("SHOW {}", self.table_name()), params![], |row| {
+                    row.get::<_, String>(0)
+                })
+                .is_ok()
+            {
+                tracing::debug!("Indexing table already exists, skipping creation");
+                return Ok(());
+            }
+
+            // Install the extensions separately from the schema to avoid duckdb issues with random
+            // 'extension exists' errors
+            let _ = conn.execute_batch(include_str!("extensions.sql"));
+
+            conn.execute_batch(&self.schema)
+                .context("Failed to create indexing table")?;
+
+            tracing::debug!(schema = &self.schema, "Indexing table created");
         }
-
-        // Install the extensions separately from the schema to avoid duckdb issues with random
-        // 'extension exists' errors
-        let _ = conn.execute_batch(include_str!("extensions.sql"));
-
-        conn.execute_batch(&self.schema)
-            .context("Failed to create indexing table")?;
-
-        tracing::debug!(schema = &self.schema, "Indexing table created");
 
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-        // We need to run this separately to ensure the table is created before we create the index
-        conn.execute_batch(&format!(
-            "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
+        {
+            let conn = self.connection.lock().unwrap();
+            // We need to run this separately to ensure the table is created before we create the index
+            conn.execute_batch(&format!(
+                "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
                  stopwords = 'english', ignore = '(\\.|[^a-z])+',
                  strip_accents = 1, lower = 1, overwrite = 0);
 ",
-            self.table_name
-        ))?;
+                self.table_name
+            ))?;
+        }
 
         tracing::info!("Setup completed");
 
