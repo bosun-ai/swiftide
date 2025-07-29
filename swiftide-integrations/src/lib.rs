@@ -34,6 +34,8 @@ pub mod open_router;
 pub mod openai;
 #[cfg(feature = "parquet")]
 pub mod parquet;
+#[cfg(feature = "pdf")]
+pub mod pdf;
 #[cfg(feature = "pgvector")]
 pub mod pgvector;
 #[cfg(feature = "qdrant")]

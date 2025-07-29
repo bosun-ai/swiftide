@@ -29,6 +29,8 @@ swiftide = { path = "../swiftide/", features = [
   "anthropic",
   "gemini",
   "metrics",
+  "pdf",
+  "redb",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
@@ -43,6 +45,7 @@ tracing = { workspace = true }
 serde = { workspace = true }
 rmcp = { workspace = true, features = ["transport-child-process", "client"] }
 metrics = { workspace = true }
+lopdf = { workspace = true }
 
 
 [[example]]
@@ -147,3 +150,7 @@ path = "agents_with_human_in_the_loop.rs"
 [[example]]
 name = "usage-metrics"
 path = "usage_metrics.rs"
+
+[[example]]
+name = "ingest_pdf"
+path = "ingest_pdf.rs"
