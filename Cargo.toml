@@ -4,7 +4,7 @@ default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.28.1"
+version = "0.29.0"
 edition = "2024"
 license = "MIT"
 readme = "README.md"
