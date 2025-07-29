@@ -113,7 +113,8 @@ impl Persist for Duckdb {
 
         {
             let conn = self.connection.lock().unwrap();
-            // We need to run this separately to ensure the table is created before we create the index
+            // We need to run this separately to ensure the table is created before we create the
+            // index
             conn.execute_batch(&format!(
                 "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
                  stopwords = 'english', ignore = '(\\.|[^a-z])+',
