@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753786508049,
+  "lastUpdate": 1753790886691,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24719,6 +24719,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 333674,
             "range": "± 16898",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7e27720e98b09d16c4d7432dc15550106d7bf9bd",
+          "message": "chore: release v0.29.0 (#849)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.28.1 -> 0.29.0 (✓ API compatible changes)\n* `swiftide-macros`: 0.28.1 -> 0.29.0\n* `swiftide-indexing`: 0.28.1 -> 0.29.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.28.1 -> 0.29.0 (⚠ API breaking changes)\n* `swiftide-integrations`: 0.28.1 -> 0.29.0 (✓ API compatible changes)\n* `swiftide-query`: 0.28.1 -> 0.29.0 (✓ API compatible changes)\n* `swiftide`: 0.28.1 -> 0.29.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-agents` breaking changes\n\n```text\n--- failure enum_tuple_variant_field_added: pub enum tuple variant field added ---\n\nDescription:\nAn enum's exhaustive tuple variant has a new field, which has to be included when constructing or matching on this variant.\n        ref: https://doc.rust-lang.org/reference/attributes/type_system.html#the-non_exhaustive-attribute\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.41.0/src/lints/enum_tuple_variant_field_added.ron\n\nFailed in:\n  field 1 of variant AgentError::ToolFailedToJoin in /tmp/.tmp2uk7NI/swiftide/swiftide-agents/src/errors.rs:26\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.29.0](https://github.com/bosun-ai/swiftide/compare/v0.28.1...v0.29.0)\n- 2025-07-29\n\n### New features\n\n-\n[25a86fa](https://github.com/bosun-ai/swiftide/commit/25a86fa0403581c3c5ddc5bd237bee98f41bc153)\n*(agents)* Lots of utility functions for agents\n([#862](https://github.com/bosun-ai/swiftide/pull/862))\n\n-\n[a70840b](https://github.com/bosun-ai/swiftide/commit/a70840b4dca983bd23b54f1f7cf12b33d60b733c)\n*(openai)* Add helper to set the end user field for requests\n\n-\n[f8ddeba](https://github.com/bosun-ai/swiftide/commit/f8ddebaf57001671516db193140c2e5618000206)\n*(tree-sitter)* Add html support for splitting and parsing\n([#850](https://github.com/bosun-ai/swiftide/pull/850))\n\n### Bug fixes\n\n-\n[aaa5cd9](https://github.com/bosun-ai/swiftide/commit/aaa5cd99d0316dcdc46afb922bbcefdfaa97da86)\n*(agents)* Add user message before invoking hooks\n([#853](https://github.com/bosun-ai/swiftide/pull/853))\n\n-\n[592be04](https://github.com/bosun-ai/swiftide/commit/592be049b798d80d6dadce6317889a14404643c8)\n*(agents)* Reduce verbosity of streaming hook\n([#854](https://github.com/bosun-ai/swiftide/pull/854))\n\n-\n[9778295](https://github.com/bosun-ai/swiftide/commit/977829550d58301f53f663b4c25fa5650ab15359)\n*(agents)* Ensure error causes are always accessible\n\n-\n[efd35da](https://github.com/bosun-ai/swiftide/commit/efd35da842288616abd55c789b727265bc549ffb)\n*(docs)* Fix prompt doctests\n\n-\n[e2670c0](https://github.com/bosun-ai/swiftide/commit/e2670c04d471dd7654e903e79f48bcfe61603b9f)\n*(duckdb)* Force install and update extensions\n([#851](https://github.com/bosun-ai/swiftide/pull/851))\n\n-\n[6a7ea3b](https://github.com/bosun-ai/swiftide/commit/6a7ea3b1472df209669fdf1231f0bdf4ebe6007f)\n*(redis)* Redis instrumentation only at trace level\n\n### Miscellaneous\n\n-\n[0a8ce37](https://github.com/bosun-ai/swiftide/commit/0a8ce373325fac53946c245209afcd8bb7b2caa9)\nPublic chat completion streaming types\n\n- [0000000](https://github.com/bosun-ai/swiftide/commit/0000000) Update\nCargo.toml dependencies\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.28.1...0.29.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-07-29T13:59:16+02:00",
+          "tree_id": "6b1c09b09153bc377d5695a8671af981b1cb5e9c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7e27720e98b09d16c4d7432dc15550106d7bf9bd"
+        },
+        "date": 1753790884547,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 848815,
+            "range": "± 17244",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 332731,
+            "range": "± 15798",
             "unit": "ns/iter"
           }
         ]
