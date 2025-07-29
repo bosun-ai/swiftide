@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753616722436,
+  "lastUpdate": 1753786508049,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24665,6 +24665,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 331921,
             "range": "± 9946",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e2670c04d471dd7654e903e79f48bcfe61603b9f",
+          "message": "fix(duckdb): Force install and update extensions (#851)",
+          "timestamp": "2025-07-29T12:46:32+02:00",
+          "tree_id": "0f86f9c64b8715357eca994b39594b04d41ae193",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e2670c04d471dd7654e903e79f48bcfe61603b9f"
+        },
+        "date": 1753786506560,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 834427,
+            "range": "± 17699",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 333674,
+            "range": "± 16898",
             "unit": "ns/iter"
           }
         ]
