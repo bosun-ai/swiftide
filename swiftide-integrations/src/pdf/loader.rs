@@ -311,7 +311,8 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_pdf_loader_stream_real_cv() {
-        let loader = PdfLoader::from_path("/home/mikealpharomeo/Downloads/MarouanBoulahtouf_CV.pdf");
+        // This test requires a real CV PDF file to be placed in the tests directory
+        let loader = PdfLoader::from_path("tests/data/cv.pdf");
         let stream = loader.into_stream();
         let nodes: Vec<_> = stream.try_collect().await.unwrap();
         assert!(!nodes.is_empty(), "Should extract at least one node from the CV PDF");
@@ -325,7 +326,8 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_pdf_loader_stream_real_multi_page() {
-        let loader = PdfLoader::from_path("/home/mikealpharomeo/Downloads/Etat-de-l'art_datasets_smartmeters.pdf");
+        // This test requires a real multi-page PDF file to be placed in the tests directory
+        let loader = PdfLoader::from_path("tests/data/multi_page.pdf");
         let stream = loader.into_stream();
         let nodes: Vec<_> = stream.try_collect().await.unwrap();
         
