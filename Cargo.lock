@@ -1323,7 +1323,7 @@ checksum = "55248b47b0caf0546f7988906588779981c43bb1bc9d0c44087278f80cdb44ba"
 
 [[package]]
 name = "benchmarks"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "criterion",
@@ -2191,9 +2191,9 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bf7af66b0989381bd0be551bd7cc91912a655a58c6918420c9527b1fd8b4679"
+checksum = "e1c047a62b0cc3e145fa84415a3191f628e980b194c2755aa12300a4e6cbd928"
 dependencies = [
  "anes",
  "cast",
@@ -2213,12 +2213,12 @@ dependencies = [
 
 [[package]]
 name = "criterion-plot"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
+checksum = "9b1bcc0dc7dfae599d84ad0b1a55f80cde8af3725da8313b528da95ef783e338"
 dependencies = [
  "cast",
- "itertools 0.10.5",
+ "itertools 0.13.0",
 ]
 
 [[package]]
@@ -3301,8 +3301,6 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 [[package]]
 name = "dyn-clone"
 version = "1.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "ecb"
@@ -5173,15 +5171,6 @@ name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
-
-[[package]]
-name = "itertools"
-version = "0.10.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
 
 [[package]]
 name = "itertools"
@@ -7839,9 +7828,9 @@ dependencies = [
 
 [[package]]
 name = "rdkafka"
-version = "0.37.0"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14b52c81ac3cac39c9639b95c20452076e74b8d9a71bc6fc4d83407af2ea6fff"
+checksum = "5f1856d72dbbbea0d2a5b2eaf6af7fb3847ef2746e883b11781446a51dbc85c0"
 dependencies = [
  "futures-channel",
  "futures-util",
@@ -9558,7 +9547,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -9590,10 +9579,11 @@ dependencies = [
 
 [[package]]
 name = "swiftide-agents"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "convert_case",
  "derive_builder 0.20.2",
  "dyn-clone",
  "fs-err",
@@ -9614,12 +9604,13 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "tracing",
 ]
 
 [[package]]
 name = "swiftide-core"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9634,6 +9625,7 @@ dependencies = [
  "pin-project",
  "pretty_assertions",
  "qdrant-client",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "strum 0.27.2",
@@ -9650,7 +9642,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-examples"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "fluvio",
@@ -9672,7 +9664,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9703,7 +9695,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -9768,6 +9760,7 @@ dependencies = [
  "tree-sitter-cpp",
  "tree-sitter-elixir",
  "tree-sitter-go",
+ "tree-sitter-html",
  "tree-sitter-java",
  "tree-sitter-javascript",
  "tree-sitter-python",
@@ -9781,12 +9774,12 @@ dependencies = [
 
 [[package]]
 name = "swiftide-macros"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "async-trait",
  "convert_case",
- "darling 0.20.11",
+ "darling 0.21.0",
  "insta",
  "pretty_assertions",
  "prettyplease",
@@ -9804,7 +9797,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9823,7 +9816,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.28.1"
+version = "0.29.0"
 dependencies = [
  "async-openai 0.29.0",
  "serde",
@@ -10610,6 +10603,8 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-sink",
+ "futures-util",
+ "hashbrown 0.15.4",
  "pin-project-lite",
  "tokio",
 ]
@@ -10907,6 +10902,16 @@ name = "tree-sitter-go"
 version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b13d476345220dbe600147dd444165c5791bf85ef53e28acbedd46112ee18431"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-html"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "261b708e5d92061ede329babaaa427b819329a9d427a1d710abb0f67bbef63ee"
 dependencies = [
  "cc",
  "tree-sitter-language",

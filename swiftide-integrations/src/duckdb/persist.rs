@@ -84,37 +84,45 @@ impl Persist for Duckdb {
     async fn setup(&self) -> Result<()> {
         tracing::debug!("Setting up duckdb schema");
 
-        let conn = self.connection.lock().unwrap();
-
-        // Create if not exists does not seem to work with duckdb, so we check first
-        if conn
-            // Duckdb has issues with params it seems.
-            .query_row(&format!("SHOW {}", self.table_name()), params![], |row| {
-                row.get::<_, String>(0)
-            })
-            .is_ok()
         {
-            tracing::debug!("Indexing table already exists, skipping creation");
-            return Ok(());
+            let conn = self.connection.lock().unwrap();
+
+            // Create if not exists does not seem to work with duckdb, so we check first
+            if conn
+                // Duckdb has issues with params it seems.
+                .query_row(&format!("SHOW {}", self.table_name()), params![], |row| {
+                    row.get::<_, String>(0)
+                })
+                .is_ok()
+            {
+                tracing::debug!("Indexing table already exists, skipping creation");
+                return Ok(());
+            }
+
+            // Install the extensions separately from the schema to avoid duckdb issues with random
+            // 'extension exists' errors
+            let _ = conn.execute_batch(include_str!("extensions.sql"));
+
+            conn.execute_batch(&self.schema)
+                .context("Failed to create indexing table")?;
+
+            tracing::debug!(schema = &self.schema, "Indexing table created");
         }
 
-        // Install the extensions separately from the schema to avoid duckdb issues with random
-        // 'extension exists' errors
-        let _ = conn.execute_batch(include_str!("extensions.sql"));
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-        conn.execute_batch(&self.schema)
-            .context("Failed to create indexing table")?;
-
-        tracing::debug!(schema = &self.schema, "Indexing table created");
-
-        // We need to run this separately to ensure the table is created before we create the index
-        conn.execute_batch(&format!(
-            "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
+        {
+            let conn = self.connection.lock().unwrap();
+            // We need to run this separately to ensure the table is created before we create the
+            // index
+            conn.execute_batch(&format!(
+                "PRAGMA create_fts_index('{}', 'uuid', 'chunk', stemmer = 'porter',
                  stopwords = 'english', ignore = '(\\.|[^a-z])+',
                  strip_accents = 1, lower = 1, overwrite = 0);
 ",
-            self.table_name
-        ))?;
+                self.table_name
+            ))?;
+        }
 
         tracing::info!("Setup completed");
 
@@ -344,5 +352,50 @@ mod tests {
 
         client.setup().await.unwrap();
         client.setup().await.unwrap(); // Should not panic or error
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_persisted() {
+        let temp_db_path = temp_dir::TempDir::new().unwrap();
+        let temp_db_path = temp_db_path.path().join("test_duckdb.db");
+
+        let client = Duckdb::builder()
+            .connection(duckdb::Connection::open(temp_db_path).unwrap())
+            .table_name("test".to_string())
+            .with_vector(EmbeddedField::Combined, 3)
+            .build()
+            .unwrap();
+
+        let mut node = Node::new("Hello duckdb!")
+            .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
+            .to_owned();
+
+        node.metadata
+            .insert("filter".to_string(), "true".to_string());
+
+        client.setup().await.unwrap();
+        client.store(node).await.unwrap();
+
+        tracing::info!("Stored node");
+
+        let connection = client.connection.lock().unwrap();
+        let mut stmt = connection
+            .prepare("SELECT uuid,path,chunk FROM test")
+            .unwrap();
+
+        let node_iter = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, String>(0).unwrap(), // id
+                    row.get::<_, String>(1).unwrap(), // chunk
+                    row.get::<_, String>(2).unwrap(), // path
+                ))
+            })
+            .unwrap();
+
+        let retrieved = node_iter.collect::<Result<Vec<_>, _>>().unwrap();
+        dbg!(&retrieved);
+        //
+        assert_eq!(retrieved.len(), 1);
     }
 }
