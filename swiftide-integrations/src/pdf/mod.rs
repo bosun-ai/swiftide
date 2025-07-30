@@ -1,17 +1,17 @@
 //! PDF document ingestion support for Swiftide
-//!
+//! 
 //! This module provides a loader for extracting text content from PDF files
 //! and feeding it into the Swiftide indexing pipeline. The loader converts
 //! PDF text to Markdown format for better downstream processing.
-//!
+//! 
 //! # Features
-//!
+//! 
 //! - Text extraction from PDF documents
 //! - Conversion to Markdown format for structured processing
 //! - Extensible design for future enhancements (tables, images, etc.)
-//!
+//! 
 //! # Example
-//!
+//! 
 //! ```no_run
 //! # use swiftide_integrations::pdf::PdfLoader;
 //! # use swiftide_indexing::Pipeline;
@@ -28,13 +28,13 @@ use derive_builder::Builder;
 pub mod loader;
 
 /// A loader for PDF documents that extracts text content and converts it to Markdown
-///
-/// This loader uses the `pdf-extract` crate to extract text from PDF files and
+/// 
+/// This loader uses the `lopdf` crate to extract text from PDF files and
 /// formats the output as Markdown. It's designed to be extensible for future
 /// enhancements like table extraction and image processing.
-///
+/// 
 /// # Example
-///
+/// 
 /// ```no_run
 /// # use swiftide_integrations::pdf::PdfLoader;
 /// # use swiftide_indexing::Pipeline;
