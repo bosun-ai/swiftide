@@ -312,7 +312,7 @@ mod tests {
     #[ignore]
     async fn test_pdf_loader_stream_real_cv() {
         // This test requires a real CV PDF file to be placed in the tests directory
-        let loader = PdfLoader::from_path("tests/data/cv.pdf");
+        let loader = PdfLoader::from_path("src/pdf/tests/data/cv.pdf");
         let stream = loader.into_stream();
         let nodes: Vec<_> = stream.try_collect().await.unwrap();
         assert!(!nodes.is_empty(), "Should extract at least one node from the CV PDF");
@@ -327,7 +327,7 @@ mod tests {
     #[ignore]
     async fn test_pdf_loader_stream_real_multi_page() {
         // This test requires a real multi-page PDF file to be placed in the tests directory
-        let loader = PdfLoader::from_path("tests/data/multi_page.pdf");
+        let loader = PdfLoader::from_path("src/pdf/tests/data/multi_page.pdf");
         let stream = loader.into_stream();
         let nodes: Vec<_> = stream.try_collect().await.unwrap();
         
