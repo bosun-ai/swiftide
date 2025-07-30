@@ -8936,9 +8936,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.136"
+version = "2.37.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fdbfe03ac239cec1cf9bea823048a44e247a2973c5212e4fa03adbd8ad8c551"
+checksum = "51d5717ab642c74a884a19c7c56585515139b834131e8d0522ec24d8d05b7435"
 dependencies = [
  "ahash 0.8.12",
  "aho-corasick",
@@ -10922,7 +10922,7 @@ dependencies = [
  "fastrand",
  "serde",
  "serde_json",
- "toml 0.9.3",
+ "toml 0.8.23",
  "ureq",
 ]
 
