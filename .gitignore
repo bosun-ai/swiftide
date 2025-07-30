@@ -28,3 +28,6 @@ tmp
 # MacOS specific files
 .DS_Store
 **/.DS_Store
+
+# Test data files
+swiftide-integrations/src/pdf/tests/data/
