@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1753793073429,
+  "lastUpdate": 1754050271599,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24827,6 +24827,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 333309,
             "range": "± 9170",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "787349329e34956bcd205b8da64bb241c15c8e65",
+          "message": "feat(agents/local-executor): Support running inline shebang scripts (#874)",
+          "timestamp": "2025-08-01T14:02:15+02:00",
+          "tree_id": "31ce4580d2bdbea57d37c2add8a70929768d997b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/787349329e34956bcd205b8da64bb241c15c8e65"
+        },
+        "date": 1754050269825,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 848101,
+            "range": "± 17172",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 332732,
+            "range": "± 5960",
             "unit": "ns/iter"
           }
         ]
