@@ -149,8 +149,6 @@ tokio = { workspace = true }
 arrow-array = { workspace = true }
 sqlx = { workspace = true }
 lancedb = { workspace = true }
-uuid = { workspace = true }
-duckdb = { workspace = true }
 
 [lints]
 workspace = true

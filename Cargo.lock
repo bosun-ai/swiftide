@@ -9446,7 +9446,6 @@ dependencies = [
  "async-openai 0.29.0",
  "async-trait",
  "document-features",
- "duckdb",
  "lancedb",
  "mockall",
  "qdrant-client",
@@ -9464,7 +9463,6 @@ dependencies = [
  "test-log",
  "testcontainers",
  "tokio",
- "uuid",
  "wiremock",
 ]
 
@@ -9580,7 +9578,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "uuid",
 ]
 
 [[package]]
