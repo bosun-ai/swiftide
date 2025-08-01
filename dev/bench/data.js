@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754050271599,
+  "lastUpdate": 1754054049305,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24881,6 +24881,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 332732,
             "range": "± 5960",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f2948b596d7c91c518e700c5d2589fba5a45b649",
+          "message": "fix(pipeline): Revert cache nodes after they've been successfully ran (#800) (#852)\n\nThis reverts commit ba6ec0485dc950e83e91e6a8102becc0e8a13158.",
+          "timestamp": "2025-08-01T15:05:28+02:00",
+          "tree_id": "c6f730214cb427282002243e02d94d4539c9240d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f2948b596d7c91c518e700c5d2589fba5a45b649"
+        },
+        "date": 1754054048189,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 782438,
+            "range": "± 13565",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256670,
+            "range": "± 1537",
             "unit": "ns/iter"
           }
         ]
