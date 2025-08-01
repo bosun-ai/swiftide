@@ -25,7 +25,7 @@ async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
 fs-err = { version = "3.1", default-features = false }
 futures-util = { version = "0.3", default-features = true }
-tokio = { version = "1.46", features = [
+tokio = { version = "1.47", features = [
   "rt-multi-thread",
   "time",
 ], default-features = false }
