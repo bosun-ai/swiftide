@@ -1,13 +1,20 @@
 //! Local executor for running tools on the local machine.
 //!
 //! By default will use the current directory as the working directory.
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use derive_builder::Builder;
 use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
 use swiftide_indexing::loaders::FileLoader;
+use tokio::{
+    io::{AsyncBufReadExt as _, AsyncWriteExt as _},
+    task::JoinSet,
+};
 
 #[derive(Debug, Clone, Builder)]
 pub struct LocalExecutor {
@@ -35,22 +42,103 @@ impl LocalExecutor {
     }
 
     async fn exec_shell(&self, cmd: &str) -> Result<CommandOutput, CommandError> {
-        let output = tokio::process::Command::new("sh")
-            .arg("-c")
-            .arg(cmd)
-            .current_dir(&self.workdir)
-            .output()
-            .await
-            .context("Executor could not run command")?;
+        let lines: Vec<&str> = cmd.lines().collect();
+        let mut child = if let Some(first_line) = lines.first()
+            && first_line.starts_with("#!")
+        {
+            let interpreter = first_line.trim_start_matches("#!/usr/bin/env ").trim();
+            tracing::info!(interpreter, "detected shebang; running as script");
 
-        let stdout = String::from_utf8(output.stdout).context("Failed to parse stdout")?;
-        let stderr = String::from_utf8(output.stderr).context("Failed to parse stderr")?;
-        let merged_output = format!("{stdout}{stderr}");
+            let mut command = tokio::process::Command::new(interpreter);
+
+            let mut child = command
+                .current_dir(&self.workdir)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?;
+
+            if let Some(mut stdin) = child.stdin.take() {
+                let body = lines[1..].join("\n");
+                stdin.write_all(body.as_bytes()).await?;
+            }
+
+            child
+        } else {
+            tracing::info!("no shebang detected; running as command");
+
+            let mut command = tokio::process::Command::new("sh");
+
+            // Treat as shell command
+            command
+                .arg("-c")
+                .arg(cmd)
+                .current_dir(&self.workdir)
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?
+        };
+        // Run the command in a shell
+
+        // NOTE: Feels way overcomplicated just because we want both stderr and stdout
+        let mut joinset = JoinSet::new();
+
+        if let Some(stdout) = child.stdout.take() {
+            joinset.spawn(async move {
+                let mut lines = tokio::io::BufReader::new(stdout).lines();
+                let mut out = Vec::new();
+                while let Ok(Some(line)) = lines.next_line().await {
+                    out.push(line);
+                }
+                out
+            });
+        } else {
+            tracing::warn!("Command has no stdout");
+        }
+
+        if let Some(stderr) = child.stderr.take() {
+            joinset.spawn(async move {
+                let mut lines = tokio::io::BufReader::new(stderr).lines();
+                let mut out = Vec::new();
+                while let Ok(Some(line)) = lines.next_line().await {
+                    out.push(line);
+                }
+                out
+            });
+        } else {
+            tracing::warn!("Command has no stderr");
+        }
+
+        let outputs = joinset.join_all().await;
+        let &[stdout, stderr] = outputs
+            .iter()
+            .map(Vec::as_slice)
+            .collect::<Vec<_>>()
+            .as_slice()
+        else {
+            // This should never happen
+            return Err(anyhow::anyhow!("Failed to get outputs from command").into());
+        };
+
+        // outputs stdout and stderr should be empty
+        let output = child
+            .wait_with_output()
+            .await
+            .map_err(anyhow::Error::from)?;
+
+        let cmd_output = stdout
+            .iter()
+            .chain(stderr.iter())
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n")
+            .into();
 
         if output.status.success() {
-            Ok(merged_output.into())
+            Ok(cmd_output)
         } else {
-            Err(CommandError::NonZeroExit(merged_output.into()))
+            Err(CommandError::NonZeroExit(cmd_output))
         }
     }
 
@@ -143,7 +231,7 @@ mod tests {
         let output = executor.exec_cmd(&read_cmd).await?;
 
         // Verify that the content read from the file matches the expected content
-        assert_eq!(output.to_string(), format!("{file_content}\n"));
+        assert_eq!(output.to_string(), format!("{file_content}"));
 
         Ok(())
     }
@@ -167,6 +255,34 @@ mod tests {
 
         // Verify that the output matches the expected content
         assert_eq!(output.to_string().trim(), "hello world");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_run_shebang() -> anyhow::Result<()> {
+        // Create a temporary directory
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        // Instantiate LocalExecutor with the temporary directory as workdir
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+        };
+
+        let script = r#"#!/usr/bin/env python3
+print("hello from python")
+print(1 + 2)"#;
+
+        // Execute the echo command
+        let output = executor
+            .exec_cmd(&Command::shell(script))
+            .await?
+            .to_string();
+
+        // Verify that the output matches the expected content
+        assert!(output.contains("hello from python"));
+        assert!(output.contains('3'));
 
         Ok(())
     }
@@ -203,7 +319,7 @@ mod tests {
         let output = executor.exec_cmd(&read_cmd).await?;
 
         // Verify that the content read from the file matches the expected content
-        assert_eq!(output.to_string(), format!("{file_content}\n"));
+        assert_eq!(output.to_string(), format!("{file_content}"));
 
         Ok(())
     }
