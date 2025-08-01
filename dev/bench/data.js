@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754054049305,
+  "lastUpdate": 1754056779445,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -24935,6 +24935,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256670,
             "range": "± 1537",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4bbf207637a1aebe4e0d5b2d4030c3d1f99d4c1c",
+          "message": "feat(agents/local-executor): Allow clearing, adding and removing env variable (#875)",
+          "timestamp": "2025-08-01T15:50:55+02:00",
+          "tree_id": "c7b907377ddf6ef2b4782cbf6e490b0e2e369ec2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4bbf207637a1aebe4e0d5b2d4030c3d1f99d4c1c"
+        },
+        "date": 1754056777769,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 790231,
+            "range": "± 14311",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257528,
+            "range": "± 1323",
             "unit": "ns/iter"
           }
         ]
