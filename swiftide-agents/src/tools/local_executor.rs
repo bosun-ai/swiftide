@@ -2,6 +2,7 @@
 //!
 //! By default will use the current directory as the working directory.
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     process::Stdio,
 };
@@ -20,12 +21,25 @@ use tokio::{
 pub struct LocalExecutor {
     #[builder(default = ".".into(), setter(into))]
     workdir: PathBuf,
+
+    /// Clears env variables before executing commands.
+    #[builder(default)]
+    pub(crate) env_clear: bool,
+    /// Remove these environment variables before executing commands.
+    #[builder(default, setter(into))]
+    pub(crate) env_remove: Vec<String>,
+    ///  Set these environment variables before executing commands.
+    #[builder(default, setter(into))]
+    pub(crate) envs: HashMap<String, String>,
 }
 
 impl Default for LocalExecutor {
     fn default() -> Self {
         LocalExecutor {
             workdir: ".".into(),
+            env_clear: false,
+            env_remove: Vec::new(),
+            envs: HashMap::new(),
         }
     }
 }
@@ -34,6 +48,9 @@ impl LocalExecutor {
     pub fn new(workdir: impl Into<PathBuf>) -> Self {
         LocalExecutor {
             workdir: workdir.into(),
+            env_clear: false,
+            env_remove: Vec::new(),
+            envs: HashMap::new(),
         }
     }
 
@@ -41,6 +58,7 @@ impl LocalExecutor {
         LocalExecutorBuilder::default()
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn exec_shell(&self, cmd: &str) -> Result<CommandOutput, CommandError> {
         let lines: Vec<&str> = cmd.lines().collect();
         let mut child = if let Some(first_line) = lines.first()
@@ -50,6 +68,21 @@ impl LocalExecutor {
             tracing::info!(interpreter, "detected shebang; running as script");
 
             let mut command = tokio::process::Command::new(interpreter);
+
+            if self.env_clear {
+                tracing::info!("clearing environment variables");
+                command.env_clear();
+            }
+
+            for var in &self.env_remove {
+                tracing::info!(var, "clearing environment variable");
+                command.env_remove(var);
+            }
+
+            for (key, value) in &self.envs {
+                tracing::info!(key, "setting environment variable");
+                command.env(key, value);
+            }
 
             let mut child = command
                 .current_dir(&self.workdir)
@@ -70,10 +103,23 @@ impl LocalExecutor {
             let mut command = tokio::process::Command::new("sh");
 
             // Treat as shell command
+            command.arg("-c").arg(cmd).current_dir(&self.workdir);
+
+            if self.env_clear {
+                tracing::info!("clearing environment variables");
+                command.env_clear();
+            }
+
+            for var in &self.env_remove {
+                tracing::info!(var, "clearing environment variable");
+                command.env_remove(var);
+            }
+
+            for (key, value) in &self.envs {
+                tracing::info!(key, "setting environment variable");
+                command.env(key, value);
+            }
             command
-                .arg("-c")
-                .arg(cmd)
-                .current_dir(&self.workdir)
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
@@ -81,7 +127,6 @@ impl LocalExecutor {
         };
         // Run the command in a shell
 
-        // NOTE: Feels way overcomplicated just because we want both stderr and stdout
         let mut joinset = JoinSet::new();
 
         if let Some(stdout) = child.stdout.take() {
@@ -208,6 +253,7 @@ mod tests {
         // Instantiate LocalExecutor with the temporary directory as workdir
         let executor = LocalExecutor {
             workdir: temp_path.to_path_buf(),
+            ..Default::default()
         };
 
         // Define the file path and content
@@ -245,6 +291,7 @@ mod tests {
         // Instantiate LocalExecutor with the temporary directory as workdir
         let executor = LocalExecutor {
             workdir: temp_path.to_path_buf(),
+            ..Default::default()
         };
 
         // Define the echo command
@@ -260,6 +307,86 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_local_executor_clear_env() -> anyhow::Result<()> {
+        // Create a temporary directory
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        // Instantiate LocalExecutor with the temporary directory as workdir
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            env_clear: true,
+            ..Default::default()
+        };
+
+        // Define the echo command
+        let echo_cmd = Command::Shell("printenv".to_string());
+
+        // Execute the echo command
+        let output = executor.exec_cmd(&echo_cmd).await?.to_string();
+
+        // Verify that the output matches the expected content
+        // assert_eq!(output.to_string().trim(), "");
+        assert!(!output.contains("CARGO_PKG_VERSION"), "{output}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_add_env() -> anyhow::Result<()> {
+        // Create a temporary directory
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        // Instantiate LocalExecutor with the temporary directory as workdir
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            envs: HashMap::from([("TEST_ENV".to_string(), "HELLO".to_string())]),
+            ..Default::default()
+        };
+
+        // Define the echo command
+        let echo_cmd = Command::Shell("printenv".to_string());
+
+        // Execute the echo command
+        let output = executor.exec_cmd(&echo_cmd).await?.to_string();
+
+        // Verify that the output matches the expected content
+        // assert_eq!(output.to_string().trim(), "");
+        assert!(output.contains("TEST_ENV=HELLO"), "{output}");
+        // Double tap its included by default
+        assert!(output.contains("CARGO_PKG_VERSION"), "{output}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_env_remove() -> anyhow::Result<()> {
+        // Create a temporary directory
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        // Instantiate LocalExecutor with the temporary directory as workdir
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            env_remove: vec!["CARGO_PKG_VERSION".to_string()],
+            ..Default::default()
+        };
+
+        // Define the echo command
+        let echo_cmd = Command::Shell("printenv".to_string());
+
+        // Execute the echo command
+        let output = executor.exec_cmd(&echo_cmd).await?.to_string();
+
+        // Verify that the output matches the expected content
+        // assert_eq!(output.to_string().trim(), "");
+        assert!(!output.contains("CARGO_PKG_VERSION="), "{output}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_local_executor_run_shebang() -> anyhow::Result<()> {
         // Create a temporary directory
         let temp_dir = TempDir::new()?;
@@ -268,6 +395,7 @@ mod tests {
         // Instantiate LocalExecutor with the temporary directory as workdir
         let executor = LocalExecutor {
             workdir: temp_path.to_path_buf(),
+            ..Default::default()
         };
 
         let script = r#"#!/usr/bin/env python3
@@ -296,6 +424,7 @@ print(1 + 2)"#;
         // Instantiate LocalExecutor with the temporary directory as workdir
         let executor = LocalExecutor {
             workdir: temp_path.to_path_buf(),
+            ..Default::default()
         };
 
         // Define the file path and content
@@ -333,6 +462,7 @@ print(1 + 2)"#;
         // Instantiate LocalExecutor with the temporary directory as workdir
         let executor = LocalExecutor {
             workdir: temp_path.to_path_buf(),
+            ..Default::default()
         };
 
         // Define the file path and content
@@ -384,6 +514,7 @@ print(1 + 2)"#;
         // Instantiate LocalExecutor with the temporary directory as workdir
         let executor = LocalExecutor {
             workdir: temp_path.to_path_buf(),
+            ..Default::default()
         };
 
         // Stream files with no extensions filter
