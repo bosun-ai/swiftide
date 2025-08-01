@@ -8625,9 +8625,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.141"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30b9eff21ebe718216c6ec64e1d9ac57087aad11efc64e32002bce4a0d4c03d3"
+checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
 dependencies = [
  "indexmap 2.10.0",
  "itoa",
@@ -8936,9 +8936,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.136"
+version = "2.37.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fdbfe03ac239cec1cf9bea823048a44e247a2973c5212e4fa03adbd8ad8c551"
+checksum = "0aa678e2af844a24eb7b60569c4968aa627d3a9791cb969eb3b15bccb549a16f"
 dependencies = [
  "ahash 0.8.12",
  "aho-corasick",
@@ -10922,7 +10922,7 @@ dependencies = [
  "fastrand",
  "serde",
  "serde_json",
- "toml 0.9.3",
+ "toml 0.8.23",
  "ureq",
 ]
 
