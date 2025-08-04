@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.0](https://github.com/bosun-ai/swiftide/compare/v0.29.0...v0.30.0) - 2025-08-04
+
+### New features
+
+- [4bbf207](https://github.com/bosun-ai/swiftide/commit/4bbf207637a1aebe4e0d5b2d4030c3d1f99d4c1c) *(agents/local-executor)*  Allow clearing, adding and removing env variable ([#875](https://github.com/bosun-ai/swiftide/pull/875))
+
+- [7873493](https://github.com/bosun-ai/swiftide/commit/787349329e34956bcd205b8da64bb241c15c8e65) *(agents/local-executor)*  Support running inline shebang scripts ([#874](https://github.com/bosun-ai/swiftide/pull/874))
+
+### Bug fixes
+
+- [f2948b5](https://github.com/bosun-ai/swiftide/commit/f2948b596d7c91c518e700c5d2589fba5a45b649) *(pipeline)*  Revert cache nodes after they've been successfully ran ([#800](https://github.com/bosun-ai/swiftide/pull/800)) ([#852](https://github.com/bosun-ai/swiftide/pull/852))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.29.0...0.30.0
+
+
+
 ## [0.29.0](https://github.com/bosun-ai/swiftide/compare/v0.28.1...v0.29.0) - 2025-07-29
 
 ### New features
