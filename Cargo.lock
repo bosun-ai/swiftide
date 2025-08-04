@@ -7771,9 +7771,9 @@ dependencies = [
 
 [[package]]
 name = "redb"
-version = "2.6.1"
+version = "2.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fef838cd981b5c46e9e91e20e4623e43b29b5c251eb245b34da0cbd2da09ab27"
+checksum = "59b38b05028f398f08bea4691640503ec25fcb60b82fb61ce1f8fd1f4fccd3f7"
 dependencies = [
  "libc",
 ]
@@ -8625,9 +8625,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.141"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30b9eff21ebe718216c6ec64e1d9ac57087aad11efc64e32002bce4a0d4c03d3"
+checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
 dependencies = [
  "indexmap 2.10.0",
  "itoa",
@@ -8936,9 +8936,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.136"
+version = "2.37.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fdbfe03ac239cec1cf9bea823048a44e247a2973c5212e4fa03adbd8ad8c551"
+checksum = "0aa678e2af844a24eb7b60569c4968aa627d3a9791cb969eb3b15bccb549a16f"
 dependencies = [
  "ahash 0.8.12",
  "aho-corasick",
@@ -10377,9 +10377,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.47.0"
+version = "1.47.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43864ed400b6043a4757a25c7a64a8efde741aed79a056a2fb348a406701bb35"
+checksum = "89e49afdadebb872d3145a5638b59eb0691ea23e46ca484037cfab3b76b95038"
 dependencies = [
  "backtrace",
  "bytes",
@@ -10478,16 +10478,15 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.15"
+version = "0.7.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66a539a9ad6d5d281510d5bd368c973d636c02dbf8a67300bfb6b950696ad7df"
+checksum = "14307c986784f72ef81c89db7d9e28d6ac26d16213b109ea501696195e6e3ce5"
 dependencies = [
  "bytes",
  "futures-core",
  "futures-io",
  "futures-sink",
  "futures-util",
- "hashbrown 0.15.4",
  "pin-project-lite",
  "tokio",
 ]
@@ -10919,7 +10918,7 @@ dependencies = [
  "fastrand",
  "serde",
  "serde_json",
- "toml 0.9.3",
+ "toml 0.8.23",
  "ureq",
 ]
 
