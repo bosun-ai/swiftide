@@ -400,10 +400,10 @@ mod tests {
         assert_eq!(optional_tool.tool_spec().parameters.len(), 1);
         assert_eq!(
             serde_json::to_string(&optional_tool.tool_spec().parameters[0].ty).unwrap(),
-            json!(["string", "null"]).to_string()
+            json!("string").to_string()
         );
 
-        let tool_call = builder.args(r#"{"b": "hello"}"#).build().unwrap();
+        let tool_call = builder.args(r#"{"text": "hello"}"#).build().unwrap();
 
         let result = optional_tool
             .invoke(&(), &tool_call)
@@ -414,7 +414,7 @@ mod tests {
             .to_string();
         assert_eq!(result, "hello");
 
-        let tool_call = builder.args(r#"{"b": null}"#).build().unwrap();
+        let tool_call = builder.args(r#"{"text": null}"#).build().unwrap();
         let result = optional_tool
             .invoke(&(), &tool_call)
             .await
@@ -473,6 +473,12 @@ mod tests {
             pub a: i32,
             pub b: i32,
         }
+
+        #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+        pub struct OptRequest {
+            pub text: Option<String>,
+        }
+
         #[derive(Debug, Clone)]
         pub struct Calculator {
             tool_router: ToolRouter<Self>,
@@ -512,10 +518,10 @@ mod tests {
             #[tool(description = "Optional echo")]
             fn optional(
                 &self,
-                Parameters(b): Parameters<Option<String>>,
+                Parameters(OptRequest { text }): Parameters<OptRequest>,
             ) -> Result<CallToolResult, McpError> {
                 Ok(CallToolResult::success(vec![Content::text(
-                    b.unwrap_or_default(),
+                    text.unwrap_or_default(),
                 )]))
             }
         }
