@@ -61,9 +61,10 @@ impl Transformer for OutlineCodeTreeSitter {
     #[tracing::instrument(skip_all, name = "transformers.outline_code_tree_sitter")]
     async fn transform_node(&self, mut node: Node) -> Result<Node> {
         if let Some(minimum_file_size) = self.minimum_file_size
-            && node.chunk.len() < minimum_file_size {
-                return Ok(node);
-            }
+            && node.chunk.len() < minimum_file_size
+        {
+            return Ok(node);
+        }
 
         let outline_result = self.outliner.outline(&node.chunk)?;
         node.metadata.insert(NAME, outline_result);

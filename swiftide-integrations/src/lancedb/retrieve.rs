@@ -167,8 +167,9 @@ impl LanceDB {
             }
         };
 
-        for batch in batches
-            .iter() { process_batch(batch, &mut documents); }
+        for batch in batches {
+            process_batch(batch, &mut documents);
+        }
 
         documents
     }

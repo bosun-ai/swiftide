@@ -305,11 +305,12 @@ impl Tool for McpTool {
             .join("\n");
 
         if let Some(error) = response.is_error
-            && error {
-                return Err(ToolError::Unknown(anyhow::anyhow!(
-                    "Failed to execute mcp tool: {content}"
-                )));
-            }
+            && error
+        {
+            return Err(ToolError::Unknown(anyhow::anyhow!(
+                "Failed to execute mcp tool: {content}"
+            )));
+        }
 
         Ok(content.into())
     }

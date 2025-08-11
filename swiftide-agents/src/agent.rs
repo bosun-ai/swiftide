@@ -455,10 +455,11 @@ impl Agent {
             .map_err(AgentError::MessageHistoryError)?
         {
             if let Some(limit) = self.limit
-                && loop_counter >= limit {
-                    tracing::warn!("Agent loop limit reached");
-                    break;
-                }
+                && loop_counter >= limit
+            {
+                tracing::warn!("Agent loop limit reached");
+                break;
+            }
 
             // If the last message contains tool calls that have not been completed,
             // run the tools first
@@ -802,9 +803,10 @@ fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessa
         }
 
         if let ChatMessage::Assistant(.., Some(tool_calls)) = message
-            && !tool_calls.is_empty() {
-                return Some(message);
-            }
+            && !tool_calls.is_empty()
+        {
+            return Some(message);
+        }
     }
 
     None
