@@ -38,7 +38,7 @@ impl From<&Document> for serde_json::Value {
 
 impl PartialOrd for Document {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.content.cmp(&other.content))
+        Some(self.cmp(other))
     }
 }
 
