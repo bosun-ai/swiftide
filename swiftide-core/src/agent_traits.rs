@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// A ToolExecutor provides an interface for agents to interact with a system
+/// A `ToolExecutor` provides an interface for agents to interact with a system
 /// in an isolated context.
 ///
 /// When starting up an agent, it's context expects an executor. For example,

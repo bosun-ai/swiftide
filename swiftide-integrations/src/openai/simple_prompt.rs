@@ -23,10 +23,10 @@ impl<
     C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
 > SimplePrompt for GenericOpenAI<C>
 {
-    /// Sends a prompt to the OpenAI API and returns the response content.
+    /// Sends a prompt to the `OpenAI` API and returns the response content.
     ///
     /// # Parameters
-    /// - `prompt`: A string slice that holds the prompt to be sent to the OpenAI API.
+    /// - `prompt`: A string slice that holds the prompt to be sent to the `OpenAI` API.
     ///
     /// # Returns
     /// - `Result<String>`: On success, returns the content of the response as a `String`. On
@@ -34,7 +34,7 @@ impl<
     ///
     /// # Errors
     /// - Returns an error if the model is not set in the default options.
-    /// - Returns an error if the request to the OpenAI API fails.
+    /// - Returns an error if the request to the `OpenAI` API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {

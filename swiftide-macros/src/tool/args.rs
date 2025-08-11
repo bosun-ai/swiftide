@@ -126,25 +126,25 @@ impl ToolArgs {
 
         let mut args = ToolArgs::from_list(&attr_args)?;
         for arg in input.sig.inputs.iter().skip(1) {
-            if let FnArg::Typed(PatType { pat, ty, .. }) = arg {
-                if let Pat::Ident(ident) = &**pat {
-                    let ty = as_owned_ty(ty);
+            if let FnArg::Typed(PatType { pat, ty, .. }) = arg
+                && let Pat::Ident(ident) = &**pat
+            {
+                let ty = as_owned_ty(ty);
 
-                    // It will error later if the types don't match
-                    //
-                    // It overwrites any json_type or rust_type set earlier in the attribute macro
-                    args.params
-                        .iter_mut()
-                        .find(|p| ident.ident == p.name)
-                        .map(|p| {
-                            p.json_type = ParamType::try_from_rust_type(&ty)?;
-                            p.rust_type = ty;
-                            p.required = !matches!(p.json_type, ParamType::Option(..));
+                // It will error later if the types don't match
+                //
+                // It overwrites any json_type or rust_type set earlier in the attribute macro
+                args.params
+                    .iter_mut()
+                    .find(|p| ident.ident == p.name)
+                    .map(|p| {
+                        p.json_type = ParamType::try_from_rust_type(&ty)?;
+                        p.rust_type = ty;
+                        p.required = !matches!(p.json_type, ParamType::Option(..));
 
-                            Ok::<(), Error>(())
-                        })
-                        .transpose()?;
-                }
+                        Ok::<(), Error>(())
+                    })
+                    .transpose()?;
             }
         }
         args.infer_param_types()?;
@@ -317,10 +317,10 @@ fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Re
     let mut seen_arg_names = vec![];
 
     item_fn.sig.inputs.iter().skip(1).for_each(|arg| {
-        if let FnArg::Typed(PatType { pat, .. }) = arg {
-            if let Pat::Ident(ident) = &**pat {
-                seen_arg_names.push(ident.ident.to_string());
-            }
+        if let FnArg::Typed(PatType { pat, .. }) = arg
+            && let Pat::Ident(ident) = &**pat
+        {
+            seen_arg_names.push(ident.ident.to_string());
         }
     });
     seen_arg_names.sort();
@@ -362,24 +362,21 @@ fn as_owned_ty(ty: &syn::Type) -> syn::Type {
             }
 
             // Does this happen?
-            if p.path.is_ident("Vec") {
-                if let syn::PathArguments::AngleBracketed(args) = &p.path.segments[0].arguments {
-                    if let syn::GenericArgument::Type(ty) = args.args.first().unwrap() {
-                        let inner = as_owned_ty(ty);
-                        return parse_quote!(Vec<#inner>);
-                    }
-                }
+            if p.path.is_ident("Vec")
+                && let syn::PathArguments::AngleBracketed(args) = &p.path.segments[0].arguments
+                && let syn::GenericArgument::Type(ty) = args.args.first().unwrap()
+            {
+                let inner = as_owned_ty(ty);
+                return parse_quote!(Vec<#inner>);
             }
 
-            if let Some(last_segment) = p.path.segments.last() {
-                if last_segment.ident.to_string().as_str() == "Option" {
-                    if let syn::PathArguments::AngleBracketed(generics) = &last_segment.arguments {
-                        if let Some(syn::GenericArgument::Type(inner_ty)) = generics.args.first() {
-                            let inner_ty = as_owned_ty(inner_ty);
-                            return parse_quote!(Option<#inner_ty>);
-                        }
-                    }
-                }
+            if let Some(last_segment) = p.path.segments.last()
+                && last_segment.ident.to_string().as_str() == "Option"
+                && let syn::PathArguments::AngleBracketed(generics) = &last_segment.arguments
+                && let Some(syn::GenericArgument::Type(inner_ty)) = generics.args.first()
+            {
+                let inner_ty = as_owned_ty(inner_ty);
+                return parse_quote!(Option<#inner_ty>);
             }
 
             return parse_quote!(String);

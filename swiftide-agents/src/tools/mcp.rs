@@ -184,7 +184,7 @@ impl ToolBox for McpToolbox {
 
                 let mut tool_spec = ToolSpec::builder()
                     .name(t.name.clone())
-                    .description(t.description)
+                    .description(t.description.unwrap_or_default())
                     .to_owned();
                 let mut parameters = Vec::new();
 
@@ -289,19 +289,27 @@ impl Tool for McpTool {
             .context("Failed to call tool")?;
 
         tracing::debug!(response = ?response, tool = self.name().as_ref(), "Received response from mcp tool");
-        let content = response
-            .content
+        let Some(content) = response.content else {
+            if response.is_error.unwrap_or(false) {
+                return Err(ToolError::Unknown(anyhow::anyhow!(
+                    "Error received from mcp tool without content"
+                )));
+            }
+
+            return Ok("Tool executed successfully".into());
+        };
+        let content = content
             .into_iter()
             .filter_map(|c| c.as_text().map(|t| t.text.to_string()))
             .collect::<Vec<_>>()
             .join("\n");
 
-        if let Some(error) = response.is_error {
-            if error {
-                return Err(ToolError::Unknown(anyhow::anyhow!(
-                    "Failed to execute mcp tool: {content}"
-                )));
-            }
+        if let Some(error) = response.is_error
+            && error
+        {
+            return Err(ToolError::Unknown(anyhow::anyhow!(
+                "Failed to execute mcp tool: {content}"
+            )));
         }
 
         Ok(content.into())
@@ -392,10 +400,10 @@ mod tests {
         assert_eq!(optional_tool.tool_spec().parameters.len(), 1);
         assert_eq!(
             serde_json::to_string(&optional_tool.tool_spec().parameters[0].ty).unwrap(),
-            json!(["string", "null"]).to_string()
+            json!("string").to_string()
         );
 
-        let tool_call = builder.args(r#"{"b": "hello"}"#).build().unwrap();
+        let tool_call = builder.args(r#"{"text": "hello"}"#).build().unwrap();
 
         let result = optional_tool
             .invoke(&(), &tool_call)
@@ -406,7 +414,7 @@ mod tests {
             .to_string();
         assert_eq!(result, "hello");
 
-        let tool_call = builder.args(r#"{"b": null}"#).build().unwrap();
+        let tool_call = builder.args(r#"{"text": null}"#).build().unwrap();
         let result = optional_tool
             .invoke(&(), &tool_call)
             .await
@@ -424,7 +432,7 @@ mod tests {
         while let Ok((stream, addr)) = unix_listener.accept().await {
             println!("Client connected: {addr:?}");
             tokio::spawn(async move {
-                match serve_server(Calculator, stream).await {
+                match serve_server(Calculator::new(), stream).await {
                     Ok(server) => {
                         println!("Server initialized successfully");
                         if let Err(e) = server.waiting().await {
@@ -454,51 +462,71 @@ mod tests {
     #[allow(clippy::unused_self)]
     mod copied_from_rmcp {
         use rmcp::{
-            ServerHandler,
-            model::{ServerCapabilities, ServerInfo},
-            schemars, tool,
+            ErrorData as McpError, ServerHandler,
+            handler::server::tool::{Parameters, ToolRouter},
+            model::{CallToolResult, Content, ServerCapabilities, ServerInfo},
+            schemars, tool, tool_handler,
         };
 
         #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
-        pub struct SumRequest {
-            #[schemars(description = "the left hand side number")]
+        pub struct Request {
             pub a: i32,
             pub b: i32,
         }
+
+        #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+        pub struct OptRequest {
+            pub text: Option<String>,
+        }
+
         #[derive(Debug, Clone)]
-        pub struct Calculator;
-        #[rmcp::tool(tool_box)]
+        pub struct Calculator {
+            tool_router: ToolRouter<Self>,
+        }
+
+        #[rmcp::tool_router]
         impl Calculator {
-            #[tool(description = "Calculate the sum of two numbers")]
-            fn sum(&self, #[tool(aggr)] SumRequest { a, b }: SumRequest) -> String {
-                (a + b).to_string()
+            pub fn new() -> Self {
+                Self {
+                    tool_router: Self::tool_router(),
+                }
             }
 
+            #[allow(clippy::unnecessary_wraps)]
+            #[tool(description = "Calculate the sum of two numbers")]
+            fn sum(
+                &self,
+                Parameters(Request { a, b }): Parameters<Request>,
+            ) -> Result<CallToolResult, McpError> {
+                Ok(CallToolResult::success(vec![Content::text(
+                    (a + b).to_string(),
+                )]))
+            }
+
+            #[allow(clippy::unnecessary_wraps)]
             #[tool(description = "Calculate the sum of two numbers")]
             fn sub(
                 &self,
-                #[tool(param)]
-                #[schemars(description = "the left hand side number", required)]
-                a: i32,
-                #[tool(param)]
-                #[schemars(description = "the left hand side number")]
-                b: i32,
-            ) -> String {
-                (a - b).to_string()
+                Parameters(Request { a, b }): Parameters<Request>,
+            ) -> Result<CallToolResult, McpError> {
+                Ok(CallToolResult::success(vec![Content::text(
+                    (a - b).to_string(),
+                )]))
             }
 
+            #[allow(clippy::unnecessary_wraps)]
             #[tool(description = "Optional echo")]
             fn optional(
                 &self,
-                #[tool(param)]
-                #[schemars(description = "Optional text")]
-                b: Option<String>,
-            ) -> String {
-                b.unwrap_or_default()
+                Parameters(OptRequest { text }): Parameters<OptRequest>,
+            ) -> Result<CallToolResult, McpError> {
+                Ok(CallToolResult::success(vec![Content::text(
+                    text.unwrap_or_default(),
+                )]))
             }
         }
 
-        #[rmcp::tool(tool_box)]
+        #[tool_handler]
         impl ServerHandler for Calculator {
             fn get_info(&self) -> ServerInfo {
                 ServerInfo {

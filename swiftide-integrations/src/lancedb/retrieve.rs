@@ -19,9 +19,9 @@ use super::{FieldConfig, LanceDB};
 
 /// Implement the `Retrieve` trait for `SimilaritySingleEmbedding` search strategy.
 ///
-/// Can be used in the query pipeline to retrieve documents from LanceDB.
+/// Can be used in the query pipeline to retrieve documents from `LanceDB`.
 ///
-/// Supports filters as strings. Refer to the LanceDB documentation for the format.
+/// Supports filters as strings. Refer to the `LanceDB` documentation for the format.
 #[async_trait]
 impl Retrieve<SimilaritySingleEmbedding<String>> for LanceDB {
     #[tracing::instrument]
@@ -93,10 +93,10 @@ impl Retrieve<SimilaritySingleEmbedding> for LanceDB {
 
 #[async_trait]
 impl<Q: ExecutableQuery + Send + Sync + 'static> Retrieve<CustomStrategy<Q>> for LanceDB {
-    /// Implements vector similarity search for LanceDB using a custom query strategy.
+    /// Implements vector similarity search for `LanceDB` using a custom query strategy.
     ///
     /// # Type Parameters
-    /// * `VectorQuery` - LanceDB's query type for vector similarity search
+    /// * `VectorQuery` - `LanceDB`'s query type for vector similarity search
     async fn retrieve(
         &self,
         search_strategy: &CustomStrategy<Q>,
@@ -167,9 +167,9 @@ impl LanceDB {
             }
         };
 
-        batches
-            .iter()
-            .for_each(|batch| process_batch(batch, &mut documents));
+        for batch in batches {
+            process_batch(batch, &mut documents);
+        }
 
         documents
     }

@@ -14,12 +14,12 @@ use wiremock::MockServer;
 /// Tests the indexing pipeline without any mocks.
 ///
 /// This test sets up a temporary directory and file, simulates API responses using mock servers,
-/// configures an OpenAI client, and runs the indexing pipeline. It then validates that the data
+/// configures an `OpenAI` client, and runs the indexing pipeline. It then validates that the data
 /// is correctly stored in the Qdrant vector database.
 ///
 /// # Panics
 /// Panics if any of the setup steps fail, such as creating the temporary directory or file,
-/// starting the mock server, or configuring the OpenAI client.
+/// starting the mock server, or configuring the `OpenAI` client.
 ///
 /// # Errors
 /// If the indexing pipeline encounters an error, the test will print the received requests

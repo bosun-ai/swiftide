@@ -38,6 +38,7 @@ rmcp = { workspace = true, optional = true, default-features = false, features =
   "base64",
   "client",
   "macros",
+  "server",
 ] }
 
 [dev-dependencies]

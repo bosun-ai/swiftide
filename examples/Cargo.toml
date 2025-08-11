@@ -41,7 +41,11 @@ sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
 serde = { workspace = true }
-rmcp = { workspace = true, features = ["transport-child-process", "client"] }
+rmcp = { workspace = true, features = [
+  "transport-child-process",
+  "client",
+  "server",
+] }
 metrics = { workspace = true }
 
 

@@ -31,11 +31,11 @@ struct VectorSearchResult {
     chunk: String,
 }
 
-/// Test case for verifying the PgVector indexing pipeline functionality.
+/// Test case for verifying the `PgVector` indexing pipeline functionality.
 ///
 /// This test:
 /// - Sets up a temporary file and Postgres database for testing.
-/// - Configures a PgVector instance with a vector size of 384.
+/// - Configures a `PgVector` instance with a vector size of 384.
 /// - Executes an indexing pipeline for Rust code chunks with embedded vector metadata.
 /// - Performs a similarity-based vector search on the database and validates the retrieved results.
 ///
@@ -127,9 +127,9 @@ async fn test_pgvector_indexing() {
 /// Test the retrieval functionality of `PgVector` integration.
 ///
 /// This test verifies that a Rust code snippet can be embedded,
-/// stored in a PostgreSQL database using `PgVector`, and accurately
+/// stored in a `PostgreSQL` database using `PgVector`, and accurately
 /// retrieved using a single similarity-based query pipeline. It sets up
-/// a mock OpenAI client, configures `PgVector`, and executes a query
+/// a mock `OpenAI` client, configures `PgVector`, and executes a query
 /// to ensure the pipeline retrieves the correct data and generates
 /// an expected response.
 #[test_log::test(tokio::test)]
@@ -234,17 +234,17 @@ async fn test_pgvector_retrieve() {
     assert_eq!(first_document, &expected);
 }
 
-/// Tests the dynamic vector similarity search functionality using PostgreSQL.
+/// Tests the dynamic vector similarity search functionality using `PostgreSQL`.
 ///
 /// This integration test verifies the complete workflow of vector similarity search:
 /// 1. Sets up a temporary test environment with a sample Rust code file
-/// 2. Configures PostgreSQL with pgvector extension for vector operations
+/// 2. Configures `PostgreSQL` with pgvector extension for vector operations
 /// 3. Creates and populates test data using a processing pipeline:
 ///    - Loads source code files
 ///    - Chunks code into processable segments
-///    - Generates metadata using OpenAI
-///    - Embeds text using FastEmbed
-///    - Stores processed data in PostgreSQL
+///    - Generates metadata using `OpenAI`
+///    - Embeds text using `FastEmbed`
+///    - Stores processed data in `PostgreSQL`
 /// 4. Implements a custom search strategy that:
 ///    - Filters results based on metadata
 ///    - Orders results by vector similarity

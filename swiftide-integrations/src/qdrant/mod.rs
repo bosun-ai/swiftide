@@ -211,13 +211,13 @@ impl QdrantBuilder {
             self = self.vectors(HashMap::default());
         }
         let vector = vector.into();
-        if let Some(vectors) = self.vectors.as_mut() {
-            if let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector) {
-                tracing::warn!(
-                    "Overriding named vector config: {}",
-                    overridden_vector.embedded_field
-                );
-            }
+        if let Some(vectors) = self.vectors.as_mut()
+            && let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector)
+        {
+            tracing::warn!(
+                "Overriding named vector config: {}",
+                overridden_vector.embedded_field
+            );
         }
         self
     }
@@ -229,13 +229,13 @@ impl QdrantBuilder {
             self = self.sparse_vectors(HashMap::default());
         }
         let vector = vector.into();
-        if let Some(vectors) = self.sparse_vectors.as_mut() {
-            if let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector) {
-                tracing::warn!(
-                    "Overriding named vector config: {}",
-                    overridden_vector.embedded_field
-                );
-            }
+        if let Some(vectors) = self.sparse_vectors.as_mut()
+            && let Some(overridden_vector) = vectors.insert(vector.embedded_field.clone(), vector)
+        {
+            tracing::warn!(
+                "Overriding named vector config: {}",
+                overridden_vector.embedded_field
+            );
         }
         self
     }
