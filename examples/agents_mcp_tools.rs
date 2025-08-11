@@ -5,7 +5,7 @@ use anyhow::Result;
 use rmcp::{
     ServiceExt as _,
     model::{ClientInfo, Implementation},
-    transport::TokioChildProcess,
+    transport::{ConfigureCommandExt as _, TokioChildProcess},
 };
 use swiftide::agents::{self, tools::mcp::McpToolbox};
 
@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     let running_service = client_info
         .serve(TokioChildProcess::new(
             tokio::process::Command::new("npx")
-                .args(["-y", "@modelcontextprotocol/server-everything"]),
+                .configure(|cmd| cmd.args(["-y", "@modelcontextprotocol/server-everything"])),
         )?)
         .await?;
 

@@ -120,11 +120,10 @@ impl Prompt {
     ///
     /// Panics if the `RWLock` is poisoned.
     pub fn render(&self) -> Result<String> {
-        if self.context.is_none() {
-            if let TemplateRef::OneOff(ref template) = self.template_ref {
+        if self.context.is_none()
+            && let TemplateRef::OneOff(ref template) = self.template_ref {
                 return Ok(template.to_string());
             }
-        }
 
         let context: Cow<'_, tera::Context> = self
             .context

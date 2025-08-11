@@ -94,7 +94,7 @@ impl TransformQuery for Arc<dyn TransformQuery> {
 /// A search strategy for the query pipeline
 pub trait SearchStrategy: Clone + Send + Sync + Default {}
 
-/// Can retrieve documents given a SearchStrategy
+/// Can retrieve documents given a `SearchStrategy`
 #[async_trait]
 pub trait Retrieve<S: SearchStrategy>: Send + Sync + DynClone {
     async fn retrieve(
