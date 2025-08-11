@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754320503167,
+  "lastUpdate": 1754935059298,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25043,6 +25043,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256739,
             "range": "± 2036",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "09f421bcc934721ab5fcf3dc2808fe5beefcc9a2",
+          "message": "chore: Update rmcp and schemars (#881)",
+          "timestamp": "2025-08-11T19:48:39+02:00",
+          "tree_id": "ab7769183362e095fcb975c51cfbe26498bb62de",
+          "url": "https://github.com/bosun-ai/swiftide/commit/09f421bcc934721ab5fcf3dc2808fe5beefcc9a2"
+        },
+        "date": 1754935057808,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 821696,
+            "range": "± 15382",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260230,
+            "range": "± 2835",
             "unit": "ns/iter"
           }
         ]
