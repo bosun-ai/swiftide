@@ -1,4 +1,6 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, pin::Pin, sync::Arc};
+
+use crate::tasks::transition::TransitionFn;
 
 use super::{
     errors::TaskError,
@@ -41,8 +43,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
         let noop_executor = Box::new(Transition {
             node: Box::new(noop),
-            node_id,
-            r#fn: Arc::new(|_output| unreachable!("Done node should never be evaluated.")),
+            node_id: Box::new(node_id),
+            r#fn: Arc::new(|_output| {
+                Box::pin(async { unreachable!("Done node should never be evaluated.") })
+            }),
             is_set: false,
         });
         Self {
@@ -207,7 +211,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
         let node_executor = Box::new(Transition::<T::Input, T::Output, T::Error> {
-            node_id: node_id.as_dyn(),
+            node_id: Box::new(node_id.as_dyn()),
             node: Box::new(node),
             r#fn: Arc::new(move |_output| unreachable!("No transition for node {}.", node_id.id)),
             is_set: false,
@@ -220,17 +224,14 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id
     }
 
-    /// # Errors
-    ///
-    /// Errors if the node does not exist
     pub fn register_transition<'a, From, To, F>(
         &mut self,
         from: NodeId<From>,
         transition: F,
     ) -> Result<(), TaskError>
     where
-        From: TaskNode + ?Sized + 'static,
-        To: TaskNode<Input = From::Output> + ?Sized + 'a,
+        From: TaskNode + 'static,
+        To: TaskNode<Input = From::Output> + 'a,
         F: Fn(To::Input) -> MarkedTransitionPayload<To> + Send + Sync + 'static,
     {
         let node_executor = self
@@ -252,12 +253,73 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 from.id
             );
         };
-        let wrapped = move |output: From::Output| {
-            let payload = transition(output);
-            payload.into_inner()
-        };
+        let transition = Arc::new(transition);
+        let wrapped: Arc<dyn TransitionFn<From::Output>> = Arc::new(move |output: From::Output| {
+            let transition = transition.clone();
+            Box::pin(async move {
+                let output = transition(output);
+                output.into_inner()
+            })
+        });
 
-        exec.r#fn = Arc::new(wrapped);
+        exec.r#fn = wrapped;
+        exec.is_set = true;
+        // set function as before
+
+        Ok(())
+    }
+    /// # Errors
+    ///
+    /// Errors if the node does not exist
+    ///
+    /// NOTE: AsyncFn traits' returned future are not 'Send' and the inner type is unstable.
+    /// When they are, we can update Fn to AsyncFn
+    pub fn register_transition_async<'a, From, To, F>(
+        &mut self,
+        from: NodeId<From>,
+        transition: F,
+    ) -> Result<(), TaskError>
+    where
+        From: TaskNode + 'static,
+        To: TaskNode<Input = From::Output> + 'a,
+        F: Fn(
+                To::Input,
+            )
+                -> Pin<Box<dyn Future<Output = MarkedTransitionPayload<To>> + Send + Sync>>
+            + Send
+            + Sync
+            + 'static,
+    {
+        let node_executor = self
+            .nodes
+            .get_mut(from.id)
+            .ok_or_else(|| TaskError::missing_node(from.id))?;
+
+        let any_executor: &mut dyn Any = node_executor.as_mut();
+
+        let Some(exec) =
+            any_executor.downcast_mut::<Transition<From::Input, From::Output, From::Error>>()
+        else {
+            let expected =
+                std::any::type_name::<Transition<From::Input, From::Output, From::Error>>();
+            let actual = std::any::type_name_of_val(node_executor);
+
+            unreachable!(
+                "Transition at index {:?} is not a {expected:?}; Mismatched types, should not never happen. Actual: {actual:?}",
+                from.id
+            );
+        };
+        let transition = Arc::new(transition);
+        let wrapped: Arc<dyn TransitionFn<From::Output>> = Arc::new(move |output: From::Output| {
+            let transition = transition.clone();
+
+            Box::pin(async move {
+                let output = transition(output).await;
+                output.into_inner()
+            })
+        });
+
+        exec.r#fn = wrapped;
         exec.is_set = true;
         // set function as before
 

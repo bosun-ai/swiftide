@@ -31,7 +31,10 @@ async fn main() -> Result<()> {
 
     task.starts_with(agent_id);
 
-    task.register_transition(agent_id, move |context| hello_id.transitions_with(context))?;
+    // Async is also supported
+    task.register_transition_async(agent_id, move |context| {
+        Box::pin(async move { hello_id.transitions_with(context) })
+    })?;
     task.register_transition(hello_id, task.transitions_to_done())?;
 
     task.run("Hello there!").await?;
