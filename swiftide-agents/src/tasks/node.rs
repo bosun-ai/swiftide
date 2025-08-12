@@ -56,7 +56,7 @@ pub trait TaskNode: Send + Sync + DynClone + Any {
     ) -> Result<Self::Output, Self::Error>;
 }
 
-type DynNodeId<T> = NodeId<
+pub type DynNodeId<T> = NodeId<
     dyn TaskNode<
             Input = <T as TaskNode>::Input,
             Output = <T as TaskNode>::Output,
