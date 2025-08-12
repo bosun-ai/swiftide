@@ -230,8 +230,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         transition: F,
     ) -> Result<(), TaskError>
     where
-        From: TaskNode + 'static,
-        To: TaskNode<Input = From::Output> + 'a,
+        From: TaskNode + 'static + ?Sized,
+        To: TaskNode<Input = From::Output> + 'a + ?Sized,
         F: Fn(To::Input) -> MarkedTransitionPayload<To> + Send + Sync + 'static,
     {
         let node_executor = self
@@ -280,12 +280,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         transition: F,
     ) -> Result<(), TaskError>
     where
-        From: TaskNode + 'static,
-        To: TaskNode<Input = From::Output> + 'a,
-        F: Fn(
-                To::Input,
-            )
-                -> Pin<Box<dyn Future<Output = MarkedTransitionPayload<To>> + Send + Sync>>
+        From: TaskNode + 'static + ?Sized,
+        To: TaskNode<Input = From::Output> + 'a + ?Sized,
+        F: Fn(To::Input) -> Pin<Box<dyn Future<Output = MarkedTransitionPayload<To>> + Send>>
             + Send
             + Sync
             + 'static,

@@ -9,16 +9,14 @@ use super::{
 };
 
 pub trait TransitionFn<Input: Send + Sync>:
-    for<'a> Fn(Input) -> Pin<Box<dyn Future<Output = TransitionPayload> + Send + Sync>> + Send + Sync
+    for<'a> Fn(Input) -> Pin<Box<dyn Future<Output = TransitionPayload> + Send>> + Send + Sync
 {
 }
 
 // dyn_clone::clone_trait_object!(<Input> TransitionFn<Input>);
 
 impl<Input: Send + Sync, F> TransitionFn<Input> for F where
-    F: for<'a> Fn(Input) -> Pin<Box<dyn Future<Output = TransitionPayload> + Send + Sync>>
-        + Send
-        + Sync
+    F: for<'a> Fn(Input) -> Pin<Box<dyn Future<Output = TransitionPayload> + Send>> + Send + Sync
 {
 }
 
@@ -30,7 +28,7 @@ pub(crate) struct Transition<
     pub(crate) node: Box<dyn TaskNode<Input = Input, Output = Output, Error = Error> + Send + Sync>,
     pub(crate) node_id: Box<NodeId<dyn TaskNode<Input = Input, Output = Output, Error = Error>>>,
     // pub(crate) r#fn: Arc<dyn Fn(Output) -> TransitionPayload + Send + Sync>,
-    pub(crate) r#fn: Arc<dyn TransitionFn<Output> + Send + Sync>,
+    pub(crate) r#fn: Arc<dyn TransitionFn<Output> + Send>,
     pub(crate) is_set: bool,
 }
 
