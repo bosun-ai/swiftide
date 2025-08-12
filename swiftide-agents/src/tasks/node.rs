@@ -36,9 +36,7 @@ impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
 
     async fn evaluate(
         &self,
-        _node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
+        _node_id: &DynNodeId<Self>,
         _context: &Context,
     ) -> Result<Self::Output, Self::Error> {
         Ok(())
@@ -53,12 +51,18 @@ pub trait TaskNode: Send + Sync + DynClone + Any {
 
     async fn evaluate(
         &self,
-        node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
+        node_id: &DynNodeId<Self>,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error>;
 }
+
+type DynNodeId<T> = NodeId<
+    dyn TaskNode<
+            Input = <T as TaskNode>::Input,
+            Output = <T as TaskNode>::Output,
+            Error = <T as TaskNode>::Error,
+        >,
+>;
 
 dyn_clone::clone_trait_object!(
     TaskNode<
