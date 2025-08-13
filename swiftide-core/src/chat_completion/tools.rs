@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt;
 
 use derive_builder::Builder;
@@ -17,8 +18,12 @@ pub enum ToolOutput {
 
     /// Indicates that the toolcall failed, but can be handled by the llm
     Fail(String),
-    /// Stops an agent
-    Stop,
+
+    /// Stops an agent with an optional message
+    Stop(Option<Cow<'static, str>>),
+
+    /// Indicates that the agent failed and should stop
+    AgentFailed(Option<Cow<'static, str>>),
 }
 
 impl ToolOutput {
@@ -31,7 +36,15 @@ impl ToolOutput {
     }
 
     pub fn stop() -> Self {
-        ToolOutput::Stop
+        ToolOutput::Stop(None)
+    }
+
+    pub fn stop_with_args(output: impl Into<Cow<'static, str>>) -> Self {
+        ToolOutput::Stop(Some(output.into()))
+    }
+
+    pub fn agent_failed(output: impl Into<Cow<'static, str>>) -> Self {
+        ToolOutput::AgentFailed(Some(output.into()))
     }
 
     pub fn fail(text: impl Into<String>) -> Self {
@@ -46,21 +59,25 @@ impl ToolOutput {
     }
 }
 
-impl<T: AsRef<str>> From<T> for ToolOutput {
-    fn from(s: T) -> Self {
-        ToolOutput::Text(s.as_ref().to_string())
+impl<S: AsRef<str>> From<S> for ToolOutput {
+    fn from(value: S) -> Self {
+        ToolOutput::Text(value.as_ref().to_string())
     }
 }
-
 impl std::fmt::Display for ToolOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ToolOutput::Text(value) => write!(f, "{value}"),
             ToolOutput::Fail(value) => write!(f, "Tool call failed: {value}"),
-            ToolOutput::Stop => write!(f, "Stop"),
+            ToolOutput::Stop(args) => write!(f, "Stop {}", args.as_deref().unwrap_or_default()),
             ToolOutput::FeedbackRequired(_) => {
                 write!(f, "Feedback required")
             }
+            ToolOutput::AgentFailed(args) => write!(
+                f,
+                "Agent failed with output: {}",
+                args.as_deref().unwrap_or_default()
+            ),
         }
     }
 }

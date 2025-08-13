@@ -39,7 +39,7 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
         let Some(args) = tool_call.args() else {
             return Err(
                 ::swiftide::chat_completion::errors::ToolError::MissingArguments(
-                    format!("No arguments provided for {}", "search_code"),
+                    format!("No arguments provided for {}", "search_code").into(),
                 ),
             )
         };

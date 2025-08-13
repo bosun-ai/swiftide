@@ -645,7 +645,7 @@ impl Agent {
                 }
                 self.add_message(ChatMessage::ToolOutput(
                     tool_call.clone(),
-                    ToolOutput::Fail(error.to_string()),
+                    ToolOutput::fail(error.to_string()),
                 ))
                 .await?;
                 if stop {
@@ -688,12 +688,14 @@ impl Agent {
     // Handle any tool specific output (e.g. stop)
     async fn handle_control_tools(&mut self, tool_call: &ToolCall, output: &ToolOutput) {
         match output {
-            ToolOutput::Stop => {
+            ToolOutput::Stop(maybe_message) => {
                 tracing::warn!("Stop tool called, stopping agent");
-                self.stop(StopReason::RequestedByTool(tool_call.clone()))
-                    .await;
+                self.stop(StopReason::RequestedByTool(
+                    tool_call.clone(),
+                    maybe_message.clone(),
+                ))
+                .await;
             }
-
             ToolOutput::FeedbackRequired(maybe_payload) => {
                 tracing::warn!("Feedback required, stopping agent");
                 self.stop(StopReason::FeedbackRequired {
@@ -701,6 +703,10 @@ impl Agent {
                     payload: maybe_payload.clone(),
                 })
                 .await;
+            }
+            ToolOutput::AgentFailed(output) => {
+                tracing::warn!("Agent failed, stopping agent");
+                self.stop(StopReason::AgentFailed(output.clone())).await;
             }
             _ => (),
         }
@@ -1410,12 +1416,13 @@ mod tests {
             .unwrap()
             .to_owned();
 
+        let stop_output = ToolOutput::stop();
         let expected_chat_request = chat_request! {
             user!("Write a poem"),
             assistant!("Roses are red", ["mock_tool"]),
             tool_output!("mock_tool", "Great!"),
             assistant!("Roses are red", ["stop"]),
-            tool_output!("stop", ToolOutput::Stop),
+            tool_output!("stop", stop_output),
             user!("Try again!");
 
             tools = [mock_tool.clone()]

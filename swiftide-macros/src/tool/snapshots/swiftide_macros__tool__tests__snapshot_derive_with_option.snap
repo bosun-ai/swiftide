@@ -23,7 +23,7 @@ impl swiftide::chat_completion::Tool for HelloDerive {
         let Some(args) = tool_call.args() else {
             return Err(
                 ::swiftide::chat_completion::errors::ToolError::MissingArguments(
-                    format!("No arguments provided for {}", "hello_derive"),
+                    format!("No arguments provided for {}", "hello_derive").into(),
                 ),
             )
         };

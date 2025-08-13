@@ -1,5 +1,7 @@
 //! Internal state of the agent
 
+use std::borrow::Cow;
+
 use swiftide_core::chat_completion::ToolCall;
 
 #[derive(Clone, Debug, Default, strum_macros::EnumDiscriminants, strum_macros::EnumIs)]
@@ -26,7 +28,10 @@ impl State {
 #[derive(Clone, Debug, strum_macros::EnumIs, PartialEq)]
 pub enum StopReason {
     /// A tool called stop
-    RequestedByTool(ToolCall),
+    RequestedByTool(ToolCall, Option<Cow<'static, str>>),
+
+    /// Agent failed to complete with optional message
+    AgentFailed(Option<Cow<'static, str>>),
 
     /// A tool repeatedly failed
     ToolCallsOverLimit(ToolCall),
@@ -46,9 +51,9 @@ pub enum StopReason {
 }
 
 impl StopReason {
-    pub fn as_requested_by_tool(&self) -> Option<&ToolCall> {
-        if let StopReason::RequestedByTool(t) = self {
-            Some(t)
+    pub fn as_requested_by_tool(&self) -> Option<(&ToolCall, Option<&str>)> {
+        if let StopReason::RequestedByTool(t, message) = self {
+            Some((t, message.as_deref()))
         } else {
             None
         }
@@ -96,7 +101,7 @@ impl StopReason {
 }
 impl Default for StopReason {
     fn default() -> Self {
-        StopReason::Other("No reason provided".to_string())
+        StopReason::Other("No reason provided".into())
     }
 }
 

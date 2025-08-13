@@ -59,7 +59,7 @@ pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> T
     } else {
         quote! {
             let Some(args) = tool_call.args()
-            else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #tool_name))) };
+            else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #tool_name).into())) };
 
             let args: #args_struct_ident = ::swiftide::reexports::serde_json::from_str(&args)?;
             return self.#fn_name(agent_context, #(#arg_names),*).await;
@@ -134,7 +134,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     } else {
         quote! {
             let Some(args) = tool_call.args()
-            else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #expected_fn_name))) };
+            else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #expected_fn_name).into())) };
 
             let args: #args_struct_ident = ::swiftide::reexports::serde_json::from_str(&args)?;
             return self.#expected_fn_ident(agent_context, #(&#invoke_tool_args),*).await;
