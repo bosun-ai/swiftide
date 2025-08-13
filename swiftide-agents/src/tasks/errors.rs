@@ -53,10 +53,10 @@ impl TaskError {
     }
 }
 
-#[derive(Debug, thiserror::Error, Clone)]
+#[derive(Debug, thiserror::Error)]
 pub struct NodeError {
-    pub node_error: Arc<dyn std::error::Error + Send + Sync>,
-    pub transition_payload: Option<TransitionPayload>,
+    pub node_error: Box<dyn std::error::Error + Send + Sync>,
+    pub transition_payload: Option<Arc<TransitionPayload>>,
     pub node_id: usize,
 }
 
@@ -71,14 +71,14 @@ impl std::fmt::Display for NodeError {
 }
 
 impl NodeError {
-    pub fn new<E: std::error::Error + Send + Sync + 'static>(
-        node_error: E,
+    pub fn new(
+        node_error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
         node_id: usize,
         transition_payload: Option<TransitionPayload>,
     ) -> Self {
         Self {
-            node_error: Arc::new(node_error),
-            transition_payload,
+            node_error: node_error.into(),
+            transition_payload: transition_payload.map(Arc::new),
             node_id,
         }
     }

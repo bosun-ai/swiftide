@@ -86,10 +86,11 @@ impl From<NextNode> for TransitionPayload {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum TransitionPayload {
     NextNode(NextNode),
     Pause,
+    Error(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl TransitionPayload {
@@ -99,6 +100,10 @@ impl TransitionPayload {
 
     pub fn pause() -> Self {
         TransitionPayload::Pause
+    }
+
+    pub fn error(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
+        TransitionPayload::Error(error.into())
     }
 }
 

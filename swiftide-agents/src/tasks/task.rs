@@ -1,6 +1,6 @@
 use std::{any::Any, pin::Pin, sync::Arc};
 
-use crate::tasks::transition::TransitionFn;
+use crate::tasks::{errors::NodeError, transition::TransitionFn};
 
 use super::{
     errors::TaskError,
@@ -151,6 +151,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     self.current_node = transition_payload.node_id;
                     self.current_context = Some(transition_payload.context);
                 }
+                TransitionPayload::Error(error) => {
+                    return Err(TaskError::NodeError(NodeError::new(
+                        error,
+                        self.current_node,
+                        None,
+                    )));
+                }
             }
         }
 
@@ -224,6 +231,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id
     }
 
+    /// # Errors
+    ///
+    /// Errors if the node does not exist
     pub fn register_transition<'a, From, To, F>(
         &mut self,
         from: NodeId<From>,
