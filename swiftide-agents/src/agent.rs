@@ -116,6 +116,11 @@ pub struct Agent {
     #[builder(default)]
     pub(crate) streaming: bool,
 
+    /// When set to true, any tools in `Agent::default_tools` will be ommitted. Only works if you
+    /// at at least one tool of your own.
+    #[builder(private, default)]
+    pub(crate) clear_default_tools: bool,
+
     /// Internally tracks the amount of times a tool has been retried. The key is a hash based on
     /// the name and args of the tool.
     #[builder(private, default)]
@@ -141,6 +146,7 @@ impl Clone for Agent {
             tool_retries_counter: HashMap::new(),
             streaming: self.streaming,
             name: self.name.clone(),
+            clear_default_tools: self.clear_default_tools,
         }
     }
 }
@@ -282,6 +288,14 @@ impl AgentBuilder {
         self
     }
 
+    fn builder_default_tools(&self) -> HashSet<Box<dyn Tool>> {
+        if self.clear_default_tools.is_some_and(|b| b) {
+            HashSet::new()
+        } else {
+            Agent::default_tools()
+        }
+    }
+
     /// Define the available tools for the agent. Tools must implement the `Tool` trait.
     ///
     /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive
@@ -294,7 +308,7 @@ impl AgentBuilder {
             tools
                 .into_iter()
                 .map(Into::into)
-                .chain(Agent::default_tools())
+                .chain(self.builder_default_tools())
                 .collect(),
         );
         self
