@@ -86,8 +86,8 @@ pub struct Agent {
     ///         .build().unwrap())
     ///     .build().unwrap();
     /// ```
-    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default().into()))]
-    pub(crate) system_prompt: Option<Prompt>,
+    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default()))]
+    pub(crate) system_prompt: Option<SystemPrompt>,
 
     /// Initial state of the agent
     #[builder(private, default = state::State::default())]
@@ -180,6 +180,11 @@ impl AgentBuilder {
     {
         self.context = Some(Arc::new(context) as Arc<dyn AgentContext>);
         self
+    }
+
+    /// Returns a mutable reference to the system prompt, if it is set.
+    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+        self.system_prompt.as_mut().and_then(Option::as_mut)
     }
 
     /// Disable the system prompt.
@@ -423,6 +428,7 @@ impl Agent {
                 self.context
                     .add_messages(vec![ChatMessage::System(
                         system_prompt
+                            .to_prompt()
                             .render()
                             .map_err(AgentError::FailedToRenderSystemPrompt)?,
                     )])
