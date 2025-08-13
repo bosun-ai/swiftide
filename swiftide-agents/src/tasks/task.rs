@@ -3,7 +3,7 @@
 //! The nodes can be any type that implements the `TaskNode` trait, which defines how the node
 //! will be evaluated with its input and output.
 //!
-//! Most swiftide primitves implement `TaskNode`, and it's easy to implement your own. Since how
+//! Most swiftide primitives implement `TaskNode`, and it's easy to implement your own. Since how
 //! agents interact is subject to taste, we recommend implementing your own.
 //!
 //! WARN: Here be dragons! This api is not stable yet. We are using it in production, and is
@@ -95,7 +95,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     ///
     /// Errors if a node is missing a transition
     pub fn validate_transitions(&self) -> Result<(), TaskError> {
-        // TODO: Validate that the task can commplete
+        // TODO: Validate that the task can complete
         for node_executor in &self.nodes {
             // Skip the done node (index 0)
             if node_executor.node_id() == 0 {
@@ -132,6 +132,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Resumes the task from the current node
+    ///
+    /// # Errors
     ///
     /// Errors if the task fails
     pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
@@ -206,6 +208,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Gets the current transition of the task
+    #[allow(dead_code)]
     fn current_transition<T: TaskNode + 'static>(
         &self,
     ) -> Option<&Transition<T::Input, T::Output, T::Error>> {

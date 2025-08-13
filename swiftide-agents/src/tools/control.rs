@@ -150,8 +150,6 @@ impl From<AgentCanFail> for Box<dyn Tool> {
     }
 }
 
-
-
 #[derive(Clone)]
 /// Wraps a tool and requires approval before it can be used
 pub struct ApprovalRequired(pub Box<dyn Tool>);

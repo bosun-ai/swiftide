@@ -116,7 +116,7 @@ pub struct Agent {
     #[builder(default)]
     pub(crate) streaming: bool,
 
-    /// When set to true, any tools in `Agent::default_tools` will be ommitted. Only works if you
+    /// When set to true, any tools in `Agent::default_tools` will be omitted. Only works if you
     /// at at least one tool of your own.
     #[builder(private, default)]
     pub(crate) clear_default_tools: bool,

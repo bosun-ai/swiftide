@@ -5,7 +5,7 @@ use super::{
     node::{NodeArg, NodeId, TaskNode},
 };
 
-// TODO: Narly api, maybe use a more generic enum wrapper
+// TODO: Gnarly api, maybe use a more generic enum wrapper
 // for everything?
 #[derive(Clone)]
 pub struct SyncClosureTaskNode<F, I, O>
