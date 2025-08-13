@@ -156,7 +156,8 @@ impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + '
 
         match self.node.evaluate(&self.node_id.as_dyn(), &context).await {
             Ok(output) => Ok((self.r#fn)(output).await),
-            Err(error) => Err(NodeError::new(error, self.node_id.id, None)), // node_id will be set by caller
+            Err(error) => Err(NodeError::new(error, self.node_id.id, None)), /* node_id will be
+                                                                              * set by caller */
         }
     }
 
