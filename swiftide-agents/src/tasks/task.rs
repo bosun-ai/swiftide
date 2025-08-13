@@ -1,3 +1,13 @@
+//! Tasks enable you to to define a graph of interacting nodes
+//!
+//! The nodes can be any type that implements the `TaskNode` trait, which defines how the node
+//! will be evaluated with its input and output.
+//!
+//! Most swiftide primitves implement `TaskNode`, and it's easy to implement your own. Since how
+//! agents interact is subject to taste, we recommend implementing your own.
+//!
+//! WARN: Here be dragons! This api is not stable yet. We are using it in production, and is
+//! subject to rapid change. However, do not hesitate to open an issue if you find anything.
 use std::{any::Any, pin::Pin, sync::Arc};
 
 use crate::tasks::{errors::NodeError, transition::TransitionFn};
@@ -58,13 +68,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         }
     }
 
-    // unused
-    // TODO: We can make the api nicer
     pub fn done(&self) -> NodeId<NoopNode<Output>> {
         NodeId::new(0, &NoopNode::default())
     }
 
-    // TODO: Same as above
+    /// Creates a transition to the done node
     pub fn transitions_to_done(
         &self,
     ) -> impl Fn(Output) -> MarkedTransitionPayload<NoopNode<Output>> + Send + Sync + 'static {
@@ -72,7 +80,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         move |context| done.transitions_with(context)
     }
 
-    // TODO: We can make the api nicer, i.e. default to the first node added
+    /// Defines the start node of the task
     pub fn starts_with<T: TaskNode<Input = Input> + Clone + 'static>(
         &mut self,
         node_id: NodeId<T>,
@@ -81,6 +89,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.start_node = node_id.id;
     }
 
+    /// Validates that all nodes have transitions set
+    ///
     /// # Errors
     ///
     /// Errors if a node is missing a transition
@@ -100,6 +110,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Ok(())
     }
 
+    /// Runs the task with the given input
+    ///
     /// # Errors
     ///
     /// Errors if the task fails
@@ -111,15 +123,15 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.resume().await
     }
 
+    /// Resets the task to the start node
+    ///
     /// WARN: This **will** lead to a type mismatch if the previous context is not the same as the
     /// input of the start node
     pub fn reset(&mut self) {
         self.current_node = self.start_node;
     }
 
-    // TODO: Use type state to avoid calling this accidentally?
-    // Also this does not make sense without pausing properly implemented
-    /// # Errors
+    /// Resumes the task from the current node
     ///
     /// Errors if the task fails
     pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
@@ -174,14 +186,17 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Ok(Some(output))
     }
 
+    /// Gets the current node of the task
     pub fn current_node<T: TaskNode + 'static>(&self) -> Option<&T> {
         self.node_at_index(self.current_node)
     }
 
+    /// Gets the node at the given `NodeId`
     pub fn node_at<T: TaskNode + 'static>(&self, node_id: NodeId<T>) -> Option<&T> {
         self.node_at_index(node_id.id)
     }
 
+    /// Gets the node at the given index
     pub fn node_at_index<T: TaskNode + 'static>(&self, index: usize) -> Option<&T> {
         let transition = self.transition_at_index::<T>(index)?;
 
@@ -190,13 +205,14 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         (node as &dyn Any).downcast_ref::<T>()
     }
 
-    #[allow(dead_code)]
+    /// Gets the current transition of the task
     fn current_transition<T: TaskNode + 'static>(
         &self,
     ) -> Option<&Transition<T::Input, T::Output, T::Error>> {
         self.transition_at_index::<T>(self.current_node)
     }
 
+    /// Gets the transition at the given `NodeId`
     fn transition_at_index<T: TaskNode + 'static>(
         &self,
         index: usize,
@@ -209,6 +225,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         (&**transition as &dyn Any).downcast_ref::<Transition<T::Input, T::Output, T::Error>>()
     }
 
+    /// Registers a new node in the task
     pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
     where
         T: TaskNode + 'static + Clone,
@@ -231,6 +248,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id
     }
 
+    /// Registers a transition from one node to another
+    ///
+    /// Note that there are various helpers and conversions for the `MarkedTransitionPayload`
+    ///
     /// # Errors
     ///
     /// Errors if the node does not exist
@@ -278,12 +299,17 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
         Ok(())
     }
+
+    /// Registers a transition from one node to another asynchronously
+    ///
+    /// Note that there are various helpers and conversions for the `MarkedTransitionPayload`
+    ///
     /// # Errors
     ///
     /// Errors if the node does not exist
     ///
-    /// NOTE: AsyncFn traits' returned future are not 'Send' and the inner type is unstable.
-    /// When they are, we can update Fn to AsyncFn
+    /// NOTE: `AsyncFn` traits' returned future are not 'Send' and the inner type is unstable.
+    /// When they are, we can update Fn to `AsyncFn`
     pub fn register_transition_async<'a, From, To, F>(
         &mut self,
         from: NodeId<From>,
