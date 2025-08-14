@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755159167808,
+  "lastUpdate": 1755159215399,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25151,6 +25151,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258243,
             "range": "± 2520",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "87407626ef75c254fae0a677148609738fd64ccc",
+          "message": "feat(agents): Allow mutating an existing system prompt in the builder (#887)",
+          "timestamp": "2025-08-14T10:04:34+02:00",
+          "tree_id": "7a2e8e8dccfbcb22cca3bc08ec4bea8cd4ebd0da",
+          "url": "https://github.com/bosun-ai/swiftide/commit/87407626ef75c254fae0a677148609738fd64ccc"
+        },
+        "date": 1755159214265,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 814833,
+            "range": "± 49139",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 261949,
+            "range": "± 2948",
             "unit": "ns/iter"
           }
         ]
