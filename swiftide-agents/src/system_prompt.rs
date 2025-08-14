@@ -35,6 +35,32 @@ impl SystemPrompt {
     pub fn builder() -> SystemPromptBuilder {
         SystemPromptBuilder::default()
     }
+
+    pub fn to_prompt(&self) -> Prompt {
+        self.clone().into()
+    }
+}
+
+impl From<String> for SystemPrompt {
+    fn from(text: String) -> Self {
+        SystemPrompt {
+            role: None,
+            guidelines: Vec::new(),
+            constraints: Vec::new(),
+            template: text.into(),
+        }
+    }
+}
+
+impl From<&str> for SystemPrompt {
+    fn from(text: &str) -> Self {
+        SystemPrompt {
+            role: None,
+            guidelines: Vec::new(),
+            constraints: Vec::new(),
+            template: text.into(),
+        }
+    }
 }
 
 impl Default for SystemPrompt {
