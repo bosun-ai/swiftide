@@ -4,7 +4,9 @@ use async_trait::async_trait;
 use std::borrow::Cow;
 use swiftide_core::{
     AgentContext, ToolFeedback,
-    chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
+    chat_completion::{
+        ParamSpec, ParamType, Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError,
+    },
 };
 
 /// `Stop` tool is a default tool used by agents to stop
@@ -18,7 +20,7 @@ impl Tool for Stop {
         _agent_context: &dyn AgentContext,
         _tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        Ok(ToolOutput::Stop)
+        Ok(ToolOutput::stop())
     }
 
     fn name(&self) -> Cow<'_, str> {
@@ -36,6 +38,114 @@ impl Tool for Stop {
 
 impl From<Stop> for Box<dyn Tool> {
     fn from(val: Stop) -> Self {
+        Box::new(val)
+    }
+}
+
+/// `StopWithArgs` is an alternative stop tool that takes arguments
+#[derive(Clone, Debug, Default)]
+pub struct StopWithArgs {}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+struct StopWithArgsSpec {
+    pub output: String,
+}
+
+#[async_trait]
+impl Tool for StopWithArgs {
+    async fn invoke(
+        &self,
+        _agent_context: &dyn AgentContext,
+        tool_call: &ToolCall,
+    ) -> Result<ToolOutput, ToolError> {
+        let args: StopWithArgsSpec = serde_json::from_str(
+            tool_call
+                .args()
+                .ok_or(ToolError::missing_arguments("output"))?,
+        )?;
+
+        Ok(ToolOutput::stop_with_args(args.output))
+    }
+
+    fn name(&self) -> Cow<'_, str> {
+        "stop".into()
+    }
+
+    fn tool_spec(&self) -> ToolSpec {
+        ToolSpec::builder()
+            .name("stop")
+            .description("When you have completed, your task, call this with your expected output")
+            .parameters(vec![
+                ParamSpec::builder()
+                    .name("output")
+                    .description("The expected output of the task")
+                    .ty(ParamType::String)
+                    .required(true)
+                    .build()
+                    .unwrap(),
+            ])
+            .build()
+            .unwrap()
+    }
+}
+
+impl From<StopWithArgs> for Box<dyn Tool> {
+    fn from(val: StopWithArgs) -> Self {
+        Box::new(val)
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+struct AgentFailedArgsSpec {
+    pub reason: String,
+}
+
+/// A utility tool that can be used to let an agent decide it failed
+///
+/// This will _NOT_ have the agent return an error, instead, look at the stop reason of the agent.
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct AgentCanFail {}
+
+#[async_trait]
+impl Tool for AgentCanFail {
+    async fn invoke(
+        &self,
+        _agent_context: &dyn AgentContext,
+        tool_call: &ToolCall,
+    ) -> Result<ToolOutput, ToolError> {
+        let args: StopWithArgsSpec = serde_json::from_str(
+            tool_call
+                .args()
+                .ok_or(ToolError::missing_arguments("reason"))?,
+        )?;
+
+        Ok(ToolOutput::agent_failed(args.output))
+    }
+
+    fn name(&self) -> Cow<'_, str> {
+        "task_failed".into()
+    }
+
+    fn tool_spec(&self) -> ToolSpec {
+        ToolSpec::builder()
+            .name("stop")
+            .description("If you cannot complete your task, or have otherwise failed, call this with your reason for failure")
+            .parameters(vec![
+                ParamSpec::builder()
+                    .name("reason")
+                    .description("The reason for failure")
+                    .ty(ParamType::String)
+                    .required(true)
+                    .build()
+                    .unwrap(),
+            ])
+            .build()
+            .unwrap()
+    }
+}
+
+impl From<AgentCanFail> for Box<dyn Tool> {
+    fn from(val: AgentCanFail) -> Self {
         Box::new(val)
     }
 }

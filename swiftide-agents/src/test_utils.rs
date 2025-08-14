@@ -106,7 +106,7 @@ macro_rules! tool_failed {
                 .id("1")
                 .build()
                 .unwrap(),
-            ToolOutput::Fail($message.to_string()),
+            ToolOutput::fail($message),
         )
     }};
 }

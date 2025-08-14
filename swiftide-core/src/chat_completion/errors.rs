@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use thiserror::Error;
 
 use crate::CommandError;
@@ -16,7 +18,7 @@ pub enum ToolError {
 
     /// Tool requires arguments but none were provided
     #[error("arguments missing for tool {0:#}")]
-    MissingArguments(String),
+    MissingArguments(Cow<'static, str>),
 
     /// Tool execution failed
     #[error("tool execution failed: {0:#}")]
@@ -33,7 +35,7 @@ impl ToolError {
     }
 
     /// Tool is missing required arguments
-    pub fn missing_arguments(tool_name: impl Into<String>) -> Self {
+    pub fn missing_arguments(tool_name: impl Into<Cow<'static, str>>) -> Self {
         ToolError::MissingArguments(tool_name.into())
     }
 
