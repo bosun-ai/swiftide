@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754935059298,
+  "lastUpdate": 1755159167808,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25097,6 +25097,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 260230,
             "range": "± 2835",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dc574b41b259f430bb4dc38338416ea1aa9480bb",
+          "message": "feat(agents): Multi agent setup with graph-like Tasks (#861)\n\nStill many things to do.",
+          "timestamp": "2025-08-14T10:04:12+02:00",
+          "tree_id": "561ece7c787e3e9186400cbf87d59e495642e6fb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dc574b41b259f430bb4dc38338416ea1aa9480bb"
+        },
+        "date": 1755159166609,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 790952,
+            "range": "± 15559",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258243,
+            "range": "± 2520",
             "unit": "ns/iter"
           }
         ]
