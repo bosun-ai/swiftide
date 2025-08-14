@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.0](https://github.com/bosun-ai/swiftide/compare/v0.29.0...v0.30.0) - 2025-08-14
+
+### New features
+
+- [dc574b4](https://github.com/bosun-ai/swiftide/commit/dc574b41b259f430bb4dc38338416ea1aa9480bb) *(agents)*  Multi agent setup with graph-like Tasks ([#861](https://github.com/bosun-ai/swiftide/pull/861))
+
+- [8740762](https://github.com/bosun-ai/swiftide/commit/87407626ef75c254fae0a677148609738fd64ccc) *(agents)*  Allow mutating an existing system prompt in the builder ([#887](https://github.com/bosun-ai/swiftide/pull/887))
+
+- [4bbf207](https://github.com/bosun-ai/swiftide/commit/4bbf207637a1aebe4e0d5b2d4030c3d1f99d4c1c) *(agents/local-executor)*  Allow clearing, adding and removing env variable ([#875](https://github.com/bosun-ai/swiftide/pull/875))
+
+- [7873493](https://github.com/bosun-ai/swiftide/commit/787349329e34956bcd205b8da64bb241c15c8e65) *(agents/local-executor)*  Support running inline shebang scripts ([#874](https://github.com/bosun-ai/swiftide/pull/874))
+
+### Bug fixes
+
+- [f2948b5](https://github.com/bosun-ai/swiftide/commit/f2948b596d7c91c518e700c5d2589fba5a45b649) *(pipeline)*  Revert cache nodes after they've been successfully ran ([#800](https://github.com/bosun-ai/swiftide/pull/800)) ([#852](https://github.com/bosun-ai/swiftide/pull/852))
+
+### Miscellaneous
+
+- [09f421b](https://github.com/bosun-ai/swiftide/commit/09f421bcc934721ab5fcf3dc2808fe5beefcc9a2)  Update rmcp and schemars ([#881](https://github.com/bosun-ai/swiftide/pull/881))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.29.0...0.30.0
+
+
+
 ## [0.29.0](https://github.com/bosun-ai/swiftide/compare/v0.28.1...v0.29.0) - 2025-07-29
 
 ### New features
