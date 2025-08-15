@@ -1,4 +1,18 @@
-//! This example illustrates how to resume an agent from existing messages.
+//! This example illustrates how to set up a basic tasks
+//!
+//! Tasks follow  a graph model where each output of a node must match the input of the next node.
+//!
+//! To set up a task, you register nodes that implement the `TaskNode` trait. Most swiftide
+//! primiteves implement this trait, including agents, prompts, and closures.
+//!
+//! Then each node can be connected to the next node using the `register_transition` method. There
+//! is also a `register_transition_async` method that allows you to register an async transition.
+//!
+//! Since running an autonomous agent in a task is subject to taste, there is a basic
+//! `TaskAgent` that wraps it in an `Arc<Mutex>`, but your own implementation might want to toy
+//! with the state instead of the task instead.
+//!
+//! The API for closures as task nodes is still a bit clunky and subject to change.
 use anyhow::Result;
 use swiftide::{
     agents::{

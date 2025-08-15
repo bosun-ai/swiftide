@@ -87,6 +87,7 @@ Swiftide is a Rust library for building LLM applications, enabling fast data ing
 - A modular and extendable API, with minimal abstractions
 - Integrations with popular LLMs and storage providers
 - Ready to use pipeline transformations
+- Build graph like workflows with Tasks
 
 <div align="center">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
