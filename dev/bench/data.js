@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755244448277,
+  "lastUpdate": 1755247261023,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25259,6 +25259,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 260256,
             "range": "± 2068",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2fcfbb62f9922f1b24113bea7e0cce6dd3424f20",
+          "message": "chore(deps): bump docker/login-action from 3.4.0 to 3.5.0 (#878)\n\nBumps [docker/login-action](https://github.com/docker/login-action) from\n3.4.0 to 3.5.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/docker/login-action/releases\">docker/login-action's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v3.5.0</h2>\n<ul>\n<li>Support dual-stack endpoints for AWS ECR by <a\nhref=\"https://github.com/Spacefish\"><code>@​Spacefish</code></a> <a\nhref=\"https://github.com/crazy-max\"><code>@​crazy-max</code></a> in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/874\">docker/login-action#874</a>\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/876\">docker/login-action#876</a></li>\n<li>Bump <code>@​aws-sdk/client-ecr</code> to 3.859.0 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/860\">docker/login-action#860</a>\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/878\">docker/login-action#878</a></li>\n<li>Bump <code>@​aws-sdk/client-ecr-public</code> to 3.859.0 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/860\">docker/login-action#860</a>\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/878\">docker/login-action#878</a></li>\n<li>Bump <code>@​docker/actions-toolkit</code> from 0.57.0 to 0.62.1 in\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/870\">docker/login-action#870</a></li>\n<li>Bump form-data from 2.5.1 to 2.5.5 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/875\">docker/login-action#875</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/docker/login-action/compare/v3.4.0...v3.5.0\">https://github.com/docker/login-action/compare/v3.4.0...v3.5.0</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/184bdaa0721073962dff0199f1fb9940f07167d1\"><code>184bdaa</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/878\">#878</a>\nfrom docker/dependabot/npm_and_yarn/aws-sdk-dependenc...</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/5c6bc94683baa064818f51e7417087c2ac58b32c\"><code>5c6bc94</code></a>\nchore: update generated content</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/caf405864315c6006c5581b540e5047cf728b4e7\"><code>caf4058</code></a>\nbuild(deps): bump the aws-sdk-dependencies group with 2 updates</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/ef38ec311a7df3f01475313e7c5bb584b74b112a\"><code>ef38ec3</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/860\">#860</a>\nfrom docker/dependabot/npm_and_yarn/aws-sdk-dependenc...</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/d52e8ef81c0de894e9c95bed8de0ee5955ec7eb7\"><code>d52e8ef</code></a>\nchore: update generated content</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/9644ab7025be3206ff4b12f1531a1b6919022b00\"><code>9644ab7</code></a>\nbuild(deps): bump the aws-sdk-dependencies group with 2 updates</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/7abd1d512621d8896b31f4ea992d207f15915ad6\"><code>7abd1d5</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/875\">#875</a>\nfrom docker/dependabot/npm_and_yarn/form-data-2.5.5</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/1a81202c4fda440f3b33eca3381d5d39c7efe85e\"><code>1a81202</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/876\">#876</a>\nfrom crazy-max/aws-public-dual-stack</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/d1ab30dc54161cbfd704562857677edf4dd7837a\"><code>d1ab30d</code></a>\nchore: update generated content</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/f25ff28d1c8cd9a7c35896711238fed682755e1c\"><code>f25ff28</code></a>\nsupport dual-stack for aws public ecr</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/docker/login-action/compare/74a5d142397b4f367a81961eba4e8cd7edddf772...184bdaa0721073962dff0199f1fb9940f07167d1\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=docker/login-action&package-manager=github_actions&previous-version=3.4.0&new-version=3.5.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-08-15T10:32:15+02:00",
+          "tree_id": "7588d342ed2669a9594504fdb21b52830b49b768",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2fcfbb62f9922f1b24113bea7e0cce6dd3424f20"
+        },
+        "date": 1755247259305,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 792427,
+            "range": "± 18495",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 262687,
+            "range": "± 1184",
             "unit": "ns/iter"
           }
         ]
