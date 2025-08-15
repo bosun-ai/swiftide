@@ -10,8 +10,8 @@ use pin_project::pin_project;
 // /// After any [`Err`] is emitted, the stream is paused for [`Backoff::next_backoff`]. The
 // /// [`Backoff`] is [`reset`](`Backoff::reset`) on any [`Ok`] value.
 // ///
-// /// If [`Backoff::next_backoff`] returns [`None`] then the backing stream is given up on, and closed.
-// pub fn backoff<S: TryStream, B: Backoff>(
+// /// If [`Backoff::next_backoff`] returns [`None`] then the backing stream is given up on, and
+// closed. pub fn backoff<S: TryStream, B: Backoff>(
 //     stream: S,
 //     backoff: B,
 // ) -> StreamBackoff<S, B, impl Sleeper> {
@@ -72,7 +72,8 @@ where
         match this.state.as_mut().project() {
             StateProj::BackingOff { mut backoff_sleep } => match backoff_sleep.as_mut().poll(cx) {
                 Poll::Ready(()) => {
-                    // tracing::debug!(deadline = ?backoff_sleep.deadline(), "Backoff complete, waking up");
+                    // tracing::debug!(deadline = ?backoff_sleep.deadline(), "Backoff complete,
+                    // waking up");
                     this.state.set(State::Awake);
                 }
                 Poll::Pending => {
