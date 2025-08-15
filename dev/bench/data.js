@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755247288299,
+  "lastUpdate": 1755247351912,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25367,6 +25367,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 263816,
             "range": "± 10657",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d34c2e94fb50a7fdaed3fa2ce3220f69cf05a259",
+          "message": "chore(deps): bump SethCohen/github-releases-to-discord from 1.16.2 to 1.19.0 (#828)\n\nBumps\n[SethCohen/github-releases-to-discord](https://github.com/sethcohen/github-releases-to-discord)\nfrom 1.16.2 to 1.19.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/sethcohen/github-releases-to-discord/releases\">SethCohen/github-releases-to-discord's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v1.19.0</h2>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.18.0...v1.19.0\">1.19.0</a>\n(2025-06-17)</h2>\n<h3>Features</h3>\n<ul>\n<li><strong>tests:</strong> add Jest configuration and comprehensive\ntests for utility functions in index.js to ensure functionality and\nreliability (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/0559b87ee8fad6482e7ed4431329fd22f6593a9a\">0559b87</a>)</li>\n</ul>\n<h3>Miscellaneous</h3>\n<ul>\n<li>added updated dependencies (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/067d2cb017f609a202547b5dbb457d91cfb6cf0c\">067d2cb</a>)</li>\n<li><strong>package:</strong> update <code>@​actions/github</code>\ndependency to version 6.0.1 and add Jest as a dev dependency with a test\nscript (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/0559b87ee8fad6482e7ed4431329fd22f6593a9a\">0559b87</a>)</li>\n</ul>\n<h2>v1.18.0</h2>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.17.0...v1.18.0\">1.18.0</a>\n(2025-06-17)</h2>\n<h3>Features</h3>\n<ul>\n<li><strong>index.js:</strong> enhance sendWebhook function to handle\nrate limits with retries for improved reliability when sending requests\nto Discord (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/feb5a402377bc3da9cb9ea788964ece4e56f48cd\">feb5a40</a>)</li>\n</ul>\n<h3>Miscellaneous</h3>\n<ul>\n<li>remove unnecessary test file from .gitignore and add sample test\nrelease JSON for local testing (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/82d906cc6f29adbe413b3f26b55deafc3f08ceee\">82d906c</a>)</li>\n<li>update README for clarity and conciseness, improve formatting, and\nadd new sections for better user guidance (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/82d906cc6f29adbe413b3f26b55deafc3f08ceee\">82d906c</a>)</li>\n</ul>\n<h2>v1.17.0</h2>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.16.2...v1.17.0\">1.17.0</a>\n(2025-06-17)</h2>\n<h3>Features</h3>\n<ul>\n<li><strong>workflow:</strong> add GitHub Actions workflow to\nautomatically update SemVer tags on tag push events (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e768ce10237a6100cccd7e80b2e994e9a2609150\">e768ce1</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/blob/master/CHANGELOG.md\">SethCohen/github-releases-to-discord's\nchangelog</a>.</em></p>\n<blockquote>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.18.0...v1.19.0\">1.19.0</a>\n(2025-06-17)</h2>\n<h3>Features</h3>\n<ul>\n<li><strong>tests:</strong> add Jest configuration and comprehensive\ntests for utility functions in index.js to ensure functionality and\nreliability (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/0559b87ee8fad6482e7ed4431329fd22f6593a9a\">0559b87</a>)</li>\n</ul>\n<h3>Miscellaneous</h3>\n<ul>\n<li>added updated dependencies (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/067d2cb017f609a202547b5dbb457d91cfb6cf0c\">067d2cb</a>)</li>\n<li><strong>package:</strong> update <code>@​actions/github</code>\ndependency to version 6.0.1 and add Jest as a dev dependency with a test\nscript (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/0559b87ee8fad6482e7ed4431329fd22f6593a9a\">0559b87</a>)</li>\n</ul>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.17.0...v1.18.0\">1.18.0</a>\n(2025-06-17)</h2>\n<h3>Features</h3>\n<ul>\n<li><strong>index.js:</strong> enhance sendWebhook function to handle\nrate limits with retries for improved reliability when sending requests\nto Discord (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/feb5a402377bc3da9cb9ea788964ece4e56f48cd\">feb5a40</a>)</li>\n</ul>\n<h3>Miscellaneous</h3>\n<ul>\n<li>remove unnecessary test file from .gitignore and add sample test\nrelease JSON for local testing (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/82d906cc6f29adbe413b3f26b55deafc3f08ceee\">82d906c</a>)</li>\n<li>update README for clarity and conciseness, improve formatting, and\nadd new sections for better user guidance (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/82d906cc6f29adbe413b3f26b55deafc3f08ceee\">82d906c</a>)</li>\n</ul>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.16.2...v1.17.0\">1.17.0</a>\n(2025-06-17)</h2>\n<h3>Features</h3>\n<ul>\n<li><strong>workflow:</strong> add GitHub Actions workflow to\nautomatically update SemVer tags on tag push events (<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e768ce10237a6100cccd7e80b2e994e9a2609150\">e768ce1</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/b96a33520f8ad5e6dcdecee6f1212bdf88b16550\"><code>b96a335</code></a>\nchore(master): release 1.19.0 (<a\nhref=\"https://redirect.github.com/sethcohen/github-releases-to-discord/issues/50\">#50</a>)</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/067d2cb017f609a202547b5dbb457d91cfb6cf0c\"><code>067d2cb</code></a>\nchore: added updated dependencies</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/0559b87ee8fad6482e7ed4431329fd22f6593a9a\"><code>0559b87</code></a>\nfeat(tests): add Jest configuration and comprehensive tests for utility\nfunct...</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/de60879a8653d2f24c11500da3af63b6f4507c4c\"><code>de60879</code></a>\nchore(master): release 1.18.0 (<a\nhref=\"https://redirect.github.com/sethcohen/github-releases-to-discord/issues/49\">#49</a>)</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/82d906cc6f29adbe413b3f26b55deafc3f08ceee\"><code>82d906c</code></a>\nchore: update README for clarity and conciseness, improve formatting,\nand add...</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/feb5a402377bc3da9cb9ea788964ece4e56f48cd\"><code>feb5a40</code></a>\nfeat(index.js): enhance sendWebhook function to handle rate limits with\nretri...</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/9fe781fdc77063b0baff0d6caae0cd2e316f64a8\"><code>9fe781f</code></a>\nAdd custom url (<a\nhref=\"https://redirect.github.com/sethcohen/github-releases-to-discord/issues/44\">#44</a>)</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/74ded4247d5129bebb3930515ff72a25eed69678\"><code>74ded42</code></a>\nAdd option to strip PR and commit links (<a\nhref=\"https://redirect.github.com/sethcohen/github-releases-to-discord/issues/48\">#48</a>)</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e1dc0826fec1552949489f53220dd075c274d1a1\"><code>e1dc082</code></a>\nchore(master): release 1.17.0 (<a\nhref=\"https://redirect.github.com/sethcohen/github-releases-to-discord/issues/47\">#47</a>)</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e768ce10237a6100cccd7e80b2e994e9a2609150\"><code>e768ce1</code></a>\nfeat(workflow): add GitHub Actions workflow to automatically update\nSemVer ta...</li>\n<li>See full diff in <a\nhref=\"https://github.com/sethcohen/github-releases-to-discord/compare/v1.16.2...v1.19.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=SethCohen/github-releases-to-discord&package-manager=github_actions&previous-version=1.16.2&new-version=1.19.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nYou can trigger a rebase of this PR by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\n\n\n</details>\n\n> **Note**\n> Automatic rebases have been disabled on this pull request as it has\nbeen open for over 30 days.\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-08-15T10:33:18+02:00",
+          "tree_id": "2b0bb3471dd7adb64a3b6dc4e0e77fd8d92b0b2d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d34c2e94fb50a7fdaed3fa2ce3220f69cf05a259"
+        },
+        "date": 1755247349828,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 802264,
+            "range": "± 17264",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 261574,
+            "range": "± 6803",
             "unit": "ns/iter"
           }
         ]
