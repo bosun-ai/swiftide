@@ -460,9 +460,18 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
             // (i.e. reverse proxy can't find an available backend)
             LanguageModelError::transient(e)
         }
+        OpenAIError::StreamError(e) => {
+            // Note that this will _retry_ the stream. We have to assume that the stream just
+            // started if a 429 happens. For future readers, internally clients streaming crate
+            // (eventsource), has a backoff mechanism as well
+            if e.contains("Too Many Requests") {
+                LanguageModelError::transient(e)
+            } else {
+                LanguageModelError::permanent(e)
+            }
+        }
         OpenAIError::FileSaveError(_)
         | OpenAIError::FileReadError(_)
-        | OpenAIError::StreamError(_)
         | OpenAIError::InvalidArgument(_) => LanguageModelError::permanent(e),
     }
 }
