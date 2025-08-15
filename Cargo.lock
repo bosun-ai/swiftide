@@ -674,9 +674,9 @@ checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
 
 [[package]]
 name = "async-trait"
-version = "0.1.88"
+version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e539d3fca749fcee5236ab05e93a52867dd549cc157c8cb7f99595f3cedffdb5"
+checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1533,7 +1533,7 @@ version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a660ebdea4d4d3ec7788cfc9c035b66efb66028b9b97bf6cde7023ccc8e77e28"
 dependencies = [
- "darling 0.21.1",
+ "darling 0.21.2",
  "ident_case",
  "prettyplease",
  "proc-macro2",
@@ -2307,12 +2307,12 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.21.1"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6b136475da5ef7b6ac596c0e956e37bad51b85b987ff3d5e230e964936736b2"
+checksum = "08440b3dd222c3d0433e63e097463969485f112baff337dfdaca043a0d760570"
 dependencies = [
- "darling_core 0.21.1",
- "darling_macro 0.21.1",
+ "darling_core 0.21.2",
+ "darling_macro 0.21.2",
 ]
 
 [[package]]
@@ -2345,9 +2345,9 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.21.1"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b44ad32f92b75fb438b04b68547e521a548be8acc339a6dacc4a7121488f53e6"
+checksum = "d25b7912bc28a04ab1b7715a68ea03aaa15662b43a1a4b2c480531fd19f8bf7e"
 dependencies = [
  "fnv",
  "ident_case",
@@ -2381,11 +2381,11 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.21.1"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b5be8a7a562d315a5b92a630c30cec6bcf663e6673f00fbb69cca66a6f521b9"
+checksum = "ce154b9bea7fb0c8e8326e62d00354000c36e79770ff21b8c84e3aa267d9d531"
 dependencies = [
- "darling_core 0.21.1",
+ "darling_core 0.21.2",
  "quote",
  "syn 2.0.105",
 ]
@@ -8186,7 +8186,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "470958f96a5700478601c385ad3d987460372c2223959eddcb682c7273cdfb86"
 dependencies = [
- "darling 0.21.1",
+ "darling 0.21.2",
  "proc-macro2",
  "quote",
  "serde_json",
@@ -8939,9 +8939,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.37.139"
+version = "2.37.146"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0aa678e2af844a24eb7b60569c4968aa627d3a9791cb969eb3b15bccb549a16f"
+checksum = "d1c48409034ee388d5a6be636286fe25c4321f06bfc367af71a4288d5d57cfba"
 dependencies = [
  "ahash 0.8.12",
  "aho-corasick",
@@ -9665,7 +9665,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "convert_case",
- "darling 0.21.1",
+ "darling 0.21.2",
  "insta",
  "pretty_assertions",
  "prettyplease",
@@ -10921,7 +10921,7 @@ dependencies = [
  "fastrand",
  "serde",
  "serde_json",
- "toml 0.9.5",
+ "toml 0.8.23",
  "ureq",
 ]
 
