@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755272450827,
+  "lastUpdate": 1755272847931,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25475,6 +25475,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 262136,
             "range": "± 2018",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a6d43794ae8e549b3716ef15344471b22041cbc1",
+          "message": "feat: Proper streaming backoff for Chat Completion (#895)\n\n- **fix(openai): More gracefully allow handling streaming errors if the\nclient is decorated**\n- **feat: Proper streaming backoff for ChatCompletion**",
+          "timestamp": "2025-08-15T17:38:30+02:00",
+          "tree_id": "752cdd6e1097e9bab37953cfdf1c68c56875a29a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a6d43794ae8e549b3716ef15344471b22041cbc1"
+        },
+        "date": 1755272846326,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 790723,
+            "range": "± 19023",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258657,
+            "range": "± 1560",
             "unit": "ns/iter"
           }
         ]
