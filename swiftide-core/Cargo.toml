@@ -43,6 +43,8 @@ backoff = { version = "0.4.0", features = ["futures", "tokio"] }
 [dev-dependencies]
 test-case = { workspace = true }
 test-log = { workspace = true }
+tokio = { workspace = true, features = ["time", "test-util"] }
+tokio-stream = { workspace = true }
 
 [features]
 defaults = ["truncate-debug"]
