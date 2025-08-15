@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755159215399,
+  "lastUpdate": 1755244448277,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25205,6 +25205,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 261949,
             "range": "± 2948",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2b8e1389b630283a2e8c55b9997f09322b7378a9",
+          "message": "fix(openai): More gracefully allow handling streaming errors if the client is decorated (#891)",
+          "timestamp": "2025-08-15T09:45:27+02:00",
+          "tree_id": "7ad935d7997c69045d3db7c52acafc69b51d33a9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2b8e1389b630283a2e8c55b9997f09322b7378a9"
+        },
+        "date": 1755244446704,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 794256,
+            "range": "± 15859",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260256,
+            "range": "± 2068",
             "unit": "ns/iter"
           }
         ]
