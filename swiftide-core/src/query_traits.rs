@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -107,6 +107,46 @@ pub trait Retrieve<S: SearchStrategy>: Send + Sync + DynClone {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+}
+
+pub type ConcreteRetrieveFn = Box<
+    dyn Fn(
+            Query<states::Pending>,
+        ) -> Pin<Box<dyn Future<Output = Result<Query<states::Retrieved>>> + Send>>
+        + Send
+        + Sync,
+>;
+
+// use std::{pin::Pin, sync::Arc};
+//
+// use crate::query::{Query, states};
+// use anyhow::Result;
+//
+// use super::{ConcreteRetreiveFn, Retrieve, SearchStrategy};
+
+pub trait RetrieveConcrete<S: SearchStrategy + 'static>: Retrieve<S>
+where
+    Self: 'static,
+{
+    fn concrete_retrieve_fn(self: &Arc<Self>, search_strategy: &S) -> ConcreteRetrieveFn {
+        let s = search_strategy.clone();
+        let this = Arc::clone(self);
+
+        Box::new(move |query| {
+            let s = s.clone();
+            let this = this.clone();
+
+            Box::pin(async move { this.retrieve(&s, query).await })
+        })
+    }
+}
+
+// Implement the trait for any type that can retrieve
+impl<S, T> RetrieveConcrete<S> for T
+where
+    S: SearchStrategy + 'static,
+    T: Retrieve<S> + Send + Sync + 'static,
+{
 }
 
 dyn_clone::clone_trait_object!(<S> Retrieve<S>);
