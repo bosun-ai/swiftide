@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755328416638,
+  "lastUpdate": 1755331769682,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25637,6 +25637,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257140,
             "range": "± 2934",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6c78f2bf70f2e74cf01cfef2e3c47c4547b4d6ce",
+          "message": "chore: release v0.30.0 (#896)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.29.0 -> 0.30.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.29.0 -> 0.30.0\n* `swiftide-indexing`: 0.29.0 -> 0.30.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.29.0 -> 0.30.0 (⚠ API breaking changes)\n* `swiftide-integrations`: 0.29.0 -> 0.30.0 (✓ API compatible changes)\n* `swiftide-query`: 0.29.0 -> 0.30.0 (✓ API compatible changes)\n* `swiftide`: 0.29.0 -> 0.30.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure enum_unit_variant_changed_kind: An enum unit variant changed kind ---\n\nDescription:\nA public enum's exhaustive unit variant has changed to a different kind of enum variant, breaking possible instantiations and patterns.\n        ref: https://doc.rust-lang.org/reference/items/enumerations.html\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.43.0/src/lints/enum_unit_variant_changed_kind.ron\n\nFailed in:\n  variant ToolOutput::Stop in /tmp/.tmpkr0p1Q/swiftide/swiftide-core/src/chat_completion/tools.rs:23\n\n--- failure inherent_method_missing: pub method removed or renamed ---\n\nDescription:\nA publicly-visible method or associated fn is no longer available under its prior name. It may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.43.0/src/lints/inherent_method_missing.ron\n\nFailed in:\n  NodeBuilder::parent_id, previously in file /tmp/.tmpH6rTIt/swiftide-core/src/node.rs:39\n  Node::chunking_from, previously in file /tmp/.tmpH6rTIt/swiftide-core/src/node.rs:132\n  Node::parent_id, previously in file /tmp/.tmpH6rTIt/swiftide-core/src/node.rs:249\n\n--- failure struct_pub_field_missing: pub struct's pub field removed or renamed ---\n\nDescription:\nA publicly-visible struct has at least one public field that is no longer available under its prior name. It may have been renamed or removed entirely.\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#item-remove\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.43.0/src/lints/struct_pub_field_missing.ron\n\nFailed in:\n  field parent_id of struct Node, previously in file /tmp/.tmpH6rTIt/swiftide-core/src/node.rs:68\n\n--- failure trait_added_supertrait: non-sealed trait added new supertraits ---\n\nDescription:\nA non-sealed trait added one or more supertraits, which breaks downstream implementations of the trait\n        ref: https://doc.rust-lang.org/cargo/reference/semver.html#generic-bounds-tighten\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.43.0/src/lints/trait_added_supertrait.ron\n\nFailed in:\n  trait swiftide_core::agent_traits::ToolExecutor gained DynClone in file /tmp/.tmpkr0p1Q/swiftide/swiftide-core/src/agent_traits.rs:28\n  trait swiftide_core::ToolExecutor gained DynClone in file /tmp/.tmpkr0p1Q/swiftide/swiftide-core/src/agent_traits.rs:28\n```\n\n### ⚠ `swiftide-agents` breaking changes\n\n```text\n--- failure enum_tuple_variant_field_added: pub enum tuple variant field added ---\n\nDescription:\nAn enum's exhaustive tuple variant has a new field, which has to be included when constructing or matching on this variant.\n        ref: https://doc.rust-lang.org/reference/attributes/type_system.html#the-non_exhaustive-attribute\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.43.0/src/lints/enum_tuple_variant_field_added.ron\n\nFailed in:\n  field 1 of variant StopReason::RequestedByTool in /tmp/.tmpkr0p1Q/swiftide/swiftide-agents/src/state.rs:31\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.30.0](https://github.com/bosun-ai/swiftide/compare/v0.29.0...v0.30.0)\n- 2025-08-16\n\n### New features\n\n-\n[dc574b4](https://github.com/bosun-ai/swiftide/commit/dc574b41b259f430bb4dc38338416ea1aa9480bb)\n*(agents)* Multi agent setup with graph-like Tasks\n([#861](https://github.com/bosun-ai/swiftide/pull/861))\n\n-\n[8740762](https://github.com/bosun-ai/swiftide/commit/87407626ef75c254fae0a677148609738fd64ccc)\n*(agents)* Allow mutating an existing system prompt in the builder\n([#887](https://github.com/bosun-ai/swiftide/pull/887))\n\n-\n[4bbf207](https://github.com/bosun-ai/swiftide/commit/4bbf207637a1aebe4e0d5b2d4030c3d1f99d4c1c)\n*(agents/local-executor)* Allow clearing, adding and removing env\nvariable ([#875](https://github.com/bosun-ai/swiftide/pull/875))\n\n-\n[7873493](https://github.com/bosun-ai/swiftide/commit/787349329e34956bcd205b8da64bb241c15c8e65)\n*(agents/local-executor)* Support running inline shebang scripts\n([#874](https://github.com/bosun-ai/swiftide/pull/874))\n\n-\n[a6d4379](https://github.com/bosun-ai/swiftide/commit/a6d43794ae8e549b3716ef15344471b22041cbc1)\nProper streaming backoff for Chat Completion\n([#895](https://github.com/bosun-ai/swiftide/pull/895))\n\n### Bug fixes\n\n-\n[2b8e138](https://github.com/bosun-ai/swiftide/commit/2b8e1389b630283a2e8c55b9997f09322b7378a9)\n*(openai)* More gracefully allow handling streaming errors if the client\nis decorated ([#891](https://github.com/bosun-ai/swiftide/pull/891))\n\n-\n[f2948b5](https://github.com/bosun-ai/swiftide/commit/f2948b596d7c91c518e700c5d2589fba5a45b649)\n*(pipeline)* Revert cache nodes after they've been successfully ran\n([#800](https://github.com/bosun-ai/swiftide/pull/800))\n([#852](https://github.com/bosun-ai/swiftide/pull/852))\n\n### Performance\n\n-\n[63a91bd](https://github.com/bosun-ai/swiftide/commit/63a91bd2d8290cbd20f4ae3914d820192ef160d2)\nUse Cow to in Prompt\n\n### Miscellaneous\n\n-\n[09f421b](https://github.com/bosun-ai/swiftide/commit/09f421bcc934721ab5fcf3dc2808fe5beefcc9a2)\nUpdate rmcp and schemars\n([#881](https://github.com/bosun-ai/swiftide/pull/881))\n\n### Docs\n\n-\n[84ffa45](https://github.com/bosun-ai/swiftide/commit/84ffa4507e57b252f72204f8e0df67191d97fe72)\nMinimal updates for tasks\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.29.0...0.30.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-08-16T10:00:48+02:00",
+          "tree_id": "4db2df9ba5fc412ce02ae1b75215752049cec3cd",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6c78f2bf70f2e74cf01cfef2e3c47c4547b4d6ce"
+        },
+        "date": 1755331768551,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 785757,
+            "range": "± 16347",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255185,
+            "range": "± 2358",
             "unit": "ns/iter"
           }
         ]
