@@ -5,10 +5,10 @@ use anyhow::bail;
 use async_trait::async_trait;
 use swiftide_core::{
     BatchableTransformer, SparseEmbeddingModel, WithBatchIndexingDefaults, WithIndexingDefaults,
-    indexing::{IndexingStream, Node},
+    indexing::{IndexingStream, TextNode},
 };
 
-/// A transformer that can generate embeddings for an `Node`
+/// A transformer that can generate embeddings for an `TextNode`
 ///
 /// This file defines the `SparseEmbed` struct and its implementation of the `BatchableTransformer`
 /// trait.
@@ -72,21 +72,23 @@ impl WithIndexingDefaults for SparseEmbed {}
 
 #[async_trait]
 impl BatchableTransformer for SparseEmbed {
-    /// Transforms a batch of `Node` objects by generating embeddings for them.
+    type Input = String;
+    type Output = String;
+    /// Transforms a batch of `TextNode` objects by generating embeddings for them.
     ///
     /// # Parameters
     ///
-    /// * `nodes` - A vector of `Node` objects to be transformed.
+    /// * `nodes` - A vector of `TextNode` objects to be transformed.
     ///
     /// # Returns
     ///
-    /// An `IndexingStream` containing the transformed `Node` objects with their embeddings.
+    /// An `IndexingStream` containing the transformed `TextNode` objects with their embeddings.
     ///
     /// # Errors
     ///
     /// If the embedding process fails, the function returns a stream with the error.
     #[tracing::instrument(skip_all, name = "transformers.embed")]
-    async fn batch_transform(&self, mut nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_transform(&self, mut nodes: Vec<TextNode>) -> IndexingStream<String> {
         // TODO: We should drop chunks that go over the token limit of the SparseEmbedModel
 
         // EmbeddedFields grouped by node stored in order of processed nodes.
@@ -141,7 +143,7 @@ impl BatchableTransformer for SparseEmbed {
 
 #[cfg(test)]
 mod tests {
-    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Metadata, Node};
+    use swiftide_core::indexing::{EmbedMode, EmbeddedField, Metadata, TextNode};
     use swiftide_core::{
         BatchableTransformer, MockSparseEmbeddingModel, SparseEmbedding, SparseEmbeddings,
     };
@@ -256,10 +258,10 @@ mod tests {
     #[test_case(vec![]; "No ingestion nodes")]
     #[tokio::test]
     async fn batch_transform(test_data: Vec<TestData<'_>>) {
-        let test_nodes: Vec<Node> = test_data
+        let test_nodes: Vec<TextNode> = test_data
             .iter()
             .map(|data| {
-                Node::builder()
+                TextNode::builder()
                     .chunk(data.chunk)
                     .metadata(data.metadata.clone())
                     .embed_mode(data.embed_mode)
@@ -268,7 +270,7 @@ mod tests {
             })
             .collect();
 
-        let expected_nodes: Vec<Node> = test_nodes
+        let expected_nodes: Vec<TextNode> = test_nodes
             .clone()
             .into_iter()
             .zip(test_data.iter())
@@ -339,7 +341,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_returns_error_properly_if_sparse_embed_fails() {
-        let test_nodes = vec![Node::new("chunk")];
+        let test_nodes = vec![TextNode::new("chunk")];
         let mut model_mock = MockSparseEmbeddingModel::new();
         model_mock
             .expect_sparse_embed()

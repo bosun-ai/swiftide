@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 use swiftide_core::{
-    indexing::{EmbeddedField, IndexingStream, Node, Persist},
+    indexing::{EmbeddedField, IndexingStream, Persist, TextNode},
     prelude::*,
 };
 
@@ -14,6 +14,9 @@ use super::{NodeWithVectors, Qdrant};
 
 #[async_trait]
 impl Persist for Qdrant {
+    type Input = String;
+    type Output = String;
+
     /// Returns the batch size for the Qdrant storage.
     ///
     /// # Returns
@@ -44,7 +47,7 @@ impl Persist for Qdrant {
     ///
     /// # Parameters
     ///
-    /// - `node`: The `Node` to be stored.
+    /// - `node`: The `TextNode` to be stored.
     ///
     /// # Returns
     ///
@@ -54,7 +57,7 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if the node conversion or storage operation fails.
     #[tracing::instrument(skip_all, err, name = "storage.qdrant.store")]
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: TextNode) -> Result<TextNode> {
         let node_with_vectors = NodeWithVectors::new(&node, self.vector_fields());
         let point = node_with_vectors.try_into()?;
 
@@ -73,7 +76,7 @@ impl Persist for Qdrant {
     ///
     /// # Parameters
     ///
-    /// - `nodes`: A vector of `Node` to be stored.
+    /// - `nodes`: A vector of `TextNode` to be stored.
     ///
     /// # Returns
     ///
@@ -83,7 +86,7 @@ impl Persist for Qdrant {
     ///
     /// This function will return an error if any node conversion or storage operation fails.
     #[tracing::instrument(skip_all, name = "storage.qdrant.batch_store")]
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<TextNode>) -> IndexingStream<String> {
         let points = nodes
             .iter()
             .map(|node| NodeWithVectors::new(node, self.vector_fields()))

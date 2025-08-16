@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Context as _;
 use ignore::{DirEntry, Walk};
-use swiftide_core::{Loader, indexing::IndexingStream, indexing::Node};
+use swiftide_core::{Loader, indexing::IndexingStream, indexing::TextNode};
 use tracing::{Span, debug_span, instrument};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory, filtering
@@ -64,17 +64,17 @@ impl FileLoader {
     ///
     /// # Returns
     ///
-    /// A vector of `Node` representing the matching files.
+    /// A vector of `TextNode` representing the matching files.
     ///
     /// # Panics
     ///
     /// This method will panic if it fails to read a file's content.
-    pub fn list_nodes(&self) -> Vec<Node> {
+    pub fn list_nodes(&self) -> Vec<TextNode> {
         self.iter().filter_map(Result::ok).collect()
     }
 
     /// Iterates over the files in the directory
-    pub fn iter(&self) -> impl Iterator<Item = anyhow::Result<Node>> + use<> {
+    pub fn iter(&self) -> impl Iterator<Item = anyhow::Result<TextNode>> + use<> {
         Iter::new(&self.root, self.extensions.clone()).fuse()
     }
 }
@@ -92,7 +92,7 @@ struct Iter {
 }
 
 impl Iterator for Iter {
-    type Item = anyhow::Result<Node>;
+    type Item = anyhow::Result<TextNode>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let _span = self.span.enter();
@@ -126,7 +126,7 @@ impl Iter {
     }
 
     #[instrument(skip_all, fields(path = %entry.path().display()))]
-    fn load(&self, entry: &DirEntry) -> Option<anyhow::Result<Node>> {
+    fn load(&self, entry: &DirEntry) -> Option<anyhow::Result<TextNode>> {
         if entry.file_type().is_some_and(|ft| !ft.is_file()) {
             // Skip directories and non-files
             return None;
@@ -156,7 +156,7 @@ impl Iter {
     }
 }
 
-fn read_node(entry: &DirEntry) -> anyhow::Result<Node> {
+fn read_node(entry: &DirEntry) -> anyhow::Result<TextNode> {
     // Files might be invalid utf-8, so we need to read them as bytes and convert it lossy, as
     // Swiftide (currently) works internally with strings.
     let mut file = fs_err::File::open(entry.path()).context("Failed to open file")?;
@@ -166,7 +166,7 @@ fn read_node(entry: &DirEntry) -> anyhow::Result<Node> {
 
     let original_size = content.len();
 
-    Node::builder()
+    TextNode::builder()
         .path(entry.path())
         .chunk(content)
         .original_size(original_size)
@@ -174,7 +174,9 @@ fn read_node(entry: &DirEntry) -> anyhow::Result<Node> {
 }
 
 impl Loader for FileLoader {
-    /// Converts the `FileLoader` into a stream of `Node`.
+    type Output = String;
+
+    /// Converts the `FileLoader` into a stream of `TextNode`.
     ///
     /// # Returns
     ///
@@ -182,11 +184,11 @@ impl Loader for FileLoader {
     ///
     /// # Errors
     /// This method will return an error if it fails to read a file's content.
-    fn into_stream(self) -> IndexingStream {
+    fn into_stream(self) -> IndexingStream<String> {
         IndexingStream::iter(self.iter())
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String> {
         self.into_stream()
     }
 }

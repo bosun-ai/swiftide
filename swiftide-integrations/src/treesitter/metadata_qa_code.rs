@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{Transformer, indexing::Node};
+use swiftide_core::{Transformer, indexing::TextNode};
 
 /// `MetadataQACode` is responsible for generating questions and answers based on code chunks.
 /// This struct integrates with the indexing pipeline to enhance the metadata of each code chunk
@@ -18,25 +18,28 @@ pub struct MetadataQACode {
 
 #[async_trait]
 impl Transformer for MetadataQACode {
-    /// Asynchronously transforms a `Node` by generating questions and answers for its code chunk.
+    type Input = String;
+    type Output = String;
+    /// Asynchronously transforms a `TextNode` by generating questions and answers for its code
+    /// chunk.
     ///
     /// This method uses the `SimplePrompt` client to generate questions and answers based on the
     /// code chunk and adds this information to the node's metadata.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `Node` to be transformed.
+    /// * `node` - The `TextNode` to be transformed.
     ///
     /// # Returns
     ///
-    /// A result containing the transformed `Node` or an error if the transformation fails.
+    /// A result containing the transformed `TextNode` or an error if the transformation fails.
     ///
     /// # Errors
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a
     /// response.
     #[tracing::instrument(skip_all, name = "transformers.metadata_qa_code")]
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: TextNode) -> Result<TextNode> {
         let mut prompt = self
             .prompt_template
             .clone()
@@ -73,7 +76,7 @@ mod test {
 
         let prompt = template
             .clone()
-            .with_node(&Node::new("test"))
+            .with_node(&TextNode::new("test"))
             .with_context_value("questions", 5)
             .with_context_value("outline", "Test outline");
         insta::assert_snapshot!(prompt.render().unwrap());
@@ -88,7 +91,7 @@ mod test {
             .returning(|_| Ok("Q1: Hello\nA1: World".to_string()));
 
         let transformer = MetadataQACode::builder().client(client).build().unwrap();
-        let node = Node::new("Some text");
+        let node = TextNode::new("Some text");
 
         let result = transformer.transform_node(node).await.unwrap();
 

@@ -4,7 +4,7 @@
 //! trait. To bring your own transformers, models and loaders, all you need to do is implement the
 //! trait and it should work out of the box.
 use crate::Embeddings;
-use crate::node::Node;
+use crate::node::{Chunk, Node};
 use crate::{
     SparseEmbeddings, indexing_defaults::IndexingDefaults, indexing_stream::IndexingStream,
 };
@@ -25,7 +25,10 @@ use mockall::{mock, predicate::str};
 #[async_trait]
 /// Transforms single nodes into single nodes
 pub trait Transformer: Send + Sync + DynClone {
-    async fn transform_node(&self, node: Node) -> Result<Node>;
+    type Input: Chunk;
+    type Output: Chunk;
+
+    async fn transform_node(&self, node: Node<Self::Input>) -> Result<Node<Self::Output>>;
 
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
@@ -38,7 +41,7 @@ pub trait Transformer: Send + Sync + DynClone {
     }
 }
 
-dyn_clone::clone_trait_object!(Transformer);
+dyn_clone::clone_trait_object!(<I, O> Transformer<Input = I, Output = O>);
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -47,7 +50,10 @@ mock! {
 
     #[async_trait]
     impl Transformer for Transformer {
-        async fn transform_node(&self, node: Node) -> Result<Node>;
+        type Input = String;
+        type Output = String;
+
+        async fn transform_node(&self, node: Node<String>) -> Result<Node<String>>;
         fn concurrency(&self) -> Option<usize>;
         fn name(&self) -> &'static str;
     }
@@ -58,8 +64,11 @@ mock! {
 }
 
 #[async_trait]
-impl Transformer for Box<dyn Transformer> {
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+impl<I: Chunk, O: Chunk> Transformer for Box<dyn Transformer<Input = I, Output = O>> {
+    type Input = I;
+    type Output = O;
+
+    async fn transform_node(&self, node: Node<Self::Input>) -> Result<Node<Self::Output>> {
         self.as_ref().transform_node(node).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -71,8 +80,11 @@ impl Transformer for Box<dyn Transformer> {
 }
 
 #[async_trait]
-impl Transformer for Arc<dyn Transformer> {
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+impl<I: Chunk, O: Chunk> Transformer for Arc<dyn Transformer<Input = I, Output = O>> {
+    type Input = I;
+    type Output = O;
+
+    async fn transform_node(&self, node: Node<Self::Input>) -> Result<Node<Self::Output>> {
         self.as_ref().transform_node(node).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -84,8 +96,11 @@ impl Transformer for Arc<dyn Transformer> {
 }
 
 #[async_trait]
-impl Transformer for &dyn Transformer {
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+impl<I: Chunk, O: Chunk> Transformer for &dyn Transformer<Input = I, Output = O> {
+    type Input = I;
+    type Output = O;
+
+    async fn transform_node(&self, node: Node<Self::Input>) -> Result<Node<Self::Output>> {
         (*self).transform_node(node).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -95,11 +110,15 @@ impl Transformer for &dyn Transformer {
 
 #[async_trait]
 /// Use a closure as a transformer
+// TODO: Find a way to make this work with full generics
 impl<F> Transformer for F
 where
-    F: Fn(Node) -> Result<Node> + Send + Sync + Clone,
+    F: Fn(Node<String>) -> Result<Node<String>> + Send + Sync + Clone,
 {
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+    type Input = String;
+    type Output = String;
+
+    async fn transform_node(&self, node: Node<Self::Input>) -> Result<Node<Self::Output>> {
         self(node)
     }
 }
@@ -107,8 +126,11 @@ where
 #[async_trait]
 /// Transforms batched single nodes into streams of nodes
 pub trait BatchableTransformer: Send + Sync + DynClone {
+    type Input: Chunk;
+    type Output: Chunk;
+
     /// Transforms a batch of nodes into a stream of nodes
-    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream;
+    async fn batch_transform(&self, nodes: Vec<Node<Self::Input>>) -> IndexingStream<Self::Output>;
 
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
@@ -126,7 +148,7 @@ pub trait BatchableTransformer: Send + Sync + DynClone {
     }
 }
 
-dyn_clone::clone_trait_object!(BatchableTransformer);
+dyn_clone::clone_trait_object!(<I, O> BatchableTransformer<Input = I, Output = O>);
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -135,7 +157,10 @@ mock! {
 
     #[async_trait]
     impl BatchableTransformer for BatchableTransformer {
-        async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream;
+        type Input = String;
+        type Output = String;
+
+        async fn batch_transform(&self, nodes: Vec<Node<String>>) -> IndexingStream<String>;
         fn name(&self) -> &'static str;
         fn batch_size(&self) -> Option<usize>;
         fn concurrency(&self) -> Option<usize>;
@@ -149,16 +174,24 @@ mock! {
 /// Use a closure as a batchable transformer
 impl<F> BatchableTransformer for F
 where
-    F: Fn(Vec<Node>) -> IndexingStream + Send + Sync + Clone,
+    F: Fn(Vec<Node<String>>) -> IndexingStream<String> + Send + Sync + Clone,
 {
-    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+    type Input = String;
+    type Output = String;
+
+    async fn batch_transform(&self, nodes: Vec<Node<String>>) -> IndexingStream<String> {
         self(nodes)
     }
 }
 
 #[async_trait]
-impl BatchableTransformer for Box<dyn BatchableTransformer> {
-    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+impl<I: Chunk, O: Chunk> BatchableTransformer
+    for Box<dyn BatchableTransformer<Input = I, Output = O>>
+{
+    type Input = I;
+    type Output = O;
+
+    async fn batch_transform(&self, nodes: Vec<Node<Self::Input>>) -> IndexingStream<Self::Output> {
         self.as_ref().batch_transform(nodes).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -170,8 +203,13 @@ impl BatchableTransformer for Box<dyn BatchableTransformer> {
 }
 
 #[async_trait]
-impl BatchableTransformer for Arc<dyn BatchableTransformer> {
-    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+impl<I: Chunk, O: Chunk> BatchableTransformer
+    for Arc<dyn BatchableTransformer<Input = I, Output = O>>
+{
+    type Input = I;
+    type Output = O;
+
+    async fn batch_transform(&self, nodes: Vec<Node<Self::Input>>) -> IndexingStream<Self::Output> {
         self.as_ref().batch_transform(nodes).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -183,8 +221,11 @@ impl BatchableTransformer for Arc<dyn BatchableTransformer> {
 }
 
 #[async_trait]
-impl BatchableTransformer for &dyn BatchableTransformer {
-    async fn batch_transform(&self, nodes: Vec<Node>) -> IndexingStream {
+impl<I: Chunk, O: Chunk> BatchableTransformer for &dyn BatchableTransformer<Input = I, Output = O> {
+    type Input = I;
+    type Output = O;
+
+    async fn batch_transform(&self, nodes: Vec<Node<Self::Input>>) -> IndexingStream<Self::Output> {
         (*self).batch_transform(nodes).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -194,7 +235,9 @@ impl BatchableTransformer for &dyn BatchableTransformer {
 
 /// Starting point of a stream
 pub trait Loader: DynClone + Send + Sync {
-    fn into_stream(self) -> IndexingStream;
+    type Output: Chunk;
+
+    fn into_stream(self) -> IndexingStream<Self::Output>;
 
     /// Intended for use with Box<dyn Loader>
     ///
@@ -207,7 +250,7 @@ pub trait Loader: DynClone + Send + Sync {
     ///    self.into_stream()
     ///  }
     /// ```
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<Self::Output> {
         unimplemented!(
             "Please implement into_stream_boxed for your loader, it needs to be implemented on the concrete type"
         )
@@ -219,7 +262,7 @@ pub trait Loader: DynClone + Send + Sync {
     }
 }
 
-dyn_clone::clone_trait_object!(Loader);
+dyn_clone::clone_trait_object!(<O> Loader<Output = O>);
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -228,8 +271,10 @@ mock! {
 
     #[async_trait]
     impl Loader for Loader {
-        fn into_stream(self) -> IndexingStream;
-        fn into_stream_boxed(self: Box<Self>) -> IndexingStream;
+        type Output = String;
+
+        fn into_stream(self) -> IndexingStream<String>;
+        fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String>;
         fn name(&self) -> &'static str;
     }
 
@@ -238,12 +283,14 @@ mock! {
     }
 }
 
-impl Loader for Box<dyn Loader> {
-    fn into_stream(self) -> IndexingStream {
+impl<O: Chunk> Loader for Box<dyn Loader<Output = O>> {
+    type Output = O;
+
+    fn into_stream(self) -> IndexingStream<Self::Output> {
         Loader::into_stream_boxed(self)
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<Self::Output> {
         Loader::into_stream(*self)
     }
     fn name(&self) -> &'static str {
@@ -251,12 +298,14 @@ impl Loader for Box<dyn Loader> {
     }
 }
 
-impl Loader for &dyn Loader {
-    fn into_stream(self) -> IndexingStream {
+impl<O: Chunk> Loader for &dyn Loader<Output = O> {
+    type Output = O;
+
+    fn into_stream(self) -> IndexingStream<Self::Output> {
         Loader::into_stream_boxed(Box::new(self))
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<Self::Output> {
         Loader::into_stream(*self)
     }
 }
@@ -264,7 +313,10 @@ impl Loader for &dyn Loader {
 #[async_trait]
 /// Turns one node into many nodes
 pub trait ChunkerTransformer: Send + Sync + DynClone {
-    async fn transform_node(&self, node: Node) -> IndexingStream;
+    type Input: Chunk;
+    type Output: Chunk;
+
+    async fn transform_node(&self, node: Node<Self::Input>) -> IndexingStream<Self::Output>;
 
     /// Overrides the default concurrency of the pipeline
     fn concurrency(&self) -> Option<usize> {
@@ -277,7 +329,7 @@ pub trait ChunkerTransformer: Send + Sync + DynClone {
     }
 }
 
-dyn_clone::clone_trait_object!(ChunkerTransformer);
+dyn_clone::clone_trait_object!(<I, O> ChunkerTransformer<Input = I, Output = O>);
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -286,7 +338,10 @@ mock! {
 
     #[async_trait]
     impl ChunkerTransformer for ChunkerTransformer {
-    async fn transform_node(&self, node: Node) -> IndexingStream;
+        type Input = String;
+        type Output = String;
+
+    async fn transform_node(&self, node: Node<String>) -> IndexingStream<String>;
         fn name(&self) -> &'static str;
         fn concurrency(&self) -> Option<usize>;
     }
@@ -296,8 +351,11 @@ mock! {
     }
 }
 #[async_trait]
-impl ChunkerTransformer for Box<dyn ChunkerTransformer> {
-    async fn transform_node(&self, node: Node) -> IndexingStream {
+impl<I: Chunk, O: Chunk> ChunkerTransformer for Box<dyn ChunkerTransformer<Input = I, Output = O>> {
+    type Input = I;
+    type Output = O;
+
+    async fn transform_node(&self, node: Node<I>) -> IndexingStream<O> {
         self.as_ref().transform_node(node).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -309,8 +367,11 @@ impl ChunkerTransformer for Box<dyn ChunkerTransformer> {
 }
 
 #[async_trait]
-impl ChunkerTransformer for Arc<dyn ChunkerTransformer> {
-    async fn transform_node(&self, node: Node) -> IndexingStream {
+impl<I: Chunk, O: Chunk> ChunkerTransformer for Arc<dyn ChunkerTransformer<Input = I, Output = O>> {
+    type Input = I;
+    type Output = O;
+
+    async fn transform_node(&self, node: Node<I>) -> IndexingStream<O> {
         self.as_ref().transform_node(node).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -322,8 +383,11 @@ impl ChunkerTransformer for Arc<dyn ChunkerTransformer> {
 }
 
 #[async_trait]
-impl ChunkerTransformer for &dyn ChunkerTransformer {
-    async fn transform_node(&self, node: Node) -> IndexingStream {
+impl<I: Chunk, O: Chunk> ChunkerTransformer for &dyn ChunkerTransformer<Input = I, Output = O> {
+    type Input = I;
+    type Output = O;
+
+    async fn transform_node(&self, node: Node<I>) -> IndexingStream<O> {
         (*self).transform_node(node).await
     }
     fn concurrency(&self) -> Option<usize> {
@@ -334,22 +398,27 @@ impl ChunkerTransformer for &dyn ChunkerTransformer {
 #[async_trait]
 impl<F> ChunkerTransformer for F
 where
-    F: Fn(Node) -> IndexingStream + Send + Sync + Clone,
+    F: Fn(Node<String>) -> IndexingStream<String> + Send + Sync + Clone,
 {
-    async fn transform_node(&self, node: Node) -> IndexingStream {
+    async fn transform_node(&self, node: Node<String>) -> IndexingStream<String> {
         self(node)
     }
+
+    type Input = String;
+
+    type Output = String;
 }
 
-// #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Caches nodes, typically by their path and hash
 /// Recommended to namespace on the storage
 ///
 /// For now just bool return value for easy filter
 pub trait NodeCache: Send + Sync + Debug + DynClone {
-    async fn get(&self, node: &Node) -> bool;
-    async fn set(&self, node: &Node);
+    type Input: Chunk;
+
+    async fn get(&self, node: &Node<Self::Input>) -> bool;
+    async fn set(&self, node: &Node<Self::Input>);
 
     /// Optionally provide a method to clear the cache
     async fn clear(&self) -> Result<()> {
@@ -362,7 +431,7 @@ pub trait NodeCache: Send + Sync + Debug + DynClone {
     }
 }
 
-dyn_clone::clone_trait_object!(NodeCache);
+dyn_clone::clone_trait_object!(<T> NodeCache<Input = T>);
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -371,8 +440,9 @@ mock! {
 
     #[async_trait]
     impl NodeCache for NodeCache {
-        async fn get(&self, node: &Node) -> bool;
-        async fn set(&self, node: &Node);
+        type Input = String;
+        async fn get(&self, node: &Node<String>) -> bool;
+        async fn set(&self, node: &Node<String>);
         async fn clear(&self) -> Result<()>;
         fn name(&self) -> &'static str;
 
@@ -384,11 +454,13 @@ mock! {
 }
 
 #[async_trait]
-impl NodeCache for Box<dyn NodeCache> {
-    async fn get(&self, node: &Node) -> bool {
+impl<T: Chunk> NodeCache for Box<dyn NodeCache<Input = T>> {
+    type Input = T;
+
+    async fn get(&self, node: &Node<T>) -> bool {
         self.as_ref().get(node).await
     }
-    async fn set(&self, node: &Node) {
+    async fn set(&self, node: &Node<T>) {
         self.as_ref().set(node).await;
     }
     async fn clear(&self) -> Result<()> {
@@ -400,11 +472,12 @@ impl NodeCache for Box<dyn NodeCache> {
 }
 
 #[async_trait]
-impl NodeCache for Arc<dyn NodeCache> {
-    async fn get(&self, node: &Node) -> bool {
+impl<T: Chunk> NodeCache for Arc<dyn NodeCache<Input = T>> {
+    type Input = T;
+    async fn get(&self, node: &Node<T>) -> bool {
         self.as_ref().get(node).await
     }
-    async fn set(&self, node: &Node) {
+    async fn set(&self, node: &Node<T>) {
         self.as_ref().set(node).await;
     }
     async fn clear(&self) -> Result<()> {
@@ -416,11 +489,12 @@ impl NodeCache for Arc<dyn NodeCache> {
 }
 
 #[async_trait]
-impl NodeCache for &dyn NodeCache {
-    async fn get(&self, node: &Node) -> bool {
+impl<T: Chunk> NodeCache for &dyn NodeCache<Input = T> {
+    type Input = T;
+    async fn get(&self, node: &Node<T>) -> bool {
         (*self).get(node).await
     }
-    async fn set(&self, node: &Node) {
+    async fn set(&self, node: &Node<T>) {
         (*self).set(node).await;
     }
     async fn clear(&self) -> Result<()> {
@@ -620,9 +694,12 @@ impl SimplePrompt for &dyn SimplePrompt {
 #[async_trait]
 /// Persists nodes
 pub trait Persist: Debug + Send + Sync + DynClone {
+    type Input: Chunk;
+    type Output: Chunk;
+
     async fn setup(&self) -> Result<()>;
-    async fn store(&self, node: Node) -> Result<Node>;
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream;
+    async fn store(&self, node: Node<Self::Input>) -> Result<Node<Self::Output>>;
+    async fn batch_store(&self, nodes: Vec<Node<Self::Input>>) -> IndexingStream<Self::Output>;
     fn batch_size(&self) -> Option<usize> {
         None
     }
@@ -633,7 +710,7 @@ pub trait Persist: Debug + Send + Sync + DynClone {
     }
 }
 
-dyn_clone::clone_trait_object!(Persist);
+dyn_clone::clone_trait_object!(<I, O> Persist<Input = I, Output = O>);
 
 #[cfg(feature = "test-utils")]
 mock! {
@@ -642,9 +719,12 @@ mock! {
 
     #[async_trait]
     impl Persist for Persist {
+        type Input = String;
+        type Output = String;
+
         async fn setup(&self) -> Result<()>;
-        async fn store(&self, node: Node) -> Result<Node>;
-        async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream;
+        async fn store(&self, node: Node<String>) -> Result<Node<String>>;
+        async fn batch_store(&self, nodes: Vec<Node<String>>) -> IndexingStream<String>;
         fn batch_size(&self) -> Option<usize>;
 
         fn name(&self) -> &'static str;
@@ -656,14 +736,17 @@ mock! {
 }
 
 #[async_trait]
-impl Persist for Box<dyn Persist> {
+impl<I: Chunk, O: Chunk> Persist for Box<dyn Persist<Input = I, Output = O>> {
+    type Input = I;
+    type Output = O;
+
     async fn setup(&self) -> Result<()> {
         self.as_ref().setup().await
     }
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: Node<I>) -> Result<Node<O>> {
         self.as_ref().store(node).await
     }
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<Node<I>>) -> IndexingStream<O> {
         self.as_ref().batch_store(nodes).await
     }
     fn batch_size(&self) -> Option<usize> {
@@ -675,14 +758,17 @@ impl Persist for Box<dyn Persist> {
 }
 
 #[async_trait]
-impl Persist for Arc<dyn Persist> {
+impl<I: Chunk, O: Chunk> Persist for Arc<dyn Persist<Input = I, Output = O>> {
+    type Input = I;
+    type Output = O;
+
     async fn setup(&self) -> Result<()> {
         self.as_ref().setup().await
     }
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: Node<I>) -> Result<Node<O>> {
         self.as_ref().store(node).await
     }
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<Node<I>>) -> IndexingStream<O> {
         self.as_ref().batch_store(nodes).await
     }
     fn batch_size(&self) -> Option<usize> {
@@ -694,14 +780,17 @@ impl Persist for Arc<dyn Persist> {
 }
 
 #[async_trait]
-impl Persist for &dyn Persist {
+impl<I: Chunk, O: Chunk> Persist for &dyn Persist<Input = I, Output = O> {
+    type Input = I;
+    type Output = O;
+
     async fn setup(&self) -> Result<()> {
         (*self).setup().await
     }
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: Node<I>) -> Result<Node<O>> {
         (*self).store(node).await
     }
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<Node<I>>) -> IndexingStream<O> {
         (*self).batch_store(nodes).await
     }
     fn batch_size(&self) -> Option<usize> {
@@ -721,24 +810,24 @@ pub trait WithBatchIndexingDefaults {
     fn with_indexing_defaults(&mut self, _indexing_defaults: IndexingDefaults) {}
 }
 
-impl WithIndexingDefaults for dyn Transformer {}
-impl WithIndexingDefaults for Box<dyn Transformer> {
+impl<I, O> WithIndexingDefaults for dyn Transformer<Input = I, Output = O> {}
+impl<I, O> WithIndexingDefaults for Box<dyn Transformer<Input = I, Output = O>> {
     fn with_indexing_defaults(&mut self, indexing_defaults: IndexingDefaults) {
         self.as_mut().with_indexing_defaults(indexing_defaults);
     }
 }
-impl WithBatchIndexingDefaults for dyn BatchableTransformer {}
-impl WithBatchIndexingDefaults for Box<dyn BatchableTransformer> {
+impl<I, O> WithBatchIndexingDefaults for dyn BatchableTransformer<Input = I, Output = O> {}
+impl<I, O> WithBatchIndexingDefaults for Box<dyn BatchableTransformer<Input = I, Output = O>> {
     fn with_indexing_defaults(&mut self, indexing_defaults: IndexingDefaults) {
         self.as_mut().with_indexing_defaults(indexing_defaults);
     }
 }
 
-impl<F> WithIndexingDefaults for F where F: Fn(Node) -> Result<Node> {}
-impl<F> WithBatchIndexingDefaults for F where F: Fn(Vec<Node>) -> IndexingStream {}
+impl<F> WithIndexingDefaults for F where F: Fn(Node<String>) -> Result<Node<String>> {}
+impl<F> WithBatchIndexingDefaults for F where F: Fn(Vec<Node<String>>) -> IndexingStream<String> {}
 
 #[cfg(feature = "test-utils")]
 impl WithIndexingDefaults for MockTransformer {}
-//
+// //
 #[cfg(feature = "test-utils")]
 impl WithBatchIndexingDefaults for MockBatchableTransformer {}

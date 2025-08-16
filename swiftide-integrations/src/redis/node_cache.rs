@@ -1,13 +1,14 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use swiftide_core::indexing::{Node, NodeCache};
+use swiftide_core::indexing::{Chunk, Node, NodeCache};
 
 use super::Redis;
 
 #[allow(dependency_on_unit_never_type_fallback)]
 #[async_trait]
-impl NodeCache for Redis {
+impl<T: Chunk> NodeCache for Redis<T> {
+    type Input = T;
     /// Checks if a node is present in the cache.
     ///
     /// # Parameters
@@ -22,7 +23,7 @@ impl NodeCache for Redis {
     ///
     /// Logs an error and returns `false` if the cache check fails.
     #[tracing::instrument(skip_all, fields(hit), level = "trace")]
-    async fn get(&self, node: &Node) -> bool {
+    async fn get(&self, node: &Node<T>) -> bool {
         let cache_result = if let Some(mut cm) = self.lazy_connect().await {
             let result = redis::cmd("EXISTS")
                 .arg(self.cache_key_for_node(node))
@@ -60,7 +61,7 @@ impl NodeCache for Redis {
     ///
     /// Logs an error if the node cannot be set in the cache.
     #[tracing::instrument(skip_all, level = "trace")]
-    async fn set(&self, node: &Node) {
+    async fn set(&self, node: &Node<T>) {
         if let Some(mut cm) = self.lazy_connect().await {
             let result: Result<(), redis::RedisError> = redis::cmd("SET")
                 .arg(self.cache_key_for_node(node))
@@ -98,6 +99,7 @@ impl NodeCache for Redis {
 mod tests {
     use super::*;
 
+    use swiftide_core::indexing::TextNode;
     use testcontainers::runners::AsyncRunner;
 
     /// Tests the `RedisNodeCache` implementation.
@@ -118,7 +120,7 @@ mod tests {
             .expect("Could not build redis client");
         cache.reset_cache().await;
 
-        let node = Node::new("chunk");
+        let node = TextNode::new("chunk");
 
         let before_cache = cache.get(&node).await;
         assert!(!before_cache);

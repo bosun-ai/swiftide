@@ -1,6 +1,6 @@
 use anyhow::Context;
 use lancedb::query::{self as lance_query_builder, QueryBase};
-use swiftide::indexing;
+use swiftide::indexing::{self, TextNode};
 use swiftide::indexing::{
     EmbeddedField,
     transformers::{ChunkCode, MetadataQACode, metadata_qa_code::NAME as METADATA_QA_CODE_NAME},
@@ -46,7 +46,7 @@ async fn test_lancedb() {
     Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
-        .then(|mut node: indexing::Node| {
+        .then(|mut node: TextNode| {
             // Add path to metadata, by default, storage will store all metadata fields
             node.metadata
                 .insert("path", node.path.display().to_string());
@@ -123,7 +123,7 @@ async fn test_lancedb_retrieve_dynamic_search() {
     Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
-        .then(|mut node: indexing::Node| {
+        .then(|mut node: indexing::TextNode| {
             // Add path to metadata, by default, storage will store all metadata fields
             node.metadata
                 .insert("path", node.path.display().to_string());

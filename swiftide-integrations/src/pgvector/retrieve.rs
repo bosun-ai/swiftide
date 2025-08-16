@@ -203,9 +203,9 @@ mod tests {
         .expect("Test setup failed");
 
         let nodes = vec![
-            indexing::Node::new("test_query1").with_metadata(("filter", "true")),
-            indexing::Node::new("test_query2").with_metadata(("filter", "true")),
-            indexing::Node::new("test_query3").with_metadata(("filter", "false")),
+            indexing::TextNode::new("test_query1").with_metadata(("filter", "true")),
+            indexing::TextNode::new("test_query2").with_metadata(("filter", "true")),
+            indexing::TextNode::new("test_query3").with_metadata(("filter", "false")),
         ]
         .into_iter()
         .map(|node| {
@@ -266,7 +266,7 @@ mod tests {
         .expect("Test setup failed");
 
         let nodes = vec![
-            indexing::Node::new("test_query1")
+            indexing::TextNode::new("test_query1")
                 .with_metadata([
                     ("other", serde_json::Value::from(10)),
                     ("text", serde_json::Value::from("some text")),

@@ -114,7 +114,7 @@ mod tests {
     use std::collections::{HashMap, HashSet};
 
     use qdrant_client::qdrant::PointStruct;
-    use swiftide_core::indexing::{EmbeddedField, Node};
+    use swiftide_core::indexing::{EmbeddedField, TextNode};
     use test_case::test_case;
 
     use crate::qdrant::indexing_node::NodeWithVectors;
@@ -123,7 +123,7 @@ mod tests {
     static EXPECTED_UUID: &str = "d42d252d-671d-37ef-a157-8e85d0710610";
 
     #[test_case(
-        Node::builder()
+        TextNode::builder()
             .path("/path")
             .chunk("data")
             .vectors([(EmbeddedField::Chunk, vec![1.0])])
@@ -140,7 +140,7 @@ mod tests {
         "Node with single vector creates struct with unnamed vector"
     )]
     #[test_case(
-        Node::builder()
+        TextNode::builder()
             .path("/path")
             .chunk("data")
             .vectors([
@@ -163,7 +163,7 @@ mod tests {
         "Node with multiple vectors creates struct with named vectors"
     )]
     #[test_case(
-        Node::builder()
+        TextNode::builder()
             .path("/path")
             .chunk("data")
             .vectors([
@@ -190,7 +190,7 @@ mod tests {
     )]
     #[allow(clippy::needless_pass_by_value)]
     fn try_into_point_struct_test(
-        node: Node,
+        node: TextNode,
         vector_fields: HashSet<EmbeddedField>,
         mut expected_point: PointStruct,
     ) {

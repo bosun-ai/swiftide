@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use htmd::HtmlToMarkdown;
 
-use swiftide_core::{Transformer, indexing::Node};
+use swiftide_core::{Transformer, indexing::TextNode};
 
 /// Transforms HTML content into markdown.
 ///
@@ -39,14 +39,16 @@ impl std::fmt::Debug for HtmlToMarkdownTransformer {
 
 #[async_trait]
 impl Transformer for HtmlToMarkdownTransformer {
-    /// Converts the HTML content in the `Node` to markdown.
+    type Input = String;
+    type Output = String;
+    /// Converts the HTML content in the `TextNode` to markdown.
     ///
     /// Will Err the node if the conversion fails.
     #[tracing::instrument(skip_all, name = "transformer.html_to_markdown")]
-    async fn transform_node(&self, node: Node) -> Result<Node> {
+    async fn transform_node(&self, node: TextNode) -> Result<TextNode> {
         let chunk = self.htmd.convert(&node.chunk)?;
 
-        Node::build_from_other(&node).chunk(chunk).build()
+        TextNode::build_from_other(&node).chunk(chunk).build()
     }
 
     fn concurrency(&self) -> Option<usize> {
@@ -60,7 +62,7 @@ mod test {
 
     #[tokio::test]
     async fn test_html_to_markdown() {
-        let node = Node::new("<h1>Hello, World!</h1>");
+        let node = TextNode::new("<h1>Hello, World!</h1>");
         let transformer = HtmlToMarkdownTransformer::default();
         let transformed_node = transformer.transform_node(node).await.unwrap();
         assert_eq!(transformed_node.chunk, "# Hello, World!");

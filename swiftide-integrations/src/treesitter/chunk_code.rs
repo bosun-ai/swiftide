@@ -6,7 +6,7 @@ use derive_builder::Builder;
 use crate::treesitter::{ChunkSize, CodeSplitter, SupportedLanguages};
 use swiftide_core::{
     ChunkerTransformer,
-    indexing::{IndexingStream, Node},
+    indexing::{IndexingStream, TextNode},
 };
 
 /// The `ChunkCode` struct is responsible for chunking code into smaller pieces
@@ -95,18 +95,21 @@ impl ChunkCode {
 
 #[async_trait]
 impl ChunkerTransformer for ChunkCode {
-    /// Transforms a `Node` by splitting its code chunk into smaller pieces.
+    type Input = String;
+    type Output = String;
+    /// Transforms a `TextNode` by splitting its code chunk into smaller pieces.
     ///
     /// # Parameters
-    /// - `node`: The `Node` containing the code chunk to be split.
+    /// - `node`: The `TextNode` containing the code chunk to be split.
     ///
     /// # Returns
-    /// - `IndexingStream`: A stream of `Node` instances, each containing a smaller chunk of code.
+    /// - `IndexingStream`: A stream of `TextNode` instances, each containing a smaller chunk of
+    ///   code.
     ///
     /// # Errors
     /// - If the code splitting fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.chunk_code")]
-    async fn transform_node(&self, node: Node) -> IndexingStream {
+    async fn transform_node(&self, node: TextNode) -> IndexingStream<String> {
         let split_result = self.chunker.split(&node.chunk);
 
         if let Ok(split) = split_result {
@@ -115,7 +118,7 @@ impl ChunkerTransformer for ChunkCode {
             IndexingStream::iter(split.into_iter().map(move |chunk| {
                 let chunk_size = chunk.len();
 
-                let node = Node::build_from_other(&node)
+                let node = TextNode::build_from_other(&node)
                     .chunk(chunk)
                     .offset(offset)
                     .build();

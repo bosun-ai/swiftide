@@ -13,13 +13,16 @@ use arrow_array::types::Utf8Type;
 use async_trait::async_trait;
 use swiftide_core::Persist;
 use swiftide_core::indexing::IndexingStream;
-use swiftide_core::indexing::Node;
+use swiftide_core::indexing::TextNode;
 
 use super::FieldConfig;
 use super::LanceDB;
 
 #[async_trait]
 impl Persist for LanceDB {
+    type Input = String;
+    type Output = String;
+
     #[tracing::instrument(skip_all)]
     async fn setup(&self) -> Result<()> {
         let conn = self.get_connection().await?;
@@ -41,7 +44,7 @@ impl Persist for LanceDB {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: TextNode) -> Result<TextNode> {
         let mut nodes = vec![node; 1];
         self.store_nodes(&nodes).await?;
 
@@ -51,7 +54,7 @@ impl Persist for LanceDB {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<TextNode>) -> IndexingStream<String> {
         self.store_nodes(&nodes).await.map(|()| nodes).into()
     }
 
@@ -61,7 +64,7 @@ impl Persist for LanceDB {
 }
 
 impl LanceDB {
-    async fn store_nodes(&self, nodes: &[Node]) -> Result<()> {
+    async fn store_nodes(&self, nodes: &[TextNode]) -> Result<()> {
         let schema = self.schema.clone();
 
         let batches = self.extract_arrow_batches_from_nodes(nodes)?;
@@ -91,7 +94,7 @@ impl LanceDB {
 
     fn extract_arrow_batches_from_nodes(
         &self,
-        nodes: &[Node],
+        nodes: &[TextNode],
     ) -> core::result::Result<Vec<Arc<dyn Array>>, anyhow::Error> {
         let fields = self.fields.as_slice();
         let mut batches: Vec<Arc<dyn Array>> = Vec::with_capacity(fields.len());

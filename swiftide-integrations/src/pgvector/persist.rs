@@ -14,11 +14,13 @@ use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use swiftide_core::{
     Persist,
-    indexing::{IndexingStream, Node},
+    indexing::{IndexingStream, TextNode},
 };
 
 #[async_trait]
 impl Persist for PgVector {
+    type Input = String;
+    type Output = String;
     #[tracing::instrument(skip_all)]
     async fn setup(&self) -> Result<()> {
         // Get or initialize the connection pool
@@ -52,7 +54,7 @@ impl Persist for PgVector {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: TextNode) -> Result<TextNode> {
         let mut nodes = vec![node; 1];
         self.store_nodes(&nodes).await?;
 
@@ -62,7 +64,7 @@ impl Persist for PgVector {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<TextNode>) -> IndexingStream<String> {
         self.store_nodes(&nodes).await.map(|()| nodes).into()
     }
 
