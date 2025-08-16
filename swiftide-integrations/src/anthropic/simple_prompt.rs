@@ -1,7 +1,10 @@
 use anyhow::Context as _;
 use async_anthropic::{errors::AnthropicError, types::CreateMessagesRequestBuilder};
 use async_trait::async_trait;
-use swiftide_core::{chat_completion::errors::LanguageModelError, indexing::SimplePrompt};
+use swiftide_core::{
+    chat_completion::{Usage, errors::LanguageModelError},
+    indexing::SimplePrompt,
+};
 
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
@@ -47,16 +50,29 @@ impl SimplePrompt for Anthropic {
             "[SimplePrompt] Response from anthropic"
         );
 
-        #[cfg(feature = "metrics")]
         if let Some(usage) = response.usage.as_ref() {
-            emit_usage(
-                model,
-                usage.input_tokens.unwrap_or_default().into(),
-                usage.output_tokens.unwrap_or_default().into(),
-                (usage.input_tokens.unwrap_or_default() + usage.output_tokens.unwrap_or_default())
+            if let Some(callback) = &self.on_usage {
+                let usage = Usage {
+                    prompt_tokens: usage.input_tokens.unwrap_or_default(),
+                    completion_tokens: usage.output_tokens.unwrap_or_default(),
+                    total_tokens: (usage.input_tokens.unwrap_or_default()
+                        + usage.output_tokens.unwrap_or_default()),
+                };
+                callback(&usage).await?;
+            }
+
+            #[cfg(feature = "metrics")]
+            {
+                emit_usage(
+                    model,
+                    usage.input_tokens.unwrap_or_default().into(),
+                    usage.output_tokens.unwrap_or_default().into(),
+                    (usage.input_tokens.unwrap_or_default()
+                        + usage.output_tokens.unwrap_or_default())
                     .into(),
-                self.metric_metadata.as_ref(),
-            );
+                    self.metric_metadata.as_ref(),
+                );
+            }
         }
 
         let message = response
