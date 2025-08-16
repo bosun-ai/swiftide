@@ -38,7 +38,7 @@ use std::{
 use anyhow::{Context as _, Result};
 use tera::Tera;
 
-use crate::node::Node;
+use crate::node::{Node, TextNode};
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
@@ -85,7 +85,7 @@ impl Prompt {
 
     /// Adds an `ingestion::Node` to the context of the Prompt
     #[must_use]
-    pub fn with_node(mut self, node: &Node) -> Self {
+    pub fn with_node(mut self, node: &TextNode) -> Self {
         let context = self.context.get_or_insert_with(tera::Context::default);
         context.insert("node", &node);
         self
