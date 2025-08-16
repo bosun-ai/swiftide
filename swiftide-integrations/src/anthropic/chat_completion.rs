@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
-        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec, Usage,
         UsageBuilder, errors::LanguageModelError,
     },
 };
@@ -89,6 +89,15 @@ impl ChatCompletion for Anthropic {
                 self.metric_metadata.as_ref(),
             );
 
+            let usage = Usage {
+                prompt_tokens: input_tokens,
+                completion_tokens: output_tokens,
+                total_tokens,
+            };
+            if let Some(callback) = &self.on_usage {
+                callback(&usage).await?;
+            }
+
             let usage = UsageBuilder::default()
                 .prompt_tokens(input_tokens)
                 .completion_tokens(output_tokens)
@@ -129,6 +138,8 @@ impl ChatCompletion for Anthropic {
         #[cfg(feature = "metrics")]
         let metric_metadata = self.metric_metadata.clone();
 
+        let maybe_usage_callback = self.on_usage.clone();
+
         response
             .map_ok(move |chunk| {
                 let accumulating_response = Arc::clone(&accumulating_response);
@@ -142,6 +153,17 @@ impl ChatCompletion for Anthropic {
             .chain(
                 stream::iter(vec![final_response]).map(move |final_response| {
                     if let Some(usage) = final_response.lock().unwrap().usage.as_ref() {
+                        if let Some(callback) = maybe_usage_callback.as_ref() {
+                            let usage = usage.clone();
+                            let callback = callback.clone();
+
+                            tokio::spawn(async move {
+                                if let Err(e) = callback(&usage).await {
+                                    tracing::error!("Error in on_usage callback: {}", e);
+                                }
+                            });
+                        }
+
                         #[cfg(feature = "metrics")]
                         emit_usage(
                             &model,
