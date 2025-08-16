@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755326082891,
+  "lastUpdate": 1755328416638,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25583,6 +25583,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257949,
             "range": "± 842",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "63a91bd2d8290cbd20f4ae3914d820192ef160d2",
+          "message": "perf: Use Cow to in Prompt",
+          "timestamp": "2025-08-16T09:03:27+02:00",
+          "tree_id": "0998ca4ff5fbb1042621b20de83d174296b52de4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/63a91bd2d8290cbd20f4ae3914d820192ef160d2"
+        },
+        "date": 1755328415103,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 788941,
+            "range": "± 14653",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257140,
+            "range": "± 2934",
             "unit": "ns/iter"
           }
         ]
