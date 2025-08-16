@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.0](https://github.com/bosun-ai/swiftide/compare/v0.29.0...v0.30.0) - 2025-08-16
+
+### New features
+
+- [dc574b4](https://github.com/bosun-ai/swiftide/commit/dc574b41b259f430bb4dc38338416ea1aa9480bb) *(agents)*  Multi agent setup with graph-like Tasks ([#861](https://github.com/bosun-ai/swiftide/pull/861))
+
+- [8740762](https://github.com/bosun-ai/swiftide/commit/87407626ef75c254fae0a677148609738fd64ccc) *(agents)*  Allow mutating an existing system prompt in the builder ([#887](https://github.com/bosun-ai/swiftide/pull/887))
+
+- [4bbf207](https://github.com/bosun-ai/swiftide/commit/4bbf207637a1aebe4e0d5b2d4030c3d1f99d4c1c) *(agents/local-executor)*  Allow clearing, adding and removing env variable ([#875](https://github.com/bosun-ai/swiftide/pull/875))
+
+- [7873493](https://github.com/bosun-ai/swiftide/commit/787349329e34956bcd205b8da64bb241c15c8e65) *(agents/local-executor)*  Support running inline shebang scripts ([#874](https://github.com/bosun-ai/swiftide/pull/874))
+
+- [a6d4379](https://github.com/bosun-ai/swiftide/commit/a6d43794ae8e549b3716ef15344471b22041cbc1)  Proper streaming backoff for Chat Completion ([#895](https://github.com/bosun-ai/swiftide/pull/895))
+
+### Bug fixes
+
+- [2b8e138](https://github.com/bosun-ai/swiftide/commit/2b8e1389b630283a2e8c55b9997f09322b7378a9) *(openai)*  More gracefully allow handling streaming errors if the client is decorated ([#891](https://github.com/bosun-ai/swiftide/pull/891))
+
+- [f2948b5](https://github.com/bosun-ai/swiftide/commit/f2948b596d7c91c518e700c5d2589fba5a45b649) *(pipeline)*  Revert cache nodes after they've been successfully ran ([#800](https://github.com/bosun-ai/swiftide/pull/800)) ([#852](https://github.com/bosun-ai/swiftide/pull/852))
+
+### Performance
+
+- [63a91bd](https://github.com/bosun-ai/swiftide/commit/63a91bd2d8290cbd20f4ae3914d820192ef160d2)  Use Cow to in Prompt
+
+### Miscellaneous
+
+- [09f421b](https://github.com/bosun-ai/swiftide/commit/09f421bcc934721ab5fcf3dc2808fe5beefcc9a2)  Update rmcp and schemars ([#881](https://github.com/bosun-ai/swiftide/pull/881))
+
+### Docs
+
+- [84ffa45](https://github.com/bosun-ai/swiftide/commit/84ffa4507e57b252f72204f8e0df67191d97fe72)  Minimal updates for tasks
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.29.0...0.30.0
+
+
+
 ## [0.29.0](https://github.com/bosun-ai/swiftide/compare/v0.28.1...v0.29.0) - 2025-07-29
 
 ### New features
