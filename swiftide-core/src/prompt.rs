@@ -51,8 +51,8 @@ pub struct Prompt {
 /// Either a one-off template or a tera template
 #[derive(Clone, Debug)]
 enum TemplateRef {
-    OneOff(String),
-    Tera(String),
+    OneOff(Cow<'static, str>),
+    Tera(Cow<'static, str>),
 }
 
 pub static SWIFTIDE_TERA: LazyLock<RwLock<Tera>> = LazyLock::new(|| RwLock::new(Tera::default()));
@@ -76,7 +76,7 @@ impl Prompt {
     }
 
     /// Create a new prompt from a compiled template that is present in the Tera repository
-    pub fn from_compiled_template(name: impl Into<String>) -> Prompt {
+    pub fn from_compiled_template(name: impl Into<Cow<'static, str>>) -> Prompt {
         Prompt {
             template_ref: TemplateRef::Tera(name.into()),
             context: None,
@@ -145,8 +145,8 @@ impl Prompt {
     }
 }
 
-impl From<&str> for Prompt {
-    fn from(prompt: &str) -> Self {
+impl From<&'static str> for Prompt {
+    fn from(prompt: &'static str) -> Self {
         Prompt {
             template_ref: TemplateRef::OneOff(prompt.into()),
             context: None,
@@ -157,7 +157,7 @@ impl From<&str> for Prompt {
 impl From<String> for Prompt {
     fn from(prompt: String) -> Self {
         Prompt {
-            template_ref: TemplateRef::OneOff(prompt),
+            template_ref: TemplateRef::OneOff(prompt.into()),
             context: None,
         }
     }

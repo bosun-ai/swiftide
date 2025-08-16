@@ -73,10 +73,10 @@ impl Persist for Redis {
                 .await
                 .context("Error persisting to redis");
 
-            if result.is_ok() {
-                IndexingStream::iter(nodes.into_iter().map(Ok))
+            if let Err(e) = result {
+                IndexingStream::iter([Err(e)])
             } else {
-                IndexingStream::iter([Err(result.unwrap_err())])
+                IndexingStream::iter(nodes.into_iter().map(Ok))
             }
         } else {
             IndexingStream::iter([Err(anyhow::anyhow!("Failed to connect to Redis"))])

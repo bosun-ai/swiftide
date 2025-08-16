@@ -52,13 +52,24 @@ impl From<String> for SystemPrompt {
     }
 }
 
-impl From<&str> for SystemPrompt {
-    fn from(text: &str) -> Self {
+impl From<&'static str> for SystemPrompt {
+    fn from(text: &'static str) -> Self {
         SystemPrompt {
             role: None,
             guidelines: Vec::new(),
             constraints: Vec::new(),
             template: text.into(),
+        }
+    }
+}
+
+impl From<Prompt> for SystemPrompt {
+    fn from(prompt: Prompt) -> Self {
+        SystemPrompt {
+            role: None,
+            guidelines: Vec::new(),
+            constraints: Vec::new(),
+            template: prompt,
         }
     }
 }
