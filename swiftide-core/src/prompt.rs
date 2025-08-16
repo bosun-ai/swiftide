@@ -177,7 +177,7 @@ mod test {
     #[tokio::test]
     async fn test_prompt_with_node() {
         let prompt: Prompt = "hello {{node.chunk}}".into();
-        let node = Node::new("test");
+        let node = Node::from("test");
         let prompt = prompt.with_node(&node);
         assert_eq!(prompt.render().unwrap(), "hello test");
     }

@@ -266,7 +266,7 @@ impl Hash for Node<String> {
 impl<T: Into<String>> From<T> for Node<String> {
     fn from(value: T) -> Self {
         let value: String = value.into();
-        Node::new(value)
+        Node::<String>::new(value)
     }
 }
 
