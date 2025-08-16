@@ -2,7 +2,8 @@ use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
-    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults, indexing::IndexingDefaults,
+    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
+    indexing::{Chunk, IndexingDefaults},
 };
 use tokio::{sync::mpsc, task};
 use tracing::Instrument;
@@ -53,20 +54,20 @@ const DEFAULT_BATCH_SIZE: usize = 256;
 /// * `stream` - The stream of `Node` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
-pub struct Pipeline {
-    stream: IndexingStream,
-    storage: Vec<Arc<dyn Persist>>,
+pub struct Pipeline<T: Chunk> {
+    stream: IndexingStream<T>,
+    storage: Vec<Arc<dyn Persist<Input = T, Output = T>>>,
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
     batch_size: usize,
 }
 
-impl Default for Pipeline {
+impl<T: Chunk> Default for Pipeline<T> {
     /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal
     /// to the number of CPUs.
     fn default() -> Self {
         Self {
-            stream: IndexingStream::empty(),
+            stream: IndexingStream::<T>::empty(),
             storage: Vec::default(),
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
@@ -75,7 +76,7 @@ impl Default for Pipeline {
     }
 }
 
-impl Pipeline {
+impl<T: Chunk> Pipeline<T> {
     /// Creates a `Pipeline` from a given loader.
     ///
     /// # Arguments
@@ -85,7 +86,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` initialized with the provided loader.
-    pub fn from_loader(loader: impl Loader + 'static) -> Self {
+    pub fn from_loader(loader: impl Loader<Output = T> + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
             stream,
@@ -110,7 +111,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` initialized with the provided stream.
-    pub fn from_stream(stream: impl Into<IndexingStream>) -> Self {
+    pub fn from_stream(stream: impl Into<IndexingStream<T>>) -> Self {
         Self {
             stream: stream.into(),
             ..Default::default()
@@ -168,7 +169,7 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that filters out cached nodes.
     #[must_use]
-    pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
+    pub fn filter_cached(mut self, cache: impl NodeCache<Input = T> + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
             .stream
@@ -205,16 +206,16 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
     #[must_use]
-    pub fn then(
+    pub fn then<Output: Chunk>(
         mut self,
-        mut transformer: impl Transformer + WithIndexingDefaults + 'static,
-    ) -> Self {
+        mut transformer: impl Transformer<Input = T, Output = Output> + WithIndexingDefaults + 'static,
+    ) -> Pipeline<Output> {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
 
         transformer.with_indexing_defaults(self.indexing_defaults.clone());
 
         let transformer = Arc::new(transformer);
-        self.stream = self
+        let stream = self
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
@@ -231,10 +232,16 @@ impl Pipeline {
             })
             .try_buffer_unordered(concurrency)
             .map(|x| x.and_then(|x| x))
-            .boxed()
-            .into();
+            .boxed();
 
-        self
+        Pipeline {
+            stream: stream.into(),
+            // TODO: Type erasure on inner storage?
+            storage: self.storage,
+            concurrency: self.concurrency,
+            indexing_defaults: self.indexing_defaults.clone(),
+            batch_size: self.batch_size,
+        }
     }
 
     /// Adds a batch transformer to the pipeline.
