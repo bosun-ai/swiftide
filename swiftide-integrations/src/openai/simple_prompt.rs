@@ -7,7 +7,9 @@ use async_trait::async_trait;
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
-    SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
+    SimplePrompt,
+    chat_completion::{Usage, errors::LanguageModelError},
+    prompt::Prompt,
     util::debug_long_utf8,
 };
 
@@ -102,9 +104,17 @@ impl<
                 LanguageModelError::PermanentError("Expected content in response".into())
             })?;
 
-        #[cfg(feature = "metrics")]
         {
             if let Some(usage) = response.usage.as_ref() {
+                if let Some(callback) = &self.on_usage {
+                    let usage = Usage {
+                        prompt_tokens: usage.prompt_tokens,
+                        completion_tokens: usage.completion_tokens,
+                        total_tokens: usage.total_tokens,
+                    };
+                    callback(&usage).await?;
+                }
+                #[cfg(feature = "metrics")]
                 emit_usage(
                     model,
                     usage.prompt_tokens.into(),

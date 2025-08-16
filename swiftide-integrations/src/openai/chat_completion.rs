@@ -136,6 +136,10 @@ impl<
                 .build()
                 .map_err(LanguageModelError::permanent)?;
 
+            if let Some(callback) = &self.on_usage {
+                callback(&usage).await?;
+            }
+
             builder.usage(usage);
 
             #[cfg(feature = "metrics")]
@@ -182,6 +186,12 @@ impl<
                 include_usage: true,
             })
             .to_owned();
+
+        if self.on_usage.is_some() || cfg!(feature = "metrics") {
+            openai_request.stream_options(ChatCompletionStreamOptions {
+                include_usage: true,
+            });
+        }
 
         if !request.tools_spec.is_empty() {
             openai_request
@@ -234,6 +244,7 @@ impl<
             tracing::info_span!("stream")
         };
 
+        let maybe_usage_callback = self.on_usage.clone();
         let stream = response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
@@ -307,9 +318,33 @@ impl<
                         );
                     }
 
-                    #[cfg(feature = "metrics")]
-                    {
-                        if let Some(usage) = lock.usage.as_ref() {
+                    tracing::debug!(
+                        usage = format!(
+                            "{}/{}/{}",
+                            lock.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                            lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                            lock.usage.as_ref().map_or(0, |u| u.total_tokens)
+                        ),
+                        model = &model,
+                        has_message = lock.message.is_some(),
+                        num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
+                        "[ChatCompletion/Streaming] Response from OpenAI"
+                    );
+                    #[allow(clippy::collapsible_if)]
+                    if let Some(usage) = lock.usage.as_ref() {
+                        if let Some(callback) = maybe_usage_callback.as_ref() {
+                            let usage = usage.clone();
+                            let callback = callback.clone();
+
+                            tokio::spawn(async move {
+                                if let Err(e) = callback(&usage).await {
+                                    tracing::error!("Error in on_usage callback: {}", e);
+                                }
+                            });
+                        }
+
+                        #[cfg(feature = "metrics")]
+                        {
                             emit_usage(
                                 &model,
                                 usage.prompt_tokens.into(),
