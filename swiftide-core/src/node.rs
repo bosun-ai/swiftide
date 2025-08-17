@@ -34,8 +34,10 @@ use crate::{Embedding, SparseEmbedding, metadata::Metadata, util::debug_long_utf
 
 /// Helper trait for types that can be used as data chunks in a `Node`.
 /// For now always expects an owned value
-pub trait Chunk: Clone + Send + Sync + 'static {}
-impl<T> Chunk for T where T: Clone + Send + Sync + 'static {}
+///
+/// A chunk must be able to yield its bytes, be cloned (not while streaming), and be sent across threads.
+pub trait Chunk: Clone + Send + Sync + Debug + AsRef<[u8]> + 'static {}
+impl<T> Chunk for T where T: Clone + Send + Sync + Debug + AsRef<[u8]> + 'static {}
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -91,7 +93,7 @@ impl<T: Chunk> NodeBuilder<T> {
     }
 }
 
-impl Debug for Node<String> {
+impl<T: Chunk> Debug for Node<T> {
     /// Formats the node for debugging purposes.
     ///
     /// This method is used to provide a human-readable representation of the node when debugging.
@@ -100,7 +102,7 @@ impl Debug for Node<String> {
         f.debug_struct("Node")
             .field("id", &self.id())
             .field("path", &self.path)
-            .field("chunk", &debug_long_utf8(&self.chunk, 100))
+            .field("chunk", &self.chunk)
             .field("metadata", &self.metadata)
             .field(
                 "vectors",
@@ -185,6 +187,19 @@ impl<T: Chunk> Node<T> {
         self.sparse_vectors = Some(sparse_vectors.into());
         self
     }
+
+    /// Retrieve the identifier of the node.
+    ///
+    /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
+    /// UUID (v3).
+    ///
+    /// WARN: Does not memoize the id. Use sparingly.
+    pub fn id(&self) -> uuid::Uuid {
+        // Calculate the identifier based on the path and chunk as bytes
+        let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_ref()].concat();
+
+        uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
+    }
 }
 
 impl Node<String> {
@@ -212,18 +227,6 @@ impl Node<String> {
         }
 
         embeddables
-    }
-
-    /// Retrieve the identifier of the node.
-    ///
-    /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
-    /// UUID (v3).
-    ///
-    /// WARN: Does not memoize the id. Use sparingly.
-    pub fn id(&self) -> uuid::Uuid {
-        let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
-
-        uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
     }
 
     /// Converts the node into an [`self::EmbeddedField::Combined`] type of embeddable.
