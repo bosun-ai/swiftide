@@ -792,7 +792,7 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_transformer() {
         let mut loader = MockLoader::new();
-        let transformer = |node: Node| {
+        let transformer = |node: TextNode| {
             let mut node = node;
             node.chunk = "transformed".to_string();
             Ok(node)
@@ -803,7 +803,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(Node::default())].into());
+            .returning(|| vec![Ok(TextNode::default())].into());
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
@@ -818,7 +818,7 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_batch_transformer() {
         let mut loader = MockLoader::new();
-        let batch_transformer = |nodes: Vec<Node>| {
+        let batch_transformer = |nodes: Vec<TextNode>| {
             IndexingStream::iter(nodes.into_iter().map(|mut node| {
                 node.chunk = "transformed".to_string();
                 Ok(node)
@@ -830,7 +830,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(Node::default())].into());
+            .returning(|| vec![Ok(TextNode::default())].into());
 
         let pipeline = Pipeline::from_loader(loader)
             .then_in_batch(batch_transformer)
@@ -853,9 +853,9 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(Node::default()),
-                    Ok(Node::new("skip")),
-                    Ok(Node::default()),
+                    Ok(TextNode::default()),
+                    Ok(TextNode::new("skip")),
+                    Ok(TextNode::default()),
                 ]
                 .into()
             });
@@ -881,9 +881,9 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(Node::default()),
-                    Ok(Node::new("will go left")),
-                    Ok(Node::default()),
+                    Ok(TextNode::default()),
+                    Ok(TextNode::new("will go left")),
+                    Ok(TextNode::default()),
                 ]
                 .into()
             });
@@ -899,14 +899,14 @@ mod tests {
 
         // change the chunk to 'left'
         left = left
-            .then(move |mut node: Node| {
+            .then(move |mut node: TextNode| {
                 node.chunk = "left".to_string();
 
                 Ok(node)
             })
             .log_all();
 
-        right = right.then(move |mut node: Node| {
+        right = right.then(move |mut node: TextNode| {
             node.chunk = "right".to_string();
             Ok(node)
         });
@@ -937,7 +937,7 @@ mod tests {
         let mut loader = MockLoader::new();
         loader
             .expect_into_stream_boxed()
-            .returning(|| vec![Ok(Node::default())].into());
+            .returning(|| vec![Ok(TextNode::default())].into());
 
         let mut transformer = MockTransformer::new();
         transformer.expect_transform_node().returning(Ok);
@@ -963,11 +963,11 @@ mod tests {
         storage.expect_batch_size().returning(|| None);
         storage.expect_name().returning(|| "mock");
 
-        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader>)
-            .then(Box::new(transformer) as Box<dyn Transformer>)
-            .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer>)
-            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
-            .then_store_with(Box::new(storage) as Box<dyn Persist>);
+        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader<Output = String>>)
+            .then(Box::new(transformer) as Box<dyn Transformer<Input = String, Output = String>>)
+            .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer<Input = String, Output = String>>)
+            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer<Input = String, Output = String>>)
+            .then_store_with(Box::new(storage) as Box<dyn Persist<Input = String, Output = String>>);
         pipeline.run().await.unwrap();
     }
 }

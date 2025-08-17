@@ -1,6 +1,9 @@
 use anyhow::Context as _;
 use async_trait::async_trait;
-use swiftide_core::{NodeCache, indexing::Node};
+use swiftide_core::{
+    NodeCache,
+    indexing::{Chunk, Node},
+};
 
 use super::Duckdb;
 
@@ -22,8 +25,10 @@ macro_rules! unwrap_or_log {
 }
 
 #[async_trait]
-impl NodeCache for Duckdb {
-    async fn get(&self, node: &Node) -> bool {
+impl<T: Chunk> NodeCache for Duckdb<T> {
+    type Input = T;
+
+    async fn get(&self, node: &Node<T>) -> bool {
         unwrap_or_log!(
             self.lazy_create_cache()
                 .await
@@ -51,7 +56,7 @@ impl NodeCache for Duckdb {
         unwrap_or_log!(present).unwrap_or(false)
     }
 
-    async fn set(&self, node: &Node) {
+    async fn set(&self, node: &Node<T>) {
         if let Err(err) = self
             .lazy_create_cache()
             .await

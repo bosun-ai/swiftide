@@ -6,13 +6,16 @@ use async_trait::async_trait;
 use rdkafka::producer::FutureRecord;
 use swiftide_core::{
     Persist,
-    indexing::{IndexingStream, Node},
+    indexing::{IndexingStream, TextNode},
 };
 
 use super::Kafka;
 
 #[async_trait]
 impl Persist for Kafka {
+    type Input = String;
+    type Output = String;
+
     async fn setup(&self) -> Result<()> {
         if self.topic_exists()? {
             return Ok(());
@@ -28,7 +31,7 @@ impl Persist for Kafka {
         Some(self.batch_size)
     }
 
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: TextNode) -> Result<TextNode> {
         let (key, payload) = self.node_to_key_payload(&node)?;
         self.producer()?
             .send(
@@ -40,7 +43,7 @@ impl Persist for Kafka {
         Ok(node)
     }
 
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<TextNode>) -> IndexingStream<String> {
         let producer = Arc::new(self.producer().expect("Failed to create producer"));
 
         for node in &nodes {
@@ -98,7 +101,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("chunk");
+        let node = TextNode::new("chunk");
 
         storage.setup().await.unwrap();
         storage.store(node.clone()).await.unwrap();
@@ -130,13 +133,13 @@ mod tests {
             .build()
             .unwrap();
 
-        let nodes = vec![Node::default(); 6];
+        let nodes = vec![TextNode::default(); 6];
 
         storage.setup().await.unwrap();
 
         let stream = storage.batch_store(nodes.clone()).await;
 
-        let result: Vec<Node> = stream.try_collect().await.unwrap();
+        let result: Vec<TextNode> = stream.try_collect().await.unwrap();
 
         assert_eq!(result.len(), 6);
         assert_eq!(result[0], nodes[0]);

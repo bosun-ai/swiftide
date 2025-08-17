@@ -43,24 +43,25 @@ pub trait Transformer: Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(<I, O> Transformer<Input = I, Output = O>);
 
-// #[cfg(feature = "test-utils")]
-// mock! {
-//     #[derive(Debug)]
-//     pub Transformer {}
-//
-//     #[async_trait]
-//     impl<T: Chunk> Transformer for Transformer {
-//         type ChunkType: Chunk;
-//
-//         async fn transform_node(&self, node: Node<T>) -> Result<Node>;
-//         fn concurrency(&self) -> Option<usize>;
-//         fn name(&self) -> &'static str;
-//     }
-//
-//     impl Clone for Transformer {
-//         fn clone(&self) -> Self;
-//     }
-// }
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Transformer {}
+
+    #[async_trait]
+    impl Transformer for Transformer {
+        type Input = String;
+        type Output = String;
+
+        async fn transform_node(&self, node: Node<String>) -> Result<Node<String>>;
+        fn concurrency(&self) -> Option<usize>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Transformer {
+        fn clone(&self) -> Self;
+    }
+}
 
 #[async_trait]
 impl<I: Chunk, O: Chunk> Transformer for Box<dyn Transformer<Input = I, Output = O>> {
@@ -149,23 +150,26 @@ pub trait BatchableTransformer: Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(<I, O> BatchableTransformer<Input = I, Output = O>);
 
-// #[cfg(feature = "test-utils")]
-// mock! {
-//     #[derive(Debug)]
-//     pub BatchableTransformer {}
-//
-//     #[async_trait]
-//     impl BatchableTransformer for BatchableTransformer {
-//         async fn batch_transform(&self, nodes: Vec<Node<T>>) -> IndexingStream;
-//         fn name(&self) -> &'static str;
-//         fn batch_size(&self) -> Option<usize>;
-//         fn concurrency(&self) -> Option<usize>;
-//     }
-//
-//     impl Clone for BatchableTransformer {
-//         fn clone(&self) -> Self;
-//     }
-// }
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub BatchableTransformer {}
+
+    #[async_trait]
+    impl BatchableTransformer for BatchableTransformer {
+        type Input = String;
+        type Output = String;
+
+        async fn batch_transform(&self, nodes: Vec<Node<String>>) -> IndexingStream<String>;
+        fn name(&self) -> &'static str;
+        fn batch_size(&self) -> Option<usize>;
+        fn concurrency(&self) -> Option<usize>;
+    }
+
+    impl Clone for BatchableTransformer {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 /// Use a closure as a batchable transformer
 impl<F> BatchableTransformer for F
@@ -260,22 +264,24 @@ pub trait Loader: DynClone + Send + Sync {
 
 dyn_clone::clone_trait_object!(<O> Loader<Output = O>);
 
-// #[cfg(feature = "test-utils")]
-// mock! {
-//     #[derive(Debug)]
-//     pub Loader {}
-//
-//     #[async_trait]
-//     impl Loader for Loader {
-//         fn into_stream(self) -> IndexingStream;
-//         fn into_stream_boxed(self: Box<Self>) -> IndexingStream;
-//         fn name(&self) -> &'static str;
-//     }
-//
-//     impl Clone for Loader {
-//         fn clone(&self) -> Self;
-//     }
-// }
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Loader {}
+
+    #[async_trait]
+    impl Loader for Loader {
+        type Output = String;
+
+        fn into_stream(self) -> IndexingStream<String>;
+        fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Loader {
+        fn clone(&self) -> Self;
+    }
+}
 
 impl<O: Chunk> Loader for Box<dyn Loader<Output = O>> {
     type Output = O;
@@ -325,22 +331,25 @@ pub trait ChunkerTransformer: Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(<I, O> ChunkerTransformer<Input = I, Output = O>);
 
-// #[cfg(feature = "test-utils")]
-// mock! {
-//     #[derive(Debug)]
-//     pub ChunkerTransformer {}
-//
-//     #[async_trait]
-//     impl ChunkerTransformer for ChunkerTransformer {
-//     async fn transform_node(&self, node: Node<T>) -> IndexingStream;
-//         fn name(&self) -> &'static str;
-//         fn concurrency(&self) -> Option<usize>;
-//     }
-//
-//     impl Clone for ChunkerTransformer {
-//         fn clone(&self) -> Self;
-//     }
-// }
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub ChunkerTransformer {}
+
+    #[async_trait]
+    impl ChunkerTransformer for ChunkerTransformer {
+        type Input = String;
+        type Output = String;
+
+    async fn transform_node(&self, node: Node<String>) -> IndexingStream<String>;
+        fn name(&self) -> &'static str;
+        fn concurrency(&self) -> Option<usize>;
+    }
+
+    impl Clone for ChunkerTransformer {
+        fn clone(&self) -> Self;
+    }
+}
 #[async_trait]
 impl<I: Chunk, O: Chunk> ChunkerTransformer for Box<dyn ChunkerTransformer<Input = I, Output = O>> {
     type Input = I;
@@ -400,7 +409,6 @@ where
     type Output = String;
 }
 
-// #[cfg_attr(feature = "test-utils", automock)]
 #[async_trait]
 /// Caches nodes, typically by their path and hash
 /// Recommended to namespace on the storage
@@ -425,24 +433,25 @@ pub trait NodeCache: Send + Sync + Debug + DynClone {
 
 dyn_clone::clone_trait_object!(<T> NodeCache<Input = T>);
 
-// #[cfg(feature = "test-utils")]
-// mock! {
-//     #[derive(Debug)]
-//     pub NodeCache<T: Chunk> {}
-//
-//     #[async_trait]
-//     impl<T: Chunk> NodeCache<T> for NodeCache<T> {
-//         async fn get(&self, node: &Node<T>) -> bool;
-//         async fn set(&self, node: &Node<T>);
-//         async fn clear(&self) -> Result<()>;
-//         fn name(&self) -> &'static str;
-//
-//     }
-//
-//     impl<T: Chunk> Clone for NodeCache<T> {
-//         fn clone(&self) -> Self;
-//     }
-// }
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub NodeCache {}
+
+    #[async_trait]
+    impl NodeCache for NodeCache {
+        type Input = String;
+        async fn get(&self, node: &Node<String>) -> bool;
+        async fn set(&self, node: &Node<String>);
+        async fn clear(&self) -> Result<()>;
+        fn name(&self) -> &'static str;
+
+    }
+
+    impl Clone for NodeCache {
+        fn clone(&self) -> Self;
+    }
+}
 
 #[async_trait]
 impl<T: Chunk> NodeCache for Box<dyn NodeCache<Input = T>> {
@@ -703,25 +712,28 @@ pub trait Persist: Debug + Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(<I, O> Persist<Input = I, Output = O>);
 
-// #[cfg(feature = "test-utils")]
-// mock! {
-//     #[derive(Debug)]
-//     pub Persist {}
-//
-//     #[async_trait]
-//     impl Persist for Persist {
-//         async fn setup(&self) -> Result<()>;
-//         async fn store(&self, node: Node<T>) -> Result<Node>;
-//         async fn batch_store(&self, nodes: Vec<Node<T>>) -> IndexingStream;
-//         fn batch_size(&self) -> Option<usize>;
-//
-//         fn name(&self) -> &'static str;
-//     }
-//
-//     impl Clone for Persist {
-//         fn clone(&self) -> Self;
-//     }
-// }
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub Persist {}
+
+    #[async_trait]
+    impl Persist for Persist {
+        type Input = String;
+        type Output = String;
+
+        async fn setup(&self) -> Result<()>;
+        async fn store(&self, node: Node<String>) -> Result<Node<String>>;
+        async fn batch_store(&self, nodes: Vec<Node<String>>) -> IndexingStream<String>;
+        fn batch_size(&self) -> Option<usize>;
+
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for Persist {
+        fn clone(&self) -> Self;
+    }
+}
 
 #[async_trait]
 impl<I: Chunk, O: Chunk> Persist for Box<dyn Persist<Input = I, Output = O>> {
@@ -814,8 +826,8 @@ impl<I, O> WithBatchIndexingDefaults for Box<dyn BatchableTransformer<Input = I,
 impl<F> WithIndexingDefaults for F where F: Fn(Node<String>) -> Result<Node<String>> {}
 impl<F> WithBatchIndexingDefaults for F where F: Fn(Vec<Node<String>>) -> IndexingStream<String> {}
 
-// #[cfg(feature = "test-utils")]
-// impl WithIndexingDefaults for MockTransformer {}
+#[cfg(feature = "test-utils")]
+impl WithIndexingDefaults for MockTransformer {}
 // //
-// #[cfg(feature = "test-utils")]
-// impl WithBatchIndexingDefaults for MockBatchableTransformer {}
+#[cfg(feature = "test-utils")]
+impl WithBatchIndexingDefaults for MockBatchableTransformer {}

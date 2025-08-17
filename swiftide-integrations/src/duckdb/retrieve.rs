@@ -2,6 +2,7 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use swiftide_core::{
     Retrieve,
+    indexing::Chunk,
     querying::{
         Document, Query,
         search_strategies::{CustomStrategy, HybridSearch, SimilaritySingleEmbedding},
@@ -12,7 +13,7 @@ use swiftide_core::{
 use super::Duckdb;
 
 #[async_trait]
-impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
+impl<T: Chunk> Retrieve<SimilaritySingleEmbedding> for Duckdb<T> {
     async fn retrieve(
         &self,
         search_strategy: &SimilaritySingleEmbedding,
@@ -75,7 +76,7 @@ impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
 }
 
 #[async_trait]
-impl Retrieve<CustomStrategy<String>> for Duckdb {
+impl<T: Chunk> Retrieve<CustomStrategy<String>> for Duckdb<T> {
     async fn retrieve(
         &self,
         search_strategy: &CustomStrategy<String>,
@@ -114,7 +115,7 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
 }
 
 #[async_trait]
-impl Retrieve<HybridSearch> for Duckdb {
+impl<T: Chunk> Retrieve<HybridSearch> for Duckdb<T> {
     async fn retrieve(
         &self,
         search_strategy: &HybridSearch,

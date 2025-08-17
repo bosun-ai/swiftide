@@ -26,11 +26,10 @@ use std::{
 };
 
 use derive_builder::Builder;
-use dyn_clone::DynClone;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{Embedding, SparseEmbedding, metadata::Metadata, util::debug_long_utf8};
+use crate::{Embedding, SparseEmbedding, metadata::Metadata};
 
 /// Helper trait for types that can be used as data chunks in a `Node`.
 /// For now always expects an owned value
@@ -341,7 +340,7 @@ mod tests {
         let _ = format!("{node:?}");
 
         // With invalid char boundary
-        Node::from("Jürgen".repeat(100));
+        let node = Node::from("Jürgen".repeat(100));
         let _ = format!("{node:?}");
     }
 

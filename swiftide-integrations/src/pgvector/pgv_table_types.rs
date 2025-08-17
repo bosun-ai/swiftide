@@ -13,7 +13,7 @@ use sqlx::PgPool;
 use sqlx::postgres::PgArguments;
 use sqlx::postgres::PgPoolOptions;
 use std::collections::BTreeMap;
-use swiftide_core::indexing::{EmbeddedField, Node};
+use swiftide_core::indexing::{EmbeddedField, TextNode};
 use tokio::time::sleep;
 
 /// Configuration for vector embedding columns in the `PostgreSQL` table.
@@ -56,7 +56,7 @@ pub struct MetadataConfig {
 
 impl MetadataConfig {
     pub fn new<T: Into<String>>(original_field: T) -> Self {
-        let original = original_field.into();
+        let original: String = original_field.into();
         Self {
             field: format!("meta_{}", PgVector::normalize_field_name(&original)),
             original_field: original,
@@ -235,7 +235,7 @@ impl PgVector {
     ///
     /// # Arguments
     ///
-    /// * `nodes` - A slice of `Node` objects to be stored.
+    /// * `nodes` - A slice of `TextNode` objects to be stored.
     ///
     /// # Returns
     ///
@@ -248,7 +248,7 @@ impl PgVector {
     /// - Any of the SQL queries fail to execute due to schema mismatch, constraint violations, or
     ///   connectivity issues.
     /// - Committing the transaction fails.
-    pub async fn store_nodes(&self, nodes: &[Node]) -> Result<()> {
+    pub async fn store_nodes(&self, nodes: &[TextNode]) -> Result<()> {
         let pool = self.pool_get_or_initialize().await?;
 
         let mut tx = pool.begin().await?;
@@ -273,7 +273,7 @@ impl PgVector {
 
     /// Prepares data from nodes into vectors for bulk processing.
     #[allow(clippy::implicit_clone)]
-    fn prepare_bulk_data<'a>(&'a self, nodes: &'a [Node]) -> Result<BulkUpsertData<'a>> {
+    fn prepare_bulk_data<'a>(&'a self, nodes: &'a [TextNode]) -> Result<BulkUpsertData<'a>> {
         let mut bulk_data = BulkUpsertData::new(&self.fields, nodes.len());
 
         for node in nodes {

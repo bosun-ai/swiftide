@@ -1,16 +1,19 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
+use serde::Serialize;
 use swiftide_core::{
     Persist,
-    indexing::{IndexingStream, Node},
+    indexing::{Chunk, IndexingStream, Node},
 };
 
 use super::Redis;
 
 #[async_trait]
 #[allow(dependency_on_unit_never_type_fallback)]
-impl Persist for Redis {
+impl<T: Chunk + Serialize> Persist for Redis<T> {
+    type Input = T;
+    type Output = T;
     async fn setup(&self) -> Result<()> {
         Ok(())
     }
@@ -26,7 +29,7 @@ impl Persist for Redis {
     ///
     /// You can customize the key and value used for storing nodes by setting the `persist_key_fn`
     /// and `persist_value_fn` fields.
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: Node<T>) -> Result<Node<T>> {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("SET")
                 .arg(self.persist_key_for_node(&node)?)
@@ -48,7 +51,7 @@ impl Persist for Redis {
     ///
     /// You can customize the key and value used for storing nodes by setting the `persist_key_fn`
     /// and `persist_value_fn` fields.
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<Node<T>>) -> IndexingStream<T> {
         // use mset for batch store
         if let Some(mut cm) = self.lazy_connect().await {
             let args = nodes

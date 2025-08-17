@@ -8,7 +8,7 @@ use duckdb::{
 };
 use swiftide_core::{
     Persist,
-    indexing::{self, Metadata, Node},
+    indexing::{self, Chunk, Metadata, Node},
 };
 use uuid::Uuid;
 
@@ -51,11 +51,11 @@ impl ToSql for NodeValues<'_> {
     }
 }
 
-impl Duckdb {
-    fn store_node_on_stmt(&self, stmt: &mut Statement<'_>, node: &Node) -> Result<()> {
+impl<T: Chunk + AsRef<str>> Duckdb<T> {
+    fn store_node_on_stmt(&self, stmt: &mut Statement<'_>, node: &Node<T>) -> Result<()> {
         let mut values = vec![
             NodeValues::Uuid(node.id()),
-            NodeValues::Chunk(&node.chunk),
+            NodeValues::Chunk(node.chunk.as_ref()),
             NodeValues::Path(&node.path),
         ];
 
@@ -80,7 +80,10 @@ impl Duckdb {
 }
 
 #[async_trait]
-impl Persist for Duckdb {
+impl<T: Chunk + AsRef<str>> Persist for Duckdb<T> {
+    type Input = T;
+    type Output = T;
+
     async fn setup(&self) -> Result<()> {
         tracing::debug!("Setting up duckdb schema");
 
@@ -129,7 +132,7 @@ impl Persist for Duckdb {
         Ok(())
     }
 
-    async fn store(&self, node: indexing::Node) -> Result<indexing::Node> {
+    async fn store(&self, node: indexing::Node<T>) -> Result<indexing::Node<T>> {
         let lock = self.connection.lock().unwrap();
         let mut stmt = lock.prepare(&self.node_upsert_sql)?;
         self.store_node_on_stmt(&mut stmt, &node)?;
@@ -137,7 +140,7 @@ impl Persist for Duckdb {
         Ok(node)
     }
 
-    async fn batch_store(&self, nodes: Vec<indexing::Node>) -> indexing::IndexingStream {
+    async fn batch_store(&self, nodes: Vec<indexing::Node<T>>) -> indexing::IndexingStream<T> {
         // TODO: Must batch
         let mut new_nodes = Vec::with_capacity(nodes.len());
 

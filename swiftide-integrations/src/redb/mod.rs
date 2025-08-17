@@ -73,7 +73,7 @@ impl Redb {
     pub fn builder() -> RedbBuilder {
         RedbBuilder::default()
     }
-    pub fn node_key(&self, node: &swiftide_core::indexing::Node) -> String {
+    pub fn node_key(&self, node: &swiftide_core::indexing::TextNode) -> String {
         format!("{}.{}", self.cache_key_prefix, node.id())
     }
 

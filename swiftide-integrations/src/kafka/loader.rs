@@ -9,8 +9,10 @@ use swiftide_core::{Loader, indexing::IndexingStream, indexing::Node};
 use super::Kafka;
 
 impl Loader for Kafka {
+    type Output = String;
+
     #[tracing::instrument]
-    fn into_stream(self) -> IndexingStream {
+    fn into_stream(self) -> IndexingStream<String> {
         let client_config = self.client_config;
         let topic = self.topic.clone();
 
@@ -28,7 +30,7 @@ impl Loader for Kafka {
                     Ok(message) => {
                         // only handle Some(Ok(s))
                         if let Some(Ok(payload)) = message.payload_view::<str>() {
-                            let mut node = Node::new(payload);
+                            let mut node = Node::<String>::new(payload);
                             msg_metadata(&mut node, &message);
                             tracing::trace!(?node, ?payload, "received message");
                             return Some((Ok(node), consumer));
@@ -44,12 +46,12 @@ impl Loader for Kafka {
         swiftide_stream.boxed().into()
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String> {
         (*self).into_stream()
     }
 }
 
-fn msg_metadata(node: &mut Node, message: &BorrowedMessage) {
+fn msg_metadata(node: &mut Node<String>, message: &BorrowedMessage) {
     // Add Kafka-specific metadata
     node.metadata
         .insert("kafka_topic", message.topic().to_string());

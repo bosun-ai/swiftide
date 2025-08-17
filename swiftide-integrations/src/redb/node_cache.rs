@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{NodeCache, indexing::Node};
+use swiftide_core::{NodeCache, indexing::TextNode};
 
 use super::Redb;
 
@@ -27,7 +27,9 @@ macro_rules! unwrap_or_log {
 }
 #[async_trait]
 impl NodeCache for Redb {
-    async fn get(&self, node: &Node) -> bool {
+    type Input = String;
+
+    async fn get(&self, node: &TextNode) -> bool {
         let table_definition = self.table_definition();
         let read_txn = unwrap_or_log!(self.database.begin_read());
 
@@ -59,7 +61,7 @@ impl NodeCache for Redb {
         }
     }
 
-    async fn set(&self, node: &Node) {
+    async fn set(&self, node: &TextNode) {
         let write_txn = self.database.begin_write().unwrap();
 
         {
@@ -84,7 +86,7 @@ impl NodeCache for Redb {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swiftide_core::indexing::Node;
+    use swiftide_core::indexing::TextNode;
     use temp_dir::TempDir;
 
     fn setup_redb() -> Redb {
@@ -98,7 +100,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_set() {
         let redb = setup_redb();
-        let node = Node::new("test_get_set");
+        let node = TextNode::new("test_get_set");
         assert!(!redb.get(&node).await);
         redb.set(&node).await;
         assert!(redb.get(&node).await);
@@ -106,7 +108,7 @@ mod tests {
     #[tokio::test]
     async fn test_clear() {
         let redb = setup_redb();
-        let node = Node::new("test_clear");
+        let node = TextNode::new("test_clear");
         redb.set(&node).await;
         assert!(redb.get(&node).await);
         redb.clear().await.unwrap();

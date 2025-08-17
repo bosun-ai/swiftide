@@ -225,7 +225,7 @@ impl ToolExecutor for LocalExecutor {
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
-    ) -> Result<swiftide_core::indexing::IndexingStream> {
+    ) -> Result<swiftide_core::indexing::IndexingStream<String>> {
         let mut loader = FileLoader::new(path);
 
         if let Some(extensions) = extensions {
