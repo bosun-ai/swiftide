@@ -17,7 +17,7 @@ macro_rules! assert_default_prompt_snapshot {
         #[tokio::test]
         async fn test_default_prompt() {
         let template = default_prompt();
-        let mut prompt = template.clone().with_node(&Node::new($node));
+        let mut prompt = template.clone().with_node(&TextNode::new($node));
         $(
             prompt = prompt.with_context_value($key, $value);
         )*

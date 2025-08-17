@@ -99,6 +99,7 @@ impl<T: Chunk> NodeCache for Redis<T> {
 mod tests {
     use super::*;
 
+    use swiftide_core::indexing::TextNode;
     use testcontainers::runners::AsyncRunner;
 
     /// Tests the `RedisNodeCache` implementation.

@@ -58,7 +58,7 @@ pub struct Redis<T: Chunk = String> {
     message_history_key: Arc<String>,
 }
 
-impl<T: Chunk> Redis<T> {
+impl Redis<String> {
     /// Creates a new `Redis` instance from a given Redis URL and key prefix.
     ///
     /// # Parameters
@@ -73,9 +73,9 @@ impl<T: Chunk> Redis<T> {
     /// # Errors
     ///
     /// Returns an error if the Redis client cannot be opened.
-    pub fn try_from_url(url: impl AsRef<str>, prefix: impl AsRef<str>) -> Result<Self> {
+    pub fn try_from_url(url: impl AsRef<str>, prefix: impl AsRef<str>) -> Result<Redis<String>> {
         let client = redis::Client::open(url.as_ref()).context("Failed to open redis client")?;
-        Ok(Self {
+        Ok(Redis::<String> {
             client: client.into(),
             connection_manager: Arc::new(RwLock::new(None)),
             cache_key_prefix: prefix.as_ref().to_string().into(),
@@ -85,7 +85,9 @@ impl<T: Chunk> Redis<T> {
             message_history_key: format!("{}:message_history", prefix.as_ref()).into(),
         })
     }
+}
 
+impl<T: Chunk> Redis<T> {
     /// # Errors
     ///
     /// Returns an error if the Redis client cannot be opened

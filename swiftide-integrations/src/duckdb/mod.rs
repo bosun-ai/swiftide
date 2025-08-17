@@ -84,7 +84,8 @@ pub struct Duckdb<T: Chunk = String> {
     #[allow(dead_code)]
     upsert_vectors: bool,
 
-    phantom: std::marker::PhantomData<T>,
+    #[builder(default)]
+    chunk_type: std::marker::PhantomData<T>,
 }
 
 impl<T: Chunk> std::fmt::Debug for Duckdb<T> {
@@ -97,10 +98,15 @@ impl<T: Chunk> std::fmt::Debug for Duckdb<T> {
     }
 }
 
-impl<T: Chunk> Duckdb<T> {
-    pub fn builder() -> DuckdbBuilder<T> {
-        DuckdbBuilder::default()
+impl Duckdb<String> {
+    pub fn builder() -> DuckdbBuilder<String> {
+        DuckdbBuilder::<String>::default()
     }
+}
+impl<T: Chunk> Duckdb<T> {
+    // pub fn builder() -> DuckdbBuilder<String> {
+    //     DuckdbBuilder::<String>::default()
+    // }
 
     /// Name of the indexing table
     pub fn table_name(&self) -> &str {

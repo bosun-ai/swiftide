@@ -110,7 +110,7 @@ impl<T: Chunk> NodeCache for Duckdb<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use swiftide_core::indexing::Node;
+    use swiftide_core::indexing::TextNode;
 
     fn setup_duckdb() -> Duckdb {
         Duckdb::builder()
@@ -122,7 +122,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_set() {
         let duckdb = setup_duckdb();
-        let node = Node::new("test_get_set");
+        let node = TextNode::new("test_get_set");
 
         assert!(!duckdb.get(&node).await);
         duckdb.set(&node).await;
@@ -132,7 +132,7 @@ mod tests {
     #[tokio::test]
     async fn test_clear() {
         let duckdb = setup_duckdb();
-        let node = Node::new("test_clear");
+        let node = TextNode::new("test_clear");
 
         duckdb.set(&node).await;
         assert!(duckdb.get(&node).await);

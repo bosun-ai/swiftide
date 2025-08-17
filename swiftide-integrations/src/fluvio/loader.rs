@@ -242,7 +242,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node: Node = loader.into_stream().try_next().await.unwrap().unwrap();
+        let node: TextNode = loader.into_stream().try_next().await.unwrap().unwrap();
 
         assert_eq!(node.chunk, "Hello fluvio");
     }

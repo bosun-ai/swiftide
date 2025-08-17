@@ -213,13 +213,13 @@ mod tests {
 
         // Create nodes with different metadata and vectors
         let nodes = vec![
-            indexing::Node::new("content1")
+            indexing::TextNode::new("content1")
                 .with_vectors([(EmbeddedField::Combined, vec![1.0; 384])])
                 .with_metadata(vec![("category", "A"), ("priority", "1")]),
-            indexing::Node::new("content2")
+            indexing::TextNode::new("content2")
                 .with_vectors([(EmbeddedField::Combined, vec![1.1; 384])])
                 .with_metadata(vec![("category", "A"), ("priority", "2")]),
-            indexing::Node::new("content3")
+            indexing::TextNode::new("content3")
                 .with_vectors([(EmbeddedField::Combined, vec![1.2; 384])])
                 .with_metadata(vec![("category", "B"), ("priority", "1")]),
         ]
@@ -293,13 +293,13 @@ mod tests {
         let dissimilar_vector = vec![-1.0; 384];
 
         let nodes = vec![
-            indexing::Node::new("base_content")
+            indexing::TextNode::new("base_content")
                 .with_vectors([(EmbeddedField::Combined, base_vector)])
                 .with_metadata(vec![("category", "A"), ("priority", "1")]),
-            indexing::Node::new("similar_content")
+            indexing::TextNode::new("similar_content")
                 .with_vectors([(EmbeddedField::Combined, similar_vector)])
                 .with_metadata(vec![("category", "A"), ("priority", "2")]),
-            indexing::Node::new("dissimilar_content")
+            indexing::TextNode::new("dissimilar_content")
                 .with_vectors([(EmbeddedField::Combined, dissimilar_vector)])
                 .with_metadata(vec![("category", "B"), ("priority", "1")]),
         ]
@@ -406,7 +406,8 @@ mod tests {
             .expect("Test setup failed");
 
         // Convert test cases to nodes and store them
-        let nodes: Vec<indexing::Node> = test_cases.iter().map(PgVectorTestData::to_node).collect();
+        let nodes: Vec<indexing::TextNode> =
+            test_cases.iter().map(PgVectorTestData::to_node).collect();
 
         // Test batch storage
         let stored_nodes = test_context

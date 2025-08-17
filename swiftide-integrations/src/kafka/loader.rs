@@ -87,6 +87,7 @@ mod tests {
         client::DefaultClientContext,
         producer::{FutureProducer, FutureRecord, Producer},
     };
+    use swiftide_core::indexing::TextNode;
     use testcontainers::{ContainerAsync, runners::AsyncRunner};
     use testcontainers_modules::kafka::apache::{self};
 
@@ -171,7 +172,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node: Node = loader.into_stream().try_next().await.unwrap().unwrap();
+        let node: TextNode = loader.into_stream().try_next().await.unwrap().unwrap();
         assert_eq!(node.chunk, "payload");
     }
 }

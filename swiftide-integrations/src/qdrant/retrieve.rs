@@ -181,9 +181,9 @@ mod tests {
         qdrant_client.setup().await.unwrap();
 
         let nodes = vec![
-            indexing::Node::new("test_query1").with_metadata(("filter", "true")),
-            indexing::Node::new("test_query2").with_metadata(("filter", "true")),
-            indexing::Node::new("test_query3").with_metadata(("filter", "false")),
+            indexing::TextNode::new("test_query1").with_metadata(("filter", "true")),
+            indexing::TextNode::new("test_query2").with_metadata(("filter", "true")),
+            indexing::TextNode::new("test_query3").with_metadata(("filter", "false")),
         ]
         .into_iter()
         .map(|node| {

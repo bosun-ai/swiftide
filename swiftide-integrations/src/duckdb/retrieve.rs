@@ -159,7 +159,7 @@ impl<T: Chunk> Retrieve<HybridSearch> for Duckdb<T> {
 
 #[cfg(test)]
 mod tests {
-    use indexing::{EmbeddedField, Node};
+    use indexing::{EmbeddedField, TextNode};
     use swiftide_core::{Persist as _, indexing};
 
     use super::*;
@@ -173,7 +173,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("Hello duckdb!")
+        let node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 
@@ -212,7 +212,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("Hello duckdb!")
+        let node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 
