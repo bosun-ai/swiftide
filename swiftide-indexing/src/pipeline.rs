@@ -2,12 +2,16 @@ use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
-    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults, indexing::IndexingDefaults,
+    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
+    indexing::{Chunk, IndexingDefaults},
 };
-use tokio::{sync::mpsc, task};
+use tokio::{
+    sync::{Mutex, mpsc},
+    task,
+};
 use tracing::Instrument;
 
-use std::{sync::Arc, time::Duration};
+use std::{pin::Pin, sync::Arc, time::Duration};
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 
@@ -38,6 +42,18 @@ macro_rules! batch_node_trace_log {
     };
 }
 
+macro_rules! pipeline_with_new_stream {
+    ($pipeline:expr, $stream:expr) => {
+        Pipeline {
+            stream: $stream.into(),
+            storage_setup_fns: $pipeline.storage_setup_fns.clone(),
+            concurrency: $pipeline.concurrency,
+            indexing_defaults: $pipeline.indexing_defaults.clone(),
+            batch_size: $pipeline.batch_size,
+        }
+    };
+}
+
 /// The default batch size for batch processing.
 const DEFAULT_BATCH_SIZE: usize = 256;
 
@@ -53,21 +69,25 @@ const DEFAULT_BATCH_SIZE: usize = 256;
 /// * `stream` - The stream of `Node` items to be processed.
 /// * `storage` - Optional storage backend where the processed nodes will be stored.
 /// * `concurrency` - The level of concurrency for processing nodes.
-pub struct Pipeline {
-    stream: IndexingStream,
-    storage: Vec<Arc<dyn Persist>>,
+pub struct Pipeline<T: Chunk> {
+    stream: IndexingStream<T>,
+    // storage: Vec<Arc<dyn Persist<Input = T, Output = T>>>,
+    storage_setup_fns: Vec<DynStorageSetupFn>,
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
     batch_size: usize,
 }
 
-impl Default for Pipeline {
+type DynStorageSetupFn =
+    Arc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<()>> + Send>> + Send + Sync>;
+
+impl<T: Chunk> Default for Pipeline<T> {
     /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal
     /// to the number of CPUs.
     fn default() -> Self {
         Self {
-            stream: IndexingStream::empty(),
-            storage: Vec::default(),
+            stream: IndexingStream::<T>::empty(),
+            storage_setup_fns: Vec::new(),
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
             batch_size: DEFAULT_BATCH_SIZE,
@@ -75,7 +95,7 @@ impl Default for Pipeline {
     }
 }
 
-impl Pipeline {
+impl<T: Chunk> Pipeline<T> {
     /// Creates a `Pipeline` from a given loader.
     ///
     /// # Arguments
@@ -85,7 +105,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` initialized with the provided loader.
-    pub fn from_loader(loader: impl Loader + 'static) -> Self {
+    pub fn from_loader(loader: impl Loader<Output = T> + 'static) -> Self {
         let stream = loader.into_stream();
         Self {
             stream,
@@ -110,7 +130,7 @@ impl Pipeline {
     /// # Returns
     ///
     /// An instance of `Pipeline` initialized with the provided stream.
-    pub fn from_stream(stream: impl Into<IndexingStream>) -> Self {
+    pub fn from_stream(stream: impl Into<IndexingStream<T>>) -> Self {
         Self {
             stream: stream.into(),
             ..Default::default()
@@ -168,7 +188,7 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that filters out cached nodes.
     #[must_use]
-    pub fn filter_cached(mut self, cache: impl NodeCache + 'static) -> Self {
+    pub fn filter_cached(mut self, cache: impl NodeCache<Input = T> + 'static) -> Self {
         let cache = Arc::new(cache);
         self.stream = self
             .stream
@@ -205,16 +225,16 @@ impl Pipeline {
     ///
     /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
     #[must_use]
-    pub fn then(
-        mut self,
-        mut transformer: impl Transformer + WithIndexingDefaults + 'static,
-    ) -> Self {
+    pub fn then<Output: Chunk>(
+        self,
+        mut transformer: impl Transformer<Input = T, Output = Output> + WithIndexingDefaults + 'static,
+    ) -> Pipeline<Output> {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
 
         transformer.with_indexing_defaults(self.indexing_defaults.clone());
 
         let transformer = Arc::new(transformer);
-        self.stream = self
+        let stream = self
             .stream
             .map_ok(move |node| {
                 let transformer = transformer.clone();
@@ -230,11 +250,9 @@ impl Pipeline {
                 .err_into::<anyhow::Error>()
             })
             .try_buffer_unordered(concurrency)
-            .map(|x| x.and_then(|x| x))
-            .boxed()
-            .into();
+            .map(|x| x.and_then(|x| x));
 
-        self
+        pipeline_with_new_stream!(self, stream.boxed())
     }
 
     /// Adds a batch transformer to the pipeline.
@@ -251,16 +269,18 @@ impl Pipeline {
     /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each
     /// batch of nodes.
     #[must_use]
-    pub fn then_in_batch(
-        mut self,
-        mut transformer: impl BatchableTransformer + WithBatchIndexingDefaults + 'static,
-    ) -> Self {
+    pub fn then_in_batch<Output: Chunk>(
+        self,
+        mut transformer: impl BatchableTransformer<Input = T, Output = Output>
+        + WithBatchIndexingDefaults
+        + 'static,
+    ) -> Pipeline<Output> {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
 
         transformer.with_indexing_defaults(self.indexing_defaults.clone());
 
         let transformer = Arc::new(transformer);
-        self.stream = self
+        let stream = self
             .stream
             .try_chunks(transformer.batch_size().unwrap_or(self.batch_size))
             .map_ok(move |nodes| {
@@ -278,10 +298,10 @@ impl Pipeline {
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency) // First get the streams from each future
-            .try_flatten_unordered(None) // Then flatten all the streams back into one
-            .boxed()
-            .into();
-        self
+            .try_flatten_unordered(None) // Then flatten the streams into a single stream
+            .boxed();
+
+        pipeline_with_new_stream!(self, stream)
     }
 
     /// Adds a chunker transformer to the pipeline.
@@ -295,10 +315,13 @@ impl Pipeline {
     /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to
     /// each node.
     #[must_use]
-    pub fn then_chunk(mut self, chunker: impl ChunkerTransformer + 'static) -> Self {
+    pub fn then_chunk<Output: Chunk>(
+        self,
+        chunker: impl ChunkerTransformer<Input = T, Output = Output> + 'static,
+    ) -> Pipeline<Output> {
         let chunker = Arc::new(chunker);
         let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
-        self.stream = self
+        let stream = self
             .stream
             .map_ok(move |node| {
                 let chunker = Arc::clone(&chunker);
@@ -315,11 +338,9 @@ impl Pipeline {
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
-            .try_flatten_unordered(None)
-            .boxed()
-            .into();
+            .try_flatten_unordered(None);
 
-        self
+        pipeline_with_new_stream!(self, stream.boxed())
     }
 
     /// Persists indexing nodes using the provided storage backend.
@@ -337,13 +358,33 @@ impl Pipeline {
     /// Panics if batch size turns out to be not set and batch storage is still invoked.
     /// Pipeline only invokes batch storing if the batch size is set, so should be alright.
     #[must_use]
-    pub fn then_store_with(mut self, storage: impl Persist + 'static) -> Self {
+    pub fn then_store_with<Output: Chunk>(
+        mut self,
+        storage: impl Persist<Input = T, Output = Output> + 'static,
+    ) -> Pipeline<Output> {
         let storage = Arc::new(storage);
-        self.storage.push(storage.clone());
+
+        let storage_closure = storage.clone();
+
+        // Ensure we run the setup function only once.
+        let completed = Arc::new(Mutex::new(false));
+        let setup_fn: DynStorageSetupFn = Arc::new(move || {
+            let completed = Arc::clone(&completed);
+            let storage_closure = Arc::clone(&storage_closure);
+            Box::pin(async move {
+                let mut lock = completed.lock().await;
+
+                tracing::trace!(?storage_closure, "Setting up storage");
+                storage_closure.setup().await?;
+                *lock = true;
+                Ok(())
+            })
+        });
+        self.storage_setup_fns.push(setup_fn);
+
         // add storage to the stream instead of doing it at the end
-        if storage.batch_size().is_some() {
-            self.stream = self
-                .stream
+        let stream = if storage.batch_size().is_some() {
+            self.stream
                 .try_chunks(storage.batch_size().unwrap())
                 .map_ok(move |nodes| {
                     let storage = Arc::clone(&storage);
@@ -362,10 +403,8 @@ impl Pipeline {
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(None)
                 .boxed()
-                .into();
         } else {
-            self.stream = self
-                .stream
+            self.stream
                 .map_ok(move |node| {
                     let storage = Arc::clone(&storage);
                     let span = trace_span!("then_store_with", storage);
@@ -383,10 +422,9 @@ impl Pipeline {
                 .try_buffer_unordered(self.concurrency)
                 .map(|x| x.and_then(|x| x))
                 .boxed()
-                .into();
-        }
+        };
 
-        self
+        pipeline_with_new_stream!(self, stream)
     }
 
     /// Splits the stream into two streams based on a predicate.
@@ -406,7 +444,7 @@ impl Pipeline {
     #[must_use]
     pub fn split_by<P>(self, predicate: P) -> (Self, Self)
     where
-        P: Fn(&Result<Node>) -> bool + Send + Sync + 'static,
+        P: Fn(&Result<Node<T>>) -> bool + Send + Sync + 'static,
     {
         let predicate = Arc::new(predicate);
 
@@ -443,21 +481,9 @@ impl Pipeline {
             .instrument(span.or_current()),
         );
 
-        let left_pipeline = Self {
-            stream: left_rx.into(),
-            storage: self.storage.clone(),
-            concurrency: self.concurrency,
-            indexing_defaults: self.indexing_defaults.clone(),
-            batch_size: self.batch_size,
-        };
+        let left_pipeline = pipeline_with_new_stream!(self, left_rx);
 
-        let right_pipeline = Self {
-            stream: right_rx.into(),
-            storage: self.storage.clone(),
-            concurrency: self.concurrency,
-            indexing_defaults: self.indexing_defaults.clone(),
-            batch_size: self.batch_size,
-        };
+        let right_pipeline = pipeline_with_new_stream!(self, right_rx);
 
         (left_pipeline, right_pipeline)
     }
@@ -516,7 +542,7 @@ impl Pipeline {
     #[must_use]
     pub fn filter<F>(mut self, filter: F) -> Self
     where
-        F: Fn(&Result<Node>) -> bool + Send + Sync + 'static,
+        F: Fn(&Result<Node<T>>) -> bool + Send + Sync + 'static,
     {
         self.stream = self
             .stream
@@ -583,15 +609,17 @@ impl Pipeline {
             self.concurrency
         );
         let now = std::time::Instant::now();
-        if self.storage.is_empty() {
-            anyhow::bail!("No storage configured for indexing pipeline");
-        }
+
+        // TODO: No longer bail if storage is empty. Do whatever you want
+        // if self.storage.is_empty() {
+        //     anyhow::bail!("No storage configured for indexing pipeline");
+        // }
 
         // Ensure all storage backends are set up before processing nodes
         let setup_futures = self
-            .storage
+            .storage_setup_fns
             .into_iter()
-            .map(|storage| async move { storage.setup().await })
+            .map(|func| async move { func().await })
             .collect::<Vec<_>>();
         futures_util::future::try_join_all(setup_futures).await?;
 
@@ -757,7 +785,7 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_transformer() {
         let mut loader = MockLoader::new();
-        let transformer = |node: Node| {
+        let transformer = |node: TextNode| {
             let mut node = node;
             node.chunk = "transformed".to_string();
             Ok(node)
@@ -768,7 +796,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(Node::default())].into());
+            .returning(|| vec![Ok(TextNode::default())].into());
 
         let pipeline = Pipeline::from_loader(loader)
             .then(transformer)
@@ -783,7 +811,7 @@ mod tests {
     #[tokio::test]
     async fn test_arbitrary_closures_as_batch_transformer() {
         let mut loader = MockLoader::new();
-        let batch_transformer = |nodes: Vec<Node>| {
+        let batch_transformer = |nodes: Vec<TextNode>| {
             IndexingStream::iter(nodes.into_iter().map(|mut node| {
                 node.chunk = "transformed".to_string();
                 Ok(node)
@@ -795,7 +823,7 @@ mod tests {
             .expect_into_stream()
             .times(1)
             .in_sequence(&mut seq)
-            .returning(|| vec![Ok(Node::default())].into());
+            .returning(|| vec![Ok(TextNode::default())].into());
 
         let pipeline = Pipeline::from_loader(loader)
             .then_in_batch(batch_transformer)
@@ -818,9 +846,9 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(Node::default()),
-                    Ok(Node::new("skip")),
-                    Ok(Node::default()),
+                    Ok(TextNode::default()),
+                    Ok(TextNode::new("skip")),
+                    Ok(TextNode::default()),
                 ]
                 .into()
             });
@@ -846,9 +874,9 @@ mod tests {
             .in_sequence(&mut seq)
             .returning(|| {
                 vec![
-                    Ok(Node::default()),
-                    Ok(Node::new("will go left")),
-                    Ok(Node::default()),
+                    Ok(TextNode::default()),
+                    Ok(TextNode::new("will go left")),
+                    Ok(TextNode::default()),
                 ]
                 .into()
             });
@@ -864,14 +892,14 @@ mod tests {
 
         // change the chunk to 'left'
         left = left
-            .then(move |mut node: Node| {
+            .then(move |mut node: TextNode| {
                 node.chunk = "left".to_string();
 
                 Ok(node)
             })
             .log_all();
 
-        right = right.then(move |mut node: Node| {
+        right = right.then(move |mut node: TextNode| {
             node.chunk = "right".to_string();
             Ok(node)
         });
@@ -902,7 +930,7 @@ mod tests {
         let mut loader = MockLoader::new();
         loader
             .expect_into_stream_boxed()
-            .returning(|| vec![Ok(Node::default())].into());
+            .returning(|| vec![Ok(TextNode::default())].into());
 
         let mut transformer = MockTransformer::new();
         transformer.expect_transform_node().returning(Ok);
@@ -928,11 +956,11 @@ mod tests {
         storage.expect_batch_size().returning(|| None);
         storage.expect_name().returning(|| "mock");
 
-        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader>)
-            .then(Box::new(transformer) as Box<dyn Transformer>)
-            .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer>)
-            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer>)
-            .then_store_with(Box::new(storage) as Box<dyn Persist>);
+        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader<Output = String>>)
+            .then(Box::new(transformer) as Box<dyn Transformer<Input = String, Output = String>>)
+            .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer<Input = String, Output = String>>)
+            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer<Input = String, Output = String>>)
+            .then_store_with(Box::new(storage) as Box<dyn Persist<Input = String, Output = String>>);
         pipeline.run().await.unwrap();
     }
 }

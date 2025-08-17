@@ -1,11 +1,11 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use swiftide_core::{MessageHistory, chat_completion::ChatMessage};
+use swiftide_core::{MessageHistory, chat_completion::ChatMessage, indexing::Chunk};
 
 use super::Redis;
 
 #[async_trait]
-impl MessageHistory for Redis {
+impl<T: Chunk> MessageHistory for Redis<T> {
     async fn history(&self) -> Result<Vec<ChatMessage>> {
         if let Some(mut cm) = self.lazy_connect().await {
             let messages: Vec<String> = redis::cmd("LRANGE")

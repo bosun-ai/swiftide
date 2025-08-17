@@ -1,16 +1,19 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 
+use serde::Serialize;
 use swiftide_core::{
     Persist,
-    indexing::{IndexingStream, Node},
+    indexing::{Chunk, IndexingStream, Node},
 };
 
 use super::Redis;
 
 #[async_trait]
 #[allow(dependency_on_unit_never_type_fallback)]
-impl Persist for Redis {
+impl<T: Chunk + Serialize> Persist for Redis<T> {
+    type Input = T;
+    type Output = T;
     async fn setup(&self) -> Result<()> {
         Ok(())
     }
@@ -26,7 +29,7 @@ impl Persist for Redis {
     ///
     /// You can customize the key and value used for storing nodes by setting the `persist_key_fn`
     /// and `persist_value_fn` fields.
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: Node<T>) -> Result<Node<T>> {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("SET")
                 .arg(self.persist_key_for_node(&node)?)
@@ -48,7 +51,7 @@ impl Persist for Redis {
     ///
     /// You can customize the key and value used for storing nodes by setting the `persist_key_fn`
     /// and `persist_value_fn` fields.
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<Node<T>>) -> IndexingStream<T> {
         // use mset for batch store
         if let Some(mut cm) = self.lazy_connect().await {
             let args = nodes
@@ -88,6 +91,7 @@ impl Persist for Redis {
 mod tests {
     use super::*;
     use futures_util::TryStreamExt;
+    use swiftide_core::indexing::TextNode;
     use testcontainers::{ContainerAsync, GenericImage, runners::AsyncRunner};
 
     async fn start_redis() -> ContainerAsync<GenericImage> {
@@ -112,7 +116,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("chunk");
+        let node = TextNode::new("chunk");
 
         redis.store(node.clone()).await.unwrap();
         let stored_node = serde_json::from_str(&redis.get_node(&node).await.unwrap().unwrap());
@@ -131,10 +135,10 @@ mod tests {
             .batch_size(20)
             .build()
             .unwrap();
-        let nodes = vec![Node::new("test"), Node::new("other")];
+        let nodes = vec![TextNode::new("test"), TextNode::new("other")];
 
         let stream = redis.batch_store(nodes).await;
-        let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
+        let streamed_nodes: Vec<TextNode> = stream.try_collect().await.unwrap();
 
         assert_eq!(streamed_nodes.len(), 2);
 
@@ -149,7 +153,7 @@ mod tests {
         let redis_container = start_redis().await;
         let host = redis_container.get_host().await.unwrap();
         let port = redis_container.get_host_port_ipv4(6379).await.unwrap();
-        let redis = Redis::try_build_from_url(format!("redis://{host}:{port}"))
+        let redis = Redis::<String>::try_build_from_url(format!("redis://{host}:{port}"))
             .unwrap()
             .persist_key_fn(|_node| Ok("test".to_string()))
             .persist_value_fn(|_node| Ok("hello world".to_string()))

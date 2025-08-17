@@ -13,7 +13,7 @@ use testcontainers::{
     runners::SyncRunner,
 };
 
-async fn run_pipeline(node_cache: Box<dyn NodeCache>) -> Result<()> {
+async fn run_pipeline(node_cache: Box<dyn NodeCache<Input = String>>) -> Result<()> {
     Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(node_cache)
         .then_chunk(ChunkCode::try_for_language_and_chunk_size("rust", 10..256)?)
@@ -31,12 +31,12 @@ fn criterion_benchmark(c: &mut Criterion) {
         port = redis_container.get_host_port_ipv4(6379).unwrap()
     );
 
-    let redis: Box<dyn NodeCache> = Box::new(
+    let redis: Box<dyn NodeCache<Input = String>> = Box::new(
         swiftide::integrations::redis::Redis::try_from_url(redis_url, "criterion").unwrap(),
     );
 
     let tempdir = TempDir::new().unwrap();
-    let redb: Box<dyn NodeCache> = Box::new(
+    let redb: Box<dyn NodeCache<Input = String>> = Box::new(
         swiftide::integrations::redb::Redb::builder()
             .database_path(tempdir.child("criterion"))
             .build()

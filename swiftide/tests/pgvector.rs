@@ -86,7 +86,7 @@ async fn test_pgvector_indexing() {
     let result =
         Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
             .then_chunk(ChunkCode::try_for_language("rust").unwrap())
-            .then(|mut node: indexing::Node| {
+            .then(|mut node: indexing::TextNode| {
                 node.with_vectors([(EmbeddedField::Combined, vec![1.0; 384])]);
                 Ok(node)
             })
@@ -184,7 +184,7 @@ async fn test_pgvector_retrieve() {
     Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
-        .then(|mut node: indexing::Node| {
+        .then(|mut node: indexing::TextNode| {
             node.metadata
                 .insert("filter".to_string(), "true".to_string());
             Ok(node)
@@ -312,7 +312,7 @@ async fn test_pgvector_retrieve_dynamic_search() {
     Pipeline::from_loader(loaders::FileLoader::new(tempdir.path()).with_extensions(&["rs"]))
         .then_chunk(ChunkCode::try_for_language("rust").unwrap())
         .then(MetadataQACode::new(openai_client.clone()))
-        .then(|mut node: indexing::Node| {
+        .then(|mut node: indexing::TextNode| {
             node.metadata
                 .insert("filter".to_string(), "true".to_string());
             Ok(node)

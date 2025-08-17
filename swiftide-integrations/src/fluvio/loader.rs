@@ -2,14 +2,19 @@ use std::string::ToString;
 
 use anyhow::Context as _;
 use futures_util::{StreamExt as _, TryStreamExt as _};
-use swiftide_core::{Loader, indexing::IndexingStream, indexing::Node};
+use swiftide_core::{
+    Loader,
+    indexing::{IndexingStream, TextNode},
+};
 use tokio::runtime::Handle;
 
 use super::Fluvio;
 
 impl Loader for Fluvio {
+    type Output = String;
+
     #[tracing::instrument]
-    fn into_stream(self) -> IndexingStream {
+    fn into_stream(self) -> IndexingStream<String> {
         let fluvio_config = self.fluvio_config;
         let consumer_config = self.consumer_config_ext;
 
@@ -28,7 +33,7 @@ impl Loader for Fluvio {
 
         let swiftide_stream = stream
             .map_ok(|f| {
-                let mut node = Node::new(f.get_value().to_string());
+                let mut node = TextNode::new(f.get_value().to_string());
                 node.metadata
                     .insert("fluvio_key", f.get_key().map(ToString::to_string));
 
@@ -39,7 +44,7 @@ impl Loader for Fluvio {
         swiftide_stream.boxed().into()
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String> {
         self.into_stream()
     }
 }
@@ -237,7 +242,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node: Node = loader.into_stream().try_next().await.unwrap().unwrap();
+        let node: TextNode = loader.into_stream().try_next().await.unwrap().unwrap();
 
         assert_eq!(node.chunk, "Hello fluvio");
     }

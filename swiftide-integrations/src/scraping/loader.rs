@@ -3,7 +3,7 @@ use spider::website::Website;
 
 use swiftide_core::{
     Loader,
-    indexing::{IndexingStream, Node},
+    indexing::{IndexingStream, TextNode},
 };
 
 #[derive(Debug, Builder, Clone)]
@@ -34,7 +34,9 @@ impl ScrapingLoader {
 }
 
 impl Loader for ScrapingLoader {
-    fn into_stream(mut self) -> IndexingStream {
+    type Output = String;
+
+    fn into_stream(mut self) -> IndexingStream<String> {
         let (tx, rx) = tokio::sync::mpsc::channel(1000);
         let mut spider_rx = self
             .spider_website
@@ -47,7 +49,7 @@ impl Loader for ScrapingLoader {
                 let html = res.get_html();
                 let original_size = html.len();
 
-                let node = Node::builder()
+                let node = TextNode::builder()
                     .chunk(html)
                     .original_size(original_size)
                     .path(res.get_url())
@@ -76,7 +78,7 @@ impl Loader for ScrapingLoader {
         rx.into()
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String> {
         self.into_stream()
     }
 }
@@ -110,7 +112,7 @@ mod tests {
         let stream = loader.into_stream();
 
         // Process the stream to check if we get the expected result
-        let nodes = stream.collect::<Vec<Result<Node>>>().await;
+        let nodes = stream.collect::<Vec<Result<TextNode>>>().await;
 
         assert_eq!(nodes.len(), 1);
 
@@ -149,7 +151,7 @@ mod tests {
         let stream = loader.into_stream();
 
         // Process the stream to check if we get the expected result
-        let mut nodes = stream.collect::<Vec<Result<Node>>>().await;
+        let mut nodes = stream.collect::<Vec<Result<TextNode>>>().await;
 
         assert_eq!(nodes.len(), 2);
 

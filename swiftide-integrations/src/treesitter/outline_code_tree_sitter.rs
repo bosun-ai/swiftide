@@ -3,7 +3,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use swiftide_core::Transformer;
-use swiftide_core::indexing::Node;
+use swiftide_core::indexing::TextNode;
 
 use crate::treesitter::{CodeOutliner, SupportedLanguages};
 
@@ -45,21 +45,23 @@ impl OutlineCodeTreeSitter {
 
 #[async_trait]
 impl Transformer for OutlineCodeTreeSitter {
-    /// Adds context to the metadata of a `Node` containing code in the "Outline" field.
+    type Input = String;
+    type Output = String;
+    /// Adds context to the metadata of a `TextNode` containing code in the "Outline" field.
     ///
     /// It uses the `CodeOutliner` to generate the context.
     ///
     /// # Parameters
-    /// - `node`: The `Node` containing the code of which the context is to be generated.
+    /// - `node`: The `TextNode` containing the code of which the context is to be generated.
     ///
     /// # Returns
-    /// - `Node`: The same `Node` instances, with the metadata updated to include the generated
-    ///   context.
+    /// - `TextNode`: The same `TextNode` instances, with the metadata updated to include the
+    ///   generated context.
     ///
     /// # Errors
     /// - If the code outlining fails, an error is sent downstream.
     #[tracing::instrument(skip_all, name = "transformers.outline_code_tree_sitter")]
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: TextNode) -> Result<TextNode> {
         if let Some(minimum_file_size) = self.minimum_file_size
             && node.chunk.len() < minimum_file_size
         {

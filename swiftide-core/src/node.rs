@@ -29,7 +29,15 @@ use derive_builder::Builder;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{Embedding, SparseEmbedding, metadata::Metadata, util::debug_long_utf8};
+use crate::{Embedding, SparseEmbedding, metadata::Metadata};
+
+/// Helper trait for types that can be used as data chunks in a `Node`.
+/// For now always expects an owned value
+///
+/// A chunk must be able to yield its bytes, be cloned (not while streaming), and be sent across
+/// threads.
+pub trait Chunk: Clone + Send + Sync + Debug + AsRef<[u8]> + 'static {}
+impl<T> Chunk for T where T: Clone + Send + Sync + Debug + AsRef<[u8]> + 'static {}
 
 /// Represents a unit of data in the indexing process.
 ///
@@ -38,12 +46,12 @@ use crate::{Embedding, SparseEmbedding, metadata::Metadata, util::debug_long_utf
 /// vector representation, and metadata.
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq, Builder)]
 #[builder(setter(into, strip_option), build_fn(error = "anyhow::Error"))]
-pub struct Node {
+pub struct Node<T: Chunk> {
     /// File path associated with the node.
     #[builder(default)]
     pub path: PathBuf,
     /// Data chunk contained in the node.
-    pub chunk: String,
+    pub chunk: T,
     /// Optional vector representation of embedded data.
     #[builder(default)]
     pub vectors: Option<HashMap<EmbeddedField, Embedding>>,
@@ -65,7 +73,9 @@ pub struct Node {
     pub offset: usize,
 }
 
-impl NodeBuilder {
+pub type TextNode = Node<String>;
+
+impl<T: Chunk> NodeBuilder<T> {
     pub fn maybe_sparse_vectors(
         &mut self,
         sparse_vectors: Option<HashMap<EmbeddedField, SparseEmbedding>>,
@@ -83,7 +93,7 @@ impl NodeBuilder {
     }
 }
 
-impl Debug for Node {
+impl<T: Chunk> Debug for Node<T> {
     /// Formats the node for debugging purposes.
     ///
     /// This method is used to provide a human-readable representation of the node when debugging.
@@ -92,7 +102,7 @@ impl Debug for Node {
         f.debug_struct("Node")
             .field("id", &self.id())
             .field("path", &self.path)
-            .field("chunk", &debug_long_utf8(&self.chunk, 100))
+            .field("chunk", &self.chunk)
             .field("metadata", &self.metadata)
             .field(
                 "vectors",
@@ -123,10 +133,10 @@ impl Debug for Node {
     }
 }
 
-impl Node {
+impl<T: Chunk> Node<T> {
     /// Builds a new instance of `Node`, returning a `NodeBuilder`. Copies
     /// over the fields from the provided `Node`.
-    pub fn build_from_other(node: &Node) -> NodeBuilder {
+    pub fn build_from_other(node: &Node<T>) -> NodeBuilder<T> {
         NodeBuilder::default()
             .path(node.path.clone())
             .chunk(node.chunk.clone())
@@ -140,14 +150,14 @@ impl Node {
     }
 
     /// Creates a new instance of `NodeBuilder.`
-    pub fn builder() -> NodeBuilder {
+    pub fn builder<VALUE: Chunk + Clone>() -> NodeBuilder<VALUE> {
         NodeBuilder::default()
     }
 
     /// Creates a new instance of `Node` with the specified data chunk.
     ///
     /// The other fields are set to their default values.
-    pub fn new(chunk: impl Into<String>) -> Node {
+    pub fn new(chunk: impl Into<String>) -> Node<String> {
         let chunk = chunk.into();
         let original_size = chunk.len();
         Node {
@@ -178,13 +188,28 @@ impl Node {
         self
     }
 
+    /// Retrieve the identifier of the node.
+    ///
+    /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
+    /// UUID (v3).
+    ///
+    /// WARN: Does not memoize the id. Use sparingly.
+    pub fn id(&self) -> uuid::Uuid {
+        // Calculate the identifier based on the path and chunk as bytes
+        let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_ref()].concat();
+
+        uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
+    }
+}
+
+impl Node<String> {
     /// Creates embeddable data depending on chosen `EmbedMode`.
     ///
     /// # Returns
     ///
     /// Embeddable data mapped to their `EmbeddedField`.
     pub fn as_embeddables(&self) -> Vec<(EmbeddedField, String)> {
-        // TODO: Figure out a clever way to do zero copy
+        // TODO: Cow and borrow the inner data + generic
         let mut embeddables = Vec::new();
 
         if self.embed_mode == EmbedMode::SingleWithMetadata || self.embed_mode == EmbedMode::Both {
@@ -229,21 +254,9 @@ impl Node {
 
         format!("{}\n{}", metadata, self.chunk)
     }
-
-    /// Retrieve the identifier of the node.
-    ///
-    /// Calculates the identifier of the node based on its path and chunk as bytes, returning a
-    /// UUID (v3).
-    ///
-    /// WARN: Does not memoize the id. Use sparingly.
-    pub fn id(&self) -> uuid::Uuid {
-        let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_bytes()].concat();
-
-        uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
-    }
 }
 
-impl Hash for Node {
+impl Hash for Node<String> {
     /// Hashes the node based on its path and chunk.
     ///
     /// This method is used by the `calculate_hash` method to generate a hash value for the node.
@@ -253,9 +266,10 @@ impl Hash for Node {
     }
 }
 
-impl<T: Into<String>> From<T> for Node {
+impl<T: Into<String>> From<T> for Node<String> {
     fn from(value: T) -> Self {
-        Node::new(value)
+        let value: String = value.into();
+        Node::<String>::new(value)
     }
 }
 
@@ -322,18 +336,18 @@ mod tests {
 
     #[test]
     fn test_debugging_node_with_utf8_char_boundary() {
-        let node = Node::new("🦀".repeat(101));
+        let node = Node::from("🦀".repeat(101));
         // Single char
         let _ = format!("{node:?}");
 
         // With invalid char boundary
-        Node::new("Jürgen".repeat(100));
+        let node = Node::from("Jürgen".repeat(100));
         let _ = format!("{node:?}");
     }
 
     #[test]
     fn test_build_from_other_without_vectors() {
-        let original_node = Node::new("test_chunk")
+        let original_node = Node::from("test_chunk")
             .with_metadata(Metadata::default())
             .with_vectors(HashMap::new())
             .with_sparse_vectors(HashMap::new())
@@ -359,7 +373,7 @@ mod tests {
             },
         );
 
-        let original_node = Node::new("test_chunk")
+        let original_node = Node::from("test_chunk")
             .with_metadata(Metadata::default())
             .with_vectors(vectors.clone())
             .with_sparse_vectors(sparse_vectors.clone())
