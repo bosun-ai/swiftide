@@ -38,7 +38,7 @@ use std::{
 use anyhow::{Context as _, Result};
 use tera::Tera;
 
-use crate::node::{Node, TextNode};
+use crate::node::TextNode;
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]

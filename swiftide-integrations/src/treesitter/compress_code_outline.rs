@@ -32,8 +32,8 @@ impl Transformer for CompressCodeOutline {
     /// Asynchronously transforms an `TextNode` by reducing the size of the outline to make it more
     /// relevant to the chunk.
     ///
-    /// This method uses the `SimplePrompt` client to compress the outline of the `TextNode` and updates
-    /// the `TextNode` with the compressed outline.
+    /// This method uses the `SimplePrompt` client to compress the outline of the `TextNode` and
+    /// updates the `TextNode` with the compressed outline.
     ///
     /// # Arguments
     ///

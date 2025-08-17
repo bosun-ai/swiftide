@@ -55,8 +55,8 @@ impl Transformer for OutlineCodeTreeSitter {
     /// - `node`: The `TextNode` containing the code of which the context is to be generated.
     ///
     /// # Returns
-    /// - `TextNode`: The same `TextNode` instances, with the metadata updated to include the generated
-    ///   context.
+    /// - `TextNode`: The same `TextNode` instances, with the metadata updated to include the
+    ///   generated context.
     ///
     /// # Errors
     /// - If the code outlining fails, an error is sent downstream.

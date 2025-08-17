@@ -11,14 +11,7 @@ use tokio::{
 };
 use tracing::Instrument;
 
-use std::{
-    pin::Pin,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    time::Duration,
-};
+use std::{pin::Pin, sync::Arc, time::Duration};
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 

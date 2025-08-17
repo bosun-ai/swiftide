@@ -34,7 +34,8 @@ use crate::{Embedding, SparseEmbedding, metadata::Metadata};
 /// Helper trait for types that can be used as data chunks in a `Node`.
 /// For now always expects an owned value
 ///
-/// A chunk must be able to yield its bytes, be cloned (not while streaming), and be sent across threads.
+/// A chunk must be able to yield its bytes, be cloned (not while streaming), and be sent across
+/// threads.
 pub trait Chunk: Clone + Send + Sync + Debug + AsRef<[u8]> + 'static {}
 impl<T> Chunk for T where T: Clone + Send + Sync + Debug + AsRef<[u8]> + 'static {}
 

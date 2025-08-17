@@ -103,7 +103,8 @@ impl ChunkerTransformer for ChunkCode {
     /// - `node`: The `TextNode` containing the code chunk to be split.
     ///
     /// # Returns
-    /// - `IndexingStream`: A stream of `TextNode` instances, each containing a smaller chunk of code.
+    /// - `IndexingStream`: A stream of `TextNode` instances, each containing a smaller chunk of
+    ///   code.
     ///
     /// # Errors
     /// - If the code splitting fails, an error is sent downstream.
