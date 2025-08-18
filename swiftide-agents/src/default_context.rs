@@ -134,7 +134,26 @@ impl AgentContext for DefaultContext {
     async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
         let history = self.message_history.history().await?;
 
-        let current = self.completions_ptr.load(Ordering::SeqCst);
+        let mut current = self.completions_ptr.load(Ordering::SeqCst);
+
+        // handle out of bounds; if current > length, reset current to 0
+        // if length is 0, return None
+        if history.is_empty() {
+            tracing::debug!("No messages in history for completion");
+            return Ok(None);
+        }
+
+        if current > history.len() {
+            tracing::warn!(
+                current,
+                len = history.len(),
+                "Completions index was higher than history length, resetting to 0; this might be a bug"
+            );
+            self.completions_ptr.store(0, Ordering::SeqCst);
+            self.current_completions_ptr.store(0, Ordering::SeqCst);
+
+            current = 0;
+        }
 
         if history[current..].is_empty()
             || (self.stop_on_assistant
@@ -497,6 +516,37 @@ mod tests {
         context.redrive().await.unwrap();
         let messages = context.next_completion().await.unwrap().unwrap();
         assert_eq!(messages.len(), 4);
+        assert!(context.next_completion().await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_next_completion_empty_history() {
+        let context = DefaultContext::default();
+        let next = context.next_completion().await;
+        assert!(next.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_next_completion_out_of_bounds_ptr() {
+        let context = DefaultContext::default();
+        context
+            .add_messages(vec![
+                ChatMessage::System("System".into()),
+                ChatMessage::User("Hi".into()),
+            ])
+            .await
+            .unwrap();
+
+        // Set completions_ptr beyond the length of messages
+        context
+            .completions_ptr
+            .store(10, std::sync::atomic::Ordering::SeqCst);
+
+        // Should reset the pointer and return the full messages
+        let messages = context.next_completion().await.unwrap().unwrap();
+        assert_eq!(messages.len(), 2);
+
+        // Second call should be empty again
         assert!(context.next_completion().await.unwrap().is_none());
     }
 }
