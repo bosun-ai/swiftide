@@ -339,7 +339,7 @@ fn message_to_openai(
                 .build()?
                 .into()
         }
-        ChatMessage::Assistant(msg, tool_calls) => {
+        ChatMessage::Assistant(msg, tool_calls, _usage) => {
             let mut builder = ChatCompletionRequestAssistantMessageArgs::default();
 
             if let Some(msg) = msg {

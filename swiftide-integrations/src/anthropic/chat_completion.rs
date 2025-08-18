@@ -267,7 +267,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
                 .build()?,
         ),
         Summary(msg) | System(msg) | User(msg) => builder.content(msg),
-        Assistant(msg, tool_calls) => {
+        Assistant(msg, tool_calls, _usage) => {
             builder.role(MessageRole::Assistant);
 
             let mut content_list: Vec<MessageContent> = Vec::new();
