@@ -51,7 +51,7 @@ impl Estimatable for &ChatMessage {
             ChatMessage::User(msg) | ChatMessage::Summary(msg) | ChatMessage::System(msg) => {
                 Cow::Borrowed(msg)
             }
-            ChatMessage::Assistant(msg, vec) => {
+            ChatMessage::Assistant(msg, vec, _usage) => {
                 // Note that this is not super accurate.
                 //
                 // It's a bit verbose to avoid unnecessary allocations. Is what it is.

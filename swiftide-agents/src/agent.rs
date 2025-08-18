@@ -483,7 +483,7 @@ impl Agent {
 
             // If the last message contains tool calls that have not been completed,
             // run the tools first
-            if let Some(&ChatMessage::Assistant(.., Some(ref tool_calls))) =
+            if let Some(&ChatMessage::Assistant(ref _message, Some(ref tool_calls), ..)) =
                 maybe_tool_call_without_output(&messages)
             {
                 tracing::debug!("Uncompleted tool calls found; invoking tools");
@@ -580,6 +580,7 @@ impl Agent {
         self.add_message(ChatMessage::Assistant(
             response.message,
             response.tool_calls.clone(),
+            response.usage,
         ))
         .await?;
 
@@ -828,7 +829,7 @@ fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessa
             return None;
         }
 
-        if let ChatMessage::Assistant(.., Some(tool_calls)) = message
+        if let ChatMessage::Assistant(_message, Some(tool_calls), ..) = message
             && !tool_calls.is_empty()
         {
             return Some(message);
