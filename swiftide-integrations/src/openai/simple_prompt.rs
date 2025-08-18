@@ -60,10 +60,10 @@ impl<
             .map_err(LanguageModelError::permanent)?;
 
         // Log the request for debugging purposes.
-        tracing::debug!(
+        tracing::trace!(
             model = &model,
             messages = debug_long_utf8(
-                serde_json::to_string_pretty(&request.messages.first())
+                serde_json::to_string_pretty(&request.messages.last())
                     .map_err(LanguageModelError::permanent)?,
                 100
             ),
@@ -104,9 +104,19 @@ impl<
         }
 
         // Log the response for debugging purposes.
-        tracing::debug!(
+        tracing::trace!(
             message = debug_long_utf8(&message, 100),
-            "[SimplePrompt] Response from openai"
+            "[SimplePrompt] Full response from OpenAI",
+        );
+        tracing::debug!(
+            usage = format!(
+                "{}/{}/{}",
+                response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                response.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                response.usage.as_ref().map_or(0, |u| u.total_tokens)
+            ),
+            model = model,
+            "[SimplePrompt] Response from OpenAI"
         );
 
         // Extract and return the content of the response, returning an error if not found.

@@ -22,7 +22,6 @@ use swiftide_core::{
         Answer, Query, QueryState, QueryStream, Retrieve, SearchStrategy, TransformQuery,
         TransformResponse, search_strategies::SimilaritySingleEmbedding, states,
     },
-    util::debug_long_utf8,
 };
 use tokio::sync::mpsc::Sender;
 

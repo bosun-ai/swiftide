@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::{Context as _, Result};
+use async_openai::types::ChatCompletionStreamOptions;
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
@@ -73,7 +74,7 @@ impl<
             .build()
             .map_err(openai_error_to_language_model_error)?;
 
-        tracing::debug!(model, ?request, "Sending request to OpenAI");
+        tracing::trace!(model, ?request, "Sending request to OpenAI");
 
         let response = self
             .client
@@ -82,7 +83,8 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        tracing::debug!(?response, "Received response from OpenAI");
+        tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
+        // Make sure the debug log is a concise one line
 
         let mut builder = ChatCompletionResponse::builder()
             .maybe_message(
@@ -136,12 +138,27 @@ impl<
             }
         }
 
-        builder.build().map_err(LanguageModelError::from)
+        let response = builder.build().map_err(LanguageModelError::from)?;
+
+        tracing::debug!(
+            usage = format!(
+                "{}/{}/{}",
+                response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                response.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                response.usage.as_ref().map_or(0, |u| u.total_tokens)
+            ),
+            model = model,
+            has_message = response.message.is_some(),
+            num_tool_calls = response.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
+            "[ChatCompletion] Response from OpenAI"
+        );
+
+        Ok(response)
     }
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
-        let Some(model) = self.default_options.prompt_model.as_ref() else {
+        let Some(model) = self.default_options.prompt_model.clone() else {
             return LanguageModelError::permanent("Model not set").into();
         };
 
@@ -158,8 +175,11 @@ impl<
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
             .chat_completion_request_defaults()
-            .model(model)
+            .model(&model)
             .messages(messages)
+            .stream_options(ChatCompletionStreamOptions {
+                include_usage: true,
+            })
             .to_owned();
 
         if !request.tools_spec.is_empty() {
@@ -190,7 +210,7 @@ impl<
             }
         };
 
-        tracing::debug!(model, ?request, "Sending request to OpenAI");
+        tracing::trace!(model, ?request, "Sending request to OpenAI");
 
         let response = match self.client.chat().create_stream(request).await {
             Ok(response) => response,
@@ -203,16 +223,20 @@ impl<
 
         #[cfg(feature = "metrics")]
         let metric_metadata = self.metric_metadata.clone();
-        #[cfg(feature = "metrics")]
-        let model = model.to_string();
 
         response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
                     let accumulating_response = Arc::clone(&accumulating_response);
 
-                    let delta_message = chunk.choices[0].delta.content.as_deref();
-                    let delta_tool_calls = chunk.choices[0].delta.tool_calls.as_deref();
+                    let delta_message = chunk
+                        .choices
+                        .first()
+                        .and_then(|d| d.delta.content.as_deref());
+                    let delta_tool_calls = chunk
+                        .choices
+                        .first()
+                        .and_then(|d| d.delta.tool_calls.as_deref());
                     let usage = chunk.usage.as_ref();
 
                     let chat_completion_response = {
@@ -262,6 +286,18 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
+                    tracing::debug!(
+                        usage = format!(
+                            "{}/{}/{}",
+                            lock.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                            lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                            lock.usage.as_ref().map_or(0, |u| u.total_tokens)
+                        ),
+                        model = &model,
+                        has_message = lock.message.is_some(),
+                        num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
+                        "[ChatCompletion/Streaming] Response from OpenAI"
+                    );
                     #[cfg(feature = "metrics")]
                     {
                         if let Some(usage) = lock.usage.as_ref() {
