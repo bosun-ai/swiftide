@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755516781118,
+  "lastUpdate": 1755524289784,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25799,6 +25799,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256187,
             "range": "± 2358",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "aadfb7b89fe1fd6d04f27bc7209458de3571d1cc",
+          "message": "chore(integrations/openai): Concise debug logs and more verbose trace",
+          "timestamp": "2025-08-18T15:28:39+02:00",
+          "tree_id": "aec3563ffc57562f6a71df9a753738108aa8e3f4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/aadfb7b89fe1fd6d04f27bc7209458de3571d1cc"
+        },
+        "date": 1755524288657,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796443,
+            "range": "± 16717",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255000,
+            "range": "± 995",
             "unit": "ns/iter"
           }
         ]
