@@ -22,6 +22,7 @@ use swiftide_core::{
         Answer, Query, QueryState, QueryStream, Retrieve, SearchStrategy, TransformQuery,
         TransformResponse, search_strategies::SimilaritySingleEmbedding, states,
     },
+    util::debug_long_utf8,
 };
 use tokio::sync::mpsc::Sender;
 
@@ -172,7 +173,15 @@ impl<'stream: 'static, STRATEGY: SearchStrategy + 'stream>
                     async move {
                         let result = retriever.retrieve(&search_strategy, query).await?;
 
-                        tracing::debug!(documents = ?result.documents(), "Retrieved documents");
+                        tracing::debug!(
+                            num_documents = result.documents().len(),
+                            total_bytes = result
+                                .documents()
+                                .iter()
+                                .map(|d| d.bytes().len())
+                                .sum::<usize>(),
+                            "Retrieved documents"
+                        );
 
                         if let Some(evaluator) = evaluator_for_stream.as_ref() {
                             evaluator.evaluate(result.clone().into()).await?;

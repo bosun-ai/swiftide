@@ -44,11 +44,18 @@ pub struct Query<STATE: QueryState> {
 impl<STATE: std::fmt::Debug + QueryState> std::fmt::Debug for Query<STATE> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Query")
-            .field("original", &debug_long_utf8(&self.original, 100))
-            .field("current", &debug_long_utf8(&self.current, 100))
+            .field(
+                "original",
+                &debug_long_utf8(&self.original, 100).lines().take(1),
+            )
+            .field(
+                "current",
+                &debug_long_utf8(&self.current, 100).lines().take(1),
+            )
             .field("state", &self.state)
-            .field("transformation_history", &self.transformation_history)
+            .field("num_transformations", &self.transformation_history.len())
             .field("embedding", &self.embedding.is_some())
+            .field("num_documents", &self.documents.len())
             .finish()
     }
 }

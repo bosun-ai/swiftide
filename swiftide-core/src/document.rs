@@ -82,6 +82,10 @@ impl Document {
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
+
+    pub fn bytes(&self) -> &[u8] {
+        self.content.as_bytes()
+    }
 }
 
 #[cfg(test)]
