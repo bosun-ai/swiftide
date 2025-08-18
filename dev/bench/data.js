@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755331769682,
+  "lastUpdate": 1755499766789,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25691,6 +25691,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 255185,
             "range": "± 2358",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "011457367b7bfdc207f1f6d9ebfcbf2a2de4ac58",
+          "message": "fix(agents): Explicitly handle out of bounds and empty edge cases for message history",
+          "timestamp": "2025-08-18T08:40:09+02:00",
+          "tree_id": "574a818aee682c43d822eb58703b3968f44c2852",
+          "url": "https://github.com/bosun-ai/swiftide/commit/011457367b7bfdc207f1f6d9ebfcbf2a2de4ac58"
+        },
+        "date": 1755499765253,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 790841,
+            "range": "± 16450",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255881,
+            "range": "± 1598",
             "unit": "ns/iter"
           }
         ]
