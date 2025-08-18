@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::{Context as _, Result};
+use async_openai::types::ChatCompletionStreamOptions;
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
@@ -120,6 +121,10 @@ impl<
                 .build()
                 .map_err(LanguageModelError::permanent)?;
 
+            if let Some(callback) = &self.on_usage {
+                callback(&usage).await?;
+            }
+
             builder.usage(usage);
 
             #[cfg(feature = "metrics")]
@@ -161,6 +166,12 @@ impl<
             .model(model)
             .messages(messages)
             .to_owned();
+
+        if self.on_usage.is_some() || cfg!(feature = "metrics") {
+            openai_request.stream_options(ChatCompletionStreamOptions {
+                include_usage: true,
+            });
+        }
 
         if !request.tools_spec.is_empty() {
             openai_request
@@ -205,6 +216,8 @@ impl<
         let metric_metadata = self.metric_metadata.clone();
         #[cfg(feature = "metrics")]
         let model = model.to_string();
+
+        let maybe_usage_callback = self.on_usage.clone();
 
         response
             .map(move |chunk| match chunk {
@@ -262,9 +275,21 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
-                    #[cfg(feature = "metrics")]
-                    {
-                        if let Some(usage) = lock.usage.as_ref() {
+                    #[allow(clippy::collapsible_if)]
+                    if let Some(usage) = lock.usage.as_ref() {
+                        if let Some(callback) = maybe_usage_callback.as_ref() {
+                            let usage = usage.clone();
+                            let callback = callback.clone();
+
+                            tokio::spawn(async move {
+                                if let Err(e) = callback(&usage).await {
+                                    tracing::error!("Error in on_usage callback: {}", e);
+                                }
+                            });
+                        }
+
+                        #[cfg(feature = "metrics")]
+                        {
                             emit_usage(
                                 &model,
                                 usage.prompt_tokens.into(),
