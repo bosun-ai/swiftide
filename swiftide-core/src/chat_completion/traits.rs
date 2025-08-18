@@ -27,6 +27,13 @@ pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
         Box::pin(tokio_stream::iter(vec![self.complete(request).await]))
     }
+
+    fn boxed(self) -> Box<dyn ChatCompletion>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 #[async_trait]

@@ -36,6 +36,13 @@ pub trait Transformer: Send + Sync + DynClone {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+
+    fn boxed(self) -> Box<dyn Transformer>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 dyn_clone::clone_trait_object!(Transformer);
@@ -123,6 +130,13 @@ pub trait BatchableTransformer: Send + Sync + DynClone {
     /// Overrides the default batch size of the pipeline
     fn batch_size(&self) -> Option<usize> {
         None
+    }
+
+    fn boxed(self) -> Box<dyn BatchableTransformer>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
     }
 }
 
@@ -217,6 +231,13 @@ pub trait Loader: DynClone + Send + Sync {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+
+    fn boxed(self) -> Box<dyn Loader>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 dyn_clone::clone_trait_object!(Loader);
@@ -274,6 +295,13 @@ pub trait ChunkerTransformer: Send + Sync + DynClone {
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+
+    fn boxed(self) -> Box<dyn ChunkerTransformer>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
     }
 }
 
@@ -360,6 +388,13 @@ pub trait NodeCache: Send + Sync + Debug + DynClone {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+
+    fn boxed(self) -> Box<dyn NodeCache>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 dyn_clone::clone_trait_object!(NodeCache);
@@ -438,6 +473,13 @@ pub trait EmbeddingModel: Send + Sync + Debug + DynClone {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+
+    fn boxed(self) -> Box<dyn EmbeddingModel>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 dyn_clone::clone_trait_object!(EmbeddingModel);
@@ -499,6 +541,13 @@ pub trait SparseEmbeddingModel: Send + Sync + Debug + DynClone {
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+
+    fn boxed(self) -> Box<dyn SparseEmbeddingModel>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
     }
 }
 
@@ -568,6 +617,13 @@ pub trait SimplePrompt: Debug + Send + Sync + DynClone {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
     }
+
+    fn boxed(self) -> Box<dyn SimplePrompt>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 dyn_clone::clone_trait_object!(SimplePrompt);
@@ -630,6 +686,13 @@ pub trait Persist: Debug + Send + Sync + DynClone {
     fn name(&self) -> &'static str {
         let name = std::any::type_name::<Self>();
         name.split("::").last().unwrap_or(name)
+    }
+
+    fn boxed(self) -> Box<dyn Persist>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
     }
 }
 
