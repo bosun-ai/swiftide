@@ -57,6 +57,46 @@ impl ToolOutput {
             _ => None,
         }
     }
+
+    /// Get the inner text if the output is a `Text` variant.
+    pub fn as_text(&self) -> Option<&str> {
+        match self {
+            ToolOutput::Text(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Get the inner text if the output is a `Fail` variant.
+    pub fn as_fail(&self) -> Option<&str> {
+        match self {
+            ToolOutput::Fail(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Get the inner text if the output is a `Stop` variant.
+    pub fn as_stop(&self) -> Option<&str> {
+        match self {
+            ToolOutput::Stop(args) => args.as_deref(),
+            _ => None,
+        }
+    }
+
+    /// Get the inner text if the output is an `AgentFailed` variant.
+    pub fn as_agent_failed(&self) -> Option<&str> {
+        match self {
+            ToolOutput::AgentFailed(args) => args.as_deref(),
+            _ => None,
+        }
+    }
+
+    /// Get the inner feedback if the output is a `FeedbackRequired` variant.
+    pub fn as_feedback_required(&self) -> Option<&serde_json::Value> {
+        match self {
+            ToolOutput::FeedbackRequired(args) => args.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 impl<S: AsRef<str>> From<S> for ToolOutput {
