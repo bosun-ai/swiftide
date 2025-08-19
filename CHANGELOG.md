@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.1](https://github.com/bosun-ai/swiftide/compare/v0.30.0...v0.30.1) - 2025-08-19
+
+### Bug fixes
+
+- [0114573](https://github.com/bosun-ai/swiftide/commit/011457367b7bfdc207f1f6d9ebfcbf2a2de4ac58) *(agents)*  Explicitly handle out of bounds and empty edge cases for message history
+
+- [1005ac2](https://github.com/bosun-ai/swiftide/commit/1005ac219e2078c6ee12b050a7e73d48ef7f46a5) *(core)*  Export tokenizer traits from the root crate
+
+- [e4c01e1](https://github.com/bosun-ai/swiftide/commit/e4c01e14fbe89cb5a16beddcb3819b66c7f1a087) *(integrations/tiktoken)*  Tiktoken feature flag in root crate
+
+- [d56496d](https://github.com/bosun-ai/swiftide/commit/d56496d60719eea3752f849aee2a780eb435130e) *(integrations/tiktoken)*  Fix my inability to count in late hours
+
+### Miscellaneous
+
+- [352bf40](https://github.com/bosun-ai/swiftide/commit/352bf40ad5f74778bf41f00cff936805b8633b30) *(core)*  Implement AsRef<str> for ChatMessage
+
+- [aadfb7b](https://github.com/bosun-ai/swiftide/commit/aadfb7b89fe1fd6d04f27bc7209458de3571d1cc) *(integrations/openai)*  Concise debug logs and more verbose trace
+
+- [f975d40](https://github.com/bosun-ai/swiftide/commit/f975d40beccdebd98c896d8492243a489a9b287b) *(query)*  Reduce debugging noise for queries
+
+### Style
+
+- [6a744e0](https://github.com/bosun-ai/swiftide/commit/6a744e0290ebceca3c14b675a35a460f532c4cff)  Fix typos
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.30.0...0.30.1
+
+
+
 ## [0.30.0](https://github.com/bosun-ai/swiftide/compare/v0.29.0...v0.30.0) - 2025-08-16
 
 ### New features
