@@ -108,12 +108,15 @@ mod tests {
     #[tokio::test]
     async fn test_estimate_chat_messages() {
         let messages = vec![
-            ChatMessage::new_user("hello"),
+            ChatMessage::new_user("hello ".repeat(10)),
             ChatMessage::new_system("world"),
         ];
 
-        let tokenizer = TikToken::try_from_model("gpt-4-0314").unwrap();
+        // 11x hello + 1x world + 2x 4 per message + 1x 3 for full + 2 whatever = 23
 
-        assert_eq!(tokenizer.estimate(messages.as_slice()).await.unwrap(), 12);
+        let tokenizer = TikToken::try_from_model("gpt-4-0314").unwrap();
+        dbg!(messages.as_slice().for_estimate().await.unwrap());
+
+        assert_eq!(tokenizer.estimate(messages.as_slice()).await.unwrap(), 23);
     }
 }

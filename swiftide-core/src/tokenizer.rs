@@ -94,12 +94,13 @@ impl Estimatable for &ChatMessage {
 #[async_trait]
 impl Estimatable for &[ChatMessage] {
     async fn for_estimate(&self) -> Result<Cow<'_, str>> {
-        let mut total = 0;
+        let mut total = String::new();
         for msg in *self {
-            total += msg.for_estimate().await?.len();
+            total.push(' ');
+            total.push_str(msg.for_estimate().await?.as_ref());
         }
 
-        Ok(total.to_string().into())
+        Ok(total.into())
     }
 
     // Apparently every reply is primed with a <|start|>assistant<|message|>
