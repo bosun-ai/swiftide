@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755597124045,
+  "lastUpdate": 1755597588630,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25907,6 +25907,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256432,
             "range": "± 1433",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "352bf40ad5f74778bf41f00cff936805b8633b30",
+          "message": "chore(core): Implement AsRef<str> for ChatMessage",
+          "timestamp": "2025-08-19T11:50:03+02:00",
+          "tree_id": "8a67df3da6ceff74baa55927c891e164872cb566",
+          "url": "https://github.com/bosun-ai/swiftide/commit/352bf40ad5f74778bf41f00cff936805b8633b30"
+        },
+        "date": 1755597586971,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 783982,
+            "range": "± 18917",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258053,
+            "range": "± 3149",
             "unit": "ns/iter"
           }
         ]
