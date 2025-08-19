@@ -63,7 +63,7 @@ impl ChatMessage {
 
 /// Returns the content of the message as a string slice.
 ///
-/// Note that this ommits the tool calls from the assistant message.
+/// Note that this omits the tool calls from the assistant message.
 ///
 /// If used for estimating tokens, consider this a very rought estimate
 impl AsRef<str> for ChatMessage {
