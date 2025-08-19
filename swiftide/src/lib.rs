@@ -146,6 +146,8 @@ pub mod traits {
     pub use swiftide_core::indexing_traits::*;
     #[doc(inline)]
     pub use swiftide_core::query_traits::*;
+    #[doc(inline)]
+    pub use swiftide_core::tokenizer::*;
 }
 
 pub mod chat_completion {
