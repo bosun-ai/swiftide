@@ -60,3 +60,18 @@ impl ChatMessage {
         ChatMessage::Summary(message.into())
     }
 }
+
+/// Returns the content of the message as a string slice.
+///
+/// Note that this ommits the tool calls from the assistant message.
+///
+/// If used for estimating tokens, consider this a very rought estimate
+impl AsRef<str> for ChatMessage {
+    fn as_ref(&self) -> &str {
+        match self {
+            ChatMessage::System(s) | ChatMessage::User(s) | ChatMessage::Summary(s) => s,
+            ChatMessage::Assistant(message, _) => message.as_deref().unwrap_or(""),
+            ChatMessage::ToolOutput(_, output) => output.content().unwrap_or(""),
+        }
+    }
+}
