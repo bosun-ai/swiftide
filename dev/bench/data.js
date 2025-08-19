@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755597865671,
+  "lastUpdate": 1755604199510,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26015,6 +26015,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257649,
             "range": "± 14962",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "d56496d60719eea3752f849aee2a780eb435130e",
+          "message": "fix(integrations/tiktoken): Fix my inability to count in late hours",
+          "timestamp": "2025-08-19T13:40:14+02:00",
+          "tree_id": "efe36d6ff6dc6e873c785e1866524a9045d83061",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d56496d60719eea3752f849aee2a780eb435130e"
+        },
+        "date": 1755604197681,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 776268,
+            "range": "± 14167",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256653,
+            "range": "± 3840",
             "unit": "ns/iter"
           }
         ]
