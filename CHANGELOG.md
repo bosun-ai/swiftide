@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.30.2](https://github.com/bosun-ai/swiftide/compare/v0.30.1...v0.30.2) - 2025-08-19
+
+### New features
+
+- [b3f18cd](https://github.com/bosun-ai/swiftide/commit/b3f18cd00f9019496274142aa89342da115c6843)  Add convenience helpers to get ToolOutput values as ref
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.30.1...0.30.2
+
+
+
 ## [0.30.1](https://github.com/bosun-ai/swiftide/compare/v0.30.0...v0.30.1) - 2025-08-19
 
 ### Bug fixes
