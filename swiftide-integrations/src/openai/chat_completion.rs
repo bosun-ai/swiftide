@@ -79,7 +79,7 @@ impl<
         let response = self
             .client
             .chat()
-            .create(request)
+            .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -138,22 +138,38 @@ impl<
             }
         }
 
-        let response = builder.build().map_err(LanguageModelError::from)?;
+        let our_response = builder.build().map_err(LanguageModelError::from)?;
 
-        tracing::debug!(
-            usage = format!(
-                "{}/{}/{}",
-                response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                response.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                response.usage.as_ref().map_or(0, |u| u.total_tokens)
-            ),
-            model = model,
-            has_message = response.message.is_some(),
-            num_tool_calls = response.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
-            "[ChatCompletion] Response from OpenAI"
-        );
+        if cfg!(feature = "langfuse") {
+            let usage = response.usage.clone().unwrap_or_default();
 
-        Ok(response)
+            tracing::debug!(
+                model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
+                input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                input_tokens = ?usage.prompt_tokens,
+                output_tokens = ?usage.completion_tokens,
+                total_tokens = ?usage.total_tokens,
+            );
+        } else {
+            tracing::debug!(
+                usage = format!(
+                    "{}/{}/{}",
+                    response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                    response.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                    response.usage.as_ref().map_or(0, |u| u.total_tokens)
+                ),
+                model = model,
+                has_message = our_response.message.is_some(),
+                num_tool_calls = our_response
+                    .tool_calls
+                    .as_ref()
+                    .map_or(0, std::vec::Vec::len),
+                "[ChatCompletion] Response from OpenAI"
+            );
+        }
+
+        Ok(our_response)
     }
 
     #[tracing::instrument(skip_all)]
@@ -286,18 +302,34 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
-                    tracing::debug!(
-                        usage = format!(
-                            "{}/{}/{}",
-                            lock.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.total_tokens)
-                        ),
-                        model = &model,
-                        has_message = lock.message.is_some(),
-                        num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
-                        "[ChatCompletion/Streaming] Response from OpenAI"
-                    );
+        if cfg!(feature = "langfuse") {
+            let usage = response.usage.clone().unwrap_or_default();
+
+            tracing::debug!(
+                model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
+                input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                input_tokens = ?usage.prompt_tokens,
+                output_tokens = ?usage.completion_tokens,
+                total_tokens = ?usage.total_tokens,
+            );
+        } else {
+            tracing::debug!(
+                usage = format!(
+                    "{}/{}/{}",
+                    response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                    response.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                    response.usage.as_ref().map_or(0, |u| u.total_tokens)
+                ),
+                model = model,
+                has_message = our_response.message.is_some(),
+                num_tool_calls = our_response
+                    .tool_calls
+                    .as_ref()
+                    .map_or(0, std::vec::Vec::len),
+                "[ChatCompletion/streaming] Response from OpenAI"
+            );
+        }
                     #[cfg(feature = "metrics")]
                     {
                         if let Some(usage) = lock.usage.as_ref() {

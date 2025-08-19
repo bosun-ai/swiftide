@@ -197,6 +197,9 @@ anthropic = ["dep:async-anthropic"]
 duckdb = ["dep:duckdb", "dep:libduckdb-sys"]
 tiktoken = ["dep:tiktoken-rs"]
 
+# Langfuse compatibility
+langfuse = []
+
 
 [lints]
 workspace = true

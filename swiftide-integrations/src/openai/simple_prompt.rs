@@ -4,6 +4,7 @@
 
 use async_openai::types::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
+use serde_json::json;
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
@@ -37,6 +38,14 @@ impl<
     /// - Returns an error if the request to the `OpenAI` API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(
+            skip_all,
+            err,
+            fields(model_config, input, output, input_tokens, output_tokens, total_tokens)
+        )
+    )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
@@ -74,7 +83,7 @@ impl<
         let mut response = self
             .client
             .chat()
-            .create(request)
+            .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -103,21 +112,35 @@ impl<
             }
         }
 
-        // Log the response for debugging purposes.
-        tracing::trace!(
-            message = debug_long_utf8(&message, 100),
-            "[SimplePrompt] Full response from OpenAI",
-        );
-        tracing::debug!(
-            usage = format!(
-                "{}/{}/{}",
-                response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                response.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                response.usage.as_ref().map_or(0, |u| u.total_tokens)
-            ),
-            model = model,
-            "[SimplePrompt] Response from OpenAI"
-        );
+        if cfg!(feature = "langfuse") {
+            // Emit Langfuse event with the response details.
+            let usage = response.usage.clone().unwrap_or_default();
+            tracing::debug!(
+                model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
+                input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                input_tokens = ?usage.prompt_tokens,
+                output_tokens = ?usage.completion_tokens,
+                total_tokens = ?usage.total_tokens,
+            );
+        } else {
+            // Log the response for debugging purposes.
+            tracing::trace!(
+                message = debug_long_utf8(&message, 100),
+                "[SimplePrompt] Full response from OpenAI",
+            );
+
+            tracing::debug!(
+                usage = format!(
+                    "{}/{}/{}",
+                    response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
+                    response.usage.as_ref().map_or(0, |u| u.completion_tokens),
+                    response.usage.as_ref().map_or(0, |u| u.total_tokens)
+                ),
+                model = model,
+                "[SimplePrompt] Response from OpenAI"
+            );
+        }
 
         // Extract and return the content of the response, returning an error if not found.
         Ok(message)
