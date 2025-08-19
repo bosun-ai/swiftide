@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755624188206,
+  "lastUpdate": 1755630837390,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26231,6 +26231,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258835,
             "range": "± 2584",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "b3f18cd00f9019496274142aa89342da115c6843",
+          "message": "feat: Add convenience helpers to get ToolOutput values as ref",
+          "timestamp": "2025-08-19T21:05:07+02:00",
+          "tree_id": "7db83ac6f02d0d0eedec51cfbfe12445d6e353e1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b3f18cd00f9019496274142aa89342da115c6843"
+        },
+        "date": 1755630835585,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 805363,
+            "range": "± 20902",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255777,
+            "range": "± 1443",
             "unit": "ns/iter"
           }
         ]
