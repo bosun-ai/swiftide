@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755524289784,
+  "lastUpdate": 1755597124045,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25853,6 +25853,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 255000,
             "range": "± 995",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "e4c01e14fbe89cb5a16beddcb3819b66c7f1a087",
+          "message": "fix(integrations/tiktoken): Tiktoken feature flag in root crate",
+          "timestamp": "2025-08-19T11:42:42+02:00",
+          "tree_id": "25bd0616388c09167dd2586dfce6033ff60f6c89",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e4c01e14fbe89cb5a16beddcb3819b66c7f1a087"
+        },
+        "date": 1755597122938,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 807195,
+            "range": "± 16969",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256432,
+            "range": "± 1433",
             "unit": "ns/iter"
           }
         ]
