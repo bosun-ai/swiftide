@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755597588630,
+  "lastUpdate": 1755597865671,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -25961,6 +25961,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258053,
             "range": "± 3149",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "1005ac219e2078c6ee12b050a7e73d48ef7f46a5",
+          "message": "fix(core): Export tokenizer traits from the root crate",
+          "timestamp": "2025-08-19T11:55:37+02:00",
+          "tree_id": "15c15dc26791a7d15c108533361e7bf8af3305da",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1005ac219e2078c6ee12b050a7e73d48ef7f46a5"
+        },
+        "date": 1755597864382,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 805425,
+            "range": "± 19068",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257649,
+            "range": "± 14962",
             "unit": "ns/iter"
           }
         ]
