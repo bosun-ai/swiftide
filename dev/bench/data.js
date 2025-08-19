@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755617038217,
+  "lastUpdate": 1755617086060,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26123,6 +26123,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257669,
             "range": "± 3894",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b6ab4f0ffb2ed46eb395d09f8bfe0437a13ee67d",
+          "message": "fix(ci): Run coverage on stable (#898)",
+          "timestamp": "2025-08-19T17:15:35+02:00",
+          "tree_id": "d484508c8d20844533a3e4f85ed7c4762424774b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b6ab4f0ffb2ed46eb395d09f8bfe0437a13ee67d"
+        },
+        "date": 1755617084346,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 780807,
+            "range": "± 15419",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258408,
+            "range": "± 1694",
             "unit": "ns/iter"
           }
         ]
