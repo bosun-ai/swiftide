@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755617086060,
+  "lastUpdate": 1755624188206,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26177,6 +26177,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258408,
             "range": "± 1694",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "02fe7d3e508fc540e87882a636d6661523f0b561",
+          "message": "chore: release v0.30.1 (#905)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.30.0 -> 0.30.1 (✓ API compatible changes)\n* `swiftide-macros`: 0.30.0 -> 0.30.1\n* `swiftide-indexing`: 0.30.0 -> 0.30.1\n* `swiftide-agents`: 0.30.0 -> 0.30.1 (✓ API compatible changes)\n* `swiftide-integrations`: 0.30.0 -> 0.30.1 (✓ API compatible changes)\n* `swiftide-query`: 0.30.0 -> 0.30.1 (✓ API compatible changes)\n* `swiftide`: 0.30.0 -> 0.30.1 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.30.1](https://github.com/bosun-ai/swiftide/compare/v0.30.0...v0.30.1)\n- 2025-08-19\n\n### Bug fixes\n\n-\n[0114573](https://github.com/bosun-ai/swiftide/commit/011457367b7bfdc207f1f6d9ebfcbf2a2de4ac58)\n*(agents)* Explicitly handle out of bounds and empty edge cases for\nmessage history\n\n-\n[1005ac2](https://github.com/bosun-ai/swiftide/commit/1005ac219e2078c6ee12b050a7e73d48ef7f46a5)\n*(core)* Export tokenizer traits from the root crate\n\n-\n[e4c01e1](https://github.com/bosun-ai/swiftide/commit/e4c01e14fbe89cb5a16beddcb3819b66c7f1a087)\n*(integrations/tiktoken)* Tiktoken feature flag in root crate\n\n-\n[d56496d](https://github.com/bosun-ai/swiftide/commit/d56496d60719eea3752f849aee2a780eb435130e)\n*(integrations/tiktoken)* Fix my inability to count in late hours\n\n### Miscellaneous\n\n-\n[352bf40](https://github.com/bosun-ai/swiftide/commit/352bf40ad5f74778bf41f00cff936805b8633b30)\n*(core)* Implement AsRef<str> for ChatMessage\n\n-\n[aadfb7b](https://github.com/bosun-ai/swiftide/commit/aadfb7b89fe1fd6d04f27bc7209458de3571d1cc)\n*(integrations/openai)* Concise debug logs and more verbose trace\n\n-\n[f975d40](https://github.com/bosun-ai/swiftide/commit/f975d40beccdebd98c896d8492243a489a9b287b)\n*(query)* Reduce debugging noise for queries\n\n### Style\n\n-\n[6a744e0](https://github.com/bosun-ai/swiftide/commit/6a744e0290ebceca3c14b675a35a460f532c4cff)\nFix typos\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.30.0...0.30.1\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-08-19T19:14:34+02:00",
+          "tree_id": "3af40115c9304d76ed4c3a644f6ef3a225d07b45",
+          "url": "https://github.com/bosun-ai/swiftide/commit/02fe7d3e508fc540e87882a636d6661523f0b561"
+        },
+        "date": 1755624186533,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 783728,
+            "range": "± 15317",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258835,
+            "range": "± 2584",
             "unit": "ns/iter"
           }
         ]
