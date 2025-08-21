@@ -11,14 +11,21 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-serde = { version = "^1.0", features = ["derive"] }
+# TODO: Go over these
+serde.workspace = true
 serde_with = { version = "^3.8", default-features = false, features = [
   "base64",
   "std",
   "macros",
 ] }
-serde_json = "^1.0"
+serde_json.workspace = true
 serde_repr = "^0.1"
+chrono.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+futures = "^0.3"
 url = "^2.5"
 reqwest = { version = "^0.12", default-features = false, features = [
   "json",
