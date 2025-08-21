@@ -492,7 +492,7 @@ impl Agent {
                 continue;
             }
 
-            let result = self.run_completions(&messages).await;
+            let result = self.step(&messages, loop_counter).await;
 
             if let Err(err) = result {
                 self.stop_with_error(&err).await;
@@ -512,8 +512,14 @@ impl Agent {
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, err)]
-    async fn run_completions(&mut self, messages: &[ChatMessage]) -> Result<(), AgentError> {
+    #[tracing::instrument(skip(self, messages), err, fields(otel.name))]
+    async fn step(
+        &mut self,
+        messages: &[ChatMessage],
+        step_count: usize,
+    ) -> Result<(), AgentError> {
+        tracing::Span::current().record("otel.name", format!("step-{step_count}"));
+
         debug!(
             tools = ?self
                 .tools
@@ -610,7 +616,7 @@ impl Agent {
 
             let tool_span = tracing::info_span!(
                 "tool",
-                "otel.name" = format!("tool.{}", tool.name().as_ref())
+                "otel.name" = format!("tool.{}", tool.name().as_ref()),
             );
 
             let handle_tool_call = tool_call.clone();
@@ -620,7 +626,15 @@ impl Agent {
                         .await
                         .map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
 
+                if cfg!(feature = "langfuse") {
+                    tracing::debug!(
+                        langfuse.output = %output,
+                        langfuse.input = handle_tool_call.args(),
+                        tool_name = tool.name().as_ref(),
+                    );
+                } else {
                     tracing::debug!(output = output.to_string(), args = ?handle_tool_call.args(), tool_name = tool.name().as_ref(), "Completed tool call");
+                }
 
                     Ok(output)
                 }.instrument(tool_span.or_current()));

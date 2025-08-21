@@ -4,7 +4,6 @@
 
 use async_openai::types::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
-use serde_json::json;
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
@@ -40,7 +39,7 @@ impl<
     #[tracing::instrument(skip_all, err)]
     #[cfg_attr(
         feature = "langfuse",
-        tracing::instrument(skip_all, err, langfuse.type = "GENERATION", fields(model, input, output, usage))
+        tracing::instrument(skip_all, err, langfuse.type = "GENERATION")
     )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.

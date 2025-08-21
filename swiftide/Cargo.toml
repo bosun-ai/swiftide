@@ -128,7 +128,11 @@ json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
 
 #! ### Experimental
 swiftide-agents = ["dep:swiftide-agents"]
-langfuse = ["swiftide-integrations/langfuse", "dep:swiftide-langfuse"]
+langfuse = [
+  "swiftide-integrations/langfuse",
+  "swiftide-agents/langfuse",
+  "dep:swiftide-langfuse",
+]
 
 ## Estimate token counts using tiktoken
 tiktoken = ["swiftide-integrations/tiktoken"]

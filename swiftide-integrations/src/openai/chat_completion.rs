@@ -22,7 +22,6 @@ use swiftide_core::chat_completion::{
 };
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
-use tracing::Instrument as _;
 
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
@@ -32,11 +31,10 @@ impl<
     C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
 > ChatCompletion for GenericOpenAI<C>
 {
-    #[tracing::instrument(
-        skip_all,
-        err,
-        langfuse.ty = "GENERATION",
-        fields(model_config, input, output, input_tokens, output_tokens, total_tokens)
+    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
     )]
     async fn complete(
         &self,
@@ -98,13 +96,6 @@ impl<
                 langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
             );
         }
-        tracing::debug!(
-            model = model,
-            model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
-            input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-            output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-            usage = %serde_json::to_string_pretty(&response.usage).unwrap_or_default(),
-        );
 
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
@@ -166,11 +157,7 @@ impl<
         Ok(our_response)
     }
 
-    #[tracing::instrument(
-        skip_all,
-        langfuse.ty = "GENERATION",
-        fields(model_config, input, output, input_tokens, output_tokens, total_tokens)
-    )]
+    #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
         let Some(model) = self.default_options.prompt_model.clone() else {
             return LanguageModelError::permanent("Model not set").into();
@@ -231,8 +218,6 @@ impl<
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
 
-        let completion_span = tracing::Span::current();
-
         let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
         let final_response = accumulating_response.clone();
         let stream_full = self.stream_full;
@@ -240,7 +225,16 @@ impl<
         #[cfg(feature = "metrics")]
         let metric_metadata = self.metric_metadata.clone();
 
-        response
+        let span = if cfg!(feature = "langfuse") {
+            tracing::info_span!(
+                "stream",
+                langfuse.type = "GENERATION",
+            )
+        } else {
+            tracing::info_span!("stream")
+        };
+
+        let stream = response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
                     let accumulating_response = Arc::clone(&accumulating_response);
@@ -304,14 +298,14 @@ impl<
 
                     let usage = lock.usage.clone().unwrap_or_default();
 
-                    tracing::debug!(
-                        parent: &completion_span,
-                        model = model,
-                        model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
-                        input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                        output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
-                        usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-                    );
+                    if cfg!(feature = "langfuse") {
+                        tracing::debug!(
+                            langfuse.model = model,
+                            langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                            langfuse.output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
+                            langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+                        );
+                    }
 
                     #[cfg(feature = "metrics")]
                     {
@@ -326,9 +320,12 @@ impl<
                         }
                     }
                     Ok(lock.clone())
-                })
-            )
-                .boxed()
+                }),
+            );
+
+        let stream = tracing_futures::Instrument::instrument(stream, span);
+
+        Box::pin(stream)
     }
 }
 

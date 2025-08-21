@@ -121,14 +121,20 @@ fn observation_create_from(
     // Metadata is all values without a langfuse prefix
     let metadata = span_data.remaining_metadata().map(Into::into);
 
+    let start_time = span_data
+        .get("langfuse.start_time")
+        .unwrap_or(span_data.start_time.clone());
+
+    let name = span_data.get("otel.name").unwrap_or(span_data.name.clone());
+
     IngestionEvent::new_observation_create(ObservationBody {
         id: Some(Some(observation_id.to_string())),
         trace_id: Some(Some(trace_id.to_string())),
         r#type: span_data
             .get("langfuse.type")
             .unwrap_or(ObservationType::Span),
-        name: Some(Some(span_data.name.clone())),
-        start_time: Some(Some(span_data.start_time.clone())),
+        name: Some(Some(name)),
+        start_time: Some(Some(start_time)),
         level: Some(span_data.level),
         parent_observation_id: Some(parent_observation_id),
         metadata: Some(metadata),
