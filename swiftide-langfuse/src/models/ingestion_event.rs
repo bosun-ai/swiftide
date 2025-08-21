@@ -33,7 +33,6 @@ impl Default for IngestionEvent {
         Self::TraceCreate(Default::default())
     }
 }
-///
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Type {
     #[serde(rename = "trace-create")]

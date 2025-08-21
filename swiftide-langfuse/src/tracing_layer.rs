@@ -1,5 +1,5 @@
 use chrono::Utc;
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
@@ -346,7 +346,7 @@ impl Visit for JsonVisitor {
     record_field!(record_str, &str);
 
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
-        self.insert_value(field, Value::String(format!("{:?}", value)));
+        self.insert_value(field, Value::String(format!("{value:?}")));
     }
 }
 

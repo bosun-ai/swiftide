@@ -20,7 +20,7 @@ serde_with = { version = "^3.8", default-features = false, features = [
 ] }
 serde_json.workspace = true
 serde_repr = "^0.1"
-chrono.workspace = true
+chrono = { workspace = true, features = ["now"] }
 tokio.workspace = true
 uuid.workspace = true
 tracing.workspace = true
@@ -33,5 +33,17 @@ reqwest = { version = "^0.12", default-features = false, features = [
 ] }
 
 
-[lints]
-workspace = true
+# We need some custom stuff because of the codegen and me being lazy
+[lints.rust]
+empty_docs = "allow"
+dead_code = "allow"
+
+[lints.clippy]
+cargo = { level = "warn", priority = -1 }
+# pedantic = { level = "warn", priority = -1 }
+blocks_in_conditions = "allow"
+must_use_candidate = "allow"
+module_name_repetitions = "allow"
+missing_fields_in_debug = "allow"
+multiple_crate_versions = "allow"
+option_option = "allow"

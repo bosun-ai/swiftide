@@ -239,7 +239,6 @@ pub use self::open_ai_response_usage_schema::OpenAiResponseUsageSchema;
 pub mod open_ai_usage;
 pub use self::open_ai_usage::OpenAiUsage;
 pub mod optional_observation_body;
-pub use self::optional_observation_body::OptionalObservationBody;
 // pub mod organization_project;
 // pub use self::organization_project::OrganizationProject;
 // pub mod organization_projects_response;

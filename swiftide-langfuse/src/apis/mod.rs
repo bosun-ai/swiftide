@@ -24,7 +24,7 @@ impl<T> fmt::Display for Error<T> {
             Error::Io(e) => ("IO", e.to_string()),
             Error::ResponseError(e) => ("response", format!("status code {}", e.status)),
         };
-        write!(f, "error in {}: {}", module, e)
+        write!(f, "error in {module}: {e}")
     }
 }
 
@@ -67,22 +67,21 @@ pub fn parse_deep_object(prefix: &str, value: &serde_json::Value) -> Vec<(String
 
         for (key, value) in object {
             match value {
-                serde_json::Value::Object(_) => params.append(&mut parse_deep_object(
-                    &format!("{}[{}]", prefix, key),
-                    value,
-                )),
+                serde_json::Value::Object(_) => {
+                    params.append(&mut parse_deep_object(&format!("{prefix}[{key}]"), value));
+                }
                 serde_json::Value::Array(array) => {
                     for (i, value) in array.iter().enumerate() {
                         params.append(&mut parse_deep_object(
-                            &format!("{}[{}][{}]", prefix, key, i),
+                            &format!("{prefix}[{key}][{i}]"),
                             value,
                         ));
                     }
                 }
                 serde_json::Value::String(s) => {
-                    params.push((format!("{}[{}]", prefix, key), s.clone()))
+                    params.push((format!("{prefix}[{key}]"), s.clone()));
                 }
-                _ => params.push((format!("{}[{}]", prefix, key), value.to_string())),
+                _ => params.push((format!("{prefix}[{key}]"), value.to_string())),
             }
         }
 
@@ -104,11 +103,11 @@ enum ContentType {
 impl From<&str> for ContentType {
     fn from(content_type: &str) -> Self {
         if content_type.starts_with("application") && content_type.contains("json") {
-            return Self::Json;
+            Self::Json
         } else if content_type.starts_with("text/plain") {
-            return Self::Text;
+            Self::Text
         } else {
-            return Self::Unsupported(content_type.to_string());
+            Self::Unsupported(content_type.to_string())
         }
     }
 }

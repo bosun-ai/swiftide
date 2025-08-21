@@ -2,16 +2,13 @@ use crate::apis::configuration::Configuration;
 use crate::apis::ingestion_api::ingestion_batch;
 use crate::models::{IngestionBatchRequest, IngestionEvent};
 use crate::tracing_layer::{ObservationLayer, SpanTracker};
-use chrono::Utc;
-use reqwest::{Client, StatusCode};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use url::Url;
-use uuid::Uuid;
 
 const DEFAULT_LANGFUSE_URL: &str = "http://localhost:3000";
 
@@ -93,7 +90,7 @@ impl LangfuseBatchManager {
 
         if response.successes.is_empty() {
             tracing::warn!("All items in the batch failed, retrying all items");
-            self.batch = std::mem::take(&mut payload.batch)
+            self.batch = std::mem::take(&mut payload.batch);
         }
 
         if response.successes.is_empty() && !response.errors.is_empty() {
