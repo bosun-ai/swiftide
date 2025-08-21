@@ -357,7 +357,7 @@ impl Agent {
     /// # Errors
     ///
     /// Errors if anything goes wrong, see `AgentError` for more details.
-    #[tracing::instrument(skip_all, name = "agent.query")]
+    #[tracing::instrument(skip_all, name = "agent.query", err)]
     pub async fn query(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
         let query = query
             .into()
@@ -384,7 +384,7 @@ impl Agent {
     /// # Errors
     ///
     /// Errors if anything goes wrong, see `AgentError` for more details.
-    #[tracing::instrument(skip_all, name = "agent.query_once")]
+    #[tracing::instrument(skip_all, name = "agent.query_once", err)]
     pub async fn query_once(&mut self, query: impl Into<Prompt>) -> Result<(), AgentError> {
         self.run_agent(Some(query), true).await
     }
@@ -395,7 +395,7 @@ impl Agent {
     /// # Errors
     ///
     /// Errors if anything goes wrong, see `AgentError` for more details.
-    #[tracing::instrument(skip_all, name = "agent.run")]
+    #[tracing::instrument(skip_all, name = "agent.run", err)]
     pub async fn run(&mut self) -> Result<(), AgentError> {
         self.run_agent(None::<Prompt>, false).await
     }
@@ -406,7 +406,7 @@ impl Agent {
     /// # Errors
     ///
     /// Errors if anything goes wrong, see `AgentError` for more details.
-    #[tracing::instrument(skip_all, name = "agent.run_once")]
+    #[tracing::instrument(skip_all, name = "agent.run_once", err)]
     pub async fn run_once(&mut self) -> Result<(), AgentError> {
         self.run_agent(None::<Prompt>, true).await
     }
@@ -456,6 +456,9 @@ impl Agent {
         }
 
         if let Some(query) = maybe_query {
+            if cfg!(feature = "langfuse") {
+                debug!(langfuse.input = query);
+            }
             self.context
                 .add_message(ChatMessage::User(query))
                 .await
@@ -773,8 +776,13 @@ impl Agent {
         if self.state.is_stopped() {
             return;
         }
+
         let reason = reason.into();
         invoke_hooks!(OnStop, self, reason.clone(), None);
+
+        if cfg!(feature = "langfuse") {
+            debug!(langfuse.output = serde_json::to_string_pretty(&reason).ok());
+        }
 
         self.state = state::State::Stopped(reason);
     }

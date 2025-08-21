@@ -117,13 +117,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Errors
     ///
     /// Errors if the task fails
-    #[tracing::instrument(skip(self, input), name = "task.run")]
+    #[tracing::instrument(skip(self, input), name = "task.run", err)]
     pub async fn run(&mut self, input: impl Into<Input>) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
 
         self.current_context = Some(Arc::new(input.into()) as Arc<dyn Any + Send + Sync>);
 
-        self.resume().await
+        self.start_task().await
     }
 
     /// Resets the task to the start node
@@ -139,7 +139,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Errors
     ///
     /// Errors if the task fails
+    #[tracing::instrument(skip(self), name = "task.resume", err)]
     pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
+        self.start_task().await
+    }
+
+    async fn start_task(&mut self) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
 
         let mut span = tracing::info_span!("task.step", node = self.current_node);
