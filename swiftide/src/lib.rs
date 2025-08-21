@@ -284,6 +284,12 @@ pub mod query {
     pub use swiftide_query::*;
 }
 
+#[cfg(feature = "langfuse")]
+pub mod langfuse {
+    #[doc(inline)]
+    pub use swiftide_langfuse::*;
+}
+
 /// Re-exports for macros
 #[doc(hidden)]
 pub mod reexports {

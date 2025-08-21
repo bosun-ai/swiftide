@@ -31,7 +31,11 @@ impl<
     C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
 > ChatCompletion for GenericOpenAI<C>
 {
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
+    )]
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
@@ -79,9 +83,19 @@ impl<
         let response = self
             .client
             .chat()
-            .create(request)
+            .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
+
+        if cfg!(feature = "langfuse") {
+            let usage = response.usage.clone().unwrap_or_default();
+            tracing::debug!(
+                langfuse.model = model,
+                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+            );
+        }
 
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
@@ -138,22 +152,9 @@ impl<
             }
         }
 
-        let response = builder.build().map_err(LanguageModelError::from)?;
+        let our_response = builder.build().map_err(LanguageModelError::from)?;
 
-        tracing::debug!(
-            usage = format!(
-                "{}/{}/{}",
-                response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                response.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                response.usage.as_ref().map_or(0, |u| u.total_tokens)
-            ),
-            model = model,
-            has_message = response.message.is_some(),
-            num_tool_calls = response.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
-            "[ChatCompletion] Response from OpenAI"
-        );
-
-        Ok(response)
+        Ok(our_response)
     }
 
     #[tracing::instrument(skip_all)]
@@ -212,7 +213,7 @@ impl<
 
         tracing::trace!(model, ?request, "Sending request to OpenAI");
 
-        let response = match self.client.chat().create_stream(request).await {
+        let response = match self.client.chat().create_stream(request.clone()).await {
             Ok(response) => response,
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
@@ -224,7 +225,16 @@ impl<
         #[cfg(feature = "metrics")]
         let metric_metadata = self.metric_metadata.clone();
 
-        response
+        let span = if cfg!(feature = "langfuse") {
+            tracing::info_span!(
+                "stream",
+                langfuse.type = "GENERATION",
+            )
+        } else {
+            tracing::info_span!("stream")
+        };
+
+        let stream = response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
                     let accumulating_response = Arc::clone(&accumulating_response);
@@ -286,18 +296,17 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
-                    tracing::debug!(
-                        usage = format!(
-                            "{}/{}/{}",
-                            lock.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.total_tokens)
-                        ),
-                        model = &model,
-                        has_message = lock.message.is_some(),
-                        num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
-                        "[ChatCompletion/Streaming] Response from OpenAI"
-                    );
+                    let usage = lock.usage.clone().unwrap_or_default();
+
+                    if cfg!(feature = "langfuse") {
+                        tracing::debug!(
+                            langfuse.model = model,
+                            langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                            langfuse.output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
+                            langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+                        );
+                    }
+
                     #[cfg(feature = "metrics")]
                     {
                         if let Some(usage) = lock.usage.as_ref() {
@@ -312,8 +321,11 @@ impl<
                     }
                     Ok(lock.clone())
                 }),
-            )
-            .boxed()
+            );
+
+        let stream = tracing_futures::Instrument::instrument(stream, span);
+
+        Box::pin(stream)
     }
 }
 

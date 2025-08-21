@@ -37,6 +37,10 @@ impl<
     /// - Returns an error if the request to the `OpenAI` API fails.
     /// - Returns an error if the response does not contain the expected content.
     #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, err, langfuse.type = "GENERATION")
+    )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
@@ -74,9 +78,19 @@ impl<
         let mut response = self
             .client
             .chat()
-            .create(request)
+            .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
+
+        if cfg!(feature = "langfuse") {
+            let usage = response.usage.clone().unwrap_or_default();
+            tracing::debug!(
+                langfuse.model = model,
+                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+            );
+        }
 
         let message = response
             .choices
@@ -103,21 +117,7 @@ impl<
             }
         }
 
-        // Log the response for debugging purposes.
-        tracing::trace!(
-            message = debug_long_utf8(&message, 100),
-            "[SimplePrompt] Full response from OpenAI",
-        );
-        tracing::debug!(
-            usage = format!(
-                "{}/{}/{}",
-                response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                response.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                response.usage.as_ref().map_or(0, |u| u.total_tokens)
-            ),
-            model = model,
-            "[SimplePrompt] Response from OpenAI"
-        );
+        // Emit Langfuse event with the response details.
 
         // Extract and return the content of the response, returning an error if not found.
         Ok(message)

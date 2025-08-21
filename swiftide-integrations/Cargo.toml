@@ -30,6 +30,7 @@ futures-util = { workspace = true }
 tera = { workspace = true }
 uuid = { workspace = true }
 metrics = { workspace = true, optional = true }
+tracing-futures = { version = "0.2.5", features = ["futures-03"] }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
@@ -196,6 +197,9 @@ anthropic = ["dep:async-anthropic"]
 # Duckdb for indexing and retrieval
 duckdb = ["dep:duckdb", "dep:libduckdb-sys"]
 tiktoken = ["dep:tiktoken-rs"]
+
+# Langfuse compatibility
+langfuse = []
 
 
 [lints]
