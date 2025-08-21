@@ -18,12 +18,3 @@ pub struct IngestionResponse {
     #[serde(rename = "errors")]
     pub errors: Vec<models::IngestionError>,
 }
-
-impl IngestionResponse {
-    pub fn new(
-        successes: Vec<models::IngestionSuccess>,
-        errors: Vec<models::IngestionError>,
-    ) -> IngestionResponse {
-        IngestionResponse { successes, errors }
-    }
-}

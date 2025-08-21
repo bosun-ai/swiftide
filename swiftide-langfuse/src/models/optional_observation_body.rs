@@ -86,21 +86,3 @@ pub struct OptionalObservationBody {
     )]
     pub environment: Option<Option<String>>,
 }
-
-impl OptionalObservationBody {
-    pub fn new() -> OptionalObservationBody {
-        OptionalObservationBody {
-            trace_id: None,
-            name: None,
-            start_time: None,
-            metadata: None,
-            input: None,
-            output: None,
-            level: None,
-            status_message: None,
-            parent_observation_id: None,
-            version: None,
-            environment: None,
-        }
-    }
-}

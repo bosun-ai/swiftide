@@ -17,9 +17,3 @@ pub struct IngestionSuccess {
     #[serde(rename = "status")]
     pub status: i32,
 }
-
-impl IngestionSuccess {
-    pub fn new(id: String, status: i32) -> IngestionSuccess {
-        IngestionSuccess { id, status }
-    }
-}

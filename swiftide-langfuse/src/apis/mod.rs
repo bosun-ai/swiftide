@@ -2,6 +2,7 @@ use std::error;
 use std::fmt;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResponseContent<T> {
     pub status: reqwest::StatusCode,
     pub content: String,
@@ -58,40 +59,6 @@ impl<T> From<std::io::Error> for Error<T> {
     }
 }
 
-pub fn urlencode<T: AsRef<str>>(s: T) -> String {
-    ::url::form_urlencoded::byte_serialize(s.as_ref().as_bytes()).collect()
-}
-
-pub fn parse_deep_object(prefix: &str, value: &serde_json::Value) -> Vec<(String, String)> {
-    if let serde_json::Value::Object(object) = value {
-        let mut params = vec![];
-
-        for (key, value) in object {
-            match value {
-                serde_json::Value::Object(_) => {
-                    params.append(&mut parse_deep_object(&format!("{prefix}[{key}]"), value));
-                }
-                serde_json::Value::Array(array) => {
-                    for (i, value) in array.iter().enumerate() {
-                        params.append(&mut parse_deep_object(
-                            &format!("{prefix}[{key}][{i}]"),
-                            value,
-                        ));
-                    }
-                }
-                serde_json::Value::String(s) => {
-                    params.push((format!("{prefix}[{key}]"), s.clone()));
-                }
-                _ => params.push((format!("{prefix}[{key}]"), value.to_string())),
-            }
-        }
-
-        return params;
-    }
-
-    unimplemented!("Only objects are supported with style=deepObject")
-}
-
 /// Internal use only
 /// A content type supported by this client.
 #[allow(dead_code)]
@@ -113,27 +80,5 @@ impl From<&str> for ContentType {
     }
 }
 
-// pub mod annotation_queues_api;
-// pub mod comments_api;
-// pub mod dataset_items_api;
-// pub mod dataset_run_items_api;
-// pub mod datasets_api;
-// pub mod health_api;
-pub mod ingestion_api;
-// pub mod llm_connections_api;
-// pub mod media_api;
-// pub mod metrics_api;
-// pub mod models_api;
-// pub mod observations_api;
-// pub mod organizations_api;
-// pub mod projects_api;
-// pub mod prompt_version_api;
-// pub mod prompts_api;
-// pub mod scim_api;
-// pub mod score_api;
-// pub mod score_configs_api;
-// pub mod score_v2_api;
-// pub mod sessions_api;
-// pub mod trace_api;
-
 pub mod configuration;
+pub mod ingestion_api;

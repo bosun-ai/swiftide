@@ -25,12 +25,3 @@ pub struct IngestionBatchRequest {
     )]
     pub metadata: Option<Option<serde_json::Value>>,
 }
-
-impl IngestionBatchRequest {
-    pub fn new(batch: Vec<models::IngestionEvent>) -> IngestionBatchRequest {
-        IngestionBatchRequest {
-            batch,
-            metadata: None,
-        }
-    }
-}

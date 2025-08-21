@@ -31,14 +31,3 @@ pub struct IngestionError {
     )]
     pub error: Option<Option<serde_json::Value>>,
 }
-
-impl IngestionError {
-    pub fn new(id: String, status: i32) -> IngestionError {
-        IngestionError {
-            id,
-            status,
-            message: None,
-            error: None,
-        }
-    }
-}

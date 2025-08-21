@@ -31,12 +31,13 @@ reqwest = { version = "^0.12", default-features = false, features = [
   "json",
   "multipart",
 ] }
+anyhow.workspace = true
 
 
 # We need some custom stuff because of the codegen and me being lazy
 [lints.rust]
 empty_docs = "allow"
-dead_code = "allow"
+dead_code = "warn"
 
 [lints.clippy]
 cargo = { level = "warn", priority = -1 }

@@ -104,8 +104,8 @@ impl SpanTracker {
 }
 
 #[derive(Clone)]
-pub struct ObservationLayer {
-    pub batch_manager: Arc<Mutex<LangfuseBatchManager>>,
+pub struct LangfuseLayer {
+    pub batch_manager: LangfuseBatchManager,
     pub span_tracker: Arc<Mutex<SpanTracker>>,
 }
 
@@ -152,7 +152,7 @@ fn observation_create_from(
     })
 }
 
-impl ObservationLayer {
+impl LangfuseLayer {
     pub async fn handle_span(&self, span_id: u64, span_data: SpanData) {
         let observation_id = span_data.observation_id.clone();
 
@@ -176,11 +176,9 @@ impl ObservationLayer {
         let trace_id = self.ensure_trace_id().await;
 
         // Create the span observation
-        let mut batch = self.batch_manager.lock().await;
-
         let event = observation_create_from(&trace_id, &observation_id, &span_data, parent_id);
 
-        batch.add_event(event);
+        self.batch_manager.add_event(event).await;
     }
 
     pub async fn handle_span_close(&self, span_id: u64) {
@@ -191,7 +189,6 @@ impl ObservationLayer {
         };
 
         let trace_id = self.ensure_trace_id().await;
-        let mut batch = self.batch_manager.lock().await;
 
         let event = IngestionEvent::new_observation_update(ObservationBody {
             id: Some(Some(observation_id.clone())),
@@ -200,7 +197,7 @@ impl ObservationLayer {
             end_time: Some(Some(Utc::now().to_rfc3339())),
             ..Default::default()
         });
-        batch.add_event(event);
+        self.batch_manager.add_event(event).await;
     }
 
     pub async fn ensure_trace_id(&self) -> String {
@@ -212,8 +209,6 @@ impl ObservationLayer {
         let trace_id = Uuid::new_v4().to_string();
         spans.current_trace_id = Some(trace_id.clone());
 
-        let mut batch = self.batch_manager.lock().await;
-
         let event = IngestionEvent::new_trace_create(TraceBody {
             id: Some(Some(trace_id.clone())),
             name: Some(Some(Utc::now().timestamp().to_string())),
@@ -221,7 +216,7 @@ impl ObservationLayer {
             public: Some(Some(false)),
             ..Default::default()
         });
-        batch.add_event(event);
+        self.batch_manager.add_event(event).await;
 
         trace_id
     }
@@ -252,12 +247,11 @@ impl ObservationLayer {
             ..Default::default()
         });
 
-        let mut batch = self.batch_manager.lock().await;
-        batch.add_event(event);
+        self.batch_manager.add_event(event).await;
     }
 }
 
-impl<S> Layer<S> for ObservationLayer
+impl<S> Layer<S> for LangfuseLayer
 where
     S: Subscriber + for<'a> LookupSpan<'a>,
 {
