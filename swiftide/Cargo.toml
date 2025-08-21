@@ -22,6 +22,7 @@ swiftide-indexing = { path = "../swiftide-indexing", version = "0.30" }
 swiftide-query = { path = "../swiftide-query", version = "0.30" }
 swiftide-agents = { path = "../swiftide-agents", version = "0.30", optional = true }
 swiftide-macros = { path = "../swiftide-macros", version = "0.30", optional = true }
+swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.30", optional = true }
 
 # Re-exports for macros and ease of use
 anyhow.workspace = true
@@ -127,7 +128,7 @@ json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
 
 #! ### Experimental
 swiftide-agents = ["dep:swiftide-agents"]
-langfuse = ["swiftide-integrations/langfuse"]
+langfuse = ["swiftide-integrations/langfuse", "dep:swiftide-langfuse"]
 
 ## Estimate token counts using tiktoken
 tiktoken = ["swiftide-integrations/tiktoken"]

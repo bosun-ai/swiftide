@@ -9480,6 +9480,7 @@ dependencies = [
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
+ "swiftide-langfuse",
  "swiftide-macros",
  "swiftide-query",
  "swiftide-test-utils",
@@ -9678,6 +9679,24 @@ dependencies = [
  "tree-sitter-typescript",
  "uuid",
  "wiremock",
+]
+
+[[package]]
+name = "swiftide-langfuse"
+version = "0.30.1"
+dependencies = [
+ "chrono",
+ "futures",
+ "reqwest 0.12.23",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "serde_with",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
 ]
 
 [[package]]

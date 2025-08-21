@@ -1,4 +1,7 @@
-use crate::tracing_layer::{BatchManager, ObservationLayer, SpanTracker};
+use crate::apis::configuration::Configuration;
+use crate::apis::ingestion_api::ingestion_batch;
+use crate::models::{IngestionBatchRequest, IngestionEvent};
+use crate::tracing_layer::{ObservationLayer, SpanTracker};
 use chrono::Utc;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -34,27 +37,19 @@ struct LangfuseIngestionError {
 
 #[derive(Debug, Clone)]
 pub struct LangfuseBatchManager {
-    pub batch: Vec<Value>,
-    pub client: Client,
-    pub base_url: String,
-    pub public_key: String,
-    pub secret_key: String,
+    config: Configuration,
+    pub batch: Vec<IngestionEvent>,
 }
 
 impl LangfuseBatchManager {
-    pub fn new(public_key: String, secret_key: String, base_url: String) -> Self {
+    pub fn new(config: Configuration) -> Self {
         Self {
+            config,
             batch: Vec::new(),
-            client: Client::builder()
-                .timeout(Duration::from_secs(10))
-                .build()
-                .expect("Failed to create HTTP client"),
-            base_url,
-            public_key,
-            secret_key,
         }
     }
 
+    // TODO: Graceful shutdown
     pub fn spawn_sender(manager: Arc<Mutex<Self>>) {
         const BATCH_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -77,77 +72,50 @@ impl LangfuseBatchManager {
             return Ok(());
         }
 
-        let payload = json!({ "batch": self.batch });
-        let base_url = Url::parse(&self.base_url).map_err(|e| format!("Invalid base URL: {e}"))?;
-        let url = base_url
-            .join("api/public/ingestion")
-            .map_err(|e| format!("Failed to construct endpoint URL: {e}"))?;
+        let batch = std::mem::take(&mut self.batch);
+        let mut payload = IngestionBatchRequest {
+            batch,
+            metadata: None, // Optional metadata can be added here if needed
+        };
 
-        let response = self
-            .client
-            .post(url)
-            .basic_auth(&self.public_key, Some(&self.secret_key))
-            .json(&payload)
-            .send()
-            .await?;
+        let response = ingestion_batch(&self.config, &payload).await?;
 
-        match response.status() {
-            status if status.is_success() => {
-                let response_body: LangfuseIngestionResponse = response.json().await?;
+        for error in &response.errors {
+            // Any errors we log and ignore, no retry
+            tracing::error!(
+                id = %error.id,
+                status = error.status,
+                message = error.message.as_ref().unwrap_or(&None).as_deref().unwrap_or("No message"),
+                error = ?error.error,
+                "Partial failure in batch ingestion"
+            );
+        }
 
-                for error in &response_body.errors {
-                    tracing::error!(
-                        id = %error.id,
-                        status = error.status,
-                        message = error.message.as_deref().unwrap_or("No message"),
-                        error = ?error.error,
-                        "Partial failure in batch ingestion"
-                    );
-                }
+        if response.successes.is_empty() {
+            tracing::warn!("All items in the batch failed, retrying all items");
+            self.batch = std::mem::take(&mut payload.batch)
+        }
 
-                if !response_body.successes.is_empty() {
-                    self.batch.clear();
-                }
-
-                if response_body.successes.is_empty() && !response_body.errors.is_empty() {
-                    Err("Langfuse ingestion failed for all items".into())
-                } else {
-                    Ok(())
-                }
-            }
-            status @ (StatusCode::BAD_REQUEST
-            | StatusCode::UNAUTHORIZED
-            | StatusCode::FORBIDDEN
-            | StatusCode::NOT_FOUND
-            | StatusCode::METHOD_NOT_ALLOWED) => {
-                let err_text = response.text().await.unwrap_or_default();
-                Err(format!("Langfuse API error: {}: {}", status, err_text).into())
-            }
-            status => {
-                let err_text = response.text().await.unwrap_or_default();
-                Err(format!("Unexpected status code: {}: {}", status, err_text).into())
-            }
+        if response.successes.is_empty() && !response.errors.is_empty() {
+            Err("Langfuse ingestion failed for all items".into())
+        } else {
+            Ok(())
         }
     }
 }
 
-impl BatchManager for LangfuseBatchManager {
-    fn add_event(&mut self, event_type: &str, body: Value) {
-        self.batch.push(json!({
-            "id": Uuid::new_v4().to_string(),
-            "timestamp": Utc::now().to_rfc3339(),
-            "type": event_type,
-            "body": body
-        }));
+impl LangfuseBatchManager {
+    pub fn add_event(&mut self, event: IngestionEvent) {
+        self.batch.push(event);
     }
 
-    fn send(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn send(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         tokio::task::block_in_place(|| {
             tokio::runtime::Handle::current().block_on(self.send_async())
         })
     }
 
-    fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.batch.is_empty()
     }
 }
@@ -168,9 +136,15 @@ pub fn create_langfuse_observer() -> Option<ObservationLayer> {
 
     let base_url = env::var("LANGFUSE_URL").unwrap_or_else(|_| DEFAULT_LANGFUSE_URL.to_string());
 
-    let batch_manager = Arc::new(Mutex::new(LangfuseBatchManager::new(
-        public_key, secret_key, base_url,
-    )));
+    let config = Configuration {
+        base_path: base_url.clone(),
+        user_agent: Some("langfuse-rust-sdk".to_string()),
+        client: Client::new(),
+        basic_auth: Some((public_key.clone(), Some(secret_key.clone()))),
+        ..Default::default()
+    };
+
+    let batch_manager = Arc::new(Mutex::new(LangfuseBatchManager::new(config)));
 
     if !cfg!(test) {
         LangfuseBatchManager::spawn_sender(batch_manager.clone());
