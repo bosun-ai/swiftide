@@ -22,6 +22,7 @@ use swiftide_core::chat_completion::{
 };
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
+use tracing::Instrument as _;
 
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
@@ -31,7 +32,12 @@ impl<
     C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
 > ChatCompletion for GenericOpenAI<C>
 {
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(
+        skip_all,
+        err,
+        langfuse.ty = "GENERATION",
+        fields(model_config, input, output, input_tokens, output_tokens, total_tokens)
+    )]
     async fn complete(
         &self,
         request: &ChatCompletionRequest,
@@ -140,39 +146,24 @@ impl<
 
         let our_response = builder.build().map_err(LanguageModelError::from)?;
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
+        let usage = response.usage.clone().unwrap_or_default();
 
-            tracing::debug!(
-                model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
-                input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                input_tokens = ?usage.prompt_tokens,
-                output_tokens = ?usage.completion_tokens,
-                total_tokens = ?usage.total_tokens,
-            );
-        } else {
-            tracing::debug!(
-                usage = format!(
-                    "{}/{}/{}",
-                    response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                    response.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                    response.usage.as_ref().map_or(0, |u| u.total_tokens)
-                ),
-                model = model,
-                has_message = our_response.message.is_some(),
-                num_tool_calls = our_response
-                    .tool_calls
-                    .as_ref()
-                    .map_or(0, std::vec::Vec::len),
-                "[ChatCompletion] Response from OpenAI"
-            );
-        }
+        tracing::debug!(
+            model = model,
+            model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
+            input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+            output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+            usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+        );
 
         Ok(our_response)
     }
 
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(
+        skip_all,
+        langfuse.ty = "GENERATION",
+        fields(model_config, input, output, input_tokens, output_tokens, total_tokens)
+    )]
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
         let Some(model) = self.default_options.prompt_model.clone() else {
             return LanguageModelError::permanent("Model not set").into();
@@ -228,10 +219,12 @@ impl<
 
         tracing::trace!(model, ?request, "Sending request to OpenAI");
 
-        let response = match self.client.chat().create_stream(request).await {
+        let response = match self.client.chat().create_stream(request.clone()).await {
             Ok(response) => response,
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
+
+        let completion_span = tracing::Span::current();
 
         let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
         let final_response = accumulating_response.clone();
@@ -302,34 +295,17 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
+                    let usage = lock.usage.clone().unwrap_or_default();
 
-            tracing::debug!(
-                model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
-                input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                input_tokens = ?usage.prompt_tokens,
-                output_tokens = ?usage.completion_tokens,
-                total_tokens = ?usage.total_tokens,
-            );
-        } else {
-            tracing::debug!(
-                usage = format!(
-                    "{}/{}/{}",
-                    response.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                    response.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                    response.usage.as_ref().map_or(0, |u| u.total_tokens)
-                ),
-                model = model,
-                has_message = our_response.message.is_some(),
-                num_tool_calls = our_response
-                    .tool_calls
-                    .as_ref()
-                    .map_or(0, std::vec::Vec::len),
-                "[ChatCompletion/streaming] Response from OpenAI"
-            );
-        }
+                    tracing::debug!(
+                        parent: &completion_span,
+                        model = model,
+                        model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
+                        input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                        output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
+                        usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+                    );
+
                     #[cfg(feature = "metrics")]
                     {
                         if let Some(usage) = lock.usage.as_ref() {
@@ -343,9 +319,9 @@ impl<
                         }
                     }
                     Ok(lock.clone())
-                }),
+                })
             )
-            .boxed()
+                .boxed()
     }
 }
 

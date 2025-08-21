@@ -30,6 +30,7 @@ futures-util = { workspace = true }
 tera = { workspace = true }
 uuid = { workspace = true }
 metrics = { workspace = true, optional = true }
+tracing-futures = { version = "0.2.5" }
 
 # Integrations
 async-openai = { workspace = true, optional = true }
