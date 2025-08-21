@@ -13,6 +13,7 @@ pub enum Error<T> {
     Reqwest(reqwest::Error),
     Serde(serde_json::Error),
     Io(std::io::Error),
+    #[allow(clippy::enum_variant_names)]
     ResponseError(ResponseContent<T>),
 }
 
