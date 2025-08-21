@@ -89,6 +89,23 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
+        if cfg!(feature = "langfuse") {
+            let usage = response.usage.clone().unwrap_or_default();
+            tracing::debug!(
+                langfuse.model = model,
+                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+            );
+        }
+        tracing::debug!(
+            model = model,
+            model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
+            input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+            output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+            usage = %serde_json::to_string_pretty(&response.usage).unwrap_or_default(),
+        );
+
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
 
@@ -145,16 +162,6 @@ impl<
         }
 
         let our_response = builder.build().map_err(LanguageModelError::from)?;
-
-        let usage = response.usage.clone().unwrap_or_default();
-
-        tracing::debug!(
-            model = model,
-            model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
-            input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-            output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-            usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-        );
 
         Ok(our_response)
     }

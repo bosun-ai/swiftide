@@ -37,11 +37,10 @@ impl<
     /// - Returns an error if the model is not set in the default options.
     /// - Returns an error if the request to the `OpenAI` API fails.
     /// - Returns an error if the response does not contain the expected content.
-    #[tracing::instrument(
-        skip_all,
-        err,
-        langfuse.ty = "GENERATION",
-        fields(model_config, input, output, input_tokens, output_tokens, total_tokens)
+    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, err, langfuse.type = "GENERATION", fields(model, input, output, usage))
     )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.
@@ -84,6 +83,16 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
+        if cfg!(feature = "langfuse") {
+            let usage = response.usage.clone().unwrap_or_default();
+            tracing::debug!(
+                langfuse.model = model,
+                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+            );
+        }
+
         let message = response
             .choices
             .remove(0)
@@ -110,14 +119,6 @@ impl<
         }
 
         // Emit Langfuse event with the response details.
-        let usage = response.usage.clone().unwrap_or_default();
-        tracing::debug!(
-            model = model,
-            model_config = %serde_json::to_string_pretty(&json!({ "model_name": model})).unwrap_or_default(),
-            input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-            output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-            usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-        );
 
         // Extract and return the content of the response, returning an error if not found.
         Ok(message)
