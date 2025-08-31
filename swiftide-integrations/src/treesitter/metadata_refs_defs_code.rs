@@ -8,7 +8,7 @@
 //! # Example
 //!
 //! ```no_run
-//! # use swiftide_core::indexing::Node;
+//! # use swiftide_core::indexing::TextNode;
 //! # use swiftide_integrations::treesitter::transformers::metadata_refs_defs_code::*;
 //! # use swiftide_core::Transformer;
 //! # #[tokio::main]
@@ -19,7 +19,7 @@
 //!     println!("Hello, World!");
 //!   }
 //! "#;
-//! let mut node = Node::new(code.to_string());
+//! let mut node = TextNode::new(code.to_string());
 //!
 //! node = transformer.transform_node(node).await.unwrap();
 //!
@@ -36,7 +36,7 @@
 //! ```
 use std::sync::Arc;
 
-use swiftide_core::{Transformer, indexing::Node};
+use swiftide_core::{Transformer, indexing::TextNode};
 
 use crate::treesitter::{CodeParser, SupportedLanguages};
 use anyhow::{Context as _, Result};
@@ -71,9 +71,11 @@ impl MetadataRefsDefsCode {
 
 #[async_trait]
 impl Transformer for MetadataRefsDefsCode {
+    type Input = String;
+    type Output = String;
     /// Extracts references and definitions from code and
     /// adds them as metadata to the node if present
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: TextNode) -> Result<TextNode> {
         let refs_defs = self
             .code_parser
             .parse(&node.chunk)?
@@ -114,7 +116,7 @@ mod test {
         expected_definitions: &str,
     ) {
         let transformer = MetadataRefsDefsCode::try_from_language(lang).unwrap();
-        let node = Node::new(code);
+        let node = TextNode::new(code);
 
         let node = transformer.transform_node(node).await.unwrap();
 

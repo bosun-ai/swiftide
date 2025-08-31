@@ -7,7 +7,7 @@
 //! # Overview
 //!
 //! Redis implements the following `Swiftide` traits:
-//! - `NodeCache`
+//! - `Node<T>Cache`
 //! - `Persist`
 //! - `MessageHistory`
 //!
@@ -19,9 +19,10 @@ use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
+use serde::Serialize;
 use tokio::sync::RwLock;
 
-use swiftide_core::indexing::Node;
+use swiftide_core::indexing::{Chunk, Node};
 
 mod message_history;
 mod node_cache;
@@ -35,9 +36,10 @@ mod persist;
 /// * `client` - The Redis client used to interact with the Redis server.
 /// * `connection_manager` - Manages the Redis connections asynchronously.
 /// * `key_prefix` - A prefix used for keys stored in Redis to avoid collisions.
+#[allow(clippy::type_complexity)]
 #[derive(Builder, Clone)]
 #[builder(pattern = "owned", setter(strip_option))]
-pub struct Redis {
+pub struct Redis<T: Chunk = String> {
     #[builder(setter(into))]
     client: Arc<redis::Client>,
     #[builder(default, setter(skip))]
@@ -49,15 +51,15 @@ pub struct Redis {
     batch_size: usize,
     #[builder(default)]
     /// Customize the key used for persisting nodes
-    persist_key_fn: Option<fn(&Node) -> Result<String>>,
+    persist_key_fn: Option<fn(&Node<T>) -> Result<String>>,
     #[builder(default)]
     /// Customize the value used for persisting nodes
-    persist_value_fn: Option<fn(&Node) -> Result<String>>,
+    persist_value_fn: Option<fn(&Node<T>) -> Result<String>>,
     #[builder(default = "message_history".to_string().into(), setter(into))]
     message_history_key: Arc<String>,
 }
 
-impl Redis {
+impl Redis<String> {
     /// Creates a new `Redis` instance from a given Redis URL and key prefix.
     ///
     /// # Parameters
@@ -72,9 +74,9 @@ impl Redis {
     /// # Errors
     ///
     /// Returns an error if the Redis client cannot be opened.
-    pub fn try_from_url(url: impl AsRef<str>, prefix: impl AsRef<str>) -> Result<Self> {
+    pub fn try_from_url(url: impl AsRef<str>, prefix: impl AsRef<str>) -> Result<Redis<String>> {
         let client = redis::Client::open(url.as_ref()).context("Failed to open redis client")?;
-        Ok(Self {
+        Ok(Redis::<String> {
             client: client.into(),
             connection_manager: Arc::new(RwLock::new(None)),
             cache_key_prefix: prefix.as_ref().to_string().into(),
@@ -84,17 +86,19 @@ impl Redis {
             message_history_key: format!("{}:message_history", prefix.as_ref()).into(),
         })
     }
+}
 
+impl<T: Chunk> Redis<T> {
     /// # Errors
     ///
     /// Returns an error if the Redis client cannot be opened
-    pub fn try_build_from_url(url: impl AsRef<str>) -> Result<RedisBuilder> {
+    pub fn try_build_from_url(url: impl AsRef<str>) -> Result<RedisBuilder<T>> {
         Ok(RedisBuilder::default()
             .client(redis::Client::open(url.as_ref()).context("Failed to open redis client")?))
     }
 
     /// Builds a new `Redis` instance from the builder.
-    pub fn builder() -> RedisBuilder {
+    pub fn builder() -> RedisBuilder<T> {
         RedisBuilder::default()
     }
 
@@ -137,29 +141,17 @@ impl Redis {
     /// # Returns
     ///
     /// A `String` representing the Redis key for the node.
-    fn cache_key_for_node(&self, node: &Node) -> String {
+    fn cache_key_for_node(&self, node: &Node<T>) -> String {
         format!("{}:{}", self.cache_key_prefix, node.id())
     }
 
     /// Generates a key for a given node to be persisted in Redis.
-    fn persist_key_for_node(&self, node: &Node) -> Result<String> {
+    fn persist_key_for_node(&self, node: &Node<T>) -> Result<String> {
         if let Some(key_fn) = self.persist_key_fn {
             key_fn(node)
         } else {
             let hash = node.id();
             Ok(format!("{}:{}", node.path.to_string_lossy(), hash))
-        }
-    }
-
-    /// Generates a value for a given node to be persisted in Redis.
-    /// By default, the node is serialized as JSON.
-    /// If a custom function is provided, it is used to generate the value.
-    /// Otherwise, the node is serialized as JSON.
-    fn persist_value_for_node(&self, node: &Node) -> Result<String> {
-        if let Some(value_fn) = self.persist_value_fn {
-            value_fn(node)
-        } else {
-            Ok(serde_json::to_string(node)?)
         }
     }
 
@@ -191,7 +183,7 @@ impl Redis {
     /// Gets a node persisted in Redis using the GET command
     /// Takes a node and returns a Result<Option<String>>
     #[allow(dead_code)]
-    async fn get_node(&self, node: &Node) -> Result<Option<String>> {
+    async fn get_node(&self, node: &Node<T>) -> Result<Option<String>> {
         if let Some(mut cm) = self.lazy_connect().await {
             let key = self.persist_key_for_node(node)?;
             let result: Option<String> = redis::cmd("GET")
@@ -206,9 +198,23 @@ impl Redis {
     }
 }
 
+impl<T: Chunk + Serialize> Redis<T> {
+    /// Generates a value for a given node to be persisted in Redis.
+    /// By default, the node is serialized as JSON.
+    /// If a custom function is provided, it is used to generate the value.
+    /// Otherwise, the node is serialized as JSON.
+    fn persist_value_for_node(&self, node: &Node<T>) -> Result<String> {
+        if let Some(value_fn) = self.persist_value_fn {
+            value_fn(node)
+        } else {
+            Ok(serde_json::to_string(node)?)
+        }
+    }
+}
+
 // Redis CM does not implement debug
 #[allow(clippy::missing_fields_in_debug)]
-impl std::fmt::Debug for Redis {
+impl<T: Chunk> std::fmt::Debug for Redis<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Redis")
             .field("client", &self.client)

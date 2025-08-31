@@ -8,14 +8,14 @@ use duckdb::{
 };
 use swiftide_core::{
     Persist,
-    indexing::{self, Metadata, Node},
+    indexing::{self, Chunk, Metadata, Node},
 };
 use uuid::Uuid;
 
 use super::Duckdb;
 
 #[allow(dead_code)]
-enum NodeValues<'a> {
+enum TextNodeValues<'a> {
     Uuid(Uuid),
     Path(&'a Path),
     Chunk(&'a str),
@@ -24,18 +24,18 @@ enum NodeValues<'a> {
     Null,
 }
 
-impl ToSql for NodeValues<'_> {
+impl ToSql for TextNodeValues<'_> {
     fn to_sql(&self) -> duckdb::Result<ToSqlOutput<'_>> {
         match self {
-            NodeValues::Uuid(uuid) => Ok(ToSqlOutput::Owned(uuid.to_string().into())),
+            TextNodeValues::Uuid(uuid) => Ok(ToSqlOutput::Owned(uuid.to_string().into())),
             // Should be borrow-able
-            NodeValues::Path(path) => Ok(path.to_string_lossy().to_string().into()),
-            NodeValues::Chunk(chunk) => chunk.to_sql(),
-            NodeValues::Metadata(_metadata) => {
+            TextNodeValues::Path(path) => Ok(path.to_string_lossy().to_string().into()),
+            TextNodeValues::Chunk(chunk) => chunk.to_sql(),
+            TextNodeValues::Metadata(_metadata) => {
                 unimplemented!("maps are not yet implemented for duckdb");
                 // Casting doesn't work either, the duckdb conversion is also not implemented :(
             }
-            NodeValues::Embedding(vector) => {
+            TextNodeValues::Embedding(vector) => {
                 let array_str = format!(
                     "[{}]",
                     vector
@@ -46,17 +46,17 @@ impl ToSql for NodeValues<'_> {
                 );
                 Ok(ToSqlOutput::Owned(array_str.into()))
             }
-            NodeValues::Null => Ok(ToSqlOutput::Owned(Value::Null)),
+            TextNodeValues::Null => Ok(ToSqlOutput::Owned(Value::Null)),
         }
     }
 }
 
-impl Duckdb {
-    fn store_node_on_stmt(&self, stmt: &mut Statement<'_>, node: &Node) -> Result<()> {
+impl<T: Chunk + AsRef<str>> Duckdb<T> {
+    fn store_node_on_stmt(&self, stmt: &mut Statement<'_>, node: &Node<T>) -> Result<()> {
         let mut values = vec![
-            NodeValues::Uuid(node.id()),
-            NodeValues::Chunk(&node.chunk),
-            NodeValues::Path(&node.path),
+            TextNodeValues::Uuid(node.id()),
+            TextNodeValues::Chunk(node.chunk.as_ref()),
+            TextNodeValues::Path(&node.path),
         ];
 
         let Some(node_vectors) = &node.vectors else {
@@ -68,7 +68,7 @@ impl Duckdb {
                 anyhow::bail!("Expected vector for field {} in node", field);
             };
 
-            values.push(NodeValues::Embedding(vector.into()));
+            values.push(TextNodeValues::Embedding(vector.into()));
         }
 
         // TODO: Investigate concurrency in duckdb, maybe optmistic if it works
@@ -80,7 +80,10 @@ impl Duckdb {
 }
 
 #[async_trait]
-impl Persist for Duckdb {
+impl<T: Chunk + AsRef<str>> Persist for Duckdb<T> {
+    type Input = T;
+    type Output = T;
+
     async fn setup(&self) -> Result<()> {
         tracing::debug!("Setting up duckdb schema");
 
@@ -129,7 +132,7 @@ impl Persist for Duckdb {
         Ok(())
     }
 
-    async fn store(&self, node: indexing::Node) -> Result<indexing::Node> {
+    async fn store(&self, node: indexing::Node<T>) -> Result<indexing::Node<T>> {
         let lock = self.connection.lock().unwrap();
         let mut stmt = lock.prepare(&self.node_upsert_sql)?;
         self.store_node_on_stmt(&mut stmt, &node)?;
@@ -137,7 +140,7 @@ impl Persist for Duckdb {
         Ok(node)
     }
 
-    async fn batch_store(&self, nodes: Vec<indexing::Node>) -> indexing::IndexingStream {
+    async fn batch_store(&self, nodes: Vec<indexing::Node<T>>) -> indexing::IndexingStream<T> {
         // TODO: Must batch
         let mut new_nodes = Vec::with_capacity(nodes.len());
 
@@ -178,7 +181,7 @@ impl Persist for Duckdb {
 #[cfg(test)]
 mod tests {
     use futures_util::TryStreamExt as _;
-    use indexing::{EmbeddedField, Node};
+    use indexing::{EmbeddedField, TextNode};
 
     use super::*;
 
@@ -191,7 +194,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("Hello duckdb!")
+        let node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 
@@ -223,14 +226,14 @@ mod tests {
         tracing::info!("Retrieved node");
         // Verify the upsert and batch works
         let new_nodes = vec![node.clone(), node.clone(), node.clone()];
-        let stream_nodes: Vec<Node> = client
+        let stream_nodes: Vec<TextNode> = client
             .batch_store(new_nodes)
             .await
             .try_collect()
             .await
             .unwrap();
 
-        // let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
+        // let streamed_nodes: Vec<TextNode> = stream.try_collect().await.unwrap();
         assert_eq!(stream_nodes.len(), 3);
         assert_eq!(stream_nodes[0], node);
 
@@ -261,7 +264,7 @@ mod tests {
         let new_nodes = vec![node.clone(), new_node.clone(), new_node.clone()];
         let stream = client.batch_store(new_nodes).await;
 
-        let streamed_nodes: Vec<Node> = stream.try_collect().await.unwrap();
+        let streamed_nodes: Vec<TextNode> = stream.try_collect().await.unwrap();
         assert_eq!(streamed_nodes.len(), 3);
         assert_eq!(streamed_nodes[0], node);
 
@@ -295,7 +298,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let mut node = Node::new("Hello duckdb!")
+        let mut node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 
@@ -366,7 +369,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let mut node = Node::new("Hello duckdb!")
+        let mut node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 

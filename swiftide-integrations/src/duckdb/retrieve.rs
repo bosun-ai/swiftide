@@ -2,6 +2,7 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use swiftide_core::{
     Retrieve,
+    indexing::Chunk,
     querying::{
         Document, Query,
         search_strategies::{CustomStrategy, HybridSearch, SimilaritySingleEmbedding},
@@ -12,7 +13,7 @@ use swiftide_core::{
 use super::Duckdb;
 
 #[async_trait]
-impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
+impl<T: Chunk> Retrieve<SimilaritySingleEmbedding> for Duckdb<T> {
     async fn retrieve(
         &self,
         search_strategy: &SimilaritySingleEmbedding,
@@ -75,7 +76,7 @@ impl Retrieve<SimilaritySingleEmbedding> for Duckdb {
 }
 
 #[async_trait]
-impl Retrieve<CustomStrategy<String>> for Duckdb {
+impl<T: Chunk> Retrieve<CustomStrategy<String>> for Duckdb<T> {
     async fn retrieve(
         &self,
         search_strategy: &CustomStrategy<String>,
@@ -114,7 +115,7 @@ impl Retrieve<CustomStrategy<String>> for Duckdb {
 }
 
 #[async_trait]
-impl Retrieve<HybridSearch> for Duckdb {
+impl<T: Chunk> Retrieve<HybridSearch> for Duckdb<T> {
     async fn retrieve(
         &self,
         search_strategy: &HybridSearch,
@@ -158,7 +159,7 @@ impl Retrieve<HybridSearch> for Duckdb {
 
 #[cfg(test)]
 mod tests {
-    use indexing::{EmbeddedField, Node};
+    use indexing::{EmbeddedField, TextNode};
     use swiftide_core::{Persist as _, indexing};
 
     use super::*;
@@ -172,7 +173,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("Hello duckdb!")
+        let node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 
@@ -211,7 +212,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let node = Node::new("Hello duckdb!")
+        let node = TextNode::new("Hello duckdb!")
             .with_vectors([(EmbeddedField::Combined, vec![1.0, 2.0, 3.0])])
             .to_owned();
 

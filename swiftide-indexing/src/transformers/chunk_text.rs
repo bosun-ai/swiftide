@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{ChunkerTransformer, indexing::IndexingStream, indexing::Node};
+use swiftide_core::{ChunkerTransformer, indexing::IndexingStream, indexing::TextNode};
 use text_splitter::{Characters, ChunkConfig, TextSplitter};
 
 const DEFAULT_MAX_CHAR_SIZE: usize = 2056;
@@ -106,8 +106,11 @@ impl ChunkTextBuilder {
 }
 #[async_trait]
 impl ChunkerTransformer for ChunkText {
+    type Input = String;
+    type Output = String;
+
     #[tracing::instrument(skip_all, name = "transformers.chunk_text")]
-    async fn transform_node(&self, node: Node) -> IndexingStream {
+    async fn transform_node(&self, node: TextNode) -> IndexingStream<String> {
         let chunks = self
             .chunker
             .chunks(&node.chunk)
@@ -124,7 +127,7 @@ impl ChunkerTransformer for ChunkText {
         IndexingStream::iter(
             chunks
                 .into_iter()
-                .map(move |chunk| Node::build_from_other(&node).chunk(chunk).build()),
+                .map(move |chunk| TextNode::build_from_other(&node).chunk(chunk).build()),
         )
     }
 
@@ -150,9 +153,9 @@ mod test {
     async fn test_transforming_with_max_characters_and_trimming() {
         let chunker = ChunkText::from_max_characters(40);
 
-        let node = Node::new(TEXT.to_string());
+        let node = TextNode::new(TEXT.to_string());
 
-        let nodes: Vec<Node> = chunker
+        let nodes: Vec<TextNode> = chunker
             .transform_node(node)
             .await
             .try_collect()
@@ -171,8 +174,8 @@ mod test {
         let ranges = vec![(10..15), (20..25), (30..35), (40..45), (50..55)];
         for range in ranges {
             let chunker = ChunkText::from_chunk_range(range.clone());
-            let node = Node::new(TEXT.to_string());
-            let nodes: Vec<Node> = chunker
+            let node = TextNode::new(TEXT.to_string());
+            let nodes: Vec<TextNode> = chunker
                 .transform_node(node)
                 .await
                 .try_collect()

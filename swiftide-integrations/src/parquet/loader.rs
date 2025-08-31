@@ -5,14 +5,16 @@ use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
 use swiftide_core::{
     Loader,
-    indexing::{IndexingStream, Node},
+    indexing::{IndexingStream, TextNode},
 };
 use tokio::runtime::Handle;
 
 use super::Parquet;
 
 impl Loader for Parquet {
-    fn into_stream(self) -> IndexingStream {
+    type Output = String;
+
+    fn into_stream(self) -> IndexingStream<String> {
         let mut builder = tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
                 let file = File::open(self.path).await.expect("Failed to open file");
@@ -48,7 +50,7 @@ impl Loader for Parquet {
 
         let swiftide_stream = stream.flat_map_unordered(None, move |result_batch| {
             let Ok(batch) = result_batch else {
-                let new_result: Result<Node> = Err(anyhow::anyhow!(result_batch.unwrap_err()));
+                let new_result: Result<TextNode> = Err(anyhow::anyhow!(result_batch.unwrap_err()));
 
                 return vec![new_result].into();
             };
@@ -61,7 +63,7 @@ impl Loader for Parquet {
                 .unwrap()
                 .into_iter()
                 .flatten()
-                .map(Node::from)
+                .map(TextNode::from)
                 .map(Ok)
                 .collect::<Vec<_>>();
 
@@ -73,7 +75,7 @@ impl Loader for Parquet {
         // let mask = ProjectionMask::
     }
 
-    fn into_stream_boxed(self: Box<Self>) -> IndexingStream {
+    fn into_stream_boxed(self: Box<Self>) -> IndexingStream<String> {
         self.into_stream()
     }
 }
@@ -100,7 +102,7 @@ mod tests {
 
         let result = loader.into_stream().try_collect::<Vec<_>>().await.unwrap();
 
-        let expected = [Node::new("hello"), Node::new("world")];
+        let expected = [TextNode::new("hello"), TextNode::new("world")];
         assert_eq!(result, expected);
     }
 }

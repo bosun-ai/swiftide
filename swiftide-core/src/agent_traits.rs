@@ -34,7 +34,7 @@ pub trait ToolExecutor: Send + Sync + DynClone {
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
-    ) -> Result<IndexingStream>;
+    ) -> Result<IndexingStream<String>>;
 }
 
 dyn_clone::clone_trait_object!(ToolExecutor);
@@ -49,7 +49,7 @@ impl<T: ToolExecutor> ToolExecutor for &T {
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
-    ) -> Result<IndexingStream> {
+    ) -> Result<IndexingStream<String>> {
         (*self).stream_files(path, extensions).await
     }
 }
@@ -63,7 +63,7 @@ impl ToolExecutor for Arc<dyn ToolExecutor> {
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
-    ) -> Result<IndexingStream> {
+    ) -> Result<IndexingStream<String>> {
         self.as_ref().stream_files(path, extensions).await
     }
 }
@@ -77,7 +77,7 @@ impl ToolExecutor for Box<dyn ToolExecutor> {
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
-    ) -> Result<IndexingStream> {
+    ) -> Result<IndexingStream<String>> {
         self.as_ref().stream_files(path, extensions).await
     }
 }
@@ -91,7 +91,7 @@ impl ToolExecutor for &dyn ToolExecutor {
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
-    ) -> Result<IndexingStream> {
+    ) -> Result<IndexingStream<String>> {
         (*self).stream_files(path, extensions).await
     }
 }

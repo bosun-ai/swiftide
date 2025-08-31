@@ -13,7 +13,7 @@ use tokio::sync::RwLock;
 
 use swiftide_core::{
     Persist,
-    indexing::{IndexingStream, Node},
+    indexing::{Chunk, IndexingStream, Node},
 };
 
 #[derive(Debug, Default, Builder, Clone)]
@@ -24,31 +24,31 @@ use swiftide_core::{
 ///
 /// The storage will use a zero indexed, incremental counter as the key for each node if the node id
 /// is not set.
-pub struct MemoryStorage {
-    data: Arc<RwLock<HashMap<String, Node>>>,
+pub struct MemoryStorage<T: Chunk = String> {
+    data: Arc<RwLock<HashMap<String, Node<T>>>>,
     #[builder(default)]
     batch_size: Option<usize>,
     #[builder(default = Arc::new(AtomicUsize::new(0)))]
     node_count: Arc<AtomicUsize>,
 }
 
-impl MemoryStorage {
+impl<T: Chunk> MemoryStorage<T> {
     fn key(&self) -> String {
         self.node_count.fetch_add(1, Ordering::Relaxed).to_string()
     }
 
     /// Retrieve a node by its key
-    pub async fn get(&self, key: impl AsRef<str>) -> Option<Node> {
+    pub async fn get(&self, key: impl AsRef<str>) -> Option<Node<T>> {
         self.data.read().await.get(key.as_ref()).cloned()
     }
 
     /// Retrieve all nodes in the storage
-    pub async fn get_all_values(&self) -> Vec<Node> {
+    pub async fn get_all_values(&self) -> Vec<Node<T>> {
         self.data.read().await.values().cloned().collect()
     }
 
     /// Retrieve all nodes in the storage with their keys
-    pub async fn get_all(&self) -> Vec<(String, Node)> {
+    pub async fn get_all(&self) -> Vec<(String, Node<T>)> {
         self.data
             .read()
             .await
@@ -59,7 +59,9 @@ impl MemoryStorage {
 }
 
 #[async_trait]
-impl Persist for MemoryStorage {
+impl<T: Chunk> Persist for MemoryStorage<T> {
+    type Input = T;
+    type Output = T;
     async fn setup(&self) -> Result<()> {
         Ok(())
     }
@@ -67,7 +69,7 @@ impl Persist for MemoryStorage {
     /// Store a node by its id
     ///
     /// If the node does not have an id, a simple counter is used as the key.
-    async fn store(&self, node: Node) -> Result<Node> {
+    async fn store(&self, node: Node<T>) -> Result<Node<T>> {
         self.data.write().await.insert(self.key(), node.clone());
 
         Ok(node)
@@ -76,7 +78,7 @@ impl Persist for MemoryStorage {
     /// Store multiple nodes at once
     ///
     /// If a node does not have an id, a simple counter is used as the key.
-    async fn batch_store(&self, nodes: Vec<Node>) -> IndexingStream {
+    async fn batch_store(&self, nodes: Vec<Node<T>>) -> IndexingStream<T> {
         let mut lock = self.data.write().await;
 
         for node in &nodes {
@@ -95,12 +97,12 @@ impl Persist for MemoryStorage {
 mod test {
     use super::*;
     use futures_util::TryStreamExt;
-    use swiftide_core::indexing::Node;
+    use swiftide_core::indexing::TextNode;
 
     #[tokio::test]
     async fn test_memory_storage() {
         let storage = MemoryStorage::default();
-        let node = Node::default();
+        let node = TextNode::default();
         let node = storage.store(node.clone()).await.unwrap();
         assert_eq!(storage.get("0").await, Some(node));
     }
@@ -108,8 +110,8 @@ mod test {
     #[tokio::test]
     async fn test_inserting_multiple_nodes() {
         let storage = MemoryStorage::default();
-        let node1 = Node::default();
-        let node2 = Node::default();
+        let node1 = TextNode::default();
+        let node2 = TextNode::default();
 
         storage.store(node1.clone()).await.unwrap();
         storage.store(node2.clone()).await.unwrap();
@@ -122,14 +124,14 @@ mod test {
     #[tokio::test]
     async fn test_batch_store() {
         let storage = MemoryStorage::default();
-        let node1 = Node::default();
-        let node2 = Node::default();
+        let node1 = TextNode::default();
+        let node2 = TextNode::default();
 
         let stream = storage
             .batch_store(vec![node1.clone(), node2.clone()])
             .await;
 
-        let result: Vec<Node> = stream.try_collect().await.unwrap();
+        let result: Vec<TextNode> = stream.try_collect().await.unwrap();
 
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], node1);

@@ -23,7 +23,7 @@ use rdkafka::{
     consumer::{Consumer, StreamConsumer},
     producer::FutureProducer,
 };
-use swiftide_core::indexing::Node;
+use swiftide_core::indexing::TextNode;
 
 pub use rdkafka::config::ClientConfig;
 
@@ -37,10 +37,10 @@ pub struct Kafka {
     topic: String,
     #[builder(default)]
     /// Customize the key used for persisting nodes
-    persist_key_fn: Option<fn(&Node) -> Result<String>>,
+    persist_key_fn: Option<fn(&TextNode) -> Result<String>>,
     #[builder(default)]
     /// Customize the value used for persisting nodes
-    persist_payload_fn: Option<fn(&Node) -> Result<String>>,
+    persist_payload_fn: Option<fn(&TextNode) -> Result<String>>,
     #[builder(default = "1")]
     partition: i32,
     #[builder(default = "1")]
@@ -103,7 +103,7 @@ impl Kafka {
     }
 
     /// Generates a ky for a given node to be persisted in Kafka.
-    fn persist_key_for_node(&self, node: &Node) -> Result<String> {
+    fn persist_key_for_node(&self, node: &TextNode) -> Result<String> {
         if let Some(key_fn) = self.persist_key_fn {
             key_fn(node)
         } else {
@@ -116,7 +116,7 @@ impl Kafka {
     /// By default, the node is serialized as JSON.
     /// If a custom function is provided, it is used to generate the value.
     /// Otherwise, the node is serialized as JSON.
-    fn persist_value_for_node(&self, node: &Node) -> Result<String> {
+    fn persist_value_for_node(&self, node: &TextNode) -> Result<String> {
         if let Some(value_fn) = self.persist_payload_fn {
             value_fn(node)
         } else {
@@ -124,7 +124,7 @@ impl Kafka {
         }
     }
 
-    fn node_to_key_payload(&self, node: &Node) -> Result<(String, String)> {
+    fn node_to_key_payload(&self, node: &TextNode) -> Result<(String, String)> {
         let key = self.persist_key_for_node(node).map_err(|e| {
             anyhow::anyhow!("persist_key_for_node failed: {:?} (node: {:?})", e, node)
         })?;

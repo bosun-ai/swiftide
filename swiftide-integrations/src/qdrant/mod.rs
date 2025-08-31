@@ -16,7 +16,7 @@ use derive_builder::Builder;
 pub use qdrant_client;
 use qdrant_client::qdrant::{self, SparseVectorParamsBuilder, SparseVectorsConfigBuilder};
 
-use swiftide_core::indexing::{EmbeddedField, Node};
+use swiftide_core::indexing::{EmbeddedField, TextNode};
 
 const DEFAULT_COLLECTION_NAME: &str = "swiftide";
 const DEFAULT_QDRANT_URL: &str = "http://localhost:6334";
@@ -307,14 +307,14 @@ impl From<EmbeddedField> for SparseVectorConfig {
 
 pub type Distance = qdrant::Distance;
 
-/// Utility struct combining `Node` with `EmbeddedField`s of configured _Qdrant_ vectors.
+/// Utility struct combining `TextNode` with `EmbeddedField`s of configured _Qdrant_ vectors.
 struct NodeWithVectors<'a> {
-    node: &'a Node,
+    node: &'a TextNode,
     vector_fields: HashSet<&'a EmbeddedField>,
 }
 
 impl<'a> NodeWithVectors<'a> {
-    pub fn new(node: &'a Node, vector_fields: HashSet<&'a EmbeddedField>) -> Self {
+    pub fn new(node: &'a TextNode, vector_fields: HashSet<&'a EmbeddedField>) -> Self {
         Self {
             node,
             vector_fields,

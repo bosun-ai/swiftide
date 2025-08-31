@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{Transformer, indexing::Node};
+use swiftide_core::{Transformer, indexing::TextNode};
 
 /// `CompressCodeChunk` rewrites the "Outline" metadata field of a chunk to
 /// condense it and make it more relevant to the chunk in question. It is useful as a
@@ -27,26 +27,28 @@ fn extract_markdown_codeblock(text: String) -> String {
 
 #[async_trait]
 impl Transformer for CompressCodeOutline {
-    /// Asynchronously transforms an `Node` by reducing the size of the outline to make it more
+    type Input = String;
+    type Output = String;
+    /// Asynchronously transforms an `TextNode` by reducing the size of the outline to make it more
     /// relevant to the chunk.
     ///
-    /// This method uses the `SimplePrompt` client to compress the outline of the `Node` and updates
-    /// the `Node` with the compressed outline.
+    /// This method uses the `SimplePrompt` client to compress the outline of the `TextNode` and
+    /// updates the `TextNode` with the compressed outline.
     ///
     /// # Arguments
     ///
-    /// * `node` - The `Node` to be transformed.
+    /// * `node` - The `TextNode` to be transformed.
     ///
     /// # Returns
     ///
-    /// A result containing the transformed `Node` or an error if the transformation fails.
+    /// A result containing the transformed `TextNode` or an error if the transformation fails.
     ///
     /// # Errors
     ///
     /// This function will return an error if the `SimplePrompt` client fails to generate a
     /// response.
     #[tracing::instrument(skip_all, name = "transformers.compress_code_outline")]
-    async fn transform_node(&self, mut node: Node) -> Result<Node> {
+    async fn transform_node(&self, mut node: TextNode) -> Result<TextNode> {
         if node.metadata.get(NAME).is_none() {
             return Ok(node);
         }
@@ -77,7 +79,7 @@ mod test {
 
         let outline = "Relevant Outline";
         let code = "Code using outline";
-        let mut node = Node::new(code);
+        let mut node = TextNode::new(code);
         node.metadata.insert("Outline", outline);
 
         let prompt = template.clone().with_node(&node);
@@ -97,7 +99,7 @@ mod test {
             .client(client)
             .build()
             .unwrap();
-        let mut node = Node::new("Some text");
+        let mut node = TextNode::new("Some text");
         node.offset = 0;
         node.original_size = 100;
 

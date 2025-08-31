@@ -38,7 +38,7 @@ use std::{
 use anyhow::{Context as _, Result};
 use tera::Tera;
 
-use crate::node::Node;
+use crate::node::TextNode;
 
 /// A Prompt can be used with large language models to prompt.
 #[derive(Clone, Debug)]
@@ -85,7 +85,7 @@ impl Prompt {
 
     /// Adds an `ingestion::Node` to the context of the Prompt
     #[must_use]
-    pub fn with_node(mut self, node: &Node) -> Self {
+    pub fn with_node(mut self, node: &TextNode) -> Self {
         let context = self.context.get_or_insert_with(tera::Context::default);
         context.insert("node", &node);
         self
@@ -165,6 +165,8 @@ impl From<String> for Prompt {
 
 #[cfg(test)]
 mod test {
+    use crate::node::Node;
+
     use super::*;
 
     #[tokio::test]
@@ -177,7 +179,7 @@ mod test {
     #[tokio::test]
     async fn test_prompt_with_node() {
         let prompt: Prompt = "hello {{node.chunk}}".into();
-        let node = Node::new("test");
+        let node = Node::from("test");
         let prompt = prompt.with_node(&node);
         assert_eq!(prompt.render().unwrap(), "hello test");
     }

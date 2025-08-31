@@ -5,7 +5,10 @@ use std::{
 
 use anyhow::{Context as _, Result};
 use derive_builder::Builder;
-use swiftide_core::{indexing::EmbeddedField, querying::search_strategies::HybridSearch};
+use swiftide_core::{
+    indexing::{Chunk, EmbeddedField},
+    querying::search_strategies::HybridSearch,
+};
 use tera::Context;
 use tokio::sync::RwLock;
 
@@ -30,7 +33,7 @@ const DEFAULT_HYBRID_QUERY: &str = include_str!("hybrid_query.sql");
 /// doesn't let us know <3.
 #[derive(Clone, Builder)]
 #[builder(setter(into))]
-pub struct Duckdb {
+pub struct Duckdb<T: Chunk = String> {
     /// The connection to the database
     ///
     /// Note that this uses the tokio version of a mutex because the duckdb connection contains a
@@ -80,9 +83,12 @@ pub struct Duckdb {
     #[builder(default)]
     #[allow(dead_code)]
     upsert_vectors: bool,
+
+    #[builder(default)]
+    chunk_type: std::marker::PhantomData<T>,
 }
 
-impl std::fmt::Debug for Duckdb {
+impl<T: Chunk> std::fmt::Debug for Duckdb<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Duckdb")
             .field("connection", &"Arc<Mutex<duckdb::Connection>>")
@@ -92,10 +98,15 @@ impl std::fmt::Debug for Duckdb {
     }
 }
 
-impl Duckdb {
-    pub fn builder() -> DuckdbBuilder {
-        DuckdbBuilder::default()
+impl Duckdb<String> {
+    pub fn builder() -> DuckdbBuilder<String> {
+        DuckdbBuilder::<String>::default()
     }
+}
+impl<T: Chunk> Duckdb<T> {
+    // pub fn builder() -> DuckdbBuilder<String> {
+    //     DuckdbBuilder::<String>::default()
+    // }
 
     /// Name of the indexing table
     pub fn table_name(&self) -> &str {
@@ -180,7 +191,7 @@ impl Duckdb {
     }
 
     /// Formats a node key for the cache table
-    pub fn node_key(&self, node: &swiftide_core::indexing::Node) -> String {
+    pub fn node_key(&self, node: &swiftide_core::indexing::Node<T>) -> String {
         format!("{}.{}", self.cache_key_prefix, node.id())
     }
 
@@ -245,7 +256,7 @@ fn wrap_and_escape(s: &str) -> String {
 
     buf
 }
-impl DuckdbBuilder {
+impl<T: Chunk> DuckdbBuilder<T> {
     pub fn connection(&mut self, connection: impl Into<duckdb::Connection>) -> &mut Self {
         self.connection = Some(Arc::new(Mutex::new(connection.into())));
         self

@@ -81,9 +81,9 @@ pub(crate) struct PgVectorTestData<'a> {
 }
 
 impl PgVectorTestData<'_> {
-    pub(crate) fn to_node(&self) -> indexing::Node {
+    pub(crate) fn to_node(&self) -> indexing::TextNode {
         // Create the initial builder
-        let mut base_builder = indexing::Node::builder();
+        let mut base_builder = indexing::TextNode::builder();
 
         // Set the required fields
         let mut builder = base_builder.chunk(self.chunk).embed_mode(self.embed_mode);
