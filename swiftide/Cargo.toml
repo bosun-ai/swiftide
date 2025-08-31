@@ -114,6 +114,8 @@ redb = ["swiftide-integrations/redb"]
 ## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
 duckdb = ["swiftide-integrations/duckdb"]
 
+#! Other 
+
 ## MCP tool support for agents (tools only)
 mcp = ["swiftide-agents", "swiftide-agents/mcp"]
 
@@ -126,16 +128,19 @@ test-utils = ["swiftide-core/test-utils"]
 ## Json schema for various types
 json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
 
+## Estimate token counts using tiktoken
+tiktoken = ["swiftide-integrations/tiktoken"]
+
 #! ### Experimental
+## GenAI agents and tools
 swiftide-agents = ["dep:swiftide-agents"]
+## Langfuse tracing and observability
 langfuse = [
   "swiftide-integrations/langfuse",
   "swiftide-agents/langfuse",
   "dep:swiftide-langfuse",
 ]
 
-## Estimate token counts using tiktoken
-tiktoken = ["swiftide-integrations/tiktoken"]
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

@@ -4,127 +4,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
 #![allow(unused_imports, reason = "that is what we do here")]
-
-//! Swiftide is a Rust library for building LLM applications, enabling fast data ingestion,
-//! transformation, and indexing for effective querying and prompt injection, known as Retrieval
-//! Augmented Generation. It provides flexible building blocks for creating various agents, allowing
-//! rapid development from concept to production with minimal code.
-//!
-//! Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
-//!
-//! We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open
-//! an issue.
-//!
-//! Read more about the project on the [swiftide website](https://swiftide.rs)
-//!
-//! ### High level features
-//!
-//! - Build fast, streaming indexing and querying pipelines
-//! - Easily build agents, mix and match with previously built pipelines
-//! - A modular and extendable API, with minimal abstractions
-//! - Integrations with popular LLMs and storage providers
-//! - Ready to use pipeline transformations
-//!
-//! # Querying
-//!
-//! After running an indexing pipeline, you can use the [`query`] module to query the indexed data.
-//!
-//! # Examples
-//!
-//! ## Indexing markdown
-//!
-//! ```no_run
-//! # use swiftide::indexing::loaders::FileLoader;
-//! # use swiftide::indexing::transformers::{ChunkMarkdown, Embed, MetadataQAText};
-//! # use swiftide::integrations::qdrant::Qdrant;
-//! # use swiftide::integrations::openai::OpenAI;
-//! # use swiftide::indexing::Pipeline;
-//! # use anyhow::Result;
-//!
-//! # #[tokio::main]
-//! # async fn main() -> Result<()> {
-//! # let qdrant_url = "url";
-//! # let openai_client = OpenAI::builder().build()?;
-//!  Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
-//!          .then_chunk(ChunkMarkdown::from_chunk_range(10..512))
-//!          .then(MetadataQAText::new(openai_client.clone()))
-//!          .then_in_batch(Embed::new(openai_client.clone()).with_batch_size(10))
-//!          .then_store_with(
-//!              Qdrant::try_from_url(qdrant_url)?
-//!                  .batch_size(50)
-//!                  .vector_size(1536)
-//!                  .collection_name("swiftide-examples".to_string())
-//!                  .build()?,
-//!          )
-//!          .run()
-//!          .await
-//! # }
-//! ```
-//!
-//! ## Querying
-//!
-//! ```no_run
-//! # use anyhow::Result;
-//! # use swiftide::query::{query_transformers, self, response_transformers, answers};
-//! # use swiftide::integrations::openai::OpenAI;
-//!
-//! # #[tokio::main]
-//! # async fn main() -> Result<()> {
-//! # let qdrant_url = "url";
-//! # let openai_client = OpenAI::builder().build()?;
-//! # let qdrant = swiftide::integrations::qdrant::Qdrant::try_from_url(qdrant_url)?
-//! #                .batch_size(50)
-//! #                .vector_size(1536)
-//! #                .collection_name("swiftide-examples".to_string())
-//! #                .build()?;
-//! query::Pipeline::default()
-//!     .then_transform_query(query_transformers::GenerateSubquestions::from_client(
-//!         openai_client.clone(),
-//!     ))
-//!     .then_transform_query(query_transformers::Embed::from_client(
-//!         openai_client.clone(),
-//!     ))
-//!     .then_retrieve(qdrant.clone())
-//!     .then_transform_response(response_transformers::Summary::from_client(
-//!         openai_client.clone(),
-//!     ))
-//!     .then_answer(answers::Simple::from_client(openai_client.clone()))
-//!     .query("What is swiftide?")
-//!     .await?;
-//! # Ok(())
-//! # }
-//! ```
-//! ## Agents with tools
-//!
-//!
-//! ```ignore
-//! #[swiftide::tool(
-//!     description = "Searches code",
-//!     param(name = "code_query", description = "The code query")
-//! )]
-//! async fn search_code(
-//!     context: &dyn AgentContext,
-//!     code_query: &str,
-//! ) -> Result<ToolOutput, ToolError> {
-//!     let command_output = context
-//!         .executor()
-//!         .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
-//!         .await?;
-//!
-//!     Ok(command_output.into())
-//! }
-//!
-//! agents::Agent::builder()
-//!     .llm(&openai)
-//!     .tools(vec![search_code()])
-//!     .build()?
-//!     .query("In what file can I find an example of a swiftide agent?")
-//!     .await?;
-//! ```
-//! # Feature flags
-//!
-//! Swiftide has little features enabled by default, as there are some dependency heavy
-//! integrations. You need to cherry-pick the tools and integrations you want to use.
+#![doc = include_str!("../../README.md")]
 #![doc = document_features::document_features!()]
 
 #[doc(inline)]
@@ -150,10 +30,9 @@ pub mod traits {
     pub use swiftide_core::tokenizer::*;
 }
 
-pub mod chat_completion {
-    #[doc(inline)]
-    pub use swiftide_core::chat_completion::*;
-}
+/// Abstractions for chat completions and LLM interactions.
+#[doc(inline)]
+pub use swiftide_core::chat_completion;
 
 /// Integrations with various platforms and external services.
 pub mod integrations {
@@ -285,10 +164,8 @@ pub mod query {
 }
 
 #[cfg(feature = "langfuse")]
-pub mod langfuse {
-    #[doc(inline)]
-    pub use swiftide_langfuse::*;
-}
+#[doc(inline)]
+pub use swiftide_langfuse as langfuse;
 
 /// Re-exports for macros
 #[doc(hidden)]
