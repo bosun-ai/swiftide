@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755630837390,
+  "lastUpdate": 1756645027151,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26285,6 +26285,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 255777,
             "range": "± 1443",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d2681d53ce235439885ace40ac08a6d4a058259a",
+          "message": "feat: Integrate with Langfuse via tracing and make traces consistent and pretty (#907)\n\n- **langfuse compatibility**\n- **Add generated client from openapi spec**\n- **fix imports**\n- **It compiles**\n- **Disable unused**\n- **Remove all unused**\n- **Remove openapi yaml**\n- **clippy fixes**\n- **More clippy**\n- **Make it work and pretty**",
+          "timestamp": "2025-08-31T14:48:17+02:00",
+          "tree_id": "0e559c9ab7402af79b4983aae1384a5a73d2def4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d2681d53ce235439885ace40ac08a6d4a058259a"
+        },
+        "date": 1756645024936,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 788851,
+            "range": "± 24921",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257362,
+            "range": "± 2807",
             "unit": "ns/iter"
           }
         ]
