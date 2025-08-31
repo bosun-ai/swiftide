@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756645027151,
+  "lastUpdate": 1756648773833,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26339,6 +26339,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257362,
             "range": "± 2807",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4e20804cc78a90e61a1c816abe5810b2a34007af",
+          "message": "feat(integrations): More convenient usage reporting via callback (#897)",
+          "timestamp": "2025-08-31T15:50:51+02:00",
+          "tree_id": "de63c459809f0abd430dcfe104ae5dd81bf1ded5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4e20804cc78a90e61a1c816abe5810b2a34007af"
+        },
+        "date": 1756648772069,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 780694,
+            "range": "± 15230",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258527,
+            "range": "± 1978",
             "unit": "ns/iter"
           }
         ]
