@@ -4,6 +4,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(html_logo_url = "https://github.com/bosun-ai/swiftide/raw/master/images/logo.png")]
 #![allow(unused_imports, reason = "that is what we do here")]
+#![allow(clippy::doc_markdown, reason = "the readme is invalid and that is ok")]
 #![doc = include_str!("../../README.md")]
 #![doc = document_features::document_features!()]
 

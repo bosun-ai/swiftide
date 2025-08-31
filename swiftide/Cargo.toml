@@ -31,6 +31,7 @@ serde.workspace = true
 serde_json.workspace = true
 
 [features]
+## By default only macros are enabled
 default = ["macros"]
 
 macros = ["dep:swiftide-macros"]
@@ -114,7 +115,7 @@ redb = ["swiftide-integrations/redb"]
 ## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
 duckdb = ["swiftide-integrations/duckdb"]
 
-#! Other 
+#! ### Other 
 
 ## MCP tool support for agents (tools only)
 mcp = ["swiftide-agents", "swiftide-agents/mcp"]
