@@ -20,11 +20,11 @@ const DEFAULT_LANGFUSE_URL: &str = "http://localhost:3000";
 
 use reqwest::Client;
 
-use crate::{
-    apis::configuration::Configuration,
-    langfuse_batch_manager::LangfuseBatchManager,
-    tracing_layer::{LangfuseLayer, SpanTracker},
-};
+use crate::tracing_layer::SpanTracker;
+
+pub use crate::apis::configuration::Configuration;
+pub use crate::langfuse_batch_manager::LangfuseBatchManager;
+pub use crate::tracing_layer::LangfuseLayer;
 
 /// Creates a new langfuse tracing layer with values from environment variables.
 ///

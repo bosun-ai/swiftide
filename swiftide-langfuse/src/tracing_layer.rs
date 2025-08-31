@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use chrono::Utc;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -153,6 +154,26 @@ fn observation_create_from(
 }
 
 impl LangfuseLayer {
+    // Start the layer with a batch manager
+    //
+    // Note that the batch manager _must_ be started before using this layer.
+    pub fn from_batch_manager(batch_manager: &LangfuseBatchManager) -> Self {
+        let span_tracker = Arc::new(Mutex::new(SpanTracker::new()));
+
+        Self {
+            batch_manager: batch_manager.clone(),
+            span_tracker,
+        }
+    }
+    pub async fn flush(&self) -> anyhow::Result<()> {
+        self.batch_manager
+            .flush()
+            .await
+            .context("Failed to flush")?;
+
+        Ok(())
+    }
+
     pub async fn handle_span(&self, span_id: u64, span_data: SpanData) {
         let observation_id = span_data.observation_id.clone();
 
@@ -255,8 +276,9 @@ impl<S> Layer<S> for LangfuseLayer
 where
     S: Subscriber + for<'a> LookupSpan<'a>,
 {
-    fn enabled(&self, metadata: &Metadata<'_>, _ctx: Context<'_, S>) -> bool {
-        metadata.target().starts_with("goose::")
+    fn enabled(&self, _metadata: &Metadata<'_>, _ctx: Context<'_, S>) -> bool {
+        // Enable this layer for all spans and events
+        true
     }
 
     fn on_new_span(&self, attrs: &span::Attributes<'_>, id: &span::Id, ctx: Context<'_, S>) {
@@ -349,185 +371,3 @@ impl Visit for JsonVisitor {
         self.insert_value(field, Value::String(format!("{value:?}")));
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use std::time::Duration;
-//     use tokio::sync::mpsc;
-//     use tracing::dispatcher;
-//
-//     struct TestFixture {
-//         original_subscriber: Option<dispatcher::Dispatch>,
-//         events: Option<Arc<Mutex<Vec<(String, Value)>>>>,
-//     }
-//
-//     impl TestFixture {
-//         fn new() -> Self {
-//             Self {
-//                 original_subscriber: Some(dispatcher::get_default(dispatcher::Dispatch::clone)),
-//                 events: None,
-//             }
-//         }
-//
-//         fn with_test_layer(mut self) -> (Self, ObservationLayer) {
-//             let events = Arc::new(Mutex::new(Vec::new()));
-//             let mock_manager = MockBatchManager::new(events.clone());
-//
-//             let layer = ObservationLayer {
-//                 batch_manager: Arc::new(Mutex::new(mock_manager)),
-//                 span_tracker: Arc::new(Mutex::new(SpanTracker::new())),
-//             };
-//
-//             self.events = Some(events);
-//             (self, layer)
-//         }
-//
-//         async fn get_events(&self) -> Vec<(String, Value)> {
-//             self.events
-//                 .as_ref()
-//                 .expect("Events not initialized")
-//                 .lock()
-//                 .await
-//                 .clone()
-//         }
-//     }
-//
-//     impl Drop for TestFixture {
-//         fn drop(&mut self) {
-//             if let Some(subscriber) = &self.original_subscriber {
-//                 let _ = dispatcher::set_global_default(subscriber.clone());
-//             }
-//         }
-//     }
-//
-//     struct MockBatchManager {
-//         events: Arc<Mutex<Vec<(String, Value)>>>,
-//         sender: mpsc::UnboundedSender<(String, Value)>,
-//     }
-//
-//     impl MockBatchManager {
-//         fn new(events: Arc<Mutex<Vec<(String, Value)>>>) -> Self {
-//             let (sender, mut receiver) = mpsc::unbounded_channel();
-//             let events_clone = events.clone();
-//
-//             tokio::spawn(async move {
-//                 while let Some((event_type, body)) = receiver.recv().await {
-//                     events_clone.lock().await.push((event_type, body));
-//                 }
-//             });
-//
-//             Self { events, sender }
-//         }
-//     }
-//
-//     impl BatchManager for MockBatchManager {
-//         fn add_event(&mut self, event_type: &str, body: Value) {
-//             self.sender
-//                 .send((event_type.to_string(), body))
-//                 .expect("Failed to send event");
-//         }
-//
-//         fn send(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-//             Ok(())
-//         }
-//
-//         fn is_empty(&self) -> bool {
-//             futures::executor::block_on(async { self.events.lock().await.is_empty() })
-//         }
-//     }
-//
-//     fn create_test_span_data() -> SpanData {
-//         SpanData {
-//             observation_id: Uuid::new_v4().to_string(),
-//             name: "test_span".to_string(),
-//             start_time: Utc::now().to_rfc3339(),
-//             level: "DEFAULT".to_string(),
-//             metadata: serde_json::Map::new(),
-//             parent_span_id: None,
-//         }
-//     }
-//
-//     const TEST_WAIT_DURATION: Duration = Duration::from_secs(6);
-//
-//     #[tokio::test]
-//     async fn test_span_creation() {
-//         let (fixture, layer) = TestFixture::new().with_test_layer();
-//         let span_id = 1u64;
-//         let span_data = create_test_span_data();
-//
-//         layer.handle_span(span_id, span_data.clone()).await;
-//         tokio::time::sleep(TEST_WAIT_DURATION).await;
-//
-//         let events = fixture.get_events().await;
-//         assert_eq!(events.len(), 2); // trace-create and observation-create
-//
-//         let (event_type, body) = &events[1];
-//         assert_eq!(event_type, "observation-create");
-//         assert_eq!(body["id"], span_data.observation_id);
-//         assert_eq!(body["name"], "test_span");
-//         assert_eq!(body["type"], "SPAN");
-//     }
-//
-//     #[tokio::test]
-//     async fn test_span_close() {
-//         let (fixture, layer) = TestFixture::new().with_test_layer();
-//         let span_id = 1u64;
-//         let span_data = create_test_span_data();
-//
-//         layer.handle_span(span_id, span_data.clone()).await;
-//         layer.handle_span_close(span_id).await;
-//         tokio::time::sleep(TEST_WAIT_DURATION).await;
-//
-//         let events = fixture.get_events().await;
-//         assert_eq!(events.len(), 3); // trace-create, observation-create, observation-update
-//
-//         let (event_type, body) = &events[2];
-//         assert_eq!(event_type, "observation-update");
-//         assert_eq!(body["id"], span_data.observation_id);
-//         assert!(body["endTime"].as_str().is_some());
-//     }
-//
-//     #[tokio::test]
-//     async fn test_record_handling() {
-//         let (fixture, layer) = TestFixture::new().with_test_layer();
-//         let span_id = 1u64;
-//         let span_data = create_test_span_data();
-//
-//         layer.handle_span(span_id, span_data.clone()).await;
-//
-//         let mut metadata = serde_json::Map::new();
-//         metadata.insert("input".to_string(), json!("test input"));
-//         metadata.insert("output".to_string(), json!("test output"));
-//         metadata.insert("custom_field".to_string(), json!("custom value"));
-//
-//         layer.handle_record(span_id, metadata).await;
-//         tokio::time::sleep(TEST_WAIT_DURATION).await;
-//
-//         let events = fixture.get_events().await;
-//         assert_eq!(events.len(), 3); // trace-create, observation-create, span-update
-//
-//         let (event_type, body) = &events[2];
-//         assert_eq!(event_type, "span-update");
-//         assert_eq!(body["input"], "test input");
-//         assert_eq!(body["output"], "test output");
-//         assert_eq!(body["metadata"]["custom_field"], "custom value");
-//     }
-//
-//     #[test]
-//     fn test_flatten_metadata() {
-//         let _fixture = TestFixture::new();
-//         let mut metadata = serde_json::Map::new();
-//         metadata.insert("simple".to_string(), json!("value"));
-//         metadata.insert(
-//             "complex".to_string(),
-//             json!({
-//                 "text": "inner value"
-//             }),
-//         );
-//
-//         let flattened = flatten_metadata(metadata);
-//         assert_eq!(flattened["simple"], "value");
-//         assert_eq!(flattened["complex"], "inner value");
-//     }
-// }

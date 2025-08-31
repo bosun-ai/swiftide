@@ -5050,6 +5050,7 @@ checksum = "154934ea70c58054b556dd430b99a98c2a7ff5309ac9891597e339b5c28f4371"
 dependencies = [
  "console",
  "once_cell",
+ "regex",
  "serde",
  "similar",
 ]
@@ -9688,16 +9689,19 @@ dependencies = [
  "anyhow",
  "chrono",
  "futures",
+ "insta",
  "reqwest 0.12.23",
  "serde",
  "serde_json",
  "serde_repr",
  "serde_with",
+ "test-log",
  "tokio",
  "tracing",
  "tracing-subscriber",
  "url",
  "uuid",
+ "wiremock",
 ]
 
 [[package]]

@@ -1,7 +1,9 @@
 use crate::apis::configuration::Configuration;
 use crate::apis::ingestion_api::ingestion_batch;
 use crate::models::{IngestionBatchRequest, IngestionEvent};
+use anyhow::Result;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::sync::Mutex;
 
@@ -9,7 +11,7 @@ use tokio::sync::Mutex;
 pub struct LangfuseBatchManager {
     config: Arc<Configuration>,
     pub batch: Arc<Mutex<Vec<IngestionEvent>>>,
-    dropped: bool,
+    dropped: Arc<AtomicBool>,
 }
 
 impl LangfuseBatchManager {
@@ -17,13 +19,15 @@ impl LangfuseBatchManager {
         Self {
             config: Arc::new(config),
             batch: Arc::new(Mutex::new(Vec::new())),
-            dropped: false,
+
+            // Locally track if the manager has been dropped to avoid spawning tasks after drop
+            dropped: Arc::new(AtomicBool::new(false)),
         }
     }
 
     pub fn spawn(self) {
-        if self.dropped {
-            tracing::warn!("LangfuseBatchManager has been dropped, not spawning sender task");
+        if self.dropped.load(Ordering::Relaxed) {
+            tracing::trace!("LangfuseBatchManager has been dropped, not spawning sender task");
             return;
         }
 
@@ -43,14 +47,21 @@ impl LangfuseBatchManager {
         });
     }
 
-    pub async fn flush(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        if !self.batch.lock().await.is_empty() {
+    pub async fn flush(&self) -> Result<()> {
+        let lock = self.batch.lock().await;
+        if !lock.is_empty() {
+            drop(lock);
             self.send_async().await?;
         }
         Ok(())
     }
 
-    pub async fn send_async(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn send_async(&self) -> Result<()> {
+        tracing::trace!("Sending batch to Langfuse");
+        if self.dropped.load(Ordering::Relaxed) {
+            tracing::error!("LangfuseBatchManager has been dropped, not sending batch");
+            return Ok(());
+        }
         let mut batch_guard = self.batch.lock().await;
         if batch_guard.is_empty() {
             return Ok(());
@@ -61,6 +72,8 @@ impl LangfuseBatchManager {
             batch,
             metadata: None, // Optional metadata can be added here if needed
         };
+
+        drop(batch_guard); // Release the lock before making the network call
 
         let response = ingestion_batch(&self.config, &payload).await?;
 
@@ -76,12 +89,14 @@ impl LangfuseBatchManager {
         }
 
         if response.successes.is_empty() {
-            tracing::warn!("All items in the batch failed, retrying all items");
-            *batch_guard = std::mem::take(&mut payload.batch);
+            tracing::error!("All items in the batch failed, retrying all items");
+
+            let mut batch_guard = self.batch.lock().await;
+            batch_guard.append(&mut payload.batch);
         }
 
         if response.successes.is_empty() && !response.errors.is_empty() {
-            Err("Langfuse ingestion failed for all items".into())
+            anyhow::bail!("Langfuse ingestion failed for all items");
         } else {
             Ok(())
         }
@@ -94,12 +109,21 @@ impl LangfuseBatchManager {
 
 impl Drop for LangfuseBatchManager {
     fn drop(&mut self) {
-        let mut this = std::mem::take(self);
-        self.dropped = true;
+        if Arc::strong_count(&self.dropped) > 1 {
+            // There are other references to this manager, don't flush yet
+            return;
+        }
+        if self.dropped.swap(true, Ordering::SeqCst) {
+            // Already dropped
+            return;
+        }
+        let this = self.clone();
 
         tokio::task::spawn_blocking(move || {
             let handle = tokio::runtime::Handle::current();
-            handle.block_on(async move { this.flush().await })
+            if let Err(e) = handle.block_on(async move { this.flush().await }) {
+                tracing::error!("Error flushing LangfuseBatchManager on drop: {:?}", e);
+            }
         });
     }
 }
