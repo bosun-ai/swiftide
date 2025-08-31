@@ -1,9 +1,10 @@
 use anyhow::Context as _;
 use chrono::Utc;
+use reqwest::Client;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fmt;
 use std::sync::Arc;
+use std::{env, fmt};
 use tokio::sync::Mutex;
 use tracing::field::{Field, Visit};
 use tracing::{Event, Id, Level, Metadata, Subscriber, span};
@@ -16,6 +17,7 @@ use crate::langfuse_batch_manager::LangfuseBatchManager;
 use crate::models::{
     IngestionEvent, ObservationBody, ObservationLevel, ObservationType, TraceBody,
 };
+use crate::{Configuration, DEFAULT_LANGFUSE_URL};
 
 #[derive(Default, Debug, Clone)]
 pub struct SpanData {
@@ -153,7 +155,57 @@ fn observation_create_from(
     })
 }
 
+impl Default for LangfuseLayer {
+    fn default() -> Self {
+        let public_key = env::var("LANGFUSE_PUBLIC_KEY")
+            .or_else(|_| env::var("LANGFUSE_INIT_PROJECT_PUBLIC_KEY"))
+            .unwrap_or_default();
+
+        let secret_key = env::var("LANGFUSE_SECRET_KEY")
+            .or_else(|_| env::var("LANGFUSE_INIT_PROJECT_SECRET_KEY"))
+            .unwrap_or_default();
+
+        if public_key.is_empty() || secret_key.is_empty() {
+            panic!(
+                "Public key or secret key not set. Please set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY environment variables."
+            );
+        }
+
+        let base_url =
+            env::var("LANGFUSE_URL").unwrap_or_else(|_| DEFAULT_LANGFUSE_URL.to_string());
+
+        let config = Configuration {
+            base_path: base_url.clone(),
+            user_agent: Some("swiftide".to_string()),
+            client: Client::new(),
+            basic_auth: Some((public_key.clone(), Some(secret_key.clone()))),
+            ..Default::default()
+        };
+
+        let batch_manager = LangfuseBatchManager::new(config);
+
+        batch_manager.clone().spawn();
+
+        LangfuseLayer {
+            batch_manager,
+            span_tracker: Arc::new(Mutex::new(SpanTracker::new())),
+        }
+    }
+}
 impl LangfuseLayer {
+    // Builds the layer from an existing configuration
+    pub fn from_config(config: Configuration) -> Self {
+        let batch_manager = LangfuseBatchManager::new(config);
+
+        batch_manager.clone().spawn();
+
+        let span_tracker = Arc::new(Mutex::new(SpanTracker::new()));
+
+        Self {
+            batch_manager,
+            span_tracker,
+        }
+    }
     // Start the layer with a batch manager
     //
     // Note that the batch manager _must_ be started before using this layer.

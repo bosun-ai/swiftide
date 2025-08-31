@@ -1,14 +1,13 @@
 use std::sync::{Arc, Mutex};
 
 use reqwest::Client;
-use serde_json::json;
-use swiftide_langfuse::{Configuration, LangfuseBatchManager, LangfuseLayer, layer_from_config};
+use swiftide_langfuse::{Configuration, LangfuseBatchManager, LangfuseLayer};
 use tokio::task::yield_now;
 use tracing::{Level, info, span};
 use tracing_subscriber::{Registry, layer::SubscriberExt};
 use wiremock::{
     Mock, MockServer, ResponseTemplate,
-    matchers::{body_partial_json, method, path},
+    matchers::{method, path},
 };
 
 #[test_log::test(tokio::test)]
