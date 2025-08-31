@@ -1,0 +1,54 @@
+[package]
+name = "swiftide-langfuse"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+# TODO: Go over these
+serde.workspace = true
+serde_with = { version = "^3.8", default-features = false, features = [
+  "base64",
+  "std",
+  "macros",
+] }
+serde_json.workspace = true
+serde_repr = "^0.1"
+chrono = { workspace = true, features = ["now"] }
+tokio.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+futures = "^0.3"
+url = "^2.5"
+reqwest = { version = "^0.12", default-features = false, features = [
+  "json",
+  "multipart",
+] }
+anyhow.workspace = true
+
+[dev-dependencies]
+wiremock.workspace = true
+test-log.workspace = true
+insta.workspace = true
+
+
+# We need some custom stuff because of the codegen and me being lazy
+[lints.rust]
+dead_code = "warn"
+
+[lints.clippy]
+cargo = { level = "warn", priority = -1 }
+# pedantic = { level = "warn", priority = -1 }
+blocks_in_conditions = "allow"
+must_use_candidate = "allow"
+module_name_repetitions = "allow"
+missing_fields_in_debug = "allow"
+multiple_crate_versions = "allow"
+option_option = "allow"

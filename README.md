@@ -88,6 +88,7 @@ Swiftide is a Rust library for building LLM applications, enabling fast data ing
 - Integrations with popular LLMs and storage providers
 - Ready to use pipeline transformations
 - Build graph like workflows with Tasks
+- [Langfuse](https://langfuse.com) support
 
 <div align="center">
     <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
@@ -194,6 +195,8 @@ agents::Agent::builder()
     .await?;
 ```
 
+Agents loop over LLM calls, tool calls, and lifecycle hooks until a final answer is reached.
+
 _You can find more detailed examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -275,7 +278,7 @@ An indexing stream starts with a Loader that emits Nodes. For instance, with the
 
 You can then slice and dice, augment, and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
 
-Nodes have a path, chunk and metadata. Currently metadata is copied over when chunking and _always_ embedded when using the OpenAIEmbed transformer.
+Nodes are generic over their inner type. This is a transition in progress, but when you BYO, feel free to slice and dice. The inner type can change midway through the pipeline.
 
 - **from_loader** `(impl Loader)` starting point of the stream, creates and emits Nodes
 - **filter_cached** `(impl NodeCache)` filters cached nodes
@@ -287,7 +290,7 @@ Nodes have a path, chunk and metadata. Currently metadata is copied over when ch
 Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `EmbedModel` to do their things.
 
 > [!WARNING]
-> Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like 3.5-turbo. Be aware.
+> Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like gpt-5-nano. Be aware. The `async-openai` crate provides an exmponential backoff strategy. If that is still a problem, there is also a decorator that supports streaming in `swiftide_core/indexing_decorators`.
 
 ### Querying
 

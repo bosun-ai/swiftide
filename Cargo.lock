@@ -5050,6 +5050,7 @@ checksum = "154934ea70c58054b556dd430b99a98c2a7ff5309ac9891597e339b5c28f4371"
 dependencies = [
  "console",
  "once_cell",
+ "regex",
  "serde",
  "similar",
 ]
@@ -9480,6 +9481,7 @@ dependencies = [
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
+ "swiftide-langfuse",
  "swiftide-macros",
  "swiftide-query",
  "swiftide-test-utils",
@@ -9662,6 +9664,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
+ "tracing-futures",
  "tree-sitter",
  "tree-sitter-c",
  "tree-sitter-cpp",
@@ -9675,6 +9678,28 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-solidity",
  "tree-sitter-typescript",
+ "uuid",
+ "wiremock",
+]
+
+[[package]]
+name = "swiftide-langfuse"
+version = "0.30.1"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "futures",
+ "insta",
+ "reqwest 0.12.23",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "serde_with",
+ "test-log",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
  "uuid",
  "wiremock",
 ]
@@ -10728,6 +10753,18 @@ checksum = "b9d12581f227e93f094d3af2ae690a574abb8a2b9b7a96e7cfe9647b2b617678"
 dependencies = [
  "once_cell",
  "valuable",
+]
+
+[[package]]
+name = "tracing-futures"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
+dependencies = [
+ "futures",
+ "futures-task",
+ "pin-project",
+ "tracing",
 ]
 
 [[package]]

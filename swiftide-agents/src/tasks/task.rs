@@ -10,6 +10,8 @@
 //! subject to rapid change. However, do not hesitate to open an issue if you find anything.
 use std::{any::Any, pin::Pin, sync::Arc};
 
+use tracing::Instrument as _;
+
 use crate::tasks::{errors::NodeError, transition::TransitionFn};
 
 use super::{
@@ -115,12 +117,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Errors
     ///
     /// Errors if the task fails
+    #[tracing::instrument(skip(self, input), name = "task.run", err)]
     pub async fn run(&mut self, input: impl Into<Input>) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
 
         self.current_context = Some(Arc::new(input.into()) as Arc<dyn Any + Send + Sync>);
 
-        self.resume().await
+        self.start_task().await
     }
 
     /// Resets the task to the start node
@@ -136,9 +139,15 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Errors
     ///
     /// Errors if the task fails
+    #[tracing::instrument(skip(self), name = "task.resume", err)]
     pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
+        self.start_task().await
+    }
+
+    async fn start_task(&mut self) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
 
+        let mut span = tracing::info_span!("task.step", node = self.current_node);
         loop {
             if self.current_node == 0 {
                 break;
@@ -154,7 +163,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 .ok_or_else(|| TaskError::missing_input(self.current_node))?;
 
             tracing::debug!("Running node {}", self.current_node);
-            let transition_payload = node_transition.evaluate_next(input).await?;
+
+            let span_id = span.id().clone();
+            let transition_payload = node_transition
+                .evaluate_next(input)
+                .instrument(span.or_current())
+                .await?;
 
             match transition_payload {
                 TransitionPayload::Pause => {
@@ -173,6 +187,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     )));
                 }
             }
+            if self.current_node == 0 {
+                tracing::debug!("Task completed at node {}", self.current_node);
+                break;
+            }
+
+            span = tracing::info_span!("task.step", node = self.current_node).or_current();
+            span.follows_from(span_id);
         }
 
         let output = self
