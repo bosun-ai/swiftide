@@ -22,6 +22,7 @@ swiftide-indexing = { path = "../swiftide-indexing", version = "0.30" }
 swiftide-query = { path = "../swiftide-query", version = "0.30" }
 swiftide-agents = { path = "../swiftide-agents", version = "0.30", optional = true }
 swiftide-macros = { path = "../swiftide-macros", version = "0.30", optional = true }
+swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.30", optional = true }
 
 # Re-exports for macros and ease of use
 anyhow.workspace = true
@@ -30,6 +31,7 @@ serde.workspace = true
 serde_json.workspace = true
 
 [features]
+## By default only macros are enabled
 default = ["macros"]
 
 macros = ["dep:swiftide-macros"]
@@ -113,6 +115,8 @@ redb = ["swiftide-integrations/redb"]
 ## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
 duckdb = ["swiftide-integrations/duckdb"]
 
+#! ### Other 
+
 ## MCP tool support for agents (tools only)
 mcp = ["swiftide-agents", "swiftide-agents/mcp"]
 
@@ -125,11 +129,19 @@ test-utils = ["swiftide-core/test-utils"]
 ## Json schema for various types
 json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
 
-#! ### Experimental
-swiftide-agents = ["dep:swiftide-agents"]
-
 ## Estimate token counts using tiktoken
 tiktoken = ["swiftide-integrations/tiktoken"]
+
+#! ### Experimental
+## GenAI agents and tools
+swiftide-agents = ["dep:swiftide-agents"]
+## Langfuse tracing and observability
+langfuse = [
+  "swiftide-integrations/langfuse",
+  "swiftide-agents/langfuse",
+  "dep:swiftide-langfuse",
+]
+
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }

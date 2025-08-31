@@ -1,11 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{pin::Pin, sync::Arc};
 
 use derive_builder::Builder;
+use swiftide_core::chat_completion::Usage;
 
 pub mod chat_completion;
 pub mod simple_prompt;
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Builder, Clone)]
 pub struct Anthropic {
     #[builder(
         default = Arc::new(async_anthropic::Client::default()),
@@ -19,7 +20,30 @@ pub struct Anthropic {
     #[cfg(feature = "metrics")]
     #[builder(default)]
     /// Optional metadata to attach to metrics emitted by this client.
-    metric_metadata: Option<HashMap<String, String>>,
+    metric_metadata: Option<std::collections::HashMap<String, String>>,
+
+    /// A callback function that is called when usage information is available.
+    #[builder(default, setter(custom))]
+    #[allow(clippy::type_complexity)]
+    on_usage: Option<
+        Arc<
+            dyn for<'a> Fn(
+                    &'a Usage,
+                ) -> Pin<
+                    Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
+                > + Send
+                + Sync,
+        >,
+    >,
+}
+
+impl std::fmt::Debug for Anthropic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Anthropic")
+            .field("client", &self.client)
+            .field("default_options", &self.default_options)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Builder)]
@@ -44,6 +68,41 @@ impl Anthropic {
 }
 
 impl AnthropicBuilder {
+    /// Adds a callback function that will be called when usage information is available.
+    pub fn on_usage<F>(&mut self, func: F) -> &mut Self
+    where
+        F: Fn(&Usage) -> anyhow::Result<()> + Send + Sync + 'static,
+    {
+        let func = Arc::new(func);
+        self.on_usage = Some(Some(Arc::new(move |usage: &Usage| {
+            let func = func.clone();
+            Box::pin(async move { func(usage) })
+        })));
+
+        self
+    }
+
+    /// Adds an asynchronous callback function that will be called when usage information is
+    /// available.
+    pub fn on_usage_async<F>(&mut self, func: F) -> &mut Self
+    where
+        F: for<'a> Fn(
+                &'a Usage,
+            ) -> Pin<
+                Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
+            > + Send
+            + Sync
+            + 'static,
+    {
+        let func = Arc::new(func);
+        self.on_usage = Some(Some(Arc::new(move |usage: &Usage| {
+            let func = func.clone();
+            Box::pin(async move { func(usage).await })
+        })));
+
+        self
+    }
+
     /// Sets the client for the `Anthropic` instance.
     ///
     /// See the `async_anthropic::Client` documentation for more information.

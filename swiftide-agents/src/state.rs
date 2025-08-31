@@ -2,6 +2,7 @@
 
 use std::borrow::Cow;
 
+use serde::{Deserialize, Serialize};
 use swiftide_core::chat_completion::ToolCall;
 
 #[derive(Clone, Debug, Default, strum_macros::EnumDiscriminants, strum_macros::EnumIs)]
@@ -25,7 +26,7 @@ impl State {
 ///
 /// `StopReason::Other` has some convenience methods to convert from any `AsRef<str>`
 #[non_exhaustive]
-#[derive(Clone, Debug, strum_macros::EnumIs, PartialEq)]
+#[derive(Clone, Debug, strum_macros::EnumIs, PartialEq, Serialize, Deserialize)]
 pub enum StopReason {
     /// A tool called stop
     RequestedByTool(ToolCall, Option<Cow<'static, str>>),
