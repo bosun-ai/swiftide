@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use swiftide_core::{EmbeddingModel, Embeddings, chat_completion::errors::LanguageModelError};
+use swiftide_core::{
+    EmbeddingModel, Embeddings,
+    chat_completion::{Usage, errors::LanguageModelError},
+};
 
 use super::GenericOpenAI;
 use crate::openai::openai_error_to_language_model_error;
@@ -45,6 +48,16 @@ impl<
                 response.usage.total_tokens.into(),
                 self.metric_metadata.as_ref(),
             );
+        }
+
+        if let Some(callback) = self.on_usage.as_ref() {
+            let usage = Usage {
+                prompt_tokens: response.usage.prompt_tokens,
+                completion_tokens: 0,
+                total_tokens: response.usage.total_tokens,
+            };
+
+            callback(&usage).await?;
         }
 
         let num_embeddings = response.data.len();

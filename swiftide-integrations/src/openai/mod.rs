@@ -8,7 +8,9 @@ use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
+use std::pin::Pin;
 use std::sync::Arc;
+use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
@@ -65,7 +67,7 @@ use swiftide_core::EstimateTokens;
 pub type OpenAI = GenericOpenAI<OpenAIConfig>;
 pub type OpenAIBuilder = GenericOpenAIBuilder<OpenAIConfig>;
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Builder, Clone)]
 #[builder(setter(into, strip_option))]
 /// Generic client for `OpenAI` APIs.
 pub struct GenericOpenAI<
@@ -97,6 +99,32 @@ pub struct GenericOpenAI<
     #[builder(default)]
     /// Optional metadata to attach to metrics emitted by this client.
     metric_metadata: Option<std::collections::HashMap<String, String>>,
+
+    /// A callback function that is called when usage information is available.
+    #[builder(default, setter(custom))]
+    #[allow(clippy::type_complexity)]
+    on_usage: Option<
+        Arc<
+            dyn for<'a> Fn(
+                    &'a Usage,
+                ) -> Pin<
+                    Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
+                > + Send
+                + Sync,
+        >,
+    >,
+}
+
+impl<C: async_openai::config::Config + Default + std::fmt::Debug> std::fmt::Debug
+    for GenericOpenAI<C>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GenericOpenAI")
+            .field("client", &self.client)
+            .field("default_options", &self.default_options)
+            .field("stream_full", &self.stream_full)
+            .finish_non_exhaustive()
+    }
 }
 
 /// The `Options` struct holds configuration options for the `OpenAI` client.
@@ -246,6 +274,40 @@ impl OpenAI {
 impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     GenericOpenAIBuilder<C>
 {
+    /// Adds a callback function that will be called when usage information is available.
+    pub fn on_usage<F>(&mut self, func: F) -> &mut Self
+    where
+        F: Fn(&Usage) -> anyhow::Result<()> + Send + Sync + 'static,
+    {
+        let func = Arc::new(func);
+        self.on_usage = Some(Some(Arc::new(move |usage: &Usage| {
+            let func = func.clone();
+            Box::pin(async move { func(usage) })
+        })));
+
+        self
+    }
+
+    /// Adds an asynchronous callback function that will be called when usage information is
+    /// available.
+    pub fn on_usage_async<F>(&mut self, func: F) -> &mut Self
+    where
+        F: for<'a> Fn(
+                &'a Usage,
+            ) -> Pin<
+                Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
+            > + Send
+            + Sync
+            + 'static,
+    {
+        let func = Arc::new(func);
+        self.on_usage = Some(Some(Arc::new(move |usage: &Usage| {
+            let func = func.clone();
+            Box::pin(async move { func(usage).await })
+        })));
+
+        self
+    }
     /// Sets the `OpenAI` client for the `OpenAI` instance.
     ///
     /// # Parameters
