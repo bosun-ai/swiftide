@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756648773833,
+  "lastUpdate": 1756650702251,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26393,6 +26393,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258527,
             "range": "± 1978",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ac7cd2209e1792b693acbde251a1aa756bb35541",
+          "message": "feat(indexing)!: Prepare for multi modal and node transformations with generic indexing (#899)\n\nBeing generic over the indexed type allows some cool stuff, like:\n\n- Multimodal indexing\n- Indexing into different storage kinds (graphs <3)\n- Reading pdfs as binary and then composing transformations\n\n... The list goes on\n\nBasicilly this will allow you to do stuff like:\n\n```rust\nPipeline::from_loader(file_loader)\n.then(transform_into_structured)\n\n// and\n\nPipeline::from_image_loader(image_loader) // Or make file loader generic 🤷 \n.then(use_llm_to_extract_into_text) // Image to String\n.persist(qdrant) // Store the text results\n```\n\nThis PR does not:\n- Implement generics for all migrations\n- Implement generics for closures in pipelines (all on String now)\n\nBREAKING CHANGE: Indexing pipelines are now generic over their inner\ntype. This is a major change that enables major cool stuff in the\nfuture. Most of Swiftide still runs on Node<String>, and will be\nmigrated when needed/appropriate. A `TextNode` alias is provided and\nmost indexing traits now take the node's inner generic parameter as\nInput/Output associated types.",
+          "timestamp": "2025-08-31T16:23:11+02:00",
+          "tree_id": "8e968f67cb0fedc8aed06bac1705341d8a2f7cfb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ac7cd2209e1792b693acbde251a1aa756bb35541"
+        },
+        "date": 1756650700626,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 793336,
+            "range": "± 14228",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257692,
+            "range": "± 2582",
             "unit": "ns/iter"
           }
         ]
