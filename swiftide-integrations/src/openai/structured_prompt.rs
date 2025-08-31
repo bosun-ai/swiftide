@@ -13,7 +13,7 @@ use schemars::Schema;
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
-    DynStructuredPrompt, StructuredPrompt,
+    DynStructuredPrompt,
     chat_completion::{Usage, errors::LanguageModelError},
     prompt::Prompt,
     util::debug_long_utf8,
@@ -71,6 +71,8 @@ impl<
                 strict: Some(true),
             },
         };
+
+        dbg!(&response_format);
 
         // Build the request to be sent to the OpenAI API.
         let request = self
@@ -160,11 +162,12 @@ impl<
 #[cfg(test)]
 mod tests {
     use crate::openai::{self, OpenAI};
+    use swiftide_core::StructuredPrompt;
 
     use super::*;
     use async_openai::Client;
     use async_openai::config::OpenAIConfig;
-    use schemars::JsonSchema;
+    use schemars::{JsonSchema, schema_for};
     use serde::{Deserialize, Serialize};
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
@@ -191,7 +194,7 @@ mod tests {
         let body = serde_json::json!({
           "id": "chatcmpl-B9MBs8CjcvOU2jLn4n570S5qMJKcT",
           "object": "chat.completion",
-          "created": 1741569952,
+          "created": 123,
           "model": "gpt-4.1-2025-04-14",
           "choices": [
             {
@@ -264,7 +267,7 @@ mod tests {
     async fn test_structured_prompt_with_wiremock_as_box() {
         let (_guard, ai) = setup_client().await;
         // Call structured_prompt
-        let ai: Box<dyn DynStructuredPrompt + Send + Sync> = Box::new(ai);
+        let ai: Box<dyn DynStructuredPrompt> = Box::new(ai);
         let result: serde_json::Value = ai
             .structured_prompt_dyn("test".into(), schema_for!(SimpleOutput))
             .await
