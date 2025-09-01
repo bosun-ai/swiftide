@@ -187,12 +187,6 @@ impl<
             })
             .to_owned();
 
-        if self.on_usage.is_some() || cfg!(feature = "metrics") {
-            openai_request.stream_options(ChatCompletionStreamOptions {
-                include_usage: true,
-            });
-        }
-
         if !request.tools_spec.is_empty() {
             openai_request
                 .tools(
