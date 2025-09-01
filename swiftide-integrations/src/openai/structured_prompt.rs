@@ -24,8 +24,8 @@ use crate::openai::openai_error_to_language_model_error;
 use super::GenericOpenAI;
 use anyhow::{Context as _, Result};
 
-/// The `StructuredPrompt` trait defines a method for sending a prompt to an AI model and receiving a
-/// response.
+/// The `StructuredPrompt` trait defines a method for sending a prompt to an AI model and receiving
+/// a response.
 #[async_trait]
 impl<
     C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
