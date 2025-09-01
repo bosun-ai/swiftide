@@ -41,7 +41,7 @@ impl<
     #[tracing::instrument(skip_all, err)]
     #[cfg_attr(
         feature = "langfuse",
-        tracing::instrument(skip_all, err, langfuse.type = "GENERATION")
+        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
     )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         // Retrieve the model from the default options, returning an error if not set.
