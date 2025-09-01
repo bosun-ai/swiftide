@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756650702251,
+  "lastUpdate": 1756713304732,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26447,6 +26447,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257692,
             "range": "± 2582",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "e389c8ba72435ba1c1af109934b2b580fb6be7c1",
+          "message": "fix(langfuse): Set type field correctly on `SimplePrompt`",
+          "timestamp": "2025-09-01T09:45:41+02:00",
+          "tree_id": "1d193be2ad8127a69ef458e70b1959fe15221874",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e389c8ba72435ba1c1af109934b2b580fb6be7c1"
+        },
+        "date": 1756713302319,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 788107,
+            "range": "± 15616",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258781,
+            "range": "± 2021",
             "unit": "ns/iter"
           }
         ]
