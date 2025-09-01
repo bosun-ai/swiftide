@@ -47,7 +47,7 @@ impl<
     #[tracing::instrument(skip_all, err)]
     #[cfg_attr(
         feature = "langfuse",
-        tracing::instrument(skip_all, err, langfuse.type = "GENERATION")
+        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
     )]
     async fn structured_prompt_dyn(
         &self,
@@ -71,8 +71,6 @@ impl<
                 strict: Some(true),
             },
         };
-
-        dbg!(&response_format);
 
         // Build the request to be sent to the OpenAI API.
         let request = self
