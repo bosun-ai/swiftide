@@ -32,11 +32,15 @@ reqwest = { version = "^0.12", default-features = false, features = [
   "multipart",
 ] }
 anyhow.workspace = true
+async-trait.workspace = true
+dyn-clone.workspace = true
+swiftide-core = { path = "../swiftide-core" }
 
 [dev-dependencies]
 wiremock.workspace = true
 test-log.workspace = true
 insta.workspace = true
+tracing-appender = "0.2.3"
 
 
 # We need some custom stuff because of the codegen and me being lazy

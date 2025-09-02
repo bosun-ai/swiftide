@@ -3,6 +3,7 @@ use chrono::Utc;
 use reqwest::Client;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::str::FromStr as _;
 use std::sync::Arc;
 use std::{env, fmt};
 use tokio::sync::Mutex;
@@ -13,7 +14,7 @@ use tracing_subscriber::layer::Context;
 use tracing_subscriber::registry::LookupSpan;
 use uuid::Uuid;
 
-use crate::langfuse_batch_manager::LangfuseBatchManager;
+use crate::langfuse_batch_manager::{BatchManagerTrait, LangfuseBatchManager};
 use crate::models::{
     IngestionEvent, ObservationBody, ObservationLevel, ObservationType, TraceBody,
 };
@@ -34,9 +35,21 @@ impl SpanData {
     where
         T: serde::de::DeserializeOwned,
     {
-        self.metadata
-            .get(key)
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
+        if let Some(value) = self.metadata.get(key) {
+            let parsed = serde_json::from_value(value.clone());
+            if let Err(e) = &parsed {
+                tracing::warn!(
+                    error.msg = %e,
+                    error.type = %std::any::type_name_of_val(e),
+                    key = %key,
+                    value = %value,
+                    "[Langfuse] Failed to parse metadata field"
+                );
+            }
+
+            return parsed.ok();
+        }
+        None
     }
 
     /// Returns metadata with all keys that do not start with "langfuse."
@@ -108,14 +121,14 @@ impl SpanTracker {
 
 #[derive(Clone)]
 pub struct LangfuseLayer {
-    pub batch_manager: LangfuseBatchManager,
+    pub batch_manager: Box<dyn BatchManagerTrait>,
     pub span_tracker: Arc<Mutex<SpanTracker>>,
 }
 
 fn observation_create_from(
     trace_id: &str,
     observation_id: &str,
-    span_data: &SpanData,
+    span_data: &mut SpanData,
     parent_observation_id: Option<String>,
 ) -> IngestionEvent {
     // Expect all langfuse values to be prefixed by "langfuse."
@@ -129,6 +142,7 @@ fn observation_create_from(
         .unwrap_or(span_data.start_time.clone());
 
     let name = span_data.get("otel.name").unwrap_or(span_data.name.clone());
+    let swiftide_usage = span_data.get::<swiftide_core::chat_completion::Usage>("langfuse.usage");
 
     IngestionEvent::new_observation_create(ObservationBody {
         id: Some(Some(observation_id.to_string())),
@@ -146,7 +160,7 @@ fn observation_create_from(
         input: Some(span_data.get("langfuse.input")),
         version: Some(span_data.get("langfuse.version")),
         output: Some(span_data.get("langfuse.output")),
-        usage: span_data.get("langfuse.usage").map(Box::new),
+        usage: swiftide_usage.map(|u| Box::new(u.into())),
         status_message: Some(span_data.get("langfuse.status_message")),
         environment: Some(span_data.get("langfuse.environment")),
 
@@ -187,7 +201,7 @@ impl Default for LangfuseLayer {
         batch_manager.clone().spawn();
 
         LangfuseLayer {
-            batch_manager,
+            batch_manager: batch_manager.boxed(),
             span_tracker: Arc::new(Mutex::new(SpanTracker::new())),
         }
     }
@@ -202,7 +216,7 @@ impl LangfuseLayer {
         let span_tracker = Arc::new(Mutex::new(SpanTracker::new()));
 
         Self {
-            batch_manager,
+            batch_manager: batch_manager.boxed(),
             span_tracker,
         }
     }
@@ -213,7 +227,7 @@ impl LangfuseLayer {
         let span_tracker = Arc::new(Mutex::new(SpanTracker::new()));
 
         Self {
-            batch_manager: batch_manager.clone(),
+            batch_manager: batch_manager.boxed(),
             span_tracker,
         }
     }
@@ -226,7 +240,7 @@ impl LangfuseLayer {
         Ok(())
     }
 
-    pub async fn handle_span(&self, span_id: u64, span_data: SpanData) {
+    pub async fn handle_span(&self, span_id: u64, mut span_data: SpanData) {
         let observation_id = span_data.observation_id.clone();
 
         let langfuse_ty = span_data
@@ -249,7 +263,7 @@ impl LangfuseLayer {
         let trace_id = self.ensure_trace_id().await;
 
         // Create the span observation
-        let event = observation_create_from(&trace_id, &observation_id, &span_data, parent_id);
+        let event = observation_create_from(&trace_id, &observation_id, &mut span_data, parent_id);
 
         self.batch_manager.add_event(event).await;
     }
@@ -304,6 +318,8 @@ impl LangfuseLayer {
         let trace_id = self.ensure_trace_id().await;
         let metadata = SpanData::from(metadata);
         let remaining = metadata.remaining_metadata().map(Into::into);
+        let swiftide_usage =
+            metadata.get::<swiftide_core::chat_completion::Usage>("langfuse.usage");
         let event = IngestionEvent::new_observation_update(ObservationBody {
             id: Some(Some(observation_id.clone())),
             trace_id: Some(Some(trace_id.clone())),
@@ -314,7 +330,7 @@ impl LangfuseLayer {
             model: Some(metadata.get("langfuse.model")),
             model_parameters: Some(metadata.get("langfuse.model_parameters")),
             version: Some(metadata.get("langfuse.version")),
-            usage: metadata.get("langfuse.usage").map(Box::new),
+            usage: swiftide_usage.map(|u| Box::new(u.into())),
             status_message: Some(metadata.get("langfuse.status_message")),
             environment: Some(metadata.get("langfuse.environment")),
             ..Default::default()
@@ -417,9 +433,118 @@ impl Visit for JsonVisitor {
     record_field!(record_i64, i64);
     record_field!(record_u64, u64);
     record_field!(record_bool, bool);
-    record_field!(record_str, &str);
 
     fn record_debug(&mut self, field: &Field, value: &dyn fmt::Debug) {
         self.insert_value(field, Value::String(format!("{value:?}")));
+    }
+
+    fn record_str(&mut self, field: &Field, value: &str) {
+        let value = Value::from_str(value).unwrap_or_else(|_| Value::String(value.to_string()));
+        self.insert_value(field, value);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::sync::Mutex;
+    use tracing::{Level, subscriber::set_global_default};
+    use tracing_subscriber::prelude::*;
+
+    #[derive(Clone)]
+    struct InMemoryBatchManager {
+        pub events: Arc<Mutex<Vec<crate::models::ingestion_event::IngestionEvent>>>,
+    }
+    #[async_trait::async_trait]
+    impl crate::langfuse_batch_manager::BatchManagerTrait for InMemoryBatchManager {
+        async fn add_event(&self, event: crate::models::ingestion_event::IngestionEvent) {
+            self.events.lock().await.push(event);
+        }
+        async fn flush(&self) -> anyhow::Result<()> {
+            Ok(())
+        }
+        fn boxed(&self) -> Box<dyn crate::langfuse_batch_manager::BatchManagerTrait + Send + Sync> {
+            Box::new(Self {
+                events: Arc::clone(&self.events),
+            })
+        }
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_generation_span_fields_are_correct_and_single_observation_created() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let batch_mgr = InMemoryBatchManager {
+            events: Arc::clone(&events),
+        };
+        let langfuse_layer = LangfuseLayer {
+            batch_manager: batch_mgr.boxed(),
+            span_tracker: Arc::new(Mutex::new(SpanTracker::new())),
+        };
+
+        let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::sink());
+        let subscriber = tracing_subscriber::Registry::default()
+            .with(langfuse_layer)
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .with_writer(non_blocking)
+                    .with_test_writer(),
+            );
+
+        set_global_default(subscriber).unwrap();
+
+        let usage = swiftide_core::chat_completion::Usage {
+            prompt_tokens: 5,
+            completion_tokens: 9,
+            total_tokens: 14,
+        };
+
+        // Start a GENERATION span, record fields, and drop/end.
+        {
+            let span = tracing::span!(
+                Level::INFO,
+                "prompt",
+                langfuse.type = "GENERATION",
+                langfuse.input = "sample-in",
+                langfuse.output = "sample-out",
+                langfuse.usage = serde_json::to_string(&usage).unwrap()
+
+            );
+            let _enter = span.enter();
+            // Span ends here (dropped)
+        }
+
+        // Allow async processing to complete
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
+        let events = events.lock().await;
+        // There should be one observation create (and likely one trace, but we check for GENERATION only)
+        let generation_events: Vec<_> = events
+            .iter()
+            .filter(|e| {
+                matches!(
+                    e,
+                    crate::models::ingestion_event::IngestionEvent::ObservationCreate(_)
+                )
+            })
+            .collect();
+
+        assert_eq!(generation_events.len(), 1);
+
+        if let crate::models::ingestion_event::IngestionEvent::ObservationCreate(obs) =
+            &generation_events[0]
+        {
+            let body = &obs.body;
+            assert_eq!(body.r#type, crate::models::ObservationType::Generation);
+            assert_eq!(body.input, Some(Some("sample-in".into())));
+            assert_eq!(body.output, Some(Some("sample-out".into())));
+            assert_eq!(
+                body.usage
+                    .as_ref()
+                    .map(|b| serde_json::to_value(&**b).unwrap()),
+                Some(serde_json::json!({"input": 5, "output": 9, "total": 14, "unit": "TOKENS"}))
+            );
+        } else {
+            panic!("Did not capture a GENERATION observation as expected");
+        }
     }
 }
