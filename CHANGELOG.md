@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.31.0](https://github.com/bosun-ai/swiftide/compare/v0.30.1...v0.31.0) - 2025-09-02
+
+### New features
+
+- [708ebe4](https://github.com/bosun-ai/swiftide/commit/708ebe436b4d2e9456723cfc95557071f2c636c9) *(agents)*  Implement From<SystemPrompt> for SystemPromptBuilder
+
+- [ac7cd22](https://github.com/bosun-ai/swiftide/commit/ac7cd2209e1792b693acbde251a1aa756bb35541) *(indexing)*  [**breaking**] Prepare for multi modal and node transformations with generic indexing ([#899](https://github.com/bosun-ai/swiftide/pull/899))
+
+**BREAKING CHANGE**: Indexing pipelines are now generic over their inner
+type. This is a major change that enables major cool stuff in the
+future. Most of Swiftide still runs on Node<String>, and will be
+migrated when needed/appropriate. A `TextNode` alias is provided and
+most indexing traits now take the node's inner generic parameter as
+Input/Output associated types.
+
+- [4e20804](https://github.com/bosun-ai/swiftide/commit/4e20804cc78a90e61a1c816abe5810b2a34007af) *(integrations)*  More convenient usage reporting via callback ([#897](https://github.com/bosun-ai/swiftide/pull/897))
+
+- [5923532](https://github.com/bosun-ai/swiftide/commit/592353259018b39d4ce43b4a15a9dea1aa1d2904) *(integrations/openai, core)*  Add `StructuredPrompt` and implement for OpenAI ([#912](https://github.com/bosun-ai/swiftide/pull/912))
+
+- [d2681d5](https://github.com/bosun-ai/swiftide/commit/d2681d53ce235439885ace40ac08a6d4a058259a)  Integrate with Langfuse via tracing and make traces consistent and pretty ([#907](https://github.com/bosun-ai/swiftide/pull/907))
+
+- [b3f18cd](https://github.com/bosun-ai/swiftide/commit/b3f18cd00f9019496274142aa89342da115c6843)  Add convenience helpers to get ToolOutput values as ref
+
+### Bug fixes
+
+- [6702314](https://github.com/bosun-ai/swiftide/commit/6702314eb6d937353324ce601f2a35c2a13d4cc1) *(langfuse)*  Ensure all data is on the right generation span ([#913](https://github.com/bosun-ai/swiftide/pull/913))
+
+- [e389c8b](https://github.com/bosun-ai/swiftide/commit/e389c8ba72435ba1c1af109934b2b580fb6be7c1) *(langfuse)*  Set type field correctly on `SimplePrompt`
+
+### Miscellaneous
+
+- [478d583](https://github.com/bosun-ai/swiftide/commit/478d5830fa194b880595b2c2ef9ef409cc5b34c4) *(openai)*  Remove double `include_usage` in complete_stream
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.30.1...0.31.0
+
+
+
 ## [0.30.1](https://github.com/bosun-ai/swiftide/compare/v0.30.0...v0.30.1) - 2025-08-19
 
 ### Bug fixes
