@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756736485007,
+  "lastUpdate": 1756800118019,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26555,6 +26555,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257439,
             "range": "± 1096",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "708ebe436b4d2e9456723cfc95557071f2c636c9",
+          "message": "feat(agents): Implement From<SystemPrompt> for SystemPromptBuilder",
+          "timestamp": "2025-09-02T09:52:58+02:00",
+          "tree_id": "d28be6e8d6072f82e828f115ebe283acaee00d32",
+          "url": "https://github.com/bosun-ai/swiftide/commit/708ebe436b4d2e9456723cfc95557071f2c636c9"
+        },
+        "date": 1756800116222,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 805558,
+            "range": "± 15758",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257830,
+            "range": "± 3679",
             "unit": "ns/iter"
           }
         ]
