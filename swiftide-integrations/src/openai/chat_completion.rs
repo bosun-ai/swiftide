@@ -31,7 +31,7 @@ impl<
     C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
 > ChatCompletion for GenericOpenAI<C>
 {
-    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
     #[cfg_attr(
         feature = "langfuse",
         tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))

@@ -80,3 +80,17 @@ impl Usage {
         }
     }
 }
+
+impl From<swiftide_core::chat_completion::Usage> for Usage {
+    fn from(value: swiftide_core::chat_completion::Usage) -> Self {
+        Usage {
+            input: Some(Some(value.prompt_tokens as i32)),
+            output: Some(Some(value.completion_tokens as i32)),
+            total: Some(Some(value.total_tokens as i32)),
+            unit: Some(models::ModelUsageUnit::Tokens),
+            input_cost: None,
+            output_cost: None,
+            total_cost: None,
+        }
+    }
+}

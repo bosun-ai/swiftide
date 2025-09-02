@@ -2,6 +2,8 @@ use crate::apis::configuration::Configuration;
 use crate::apis::ingestion_api::ingestion_batch;
 use crate::models::{IngestionBatchRequest, IngestionEvent};
 use anyhow::Result;
+use async_trait::async_trait;
+use dyn_clone::DynClone;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -13,6 +15,15 @@ pub struct LangfuseBatchManager {
     pub batch: Arc<Mutex<Vec<IngestionEvent>>>,
     dropped: Arc<AtomicBool>,
 }
+
+#[async_trait]
+pub trait BatchManagerTrait: Send + Sync + DynClone {
+    async fn add_event(&self, event: IngestionEvent);
+    async fn flush(&self) -> anyhow::Result<()>;
+    fn boxed(&self) -> Box<dyn BatchManagerTrait + Send + Sync>;
+}
+
+dyn_clone::clone_trait_object!(BatchManagerTrait);
 
 impl LangfuseBatchManager {
     pub fn new(config: Configuration) -> Self {
@@ -104,6 +115,21 @@ impl LangfuseBatchManager {
 
     pub async fn add_event(&self, event: IngestionEvent) {
         self.batch.lock().await.push(event);
+    }
+}
+
+#[async_trait]
+impl BatchManagerTrait for LangfuseBatchManager {
+    async fn add_event(&self, event: IngestionEvent) {
+        self.add_event(event).await;
+    }
+
+    async fn flush(&self) -> anyhow::Result<()> {
+        self.flush().await
+    }
+
+    fn boxed(&self) -> Box<dyn BatchManagerTrait + Send + Sync> {
+        Box::new(self.clone())
     }
 }
 
