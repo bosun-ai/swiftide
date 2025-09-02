@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756817833920,
+  "lastUpdate": 1756817834995,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26663,6 +26663,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259003,
             "range": "± 2885",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6702314eb6d937353324ce601f2a35c2a13d4cc1",
+          "message": "fix(langfuse): Ensure all data is on the right generation span (#913)",
+          "timestamp": "2025-09-02T14:48:29+02:00",
+          "tree_id": "cc9d34b99cc977a27ae975be39b9f34798207745",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6702314eb6d937353324ce601f2a35c2a13d4cc1"
+        },
+        "date": 1756817832803,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796070,
+            "range": "± 30408",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259619,
+            "range": "± 3906",
             "unit": "ns/iter"
           }
         ]
