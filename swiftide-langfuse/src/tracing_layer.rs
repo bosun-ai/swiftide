@@ -517,7 +517,8 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
         let events = events.lock().await;
-        // There should be one observation create (and likely one trace, but we check for GENERATION only)
+        // There should be one observation create (and likely one trace, but we check for GENERATION
+        // only)
         let generation_events: Vec<_> = events
             .iter()
             .filter(|e| {
