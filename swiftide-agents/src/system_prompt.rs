@@ -63,6 +63,17 @@ impl From<&'static str> for SystemPrompt {
     }
 }
 
+impl From<SystemPrompt> for SystemPromptBuilder {
+    fn from(val: SystemPrompt) -> Self {
+        SystemPromptBuilder {
+            role: Some(val.role),
+            guidelines: Some(val.guidelines),
+            constraints: Some(val.constraints),
+            template: Some(val.template),
+        }
+    }
+}
+
 impl From<Prompt> for SystemPrompt {
     fn from(prompt: Prompt) -> Self {
         SystemPrompt {
@@ -166,5 +177,30 @@ mod tests {
         let rendered = prompt.render().unwrap();
 
         insta::assert_snapshot!(rendered);
+    }
+
+    #[tokio::test]
+    async fn test_system_prompt_to_builder() {
+        let sp = SystemPrompt {
+            role: Some("Assistant".to_string()),
+            guidelines: vec!["Be concise".to_string()],
+            constraints: vec!["No personal opinions".to_string()],
+            template: "Hello, {{role}}! Guidelines: {{guidelines}}, Constraints: {{constraints}}"
+                .into(),
+        };
+
+        let builder = SystemPromptBuilder::from(sp.clone());
+
+        assert_eq!(builder.role, Some(Some("Assistant".to_string())));
+        assert_eq!(builder.guidelines, Some(vec!["Be concise".to_string()]));
+        assert_eq!(
+            builder.constraints,
+            Some(vec!["No personal opinions".to_string()])
+        );
+        // For template, compare the rendered string
+        assert_eq!(
+            builder.template.as_ref().unwrap().render().unwrap(),
+            sp.template.render().unwrap()
+        );
     }
 }
