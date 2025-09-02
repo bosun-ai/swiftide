@@ -31,6 +31,7 @@ tera = { workspace = true }
 uuid = { workspace = true }
 metrics = { workspace = true, optional = true }
 tracing-futures = { version = "0.2.5", features = ["futures-03"] }
+schemars.workspace = true
 
 # Integrations
 async-openai = { workspace = true, optional = true }

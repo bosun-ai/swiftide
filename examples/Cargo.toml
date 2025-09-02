@@ -47,6 +47,7 @@ rmcp = { workspace = true, features = [
   "server",
 ] }
 metrics = { workspace = true }
+schemars.workspace = true
 
 
 [[example]]
@@ -155,3 +156,7 @@ path = "usage_metrics.rs"
 [[example]]
 name = "tasks"
 path = "tasks.rs"
+
+[[example]]
+name = "structured-prompt"
+path = "structured_prompt.rs"

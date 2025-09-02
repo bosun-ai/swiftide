@@ -21,6 +21,8 @@ pub use dyn_clone::DynClone;
 #[cfg(feature = "test-utils")]
 #[doc(hidden)]
 use mockall::{mock, predicate::str};
+use schemars::{JsonSchema, schema_for};
+use serde::de::DeserializeOwned;
 
 #[async_trait]
 /// Transforms single nodes into single nodes
@@ -831,3 +833,56 @@ impl WithIndexingDefaults for MockTransformer {}
 // //
 #[cfg(feature = "test-utils")]
 impl WithBatchIndexingDefaults for MockBatchableTransformer {}
+
+#[async_trait]
+/// Given a string prompt, queries an LLM to return structured data
+pub trait StructuredPrompt: Debug + Send + Sync + DynClone {
+    async fn structured_prompt<T: serde::Serialize + DeserializeOwned + JsonSchema>(
+        &self,
+        prompt: Prompt,
+    ) -> Result<T, LanguageModelError>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+/// Helper trait object to call structured prompt with dynamic dispatch
+///
+/// Internally Swiftide only implements this trait, as implementing `DynStructuredPrompt` gives
+/// `StructuredPrompt` for free
+#[async_trait]
+pub trait DynStructuredPrompt: Debug + Send + Sync + DynClone {
+    async fn structured_prompt_dyn(
+        &self,
+        prompt: Prompt,
+        schema: schemars::Schema,
+    ) -> Result<serde_json::Value, LanguageModelError>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+dyn_clone::clone_trait_object!(DynStructuredPrompt);
+
+#[async_trait]
+impl<C> StructuredPrompt for C
+where
+    C: DynStructuredPrompt + Debug + Send + Sync + DynClone,
+{
+    async fn structured_prompt<T: serde::Serialize + DeserializeOwned + JsonSchema>(
+        &self,
+        prompt: Prompt,
+    ) -> Result<T, LanguageModelError> {
+        // Call with T = serde_json::Value
+        let schema = schema_for!(T);
+        let val = self.structured_prompt_dyn(prompt, schema).await?;
+
+        let parsed = serde_json::from_value(val).map_err(LanguageModelError::permanent)?;
+
+        Ok(parsed)
+    }
+}

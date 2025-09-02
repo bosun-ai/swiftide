@@ -16,6 +16,7 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 mod chat_completion;
 mod embed;
 mod simple_prompt;
+mod structured_prompt;
 
 // expose type aliases to simplify downstream use of the open ai builder invocations
 pub use async_openai::config::AzureConfig;

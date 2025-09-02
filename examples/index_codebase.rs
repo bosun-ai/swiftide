@@ -36,6 +36,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .default_prompt_model("gpt-3.5-turbo")
         .build()?;
 
+    // Optionally use the backoff decorator to handle rate limits and transient errors.
+    //
+    // This works with streaming as well, async openai does not support this properly yet.
     let openai_client = LanguageModelWithBackOff::new(openai_client, Default::default());
 
     let redis_url = std::env::var("REDIS_URL")
