@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756800118019,
+  "lastUpdate": 1756817833920,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26609,6 +26609,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257830,
             "range": "± 3679",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "592353259018b39d4ce43b4a15a9dea1aa1d2904",
+          "message": "feat(integrations/openai, core): Add `StructuredPrompt` and implement for OpenAI (#912)\n\nWith the indexing now being generic, we can do cool stuff like using\nstructured prompts for classification, graphs, etc.",
+          "timestamp": "2025-09-02T14:48:43+02:00",
+          "tree_id": "3e8eafff898ed9b6797188f8cd487d1e263cea35",
+          "url": "https://github.com/bosun-ai/swiftide/commit/592353259018b39d4ce43b4a15a9dea1aa1d2904"
+        },
+        "date": 1756817832722,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 788750,
+            "range": "± 15893",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259003,
+            "range": "± 2885",
             "unit": "ns/iter"
           }
         ]
