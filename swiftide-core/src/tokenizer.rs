@@ -11,10 +11,26 @@ pub trait EstimateTokens {
     async fn estimate(&self, value: impl Estimatable) -> Result<usize>;
 }
 
-/// A value that can be estimated for the number of tokens it contains.
+/// A rough estimater when speed matters more than accuracy.
+///
+/// Devides the number of characters by 4 as recommended by `OpenAI`.
+pub struct CharEstimator;
+
 #[async_trait]
+impl EstimateTokens for CharEstimator {
+    async fn estimate(&self, value: impl Estimatable) -> Result<usize> {
+        let s = value.for_estimate()?;
+        Ok(s.iter().map(|s| s.chars().count()).sum::<usize>() / 4 + value.additional_tokens())
+    }
+}
+
+/// A value that can be estimated for the number of tokens it contains.
+///
+/// # Errors
+///
+/// Errors if the value cannot be presented for estimation.
 pub trait Estimatable: Send + Sync {
-    async fn for_estimate(&self) -> Result<Cow<'_, str>>;
+    fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>>;
 
     /// Optionally return extra tokens that should be added to the estimate.
     fn additional_tokens(&self) -> usize {
@@ -22,63 +38,59 @@ pub trait Estimatable: Send + Sync {
     }
 }
 
-#[async_trait]
 impl Estimatable for &str {
-    async fn for_estimate(&self) -> Result<Cow<'_, str>> {
-        Ok(Cow::Borrowed(self))
+    fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
+        Ok(vec![Cow::Borrowed(self)])
     }
 }
 
-#[async_trait]
 impl Estimatable for String {
-    async fn for_estimate(&self) -> Result<Cow<'_, str>> {
-        Ok(Cow::Borrowed(self.as_str()))
+    fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
+        Ok(vec![Cow::Borrowed(self.as_str())])
     }
 }
 
-#[async_trait]
 impl Estimatable for &Prompt {
-    async fn for_estimate(&self) -> Result<Cow<'_, str>> {
+    fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
         let rendered = self.render()?;
-        Ok(Cow::Owned(rendered))
+        Ok(vec![Cow::Owned(rendered)])
     }
 }
 
-#[async_trait]
 impl Estimatable for &ChatMessage {
-    async fn for_estimate(&self) -> Result<Cow<'_, str>> {
+    fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
         Ok(match self {
             ChatMessage::User(msg) | ChatMessage::Summary(msg) | ChatMessage::System(msg) => {
-                Cow::Borrowed(msg)
+                vec![Cow::Borrowed(msg)]
             }
             ChatMessage::Assistant(msg, vec) => {
                 // Note that this is not super accurate.
                 //
                 // It's a bit verbose to avoid unnecessary allocations. Is what it is.
-                let tool_calls = vec.as_ref().map(|vec| {
+                let mut tool_calls = vec.as_ref().map(|vec| {
                     vec.iter()
-                        .map(std::string::ToString::to_string)
-                        .collect::<Vec<String>>()
-                        .join(" ")
+                        .filter_map(|c| c.args().map(Cow::Borrowed))
+                        .collect::<Vec<_>>()
                 });
 
                 if let Some(msg) = msg {
-                    if let Some(tool_calls) = tool_calls {
-                        format!("{msg} {tool_calls}").into()
+                    if let Some(tool_calls) = tool_calls.as_mut() {
+                        let mut msg = vec![Cow::Borrowed(msg.as_str())];
+                        msg.append(tool_calls);
+                        msg
                     } else {
-                        msg.into()
+                        vec![Cow::Borrowed(msg)]
                     }
                 } else if let Some(tool_calls) = tool_calls {
-                    tool_calls.into()
+                    tool_calls
                 } else {
-                    "None".into()
+                    vec!["None".into()]
                 }
             }
-            ChatMessage::ToolOutput(tool_call, tool_output) => {
-                let tool_call_id = tool_call.id();
+            ChatMessage::ToolOutput(_tool_call, tool_output) => {
                 let tool_output_content = tool_output.content().unwrap_or_default();
 
-                format!("{tool_call_id} {tool_output_content}").into()
+                vec![Cow::Borrowed(tool_output_content)]
             }
         })
     }
@@ -91,16 +103,20 @@ impl Estimatable for &ChatMessage {
     }
 }
 
-#[async_trait]
 impl Estimatable for &[ChatMessage] {
-    async fn for_estimate(&self) -> Result<Cow<'_, str>> {
-        let mut total = String::new();
+    fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
+        let mut total = Vec::new();
         for msg in *self {
-            total.push(' ');
-            total.push_str(msg.for_estimate().await?.as_ref());
+            let mut v = msg
+                .for_estimate()?
+                .into_iter()
+                .map(Cow::into_owned)
+                .map(Into::into)
+                .collect();
+            total.append(&mut v);
         }
 
-        Ok(total.into())
+        Ok(total)
     }
 
     // Apparently every reply is primed with a <|start|>assistant<|message|>
