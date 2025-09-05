@@ -75,11 +75,12 @@ impl TikToken {
 #[async_trait]
 impl EstimateTokens for TikToken {
     async fn estimate(&self, value: impl Estimatable) -> Result<usize> {
-        Ok(self
-            .bpe
-            .encode_with_special_tokens(value.for_estimate().await?.as_ref())
-            .len()
-            + value.additional_tokens())
+        let mut total = 0;
+        for text in value.for_estimate()? {
+            total += self.bpe.encode_with_special_tokens(text.as_ref()).len();
+        }
+
+        Ok(total + value.additional_tokens())
     }
 }
 
