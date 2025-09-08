@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1756817834995,
+  "lastUpdate": 1757337639593,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26717,6 +26717,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259619,
             "range": "± 3906",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "dab4cf771cd9a6d90ae0985c83171fd87b213cba",
+          "message": "fix(integrations): Remove sync requirement in future from `on_usage_async`",
+          "timestamp": "2025-09-08T15:11:20+02:00",
+          "tree_id": "56240e0f747d78b066e3b943cbb4dcae985da525",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dab4cf771cd9a6d90ae0985c83171fd87b213cba"
+        },
+        "date": 1757337637808,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 798624,
+            "range": "± 15936",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256496,
+            "range": "± 3331",
             "unit": "ns/iter"
           }
         ]
