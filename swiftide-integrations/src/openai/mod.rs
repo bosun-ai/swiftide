@@ -109,7 +109,7 @@ pub struct GenericOpenAI<
             dyn for<'a> Fn(
                     &'a Usage,
                 ) -> Pin<
-                    Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
+                    Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'a>,
                 > + Send
                 + Sync,
         >,
@@ -295,9 +295,9 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     where
         F: for<'a> Fn(
                 &'a Usage,
-            ) -> Pin<
-                Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
-            > + Send
+            )
+                -> Pin<Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'a>>
+            + Send
             + Sync
             + 'static,
     {
