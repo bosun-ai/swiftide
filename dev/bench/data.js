@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1757668217337,
+  "lastUpdate": 1757668589691,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26825,6 +26825,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257392,
             "range": "± 1035",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "5ba9a7db6f844687b04c5fa5d9a2119f456108c6",
+          "message": "chore(agents): Implement default for `AgentCanFail` tool",
+          "timestamp": "2025-09-12T11:07:19+02:00",
+          "tree_id": "eed080321e066123984666aac11ed00719270cec",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5ba9a7db6f844687b04c5fa5d9a2119f456108c6"
+        },
+        "date": 1757668587979,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 791026,
+            "range": "± 17409",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258620,
+            "range": "± 1011",
             "unit": "ns/iter"
           }
         ]
