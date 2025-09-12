@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1757337639593,
+  "lastUpdate": 1757668217337,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26771,6 +26771,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256496,
             "range": "± 3331",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "ad6655dc448defc3a9ef8401f0528da11e16a256",
+          "message": "feat(agents): Add helper to remove default stop tool from agent builder",
+          "timestamp": "2025-09-12T11:01:24+02:00",
+          "tree_id": "68d988752ec31391c8d96606fd51fdaa0c02fede",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ad6655dc448defc3a9ef8401f0528da11e16a256"
+        },
+        "date": 1757668215671,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 789404,
+            "range": "± 14644",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257392,
+            "range": "± 1035",
             "unit": "ns/iter"
           }
         ]
