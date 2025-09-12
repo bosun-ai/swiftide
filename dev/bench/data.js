@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1757668589691,
+  "lastUpdate": 1757673500700,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26879,6 +26879,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258620,
             "range": "± 1011",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "0071b721520d585f36d1ec6ff90eb88d669da043",
+          "message": "fix(agents): Replace tools when adding multiple with the same name",
+          "timestamp": "2025-09-12T12:29:09+02:00",
+          "tree_id": "573e7e6abf663056d30292b42b15d6c5eaf88739",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0071b721520d585f36d1ec6ff90eb88d669da043"
+        },
+        "date": 1757673499243,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 794746,
+            "range": "± 18496",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260797,
+            "range": "± 2051",
             "unit": "ns/iter"
           }
         ]
