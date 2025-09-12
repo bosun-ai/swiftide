@@ -113,13 +113,13 @@ impl Tool for AgentCanFail {
         _agent_context: &dyn AgentContext,
         tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        let args: StopWithArgsSpec = serde_json::from_str(
+        let args: AgentFailedArgsSpec = serde_json::from_str(
             tool_call
                 .args()
                 .ok_or(ToolError::missing_arguments("reason"))?,
         )?;
 
-        Ok(ToolOutput::agent_failed(args.output))
+        Ok(ToolOutput::agent_failed(args.reason))
     }
 
     fn name(&self) -> Cow<'_, str> {
@@ -128,7 +128,7 @@ impl Tool for AgentCanFail {
 
     fn tool_spec(&self) -> ToolSpec {
         ToolSpec::builder()
-            .name("stop")
+            .name("task_failed")
             .description("If you cannot complete your task, or have otherwise failed, call this with your reason for failure")
             .parameters(vec![
                 ParamSpec::builder()

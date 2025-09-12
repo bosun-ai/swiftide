@@ -210,14 +210,11 @@ impl AgentBuilder {
 
     /// Adds a tool to the agent
     pub fn add_tool(&mut self, tool: impl Tool + 'static) -> &mut Self {
-        self.tools = Some(
-            self.tools
-                .take()
-                .unwrap_or_default()
-                .into_iter()
-                .chain([Box::new(tool) as Box<dyn Tool>])
-                .collect(),
-        );
+        let tools = self.tools.get_or_insert_with(HashSet::new);
+        if let Some(tool) = tools.replace(tool.boxed()) {
+            tracing::debug!("Tool {} already exists, replacing", tool.name());
+        }
+
         self
     }
 
@@ -295,6 +292,8 @@ impl AgentBuilder {
 
     /// Removes the default `stop` tool from the agent. This allows you to add your own or use
     /// other methods to stop the agent.
+    ///
+    /// Note that you can also just override the tool if the name of the tool is `stop`.
     pub fn without_default_stop_tool(&mut self) -> &mut Self {
         self.clear_default_tools = Some(true);
         self
@@ -317,10 +316,9 @@ impl AgentBuilder {
         TOOL: Into<Box<dyn Tool>>,
     {
         self.tools = Some(
-            tools
+            self.builder_default_tools()
                 .into_iter()
-                .map(Into::into)
-                .chain(self.builder_default_tools())
+                .chain(tools.into_iter().map(Into::into))
                 .collect(),
         );
         self
@@ -375,7 +373,9 @@ impl Agent {
 
     /// Adds a tool to an agent at run time
     pub fn add_tool(&mut self, tool: Box<dyn Tool>) {
-        self.tools.insert(tool);
+        if let Some(tool) = self.tools.replace(tool) {
+            tracing::debug!("Tool {} already exists, replacing", tool.name());
+        }
     }
 
     /// Modify the tools of the agent at runtime
