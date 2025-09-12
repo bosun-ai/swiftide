@@ -103,7 +103,7 @@ struct AgentFailedArgsSpec {
 /// A utility tool that can be used to let an agent decide it failed
 ///
 /// This will _NOT_ have the agent return an error, instead, look at the stop reason of the agent.
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, Default)]
 pub struct AgentCanFail {}
 
 #[async_trait]
