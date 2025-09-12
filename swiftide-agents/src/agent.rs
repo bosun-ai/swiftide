@@ -293,6 +293,13 @@ impl AgentBuilder {
         self
     }
 
+    /// Removes the default `stop` tool from the agent. This allows you to add your own or use
+    /// other methods to stop the agent.
+    pub fn without_default_stop_tool(&mut self) -> &mut Self {
+        self.clear_default_tools = Some(true);
+        self
+    }
+
     fn builder_default_tools(&self) -> HashSet<Box<dyn Tool>> {
         if self.clear_default_tools.is_some_and(|b| b) {
             HashSet::new()
@@ -1631,5 +1638,25 @@ mod tests {
             .expect("Could not find refusal message");
 
         assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_removing_default_stop_tool() {
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("mock_tool");
+
+        // Build agent with without_default_stop_tool
+        let agent = Agent::builder()
+            .without_default_stop_tool()
+            .tools([mock_tool.clone()])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // Check that "stop" tool is NOT included
+        assert!(agent.find_tool_by_name("stop").is_none());
+        // Check that our provided tool is still present
+        assert!(agent.find_tool_by_name("mock_tool").is_some());
     }
 }
