@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1757676012292,
+  "lastUpdate": 1757850674464,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -26987,6 +26987,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259094,
             "range": "± 1908",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "db79f21c323abca462a5f469814c4c03cc949b7e",
+          "message": "feat(agents/tasks): Add helper to create instant transitions from node ids",
+          "timestamp": "2025-09-14T13:42:30+02:00",
+          "tree_id": "4da6d78098fdda5e085d3568224371cf406b51fd",
+          "url": "https://github.com/bosun-ai/swiftide/commit/db79f21c323abca462a5f469814c4c03cc949b7e"
+        },
+        "date": 1757850672486,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 787450,
+            "range": "± 16980",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256866,
+            "range": "± 1081",
             "unit": "ns/iter"
           }
         ]
