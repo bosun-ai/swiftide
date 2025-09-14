@@ -109,16 +109,32 @@ impl<T: TaskNode + ?Sized> std::fmt::Debug for NodeId<T> {
 
 pub type AnyNodeId = usize;
 
+impl<T: TaskNode + ?Sized> NodeId<T> {
+    pub fn id(&self) -> usize {
+        self.id
+    }
+
+    /// Returns a closure that can be used as a transition function
+    pub fn as_transition(&self) -> impl Fn(T::Input) -> MarkedTransitionPayload<T> + 'static {
+        let node_id = *self;
+
+        Box::new(move |context| node_id.transitions_with(context))
+    }
+
+    /// Returns a transition payload suitable for inside a task transition
+    ///
+    /// You can also get the closure version with `as_transition`
+    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
+        MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
+    }
+}
+
 impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
     pub fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
             _marker: std::marker::PhantomData,
         }
-    }
-
-    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
-        MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
     }
 
     /// Returns the internal id of the node without the type information.
