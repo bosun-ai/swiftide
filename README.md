@@ -210,6 +210,7 @@ Our goal is to create a fast, extendable platform for building LLM applications 
 
 ## Features
 
+- Simple primitives for common LLM tasks
 - Fast, modular streaming indexing pipeline with async, parallel processing
 - Experimental query pipeline
 - Experimental agent framework
@@ -222,16 +223,19 @@ Our goal is to create a fast, extendable platform for building LLM applications 
 - Evaluate pipelines with RAGAS
 - Sparse vector support for hybrid search
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
+- Tracing layer for exporting to Langfuse
 
 ### In detail
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Supported Large Language Model providers** | OpenAI (and Azure) <br> Anthropic <br> Gemini <br> OpenRouter <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                 |
-| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
-| **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
+| **Agents**                           | All the boiler plate for autonomous agents so you don't have to                                                                                     |
+| **Tasks** | Build graph like workflows with tasks, combining all the above to build complex applications                                                                                     |
+| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Kafka <br> Other pipelines and streams                                                                                        |
+| **Example and pre-build transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
-| **Storage**                                  | Qdrant <br> Redis <br> LanceDB                                                                                                                                       |
+| **Storage**                                  | Qdrant <br> Redis <br> LanceDB <br> Postgres <br> Duckdb                                                                                                                                       |
 | **Query pipeline**                           | Similarity and hybrid search, query and response transformations, and evaluation                                                                                     |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
