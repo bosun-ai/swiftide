@@ -29,6 +29,7 @@ swiftide = { path = "../swiftide/", features = [
   "anthropic",
   "gemini",
   "metrics",
+  "langfuse",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
@@ -160,3 +161,7 @@ path = "tasks.rs"
 [[example]]
 name = "structured-prompt"
 path = "structured_prompt.rs"
+
+[[example]]
+name = "langfuse"
+path = "langfuse.rs"

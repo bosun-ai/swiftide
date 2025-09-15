@@ -8,6 +8,8 @@
 //! to be set. You can also provide a custom Langfuse URL via the LANGFUSE_URL environment
 //! variable.
 //!
+//! All `Langfuse` data is on the `debug` level. Make sure your tracing setup captures that level.
+//!
 //! # Example
 //! ```
 //! use swiftide::langfuse;
@@ -22,7 +24,7 @@
 //! registry.init();
 //! ```
 //!
-//! See the `default_tracing_layer` function for an example of how to set it up.
+//! For more advanced usage, refer to the `LangfuseLayer` documentation.
 //!
 //! Refer to the [Langfuse documentation](https://langfuse.com/docs/) for more details on how to setup Langfuse itself.
 mod apis;
