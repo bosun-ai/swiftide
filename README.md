@@ -78,20 +78,21 @@ Fast, streaming indexing, query, and agentic LLM applications in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a Rust library for building LLM applications, enabling fast data ingestion, transformation, and indexing for effective querying and prompt injection, known as Retrieval Augmented Generation. It provides flexible building blocks for creating various agents, allowing rapid development from concept to production with minimal code.
+Swiftide is a Rust library for building LLM applications. From performing a simple prompt completion, to building fast, streaming indexing and querying pipelines, to building agents that can use tools and call other agents.
 
 ### High level features
 
+- Simple primitives for common LLM tasks
 - Build fast, streaming indexing and querying pipelines
 - Easily build agents, mix and match with previously built pipelines
 - A modular and extendable API, with minimal abstractions
 - Integrations with popular LLMs and storage providers
-- Ready to use pipeline transformations
+- Ready to use pipeline transformations or bring your own
 - Build graph like workflows with Tasks
 - [Langfuse](https://langfuse.com) support
 
 <div align="center">
-    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
+    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/overview.png" alt="Swiftide overview" width="100%" >
 </div>
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
