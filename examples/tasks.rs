@@ -17,7 +17,7 @@ use anyhow::Result;
 use swiftide::{
     agents::{
         self,
-        tasks::{closures::SyncClosureTaskNode, impls::TaskAgent, task::Task},
+        tasks::{closures::SyncFn, impls::TaskAgent, task::Task},
     },
     prompt::Prompt,
 };
@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
 
     let agent_id = task.register_node(TaskAgent::from(agent));
 
-    let hello_id = task.register_node(SyncClosureTaskNode::new(move |_context: &()| {
+    let hello_id = task.register_node(SyncFn::new(move |_context: &()| {
         println!("Hello from a task!");
 
         Ok(())
