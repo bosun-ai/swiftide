@@ -48,7 +48,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/bosun-ai/swiftide">
-    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/logo.png" alt="Logo" width="250" height="250">
+    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/logo.png" alt="Logo" width="250" height="250">
   </a>
 
   <h3 align="center">Swiftide</h3>
@@ -92,7 +92,7 @@ Swiftide is a Rust library for building LLM applications. From performing a simp
 - [Langfuse](https://langfuse.com) support
 
 <div align="center">
-    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/overview.png" alt="Swiftide overview" width="100%" >
+    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/overview.png" alt="Swiftide overview" width="100%" >
 </div>
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
