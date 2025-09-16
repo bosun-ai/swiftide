@@ -106,20 +106,17 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
+- [Swiftide 0.31 - Tasks, Langfuse, Multi-Modal, and more](http://blog.bosun.ai/swiftide-0-31/)
+- [Swiftide 0.27 - Easy human-in-the-loop flows for agentic AI](http://blog.bosun.ai/swiftide-0-27/)
+- [Swiftide 0.26 - Streaming agents](http://blog.bosun.ai/swiftide-0-26/)
 - [Releasing kwaak with kwaak](https://bosun.ai/posts/releasing-kwaak-with-kwaak/)
-- [Release - Swiftide 0.16](https://bosun.ai/posts/swiftide-0-16/)
+- [Swiftide 0.16 - AI Agents in Rust](https://bosun.ai/posts/swiftide-0-16/)
 - [Rust in LLM based tools for performance](https://bosun.ai/posts/rust-for-genai-performance/)
 - [Evaluate Swiftide pipelines with Ragas](https://bosun.ai/posts/evaluating-swiftide-with-ragas/) (2024-09-15)
 - [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
-- [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04
+- [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04)
 
-- [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-09-02)
-- [Bring your own transformers](https://bosun.ai/posts/bring-your-own-transformers-in-swiftide/) (2024-08-13)
-- [Release - Swiftide 0.8](https://bosun.ai/posts/swiftide-0-8/) (2024-08-12)
-- [Release - Swiftide 0.7](https://bosun.ai/posts/swiftide-0-7/) (2024-07-28)
-- [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
-- [Release - Swiftide 0.6](https://bosun.ai/posts/swiftide-0-6/) (2024-07-12)
-- [Release - Swiftide 0.5](https://bosun.ai/posts/swiftide-0-5/) (2024-07-1)
+More on our [blog](https://blog.bosun.ai/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
