@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1757947195141,
+  "lastUpdate": 1758012619211,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27203,6 +27203,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259872,
             "range": "± 1498",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "412dacb554d2b1478f3286a47352a6daed3079b9",
+          "message": "chore(agents/tasks): Clean up closure api for node registration",
+          "timestamp": "2025-09-16T10:40:56+02:00",
+          "tree_id": "fb783afe13e17282b30a2496ed0422ac6d93785a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/412dacb554d2b1478f3286a47352a6daed3079b9"
+        },
+        "date": 1758012617300,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 774107,
+            "range": "± 14880",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255033,
+            "range": "± 874",
             "unit": "ns/iter"
           }
         ]
