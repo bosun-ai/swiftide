@@ -9,6 +9,7 @@ description.workspace = true
 categories.workspace = true
 repository.workspace = true
 homepage.workspace = true
+include = ["../README.md", "../images/", "src/", "../examples", "tests/"]
 
 [badges]
 
