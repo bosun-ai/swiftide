@@ -25,7 +25,6 @@ impl From<Agent> for TaskAgent {
 }
 
 /// A 'default' implementation for an agent where there is no output
-///
 #[async_trait]
 impl TaskNode for TaskAgent {
     type Input = Prompt;
