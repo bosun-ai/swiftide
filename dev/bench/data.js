@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758030046527,
+  "lastUpdate": 1758030371167,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27581,6 +27581,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 260469,
             "range": "± 2481",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "866b77a8c33b6b7935f260c1df099d89492cb048",
+          "message": "docs(README): Use raw links for images so they work on crates/docs",
+          "timestamp": "2025-09-16T15:36:56+02:00",
+          "tree_id": "c6e720d86030163ae2ff9721e07964d0571f19a6",
+          "url": "https://github.com/bosun-ai/swiftide/commit/866b77a8c33b6b7935f260c1df099d89492cb048"
+        },
+        "date": 1758030369553,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 790433,
+            "range": "± 15991",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256456,
+            "range": "± 5900",
             "unit": "ns/iter"
           }
         ]
