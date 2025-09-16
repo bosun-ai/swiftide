@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.31.1](https://github.com/bosun-ai/swiftide/compare/v0.31.0...v0.31.1) - 2025-09-16
+
+### Docs
+
+- [866b77a](https://github.com/bosun-ai/swiftide/commit/866b77a8c33b6b7935f260c1df099d89492cb048) *(readme)*  Use raw links for images so they work on crates/docs
+
+- [513c143](https://github.com/bosun-ai/swiftide/commit/513c143cd11ae6ddda48f73012844f1f6d026ef7) *(readme)*  Remove double back-to-top
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.0...0.31.1
+
+
+
 ## [0.31.0](https://github.com/bosun-ai/swiftide/compare/v0.30.1...v0.31.0) - 2025-09-16
 
 ### New features
