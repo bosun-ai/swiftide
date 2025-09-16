@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758024889634,
+  "lastUpdate": 1758030046527,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27527,6 +27527,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259575,
             "range": "± 2910",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "513c143cd11ae6ddda48f73012844f1f6d026ef7",
+          "message": "docs(README): Remove double back-to-top",
+          "timestamp": "2025-09-16T15:31:37+02:00",
+          "tree_id": "490b293d2b4f42057a58f5d81e08fbd4fa73c843",
+          "url": "https://github.com/bosun-ai/swiftide/commit/513c143cd11ae6ddda48f73012844f1f6d026ef7"
+        },
+        "date": 1758030044203,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 784169,
+            "range": "± 14138",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260469,
+            "range": "± 2481",
             "unit": "ns/iter"
           }
         ]
