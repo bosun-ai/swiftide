@@ -84,16 +84,6 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
-            tracing::debug!(
-                langfuse.model = model,
-                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-            );
-        }
-
         let message = response
             .choices
             .remove(0)
@@ -106,13 +96,21 @@ impl<
 
         {
             if let Some(usage) = response.usage.as_ref() {
+                let usage = Usage {
+                    prompt_tokens: usage.prompt_tokens,
+                    completion_tokens: usage.completion_tokens,
+                    total_tokens: usage.total_tokens,
+                };
                 if let Some(callback) = &self.on_usage {
-                    let usage = Usage {
-                        prompt_tokens: usage.prompt_tokens,
-                        completion_tokens: usage.completion_tokens,
-                        total_tokens: usage.total_tokens,
-                    };
                     callback(&usage).await?;
+                }
+                if cfg!(feature = "langfuse") {
+                    tracing::debug!(
+                        langfuse.model = model,
+                        langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
+                        langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
+                        langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
+                    );
                 }
                 #[cfg(feature = "metrics")]
                 emit_usage(
@@ -127,9 +125,6 @@ impl<
             }
         }
 
-        // Emit Langfuse event with the response details.
-
-        // Extract and return the content of the response, returning an error if not found.
         Ok(message)
     }
 }
