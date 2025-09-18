@@ -194,3 +194,57 @@ impl From<ApprovalRequired> for Box<dyn Tool> {
         Box::new(val)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn dummy_tool_call(name: &str, args: Option<&str>) -> ToolCall {
+        let mut builder = ToolCall::builder().name(name).id("1").to_owned();
+        if let Some(args) = args {
+            builder.args(args.to_string());
+        }
+        builder.build().unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_stop_tool() {
+        let stop = Stop::default();
+        let ctx = ();
+        let tool_call = dummy_tool_call("stop", None);
+        let out = stop.invoke(&ctx, &tool_call).await.unwrap();
+        assert_eq!(out, ToolOutput::stop());
+    }
+
+    #[tokio::test]
+    async fn test_stop_with_args_tool() {
+        let tool = StopWithArgs::default();
+        let ctx = ();
+        let args = r#"{"output":"expected result"}"#;
+        let tool_call = dummy_tool_call("stop", Some(args));
+        let out = tool.invoke(&ctx, &tool_call).await.unwrap();
+        assert_eq!(out, ToolOutput::stop_with_args("expected result"));
+    }
+
+    #[tokio::test]
+    async fn test_agent_can_fail_tool() {
+        let tool = AgentCanFail::default();
+        let ctx = ();
+        let args = r#"{"reason":"something went wrong"}"#;
+        let tool_call = dummy_tool_call("task_failed", Some(args));
+        let out = tool.invoke(&ctx, &tool_call).await.unwrap();
+        assert_eq!(out, ToolOutput::agent_failed("something went wrong"));
+    }
+
+    #[tokio::test]
+    async fn test_approval_required_feedback_required() {
+        let stop = Stop::default();
+        let tool = ApprovalRequired::new(stop);
+        let ctx = ();
+        let tool_call = dummy_tool_call("stop", None);
+        let out = tool.invoke(&ctx, &tool_call).await.unwrap();
+
+        // On unit; existing feedback is always present
+        assert_eq!(out, ToolOutput::Stop(None));
+    }
+}
