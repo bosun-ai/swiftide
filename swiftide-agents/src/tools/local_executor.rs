@@ -279,6 +279,12 @@ mod tests {
         // Verify that the content read from the file matches the expected content
         assert_eq!(output.to_string(), format!("{file_content}"));
 
+        let output = executor
+            .exec_cmd(&Command::read_file(&file_path))
+            .await
+            .unwrap();
+        assert_eq!(output.to_string(), format!("{file_content}\n"));
+
         Ok(())
     }
 
