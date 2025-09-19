@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758036779546,
+  "lastUpdate": 1758280964476,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27689,6 +27689,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 262936,
             "range": "± 3820",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "ec1e301eec2793613186b9e3bcb02de52741b936",
+          "message": "chore(agents): Explicit read file test for local executor",
+          "timestamp": "2025-09-19T13:13:52+02:00",
+          "tree_id": "4a662dff8502a2c5edad4e90bddf6325180c183b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ec1e301eec2793613186b9e3bcb02de52741b936"
+        },
+        "date": 1758280962713,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796940,
+            "range": "± 15735",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 261470,
+            "range": "± 5851",
             "unit": "ns/iter"
           }
         ]
