@@ -633,8 +633,7 @@ impl Agent {
             let handle = tokio::spawn(async move {
                     let handle_tool_call = handle_tool_call;
                     let output = tool.invoke(&*context, &handle_tool_call)
-                        .await
-                        .map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
+                        .await?;
 
                 if cfg!(feature = "langfuse") {
                     tracing::debug!(
