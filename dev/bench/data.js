@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758280964476,
+  "lastUpdate": 1758372877952,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27743,6 +27743,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 261470,
             "range": "± 5851",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "5df7a483bed7d980bceef5e69fd7e1415da7563f",
+          "message": "fix(agents): Only log error tool calls if error after hook",
+          "timestamp": "2025-09-20T14:45:36+02:00",
+          "tree_id": "2c32878ee7ef0a4cd474e8c6942342b1f90b8b59",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5df7a483bed7d980bceef5e69fd7e1415da7563f"
+        },
+        "date": 1758372875975,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 783588,
+            "range": "± 31022",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259074,
+            "range": "± 1453",
             "unit": "ns/iter"
           }
         ]
