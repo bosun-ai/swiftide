@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.31.2](https://github.com/bosun-ai/swiftide/compare/v0.31.1...v0.31.2) - 2025-09-20
+
+### Bug fixes
+
+- [5df7a48](https://github.com/bosun-ai/swiftide/commit/5df7a483bed7d980bceef5e69fd7e1415da7563f) *(agents)*  Only log error tool calls if error after hook
+
+### Miscellaneous
+
+- [ec1e301](https://github.com/bosun-ai/swiftide/commit/ec1e301eec2793613186b9e3bcb02de52741b936) *(agents)*  Explicit read file test for local executor
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.1...0.31.2
+
+
+
 ## [0.31.1](https://github.com/bosun-ai/swiftide/compare/v0.31.0...v0.31.1) - 2025-09-16
 
 ### Docs
