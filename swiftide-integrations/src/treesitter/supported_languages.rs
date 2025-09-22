@@ -72,6 +72,8 @@ pub enum SupportedLanguages {
     Elixir,
     #[serde(alias = "html", alias = "Html")]
     HTML,
+    #[serde(alias = "php", alias = "PHP", alias = "Php")]
+    PHP,
 }
 
 impl Hash for SupportedLanguages {
@@ -120,6 +122,8 @@ static ELIXIR_EXTENSIONS: &[&str] = &["ex", "exs"];
 
 static HTML_EXTENSIONS: &[&str] = &["html", "htm", "xhtml"];
 
+static PHP_EXTENSIONS: &[&str] = &["php"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -139,6 +143,7 @@ impl SupportedLanguages {
             SupportedLanguages::Cpp => CPP_EXTENSIONS,
             SupportedLanguages::Elixir => ELIXIR_EXTENSIONS,
             SupportedLanguages::HTML => HTML_EXTENSIONS,
+            SupportedLanguages::PHP => PHP_EXTENSIONS,
         }
     }
 }
@@ -169,6 +174,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Cpp => tree_sitter_cpp::LANGUAGE,
             SupportedLanguages::Elixir => tree_sitter_elixir::LANGUAGE,
             SupportedLanguages::HTML => tree_sitter_html::LANGUAGE,
+            SupportedLanguages::PHP => tree_sitter_php::LANGUAGE,
         }
         .into()
     }
