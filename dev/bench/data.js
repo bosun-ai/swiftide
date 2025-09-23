@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758614782291,
+  "lastUpdate": 1758614961758,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27905,6 +27905,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256520,
             "range": "± 2077",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8882a538f30c7ff457dcb3a1d48e623fbc5aad1d",
+          "message": "chore: Improve tests for control tools (#928)",
+          "timestamp": "2025-09-23T10:00:41+02:00",
+          "tree_id": "4fc68c3cbcb4efcb0f65cd567bf9a8a26aeffe49",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8882a538f30c7ff457dcb3a1d48e623fbc5aad1d"
+        },
+        "date": 1758614959654,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 810184,
+            "range": "± 21866",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259035,
+            "range": "± 2600",
             "unit": "ns/iter"
           }
         ]
