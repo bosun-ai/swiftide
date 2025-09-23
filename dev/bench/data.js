@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758636031545,
+  "lastUpdate": 1758638503309,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28175,6 +28175,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258781,
             "range": "± 2573",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "9f533f57b2c7ed4ac1988f9e3567cda42f64b824",
+          "message": "feat(agents): Add helpers to retrieve or mutate the system prompt",
+          "timestamp": "2025-09-23T16:32:45+02:00",
+          "tree_id": "e64fd9c31e1cc03c2d4741b6fa165535ec0ad6e5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9f533f57b2c7ed4ac1988f9e3567cda42f64b824"
+        },
+        "date": 1758638501478,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 778377,
+            "range": "± 14466",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257167,
+            "range": "± 2985",
             "unit": "ns/iter"
           }
         ]
