@@ -189,7 +189,8 @@ impl LocalExecutor {
     }
 
     async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput, CommandError> {
-        let output = fs_err::tokio::read(path).await?;
+        let path = self.workdir.join(path);
+        let output = fs_err::tokio::read(&path).await?;
 
         Ok(String::from_utf8(output)
             .context("Failed to parse read file output")?
@@ -201,10 +202,11 @@ impl LocalExecutor {
         path: &Path,
         content: &str,
     ) -> Result<CommandOutput, CommandError> {
+        let path = self.workdir.join(path);
         if let Some(parent) = path.parent() {
             let _ = fs_err::tokio::create_dir_all(parent).await;
         }
-        fs_err::tokio::write(path, content).await?;
+        fs_err::tokio::write(&path, content).await?;
 
         Ok(CommandOutput::empty())
     }
@@ -537,6 +539,48 @@ print(1 + 2)"#;
         let txt_files: Vec<_> = stream.collect().await;
 
         assert_eq!(txt_files.len(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_honors_workdir() -> anyhow::Result<()> {
+        use std::fs;
+        use temp_dir::TempDir;
+
+        // 1. Create a temp dir and instantiate executor
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        // 2. Run a shell command in workdir and check output is workdir
+        let pwd_cmd = Command::Shell("pwd".to_string());
+        let pwd_output = executor.exec_cmd(&pwd_cmd).await?.to_string();
+        let pwd_path = std::fs::canonicalize(pwd_output.trim())?;
+        let temp_path = std::fs::canonicalize(temp_path)?;
+        assert_eq!(pwd_path, temp_path);
+
+        // 3. Write a file using WriteFile (should land in workdir)
+        let fname = "workdir_check.txt";
+        let write_cmd = Command::WriteFile(fname.into(), "test123".into());
+        executor.exec_cmd(&write_cmd).await?;
+
+        // 4. Assert file exists in workdir, not current dir
+        let expected_path = temp_path.join(fname);
+        assert!(expected_path.exists());
+        assert!(!Path::new(fname).exists());
+
+        // 5. Write/read using ReadFile
+        let read_cmd = Command::ReadFile(fname.into());
+        let read_output = executor.exec_cmd(&read_cmd).await?.to_string();
+        assert_eq!(read_output.trim(), "test123");
+
+        // 6. Clean up
+        fs::remove_file(&expected_path)?;
 
         Ok(())
     }
