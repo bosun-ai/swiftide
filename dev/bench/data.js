@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758372877952,
+  "lastUpdate": 1758614745325,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27797,6 +27797,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259074,
             "range": "± 1453",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5b01c5854432569638fa54225268e48b4133178d",
+          "message": "fix(langfuse): Use swiftide Usage in SimplePrompt (#929)",
+          "timestamp": "2025-09-23T09:57:10+02:00",
+          "tree_id": "8abbf7cbca0809466f03a69b73756b9a745009f1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5b01c5854432569638fa54225268e48b4133178d"
+        },
+        "date": 1758614743610,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 798183,
+            "range": "± 18011",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256532,
+            "range": "± 6880",
             "unit": "ns/iter"
           }
         ]
