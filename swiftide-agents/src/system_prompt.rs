@@ -1,6 +1,12 @@
 //! The system prompt is the initial role and constraint defining message the LLM will receive for
 //! completion.
 //!
+//! By default, the system prompt is setup as a general-purpose chain-of-thought reasoning prompt
+//! with the role, guidelines, and constraints left empty for customization.
+//!
+//! You can override the the template entirely by providing your own `Prompt`. Optionally, you can
+//! still use the builder values by referencing them in your template.
+//!
 //! The builder provides an accessible way to build a system prompt.
 //!
 //! The agent will convert the system prompt into a prompt, adding it to the messages list the
@@ -26,6 +32,12 @@ pub struct SystemPrompt {
     #[builder(default, setter(custom))]
     constraints: Vec<String>,
 
+    /// Optional additional raw markdown to append to the prompt
+    ///
+    /// For instance, if you would like to support an AGENTS.md file, add it here.
+    #[builder(default)]
+    additional: Option<String>,
+
     /// The template to use for the system prompt
     #[builder(default = default_prompt_template())]
     template: Prompt,
@@ -47,6 +59,7 @@ impl From<String> for SystemPrompt {
             role: None,
             guidelines: Vec::new(),
             constraints: Vec::new(),
+            additional: None,
             template: text.into(),
         }
     }
@@ -58,6 +71,7 @@ impl From<&'static str> for SystemPrompt {
             role: None,
             guidelines: Vec::new(),
             constraints: Vec::new(),
+            additional: None,
             template: text.into(),
         }
     }
@@ -69,6 +83,7 @@ impl From<SystemPrompt> for SystemPromptBuilder {
             role: Some(val.role),
             guidelines: Some(val.guidelines),
             constraints: Some(val.constraints),
+            additional: Some(val.additional),
             template: Some(val.template),
         }
     }
@@ -80,6 +95,7 @@ impl From<Prompt> for SystemPrompt {
             role: None,
             guidelines: Vec::new(),
             constraints: Vec::new(),
+            additional: None,
             template: prompt,
         }
     }
@@ -91,6 +107,7 @@ impl Default for SystemPrompt {
             role: None,
             guidelines: Vec::new(),
             constraints: Vec::new(),
+            additional: None,
             template: default_prompt_template(),
         }
     }
@@ -150,12 +167,14 @@ impl Into<Prompt> for SystemPrompt {
             guidelines,
             constraints,
             template,
+            additional,
         } = self;
 
         template
             .with_context_value("role", role)
             .with_context_value("guidelines", guidelines)
             .with_context_value("constraints", constraints)
+            .with_context_value("additional", additional)
     }
 }
 
@@ -166,15 +185,49 @@ mod tests {
     #[tokio::test]
     async fn test_customization() {
         let prompt = SystemPrompt::builder()
-            .role("role")
-            .guidelines(["guideline"])
-            .constraints(vec!["constraint".to_string()])
+            .role("special role")
+            .guidelines(["special guideline"])
+            .constraints(vec!["special constraint".to_string()])
+            .additional("some additional info")
             .build()
             .unwrap();
 
         let prompt: Prompt = prompt.into();
 
         let rendered = prompt.render().unwrap();
+
+        assert!(rendered.contains("special role"), "error: {rendered}");
+        assert!(rendered.contains("special guideline"), "error: {rendered}");
+        assert!(rendered.contains("special constraint"), "error: {rendered}");
+        assert!(
+            rendered.contains("some additional info"),
+            "error: {rendered}"
+        );
+
+        insta::assert_snapshot!(rendered);
+    }
+
+    #[tokio::test]
+    async fn test_to_prompt() {
+        let prompt = SystemPrompt::builder()
+            .role("special role")
+            .guidelines(["special guideline"])
+            .constraints(vec!["special constraint".to_string()])
+            .additional("some additional info")
+            .build()
+            .unwrap();
+
+        let prompt: Prompt = prompt.to_prompt();
+
+        let rendered = prompt.render().unwrap();
+
+        assert!(rendered.contains("special role"), "error: {rendered}");
+        assert!(rendered.contains("special guideline"), "error: {rendered}");
+        assert!(rendered.contains("special constraint"), "error: {rendered}");
+        assert!(
+            rendered.contains("some additional info"),
+            "error: {rendered}"
+        );
 
         insta::assert_snapshot!(rendered);
     }
@@ -185,6 +238,7 @@ mod tests {
             role: Some("Assistant".to_string()),
             guidelines: vec!["Be concise".to_string()],
             constraints: vec!["No personal opinions".to_string()],
+            additional: None,
             template: "Hello, {{role}}! Guidelines: {{guidelines}}, Constraints: {{constraints}}"
                 .into(),
         };

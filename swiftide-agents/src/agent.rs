@@ -75,6 +75,8 @@ pub struct Agent {
     ///
     /// Swiftide provides a default system prompt for all agents.
     ///
+    /// Alternatively you can also provide a `Prompt` directly, or disable the system prompt.
+    ///
     /// # Example
     ///
     /// ```no_run
