@@ -743,6 +743,18 @@ impl Agent {
         }
     }
 
+    /// Retrieve the system prompt, if it is set.
+    pub fn system_prompt(&self) -> Option<&SystemPrompt> {
+        self.system_prompt.as_ref()
+    }
+
+    /// Retrieve a mutable reference to the system prompt, if it is set.
+    ///
+    /// Note that the system prompt is rendered only once, when the agent starts for the first time
+    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+        self.system_prompt.as_mut()
+    }
+
     fn tool_calls_over_limit(&mut self, tool_call: &ToolCall) -> bool {
         let mut s = DefaultHasher::new();
         tool_call.hash(&mut s);
