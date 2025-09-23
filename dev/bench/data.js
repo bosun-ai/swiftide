@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758617066387,
+  "lastUpdate": 1758632743149,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28013,6 +28013,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256106,
             "range": "± 2002",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "febb7eb282af98ce1124636cb66a8819265e3585",
+          "message": "feat(agents): Support appending any kind of string to default SystemPrompt",
+          "timestamp": "2025-09-23T14:56:03+02:00",
+          "tree_id": "c229f6603ff0048d9628a5b0f7f598ba66e70c69",
+          "url": "https://github.com/bosun-ai/swiftide/commit/febb7eb282af98ce1124636cb66a8819265e3585"
+        },
+        "date": 1758632741097,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 818570,
+            "range": "± 18776",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 262505,
+            "range": "± 2660",
             "unit": "ns/iter"
           }
         ]
