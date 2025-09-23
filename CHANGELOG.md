@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.31.2](https://github.com/bosun-ai/swiftide/compare/v0.31.1...v0.31.2) - 2025-09-23
+
+### New features
+
+- [f35c9b5](https://github.com/bosun-ai/swiftide/commit/f35c9b507e11f76ff7e78de35843b3310a25f3db) *(agents)*  Add builder lite methods to SystemPrompt
+
+- [9f533f5](https://github.com/bosun-ai/swiftide/commit/9f533f57b2c7ed4ac1988f9e3567cda42f64b824) *(agents)*  Add helpers to retrieve or mutate the system prompt
+
+- [febb7eb](https://github.com/bosun-ai/swiftide/commit/febb7eb282af98ce1124636cb66a8819265e3585) *(agents)*  Support appending any kind of string to default SystemPrompt
+
+- [992478e](https://github.com/bosun-ai/swiftide/commit/992478ec8912554f73e3af6467784fd9326461c5) *(integrations/tree-sitter)*  Splitter support for PHP ([#932](https://github.com/bosun-ai/swiftide/pull/932))
+
+### Bug fixes
+
+- [5df7a48](https://github.com/bosun-ai/swiftide/commit/5df7a483bed7d980bceef5e69fd7e1415da7563f) *(agents)*  Only log error tool calls if error after hook
+
+- [54dceec](https://github.com/bosun-ai/swiftide/commit/54dceece5b939a0b534891ee5902593920a3fdeb) *(agents/local-executor)*  Also respect workdir in read file and write file
+
+- [6a688b4](https://github.com/bosun-ai/swiftide/commit/6a688b4be6a5a443ac72aa8ec0165ce6a0bebf11) *(agents/local-executor)*  Respect workdir when running commands
+
+- [5b01c58](https://github.com/bosun-ai/swiftide/commit/5b01c5854432569638fa54225268e48b4133178d) *(langfuse)*  Use swiftide Usage in SimplePrompt ([#929](https://github.com/bosun-ai/swiftide/pull/929))
+
+### Miscellaneous
+
+- [ec1e301](https://github.com/bosun-ai/swiftide/commit/ec1e301eec2793613186b9e3bcb02de52741b936) *(agents)*  Explicit read file test for local executor
+
+- [8882a53](https://github.com/bosun-ai/swiftide/commit/8882a538f30c7ff457dcb3a1d48e623fbc5aad1d)  Improve tests for control tools ([#928](https://github.com/bosun-ai/swiftide/pull/928))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.1...0.31.2
+
+
+
 ## [0.31.1](https://github.com/bosun-ai/swiftide/compare/v0.31.0...v0.31.1) - 2025-09-16
 
 ### Docs
