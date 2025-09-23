@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758614961758,
+  "lastUpdate": 1758617066387,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27959,6 +27959,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259035,
             "range": "± 2600",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "992478ec8912554f73e3af6467784fd9326461c5",
+          "message": "feat(integrations/tree-sitter): Splitter support for PHP (#932)",
+          "timestamp": "2025-09-23T10:35:44+02:00",
+          "tree_id": "ef4a9f1cdf4266918d1601574f4db626dfda53cf",
+          "url": "https://github.com/bosun-ai/swiftide/commit/992478ec8912554f73e3af6467784fd9326461c5"
+        },
+        "date": 1758617064412,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 789285,
+            "range": "± 17230",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256106,
+            "range": "± 2002",
             "unit": "ns/iter"
           }
         ]
