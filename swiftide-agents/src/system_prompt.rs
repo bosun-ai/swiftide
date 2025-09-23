@@ -51,6 +51,60 @@ impl SystemPrompt {
     pub fn to_prompt(&self) -> Prompt {
         self.clone().into()
     }
+
+    /// Adds a guideline to the guidelines list.
+    pub fn with_added_guideline(&mut self, guideline: impl AsRef<str>) -> &mut Self {
+        self.guidelines.push(guideline.as_ref().to_string());
+        self
+    }
+
+    /// Adds a constraint to the constraints list.
+    pub fn with_added_constraint(&mut self, constraint: impl AsRef<str>) -> &mut Self {
+        self.constraints.push(constraint.as_ref().to_string());
+        self
+    }
+
+    /// Overwrites all guidelines.
+    pub fn with_guidelines<T: IntoIterator<Item = S>, S: AsRef<str>>(
+        &mut self,
+        guidelines: T,
+    ) -> &mut Self {
+        self.guidelines = guidelines
+            .into_iter()
+            .map(|s| s.as_ref().to_string())
+            .collect();
+        self
+    }
+
+    /// Overwrites all constraints.
+    pub fn with_constraints<T: IntoIterator<Item = S>, S: AsRef<str>>(
+        &mut self,
+        constraints: T,
+    ) -> &mut Self {
+        self.constraints = constraints
+            .into_iter()
+            .map(|s| s.as_ref().to_string())
+            .collect();
+        self
+    }
+
+    /// Changes the role.
+    pub fn with_role(&mut self, role: impl Into<String>) -> &mut Self {
+        self.role = Some(role.into());
+        self
+    }
+
+    /// Sets the additional markdown field.
+    pub fn with_additional(&mut self, additional: impl Into<String>) -> &mut Self {
+        self.additional = Some(additional.into());
+        self
+    }
+
+    /// Sets the template.
+    pub fn with_template(&mut self, template: impl Into<Prompt>) -> &mut Self {
+        self.template = template.into();
+        self
+    }
 }
 
 impl From<String> for SystemPrompt {
@@ -256,5 +310,45 @@ mod tests {
             builder.template.as_ref().unwrap().render().unwrap(),
             sp.template.render().unwrap()
         );
+    }
+
+    #[test]
+    fn test_with_added_guideline_and_constraint() {
+        let mut sp = SystemPrompt::default();
+        sp.with_added_guideline("Stay polite")
+            .with_added_guideline("Use Markdown")
+            .with_added_constraint("No personal info")
+            .with_added_constraint("Short responses");
+
+        assert_eq!(sp.guidelines, vec!["Stay polite", "Use Markdown"]);
+        assert_eq!(sp.constraints, vec!["No personal info", "Short responses"]);
+    }
+
+    #[test]
+    fn test_with_guidelines_and_constraints_overwrites() {
+        let mut sp = SystemPrompt::default();
+        sp.with_guidelines(["A", "B", "C"])
+            .with_constraints(vec!["X", "Y"]);
+
+        assert_eq!(sp.guidelines, vec!["A", "B", "C"]);
+        assert_eq!(sp.constraints, vec!["X", "Y"]);
+
+        // Overwrite with different contents
+        sp.with_guidelines(vec!["Z"]);
+        sp.with_constraints(["P", "Q"]);
+        assert_eq!(sp.guidelines, vec!["Z"]);
+        assert_eq!(sp.constraints, vec!["P", "Q"]);
+    }
+
+    #[test]
+    fn test_with_role_and_additional_and_template() {
+        let mut sp = SystemPrompt::default();
+        sp.with_role("explainer")
+            .with_additional("AGENTS.md here")
+            .with_template("Template: {{role}}");
+
+        assert_eq!(sp.role.as_deref(), Some("explainer"));
+        assert_eq!(sp.additional.as_deref(), Some("AGENTS.md here"));
+        assert_eq!(sp.template.render().unwrap(), "Template: {{role}}");
     }
 }
