@@ -174,7 +174,7 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Cpp => tree_sitter_cpp::LANGUAGE,
             SupportedLanguages::Elixir => tree_sitter_elixir::LANGUAGE,
             SupportedLanguages::HTML => tree_sitter_html::LANGUAGE,
-            SupportedLanguages::PHP => tree_sitter_php::LANGUAGE,
+            SupportedLanguages::PHP => tree_sitter_php::LANGUAGE_PHP,
         }
         .into()
     }
