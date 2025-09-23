@@ -120,6 +120,7 @@ impl LocalExecutor {
                 command.env(key, value);
             }
             command
+                .current_dir(&self.workdir)
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
