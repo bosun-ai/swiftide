@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758638503309,
+  "lastUpdate": 1758638761406,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28229,6 +28229,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257167,
             "range": "± 2985",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "f35c9b507e11f76ff7e78de35843b3310a25f3db",
+          "message": "feat(agents): Add builder lite methods to SystemPrompt",
+          "timestamp": "2025-09-23T16:37:09+02:00",
+          "tree_id": "ea36b06daecc778df49469e4140a762ea4a1a018",
+          "url": "https://github.com/bosun-ai/swiftide/commit/f35c9b507e11f76ff7e78de35843b3310a25f3db"
+        },
+        "date": 1758638759425,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 797074,
+            "range": "± 13040",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254966,
+            "range": "± 1287",
             "unit": "ns/iter"
           }
         ]
