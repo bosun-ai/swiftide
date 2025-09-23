@@ -68,6 +68,7 @@ tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-cpp = { workspace = true, optional = true }
 tree-sitter-elixir = { workspace = true, optional = true }
 tree-sitter-html = { workspace = true, optional = true }
+tree-sitter-php = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true, default-features = true }
@@ -159,6 +160,7 @@ tree-sitter = [
   "dep:tree-sitter-cpp",
   "dep:tree-sitter-elixir",
   "dep:tree-sitter-html",
+  "dep:tree-sitter-php",
 ]
 # OpenAI for embedding and prompting
 openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
