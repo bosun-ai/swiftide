@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758614745325,
+  "lastUpdate": 1758614782291,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -27851,6 +27851,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256532,
             "range": "± 6880",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "aa1e60b8fa4602d843256a6db769999eb20d4050",
+          "message": "chore(deps): bump redb from 2.6.2 to 2.6.3 (#926)\n\nBumps [redb](https://github.com/cberner/redb) from 2.6.2 to 2.6.3.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/cberner/redb/releases\">redb's\nreleases</a>.</em></p>\n<blockquote>\n<h2>2.6.3</h2>\n<ul>\n<li>Fix correctness issue with <code>range()</code>,\n<code>extract_from_if()</code>, and <code>retain_in()</code>. If a\nRangeBounds\nwith <code>start</code> &gt; <code>end</code> was passed as an argument\nand <code>start</code> and <code>end</code> keys were stored in\ndifferent\ninternal pages in the database (i.e. a sufficient condition is that more\nthan 4KiB of key-value\npairs were between the two keys) then these methods would perform as if\nthe argument had been\n<code>start..</code></li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/cberner/redb/blob/master/CHANGELOG.md\">redb's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>2.6.3 - 2025-08-23</h2>\n<ul>\n<li>Fix correctness issue with <code>range()</code>,\n<code>extract_from_if()</code>, and <code>retain_in()</code>. If a\nRangeBounds\nwith <code>start</code> &gt; <code>end</code> was passed as an argument\nand <code>start</code> and <code>end</code> keys were stored in\ndifferent\ninternal pages in the database (i.e. a sufficient condition is that more\nthan 4KiB of key-value\npairs were between the two keys) then these methods would perform as if\nthe argument had been\n<code>start..</code></li>\n</ul>\n<h2>1.5.2 - 2025-08-23</h2>\n<ul>\n<li>Fix correctness issue with <code>range()</code>,\n<code>drain()</code>, and <code>drain_filter()</code>. If a RangeBounds\nwith <code>start</code> &gt; <code>end</code> was passed as an argument\nand <code>start</code> and <code>end</code> keys were stored in\ndifferent\ninternal pages in the database (i.e. a sufficient condition is that more\nthan 4KiB of key-value\npairs were between the two keys) then these methods would perform as if\nthe argument had been\n<code>start..</code></li>\n</ul>\n<h2>3.0.0 - 2025-08-09</h2>\n<h3>Removes support for file format v2.</h3>\n<p>Use <code>Database::upgrade()</code>, in redb 2.6, to migrate to the\nv3 file format.</p>\n<h3>General storage optimizations</h3>\n<p>The v3 file format has been further optimized to reduce the size of\nthe database. Databases with only\na few small keys will see the largest benefit, and the minimum size of a\ndatabase file has decreased\nfrom ~2.5MiB to ~50KiB. To achieve the smallest file size call\n<code>Database::compact()</code> before\ndropping the <code>Database</code>.</p>\n<p>Additionally, performance is ~15% better in bulk load benchmarks.\nThis was achieved by implementing\na custom hash function for various in-memory <code>HashSet</code>s and\n<code>HashMap</code>s, and by optimizing the usage\nof buffers held in <code>Arc</code>s to reduce the number of atomic\ninstructions executed.</p>\n<h3>Optimize storage of tuple types</h3>\n<p>Storage of variable width tuple types with arity greater than 1 is\nmore efficient. The new format\nelides the length of any fixed width fields and uses varint encoding for\nthe lengths of all variable\nwidth fields.</p>\n<p>Note that this encoding is not compatible with the serialization of\nvariable width tuples used in prior versions.\nTo load tuple data created prior to version 3.0, wrap them in the\n<code>Legacy</code> type.\nFor example, <code>TableDefinition&lt;u64, (&amp;str, u32)&gt;</code>\nbecomes <code>TableDefinition&lt;u64, Legacy&lt;(&amp;str,\nu32)&gt;&gt;</code>.\nFixed width tuples, such as <code>(u32, u64)</code> are backwards\ncompatible.</p>\n<h3>Derive for Key and Value traits</h3>\n<p><code>Key</code> and <code>Value</code> can be derived using the\n<code>redb-derive</code> crate. Note that it does not support\nschema migration. The recommended pattern to migrate schema is to create\na new table, and then\nperform a migration from the old table to the new table.</p>\n<h3>Read-only multi-process support</h3>\n<p>Multiple processes may open the same database file for reading by\nusing the new <code>ReadOnlyDatabase</code>\ntype. On platforms which support file locks, this acquires a shared lock\non the database file.</p>\n<h3>Enable garbage collection in Durability::None transactions</h3>\n<p>Non-durable transactions will now free pages when possible (pages\nallocated in a preceding</p>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/f4e3eb69dc2a4b4e01fefff0b9e039c6c7ab98f6\"><code>f4e3eb6</code></a>\nBump version to 2.6.3</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/e5e7f035e48edacc89964793b0a1d20b72cdd72c\"><code>e5e7f03</code></a>\nUpdate changelog</li>\n<li><a\nhref=\"https://github.com/cberner/redb/commit/9173a82d016a6b36bbe22099f9235e1354532e4f\"><code>9173a82</code></a>\nFix a correctness issue with range queries</li>\n<li>See full diff in <a\nhref=\"https://github.com/cberner/redb/compare/v2.6.2...v2.6.3\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=redb&package-manager=cargo&previous-version=2.6.2&new-version=2.6.3)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-09-23T09:57:20+02:00",
+          "tree_id": "472e5624fb28a24141a7701f1c66cb7a08ef890f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/aa1e60b8fa4602d843256a6db769999eb20d4050"
+        },
+        "date": 1758614780100,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 782828,
+            "range": "± 18659",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256520,
+            "range": "± 2077",
             "unit": "ns/iter"
           }
         ]
