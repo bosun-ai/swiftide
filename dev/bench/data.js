@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758632743149,
+  "lastUpdate": 1758635580381,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28067,6 +28067,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 262505,
             "range": "± 2660",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "6a688b4be6a5a443ac72aa8ec0165ce6a0bebf11",
+          "message": "fix(agents/local-executor): Respect workdir when running commands",
+          "timestamp": "2025-09-23T15:43:50+02:00",
+          "tree_id": "582eb8bce2a7f0e403fc1470dba776b78ac849bb",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6a688b4be6a5a443ac72aa8ec0165ce6a0bebf11"
+        },
+        "date": 1758635578524,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 778451,
+            "range": "± 15393",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 254485,
+            "range": "± 1646",
             "unit": "ns/iter"
           }
         ]
