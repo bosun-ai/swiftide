@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758638761406,
+  "lastUpdate": 1758697064214,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28283,6 +28283,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 254966,
             "range": "± 1287",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d8c5ee800f20ad263129ae3415740a210ce0da61",
+          "message": "chore: release v0.31.2 (#930)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.31.1 -> 0.31.2\n* `swiftide-macros`: 0.31.1 -> 0.31.2\n* `swiftide-indexing`: 0.31.1 -> 0.31.2\n* `swiftide-agents`: 0.31.1 -> 0.31.2 (✓ API compatible changes)\n* `swiftide-integrations`: 0.31.1 -> 0.31.2 (✓ API compatible changes)\n* `swiftide-langfuse`: 0.31.1 -> 0.31.2 (✓ API compatible changes)\n* `swiftide-query`: 0.31.1 -> 0.31.2\n* `swiftide`: 0.31.1 -> 0.31.2 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.31.2](https://github.com/bosun-ai/swiftide/compare/v0.31.1...v0.31.2)\n- 2025-09-23\n\n### New features\n\n-\n[f35c9b5](https://github.com/bosun-ai/swiftide/commit/f35c9b507e11f76ff7e78de35843b3310a25f3db)\n*(agents)* Add builder lite methods to SystemPrompt\n\n-\n[9f533f5](https://github.com/bosun-ai/swiftide/commit/9f533f57b2c7ed4ac1988f9e3567cda42f64b824)\n*(agents)* Add helpers to retrieve or mutate the system prompt\n\n-\n[febb7eb](https://github.com/bosun-ai/swiftide/commit/febb7eb282af98ce1124636cb66a8819265e3585)\n*(agents)* Support appending any kind of string to default SystemPrompt\n\n-\n[992478e](https://github.com/bosun-ai/swiftide/commit/992478ec8912554f73e3af6467784fd9326461c5)\n*(integrations/tree-sitter)* Splitter support for PHP\n([#932](https://github.com/bosun-ai/swiftide/pull/932))\n\n### Bug fixes\n\n-\n[5df7a48](https://github.com/bosun-ai/swiftide/commit/5df7a483bed7d980bceef5e69fd7e1415da7563f)\n*(agents)* Only log error tool calls if error after hook\n\n-\n[54dceec](https://github.com/bosun-ai/swiftide/commit/54dceece5b939a0b534891ee5902593920a3fdeb)\n*(agents/local-executor)* Also respect workdir in read file and write\nfile\n\n-\n[6a688b4](https://github.com/bosun-ai/swiftide/commit/6a688b4be6a5a443ac72aa8ec0165ce6a0bebf11)\n*(agents/local-executor)* Respect workdir when running commands\n\n-\n[5b01c58](https://github.com/bosun-ai/swiftide/commit/5b01c5854432569638fa54225268e48b4133178d)\n*(langfuse)* Use swiftide Usage in SimplePrompt\n([#929](https://github.com/bosun-ai/swiftide/pull/929))\n\n### Miscellaneous\n\n-\n[ec1e301](https://github.com/bosun-ai/swiftide/commit/ec1e301eec2793613186b9e3bcb02de52741b936)\n*(agents)* Explicit read file test for local executor\n\n-\n[8882a53](https://github.com/bosun-ai/swiftide/commit/8882a538f30c7ff457dcb3a1d48e623fbc5aad1d)\nImprove tests for control tools\n([#928](https://github.com/bosun-ai/swiftide/pull/928))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.31.1...0.31.2\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-09-24T08:48:54+02:00",
+          "tree_id": "615c5d1eabcf98c53d340f3d6149db63c87e0f44",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d8c5ee800f20ad263129ae3415740a210ce0da61"
+        },
+        "date": 1758697062320,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 808944,
+            "range": "± 15558",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260480,
+            "range": "± 1058",
             "unit": "ns/iter"
           }
         ]
