@@ -1,4 +1,3 @@
-use anyhow::Context;
 use lancedb::query::{self as lance_query_builder, QueryBase};
 use swiftide::indexing::{self, TextNode};
 use swiftide::indexing::{
@@ -163,14 +162,17 @@ async fn test_lancedb_retrieve_dynamic_search() {
                     // Return a Future using async block syntax
                     Box::pin(async move {
                         // Create a new connection for each query execution
-                        let connection = lancedb.get_connection().await?;
+                        let connection = lancedb
+                            .get_connection()
+                            .await
+                            .expect("Connection to Land DB failed");
 
                         // Open the table within the query execution context
                         let vector_table = connection
                             .open_table(&table_name)
                             .execute()
                             .await
-                            .context("Failed to open vector search table")?;
+                            .expect("Failed to open vector search table");
 
                         let vector_field =
                             lance_integration::VectorConfig::from(EmbeddedField::Combined)
@@ -179,7 +181,8 @@ async fn test_lancedb_retrieve_dynamic_search() {
                         // Build and return the query
                         let query_builder = vector_table
                             .query()
-                            .nearest_to(embedding.as_slice())?
+                            .nearest_to(embedding.as_slice())
+                            .expect("Lance DB query failed")
                             .column(&vector_field)
                             .limit(20);
 
