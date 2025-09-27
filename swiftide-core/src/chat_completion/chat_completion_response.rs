@@ -11,7 +11,7 @@ use super::{ToolCallBuilder, tools::ToolCall};
 /// When streaming, the delta is available. Every response will have the accumulated message if
 /// present. The final message will also have the final tool calls.
 #[derive(Clone, Builder, Debug, Serialize, Deserialize, PartialEq)]
-#[builder(setter(strip_option, into), build_fn(error = anyhow::Error))]
+#[builder(setter(strip_option, into), build_fn(error = super::errors::CompletionError))]
 pub struct ChatCompletionResponse {
     /// An identifier for the response
     ///

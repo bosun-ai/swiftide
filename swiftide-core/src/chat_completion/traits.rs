@@ -1,4 +1,3 @@
-use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 use futures_util::Stream;
@@ -123,7 +122,7 @@ pub trait Tool: Send + Sync + DynClone {
 /// It also allows for tools to be dynamically loaded and unloaded, etc.
 #[async_trait]
 pub trait ToolBox: Send + Sync + DynClone {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>>;
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError>;
 
     fn name(&self) -> Cow<'_, str> {
         Cow::Borrowed("Unnamed ToolBox")
@@ -139,42 +138,42 @@ pub trait ToolBox: Send + Sync + DynClone {
 
 #[async_trait]
 impl ToolBox for Vec<Box<dyn Tool>> {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         Ok(self.clone())
     }
 }
 
 #[async_trait]
 impl ToolBox for Box<dyn ToolBox> {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         (**self).available_tools().await
     }
 }
 
 #[async_trait]
 impl ToolBox for Arc<dyn ToolBox> {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         (**self).available_tools().await
     }
 }
 
 #[async_trait]
 impl ToolBox for &dyn ToolBox {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         (**self).available_tools().await
     }
 }
 
 #[async_trait]
 impl ToolBox for &[Box<dyn Tool>] {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         Ok(self.to_vec())
     }
 }
 
 #[async_trait]
 impl ToolBox for [Box<dyn Tool>] {
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         Ok(self.to_vec())
     }
 }

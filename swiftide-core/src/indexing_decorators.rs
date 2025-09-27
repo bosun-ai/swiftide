@@ -1,3 +1,8 @@
+#![allow(
+    clippy::enum_glob_use,
+    reason = "Use is well scoped and helps with verbosity"
+)]
+
 use std::fmt::Debug;
 
 use crate::chat_completion::{ChatCompletionRequest, ChatCompletionResponse};
@@ -70,15 +75,14 @@ impl<P: SimplePrompt + Clone> SimplePrompt for LanguageModelWithBackOff<P> {
         let op = || {
             let prompt = prompt.clone();
             async {
-                self.inner.prompt(prompt).await.map_err(|e| match e {
-                    LanguageModelError::ContextLengthExceeded(e) => {
-                        backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
-                    }
-                    LanguageModelError::PermanentError(e) => {
-                        backoff::Error::Permanent(LanguageModelError::PermanentError(e))
-                    }
-                    LanguageModelError::TransientError(e) => {
-                        backoff::Error::transient(LanguageModelError::TransientError(e))
+                self.inner.prompt(prompt).await.map_err(|e| {
+                    use {LanguageModelError::*, backoff::Error::*};
+                    match e {
+                        e @ TransientError(_) => backoff::Error::transient(e),
+                        e @ (Completion(_)
+                        | Unknown(_)
+                        | ContextLengthExceeded(_)
+                        | PermanentError(_)) => Permanent(e),
                     }
                 })
             }
@@ -112,15 +116,14 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
         let strategy = self.strategy();
 
         let op = || async move {
-            self.inner.complete(request).await.map_err(|e| match e {
-                LanguageModelError::ContextLengthExceeded(e) => {
-                    backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
-                }
-                LanguageModelError::PermanentError(e) => {
-                    backoff::Error::Permanent(LanguageModelError::PermanentError(e))
-                }
-                LanguageModelError::TransientError(e) => {
-                    backoff::Error::transient(LanguageModelError::TransientError(e))
+            self.inner.complete(request).await.map_err(|e| {
+                use {LanguageModelError::*, backoff::Error::*};
+                match e {
+                    e @ TransientError(_) => backoff::Error::transient(e),
+                    e @ (Completion(_)
+                    | Unknown(_)
+                    | ContextLengthExceeded(_)
+                    | PermanentError(_)) => Permanent(e),
                 }
             })
         };
@@ -133,15 +136,14 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
 
         let stream = self.inner.complete_stream(request).await;
         let stream = stream
-            .map_err(|e| match e {
-                LanguageModelError::ContextLengthExceeded(e) => {
-                    backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
-                }
-                LanguageModelError::PermanentError(e) => {
-                    backoff::Error::Permanent(LanguageModelError::PermanentError(e))
-                }
-                LanguageModelError::TransientError(e) => {
-                    backoff::Error::transient(LanguageModelError::TransientError(e))
+            .map_err(|e| {
+                use {LanguageModelError::*, backoff::Error::*};
+                match e {
+                    e @ TransientError(_) => backoff::Error::transient(e),
+                    e @ (Completion(_)
+                    | Unknown(_)
+                    | ContextLengthExceeded(_)
+                    | PermanentError(_)) => Permanent(e),
                 }
             })
             .boxed();

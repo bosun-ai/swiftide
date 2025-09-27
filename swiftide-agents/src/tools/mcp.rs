@@ -17,6 +17,7 @@ use schemars::Schema;
 use serde::{Deserialize, Serialize};
 use swiftide_core::CommandError;
 use swiftide_core::chat_completion::ToolCall;
+use swiftide_core::chat_completion::errors::ToolBuildError;
 use swiftide_core::{
     Tool, ToolBox,
     chat_completion::{ToolSpec, errors::ToolError},
@@ -146,56 +147,51 @@ impl McpToolbox {
 
         Ok(())
     }
+
+    fn build_tool(&self, t: rmcp::model::Tool) -> Result<Box<dyn Tool>, ToolBuildError> {
+        let schema_value = t.schema_as_json_value();
+        tracing::trace!(schema = ?schema_value, "Parsing tool input schema for {}", t.name);
+
+        let mut tool_spec_builder = ToolSpec::builder();
+        tool_spec_builder.name(t.name.clone());
+        tool_spec_builder.description(t.description.unwrap_or_default());
+
+        match schema_value {
+            serde_json::Value::Null => {}
+            value => {
+                let schema: Schema = serde_json::from_value(value)?;
+                tool_spec_builder.parameters_schema(schema);
+            }
+        }
+
+        let tool_spec = tool_spec_builder.build()?;
+
+        Ok(Box::new(McpTool {
+            client: Arc::clone(&self.service),
+            tool_name: t.name.into(),
+            tool_spec,
+        }) as Box<dyn Tool>)
+    }
 }
 
 #[async_trait]
 impl ToolBox for McpToolbox {
     #[tracing::instrument(skip_all)]
-    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>> {
+    async fn available_tools(&self) -> Result<Vec<Box<dyn Tool>>, ToolError> {
         let Some(service) = &*self.service.read().await else {
-            anyhow::bail!("No service available");
+            return Err(ToolError::NoService);
         };
         tracing::debug!(name = self.name(), "Connecting to mcp server");
         let peer_info = service.peer_info();
         tracing::debug!(?peer_info, name = self.name(), "Connected to mcp server");
 
         tracing::debug!(name = self.name(), "Listing tools from mcp server");
-        let tools = service
-            .list_all_tools()
-            .await
-            .context("Failed to list tools")?;
+        let tools = service.list_all_tools().await.map_err(ToolError::List)?;
 
         let tools = tools
             .into_iter()
-            .map(|t| {
-                let schema_value = t.schema_as_json_value();
-                tracing::trace!(schema = ?schema_value, "Parsing tool input schema for {}", t.name);
-
-                let mut tool_spec_builder = ToolSpec::builder();
-                tool_spec_builder.name(t.name.clone());
-                tool_spec_builder.description(t.description.unwrap_or_default());
-
-                match schema_value {
-                    serde_json::Value::Null => {}
-                    value => {
-                        let schema: Schema = serde_json::from_value(value)
-                            .context("Failed to parse tool input schema")?;
-                        tool_spec_builder.parameters_schema(schema);
-                    }
-                }
-
-                let tool_spec = tool_spec_builder
-                    .build()
-                    .context("Failed to build tool spec")?;
-
-                Ok(Box::new(McpTool {
-                    client: Arc::clone(&self.service),
-                    tool_name: t.name.into(),
-                    tool_spec,
-                }) as Box<dyn Tool>)
-            })
-            .collect::<Result<Vec<_>>>()
-            .context("Failed to build mcp tool specs")?;
+            .map(|t| self.build_tool(t))
+            .collect::<Result<Vec<_>, ToolBuildError>>()?;
 
         if let Some(filter) = self.filter.as_ref() {
             match filter {
@@ -258,17 +254,14 @@ impl Tool for McpTool {
         };
 
         tracing::debug!(request = ?request, tool = self.name().as_ref(), "Invoking mcp tool");
-        let response = service
-            .call_tool(request)
-            .await
-            .context("Failed to call tool")?;
+        let response = service.call_tool(request).await.map_err(ToolError::Call)?;
 
         tracing::debug!(response = ?response, tool = self.name().as_ref(), "Received response from mcp tool");
         let Some(content) = response.content else {
             if response.is_error.unwrap_or(false) {
-                return Err(ToolError::Unknown(anyhow::anyhow!(
-                    "Error received from mcp tool without content"
-                )));
+                return Err(ToolError::Unknown(
+                    "Error received from mcp tool without content".to_owned(),
+                ));
             }
 
             return Ok("Tool executed successfully".into());
@@ -282,7 +275,7 @@ impl Tool for McpTool {
         if let Some(error) = response.is_error
             && error
         {
-            return Err(ToolError::Unknown(anyhow::anyhow!(
+            return Err(ToolError::Unknown(format!(
                 "Failed to execute mcp tool: {content}"
             )));
         }

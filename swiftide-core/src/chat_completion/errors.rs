@@ -1,10 +1,21 @@
 use std::borrow::Cow;
 
+use rmcp::ServiceError;
 use thiserror::Error;
 
 use crate::CommandError;
 
-use super::ChatCompletionStream;
+use super::{ChatCompletionStream, ToolSpecBuilderError};
+
+/// Errors generated when building a [`crate::Tool`] object from [`rmcp::model::Tool`]
+#[derive(Debug, Error)]
+pub enum ToolBuildError {
+    #[error("Failed to parse tool input schema: {0}")]
+    Parse(#[from] serde_json::Error),
+
+    #[error("Failed to build tool spec: {0}")]
+    ToolSpec(#[from] ToolSpecBuilderError),
+}
 
 /// A `ToolError` is an error that occurs when a tool is invoked.
 ///
@@ -24,8 +35,20 @@ pub enum ToolError {
     #[error("tool execution failed: {0:#}")]
     ExecutionFailed(#[from] CommandError),
 
-    #[error(transparent)]
-    Unknown(#[from] anyhow::Error),
+    #[error("no service available")]
+    NoService,
+
+    #[error("Failed to list tools: {0}")]
+    List(ServiceError),
+
+    #[error("Failed to call tool: {0}")]
+    Call(ServiceError),
+
+    #[error("Failed to build mcp tool specs: {0}")]
+    ToolBuild(#[from] ToolBuildError),
+
+    #[error("Unknown failure: {0}")]
+    Unknown(String),
 }
 
 impl ToolError {
@@ -43,11 +66,6 @@ impl ToolError {
     pub fn execution_failed(e: impl Into<CommandError>) -> Self {
         ToolError::ExecutionFailed(e.into())
     }
-
-    /// Tool failed with an unknown error
-    pub fn unknown(e: impl Into<anyhow::Error>) -> Self {
-        ToolError::Unknown(e.into())
-    }
 }
 
 type BoxedError = Box<dyn std::error::Error + Send + Sync>;
@@ -60,6 +78,11 @@ pub enum LanguageModelError {
     PermanentError(BoxedError),
     #[error("Transient error: {0:#}")]
     TransientError(BoxedError),
+    #[error("Failed to execute chat completion: {0:#}")]
+    Completion(#[from] CompletionError),
+    // Remove this variant after dropping `anyhow` from swiftide-integrations
+    #[error("{0:#}")]
+    Unknown(#[from] anyhow::Error),
 }
 
 impl LanguageModelError {
@@ -82,12 +105,6 @@ impl From<BoxedError> for LanguageModelError {
     }
 }
 
-impl From<anyhow::Error> for LanguageModelError {
-    fn from(e: anyhow::Error) -> Self {
-        LanguageModelError::PermanentError(e.into())
-    }
-}
-
 // Make it easier to use the error in streaming functions
 
 impl From<LanguageModelError> for ChatCompletionStream {
@@ -95,3 +112,6 @@ impl From<LanguageModelError> for ChatCompletionStream {
         Box::pin(futures_util::stream::once(async move { Err(val) }))
     }
 }
+
+#[derive(Error, Debug)]
+pub enum CompletionError {}
