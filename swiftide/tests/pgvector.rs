@@ -6,7 +6,7 @@ use swiftide_core::document::Document;
 use swiftide_integrations::treesitter::metadata_qa_code;
 use temp_dir::TempDir;
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use sqlx::{prelude::FromRow, types::Uuid};
 use swiftide::{
     indexing::{
@@ -19,7 +19,10 @@ use swiftide::{
         self,
         pgvector::{FieldConfig, PgVector, PgVectorBuilder, VectorConfig},
     },
-    query::{self, Query, answers, query_transformers, response_transformers, states},
+    query::{
+        self, Query, answers, query_transformers, response_transformers,
+        search_strategies::StrategyError, states,
+    },
 };
 use swiftide_test_utils::{mock_chat_completions, openai_client};
 use wiremock::MockServer;
@@ -330,7 +333,7 @@ async fn test_pgvector_retrieve_dynamic_search() {
     // Configure search strategy
     // Create a custom query generator with metadata filtering
     let custom_strategy = query::search_strategies::CustomStrategy::from_query(
-        move |query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
+        move |query_node: &Query<states::Pending>| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>, StrategyError> {
             const CUSTOM_STRATEGY_MAX_RESULTS: i64 = 5;
             let mut builder = sqlx::QueryBuilder::new("");
             let table: &str = pgv_storage_for_closure.get_table_name();
@@ -362,7 +365,7 @@ async fn test_pgvector_retrieve_dynamic_search() {
                 query_node
                     .embedding
                     .as_ref()
-                    .ok_or_else(|| anyhow!("Missing embedding in query state"))?
+                    .expect("Missing embedding in query state")
                     .clone(),
             );
             builder.push("::vector");

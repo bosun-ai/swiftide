@@ -30,6 +30,7 @@ pin-project = { workspace = true }
 thiserror = { workspace = true }
 metrics = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"] }
+rmcp = { workspace = true, features = ["server"] }
 
 tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }
