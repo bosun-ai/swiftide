@@ -170,3 +170,7 @@ path = "structured_prompt.rs"
 [[example]]
 name = "langfuse"
 path = "langfuse.rs"
+
+[[example]]
+name = "tool-custom-schema"
+path = "tool_custom_schema.rs"
