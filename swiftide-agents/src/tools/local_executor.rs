@@ -213,6 +213,8 @@ impl LocalExecutor {
 }
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
+    type Owned = LocalExecutor;
+
     /// Execute a `Command` on the local machine
     #[tracing::instrument(skip_self)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
@@ -237,6 +239,19 @@ impl ToolExecutor for LocalExecutor {
 
         Ok(loader.into_stream())
     }
+
+    fn current_dir(&self, path: &Path) -> Result<Self::Owned, CommandError> {
+        let new_workdir = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            self.workdir.join(path)
+        };
+
+        let mut executor = self.clone();
+        executor.workdir = new_workdir;
+
+        Ok(executor)
+    }
 }
 
 #[cfg(test)]
@@ -244,6 +259,7 @@ mod tests {
     use super::*;
     use futures_util::StreamExt as _;
     use indoc::indoc;
+    use std::{path::Path, sync::Arc};
     use swiftide_core::{Command, ToolExecutor};
     use temp_dir::TempDir;
 
@@ -581,6 +597,54 @@ print(1 + 2)"#;
 
         // 6. Clean up
         fs::remove_file(&expected_path)?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_current_dir() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let base_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: base_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let nested = executor.current_dir(Path::new("nested"))?;
+        nested
+            .exec_cmd(&Command::WriteFile("file.txt".into(), "hello".into()))
+            .await?;
+
+        assert!(!base_path.join("file.txt").exists());
+        assert!(base_path.join("nested").join("file.txt").exists());
+        assert_eq!(executor.workdir, base_path);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_current_dir_dyn() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let base_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: base_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let dyn_exec: Arc<dyn swiftide_core::DynToolExecutor> = Arc::new(executor.clone());
+        let nested = dyn_exec.current_dir(Path::new("nested"))?;
+
+        nested
+            .exec_cmd(&Command::WriteFile(
+                "nested_file.txt".into(),
+                "hello".into(),
+            ))
+            .await?;
+
+        assert!(base_path.join("nested").join("nested_file.txt").exists());
+        assert!(!base_path.join("nested_file.txt").exists());
 
         Ok(())
     }

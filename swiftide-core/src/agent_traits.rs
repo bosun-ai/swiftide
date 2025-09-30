@@ -26,6 +26,9 @@ use thiserror::Error;
 /// Additionally, the executor can be used stream files files for indexing.
 #[async_trait]
 pub trait ToolExecutor: Send + Sync + DynClone {
+    /// Owned executor type returned by `current_dir`.
+    type Owned: ToolExecutor + Send + Sync + DynClone + 'static;
+
     /// Execute a command in the executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
@@ -35,14 +38,33 @@ pub trait ToolExecutor: Send + Sync + DynClone {
         path: &Path,
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream<String>>;
+
+    /// Create a new executor that operates relative to the provided directory.
+    fn current_dir(&self, path: &Path) -> Result<Self::Owned, CommandError>;
 }
 
-dyn_clone::clone_trait_object!(ToolExecutor);
+#[async_trait]
+pub trait DynToolExecutor: Send + Sync + DynClone {
+    async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
+
+    async fn stream_files(
+        &self,
+        path: &Path,
+        extensions: Option<Vec<String>>,
+    ) -> Result<IndexingStream<String>>;
+
+    fn current_dir(&self, path: &Path) -> Result<Arc<dyn DynToolExecutor>, CommandError>;
+}
+
+dyn_clone::clone_trait_object!(DynToolExecutor);
 
 #[async_trait]
-impl<T: ToolExecutor> ToolExecutor for &T {
+impl<T> DynToolExecutor for T
+where
+    T: ToolExecutor + Send + Sync + DynClone + 'static,
+{
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
-        (*self).exec_cmd(cmd).await
+        ToolExecutor::exec_cmd(self, cmd).await
     }
 
     async fn stream_files(
@@ -50,15 +72,21 @@ impl<T: ToolExecutor> ToolExecutor for &T {
         path: &Path,
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream<String>> {
-        (*self).stream_files(path, extensions).await
+        ToolExecutor::stream_files(self, path, extensions).await
+    }
+
+    fn current_dir(&self, path: &Path) -> Result<Arc<dyn DynToolExecutor>, CommandError> {
+        let owned = ToolExecutor::current_dir(self, path)?;
+        Ok(Arc::new(owned) as Arc<dyn DynToolExecutor>)
     }
 }
 
 #[async_trait]
-impl ToolExecutor for Arc<dyn ToolExecutor> {
+impl DynToolExecutor for Arc<dyn DynToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         self.as_ref().exec_cmd(cmd).await
     }
+
     async fn stream_files(
         &self,
         path: &Path,
@@ -66,13 +94,18 @@ impl ToolExecutor for Arc<dyn ToolExecutor> {
     ) -> Result<IndexingStream<String>> {
         self.as_ref().stream_files(path, extensions).await
     }
+
+    fn current_dir(&self, path: &Path) -> Result<Arc<dyn DynToolExecutor>, CommandError> {
+        self.as_ref().current_dir(path)
+    }
 }
 
 #[async_trait]
-impl ToolExecutor for Box<dyn ToolExecutor> {
+impl DynToolExecutor for Box<dyn DynToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         self.as_ref().exec_cmd(cmd).await
     }
+
     async fn stream_files(
         &self,
         path: &Path,
@@ -80,19 +113,28 @@ impl ToolExecutor for Box<dyn ToolExecutor> {
     ) -> Result<IndexingStream<String>> {
         self.as_ref().stream_files(path, extensions).await
     }
+
+    fn current_dir(&self, path: &Path) -> Result<Arc<dyn DynToolExecutor>, CommandError> {
+        self.as_ref().current_dir(path)
+    }
 }
 
 #[async_trait]
-impl ToolExecutor for &dyn ToolExecutor {
+impl DynToolExecutor for &dyn DynToolExecutor {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
-        (*self).exec_cmd(cmd).await
+        (**self).exec_cmd(cmd).await
     }
+
     async fn stream_files(
         &self,
         path: &Path,
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream<String>> {
-        (*self).stream_files(path, extensions).await
+        (**self).stream_files(path, extensions).await
+    }
+
+    fn current_dir(&self, path: &Path) -> Result<Arc<dyn DynToolExecutor>, CommandError> {
+        (**self).current_dir(path)
     }
 }
 
@@ -254,7 +296,7 @@ pub trait AgentContext: Send + Sync {
     #[deprecated(note = "use executor instead")]
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
-    fn executor(&self) -> &Arc<dyn ToolExecutor>;
+    fn executor(&self) -> &Arc<dyn DynToolExecutor>;
 
     async fn history(&self) -> Result<Vec<ChatMessage>>;
 
@@ -294,7 +336,7 @@ impl AgentContext for Box<dyn AgentContext> {
         (**self).exec_cmd(cmd).await
     }
 
-    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+    fn executor(&self) -> &Arc<dyn DynToolExecutor> {
         (**self).executor()
     }
 
@@ -338,7 +380,7 @@ impl AgentContext for Arc<dyn AgentContext> {
         (**self).exec_cmd(cmd).await
     }
 
-    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+    fn executor(&self) -> &Arc<dyn DynToolExecutor> {
         (**self).executor()
     }
 
@@ -382,7 +424,7 @@ impl AgentContext for &dyn AgentContext {
         (**self).exec_cmd(cmd).await
     }
 
-    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+    fn executor(&self) -> &Arc<dyn DynToolExecutor> {
         (**self).executor()
     }
 
@@ -430,7 +472,7 @@ impl AgentContext for () {
         )))
     }
 
-    fn executor(&self) -> &Arc<dyn ToolExecutor> {
+    fn executor(&self) -> &Arc<dyn DynToolExecutor> {
         unimplemented!("Empty agent context does not have a tool executor")
     }
 
