@@ -24,7 +24,7 @@ pub struct ToolArgs {
     params: Vec<ParamOptions>,
 }
 
-#[derive(FromMeta, Debug)]
+#[derive(FromMeta, Debug, Default)]
 #[darling(default)]
 pub struct ParamOptions {
     pub name: String,
@@ -40,19 +40,6 @@ pub struct ParamOptions {
 
     #[darling(skip)]
     pub resolved_type: Option<syn::Type>,
-}
-
-impl Default for ParamOptions {
-    fn default() -> Self {
-        ParamOptions {
-            name: String::new(),
-            description: String::new(),
-            json_type: None,
-            rust_type: None,
-            required: None,
-            resolved_type: None,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -290,8 +277,7 @@ fn is_option_type(ty: &syn::Type) -> bool {
             .path
             .segments
             .last()
-            .map(|segment| segment.ident == "Option")
-            .unwrap_or(false);
+            .is_some_and(|segment| segment.ident == "Option");
     }
 
     false

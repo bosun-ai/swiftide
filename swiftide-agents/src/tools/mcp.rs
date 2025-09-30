@@ -304,7 +304,6 @@ mod tests {
     use super::*;
     use copied_from_rmcp::Calculator;
     use rmcp::serve_server;
-    use serde_json::json;
     use tokio::net::{UnixListener, UnixStream};
 
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
@@ -371,10 +370,9 @@ mod tests {
         // The input schema type for the input param is string with null allowed
         let optional_tool = t.iter().find(|t| t.name() == "optional").unwrap();
         assert_eq!(optional_tool.tool_spec().name, "optional");
-        let schema = optional_tool
-            .tool_spec()
+        let spec = optional_tool.tool_spec();
+        let schema = spec
             .parameters_schema
-            .as_ref()
             .expect("optional tool should expose a schema");
         let schema_json = serde_json::to_value(schema).unwrap();
         assert_eq!(

@@ -220,10 +220,10 @@ impl std::hash::Hash for ToolSpec {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.description.hash(state);
-        if let Some(schema) = &self.parameters_schema {
-            if let Ok(serialized) = serde_json::to_vec(schema) {
-                serialized.hash(state);
-            }
+        if let Some(schema) = &self.parameters_schema
+            && let Ok(serialized) = serde_json::to_vec(schema)
+        {
+            serialized.hash(state);
         }
     }
 }
