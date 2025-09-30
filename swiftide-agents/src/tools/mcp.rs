@@ -4,7 +4,7 @@
 //!
 //! Supports any transport that the `rmcp` crate supports
 use std::borrow::Cow;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
@@ -13,13 +13,13 @@ use rmcp::model::{ClientInfo, Implementation, InitializeRequestParam};
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
 use rmcp::{ServiceExt, model::CallToolRequestParam};
+use schemars::Schema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use swiftide_core::CommandError;
 use swiftide_core::chat_completion::ToolCall;
 use swiftide_core::{
     Tool, ToolBox,
-    chat_completion::{ParamSpec, ParamType, ToolSpec, errors::ToolError},
+    chat_completion::{ToolSpec, errors::ToolError},
 };
 use tokio::sync::RwLock;
 
@@ -148,15 +148,6 @@ impl McpToolbox {
     }
 }
 
-#[derive(Deserialize, Debug)]
-struct ToolInputSchema {
-    #[serde(rename = "type")]
-    #[allow(dead_code)]
-    pub type_: String, // This _must_ be object
-    pub properties: Option<HashMap<String, Value>>,
-    pub required: Option<Vec<String>>,
-}
-
 #[async_trait]
 impl ToolBox for McpToolbox {
     #[tracing::instrument(skip_all)]
@@ -177,41 +168,25 @@ impl ToolBox for McpToolbox {
         let tools = tools
             .into_iter()
             .map(|t| {
-                let schema: ToolInputSchema = serde_json::from_value(t.schema_as_json_value())
-                    .context("Failed to parse tool input schema")?;
+                let schema_value = t.schema_as_json_value();
+                tracing::trace!(schema = ?schema_value, "Parsing tool input schema for {}", t.name);
 
-                tracing::trace!(?schema, "Parsing tool input schema for {}", t.name);
+                let mut tool_spec_builder = ToolSpec::builder();
+                tool_spec_builder.name(t.name.clone());
+                tool_spec_builder.description(t.description.unwrap_or_default());
 
-                let mut tool_spec = ToolSpec::builder()
-                    .name(t.name.clone())
-                    .description(t.description.unwrap_or_default())
-                    .to_owned();
-                let mut parameters = Vec::new();
-
-                if let Some(mut p) = schema.properties {
-                    for (name, value) in &mut p {
-                        let param = ParamSpec::builder()
-                            .name(name)
-                            .description(
-                                value
-                                    .get("description")
-                                    .and_then(Value::as_str)
-                                    .unwrap_or(""),
-                            )
-                            .ty(value
-                                .get_mut("type")
-                                .and_then(|t| serde_json::from_value(t.take()).ok())
-                                .unwrap_or(ParamType::String))
-                            .required(schema.required.as_ref().is_some_and(|r| r.contains(name)))
-                            .build()
-                            .context("Failed to build parameters for mcp tool")?;
-
-                        parameters.push(param);
+                match schema_value {
+                    serde_json::Value::Null => {}
+                    value => {
+                        let schema: Schema = serde_json::from_value(value)
+                            .context("Failed to parse tool input schema")?;
+                        tool_spec_builder.parameters_schema(schema);
                     }
                 }
 
-                tool_spec.parameters(parameters);
-                let tool_spec = tool_spec.build().context("Failed to build tool spec")?;
+                let tool_spec = tool_spec_builder
+                    .build()
+                    .context("Failed to build tool spec")?;
 
                 Ok(Box::new(McpTool {
                     client: Arc::clone(&self.service),
@@ -393,14 +368,22 @@ mod tests {
             .to_string();
         assert_eq!(result, "-10");
 
-        // The input schema type for the input param is ["string", "null"]
+        // The input schema type for the input param is string with null allowed
         let optional_tool = t.iter().find(|t| t.name() == "optional").unwrap();
-        dbg!(optional_tool.tool_spec());
         assert_eq!(optional_tool.tool_spec().name, "optional");
-        assert_eq!(optional_tool.tool_spec().parameters.len(), 1);
+        let schema = optional_tool
+            .tool_spec()
+            .parameters_schema
+            .as_ref()
+            .expect("optional tool should expose a schema");
+        let schema_json = serde_json::to_value(schema).unwrap();
         assert_eq!(
-            serde_json::to_string(&optional_tool.tool_spec().parameters[0].ty).unwrap(),
-            json!("string").to_string()
+            schema_json
+                .get("properties")
+                .and_then(|props| props.get("text"))
+                .and_then(|prop| prop.get("type"))
+                .and_then(serde_json::Value::as_str),
+            Some("string")
         );
 
         let tool_call = builder.args(r#"{"text": "hello"}"#).build().unwrap();

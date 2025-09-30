@@ -544,30 +544,26 @@ pub(crate) fn usage_from_counts(
 }
 
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
-    let mut properties = serde_json::Map::new();
-
-    for param in &spec.parameters {
-        properties.insert(
-            param.name.to_string(),
-            json!({
-                "type": param.ty.as_ref(),
-                "description": &param.description,
-            }),
-        );
-    }
+    let parameters = match &spec.parameters_schema {
+        Some(schema) => serde_json::to_value(schema)?,
+        None => json!({
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+        }),
+    };
 
     ChatCompletionToolArgs::default()
         .r#type(ChatCompletionToolType::Function)
-        .function(FunctionObjectArgs::default()
-            .name(&spec.name)
-            .description(&spec.description)
-            .strict(true)
-            .parameters(json!({
-                "type": "object",
-                "properties": properties,
-                "required": spec.parameters.iter().filter(|param| param.required).map(|param| &param.name).collect_vec(),
-                "additionalProperties": false,
-            })).build()?).build()
+        .function(
+            FunctionObjectArgs::default()
+                .name(&spec.name)
+                .description(&spec.description)
+                .strict(true)
+                .parameters(parameters)
+                .build()?,
+        )
+        .build()
         .map_err(anyhow::Error::from)
 }
 

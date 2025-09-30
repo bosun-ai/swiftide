@@ -5,6 +5,7 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
 #[derive(
     ::swiftide::reexports::serde::Serialize,
     ::swiftide::reexports::serde::Deserialize,
+    ::swiftide::reexports::schemars::JsonSchema,
     Debug
 )]
 pub struct HelloDeriveArgs {
@@ -37,13 +38,8 @@ impl<'a> swiftide::chat_completion::Tool for HelloDerive<'a> {
         swiftide::chat_completion::ToolSpec::builder()
             .name("hello_derive")
             .description("Hello derive")
-            .parameters(
-                vec![
-                    swiftide::chat_completion::ParamSpec::builder().name("test")
-                    .description("test param")
-                    .ty(::swiftide::chat_completion::ParamType::String).required(true)
-                    .build().expect("infallible")
-                ],
+            .parameters_schema(
+                ::swiftide::reexports::schemars::schema_for!(HelloDeriveArgs),
             )
             .build()
             .unwrap()
