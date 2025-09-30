@@ -10,7 +10,7 @@ use std::{
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use derive_builder::Builder;
-use swiftide_core::{Command, CommandError, CommandKind, CommandOutput, Loader, ToolExecutor};
+use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{
     io::{AsyncBufReadExt as _, AsyncWriteExt as _},
@@ -59,7 +59,7 @@ impl LocalExecutor {
     }
 
     fn resolve_workdir(&self, cmd: &Command) -> PathBuf {
-        match cmd.current_dir() {
+        match cmd.current_dir_path() {
             Some(path) if path.is_absolute() => path.to_path_buf(),
             Some(path) => self.workdir.join(path),
             None => self.workdir.clone(),
@@ -240,10 +240,10 @@ impl ToolExecutor for LocalExecutor {
     #[tracing::instrument(skip_self)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
         let workdir = __self.resolve_workdir(cmd);
-        match cmd.kind() {
-            CommandKind::Shell(command) => __self.exec_shell(command, &workdir).await,
-            CommandKind::ReadFile(path) => __self.exec_read_file(&workdir, path).await,
-            CommandKind::WriteFile(path, content) => {
+        match cmd {
+            Command::Shell { command, .. } => __self.exec_shell(command, &workdir).await,
+            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path).await,
+            Command::WriteFile { path, content, .. } => {
                 __self.exec_write_file(&workdir, path, content).await
             }
             _ => unimplemented!("Unsupported command: {cmd:?}"),
@@ -641,24 +641,22 @@ print(1 + 2)"#;
         let nested_dir = base_path.join("nested");
         fs::create_dir_all(&nested_dir)?;
 
-        let pwd_cmd = Command::shell("pwd").with_current_dir(Path::new("nested"));
+        let mut pwd_cmd = Command::shell("pwd");
+        pwd_cmd.current_dir(Path::new("nested"));
         let pwd_output = executor.exec_cmd(&pwd_cmd).await?.to_string();
         let pwd_path = std::fs::canonicalize(pwd_output.trim())?;
         assert_eq!(pwd_path, std::fs::canonicalize(&nested_dir)?);
 
-        executor
-            .exec_cmd(
-                &Command::write_file("file.txt", "hello").with_current_dir(Path::new("nested")),
-            )
-            .await?;
+        let mut write_cmd = Command::write_file("file.txt", "hello");
+        write_cmd.current_dir(Path::new("nested"));
+        executor.exec_cmd(&write_cmd).await?;
 
         assert!(!base_path.join("file.txt").exists());
         assert!(nested_dir.join("file.txt").exists());
 
-        let read_output = executor
-            .exec_cmd(&Command::read_file("file.txt").with_current_dir(Path::new("nested")))
-            .await?
-            .to_string();
+        let mut read_cmd = Command::read_file("file.txt");
+        read_cmd.current_dir(Path::new("nested"));
+        let read_output = executor.exec_cmd(&read_cmd).await?.to_string();
         assert_eq!(read_output.trim(), "hello");
 
         Ok(())

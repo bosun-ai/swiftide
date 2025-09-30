@@ -162,43 +162,46 @@ impl From<std::io::Error> for CommandError {
 /// There is an ongoing consideration to make this an associated type on the executor
 ///
 /// TODO: Should be able to borrow everything?
-/// Commands that can be executed by the executor.
 ///
-/// Use the constructor helpers (e.g. [`Command::shell`]) and then chain
-/// configuration methods such as [`Command::with_current_dir`] for
-/// builder-style ergonomics.
+/// Use the constructor helpers (e.g. [`Command::shell`]) and then chain configuration methods
+/// such as [`Command::with_current_dir`] or [`Command::current_dir`] for builder-style ergonomics.
 #[derive(Debug, Clone)]
-pub struct Command {
-    kind: CommandKind,
-    current_dir: Option<PathBuf>,
-}
-
 #[non_exhaustive]
-#[derive(Debug, Clone)]
-pub enum CommandKind {
-    Shell(String),
-    ReadFile(PathBuf),
-    WriteFile(PathBuf, String),
+pub enum Command {
+    Shell {
+        command: String,
+        current_dir: Option<PathBuf>,
+    },
+    ReadFile {
+        path: PathBuf,
+        current_dir: Option<PathBuf>,
+    },
+    WriteFile {
+        path: PathBuf,
+        content: String,
+        current_dir: Option<PathBuf>,
+    },
 }
 
 impl Command {
     pub fn shell<S: Into<String>>(cmd: S) -> Self {
-        Self {
-            kind: CommandKind::Shell(cmd.into()),
+        Command::Shell {
+            command: cmd.into(),
             current_dir: None,
         }
     }
 
     pub fn read_file<P: Into<PathBuf>>(path: P) -> Self {
-        Self {
-            kind: CommandKind::ReadFile(path.into()),
+        Command::ReadFile {
+            path: path.into(),
             current_dir: None,
         }
     }
 
     pub fn write_file<P: Into<PathBuf>, S: Into<String>>(path: P, content: S) -> Self {
-        Self {
-            kind: CommandKind::WriteFile(path.into(), content.into()),
+        Command::WriteFile {
+            path: path.into(),
+            content: content.into(),
             current_dir: None,
         }
     }
@@ -208,17 +211,41 @@ impl Command {
     /// Executors may interpret relative paths in the context of their own
     /// working directory.
     pub fn with_current_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
-        self.current_dir = Some(path.into());
+        self.current_dir(path);
         self
     }
 
-    pub fn current_dir(&self) -> Option<&Path> {
-        self.current_dir.as_deref()
+    /// Override the working directory using the `std::process::Command`
+    /// builder-lite style API.
+    pub fn current_dir<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
+        let dir = Some(path.into());
+        match self {
+            Command::Shell { current_dir, .. }
+            | Command::ReadFile { current_dir, .. }
+            | Command::WriteFile { current_dir, .. } => {
+                *current_dir = dir;
+            }
+        }
+        self
     }
 
-    /// Access the underlying command payload.
-    pub fn kind(&self) -> &CommandKind {
-        &self.kind
+    pub fn clear_current_dir(&mut self) -> &mut Self {
+        match self {
+            Command::Shell { current_dir, .. }
+            | Command::ReadFile { current_dir, .. }
+            | Command::WriteFile { current_dir, .. } => {
+                *current_dir = None;
+            }
+        }
+        self
+    }
+
+    pub fn current_dir_path(&self) -> Option<&Path> {
+        match self {
+            Command::Shell { current_dir, .. }
+            | Command::ReadFile { current_dir, .. }
+            | Command::WriteFile { current_dir, .. } => current_dir.as_deref(),
+        }
     }
 }
 
