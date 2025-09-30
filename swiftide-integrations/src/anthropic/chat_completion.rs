@@ -322,17 +322,6 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
 fn tools_to_anthropic(
     spec: &ToolSpec,
 ) -> Result<serde_json::value::Map<String, serde_json::Value>> {
-    let mut properties = serde_json::Map::new();
-    for param in &spec.parameters {
-        properties.insert(
-            param.name.to_string(),
-            json!({
-
-                        "type": param.ty.as_ref(),
-                        "description": &param.description,
-            }),
-        );
-    }
     let mut map = json!({
         "name": &spec.name,
         "description": &spec.description,
@@ -341,21 +330,15 @@ fn tools_to_anthropic(
     .context("Failed to build tool")?
     .to_owned();
 
-    let required = spec
-        .parameters
-        .iter()
-        .filter(|param| param.required)
-        .map(|param| &param.name)
-        .collect::<Vec<_>>();
-
-    map.insert(
-        "input_schema".to_string(),
-        json!({
+    let schema = match &spec.parameters_schema {
+        Some(schema) => serde_json::to_value(schema)?,
+        None => json!({
             "type": "object",
-            "properties": properties,
-            "required": required
+            "properties": {},
         }),
-    );
+    };
+
+    map.insert("input_schema".to_string(), schema);
 
     Ok(map)
 }
@@ -365,9 +348,10 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
+    use schemars::{JsonSchema, schema_for};
     use swiftide_core::{
         AgentContext, Tool,
-        chat_completion::{ChatCompletionRequest, ChatMessage, ParamSpec},
+        chat_completion::{ChatCompletionRequest, ChatMessage},
     };
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
@@ -376,6 +360,11 @@ mod tests {
 
     #[derive(Clone)]
     struct FakeTool();
+
+    #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
+    struct LocationArgs {
+        location: String,
+    }
 
     #[async_trait]
     impl Tool for FakeTool {
@@ -398,14 +387,7 @@ mod tests {
             ToolSpec::builder()
                 .description("Gets the weather")
                 .name("get_weather")
-                .parameters(vec![
-                    ParamSpec::builder()
-                        .description("Location")
-                        .name("location")
-                        .required(true)
-                        .build()
-                        .unwrap(),
-                ])
+                .parameters_schema(schema_for!(LocationArgs))
                 .build()
                 .unwrap()
         }
@@ -592,34 +574,18 @@ mod tests {
         let tool_spec = ToolSpec::builder()
             .description("Gets the weather")
             .name("get_weather")
-            .parameters(vec![
-                ParamSpec::builder()
-                    .description("Location")
-                    .name("location")
-                    .required(true)
-                    .build()
-                    .unwrap(),
-            ])
+            .parameters_schema(schema_for!(LocationArgs))
             .build()
             .unwrap();
 
         let result = tools_to_anthropic(&tool_spec).unwrap();
-
+        let expected_schema = serde_json::to_value(schema_for!(LocationArgs)).unwrap();
         let expected = json!({
             "name": "get_weather",
             "description": "Gets the weather",
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "Location"
-                    }
-                },
-                "required": ["location"]
-            }
+            "input_schema": expected_schema,
         });
 
-        assert_eq!(result, expected.as_object().unwrap().to_owned());
+        assert_eq!(serde_json::Value::Object(result), expected);
     }
 }

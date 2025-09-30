@@ -173,6 +173,7 @@ pub use swiftide_langfuse as langfuse;
 pub mod reexports {
     pub use ::anyhow;
     pub use ::async_trait;
+    pub use ::schemars;
     pub use ::serde;
     pub use ::serde_json;
 }

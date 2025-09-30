@@ -35,6 +35,7 @@ insta.workspace = true
 swiftide = { path = "../swiftide/" }
 swiftide-core = { path = "../swiftide-core/" }
 tokio = { workspace = true, features = ["full"] }
+schemars = { workspace = true, features = ["derive"] }
 
 [lints]
 workspace = true

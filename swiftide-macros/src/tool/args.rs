@@ -291,7 +291,12 @@ impl ToolArgs {
 
         let args_struct_ident = self.args_struct_ident();
         quote! {
-            #[derive(::swiftide::reexports::serde::Serialize, ::swiftide::reexports::serde::Deserialize, Debug)]
+            #[derive(
+                ::swiftide::reexports::serde::Serialize,
+                ::swiftide::reexports::serde::Deserialize,
+                ::swiftide::reexports::schemars::JsonSchema,
+                Debug
+            )]
             pub struct #args_struct_ident {
                 #(#fields),*
             }
