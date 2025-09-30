@@ -40,6 +40,10 @@ pub trait ToolExecutor: Send + Sync + DynClone {
     ) -> Result<IndexingStream<String>>;
 
     /// Create a new executor that operates relative to the provided directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the executor fails to adjust to the requested directory.
     fn current_dir(&self, path: &Path) -> Result<Self::Owned, CommandError>;
 }
 
@@ -53,6 +57,11 @@ pub trait DynToolExecutor: Send + Sync + DynClone {
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream<String>>;
 
+    /// Create a new executor scoped to `path`.
+    ///
+    /// # Errors
+    ///
+    /// Propagates failures encountered while preparing the new executor instance.
     fn current_dir(&self, path: &Path) -> Result<Arc<dyn DynToolExecutor>, CommandError>;
 }
 
@@ -210,6 +219,7 @@ impl Command {
     ///
     /// Executors may interpret relative paths in the context of their own
     /// working directory.
+    #[must_use]
     pub fn with_current_dir<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.current_dir(path);
         self
