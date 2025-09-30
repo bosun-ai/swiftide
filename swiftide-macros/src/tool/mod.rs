@@ -7,7 +7,6 @@ use quote::quote;
 use syn::{DeriveInput, FnArg, ItemFn, Pat, PatType, parse_quote};
 
 mod args;
-mod rust_to_json_type;
 mod tool_spec;
 mod wrapped;
 

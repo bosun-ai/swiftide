@@ -4,8 +4,6 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens as _, quote};
 use syn::{FnArg, Ident, ItemFn, Pat, PatType, parse_quote};
 
-use super::rust_to_json_type::rust_type_to_json_type;
-
 #[derive(FromMeta, Default, Debug)]
 pub struct ToolArgs {
     #[darling(default)]
@@ -32,15 +30,16 @@ pub struct ParamOptions {
     pub name: String,
     pub description: String,
 
-    /// The type the parameter should be in the JSON spec
-    /// Defaults to `String`
-    pub json_type: ParamType,
+    /// Backwards compatibility: optional JSON type hint (string based)
+    pub json_type: Option<String>,
 
-    /// The type the parameter should be in Rust
-    /// Defaults to what can be derived from `json_type`
-    pub rust_type: syn::Type,
+    /// Explicit rust type override parsed from the attribute
+    pub rust_type: Option<syn::Type>,
 
-    pub required: bool,
+    pub required: Option<bool>,
+
+    #[darling(skip)]
+    pub resolved_type: Option<syn::Type>,
 }
 
 impl Default for ParamOptions {
@@ -48,41 +47,11 @@ impl Default for ParamOptions {
         ParamOptions {
             name: String::new(),
             description: String::new(),
-            json_type: ParamType::String,
-            rust_type: syn::parse_quote! { String },
-            required: true,
+            json_type: None,
+            rust_type: None,
+            required: None,
+            resolved_type: None,
         }
-    }
-}
-
-#[derive(Debug, FromMeta, PartialEq, Eq, Default, Clone)]
-#[darling(rename_all = "camelCase")]
-pub enum ParamType {
-    #[default]
-    String,
-    Number,
-    Boolean,
-    Array,
-    #[darling(skip)]
-    Option(Box<ParamType>),
-}
-
-impl ParamType {
-    fn default_rust_type(&self) -> syn::Type {
-        match self {
-            ParamType::String => syn::parse_quote! { String },
-            ParamType::Number => syn::parse_quote! { usize },
-            ParamType::Boolean => syn::parse_quote! { bool },
-            ParamType::Array => syn::parse_quote! { Vec<String> },
-            ParamType::Option(t) => {
-                let inner_ty = t.default_rust_type();
-                syn::parse_quote! {Option<#inner_ty>}
-            }
-        }
-    }
-
-    fn try_from_rust_type(ty: &syn::Type) -> Result<ParamType, Error> {
-        rust_type_to_json_type(ty)
     }
 }
 
@@ -131,20 +100,9 @@ impl ToolArgs {
             {
                 let ty = as_owned_ty(ty);
 
-                // It will error later if the types don't match
-                //
-                // It overwrites any json_type or rust_type set earlier in the attribute macro
-                args.params
-                    .iter_mut()
-                    .find(|p| ident.ident == p.name)
-                    .map(|p| {
-                        p.json_type = ParamType::try_from_rust_type(&ty)?;
-                        p.rust_type = ty;
-                        p.required = !matches!(p.json_type, ParamType::Option(..));
-
-                        Ok::<(), Error>(())
-                    })
-                    .transpose()?;
+                if let Some(param) = args.params.iter_mut().find(|p| ident.ident == p.name) {
+                    param.rust_type = Some(ty);
+                }
             }
         }
         args.infer_param_types()?;
@@ -158,87 +116,36 @@ impl ToolArgs {
 
     pub fn infer_param_types(&mut self) -> Result<(), Error> {
         for param in &mut self.params {
-            // Just be flexible. Might be weird if required is explicitly set to true. But it's
-            // more lenient if the user just provides the rust type.
-            if matches!(param.json_type, ParamType::Option(..))
-                || param
-                    .rust_type
-                    .to_token_stream()
-                    .to_string()
-                    .contains("Option")
-            {
-                param.required = false;
-            }
-
-            if param.required {
-                if matches!(param.json_type, ParamType::Option(..)) {
-                    return Err(Error::custom(format!(
-                        "The parameter {} is marked as required but is an option",
-                        param.name
-                    )));
-                }
-
-                if param
-                    .rust_type
-                    .to_token_stream()
-                    .to_string()
-                    .contains("Option")
-                {
-                    return Err(Error::custom(format!(
-                        "The parameter {} is marked as required but is an option",
-                        param.name
-                    )));
-                }
-
-                if param.json_type == ParamType::String
-                    && param.rust_type != syn::parse_quote! { String }
-                {
-                    param.json_type = ParamType::try_from_rust_type(&param.rust_type)?;
-                    continue;
-                }
-
-                if param.json_type != ParamType::String
-                    && param.rust_type == syn::parse_quote! { String }
-                {
-                    param.rust_type = param.json_type.default_rust_type();
-                    continue;
-                }
+            let mut ty = if let Some(ty) = param.rust_type.clone() {
+                ty
+            } else if let Some(json_type) = &param.json_type {
+                json_type_to_rust_type(json_type)
             } else {
-                // They are the same but no option, so let's wrap them both
-                if param.json_type == ParamType::try_from_rust_type(&param.rust_type)?
-                    && !matches!(param.json_type, ParamType::Option(..))
-                {
-                    let option_param = ParamType::Option(Box::new(param.json_type.clone()));
-                    let rust_ty = param.rust_type.clone();
-                    param.rust_type = parse_quote!(Option<#rust_ty>);
-                    param.json_type = option_param;
-                    continue;
-                }
+                syn::parse_quote! { String }
+            };
 
-                if param.json_type == ParamType::String
-                    && param.rust_type != syn::parse_quote! { String }
-                {
-                    param.json_type = ParamType::try_from_rust_type(&param.rust_type)?;
-                    continue;
-                }
+            let is_option = is_option_type(&ty);
 
-                if param.json_type != ParamType::String
-                    && param.rust_type == syn::parse_quote! { String }
-                {
-                    let option_param = ParamType::Option(Box::new(param.json_type.clone()));
-                    let rust_ty = param.rust_type.clone();
-                    param.rust_type = parse_quote!(Option<#rust_ty>);
-                    param.json_type = option_param;
-                    continue;
+            match param.required {
+                Some(true) if is_option => {
+                    return Err(Error::custom(format!(
+                        "The parameter {} is marked as required but has an optional type",
+                        param.name
+                    )));
                 }
+                Some(false) if !is_option => {
+                    ty = wrap_type_in_option(ty);
+                }
+                None if is_option => {
+                    param.required = Some(false);
+                }
+                None => {
+                    param.required = Some(true);
+                }
+                _ => {}
             }
 
-            if ParamType::try_from_rust_type(&param.rust_type)? != param.json_type {
-                return Err(Error::custom(format!(
-                    "The type of the parameter {} is not compatible with the json type; if it is an option make sure you set `required` to false in the param attribute",
-                    param.name
-                )));
-            }
+            param.resolved_type = Some(ty);
         }
         Ok(())
     }
@@ -284,7 +191,10 @@ impl ToolArgs {
         let mut fields = Vec::new();
 
         for param in &self.params {
-            let ty = &param.rust_type;
+            let ty = param
+                .resolved_type
+                .as_ref()
+                .expect("parameter types should be resolved");
             let ident = syn::Ident::new(&param.name, proc_macro2::Span::call_site());
             fields.push(quote! { pub #ident: #ty });
         }
@@ -357,6 +267,42 @@ fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Re
 
     errors.finish()?;
     Ok(())
+}
+
+fn json_type_to_rust_type(json_type: &str) -> syn::Type {
+    match json_type.to_ascii_lowercase().as_str() {
+        "number" => syn::parse_quote! { usize },
+        "boolean" => syn::parse_quote! { bool },
+        "array" => syn::parse_quote! { Vec<String> },
+        "object" => syn::parse_quote! { ::serde_json::Value },
+        // default to string if nothing is specified
+        _ => syn::parse_quote! { String },
+    }
+}
+
+fn is_option_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if type_path.qself.is_some() {
+            return false;
+        }
+
+        return type_path
+            .path
+            .segments
+            .last()
+            .map(|segment| segment.ident == "Option")
+            .unwrap_or(false);
+    }
+
+    false
+}
+
+fn wrap_type_in_option(ty: syn::Type) -> syn::Type {
+    if is_option_type(&ty) {
+        ty
+    } else {
+        syn::parse_quote! { Option<#ty> }
+    }
 }
 
 fn as_owned_ty(ty: &syn::Type) -> syn::Type {
