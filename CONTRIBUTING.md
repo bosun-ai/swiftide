@@ -1,6 +1,13 @@
 # Contribution guidelines
 
-Swiftide is in a very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada: 
+
+Swiftide is in a very early stage and we are aware that we do lack features for the wider community. Contributions are very welcome. :tada:
+
+Indexing and querying are performance sensitive tasks. Please make sure to consider allocations and performance when contributing.
+
+AI Generated code is welcome and not frowned upon. Please be genuine and think critically about what you add.
+
+For AI agents read the [AGENTS.md](AGENTS.md) for workspace layout, commands, and expectations tailored to agents.
 
 ## Feature requests and feedback
 

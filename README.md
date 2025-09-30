@@ -317,6 +317,10 @@ Swiftide is in a very early stage and we are aware that we lack features for the
 If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
+Indexing and querying are performance sensitive tasks. Please make sure to consider allocations and performance when contributing.
+
+AI Generated code is welcome and not frowned upon. Please be genuine and think critically about what you add.
+
 If you just want to contribute (bless you!), see [our issues](https://github.com/bosun-ai/swiftide/issues) or join us on Discord.
 
 1. Fork the Project
@@ -325,7 +329,7 @@ If you just want to contribute (bless you!), see [our issues](https://github.com
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-See [CONTRIBUTING](https://github.com/bosun-ai/swiftide/blob/master/CONTRIBUTING.md) for more
+AI Agents can refer to [AGENTS.md](AGENTS.md) for workspace layout, commands, and expectations tailored to agents.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
