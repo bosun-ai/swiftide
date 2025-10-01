@@ -60,7 +60,11 @@ dyn-clone = { version = "1.0", default-features = false }
 convert_case = { version = "0.8", default-features = false }
 
 # Mcp
-rmcp = { version = "0.5", default-features = false }
+rmcp = { version = "0.5", default-features = false, features = [
+  "base64",
+  "macros",
+  "server",
+] }
 schemars = { version = "1.0", default-features = false }
 
 # Integrations
