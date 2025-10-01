@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1758697064214,
+  "lastUpdate": 1759303942512,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28337,6 +28337,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 260480,
             "range": "± 1058",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "ffdb15b3cd86a5080403d77910f20eaa6e5faf68",
+          "message": "fix(ci): Add clippy to components in lint",
+          "timestamp": "2025-10-01T09:23:22+02:00",
+          "tree_id": "a2036165b1cc0d2ca081bc949a88fa630ee72337",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ffdb15b3cd86a5080403d77910f20eaa6e5faf68"
+        },
+        "date": 1759303940485,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 808874,
+            "range": "± 15681",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260327,
+            "range": "± 1663",
             "unit": "ns/iter"
           }
         ]
