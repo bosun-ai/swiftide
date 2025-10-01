@@ -1,12 +1,11 @@
 //! Control tools manage control flow during agent's lifecycle.
 use anyhow::Result;
 use async_trait::async_trait;
+use schemars::schema_for;
 use std::borrow::Cow;
 use swiftide_core::{
     AgentContext, ToolFeedback,
-    chat_completion::{
-        ParamSpec, ParamType, Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError,
-    },
+    chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
 };
 
 /// `Stop` tool is a default tool used by agents to stop
@@ -46,7 +45,7 @@ impl From<Stop> for Box<dyn Tool> {
 #[derive(Clone, Debug, Default)]
 pub struct StopWithArgs {}
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 struct StopWithArgsSpec {
     pub output: String,
 }
@@ -75,15 +74,7 @@ impl Tool for StopWithArgs {
         ToolSpec::builder()
             .name("stop")
             .description("When you have completed, your task, call this with your expected output")
-            .parameters(vec![
-                ParamSpec::builder()
-                    .name("output")
-                    .description("The expected output of the task")
-                    .ty(ParamType::String)
-                    .required(true)
-                    .build()
-                    .unwrap(),
-            ])
+            .parameters_schema(schema_for!(StopWithArgsSpec))
             .build()
             .unwrap()
     }
@@ -95,7 +86,7 @@ impl From<StopWithArgs> for Box<dyn Tool> {
     }
 }
 
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 struct AgentFailedArgsSpec {
     pub reason: String,
 }
@@ -130,15 +121,7 @@ impl Tool for AgentCanFail {
         ToolSpec::builder()
             .name("task_failed")
             .description("If you cannot complete your task, or have otherwise failed, call this with your reason for failure")
-            .parameters(vec![
-                ParamSpec::builder()
-                    .name("reason")
-                    .description("The reason for failure")
-                    .ty(ParamType::String)
-                    .required(true)
-                    .build()
-                    .unwrap(),
-            ])
+            .parameters_schema(schema_for!(AgentFailedArgsSpec))
             .build()
             .unwrap()
     }

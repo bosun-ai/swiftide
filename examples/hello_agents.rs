@@ -18,23 +18,44 @@
 //!
 //! Refer to the api documentation for more detailed information.
 use anyhow::Result;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use swiftide::{
     agents,
     chat_completion::{ToolOutput, errors::ToolError},
     traits::{AgentContext, Command},
 };
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+struct CodeSearchRequest {
+    /// Search query to pass to ripgrep
+    query: String,
+    /// Optional repository root (defaults to the current working directory)
+    repo: Option<String>,
+    /// Optional list of glob filters for the search
+    file_globs: Option<Vec<String>>,
+}
+
 #[swiftide::tool(
     description = "Searches code",
-    param(name = "code_query", description = "The code query")
+    param(name = "request", description = "Code search parameters")
 )]
 async fn search_code(
     context: &dyn AgentContext,
-    code_query: &str,
+    request: CodeSearchRequest,
 ) -> Result<ToolOutput, ToolError> {
+    let repo = request.repo.as_deref().unwrap_or(".");
+    let mut command = format!("cd {repo} && rg '{query}'", query = request.query);
+
+    if let Some(globs) = &request.file_globs {
+        for glob in globs {
+            command.push_str(&format!(" -g '{glob}'"));
+        }
+    }
+
     let command_output = context
         .executor()
-        .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
+        .exec_cmd(&Command::shell(command))
         .await?;
 
     Ok(command_output.into())
@@ -55,14 +76,10 @@ async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput,
     Ok(command_output.into())
 }
 
-// The macro supports strings/strs, vectors/slices, booleans and numbers.
+// The macro understands common Rust types (strings, numbers, bools, vectors, maps, structs, etc.)
+// and automatically derives a JSON Schema via `schemars`. If you need to tweak the schema
+// manually, implement the `Tool` trait and attach your own `parameters_schema`.
 //
-// This is currently only supported for the attribute macro, not the derive macro.
-//
-// If you need more control or need to use full objects, we recommend to implement the `Tool` trait
-// and prove the Json spec yourself. Builders are available.
-//
-// For non-string types, the `json_type` is required to be specified.
 #[swiftide::tool(
     description = "Guess a number",
     param(name = "number", description = "Number to guess")
