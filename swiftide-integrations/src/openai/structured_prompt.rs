@@ -74,7 +74,7 @@ impl<
         let response_format = ResponseFormat::JsonSchema {
             json_schema: ResponseFormatJsonSchema {
                 description: None,
-                name: "math_reasoning".into(),
+                name: "structured_prompt".into(),
                 schema: Some(schema_value),
                 strict: Some(true),
             },
