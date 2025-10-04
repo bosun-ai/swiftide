@@ -195,3 +195,150 @@ impl<
         Ok(message)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::openai::OpenAI;
+    use async_openai::types::responses::{
+        CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus, OutputText,
+        PromptTokensDetails, Response as ResponsesResponse, Role, Status, Usage as ResponsesUsage,
+    };
+    use serde_json::Value;
+    use wiremock::{
+        Mock, MockServer, Request, Respond, ResponseTemplate,
+        matchers::{method, path},
+    };
+
+    #[test_log::test(tokio::test)]
+    async fn test_prompt_errors_when_model_missing() {
+        let openai = OpenAI::builder().build().unwrap();
+        let result = openai.prompt("hello".into()).await;
+        assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_prompt_via_responses_api_returns_message() {
+        let mock_server = MockServer::start().await;
+
+        let response = ResponsesResponse {
+            created_at: 0,
+            error: None,
+            id: "resp".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1-mini".into(),
+            object: "response".into(),
+            output: vec![OutputContent::Message(OutputMessage {
+                content: vec![Content::OutputText(OutputText {
+                    annotations: Vec::new(),
+                    text: "Hello world".into(),
+                })],
+                id: "msg".into(),
+                role: Role::Assistant,
+                status: OutputStatus::Completed,
+            })],
+            output_text: Some("Hello world".into()),
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: Some(ResponsesUsage {
+                input_tokens: 4,
+                input_tokens_details: PromptTokensDetails {
+                    audio_tokens: Some(0),
+                    cached_tokens: Some(0),
+                },
+                output_tokens: 2,
+                output_tokens_details: CompletionTokensDetails {
+                    accepted_prediction_tokens: Some(0),
+                    audio_tokens: Some(0),
+                    reasoning_tokens: Some(0),
+                    rejected_prediction_tokens: Some(0),
+                },
+                total_tokens: 6,
+            }),
+            user: None,
+        };
+
+        let response_body = serde_json::to_value(&response).unwrap();
+
+        struct ValidatePromptRequest {
+            response: Value,
+        }
+
+        impl Respond for ValidatePromptRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let payload: Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(payload["model"], self.response["model"]);
+                let items = payload["input"].as_array().expect("array input");
+                assert_eq!(items.len(), 1);
+                assert_eq!(items[0]["type"], "message");
+                ResponseTemplate::new(200).set_body_json(self.response.clone())
+            }
+        }
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ValidatePromptRequest {
+                response: response_body,
+            })
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let client = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(client)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .unwrap();
+
+        let result = openai.prompt("Say hi".into()).await.unwrap();
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_prompt_via_responses_api_missing_output_errors() {
+        let mock_server = MockServer::start().await;
+        let empty_response = serde_json::json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1-mini",
+            "object": "response",
+            "output": [],
+            "status": "completed"
+        });
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(empty_response))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let client = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(client)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .unwrap();
+
+        let err = openai.prompt("test".into()).await.unwrap_err();
+        assert!(matches!(err, LanguageModelError::PermanentError(_)));
+    }
+}

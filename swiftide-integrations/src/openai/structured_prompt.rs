@@ -252,6 +252,10 @@ mod tests {
     use super::*;
     use async_openai::Client;
     use async_openai::config::OpenAIConfig;
+    use async_openai::types::responses::{
+        CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus, OutputText,
+        PromptTokensDetails, Response as ResponsesResponse, Role, Status, Usage as ResponsesUsage,
+    };
     use schemars::{JsonSchema, schema_for};
     use serde::{Deserialize, Serialize};
     use wiremock::{
@@ -366,5 +370,159 @@ mod tests {
                 answer: "42".into()
             }
         );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_via_responses_api() {
+        let mock_server = MockServer::start().await;
+
+        let response = ResponsesResponse {
+            created_at: 0,
+            error: None,
+            id: "resp".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1-mini".into(),
+            object: "response".into(),
+            output: vec![OutputContent::Message(OutputMessage {
+                content: vec![Content::OutputText(OutputText {
+                    annotations: Vec::new(),
+                    text: serde_json::to_string(&SimpleOutput {
+                        answer: "structured".into(),
+                    })
+                    .unwrap(),
+                })],
+                id: "msg".into(),
+                role: Role::Assistant,
+                status: OutputStatus::Completed,
+            })],
+            output_text: None,
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: Some(ResponsesUsage {
+                input_tokens: 10,
+                input_tokens_details: PromptTokensDetails {
+                    audio_tokens: Some(0),
+                    cached_tokens: Some(0),
+                },
+                output_tokens: 4,
+                output_tokens_details: CompletionTokensDetails {
+                    accepted_prediction_tokens: Some(0),
+                    audio_tokens: Some(0),
+                    reasoning_tokens: Some(0),
+                    rejected_prediction_tokens: Some(0),
+                },
+                total_tokens: 14,
+            }),
+            user: None,
+        };
+
+        let response_body = serde_json::to_value(&response).unwrap();
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(response_body))
+            .mount(&mock_server)
+            .await;
+
+        let config = OpenAIConfig::new().with_api_base(mock_server.uri());
+        let client = Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(client)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .unwrap();
+
+        let schema = schema_for!(SimpleOutput);
+        let result = openai
+            .structured_prompt_dyn("Render".into(), schema)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            serde_json::from_value::<SimpleOutput>(result).unwrap(),
+            SimpleOutput {
+                answer: "structured".into(),
+            }
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_via_responses_api_invalid_json_errors() {
+        let mock_server = MockServer::start().await;
+
+        let bad_response = ResponsesResponse {
+            created_at: 0,
+            error: None,
+            id: "resp".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1-mini".into(),
+            object: "response".into(),
+            output: vec![OutputContent::Message(OutputMessage {
+                content: vec![Content::OutputText(OutputText {
+                    annotations: Vec::new(),
+                    text: "not json".into(),
+                })],
+                id: "msg".into(),
+                role: Role::Assistant,
+                status: OutputStatus::Completed,
+            })],
+            output_text: Some("not json".into()),
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: None,
+            user: None,
+        };
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(bad_response))
+            .mount(&mock_server)
+            .await;
+
+        let config = OpenAIConfig::new().with_api_base(mock_server.uri());
+        let client = Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(client)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .unwrap();
+
+        let schema = schema_for!(SimpleOutput);
+        let err = openai
+            .structured_prompt_dyn("Render".into(), schema)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, LanguageModelError::PermanentError(_)));
     }
 }
