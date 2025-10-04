@@ -292,19 +292,19 @@ impl ResponsesStreamAccumulator {
             ResponseEvent::ResponseOutputTextDelta(delta) => {
                 self.response
                     .append_message_delta(Some(delta.delta.as_str()));
-                return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                return Ok(self.emit(stream_full));
             }
             ResponseEvent::ResponseContentPartAdded(part) => {
                 if let Some(text) = part.part.text.as_ref() {
                     self.response.append_message_delta(Some(text.as_str()));
-                    return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                    return Ok(self.emit(stream_full));
                 }
             }
             ResponseEvent::ResponseFunctionCallArgumentsDelta(delta) => {
                 let index = self.ensure_tool_index(&delta.item_id, delta.output_index as usize);
                 self.response
                     .append_tool_call_delta(index, None, None, Some(delta.delta.as_str()));
-                return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                return Ok(self.emit(stream_full));
             }
             ResponseEvent::ResponseOutputItemAdded(event) => match event.item {
                 OutputItem::FunctionCall(function_call) => {
@@ -335,12 +335,12 @@ impl ResponsesStreamAccumulator {
                         arguments,
                     );
 
-                    return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                    return Ok(self.emit(stream_full));
                 }
                 OutputItem::Message(message) => {
                     if let Some(text) = collect_message_text_from_message(&message) {
                         self.response.append_message_delta(Some(text.as_str()));
-                        return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                        return Ok(self.emit(stream_full));
                     }
                 }
                 _ => {}
@@ -366,7 +366,7 @@ impl ResponsesStreamAccumulator {
                         Some(function_call.name.as_str()),
                         None,
                     );
-                    return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                    return Ok(self.emit(stream_full));
                 }
             }
             ResponseEvent::ResponseFunctionCallArgumentsDone(done) => {
@@ -390,17 +390,17 @@ impl ResponsesStreamAccumulator {
                         );
                     }
                 }
-                return Ok(StreamControl::Emit(self.snapshot(stream_full, false)));
+                return Ok(self.emit(stream_full));
             }
             ResponseEvent::ResponseCompleted(completed) => {
                 metadata_to_chat_completion(&completed.response, &mut self.response)?;
                 self.response.delta = None;
-                return Ok(StreamControl::Finished(self.snapshot(stream_full, true)));
+                return Ok(self.finish(stream_full));
             }
             ResponseEvent::ResponseIncomplete(incomplete) => {
                 metadata_to_chat_completion(&incomplete.response, &mut self.response)?;
                 self.response.delta = None;
-                return Ok(StreamControl::Finished(self.snapshot(stream_full, true)));
+                return Ok(self.finish(stream_full));
             }
             ResponseEvent::ResponseFailed(failed) => {
                 let message = failed
@@ -453,6 +453,14 @@ impl ResponsesStreamAccumulator {
 
     pub fn has_emitted_finished(&self) -> bool {
         self.finished_emitted
+    }
+
+    fn emit(&mut self, stream_full: bool) -> StreamControl {
+        StreamControl::Emit(self.snapshot(stream_full, false))
+    }
+
+    fn finish(&mut self, stream_full: bool) -> StreamControl {
+        StreamControl::Finished(self.snapshot(stream_full, true))
     }
 }
 
@@ -648,6 +656,26 @@ mod tests {
 
     use crate::openai::{OpenAI, Options};
 
+    fn expect_emit(control: StreamControl) -> StreamChunk {
+        match control {
+            StreamControl::Emit(chunk) => chunk,
+            other => panic!("expected emit, got {other:?}"),
+        }
+    }
+
+    fn expect_finished(control: StreamControl) -> StreamChunk {
+        match control {
+            StreamControl::Finished(chunk) => chunk,
+            other => panic!("expected finished, got {other:?}"),
+        }
+    }
+
+    fn expect_skip(control: StreamControl) {
+        if !matches!(control, StreamControl::Skip) {
+            panic!("expected skip, got {control:?}");
+        }
+    }
+
     fn sample_usage() -> ResponsesUsage {
         ResponsesUsage {
             input_tokens: 5,
@@ -810,13 +838,11 @@ mod tests {
         }))
         .unwrap();
 
-        let chunk = match accumulator
-            .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
-            .unwrap()
-        {
-            StreamControl::Emit(chunk) => chunk,
-            control => panic!("unexpected control: {control:?}"),
-        };
+        let chunk = expect_emit(
+            accumulator
+                .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
+                .unwrap(),
+        );
 
         assert_eq!(
             chunk
@@ -841,13 +867,11 @@ mod tests {
         }))
         .unwrap();
 
-        match accumulator
-            .apply_event(ResponseEvent::ResponseOutputItemAdded(item_added), false)
-            .unwrap()
-        {
-            StreamControl::Emit(_) | StreamControl::Skip => {}
-            control => panic!("unexpected control: {control:?}"),
-        }
+        expect_emit(
+            accumulator
+                .apply_event(ResponseEvent::ResponseOutputItemAdded(item_added), false)
+                .unwrap(),
+        );
 
         let args_delta: ResponseFunctionCallArgumentsDelta = serde_json::from_value(json!({
             "sequence_number": 2,
@@ -857,16 +881,14 @@ mod tests {
         }))
         .unwrap();
 
-        match accumulator
-            .apply_event(
-                ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
-                false,
-            )
-            .unwrap()
-        {
-            StreamControl::Emit(_) | StreamControl::Skip => {}
-            control => panic!("unexpected control: {control:?}"),
-        }
+        expect_emit(
+            accumulator
+                .apply_event(
+                    ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
+                    false,
+                )
+                .unwrap(),
+        );
 
         let args_done: ResponseFunctionCallArgumentsDone = serde_json::from_value(json!({
             "sequence_number": 3,
@@ -876,16 +898,14 @@ mod tests {
         }))
         .unwrap();
 
-        match accumulator
-            .apply_event(
-                ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
-                false,
-            )
-            .unwrap()
-        {
-            StreamControl::Emit(_) | StreamControl::Skip => {}
-            control => panic!("unexpected control: {control:?}"),
-        }
+        expect_emit(
+            accumulator
+                .apply_event(
+                    ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
+                    false,
+                )
+                .unwrap(),
+        );
 
         let usage = sample_usage();
         let completed: ResponseCompleted = serde_json::from_value(json!({
@@ -901,13 +921,11 @@ mod tests {
         }))
         .unwrap();
 
-        let final_chunk = match accumulator
-            .apply_event(ResponseEvent::ResponseCompleted(completed), false)
-            .unwrap()
-        {
-            StreamControl::Finished(chunk) => chunk,
-            control => panic!("unexpected control: {control:?}"),
-        };
+        let final_chunk = expect_finished(
+            accumulator
+                .apply_event(ResponseEvent::ResponseCompleted(completed), false)
+                .unwrap(),
+        );
 
         assert_eq!(final_chunk.response.message(), Some("Hello"));
 
@@ -950,13 +968,11 @@ mod tests {
         }))
         .unwrap();
 
-        match accumulator
-            .apply_event(ResponseEvent::ResponseCompleted(completed), false)
-            .unwrap()
-        {
-            StreamControl::Finished(_) => {}
-            control => panic!("unexpected control: {control:?}"),
-        }
+        expect_finished(
+            accumulator
+                .apply_event(ResponseEvent::ResponseCompleted(completed), false)
+                .unwrap(),
+        );
 
         let delta: ResponseOutputTextDelta = serde_json::from_value(json!({
             "sequence_number": 1,
@@ -967,13 +983,11 @@ mod tests {
         }))
         .unwrap();
 
-        match accumulator
-            .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
-            .unwrap()
-        {
-            StreamControl::Skip => {}
-            control => panic!("expected skip, got {control:?}"),
-        }
+        expect_skip(
+            accumulator
+                .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
+                .unwrap(),
+        );
     }
 }
 

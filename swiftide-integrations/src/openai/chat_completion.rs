@@ -11,17 +11,19 @@ use async_openai::types::{
     ChatCompletionToolType, FunctionCall, FunctionObjectArgs,
 };
 use async_trait::async_trait;
-use futures_util::future;
 use futures_util::StreamExt as _;
+use futures_util::future;
 use futures_util::stream;
 use itertools::Itertools;
+#[cfg(feature = "langfuse")]
+use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
-use swiftide_core::chat_completion::UsageBuilder;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
+use swiftide_core::chat_completion::{Usage, UsageBuilder};
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
@@ -98,16 +100,6 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
-            tracing::debug!(
-                langfuse.model = model,
-                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-            );
-        }
-
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
 
@@ -147,27 +139,24 @@ impl<
                 .build()
                 .map_err(LanguageModelError::permanent)?;
 
-            if let Some(callback) = &self.on_usage {
-                callback(&usage).await?;
-            }
-
             builder.usage(usage);
-
-            #[cfg(feature = "metrics")]
-            {
-                if let Some(usage) = response.usage.as_ref() {
-                    emit_usage(
-                        model,
-                        usage.prompt_tokens.into(),
-                        usage.completion_tokens.into(),
-                        usage.total_tokens.into(),
-                        self.metric_metadata.as_ref(),
-                    );
-                }
-            }
         }
 
         let our_response = builder.build().map_err(LanguageModelError::from)?;
+
+        let usage_ref = our_response.usage.as_ref();
+        let request_json = langfuse_json(&request);
+        let response_json = langfuse_json(&our_response);
+        let usage_json = our_response.usage.as_ref().and_then(langfuse_json);
+
+        self.track_completion(
+            model,
+            usage_ref,
+            request_json.as_deref(),
+            response_json.as_deref(),
+            usage_json.as_deref(),
+        )
+        .await?;
 
         Ok(our_response)
     }
@@ -389,7 +378,7 @@ impl<
 
         let create_request = build_responses_request_from_chat(self, request)?;
 
-        let request_pretty = if cfg!(feature = "langfuse") {
+        let _request_pretty = if cfg!(feature = "langfuse") {
             serde_json::to_string_pretty(&create_request).ok()
         } else {
             None
@@ -404,38 +393,18 @@ impl<
 
         let completion = response_to_chat_completion(response)?;
 
-        if let Some(usage) = completion.usage.clone() {
-            if let Some(callback) = &self.on_usage {
-                callback(&usage).await?;
-            }
+        let request_json = _request_pretty;
+        let response_json = langfuse_json(&completion);
+        let usage_json = completion.usage.as_ref().and_then(langfuse_json);
 
-            #[cfg(feature = "metrics")]
-            emit_usage(
-                model,
-                usage.prompt_tokens.into(),
-                usage.completion_tokens.into(),
-                usage.total_tokens.into(),
-                self.metric_metadata.as_ref(),
-            );
-        }
-
-        if cfg!(feature = "langfuse") {
-            if let Some(request_pretty) = request_pretty.as_ref() {
-                tracing::debug!(
-                    langfuse.model = model,
-                    langfuse.input = request_pretty,
-                    langfuse.output = %serde_json::to_string_pretty(&completion)
-                        .unwrap_or_default(),
-                    langfuse.usage = %completion
-                        .usage
-                        .as_ref()
-                        .map(serde_json::to_string_pretty)
-                        .transpose()
-                        .unwrap_or_default()
-                        .unwrap_or_default(),
-                );
-            }
-        }
+        self.track_completion(
+            model,
+            completion.usage.as_ref(),
+            request_json.as_deref(),
+            response_json.as_deref(),
+            usage_json.as_deref(),
+        )
+        .await?;
 
         Ok(completion)
     }
@@ -455,11 +424,7 @@ impl<
 
         create_request.stream = Some(true);
 
-        let request_pretty = if cfg!(feature = "langfuse") {
-            serde_json::to_string_pretty(&create_request).ok()
-        } else {
-            None
-        };
+        let _request_pretty = langfuse_json(&create_request);
 
         let stream = match self
             .client
@@ -534,8 +499,8 @@ impl<
             future::ready(Some(result))
         });
 
-        let mapped_stream =
-            mapped_stream.map(move |result: Result<(StreamChunk, bool), LanguageModelError>| {
+        let mapped_stream = mapped_stream.map(
+            move |result: Result<(StreamChunk, bool), LanguageModelError>| {
                 result.and_then(|(chunk, finished)| {
                     let response = chunk.response;
 
@@ -563,15 +528,16 @@ impl<
                             }
 
                             if cfg!(feature = "langfuse") {
-                                if let Some(request_pretty) = request_pretty.as_ref() {
-                                    tracing::debug!(
-                                        langfuse.model = model,
-                                        langfuse.input = request_pretty,
-                                        langfuse.output = %serde_json::to_string_pretty(&response)
-                                            .unwrap_or_default(),
-                                        langfuse.usage = %serde_json::to_string_pretty(&usage)
-                                            .unwrap_or_default(),
-                                    );
+                                if let Some(request_pretty) = _request_pretty.as_ref() {
+                                    if let Some(usage_json) = langfuse_json(&usage) {
+                                        tracing::debug!(
+                                            langfuse.model = model,
+                                            langfuse.input = request_pretty,
+                                            langfuse.output = %langfuse_json(&response)
+                                                .unwrap_or_default(),
+                                            langfuse.usage = usage_json,
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -579,9 +545,48 @@ impl<
 
                     Ok(response)
                 })
-            });
+            },
+        );
 
         Box::pin(Instrument::instrument(mapped_stream, span))
+    }
+    async fn track_completion(
+        &self,
+        model: &str,
+        usage: Option<&Usage>,
+        request_json: Option<&str>,
+        response_json: Option<&str>,
+        usage_json: Option<&str>,
+    ) -> Result<(), LanguageModelError> {
+        if let Some(usage) = usage {
+            if let Some(callback) = &self.on_usage {
+                callback(usage).await?;
+            }
+
+            #[cfg(feature = "metrics")]
+            emit_usage(
+                model,
+                usage.prompt_tokens.into(),
+                usage.completion_tokens.into(),
+                usage.total_tokens.into(),
+                self.metric_metadata.as_ref(),
+            );
+        } else {
+            let _ = model;
+        }
+
+        #[cfg(feature = "langfuse")]
+        tracing::debug!(
+            langfuse.model = model,
+            langfuse.input = request_json.unwrap_or_default(),
+            langfuse.output = response_json.unwrap_or_default(),
+            langfuse.usage = usage_json.unwrap_or_default(),
+        );
+
+        #[cfg(not(feature = "langfuse"))]
+        let _ = (request_json, response_json, usage_json);
+
+        Ok(())
     }
 }
 
@@ -593,6 +598,16 @@ fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
         }
         _ => false,
     }
+}
+
+#[cfg(feature = "langfuse")]
+fn langfuse_json<T: Serialize>(value: &T) -> Option<String> {
+    Some(serde_json::to_string_pretty(value).unwrap_or_default())
+}
+
+#[cfg(not(feature = "langfuse"))]
+fn langfuse_json<T>(_value: &T) -> Option<String> {
+    None
 }
 
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {

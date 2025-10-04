@@ -2,12 +2,12 @@ use anyhow::Result;
 use futures_util::StreamExt as _;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use std::io::Write as _;
 use swiftide::{
     chat_completion::{ChatCompletionRequest, ChatMessage},
     integrations::openai::{OpenAI, Options},
     traits::{ChatCompletion, SimplePrompt, StructuredPrompt},
 };
-use std::io::Write as _;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Deserialize, JsonSchema)]
