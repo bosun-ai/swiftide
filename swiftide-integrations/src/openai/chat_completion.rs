@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::{Context as _, Result};
+use async_openai::error::OpenAIError;
 use async_openai::types::ChatCompletionStreamOptions;
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
@@ -10,6 +11,7 @@ use async_openai::types::{
     ChatCompletionToolType, FunctionCall, FunctionObjectArgs,
 };
 use async_trait::async_trait;
+use futures_util::future;
 use futures_util::StreamExt as _;
 use futures_util::stream;
 use itertools::Itertools;
@@ -496,11 +498,36 @@ impl<
                                 Err(err) => Some(Err(err)),
                             }
                         }
-                        Err(err) => Some(Err(openai_error_to_language_model_error(err))),
+                        Err(err) => {
+                            if is_responses_stream_end_error(&err) {
+                                let mut guard = aggregator.lock().expect("mutex poisoned");
+
+                                if guard.has_emitted_finished() {
+                                    None
+                                } else {
+                                    let chunk = guard.snapshot(stream_full, true);
+                                    Some(Ok(chunk))
+                                }
+                            } else {
+                                Some(Err(openai_error_to_language_model_error(err)))
+                            }
+                        }
                     }
                 }
             })
             .filter_map(|maybe| async move { maybe });
+
+        let mapped_stream = mapped_stream.scan(false, |finished, result| {
+            if *finished {
+                return future::ready(None);
+            }
+
+            if result.as_ref().map(|chunk| chunk.finished).unwrap_or(true) {
+                *finished = true;
+            }
+
+            future::ready(Some(result))
+        });
 
         let mapped_stream =
             mapped_stream.map(move |result: Result<StreamChunk, LanguageModelError>| {
@@ -551,6 +578,16 @@ impl<
             });
 
         Box::pin(Instrument::instrument(mapped_stream, span))
+    }
+}
+
+fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
+    match error {
+        OpenAIError::StreamError(message) => {
+            let normalized = message.trim().to_ascii_lowercase();
+            normalized == "stream ended" || normalized.contains("stream ended")
+        }
+        _ => false,
     }
 }
 
@@ -941,5 +978,20 @@ mod tests {
         let response = openai.complete(&request).await.unwrap();
 
         assert_eq!(response.message(), Some("All settings validated"));
+    }
+
+    #[test]
+    fn test_harmless_stream_end_detection() {
+        assert!(is_responses_stream_end_error(&OpenAIError::StreamError(
+            "Stream Ended".into()
+        )));
+
+        assert!(is_responses_stream_end_error(&OpenAIError::StreamError(
+            "connection closed: stream ended".into()
+        )));
+
+        assert!(!is_responses_stream_end_error(&OpenAIError::StreamError(
+            "Too Many Requests".into()
+        )));
     }
 }

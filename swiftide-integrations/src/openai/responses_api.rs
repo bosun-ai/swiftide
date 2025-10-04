@@ -259,6 +259,7 @@ fn message_item(role: Role, content: String) -> LmResult<InputItem> {
 pub(super) struct ResponsesStreamAccumulator {
     response: ChatCompletionResponse,
     tool_index_by_item_id: HashMap<String, usize>,
+    finished_emitted: bool,
 }
 
 pub(super) struct StreamChunk {
@@ -408,7 +409,11 @@ impl ResponsesStreamAccumulator {
         Ok(None)
     }
 
-    pub fn snapshot(&self, stream_full: bool, finished: bool) -> StreamChunk {
+    pub fn snapshot(&mut self, stream_full: bool, finished: bool) -> StreamChunk {
+        if finished {
+            self.finished_emitted = true;
+        }
+
         let mut response = if stream_full || finished {
             self.response.clone()
         } else {
@@ -433,6 +438,10 @@ impl ResponsesStreamAccumulator {
             .tool_index_by_item_id
             .entry(item_id.to_owned())
             .or_insert(output_index)
+    }
+
+    pub fn has_emitted_finished(&self) -> bool {
+        self.finished_emitted
     }
 }
 
@@ -886,6 +895,16 @@ mod tests {
 
         let usage = final_chunk.response.usage.expect("usage");
         assert_eq!(usage.total_tokens, 8);
+    }
+
+    #[test]
+    fn test_stream_accumulator_tracks_finished_emission() {
+        let mut accumulator = ResponsesStreamAccumulator::new();
+        assert!(!accumulator.has_emitted_finished());
+
+        let chunk = accumulator.snapshot(true, true);
+        assert!(chunk.finished);
+        assert!(accumulator.has_emitted_finished());
     }
 }
 
