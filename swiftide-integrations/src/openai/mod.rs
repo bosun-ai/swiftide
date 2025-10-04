@@ -15,6 +15,7 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
+mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
 
@@ -101,6 +102,10 @@ pub struct GenericOpenAI<
     /// Optional metadata to attach to metrics emitted by this client.
     metric_metadata: Option<std::collections::HashMap<String, String>>,
 
+    /// Opt-in flag to use OpenAI's Responses API instead of the legacy Chat Completions API.
+    #[builder(default)]
+    pub(crate) use_responses_api: bool,
+
     /// A callback function that is called when usage information is available.
     #[builder(default, setter(custom))]
     #[allow(clippy::type_complexity)]
@@ -124,6 +129,7 @@ impl<C: async_openai::config::Config + Default + std::fmt::Debug> std::fmt::Debu
             .field("client", &self.client)
             .field("default_options", &self.default_options)
             .field("stream_full", &self.stream_full)
+            .field("use_responses_api", &self.use_responses_api)
             .finish_non_exhaustive()
     }
 }
@@ -446,6 +452,11 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
         &mut self.default_options
     }
 
+    /// Returns whether the Responses API is enabled for this client.
+    pub fn is_responses_api_enabled(&self) -> bool {
+        self.use_responses_api
+    }
+
     fn chat_completion_request_defaults(&self) -> CreateChatCompletionRequestArgs {
         let mut args = CreateChatCompletionRequestArgs::default();
 
@@ -574,6 +585,13 @@ mod test {
             openai.default_options.embed_model,
             Some("gpt-3".to_string())
         );
+    }
+
+    #[test]
+    fn test_use_responses_api_flag() {
+        let openai: OpenAI = OpenAI::builder().use_responses_api(true).build().unwrap();
+
+        assert!(openai.is_responses_api_enabled());
     }
 
     #[test]

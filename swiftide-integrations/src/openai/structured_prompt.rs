@@ -19,6 +19,9 @@ use swiftide_core::{
     util::debug_long_utf8,
 };
 
+use super::responses_api::{
+    build_responses_request_from_prompt_with_schema, response_to_chat_completion,
+};
 use crate::openai::openai_error_to_language_model_error;
 
 use super::GenericOpenAI;
@@ -54,6 +57,12 @@ impl<
         prompt: Prompt,
         schema: Schema,
     ) -> Result<serde_json::Value, LanguageModelError> {
+        if self.is_responses_api_enabled() {
+            return self
+                .structured_prompt_via_responses_api(prompt, schema)
+                .await;
+        }
+
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
@@ -153,6 +162,84 @@ impl<
             .with_context(|| format!("Failed to parse response\n {message}"))?;
 
         // Extract and return the content of the response, returning an error if not found.
+        Ok(parsed)
+    }
+}
+
+impl<
+    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+> GenericOpenAI<C>
+{
+    async fn structured_prompt_via_responses_api(
+        &self,
+        prompt: Prompt,
+        schema: Schema,
+    ) -> Result<serde_json::Value, LanguageModelError> {
+        let prompt_text = prompt.render().map_err(LanguageModelError::permanent)?;
+        let model = self
+            .default_options
+            .prompt_model
+            .as_ref()
+            .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+
+        let schema_value = serde_json::to_value(&schema)
+            .context("Failed to get schema as value")
+            .map_err(LanguageModelError::permanent)?;
+
+        let create_request = build_responses_request_from_prompt_with_schema(
+            self,
+            prompt_text.clone(),
+            schema_value,
+        )?;
+
+        let request_pretty = if cfg!(feature = "langfuse") {
+            serde_json::to_string_pretty(&create_request).ok()
+        } else {
+            None
+        };
+
+        let response = self
+            .client
+            .responses()
+            .create(create_request)
+            .await
+            .map_err(openai_error_to_language_model_error)?;
+
+        let completion = response_to_chat_completion(response)?;
+
+        if let Some(usage) = completion.usage {
+            if let Some(callback) = &self.on_usage {
+                callback(&usage).await?;
+            }
+
+            #[cfg(feature = "metrics")]
+            emit_usage(
+                model,
+                usage.prompt_tokens.into(),
+                usage.completion_tokens.into(),
+                usage.total_tokens.into(),
+                self.metric_metadata.as_ref(),
+            );
+        }
+
+        let message = completion.message.ok_or_else(|| {
+            LanguageModelError::PermanentError("Expected content in response".into())
+        })?;
+
+        let parsed = serde_json::from_str(&message)
+            .with_context(|| format!("Failed to parse response\n {message}"))
+            .map_err(LanguageModelError::permanent)?;
+
+        if cfg!(feature = "langfuse") {
+            if let Some(request_pretty) = request_pretty.as_ref() {
+                tracing::debug!(
+                    langfuse.model = model,
+                    langfuse.input = request_pretty,
+                    langfuse.output = %message,
+                );
+            }
+        }
+
         Ok(parsed)
     }
 }
