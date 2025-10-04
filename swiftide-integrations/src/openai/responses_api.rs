@@ -279,6 +279,7 @@ impl ResponsesStreamAccumulator {
         Self::default()
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn apply_event(
         &mut self,
         event: ResponseEvent,
@@ -378,8 +379,7 @@ impl ResponsesStreamAccumulator {
                         .as_ref()
                         .and_then(|calls| calls.get(index))
                         .and_then(|tc| tc.args())
-                        .map(|existing| existing == done.arguments)
-                        .unwrap_or(false);
+                        .is_some_and(|existing| existing == done.arguments);
 
                     if !duplicate {
                         self.response.append_tool_call_delta(
@@ -403,12 +403,10 @@ impl ResponsesStreamAccumulator {
                 return Ok(self.finish(stream_full));
             }
             ResponseEvent::ResponseFailed(failed) => {
-                let message = failed
-                    .response
-                    .error
-                    .as_ref()
-                    .map(|err| format!("{}: {}", err.code, err.message))
-                    .unwrap_or_else(|| "Responses API stream failed".to_string());
+                let message = failed.response.error.as_ref().map_or_else(
+                    || "Responses API stream failed".to_string(),
+                    |err| format!("{}: {}", err.code, err.message),
+                );
                 return Err(LanguageModelError::permanent(message));
             }
             ResponseEvent::ResponseError(error) => {
@@ -438,7 +436,7 @@ impl ResponsesStreamAccumulator {
         };
 
         if !stream_full && finished {
-            response.usage = self.response.usage.clone();
+            response.usage.clone_from(&self.response.usage);
         }
 
         StreamChunk { response }
@@ -464,20 +462,19 @@ impl ResponsesStreamAccumulator {
     }
 }
 
-pub(super) fn response_to_chat_completion(response: Response) -> LmResult<ChatCompletionResponse> {
+pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatCompletionResponse> {
     if matches!(response.status, Status::Failed) {
-        let error = response
-            .error
-            .as_ref()
-            .map(|err| format!("{}: {}", err.code, err.message))
-            .unwrap_or_else(|| "OpenAI Responses API returned failure".to_string());
+        let error = response.error.as_ref().map_or_else(
+            || "OpenAI Responses API returned failure".to_string(),
+            |err| format!("{}: {}", err.code, err.message),
+        );
         return Err(LanguageModelError::permanent(error));
     }
 
     let mut builder = ChatCompletionResponse::builder();
 
-    if let Some(text) = response.output_text.clone().filter(|s| !s.is_empty()) {
-        builder.message(text);
+    if let Some(text) = response.output_text.as_ref().filter(|s| !s.is_empty()) {
+        builder.message(text.clone());
     } else if let Some(text) = collect_message_text(&response.output) {
         builder.message(text);
     }
@@ -502,20 +499,19 @@ pub(super) fn metadata_to_chat_completion(
         accumulator.usage = Some(convert_usage(usage)?);
     }
 
-    if accumulator.message.is_none() {
-        if let Some(output) = metadata.output.as_ref() {
-            if let Some(text) = collect_message_text_from_items(output) {
-                accumulator.message = Some(text);
-            }
-        }
+    if accumulator.message.is_none()
+        && let Some(output) = metadata.output.as_ref()
+        && let Some(text) = collect_message_text_from_items(output)
+    {
+        accumulator.message = Some(text);
     }
 
-    if accumulator.tool_calls.is_none() {
-        if let Some(output) = metadata.output.as_ref() {
-            let tool_calls = collect_tool_calls_from_items(output)?;
-            if !tool_calls.is_empty() {
-                accumulator.tool_calls = Some(tool_calls);
-            }
+    if accumulator.tool_calls.is_none()
+        && let Some(output) = metadata.output.as_ref()
+    {
+        let tool_calls = collect_tool_calls_from_items(output)?;
+        if !tool_calls.is_empty() {
+            accumulator.tool_calls = Some(tool_calls);
         }
     }
 
@@ -577,13 +573,13 @@ fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
     let mut buffer = String::new();
 
     for item in output {
-        if let OutputItem::Message(message) = item {
-            if let Some(text) = collect_message_text_from_message(message) {
-                if !buffer.is_empty() {
-                    buffer.push('\n');
-                }
-                buffer.push_str(&text);
+        if let OutputItem::Message(message) = item
+            && let Some(text) = collect_message_text_from_message(message)
+        {
+            if !buffer.is_empty() {
+                buffer.push('\n');
             }
+            buffer.push_str(&text);
         }
     }
 
@@ -621,10 +617,10 @@ fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall
 fn tool_call_from_function_call(
     function_call: &async_openai::types::responses::FunctionCall,
 ) -> LmResult<ToolCall> {
-    let id = if !function_call.call_id.is_empty() {
-        function_call.call_id.clone()
-    } else {
+    let id = if function_call.call_id.is_empty() {
         function_call.id.clone()
+    } else {
+        function_call.call_id.clone()
     };
 
     let mut builder = ToolCall::builder();
@@ -811,7 +807,7 @@ mod tests {
             user: None,
         };
 
-        let completion = response_to_chat_completion(response).unwrap();
+        let completion = response_to_chat_completion(&response).unwrap();
         assert_eq!(completion.message(), Some("Assistant reply"));
 
         let tool_calls = completion.tool_calls().expect("tool calls present");

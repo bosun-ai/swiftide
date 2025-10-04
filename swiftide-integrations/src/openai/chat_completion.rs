@@ -378,11 +378,7 @@ impl<
 
         let create_request = build_responses_request_from_chat(self, request)?;
 
-        let _request_pretty = if cfg!(feature = "langfuse") {
-            serde_json::to_string_pretty(&create_request).ok()
-        } else {
-            None
-        };
+        let request_json = langfuse_json(&create_request);
 
         let response = self
             .client
@@ -391,9 +387,8 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let completion = response_to_chat_completion(response)?;
+        let completion = response_to_chat_completion(&response)?;
 
-        let request_json = _request_pretty;
         let response_json = langfuse_json(&completion);
         let usage_json = completion.usage.as_ref().and_then(langfuse_json);
 
@@ -409,6 +404,7 @@ impl<
         Ok(completion)
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn complete_stream_via_responses_api(
         &self,
         request: &ChatCompletionRequest,
@@ -424,7 +420,7 @@ impl<
 
         create_request.stream = Some(true);
 
-        let _request_pretty = langfuse_json(&create_request);
+        let request_json = langfuse_json(&create_request);
 
         let stream = match self
             .client
@@ -501,49 +497,46 @@ impl<
 
         let mapped_stream = mapped_stream.map(
             move |result: Result<(StreamChunk, bool), LanguageModelError>| {
-                result.and_then(|(chunk, finished)| {
+                result.map(|(chunk, finished)| {
                     let response = chunk.response;
 
-                    if finished {
-                        if let Some(usage) = response.usage.clone() {
-                            if let Some(callback) = usage_callback.as_ref() {
-                                let usage_clone = usage.clone();
-                                let callback = callback.clone();
-                                tokio::spawn(async move {
-                                    if let Err(err) = callback(&usage_clone).await {
-                                        tracing::error!("Error in on_usage callback: {err}");
-                                    }
-                                });
-                            }
-
-                            #[cfg(feature = "metrics")]
-                            {
-                                emit_usage(
-                                    &model,
-                                    usage.prompt_tokens.into(),
-                                    usage.completion_tokens.into(),
-                                    usage.total_tokens.into(),
-                                    metric_metadata.as_ref(),
-                                );
-                            }
-
-                            if cfg!(feature = "langfuse") {
-                                if let Some(request_pretty) = _request_pretty.as_ref() {
-                                    if let Some(usage_json) = langfuse_json(&usage) {
-                                        tracing::debug!(
-                                            langfuse.model = model,
-                                            langfuse.input = request_pretty,
-                                            langfuse.output = %langfuse_json(&response)
-                                                .unwrap_or_default(),
-                                            langfuse.usage = usage_json,
-                                        );
-                                    }
+                    if finished && let Some(usage) = response.usage.clone() {
+                        if let Some(callback) = usage_callback.as_ref() {
+                            let usage_clone = usage.clone();
+                            let callback = callback.clone();
+                            tokio::spawn(async move {
+                                if let Err(err) = callback(&usage_clone).await {
+                                    tracing::error!("Error in on_usage callback: {err}");
                                 }
-                            }
+                            });
+                        }
+
+                        #[cfg(feature = "metrics")]
+                        {
+                            emit_usage(
+                                &model,
+                                usage.prompt_tokens.into(),
+                                usage.completion_tokens.into(),
+                                usage.total_tokens.into(),
+                                metric_metadata.as_ref(),
+                            );
+                        }
+
+                        if cfg!(feature = "langfuse")
+                            && let Some(request_pretty) = request_json.as_ref()
+                            && let Some(usage_json) = langfuse_json(&usage)
+                        {
+                            tracing::debug!(
+                                langfuse.model = model,
+                                langfuse.input = request_pretty,
+                                langfuse.output = %langfuse_json(&response)
+                                    .unwrap_or_default(),
+                                langfuse.usage = usage_json,
+                            );
                         }
                     }
 
-                    Ok(response)
+                    response
                 })
             },
         );
@@ -602,12 +595,24 @@ fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
 
 #[cfg(feature = "langfuse")]
 pub(crate) fn langfuse_json<T: Serialize>(value: &T) -> Option<String> {
-    Some(serde_json::to_string_pretty(value).unwrap_or_default())
+    serde_json::to_string_pretty(value).ok()
 }
 
 #[cfg(not(feature = "langfuse"))]
 pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
     None
+}
+
+pub(crate) fn usage_from_counts(
+    prompt_tokens: u32,
+    completion_tokens: u32,
+    total_tokens: u32,
+) -> Usage {
+    Usage {
+        prompt_tokens,
+        completion_tokens,
+        total_tokens,
+    }
 }
 
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {

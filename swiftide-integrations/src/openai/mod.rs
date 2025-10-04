@@ -102,7 +102,7 @@ pub struct GenericOpenAI<
     /// Optional metadata to attach to metrics emitted by this client.
     metric_metadata: Option<std::collections::HashMap<String, String>>,
 
-    /// Opt-in flag to use OpenAI's Responses API instead of the legacy Chat Completions API.
+    /// Opt-in flag to use `OpenAI`'s Responses API instead of the legacy Chat Completions API.
     #[builder(default)]
     pub(crate) use_responses_api: bool,
 
