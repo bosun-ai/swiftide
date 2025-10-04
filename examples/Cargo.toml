@@ -159,6 +159,10 @@ name = "tasks"
 path = "tasks.rs"
 
 [[example]]
+name = "responses-api"
+path = "responses_api.rs"
+
+[[example]]
 name = "structured-prompt"
 path = "structured_prompt.rs"
 

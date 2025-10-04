@@ -393,14 +393,6 @@ impl<
             None
         };
 
-        #[cfg(feature = "tiktoken")]
-        if let Err(err) = self
-            .tiktoken
-            .validate_chat_completion_request(request.messages())
-        {
-            return Err(LanguageModelError::from(err));
-        }
-
         let response = self
             .client
             .responses()
@@ -458,14 +450,6 @@ impl<
             Ok(req) => req,
             Err(err) => return err.into(),
         };
-
-        #[cfg(feature = "tiktoken")]
-        if let Err(err) = self
-            .tiktoken
-            .validate_chat_completion_request(request.messages())
-        {
-            return LanguageModelError::from(err).into();
-        }
 
         create_request.stream = Some(true);
 
