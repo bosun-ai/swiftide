@@ -550,7 +550,7 @@ impl<
 
         Box::pin(Instrument::instrument(mapped_stream, span))
     }
-    async fn track_completion(
+    pub(crate) async fn track_completion(
         &self,
         model: &str,
         usage: Option<&Usage>,
@@ -601,12 +601,12 @@ fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
 }
 
 #[cfg(feature = "langfuse")]
-fn langfuse_json<T: Serialize>(value: &T) -> Option<String> {
+pub(crate) fn langfuse_json<T: Serialize>(value: &T) -> Option<String> {
     Some(serde_json::to_string_pretty(value).unwrap_or_default())
 }
 
 #[cfg(not(feature = "langfuse"))]
-fn langfuse_json<T>(_value: &T) -> Option<String> {
+pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
     None
 }
 

@@ -10,8 +10,6 @@ use async_openai::types::{
 };
 use async_trait::async_trait;
 use schemars::Schema;
-#[cfg(feature = "metrics")]
-use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
     DynStructuredPrompt,
     chat_completion::{Usage, errors::LanguageModelError},
@@ -19,6 +17,7 @@ use swiftide_core::{
     util::debug_long_utf8,
 };
 
+use super::chat_completion::langfuse_json;
 use super::responses_api::{
     build_responses_request_from_prompt_with_schema, response_to_chat_completion,
 };
@@ -108,55 +107,39 @@ impl<
         );
 
         // Send the request to the OpenAI API and await the response.
-        let mut response = self
+        let response = self
             .client
             .chat()
             .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
-            tracing::debug!(
-                langfuse.model = model,
-                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-            );
-        }
-
         let message = response
             .choices
-            .remove(0)
-            .message
-            .content
-            .take()
+            .first()
+            .and_then(|choice| choice.message.content.clone())
             .ok_or_else(|| {
                 LanguageModelError::PermanentError("Expected content in response".into())
             })?;
 
-        {
-            if let Some(usage) = response.usage.as_ref() {
-                if let Some(callback) = &self.on_usage {
-                    let usage = Usage {
-                        prompt_tokens: usage.prompt_tokens,
-                        completion_tokens: usage.completion_tokens,
-                        total_tokens: usage.total_tokens,
-                    };
-                    callback(&usage).await?;
-                }
-                #[cfg(feature = "metrics")]
-                emit_usage(
-                    model,
-                    usage.prompt_tokens.into(),
-                    usage.completion_tokens.into(),
-                    usage.total_tokens.into(),
-                    self.metric_metadata.as_ref(),
-                );
-            } else {
-                tracing::warn!("Metrics enabled but no usage data found in response");
-            }
-        }
+        let usage = response.usage.as_ref().map(|usage| Usage {
+            prompt_tokens: usage.prompt_tokens,
+            completion_tokens: usage.completion_tokens,
+            total_tokens: usage.total_tokens,
+        });
+
+        let request_json = langfuse_json(&request);
+        let response_json = langfuse_json(&response);
+        let usage_json = usage.as_ref().and_then(langfuse_json);
+
+        self.track_completion(
+            model,
+            usage.as_ref(),
+            request_json.as_deref(),
+            response_json.as_deref(),
+            usage_json.as_deref(),
+        )
+        .await?;
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))?;
@@ -191,12 +174,7 @@ impl<
             prompt_text.clone(),
             schema_value,
         )?;
-
-        let request_pretty = if cfg!(feature = "langfuse") {
-            serde_json::to_string_pretty(&create_request).ok()
-        } else {
-            None
-        };
+        let request_json = langfuse_json(&create_request);
 
         let response = self
             .client
@@ -207,38 +185,26 @@ impl<
 
         let completion = response_to_chat_completion(response)?;
 
-        if let Some(usage) = completion.usage {
-            if let Some(callback) = &self.on_usage {
-                callback(&usage).await?;
-            }
+        let usage_ref = completion.usage.as_ref();
+        let response_json = langfuse_json(&completion);
+        let usage_json = usage_ref.and_then(langfuse_json);
 
-            #[cfg(feature = "metrics")]
-            emit_usage(
-                model,
-                usage.prompt_tokens.into(),
-                usage.completion_tokens.into(),
-                usage.total_tokens.into(),
-                self.metric_metadata.as_ref(),
-            );
-        }
-
-        let message = completion.message.ok_or_else(|| {
+        let message = completion.message.clone().ok_or_else(|| {
             LanguageModelError::PermanentError("Expected content in response".into())
         })?;
+
+        self.track_completion(
+            model,
+            usage_ref,
+            request_json.as_deref(),
+            response_json.as_deref(),
+            usage_json.as_deref(),
+        )
+        .await?;
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))
             .map_err(LanguageModelError::permanent)?;
-
-        if cfg!(feature = "langfuse") {
-            if let Some(request_pretty) = request_pretty.as_ref() {
-                tracing::debug!(
-                    langfuse.model = model,
-                    langfuse.input = request_pretty,
-                    langfuse.output = %message,
-                );
-            }
-        }
 
         Ok(parsed)
     }
