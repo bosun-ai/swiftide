@@ -38,6 +38,7 @@ spider = { workspace = true }
 fluvio = { workspace = true }
 temp-dir = { workspace = true }
 anyhow = { workspace = true }
+futures-util = { workspace = true }
 sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
