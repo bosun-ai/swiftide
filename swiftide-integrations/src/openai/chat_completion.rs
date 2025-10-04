@@ -28,7 +28,7 @@ use swiftide_core::metrics::emit_usage;
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
 use super::responses_api::{
-    ResponsesStreamAccumulator, StreamChunk, build_responses_request_from_chat,
+    ResponsesStreamAccumulator, StreamChunk, StreamControl, build_responses_request_from_chat,
     response_to_chat_completion,
 };
 use tracing_futures::Instrument;
@@ -493,8 +493,9 @@ impl<
                         Ok(event) => {
                             let mut guard = aggregator.lock().expect("mutex poisoned");
                             match guard.apply_event(event, stream_full) {
-                                Ok(Some(chunk)) => Some(Ok(chunk)),
-                                Ok(None) => None,
+                                Ok(StreamControl::Emit(chunk)) => Some(Ok((chunk, false))),
+                                Ok(StreamControl::Finished(chunk)) => Some(Ok((chunk, true))),
+                                Ok(StreamControl::Skip) => None,
                                 Err(err) => Some(Err(err)),
                             }
                         }
@@ -506,7 +507,7 @@ impl<
                                     None
                                 } else {
                                     let chunk = guard.snapshot(stream_full, true);
-                                    Some(Ok(chunk))
+                                    Some(Ok((chunk, true)))
                                 }
                             } else {
                                 Some(Err(openai_error_to_language_model_error(err)))
@@ -522,7 +523,11 @@ impl<
                 return future::ready(None);
             }
 
-            if result.as_ref().map(|chunk| chunk.finished).unwrap_or(true) {
+            if result
+                .as_ref()
+                .map(|(_, finished)| *finished)
+                .unwrap_or(true)
+            {
                 *finished = true;
             }
 
@@ -530,9 +535,8 @@ impl<
         });
 
         let mapped_stream =
-            mapped_stream.map(move |result: Result<StreamChunk, LanguageModelError>| {
-                result.and_then(|chunk| {
-                    let finished = chunk.finished;
+            mapped_stream.map(move |result: Result<(StreamChunk, bool), LanguageModelError>| {
+                result.and_then(|(chunk, finished)| {
                     let response = chunk.response;
 
                     if finished {
