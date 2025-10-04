@@ -611,6 +611,284 @@ fn tool_call_from_function_call(
         .map_err(LanguageModelError::permanent)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_openai::types::responses::{
+        CompletionTokensDetails, Content, FunctionCall as ResponsesFunctionCall, OutputContent,
+        OutputMessage, OutputStatus, OutputText, PromptTokensDetails, ResponseCompleted,
+        ResponseFunctionCallArgumentsDelta, ResponseFunctionCallArgumentsDone,
+        ResponseOutputItemAdded, ResponseOutputTextDelta, Usage as ResponsesUsage,
+    };
+    use serde_json::{json, to_value};
+    use std::collections::HashSet;
+    use swiftide_core::chat_completion::{
+        ChatCompletionRequest, ChatMessage, ParamSpec, ParamType, ToolSpec,
+    };
+
+    use crate::openai::{OpenAI, Options};
+
+    fn sample_usage() -> ResponsesUsage {
+        ResponsesUsage {
+            input_tokens: 5,
+            input_tokens_details: PromptTokensDetails {
+                audio_tokens: Some(0),
+                cached_tokens: Some(0),
+            },
+            output_tokens: 3,
+            output_tokens_details: CompletionTokensDetails {
+                accepted_prediction_tokens: Some(0),
+                audio_tokens: Some(0),
+                reasoning_tokens: Some(0),
+                rejected_prediction_tokens: Some(0),
+            },
+            total_tokens: 8,
+        }
+    }
+
+    fn sample_tool_spec() -> ToolSpec {
+        ToolSpec::builder()
+            .name("get_weather")
+            .description("Retrieve weather data")
+            .parameters(vec![
+                ParamSpec::builder()
+                    .name("city")
+                    .description("City to lookup")
+                    .ty(ParamType::String)
+                    .required(true)
+                    .build()
+                    .unwrap(),
+            ])
+            .build()
+            .unwrap()
+    }
+
+    #[test]
+    fn test_build_responses_request_includes_tools_and_options() {
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4.1")
+            .parallel_tool_calls(Some(true))
+            .default_options(
+                Options::builder()
+                    .metadata(json!({"tag": "demo"}))
+                    .user("tester")
+                    .temperature(0.2),
+            )
+            .build()
+            .unwrap();
+
+        let tool_spec = sample_tool_spec();
+        let mut tools = HashSet::new();
+        tools.insert(tool_spec);
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tools_spec(tools)
+            .build()
+            .unwrap();
+
+        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+
+        assert_eq!(create.model, "gpt-4.1");
+        assert_eq!(create.user.as_deref(), Some("tester"));
+        assert_eq!(create.temperature, Some(0.2));
+        assert_eq!(create.parallel_tool_calls, Some(true));
+        assert_eq!(
+            create
+                .metadata
+                .as_ref()
+                .and_then(|m| m.get("tag"))
+                .map(String::as_str),
+            Some("demo"),
+        );
+
+        let Input::Items(items) = &create.input else {
+            panic!("expected items input");
+        };
+        assert_eq!(items.len(), 1);
+
+        let tools = create.tools.expect("tools present");
+        assert_eq!(tools.len(), 1);
+        assert_eq!(
+            create.tool_choice,
+            Some(ToolChoice::Mode(ToolChoiceMode::Auto))
+        );
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_maps_outputs() {
+        let usage = sample_usage();
+        let response = Response {
+            created_at: 0,
+            error: None,
+            id: "resp".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1".into(),
+            object: "response".into(),
+            output: vec![
+                OutputContent::Message(OutputMessage {
+                    content: vec![Content::OutputText(OutputText {
+                        annotations: Vec::new(),
+                        text: "Assistant reply".into(),
+                    })],
+                    id: "msg".into(),
+                    role: Role::Assistant,
+                    status: OutputStatus::Completed,
+                }),
+                OutputContent::FunctionCall(ResponsesFunctionCall {
+                    id: "tool".into(),
+                    call_id: "tool".into(),
+                    name: "get_weather".into(),
+                    arguments: "{\"city\":\"Oslo\"}".into(),
+                    status: OutputStatus::Completed,
+                }),
+            ],
+            output_text: Some("Assistant reply".into()),
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: Some(usage.clone()),
+            user: None,
+        };
+
+        let completion = response_to_chat_completion(response).unwrap();
+        assert_eq!(completion.message(), Some("Assistant reply"));
+
+        let tool_calls = completion.tool_calls().expect("tool calls present");
+        assert_eq!(tool_calls.len(), 1);
+        assert_eq!(tool_calls[0].name(), "get_weather");
+        assert_eq!(tool_calls[0].args(), Some("{\"city\":\"Oslo\"}"));
+
+        let usage = completion.usage.expect("usage");
+        assert_eq!(usage.prompt_tokens, 5);
+        assert_eq!(usage.completion_tokens, 3);
+        assert_eq!(usage.total_tokens, 8);
+    }
+
+    #[test]
+    fn test_stream_accumulator_handles_text_and_tool_events() {
+        let mut accumulator = ResponsesStreamAccumulator::new();
+
+        let delta: ResponseOutputTextDelta = serde_json::from_value(json!({
+            "sequence_number": 0,
+            "item_id": "msg_1",
+            "output_index": 0,
+            "content_index": 0,
+            "delta": "Hello"
+        }))
+        .unwrap();
+
+        let chunk = accumulator
+            .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(
+            chunk
+                .response
+                .delta
+                .as_ref()
+                .and_then(|d| d.message_chunk.as_deref()),
+            Some("Hello")
+        );
+
+        let item_added: ResponseOutputItemAdded = serde_json::from_value(json!({
+            "sequence_number": 1,
+            "output_index": 0,
+            "item": {
+                "type": "function_call",
+                "id": "call",
+                "call_id": "call",
+                "name": "lookup",
+                "arguments": "",
+                "status": "in_progress"
+            }
+        }))
+        .unwrap();
+
+        accumulator
+            .apply_event(ResponseEvent::ResponseOutputItemAdded(item_added), false)
+            .unwrap()
+            .unwrap();
+
+        let args_delta: ResponseFunctionCallArgumentsDelta = serde_json::from_value(json!({
+            "sequence_number": 2,
+            "item_id": "call",
+            "output_index": 0,
+            "delta": "{\"q\":\"rust\"}"
+        }))
+        .unwrap();
+
+        accumulator
+            .apply_event(
+                ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
+                false,
+            )
+            .unwrap()
+            .unwrap();
+
+        let args_done: ResponseFunctionCallArgumentsDone = serde_json::from_value(json!({
+            "sequence_number": 3,
+            "item_id": "call",
+            "output_index": 0,
+            "arguments": "{\"q\":\"rust\"}"
+        }))
+        .unwrap();
+
+        accumulator
+            .apply_event(
+                ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
+                false,
+            )
+            .unwrap()
+            .unwrap();
+
+        let usage = sample_usage();
+        let completed: ResponseCompleted = serde_json::from_value(json!({
+            "sequence_number": 4,
+            "response": {
+                "id": "resp",
+                "object": "response",
+                "created_at": 0,
+                "status": "completed",
+                "model": "gpt-4.1",
+                "usage": to_value(&usage).unwrap()
+            }
+        }))
+        .unwrap();
+
+        let final_chunk = accumulator
+            .apply_event(ResponseEvent::ResponseCompleted(completed), false)
+            .unwrap()
+            .unwrap();
+
+        assert!(final_chunk.finished);
+        assert_eq!(final_chunk.response.message(), Some("Hello"));
+
+        let tool_calls = final_chunk
+            .response
+            .tool_calls()
+            .expect("tool calls present");
+        assert_eq!(tool_calls[0].name(), "lookup");
+        assert_eq!(tool_calls[0].args(), Some("{\"q\":\"rust\"}"));
+
+        let usage = final_chunk.response.usage.expect("usage");
+        assert_eq!(usage.total_tokens, 8);
+    }
+}
+
 pub(super) fn build_responses_request_from_prompt<C>(
     client: &GenericOpenAI<C>,
     prompt_text: String,
