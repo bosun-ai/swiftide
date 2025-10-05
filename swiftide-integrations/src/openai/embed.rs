@@ -35,30 +35,18 @@ impl<
         let response = self
             .client
             .embeddings()
-            .create(request)
+            .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        #[cfg(feature = "metrics")]
-        {
-            swiftide_core::metrics::emit_usage(
-                model,
-                response.usage.prompt_tokens.into(),
-                0,
-                response.usage.total_tokens.into(),
-                self.metric_metadata.as_ref(),
-            );
-        }
+        let usage = Usage {
+            prompt_tokens: response.usage.prompt_tokens,
+            completion_tokens: 0,
+            total_tokens: response.usage.total_tokens,
+        };
 
-        if let Some(callback) = self.on_usage.as_ref() {
-            let usage = Usage {
-                prompt_tokens: response.usage.prompt_tokens,
-                completion_tokens: 0,
-                total_tokens: response.usage.total_tokens,
-            };
-
-            callback(&usage).await?;
-        }
+        self.track_completion(model, Some(&usage), Some(&request), Some(&response))
+            .await?;
 
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");

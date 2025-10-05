@@ -15,7 +15,6 @@ use futures_util::StreamExt as _;
 use futures_util::future;
 use futures_util::stream;
 use itertools::Itertools;
-#[cfg(feature = "langfuse")]
 use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
@@ -144,17 +143,11 @@ impl<
 
         let our_response = builder.build().map_err(LanguageModelError::from)?;
 
-        let usage_ref = our_response.usage.as_ref();
-        let request_json = langfuse_json(&request);
-        let response_json = langfuse_json(&our_response);
-        let usage_json = our_response.usage.as_ref().and_then(langfuse_json);
-
         self.track_completion(
             model,
-            usage_ref,
-            request_json.as_deref(),
-            response_json.as_deref(),
-            usage_json.as_deref(),
+            our_response.usage.as_ref(),
+            Some(&request),
+            Some(&our_response),
         )
         .await?;
 
@@ -167,9 +160,12 @@ impl<
             return self.complete_stream_via_responses_api(request).await;
         }
 
-        let Some(model) = self.default_options.prompt_model.clone() else {
+        let Some(model_name) = self.default_options.prompt_model.clone() else {
             return LanguageModelError::permanent("Model not set").into();
         };
+
+        #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
+        let _ = &model_name;
 
         let messages = match request
             .messages()
@@ -184,7 +180,7 @@ impl<
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
             .chat_completion_request_defaults()
-            .model(&model)
+            .model(&model_name)
             .messages(messages)
             .stream_options(ChatCompletionStreamOptions {
                 include_usage: true,
@@ -219,7 +215,7 @@ impl<
             }
         };
 
-        tracing::trace!(model, ?request, "Sending request to OpenAI");
+        tracing::trace!(model = %model_name, ?request, "Sending request to OpenAI");
 
         let response = match self.client.chat().create_stream(request.clone()).await {
             Ok(response) => response,
@@ -309,7 +305,7 @@ impl<
 
                     if cfg!(feature = "langfuse") {
                         tracing::debug!(
-                            langfuse.model = model,
+                            langfuse.model = model_name,
                             langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
                             langfuse.output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
                             langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
@@ -323,7 +319,7 @@ impl<
                             lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
                             lock.usage.as_ref().map_or(0, |u| u.total_tokens)
                         ),
-                        model = &model,
+                        model = &model_name,
                         has_message = lock.message.is_some(),
                         num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
                         "[ChatCompletion/Streaming] Response from OpenAI"
@@ -344,7 +340,7 @@ impl<
                         #[cfg(feature = "metrics")]
                         {
                             emit_usage(
-                                &model,
+                                &model_name,
                                 usage.prompt_tokens.into(),
                                 usage.completion_tokens.into(),
                                 usage.total_tokens.into(),
@@ -378,8 +374,6 @@ impl<
 
         let create_request = build_responses_request_from_chat(self, request)?;
 
-        let request_json = langfuse_json(&create_request);
-
         let response = self
             .client
             .responses()
@@ -389,15 +383,11 @@ impl<
 
         let completion = response_to_chat_completion(&response)?;
 
-        let response_json = langfuse_json(&completion);
-        let usage_json = completion.usage.as_ref().and_then(langfuse_json);
-
         self.track_completion(
             model,
             completion.usage.as_ref(),
-            request_json.as_deref(),
-            response_json.as_deref(),
-            usage_json.as_deref(),
+            Some(&create_request),
+            Some(&completion),
         )
         .await?;
 
@@ -409,7 +399,8 @@ impl<
         &self,
         request: &ChatCompletionRequest,
     ) -> ChatCompletionStream {
-        let Some(model) = self.default_options.prompt_model.clone() else {
+        #[allow(unused_variables)]
+        let Some(model_name) = self.default_options.prompt_model.clone() else {
             return LanguageModelError::permanent("Model not set").into();
         };
 
@@ -419,8 +410,6 @@ impl<
         };
 
         create_request.stream = Some(true);
-
-        let request_json = langfuse_json(&create_request);
 
         let stream = match self
             .client
@@ -514,7 +503,7 @@ impl<
                         #[cfg(feature = "metrics")]
                         {
                             emit_usage(
-                                &model,
+                                &model_name,
                                 usage.prompt_tokens.into(),
                                 usage.completion_tokens.into(),
                                 usage.total_tokens.into(),
@@ -522,12 +511,12 @@ impl<
                             );
                         }
 
-                        if cfg!(feature = "langfuse")
-                            && let Some(request_pretty) = request_json.as_ref()
+                        #[cfg(feature = "langfuse")]
+                        if let Some(request_pretty) = langfuse_json(&create_request)
                             && let Some(usage_json) = langfuse_json(&usage)
                         {
                             tracing::debug!(
-                                langfuse.model = model,
+                                langfuse.model = model_name,
                                 langfuse.input = request_pretty,
                                 langfuse.output = %langfuse_json(&response)
                                     .unwrap_or_default(),
@@ -543,14 +532,17 @@ impl<
 
         Box::pin(Instrument::instrument(mapped_stream, span))
     }
-    pub(crate) async fn track_completion(
+    pub(crate) async fn track_completion<R, S>(
         &self,
         model: &str,
         usage: Option<&Usage>,
-        request_json: Option<&str>,
-        response_json: Option<&str>,
-        usage_json: Option<&str>,
-    ) -> Result<(), LanguageModelError> {
+        request: Option<&R>,
+        response: Option<&S>,
+    ) -> Result<(), LanguageModelError>
+    where
+        R: Serialize + ?Sized,
+        S: Serialize + ?Sized,
+    {
         if let Some(usage) = usage {
             if let Some(callback) = &self.on_usage {
                 callback(usage).await?;
@@ -571,13 +563,13 @@ impl<
         #[cfg(feature = "langfuse")]
         tracing::debug!(
             langfuse.model = model,
-            langfuse.input = request_json.unwrap_or_default(),
-            langfuse.output = response_json.unwrap_or_default(),
-            langfuse.usage = usage_json.unwrap_or_default(),
+            langfuse.input = request.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
         );
 
         #[cfg(not(feature = "langfuse"))]
-        let _ = (request_json, response_json, usage_json);
+        let _ = (request, response);
 
         Ok(())
     }
@@ -594,11 +586,12 @@ fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
 }
 
 #[cfg(feature = "langfuse")]
-pub(crate) fn langfuse_json<T: Serialize>(value: &T) -> Option<String> {
+pub(crate) fn langfuse_json<T: Serialize + ?Sized>(value: &T) -> Option<String> {
     serde_json::to_string_pretty(value).ok()
 }
 
 #[cfg(not(feature = "langfuse"))]
+#[allow(dead_code)]
 pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
     None
 }

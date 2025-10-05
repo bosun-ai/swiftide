@@ -15,7 +15,7 @@ use swiftide_core::{
     util::debug_long_utf8,
 };
 
-use super::chat_completion::{langfuse_json, usage_from_counts};
+use super::chat_completion::usage_from_counts;
 use super::responses_api::{
     build_responses_request_from_prompt_with_schema, response_to_chat_completion,
 };
@@ -128,18 +128,8 @@ impl<
             )
         });
 
-        let request_json = langfuse_json(&request);
-        let response_json = langfuse_json(&response);
-        let usage_json = usage.as_ref().and_then(langfuse_json);
-
-        self.track_completion(
-            model,
-            usage.as_ref(),
-            request_json.as_deref(),
-            response_json.as_deref(),
-            usage_json.as_deref(),
-        )
-        .await?;
+        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response))
+            .await?;
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))?;
@@ -174,20 +164,15 @@ impl<
             prompt_text.clone(),
             schema_value,
         )?;
-        let request_json = langfuse_json(&create_request);
 
         let response = self
             .client
             .responses()
-            .create(create_request)
+            .create(create_request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
 
         let completion = response_to_chat_completion(&response)?;
-
-        let usage_ref = completion.usage.as_ref();
-        let response_json = langfuse_json(&completion);
-        let usage_json = usage_ref.and_then(langfuse_json);
 
         let message = completion.message.clone().ok_or_else(|| {
             LanguageModelError::PermanentError("Expected content in response".into())
@@ -195,10 +180,9 @@ impl<
 
         self.track_completion(
             model,
-            usage_ref,
-            request_json.as_deref(),
-            response_json.as_deref(),
-            usage_json.as_deref(),
+            completion.usage.as_ref(),
+            Some(&create_request),
+            Some(&completion),
         )
         .await?;
 
