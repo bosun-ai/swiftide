@@ -10,15 +10,15 @@ use async_openai::types::{
 };
 use async_trait::async_trait;
 use schemars::Schema;
-#[cfg(feature = "metrics")]
-use swiftide_core::metrics::emit_usage;
 use swiftide_core::{
-    DynStructuredPrompt,
-    chat_completion::{Usage, errors::LanguageModelError},
-    prompt::Prompt,
+    DynStructuredPrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
     util::debug_long_utf8,
 };
 
+use super::chat_completion::usage_from_counts;
+use super::responses_api::{
+    build_responses_request_from_prompt_with_schema, response_to_chat_completion,
+};
 use crate::openai::openai_error_to_language_model_error;
 
 use super::GenericOpenAI;
@@ -28,7 +28,13 @@ use anyhow::{Context as _, Result};
 /// a response.
 #[async_trait]
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > DynStructuredPrompt for GenericOpenAI<C>
 {
     /// Sends a prompt to the `OpenAI` API and returns the response content.
@@ -54,6 +60,12 @@ impl<
         prompt: Prompt,
         schema: Schema,
     ) -> Result<serde_json::Value, LanguageModelError> {
+        if self.is_responses_api_enabled() {
+            return self
+                .structured_prompt_via_responses_api(prompt, schema)
+                .await;
+        }
+
         // Retrieve the model from the default options, returning an error if not set.
         let model = self
             .default_options
@@ -66,7 +78,7 @@ impl<
         let response_format = ResponseFormat::JsonSchema {
             json_schema: ResponseFormatJsonSchema {
                 description: None,
-                name: "math_reasoning".into(),
+                name: "structured_prompt".into(),
                 schema: Some(schema_value),
                 strict: Some(true),
             },
@@ -99,60 +111,95 @@ impl<
         );
 
         // Send the request to the OpenAI API and await the response.
-        let mut response = self
+        let response = self
             .client
             .chat()
             .create(request.clone())
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
-            tracing::debug!(
-                langfuse.model = model,
-                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-            );
-        }
-
         let message = response
             .choices
-            .remove(0)
-            .message
-            .content
-            .take()
+            .first()
+            .and_then(|choice| choice.message.content.clone())
             .ok_or_else(|| {
                 LanguageModelError::PermanentError("Expected content in response".into())
             })?;
 
-        {
-            if let Some(usage) = response.usage.as_ref() {
-                if let Some(callback) = &self.on_usage {
-                    let usage = Usage {
-                        prompt_tokens: usage.prompt_tokens,
-                        completion_tokens: usage.completion_tokens,
-                        total_tokens: usage.total_tokens,
-                    };
-                    callback(&usage).await?;
-                }
-                #[cfg(feature = "metrics")]
-                emit_usage(
-                    model,
-                    usage.prompt_tokens.into(),
-                    usage.completion_tokens.into(),
-                    usage.total_tokens.into(),
-                    self.metric_metadata.as_ref(),
-                );
-            } else {
-                tracing::warn!("Metrics enabled but no usage data found in response");
-            }
-        }
+        let usage = response.usage.as_ref().map(|usage| {
+            usage_from_counts(
+                usage.prompt_tokens,
+                usage.completion_tokens,
+                usage.total_tokens,
+            )
+        });
+
+        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))?;
 
         // Extract and return the content of the response, returning an error if not found.
+        Ok(parsed)
+    }
+}
+
+impl<
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
+> GenericOpenAI<C>
+{
+    async fn structured_prompt_via_responses_api(
+        &self,
+        prompt: Prompt,
+        schema: Schema,
+    ) -> Result<serde_json::Value, LanguageModelError> {
+        let prompt_text = prompt.render().map_err(LanguageModelError::permanent)?;
+        let model = self
+            .default_options
+            .prompt_model
+            .as_ref()
+            .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+
+        let schema_value = serde_json::to_value(&schema)
+            .context("Failed to get schema as value")
+            .map_err(LanguageModelError::permanent)?;
+
+        let create_request = build_responses_request_from_prompt_with_schema(
+            self,
+            prompt_text.clone(),
+            schema_value,
+        )?;
+
+        let response = self
+            .client
+            .responses()
+            .create(create_request.clone())
+            .await
+            .map_err(openai_error_to_language_model_error)?;
+
+        let completion = response_to_chat_completion(&response)?;
+
+        let message = completion.message.clone().ok_or_else(|| {
+            LanguageModelError::PermanentError("Expected content in response".into())
+        })?;
+
+        self.track_completion(
+            model,
+            completion.usage.as_ref(),
+            Some(&create_request),
+            Some(&completion),
+        );
+
+        let parsed = serde_json::from_str(&message)
+            .with_context(|| format!("Failed to parse response\n {message}"))
+            .map_err(LanguageModelError::permanent)?;
+
         Ok(parsed)
     }
 }
@@ -165,6 +212,10 @@ mod tests {
     use super::*;
     use async_openai::Client;
     use async_openai::config::OpenAIConfig;
+    use async_openai::types::responses::{
+        CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus, OutputText,
+        PromptTokensDetails, Response as ResponsesResponse, Role, Status, Usage as ResponsesUsage,
+    };
     use schemars::{JsonSchema, schema_for};
     use serde::{Deserialize, Serialize};
     use wiremock::{
@@ -279,5 +330,159 @@ mod tests {
                 answer: "42".into()
             }
         );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_via_responses_api() {
+        let mock_server = MockServer::start().await;
+
+        let response = ResponsesResponse {
+            created_at: 0,
+            error: None,
+            id: "resp".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1-mini".into(),
+            object: "response".into(),
+            output: vec![OutputContent::Message(OutputMessage {
+                content: vec![Content::OutputText(OutputText {
+                    annotations: Vec::new(),
+                    text: serde_json::to_string(&SimpleOutput {
+                        answer: "structured".into(),
+                    })
+                    .unwrap(),
+                })],
+                id: "msg".into(),
+                role: Role::Assistant,
+                status: OutputStatus::Completed,
+            })],
+            output_text: None,
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: Some(ResponsesUsage {
+                input_tokens: 10,
+                input_tokens_details: PromptTokensDetails {
+                    audio_tokens: Some(0),
+                    cached_tokens: Some(0),
+                },
+                output_tokens: 4,
+                output_tokens_details: CompletionTokensDetails {
+                    accepted_prediction_tokens: Some(0),
+                    audio_tokens: Some(0),
+                    reasoning_tokens: Some(0),
+                    rejected_prediction_tokens: Some(0),
+                },
+                total_tokens: 14,
+            }),
+            user: None,
+        };
+
+        let response_body = serde_json::to_value(&response).unwrap();
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(response_body))
+            .mount(&mock_server)
+            .await;
+
+        let config = OpenAIConfig::new().with_api_base(mock_server.uri());
+        let client = Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(client)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .unwrap();
+
+        let schema = schema_for!(SimpleOutput);
+        let result = openai
+            .structured_prompt_dyn("Render".into(), schema)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            serde_json::from_value::<SimpleOutput>(result).unwrap(),
+            SimpleOutput {
+                answer: "structured".into(),
+            }
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_via_responses_api_invalid_json_errors() {
+        let mock_server = MockServer::start().await;
+
+        let bad_response = ResponsesResponse {
+            created_at: 0,
+            error: None,
+            id: "resp".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1-mini".into(),
+            object: "response".into(),
+            output: vec![OutputContent::Message(OutputMessage {
+                content: vec![Content::OutputText(OutputText {
+                    annotations: Vec::new(),
+                    text: "not json".into(),
+                })],
+                id: "msg".into(),
+                role: Role::Assistant,
+                status: OutputStatus::Completed,
+            })],
+            output_text: Some("not json".into()),
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: None,
+            user: None,
+        };
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(bad_response))
+            .mount(&mock_server)
+            .await;
+
+        let config = OpenAIConfig::new().with_api_base(mock_server.uri());
+        let client = Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(client)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .unwrap();
+
+        let schema = schema_for!(SimpleOutput);
+        let err = openai
+            .structured_prompt_dyn("Render".into(), schema)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, LanguageModelError::PermanentError(_)));
     }
 }

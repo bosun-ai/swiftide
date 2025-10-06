@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::{Context as _, Result};
+use async_openai::error::OpenAIError;
 use async_openai::types::ChatCompletionStreamOptions;
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
@@ -11,24 +12,37 @@ use async_openai::types::{
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
+use futures_util::future;
 use futures_util::stream;
 use itertools::Itertools;
+use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
-use swiftide_core::chat_completion::UsageBuilder;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
+use swiftide_core::chat_completion::{Usage, UsageBuilder};
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
+use super::responses_api::{
+    ResponsesStreamAccumulator, StreamChunk, StreamControl, build_responses_request_from_chat,
+    response_to_chat_completion,
+};
+use tracing_futures::Instrument;
 
 #[async_trait]
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > ChatCompletion for GenericOpenAI<C>
 {
     #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
@@ -40,6 +54,10 @@ impl<
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        if self.is_responses_api_enabled() {
+            return self.complete_via_responses_api(request).await;
+        }
+
         let model = self
             .default_options
             .prompt_model
@@ -87,16 +105,6 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        if cfg!(feature = "langfuse") {
-            let usage = response.usage.clone().unwrap_or_default();
-            tracing::debug!(
-                langfuse.model = model,
-                langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                langfuse.output = %serde_json::to_string_pretty(&response).unwrap_or_default(),
-                langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-            );
-        }
-
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
 
@@ -136,36 +144,33 @@ impl<
                 .build()
                 .map_err(LanguageModelError::permanent)?;
 
-            if let Some(callback) = &self.on_usage {
-                callback(&usage).await?;
-            }
-
             builder.usage(usage);
-
-            #[cfg(feature = "metrics")]
-            {
-                if let Some(usage) = response.usage.as_ref() {
-                    emit_usage(
-                        model,
-                        usage.prompt_tokens.into(),
-                        usage.completion_tokens.into(),
-                        usage.total_tokens.into(),
-                        self.metric_metadata.as_ref(),
-                    );
-                }
-            }
         }
 
         let our_response = builder.build().map_err(LanguageModelError::from)?;
+
+        self.track_completion(
+            model,
+            our_response.usage.as_ref(),
+            Some(&request),
+            Some(&our_response),
+        );
 
         Ok(our_response)
     }
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
-        let Some(model) = self.default_options.prompt_model.clone() else {
+        if self.is_responses_api_enabled() {
+            return self.complete_stream_via_responses_api(request).await;
+        }
+
+        let Some(model_name) = self.default_options.prompt_model.clone() else {
             return LanguageModelError::permanent("Model not set").into();
         };
+
+        #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
+        let _ = &model_name;
 
         let messages = match request
             .messages()
@@ -180,7 +185,7 @@ impl<
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
             .chat_completion_request_defaults()
-            .model(&model)
+            .model(&model_name)
             .messages(messages)
             .stream_options(ChatCompletionStreamOptions {
                 include_usage: true,
@@ -215,7 +220,7 @@ impl<
             }
         };
 
-        tracing::trace!(model, ?request, "Sending request to OpenAI");
+        tracing::trace!(model = %model_name, ?request, "Sending request to OpenAI");
 
         let response = match self.client.chat().create_stream(request.clone()).await {
             Ok(response) => response,
@@ -226,9 +231,6 @@ impl<
         let final_response = accumulating_response.clone();
         let stream_full = self.stream_full;
 
-        #[cfg(feature = "metrics")]
-        let metric_metadata = self.metric_metadata.clone();
-
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!(
                 "stream",
@@ -238,7 +240,7 @@ impl<
             tracing::info_span!("stream")
         };
 
-        let maybe_usage_callback = self.on_usage.clone();
+        let self_for_stream = self.clone();
         let stream = response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
@@ -301,53 +303,13 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
-                    let usage = lock.usage.clone().unwrap_or_default();
-
-                    if cfg!(feature = "langfuse") {
-                        tracing::debug!(
-                            langfuse.model = model,
-                            langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                            langfuse.output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
-                            langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-                        );
-                    }
-
-                    tracing::debug!(
-                        usage = format!(
-                            "{}/{}/{}",
-                            lock.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.total_tokens)
-                        ),
-                        model = &model,
-                        has_message = lock.message.is_some(),
-                        num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
-                        "[ChatCompletion/Streaming] Response from OpenAI"
+                    self_for_stream.track_completion(
+                        &model_name,
+                        lock.usage.as_ref(),
+                        Some(&request),
+                        Some(&*lock),
                     );
-                    #[allow(clippy::collapsible_if)]
-                    if let Some(usage) = lock.usage.as_ref() {
-                        if let Some(callback) = maybe_usage_callback.as_ref() {
-                            let usage = usage.clone();
-                            let callback = callback.clone();
 
-                            tokio::spawn(async move {
-                                if let Err(e) = callback(&usage).await {
-                                    tracing::error!("Error in on_usage callback: {}", e);
-                                }
-                            });
-                        }
-
-                        #[cfg(feature = "metrics")]
-                        {
-                            emit_usage(
-                                &model,
-                                usage.prompt_tokens.into(),
-                                usage.completion_tokens.into(),
-                                usage.total_tokens.into(),
-                                metric_metadata.as_ref(),
-                            );
-                        }
-                    }
                     Ok(lock.clone())
                 }),
             );
@@ -355,6 +317,229 @@ impl<
         let stream = tracing_futures::Instrument::instrument(stream, span);
 
         Box::pin(stream)
+    }
+}
+
+impl<
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
+> GenericOpenAI<C>
+{
+    async fn complete_via_responses_api(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        let model = self
+            .default_options
+            .prompt_model
+            .as_ref()
+            .context("Model not set")?;
+
+        let create_request = build_responses_request_from_chat(self, request)?;
+
+        let response = self
+            .client
+            .responses()
+            .create(create_request.clone())
+            .await
+            .map_err(openai_error_to_language_model_error)?;
+
+        let completion = response_to_chat_completion(&response)?;
+
+        self.track_completion(
+            model,
+            completion.usage.as_ref(),
+            Some(&create_request),
+            Some(&completion),
+        );
+
+        Ok(completion)
+    }
+
+    #[allow(clippy::too_many_lines)]
+    async fn complete_stream_via_responses_api(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> ChatCompletionStream {
+        #[allow(unused_variables)]
+        let Some(model_name) = self.default_options.prompt_model.clone() else {
+            return LanguageModelError::permanent("Model not set").into();
+        };
+
+        let mut create_request = match build_responses_request_from_chat(self, request) {
+            Ok(req) => req,
+            Err(err) => return err.into(),
+        };
+
+        create_request.stream = Some(true);
+
+        let stream = match self
+            .client
+            .responses()
+            .create_stream(create_request.clone())
+            .await
+        {
+            Ok(stream) => stream,
+            Err(err) => return openai_error_to_language_model_error(err).into(),
+        };
+
+        let aggregator = Arc::new(Mutex::new(ResponsesStreamAccumulator::new()));
+        let stream_full = self.stream_full;
+
+        let span = if cfg!(feature = "langfuse") {
+            tracing::info_span!("responses_stream", langfuse.type = "GENERATION")
+        } else {
+            tracing::info_span!("responses_stream")
+        };
+
+        let mapped_stream = stream
+            .then(move |event| {
+                let aggregator = aggregator.clone();
+                async move {
+                    match event {
+                        Ok(event) => {
+                            let mut guard = aggregator.lock().expect("mutex poisoned");
+                            match guard.apply_event(event, stream_full) {
+                                Ok(StreamControl::Emit(chunk)) => Some(Ok((chunk, false))),
+                                Ok(StreamControl::Finished(chunk)) => Some(Ok((chunk, true))),
+                                Ok(StreamControl::Skip) => None,
+                                Err(err) => Some(Err(err)),
+                            }
+                        }
+                        Err(err) => {
+                            if is_responses_stream_end_error(&err) {
+                                let mut guard = aggregator.lock().expect("mutex poisoned");
+
+                                if guard.has_emitted_finished() {
+                                    None
+                                } else {
+                                    let chunk = guard.snapshot(stream_full, true);
+                                    Some(Ok((chunk, true)))
+                                }
+                            } else {
+                                Some(Err(openai_error_to_language_model_error(err)))
+                            }
+                        }
+                    }
+                }
+            })
+            .filter_map(|maybe| async move { maybe });
+
+        let mapped_stream = mapped_stream.scan(false, |finished, result| {
+            if *finished {
+                return future::ready(None);
+            }
+
+            if result
+                .as_ref()
+                .map(|(_, finished)| *finished)
+                .unwrap_or(true)
+            {
+                *finished = true;
+            }
+
+            future::ready(Some(result))
+        });
+
+        let this = self.clone();
+        let mapped_stream = mapped_stream.map(
+            move |result: Result<(StreamChunk, bool), LanguageModelError>| {
+                result.map(|(chunk, finished)| {
+                    let response = chunk.response;
+
+                    if finished {
+                        this.track_completion(
+                            &model_name,
+                            response.usage.as_ref(),
+                            Some(&create_request),
+                            Some(&response),
+                        );
+                    }
+
+                    response
+                })
+            },
+        );
+
+        Box::pin(Instrument::instrument(mapped_stream, span))
+    }
+    #[allow(unused_variables)]
+    pub(crate) fn track_completion<R, S>(
+        &self,
+        model: &str,
+        usage: Option<&Usage>,
+        request: Option<&R>,
+        response: Option<&S>,
+    ) where
+        R: Serialize + ?Sized,
+        S: Serialize + ?Sized,
+    {
+        if let Some(usage) = usage {
+            let cb_usage = usage.clone();
+            if let Some(callback) = &self.on_usage {
+                let callback = callback.clone();
+                tokio::spawn(async move {
+                    if let Err(err) = callback(&cb_usage).await {
+                        tracing::error!("Error in on_usage callback: {err}");
+                    }
+                });
+            }
+
+            #[cfg(feature = "metrics")]
+            emit_usage(
+                model,
+                usage.prompt_tokens.into(),
+                usage.completion_tokens.into(),
+                usage.total_tokens.into(),
+                self.metric_metadata.as_ref(),
+            );
+        }
+
+        #[cfg(feature = "langfuse")]
+        tracing::debug!(
+            langfuse.model = model,
+            langfuse.input = request.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
+        );
+    }
+}
+
+fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
+    match error {
+        OpenAIError::StreamError(message) => {
+            let normalized = message.trim().to_ascii_lowercase();
+            normalized == "stream ended" || normalized.contains("stream ended")
+        }
+        _ => false,
+    }
+}
+
+#[cfg(feature = "langfuse")]
+pub(crate) fn langfuse_json<T: Serialize + ?Sized>(value: &T) -> Option<String> {
+    serde_json::to_string_pretty(value).ok()
+}
+
+#[cfg(not(feature = "langfuse"))]
+#[allow(dead_code)]
+pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
+    None
+}
+
+pub(crate) fn usage_from_counts(
+    prompt_tokens: u32,
+    completion_tokens: u32,
+    total_tokens: u32,
+) -> Usage {
+    Usage {
+        prompt_tokens,
+        completion_tokens,
+        total_tokens,
     }
 }
 
@@ -531,6 +716,127 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     #[allow(clippy::items_after_statements)]
+    async fn test_complete_responses_api() {
+        use serde_json::Value;
+        use wiremock::{Request, Respond};
+
+        let mock_server = MockServer::start().await;
+
+        use async_openai::types::responses::{
+            CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus,
+            OutputText, PromptTokensDetails, Response as ResponsesResponse, Role, Status,
+            Usage as ResponsesUsage,
+        };
+
+        let response = ResponsesResponse {
+            created_at: 123,
+            error: None,
+            id: "resp_123".into(),
+            incomplete_details: None,
+            instructions: None,
+            max_output_tokens: None,
+            metadata: None,
+            model: "gpt-4.1-mini".into(),
+            object: "response".into(),
+            output: vec![OutputContent::Message(OutputMessage {
+                content: vec![Content::OutputText(OutputText {
+                    annotations: Vec::new(),
+                    text: "Hello via responses".into(),
+                })],
+                id: "msg_1".into(),
+                role: Role::Assistant,
+                status: OutputStatus::Completed,
+            })],
+            output_text: Some("Hello via responses".into()),
+            parallel_tool_calls: None,
+            previous_response_id: None,
+            reasoning: None,
+            store: None,
+            service_tier: None,
+            status: Status::Completed,
+            temperature: None,
+            text: None,
+            tool_choice: None,
+            tools: None,
+            top_p: None,
+            truncation: None,
+            usage: Some(ResponsesUsage {
+                input_tokens: 5,
+                input_tokens_details: PromptTokensDetails {
+                    audio_tokens: Some(0),
+                    cached_tokens: Some(0),
+                },
+                output_tokens: 3,
+                output_tokens_details: CompletionTokensDetails {
+                    accepted_prediction_tokens: Some(0),
+                    audio_tokens: Some(0),
+                    reasoning_tokens: Some(0),
+                    rejected_prediction_tokens: Some(0),
+                },
+                total_tokens: 8,
+            }),
+            user: None,
+        };
+
+        let response_body = serde_json::to_value(&response).unwrap();
+
+        struct ValidateResponsesRequest {
+            expected_model: &'static str,
+            response: Value,
+        }
+
+        impl Respond for ValidateResponsesRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let body: Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(body["model"], self.expected_model);
+                let input = body["input"].as_array().expect("input array");
+                assert_eq!(input.len(), 1);
+                assert_eq!(input[0]["role"], "user");
+                assert_eq!(input[0]["content"], "Hello via prompt");
+
+                let _: async_openai::types::responses::Response =
+                    serde_json::from_value(self.response.clone()).unwrap();
+
+                ResponseTemplate::new(200).set_body_json(self.response.clone())
+            }
+        }
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ValidateResponsesRequest {
+                expected_model: "gpt-4.1-mini",
+                response: response_body,
+            })
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4.1-mini")
+            .use_responses_api(true)
+            .build()
+            .expect("Can create OpenAI client.");
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello via prompt".to_string())])
+            .build()
+            .unwrap();
+
+        let response = openai.complete(&request).await.unwrap();
+
+        assert_eq!(response.message(), Some("Hello via responses"));
+
+        let usage = response.usage.expect("usage present");
+        assert_eq!(usage.prompt_tokens, 5);
+        assert_eq!(usage.completion_tokens, 3);
+        assert_eq!(usage.total_tokens, 8);
+    }
+
+    #[test_log::test(tokio::test)]
+    #[allow(clippy::items_after_statements)]
     async fn test_complete_with_all_default_settings() {
         use serde_json::Value;
         use wiremock::{Request, Respond, ResponseTemplate};
@@ -625,5 +931,20 @@ mod tests {
         let response = openai.complete(&request).await.unwrap();
 
         assert_eq!(response.message(), Some("All settings validated"));
+    }
+
+    #[test]
+    fn test_harmless_stream_end_detection() {
+        assert!(is_responses_stream_end_error(&OpenAIError::StreamError(
+            "Stream Ended".into()
+        )));
+
+        assert!(is_responses_stream_end_error(&OpenAIError::StreamError(
+            "connection closed: stream ended".into()
+        )));
+
+        assert!(!is_responses_stream_end_error(&OpenAIError::StreamError(
+            "Too Many Requests".into()
+        )));
     }
 }

@@ -9552,6 +9552,7 @@ version = "0.31.2"
 dependencies = [
  "anyhow",
  "fluvio",
+ "futures-util",
  "metrics",
  "rmcp",
  "schemars 1.0.4",
