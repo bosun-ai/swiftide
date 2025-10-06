@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.31.3](https://github.com/bosun-ai/swiftide/compare/v0.31.2...v0.31.3) - 2025-10-06
+
+### New features
+
+- [a189ae6](https://github.com/bosun-ai/swiftide/commit/a189ae6de51571810f98cf58f9fdb58e7707f29a) *(integrations/openai)*  Opt-in responses api ([#943](https://github.com/bosun-ai/swiftide/pull/943))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.2...0.31.3
+
+
+
 ## [0.31.2](https://github.com/bosun-ai/swiftide/compare/v0.31.1...v0.31.2) - 2025-09-23
 
 ### New features
