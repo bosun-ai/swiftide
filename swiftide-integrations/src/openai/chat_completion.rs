@@ -36,7 +36,13 @@ use tracing_futures::Instrument;
 
 #[async_trait]
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > ChatCompletion for GenericOpenAI<C>
 {
     #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
@@ -148,8 +154,7 @@ impl<
             our_response.usage.as_ref(),
             Some(&request),
             Some(&our_response),
-        )
-        .await?;
+        );
 
         Ok(our_response)
     }
@@ -226,9 +231,6 @@ impl<
         let final_response = accumulating_response.clone();
         let stream_full = self.stream_full;
 
-        #[cfg(feature = "metrics")]
-        let metric_metadata = self.metric_metadata.clone();
-
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!(
                 "stream",
@@ -238,7 +240,7 @@ impl<
             tracing::info_span!("stream")
         };
 
-        let maybe_usage_callback = self.on_usage.clone();
+        let self_for_stream = self.clone();
         let stream = response
             .map(move |chunk| match chunk {
                 Ok(chunk) => {
@@ -301,53 +303,13 @@ impl<
                 stream::iter(vec![final_response]).map(move |accumulating_response| {
                     let lock = accumulating_response.lock().unwrap();
 
-                    let usage = lock.usage.clone().unwrap_or_default();
-
-                    if cfg!(feature = "langfuse") {
-                        tracing::debug!(
-                            langfuse.model = model_name,
-                            langfuse.input = %serde_json::to_string_pretty(&request).unwrap_or_default(),
-                            langfuse.output = %serde_json::to_string_pretty(&*lock).unwrap_or_default(),
-                            langfuse.usage = %serde_json::to_string_pretty(&usage).unwrap_or_default(),
-                        );
-                    }
-
-                    tracing::debug!(
-                        usage = format!(
-                            "{}/{}/{}",
-                            lock.usage.as_ref().map_or(0, |u| u.prompt_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.completion_tokens),
-                            lock.usage.as_ref().map_or(0, |u| u.total_tokens)
-                        ),
-                        model = &model_name,
-                        has_message = lock.message.is_some(),
-                        num_tool_calls = lock.tool_calls.as_ref().map_or(0, std::vec::Vec::len),
-                        "[ChatCompletion/Streaming] Response from OpenAI"
+                    self_for_stream.track_completion(
+                        &model_name,
+                        lock.usage.as_ref(),
+                        Some(&request),
+                        Some(&*lock),
                     );
-                    #[allow(clippy::collapsible_if)]
-                    if let Some(usage) = lock.usage.as_ref() {
-                        if let Some(callback) = maybe_usage_callback.as_ref() {
-                            let usage = usage.clone();
-                            let callback = callback.clone();
 
-                            tokio::spawn(async move {
-                                if let Err(e) = callback(&usage).await {
-                                    tracing::error!("Error in on_usage callback: {}", e);
-                                }
-                            });
-                        }
-
-                        #[cfg(feature = "metrics")]
-                        {
-                            emit_usage(
-                                &model_name,
-                                usage.prompt_tokens.into(),
-                                usage.completion_tokens.into(),
-                                usage.total_tokens.into(),
-                                metric_metadata.as_ref(),
-                            );
-                        }
-                    }
                     Ok(lock.clone())
                 }),
             );
@@ -359,7 +321,13 @@ impl<
 }
 
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > GenericOpenAI<C>
 {
     async fn complete_via_responses_api(
@@ -388,8 +356,7 @@ impl<
             completion.usage.as_ref(),
             Some(&create_request),
             Some(&completion),
-        )
-        .await?;
+        );
 
         Ok(completion)
     }
@@ -423,11 +390,6 @@ impl<
 
         let aggregator = Arc::new(Mutex::new(ResponsesStreamAccumulator::new()));
         let stream_full = self.stream_full;
-
-        #[cfg(feature = "metrics")]
-        let metric_metadata = self.metric_metadata.clone();
-
-        let usage_callback = self.on_usage.clone();
 
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!("responses_stream", langfuse.type = "GENERATION")
@@ -484,45 +446,19 @@ impl<
             future::ready(Some(result))
         });
 
+        let this = self.clone();
         let mapped_stream = mapped_stream.map(
             move |result: Result<(StreamChunk, bool), LanguageModelError>| {
                 result.map(|(chunk, finished)| {
                     let response = chunk.response;
 
-                    if finished && let Some(usage) = response.usage.clone() {
-                        if let Some(callback) = usage_callback.as_ref() {
-                            let usage_clone = usage.clone();
-                            let callback = callback.clone();
-                            tokio::spawn(async move {
-                                if let Err(err) = callback(&usage_clone).await {
-                                    tracing::error!("Error in on_usage callback: {err}");
-                                }
-                            });
-                        }
-
-                        #[cfg(feature = "metrics")]
-                        {
-                            emit_usage(
-                                &model_name,
-                                usage.prompt_tokens.into(),
-                                usage.completion_tokens.into(),
-                                usage.total_tokens.into(),
-                                metric_metadata.as_ref(),
-                            );
-                        }
-
-                        #[cfg(feature = "langfuse")]
-                        if let Some(request_pretty) = langfuse_json(&create_request)
-                            && let Some(usage_json) = langfuse_json(&usage)
-                        {
-                            tracing::debug!(
-                                langfuse.model = model_name,
-                                langfuse.input = request_pretty,
-                                langfuse.output = %langfuse_json(&response)
-                                    .unwrap_or_default(),
-                                langfuse.usage = usage_json,
-                            );
-                        }
+                    if finished {
+                        this.track_completion(
+                            &model_name,
+                            response.usage.as_ref(),
+                            Some(&create_request),
+                            Some(&response),
+                        );
                     }
 
                     response
@@ -532,20 +468,26 @@ impl<
 
         Box::pin(Instrument::instrument(mapped_stream, span))
     }
-    pub(crate) async fn track_completion<R, S>(
+    #[allow(unused_variables)]
+    pub(crate) fn track_completion<R, S>(
         &self,
         model: &str,
         usage: Option<&Usage>,
         request: Option<&R>,
         response: Option<&S>,
-    ) -> Result<(), LanguageModelError>
-    where
+    ) where
         R: Serialize + ?Sized,
         S: Serialize + ?Sized,
     {
         if let Some(usage) = usage {
+            let cb_usage = usage.clone();
             if let Some(callback) = &self.on_usage {
-                callback(usage).await?;
+                let callback = callback.clone();
+                tokio::spawn(async move {
+                    if let Err(err) = callback(&cb_usage).await {
+                        tracing::error!("Error in on_usage callback: {err}");
+                    }
+                });
             }
 
             #[cfg(feature = "metrics")]
@@ -556,8 +498,6 @@ impl<
                 usage.total_tokens.into(),
                 self.metric_metadata.as_ref(),
             );
-        } else {
-            let _ = model;
         }
 
         #[cfg(feature = "langfuse")]
@@ -567,11 +507,6 @@ impl<
             langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
             langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
         );
-
-        #[cfg(not(feature = "langfuse"))]
-        let _ = (request, response);
-
-        Ok(())
     }
 }
 
@@ -780,6 +715,7 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    #[allow(clippy::items_after_statements)]
     async fn test_complete_responses_api() {
         use serde_json::Value;
         use wiremock::{Request, Respond};

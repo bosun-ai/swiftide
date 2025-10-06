@@ -12,6 +12,7 @@ use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[allow(dead_code)]
 struct WeatherSummary {
     description: String,
 }

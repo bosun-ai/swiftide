@@ -20,7 +20,13 @@ use anyhow::Result;
 /// response.
 #[async_trait]
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > SimplePrompt for GenericOpenAI<C>
 {
     /// Sends a prompt to the `OpenAI` API and returns the response content.
@@ -102,15 +108,20 @@ impl<
             )
         });
 
-        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response))
-            .await?;
+        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
 
         Ok(message)
     }
 }
 
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > GenericOpenAI<C>
 {
     async fn prompt_via_responses_api(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
@@ -141,13 +152,13 @@ impl<
             completion.usage.as_ref(),
             Some(&create_request),
             Some(&completion),
-        )
-        .await?;
+        );
 
         Ok(message)
     }
 }
 
+#[allow(clippy::items_after_statements)]
 #[cfg(test)]
 mod tests {
     use super::*;

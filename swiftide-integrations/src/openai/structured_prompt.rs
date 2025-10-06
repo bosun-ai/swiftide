@@ -28,7 +28,13 @@ use anyhow::{Context as _, Result};
 /// a response.
 #[async_trait]
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > DynStructuredPrompt for GenericOpenAI<C>
 {
     /// Sends a prompt to the `OpenAI` API and returns the response content.
@@ -128,8 +134,7 @@ impl<
             )
         });
 
-        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response))
-            .await?;
+        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))?;
@@ -140,7 +145,13 @@ impl<
 }
 
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > GenericOpenAI<C>
 {
     async fn structured_prompt_via_responses_api(
@@ -183,8 +194,7 @@ impl<
             completion.usage.as_ref(),
             Some(&create_request),
             Some(&completion),
-        )
-        .await?;
+        );
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))

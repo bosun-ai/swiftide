@@ -10,7 +10,13 @@ use crate::openai::openai_error_to_language_model_error;
 
 #[async_trait]
 impl<
-    C: async_openai::config::Config + std::default::Default + Sync + Send + std::fmt::Debug + Clone,
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
 > EmbeddingModel for GenericOpenAI<C>
 {
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
@@ -45,8 +51,7 @@ impl<
             total_tokens: response.usage.total_tokens,
         };
 
-        self.track_completion(model, Some(&usage), Some(&request), Some(&response))
-            .await?;
+        self.track_completion(model, Some(&usage), Some(&request), Some(&response));
 
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");
@@ -73,6 +78,7 @@ mod tests {
         assert!(matches!(err, LanguageModelError::PermanentError(_)));
     }
 
+    #[allow(clippy::items_after_statements)]
     #[test_log::test(tokio::test)]
     async fn test_embed_success() {
         let mock_server = MockServer::start().await;

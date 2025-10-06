@@ -635,6 +635,67 @@ fn tool_call_from_function_call(
         .map_err(LanguageModelError::permanent)
 }
 
+pub(super) fn build_responses_request_from_prompt<C>(
+    client: &GenericOpenAI<C>,
+    prompt_text: String,
+) -> LmResult<CreateResponse>
+where
+    C: async_openai::config::Config + Clone + Default,
+{
+    let model = client
+        .options()
+        .prompt_model
+        .as_ref()
+        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+
+    let mut args = base_request_args(client, model)?;
+    args.input(Input::Items(vec![InputItem::Message(
+        InputMessageArgs::default()
+            .role(Role::User)
+            .content(InputContent::TextInput(prompt_text))
+            .build()
+            .map_err(LanguageModelError::permanent)?,
+    )]));
+
+    args.build().map_err(openai_error_to_language_model_error)
+}
+
+pub(super) fn build_responses_request_from_prompt_with_schema<C>(
+    client: &GenericOpenAI<C>,
+    prompt_text: String,
+    schema: serde_json::Value,
+) -> LmResult<CreateResponse>
+where
+    C: async_openai::config::Config + Clone + Default,
+{
+    let model = client
+        .options()
+        .prompt_model
+        .as_ref()
+        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+
+    let mut args = base_request_args(client, model)?;
+    args.input(Input::Items(vec![InputItem::Message(
+        InputMessageArgs::default()
+            .role(Role::User)
+            .content(InputContent::TextInput(prompt_text))
+            .build()
+            .map_err(LanguageModelError::permanent)?,
+    )]));
+
+    args.text(TextConfig {
+        format: TextResponseFormat::JsonSchema(ResponseFormatJsonSchema {
+            description: None,
+            name: "swiftide_structured_output".into(),
+            schema: Some(schema),
+            strict: Some(true),
+        }),
+    });
+
+    args.build().map_err(openai_error_to_language_model_error)
+}
+
+#[allow(clippy::items_after_statements)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -666,10 +727,8 @@ mod tests {
         }
     }
 
-    fn expect_skip(control: StreamControl) {
-        if !matches!(control, StreamControl::Skip) {
-            panic!("expected skip, got {control:?}");
-        }
+    fn expect_skip(control: &StreamControl) {
+        assert!(matches!(control, StreamControl::Skip));
     }
 
     fn sample_usage() -> ResponsesUsage {
@@ -980,69 +1039,9 @@ mod tests {
         .unwrap();
 
         expect_skip(
-            accumulator
+            &accumulator
                 .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
                 .unwrap(),
         );
     }
-}
-
-pub(super) fn build_responses_request_from_prompt<C>(
-    client: &GenericOpenAI<C>,
-    prompt_text: String,
-) -> LmResult<CreateResponse>
-where
-    C: async_openai::config::Config + Clone + Default,
-{
-    let model = client
-        .options()
-        .prompt_model
-        .as_ref()
-        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
-
-    let mut args = base_request_args(client, model)?;
-    args.input(Input::Items(vec![InputItem::Message(
-        InputMessageArgs::default()
-            .role(Role::User)
-            .content(InputContent::TextInput(prompt_text))
-            .build()
-            .map_err(LanguageModelError::permanent)?,
-    )]));
-
-    args.build().map_err(openai_error_to_language_model_error)
-}
-
-pub(super) fn build_responses_request_from_prompt_with_schema<C>(
-    client: &GenericOpenAI<C>,
-    prompt_text: String,
-    schema: serde_json::Value,
-) -> LmResult<CreateResponse>
-where
-    C: async_openai::config::Config + Clone + Default,
-{
-    let model = client
-        .options()
-        .prompt_model
-        .as_ref()
-        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
-
-    let mut args = base_request_args(client, model)?;
-    args.input(Input::Items(vec![InputItem::Message(
-        InputMessageArgs::default()
-            .role(Role::User)
-            .content(InputContent::TextInput(prompt_text))
-            .build()
-            .map_err(LanguageModelError::permanent)?,
-    )]));
-
-    args.text(TextConfig {
-        format: TextResponseFormat::JsonSchema(ResponseFormatJsonSchema {
-            description: None,
-            name: "swiftide_structured_output".into(),
-            schema: Some(schema),
-            strict: Some(true),
-        }),
-    });
-
-    args.build().map_err(openai_error_to_language_model_error)
 }
