@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1759303942512,
+  "lastUpdate": 1759759199653,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28391,6 +28391,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 260327,
             "range": "± 1663",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a189ae6de51571810f98cf58f9fdb58e7707f29a",
+          "message": "feat(integrations/openai): Opt-in responses api (#943)\n\n- **Opt-in responses api**\n- **Tests**\n- **Add more tests**\n- **Remove weird tiktoken validate**\n- **Also add complete and stream to example**\n- **Fix streaming loop**\n- **Cleanup**",
+          "timestamp": "2025-10-06T15:51:16+02:00",
+          "tree_id": "d66763e22a457ceb67ecf414eb35ca61c3adc7b1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a189ae6de51571810f98cf58f9fdb58e7707f29a"
+        },
+        "date": 1759759197760,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 798064,
+            "range": "± 18481",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259649,
+            "range": "± 1872",
             "unit": "ns/iter"
           }
         ]
