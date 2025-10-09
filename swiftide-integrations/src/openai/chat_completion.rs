@@ -169,9 +169,6 @@ impl<
             return LanguageModelError::permanent("Model not set").into();
         };
 
-        #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
-        let _ = &model_name;
-
         let messages = match request
             .messages()
             .iter()
@@ -403,8 +400,13 @@ impl<
                 async move {
                     match event {
                         Ok(event) => {
-                            let mut guard = aggregator.lock().expect("mutex poisoned");
-                            match guard.apply_event(event, stream_full) {
+                            let result = {
+                                let mut guard = aggregator.lock().expect("mutex poisoned");
+                                guard.apply_event(event, stream_full)
+                            };
+                            tracing::trace!(?result, "Processing stream event");
+
+                            match result {
                                 Ok(StreamControl::Emit(chunk)) => Some(Ok((chunk, false))),
                                 Ok(StreamControl::Finished(chunk)) => Some(Ok((chunk, true))),
                                 Ok(StreamControl::Skip) => None,

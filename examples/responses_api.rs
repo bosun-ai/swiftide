@@ -29,28 +29,28 @@ async fn main() -> Result<()> {
         .use_responses_api(true)
         .build()?;
 
-    let greeting = openai
-        .prompt("Say hello in one short sentence".into())
-        .await?;
-    println!("Prompt result: {greeting}");
-
-    let structured: WeatherSummary = openai
-        .structured_prompt("Summarise today's weather in Amsterdam as JSON".into())
-        .await?;
-    println!("Structured result: {structured:?}");
-
+    // let greeting = openai
+    //     .prompt("Say hello in one short sentence".into())
+    //     .await?;
+    // println!("Prompt result: {greeting}");
+    //
+    // let structured: WeatherSummary = openai
+    //     .structured_prompt("Summarise today's weather in Amsterdam as JSON".into())
+    //     .await?;
+    // println!("Structured result: {structured:?}");
+    //
     let chat_request = ChatCompletionRequest::builder()
         .messages(vec![
             ChatMessage::new_system("You are a concise assistant."),
             ChatMessage::new_user("Share one fun fact about Amsterdam."),
         ])
         .build()?;
-
-    let completion = openai.complete(&chat_request).await?;
-    println!(
-        "Complete result: {}",
-        completion.message().unwrap_or("<no message>")
-    );
+    //
+    // let completion = openai.complete(&chat_request).await?;
+    // println!(
+    //     "Complete result: {}",
+    //     completion.message().unwrap_or("<no message>")
+    // );
 
     let mut stream = openai.complete_stream(&chat_request).await;
     print!("Streaming result: ");
