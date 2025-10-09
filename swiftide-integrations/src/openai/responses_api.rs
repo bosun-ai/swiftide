@@ -289,6 +289,8 @@ impl ResponsesStreamAccumulator {
             return Ok(StreamControl::Skip);
         }
 
+        tracing::trace!("Responses event: {event:?}");
+
         match event {
             ResponseEvent::ResponseOutputTextDelta(delta) => {
                 self.response
@@ -690,6 +692,7 @@ where
             schema: Some(schema),
             strict: Some(true),
         }),
+        verbosity: None,
     });
 
     args.build().map_err(openai_error_to_language_model_error)
