@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1759764709723,
+  "lastUpdate": 1760278546708,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28499,6 +28499,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259365,
             "range": "± 1289",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9ae33317bbcbf5e65e3aa7eb0bf378190b7c33b5",
+          "message": "feat(agents)!: Improve toolspec api with schemars and support all possible types (#940)\n\n## Summary\n- refactor tool macro parameter handling to rely on schemars-derived\nschemas, allowing complex argument types without bespoke ParamType\nbookkeeping\n- refresh the agent examples to demonstrate both primitive and\nstructured tool arguments, including the new custom schema showcase\n- add `tool_custom_schema` example that wraps a manual `Tool`\nimplementation around a `schema_for!` definition for fine-grained schema\ncontrol\n\nBREAKING CHANGE: macro-level `json_type` overrides beyond the basic\nprimitives are no longer enforced; rely on Rust type inference or\nprovide an explicit schemars-derived struct/custom schema when specific\nshapes are required",
+          "timestamp": "2025-10-12T16:06:59+02:00",
+          "tree_id": "fe2299df718cdc219ead260fc80110e32a618efc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9ae33317bbcbf5e65e3aa7eb0bf378190b7c33b5"
+        },
+        "date": 1760278544282,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 791449,
+            "range": "± 18275",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 255566,
+            "range": "± 1165",
             "unit": "ns/iter"
           }
         ]
