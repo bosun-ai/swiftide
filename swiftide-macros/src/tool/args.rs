@@ -163,11 +163,18 @@ impl ToolArgs {
         &self.params
     }
 
-    pub fn arg_names(&self) -> Vec<&str> {
+    pub fn derive_invoke_args(&self) -> Vec<TokenStream> {
         self.params
             .iter()
-            .map(|p| p.name.as_str())
-            .collect::<Vec<_>>()
+            .map(|param| {
+                let ident = syn::Ident::new(&param.name, proc_macro2::Span::call_site());
+                if param.should_pass_owned() {
+                    quote! { args.#ident }
+                } else {
+                    quote! { &args.#ident }
+                }
+            })
+            .collect()
     }
 
     pub fn args_struct(&self) -> TokenStream {
@@ -327,6 +334,30 @@ fn as_owned_ty(ty: &syn::Type) -> syn::Type {
         panic!("Unsupported reference type");
     } else {
         ty.to_owned()
+    }
+}
+
+fn is_vec_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if type_path.qself.is_some() {
+            return false;
+        }
+
+        return type_path
+            .path
+            .segments
+            .last()
+            .is_some_and(|segment| segment.ident == "Vec");
+    }
+
+    false
+}
+
+impl ParamOptions {
+    fn should_pass_owned(&self) -> bool {
+        self.resolved_type
+            .as_ref()
+            .map_or(false, |ty| is_vec_type(ty))
     }
 }
 

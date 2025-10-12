@@ -118,13 +118,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     let invoke_tool_args = parsed
         .tool
-        .arg_names()
-        .into_iter()
-        .map(|name| {
-            let name = syn::Ident::new(name, struct_ident.span());
-            quote! { args.#name }
-        })
-        .collect::<Vec<_>>();
+        .derive_invoke_args();
     let args_struct_ident = parsed.tool.args_struct_ident();
     let args_struct = parsed.tool.args_struct();
 
@@ -136,7 +130,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             else { return Err(::swiftide::chat_completion::errors::ToolError::MissingArguments(format!("No arguments provided for {}", #expected_fn_name).into())) };
 
             let args: #args_struct_ident = ::swiftide::reexports::serde_json::from_str(&args)?;
-            return self.#expected_fn_ident(agent_context, #(&#invoke_tool_args),*).await;
+            return self.#expected_fn_ident(agent_context, #(#invoke_tool_args),*).await;
         }
     };
 
