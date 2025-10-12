@@ -25,6 +25,7 @@ anyhow.workspace = true
 async-trait.workspace = true
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 pretty_assertions.workspace = true
@@ -35,7 +36,6 @@ insta.workspace = true
 swiftide = { path = "../swiftide/" }
 swiftide-core = { path = "../swiftide-core/" }
 tokio = { workspace = true, features = ["full"] }
-schemars = { workspace = true, features = ["derive"] }
 
 [lints]
 workspace = true

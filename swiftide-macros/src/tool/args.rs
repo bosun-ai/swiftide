@@ -194,6 +194,7 @@ impl ToolArgs {
                 ::swiftide::reexports::schemars::JsonSchema,
                 Debug
             )]
+            #[schemars(crate = "::swiftide::reexports::schemars")]
             pub struct #args_struct_ident {
                 #(#fields),*
             }
