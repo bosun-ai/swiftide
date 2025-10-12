@@ -25,6 +25,7 @@ anyhow.workspace = true
 async-trait.workspace = true
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 pretty_assertions.workspace = true

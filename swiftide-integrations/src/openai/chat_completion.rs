@@ -544,30 +544,45 @@ pub(crate) fn usage_from_counts(
 }
 
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
-    let mut properties = serde_json::Map::new();
+    let mut parameters = match &spec.parameters_schema {
+        Some(schema) => serde_json::to_value(schema)?,
+        None => json!({
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+        }),
+    };
 
-    for param in &spec.parameters {
-        properties.insert(
-            param.name.to_string(),
-            json!({
-                "type": param.ty.as_ref(),
-                "description": &param.description,
-            }),
-        );
+    if let Some(obj) = parameters.as_object_mut() {
+        obj.insert("additionalProperties".to_string(), json!(false));
+        #[allow(clippy::collapsible_if)]
+        if let Some(props) = obj.get_mut("properties").and_then(|v| v.as_object_mut()) {
+            if props.get("type").map(serde_json::Value::as_str) == Some(Some("object")) {
+                props.insert("additionalProperties".to_string(), json!(false));
+            }
+        }
+    } else {
+        return Err(anyhow::anyhow!(
+            "Tool parameters schema is not a JSON object"
+        ));
     }
+    tracing::debug!(
+        parameters = serde_json::to_string_pretty(&parameters).unwrap(),
+        tool = %spec.name,
+        "Tool parameters schema"
+    );
 
     ChatCompletionToolArgs::default()
         .r#type(ChatCompletionToolType::Function)
-        .function(FunctionObjectArgs::default()
-            .name(&spec.name)
-            .description(&spec.description)
-            .strict(true)
-            .parameters(json!({
-                "type": "object",
-                "properties": properties,
-                "required": spec.parameters.iter().filter(|param| param.required).map(|param| &param.name).collect_vec(),
-                "additionalProperties": false,
-            })).build()?).build()
+        .function(
+            FunctionObjectArgs::default()
+                .name(&spec.name)
+                .description(&spec.description)
+                .strict(true)
+                .parameters(parameters)
+                .build()?,
+        )
+        .build()
         .map_err(anyhow::Error::from)
 }
 

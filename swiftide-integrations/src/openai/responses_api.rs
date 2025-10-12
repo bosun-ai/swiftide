@@ -130,31 +130,15 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
 }
 
 fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
-    let mut properties = serde_json::Map::new();
-
-    for param in &spec.parameters {
-        properties.insert(
-            param.name.clone(),
-            json!({
-                "type": param.ty.as_ref(),
-                "description": param.description,
-            }),
-        );
-    }
-
-    let required: Vec<String> = spec
-        .parameters
-        .iter()
-        .filter(|param| param.required)
-        .map(|param| param.name.clone())
-        .collect();
-
-    let parameters = json!({
-        "type": "object",
-        "properties": properties,
-        "required": required,
-        "additionalProperties": false,
-    });
+    let parameters = match &spec.parameters_schema {
+        Some(schema) => serde_json::to_value(schema)
+            .context("failed to serialize tool parameters schema")?,
+        None => json!({
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+        }),
+    };
 
     let function = FunctionArgs::default()
         .name(&spec.name)
@@ -707,9 +691,7 @@ mod tests {
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
-    use swiftide_core::chat_completion::{
-        ChatCompletionRequest, ChatMessage, ParamSpec, ParamType, ToolSpec,
-    };
+    use swiftide_core::chat_completion::{ChatCompletionRequest, ChatMessage, ToolSpec};
 
     use crate::openai::{OpenAI, Options};
 
@@ -749,19 +731,17 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)]
+    #[derive(schemars::JsonSchema)]
+    struct WeatherArgs {
+        city: String,
+    }
+
     fn sample_tool_spec() -> ToolSpec {
         ToolSpec::builder()
             .name("get_weather")
             .description("Retrieve weather data")
-            .parameters(vec![
-                ParamSpec::builder()
-                    .name("city")
-                    .description("City to lookup")
-                    .ty(ParamType::String)
-                    .required(true)
-                    .build()
-                    .unwrap(),
-            ])
+            .parameters_schema(schemars::schema_for!(WeatherArgs))
             .build()
             .unwrap()
     }
