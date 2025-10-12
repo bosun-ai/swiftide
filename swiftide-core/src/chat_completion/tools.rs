@@ -196,13 +196,14 @@ impl ToolCallBuilder {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Builder, Default)]
 #[builder(setter(into), derive(Debug, Serialize, Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
 pub struct ToolSpec {
     /// Name of the tool
     pub name: String,
     /// Description passed to the LLM for the tool
     pub description: String,
 
-    #[builder(default, setter(custom))]
+    #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional JSON schema describing the tool arguments
     pub parameters_schema: Option<Schema>,
@@ -211,17 +212,6 @@ pub struct ToolSpec {
 impl ToolSpec {
     pub fn builder() -> ToolSpecBuilder {
         ToolSpecBuilder::default()
-    }
-}
-
-impl ToolSpecBuilder {
-    pub fn parameters_schema<T: Into<Schema>>(&mut self, schema: T) -> &mut Self {
-        let mut schema = schema.into();
-        // Force additional properties to false if a schema is provided
-        schema.insert("additionalProperties".to_string(), serde_json::json!(false));
-
-        self.parameters_schema = Some(Some(schema));
-        self
     }
 }
 
