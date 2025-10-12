@@ -357,7 +357,7 @@ impl ParamOptions {
     fn should_pass_owned(&self) -> bool {
         self.resolved_type
             .as_ref()
-            .map_or(false, |ty| is_vec_type(ty))
+            .is_some_and(is_vec_type)
     }
 }
 
