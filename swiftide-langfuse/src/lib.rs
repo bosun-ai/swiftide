@@ -11,8 +11,10 @@
 //! All `Langfuse` data is on the `debug` level. Make sure your tracing setup captures that level.
 //!
 //! # Example
-//! ```
-//! use swiftide::langfuse;
+//! ```no_run
+//! # use swiftide_langfuse::LangfuseLayer;
+//! # use tracing::metadata::LevelFilter;
+//! # use tracing_subscriber::prelude::*;
 //!
 //! // Assuming you have other layers
 //! let mut layers = Vec::new();

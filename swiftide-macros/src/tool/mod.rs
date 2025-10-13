@@ -116,9 +116,7 @@ pub(crate) fn tool_derive_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let expected_fn_name = parsed.tool.fn_name();
     let expected_fn_ident = syn::Ident::new(expected_fn_name, struct_ident.span());
 
-    let invoke_tool_args = parsed
-        .tool
-        .derive_invoke_args();
+    let invoke_tool_args = parsed.tool.derive_invoke_args();
     let args_struct_ident = parsed.tool.args_struct_ident();
     let args_struct = parsed.tool.args_struct();
 

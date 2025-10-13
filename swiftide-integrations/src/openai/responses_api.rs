@@ -131,8 +131,9 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
 
 fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
     let parameters = match &spec.parameters_schema {
-        Some(schema) => serde_json::to_value(schema)
-            .context("failed to serialize tool parameters schema")?,
+        Some(schema) => {
+            serde_json::to_value(schema).context("failed to serialize tool parameters schema")?
+        }
         None => json!({
             "type": "object",
             "properties": {},
