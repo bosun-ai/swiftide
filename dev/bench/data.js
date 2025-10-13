@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1760357411608,
+  "lastUpdate": 1760364703842,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28661,6 +28661,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 196346,
             "range": "± 12753",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "72a6c92764aeda4e88a7cf18d26ce600b7ba8a28",
+          "message": "fix: Force additionalProperties properly on completion requests (#949)\n\n- **Temporary fix for responses api**\n- **Cleanup**\n- **fmt**",
+          "timestamp": "2025-10-13T16:03:06+02:00",
+          "tree_id": "7c1c9bb1345738c5260468686029bde6c1be5463",
+          "url": "https://github.com/bosun-ai/swiftide/commit/72a6c92764aeda4e88a7cf18d26ce600b7ba8a28"
+        },
+        "date": 1760364701926,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 795135,
+            "range": "± 24123",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259376,
+            "range": "± 4391",
             "unit": "ns/iter"
           }
         ]
