@@ -8,13 +8,15 @@ use async_openai::types::responses::{
     Response, ResponseEvent, ResponseMetadata, Role, Status, TextConfig, TextResponseFormat,
     ToolChoice, ToolChoiceMode, ToolDefinition, Usage as ResponsesUsage,
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolOutput, ToolSpec,
     Usage, UsageBuilder,
 };
 
-use super::{GenericOpenAI, openai_error_to_language_model_error};
+use super::{
+    GenericOpenAI, ensure_tool_schema_additional_properties_false, openai_error_to_language_model_error,
+};
 use crate::openai::LanguageModelError;
 
 type LmResult<T> = Result<T, LanguageModelError>;
@@ -140,7 +142,7 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
         }),
     };
 
-    ensure_additional_properties_is_false(&mut parameters)
+    ensure_tool_schema_additional_properties_false(&mut parameters)
         .context("tool schema must allow no additional properties")?;
 
     let function = FunctionArgs::default()
@@ -151,19 +153,6 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
         .build()?;
 
     Ok(ToolDefinition::Function(function))
-}
-
-fn ensure_additional_properties_is_false(parameters: &mut Value) -> Result<()> {
-    let object = parameters
-        .as_object_mut()
-        .context("tool schema must be a JSON object")?;
-
-    object.insert(
-        "additionalProperties".to_string(),
-        Value::Bool(false),
-    );
-
-    Ok(())
 }
 
 fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputItem>> {

@@ -26,8 +26,9 @@ use swiftide_core::chat_completion::{Usage, UsageBuilder};
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
-use super::GenericOpenAI;
+use super::ensure_tool_schema_additional_properties_false;
 use super::openai_error_to_language_model_error;
+use super::GenericOpenAI;
 use super::responses_api::{
     ResponsesStreamAccumulator, StreamChunk, StreamControl, build_responses_request_from_chat,
     response_to_chat_completion,
@@ -553,19 +554,8 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
         }),
     };
 
-    if let Some(obj) = parameters.as_object_mut() {
-        obj.insert("additionalProperties".to_string(), json!(false));
-        #[allow(clippy::collapsible_if)]
-        if let Some(props) = obj.get_mut("properties").and_then(|v| v.as_object_mut()) {
-            if props.get("type").map(serde_json::Value::as_str) == Some(Some("object")) {
-                props.insert("additionalProperties".to_string(), json!(false));
-            }
-        }
-    } else {
-        return Err(anyhow::anyhow!(
-            "Tool parameters schema is not a JSON object"
-        ));
-    }
+    ensure_tool_schema_additional_properties_false(&mut parameters)
+        .context("tool schema must allow no additional properties")?;
     tracing::debug!(
         parameters = serde_json::to_string_pretty(&parameters).unwrap(),
         tool = %spec.name,
@@ -653,6 +643,41 @@ mod tests {
     use super::*;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    #[allow(dead_code)]
+    #[derive(schemars::JsonSchema)]
+    struct WeatherArgs {
+        city: String,
+    }
+
+    #[test]
+    fn test_tools_to_openai_sets_additional_properties_false() {
+        let spec = ToolSpec::builder()
+            .name("get_weather")
+            .description("Retrieve weather data")
+            .parameters_schema(schemars::schema_for!(WeatherArgs))
+            .build()
+            .unwrap();
+
+        let tool = tools_to_openai(&spec).expect("tool conversion succeeds");
+
+        assert_eq!(tool.r#type, ChatCompletionToolType::Function);
+
+        let additional_properties = tool
+            .function
+            .parameters
+            .as_ref()
+            .and_then(serde_json::Value::as_object)
+            .and_then(|obj| obj.get("additionalProperties"))
+            .cloned();
+
+        assert_eq!(
+            additional_properties,
+            Some(serde_json::Value::Bool(false)),
+            "Chat Completions require additionalProperties=false for tool parameters, got {}",
+            serde_json::to_string_pretty(&tool.function.parameters).unwrap()
+        );
+    }
 
     #[test_log::test(tokio::test)]
     async fn test_complete() {
