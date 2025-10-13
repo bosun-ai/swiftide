@@ -3,11 +3,13 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
+use anyhow::Context as _;
 use async_openai::error::OpenAIError;
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
+use serde_json::Value;
 use std::pin::Pin;
 use std::sync::Arc;
 use swiftide_core::chat_completion::Usage;
@@ -269,6 +271,18 @@ impl From<&mut OptionsBuilder> for Options {
             dimensions: value.dimensions.flatten(),
         }
     }
+}
+
+pub(crate) fn ensure_tool_schema_additional_properties_false(
+    parameters: &mut Value,
+) -> anyhow::Result<()> {
+    let object = parameters
+        .as_object_mut()
+        .context("tool schema must be a JSON object")?;
+
+    object.insert("additionalProperties".to_string(), Value::Bool(false));
+
+    Ok(())
 }
 
 impl OpenAI {
