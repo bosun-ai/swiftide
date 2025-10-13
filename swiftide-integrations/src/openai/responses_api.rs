@@ -8,7 +8,7 @@ use async_openai::types::responses::{
     Response, ResponseEvent, ResponseMetadata, Role, Status, TextConfig, TextResponseFormat,
     ToolChoice, ToolChoiceMode, ToolDefinition, Usage as ResponsesUsage,
 };
-use serde_json::json;
+use serde_json::{json, Value};
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolOutput, ToolSpec,
     Usage, UsageBuilder,
@@ -130,16 +130,18 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
 }
 
 fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
-    let parameters = match &spec.parameters_schema {
-        Some(schema) => {
-            serde_json::to_value(schema).context("failed to serialize tool parameters schema")?
-        }
+    let mut parameters = match &spec.parameters_schema {
+        Some(schema) => serde_json::to_value(schema)
+            .context("failed to serialize tool parameters schema")?,
         None => json!({
             "type": "object",
             "properties": {},
             "additionalProperties": false,
         }),
     };
+
+    ensure_additional_properties_is_false(&mut parameters)
+        .context("tool schema must allow no additional properties")?;
 
     let function = FunctionArgs::default()
         .name(&spec.name)
@@ -149,6 +151,19 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
         .build()?;
 
     Ok(ToolDefinition::Function(function))
+}
+
+fn ensure_additional_properties_is_false(parameters: &mut Value) -> Result<()> {
+    let object = parameters
+        .as_object_mut()
+        .context("tool schema must be a JSON object")?;
+
+    object.insert(
+        "additionalProperties".to_string(),
+        Value::Bool(false),
+    );
+
+    Ok(())
 }
 
 fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputItem>> {
@@ -688,7 +703,7 @@ mod tests {
         CompletionTokensDetails, Content, FunctionCall as ResponsesFunctionCall, OutputContent,
         OutputMessage, OutputStatus, OutputText, PromptTokensDetails, ResponseCompleted,
         ResponseFunctionCallArgumentsDelta, ResponseFunctionCallArgumentsDone,
-        ResponseOutputItemAdded, ResponseOutputTextDelta, Usage as ResponsesUsage,
+        ResponseOutputItemAdded, ResponseOutputTextDelta, ToolDefinition, Usage as ResponsesUsage,
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
@@ -796,6 +811,54 @@ mod tests {
         assert_eq!(
             create.tool_choice,
             Some(ToolChoice::Mode(ToolChoiceMode::Auto))
+        );
+    }
+
+    #[test]
+    fn test_build_responses_request_sets_additional_properties_false_for_custom_tool_schema() {
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4.1")
+            .build()
+            .unwrap();
+
+        let mut tools = HashSet::new();
+        tools.insert(sample_tool_spec());
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tools_spec(tools)
+            .build()
+            .unwrap();
+
+        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+
+        let tools = create.tools.expect("tools present");
+        assert_eq!(tools.len(), 1);
+
+        let ToolDefinition::Function(function) = &tools[0] else {
+            panic!("expected function tool");
+        };
+
+        let additional_properties = function.parameters.get("additionalProperties").cloned();
+
+        #[allow(dead_code)]
+        #[derive(schemars::JsonSchema)]
+        #[serde(deny_unknown_fields)]
+        #[schemars(title = "WeatherArgs")]
+        struct WeatherArgsCorrect {
+            city: String,
+        }
+
+        assert_eq!(
+            additional_properties,
+            Some(serde_json::Value::Bool(false)),
+            "OpenAI requires additionalProperties to be set to false for tool parameters, got {}",
+            serde_json::to_string_pretty(&function.parameters).unwrap()
+        );
+
+        assert_eq!(
+            function.parameters,
+            serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap()
         );
     }
 
