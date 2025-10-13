@@ -15,7 +15,8 @@ use swiftide_core::chat_completion::{
 };
 
 use super::{
-    GenericOpenAI, ensure_tool_schema_additional_properties_false, openai_error_to_language_model_error,
+    GenericOpenAI, ensure_tool_schema_additional_properties_false,
+    openai_error_to_language_model_error,
 };
 use crate::openai::LanguageModelError;
 
@@ -133,8 +134,9 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
 
 fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
     let mut parameters = match &spec.parameters_schema {
-        Some(schema) => serde_json::to_value(schema)
-            .context("failed to serialize tool parameters schema")?,
+        Some(schema) => {
+            serde_json::to_value(schema).context("failed to serialize tool parameters schema")?
+        }
         None => json!({
             "type": "object",
             "properties": {},

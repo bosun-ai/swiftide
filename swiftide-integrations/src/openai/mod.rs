@@ -9,11 +9,11 @@ use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
+use serde_json::Value;
 use std::pin::Pin;
 use std::sync::Arc;
 use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::errors::LanguageModelError;
-use serde_json::Value;
 
 mod chat_completion;
 mod embed;

@@ -26,9 +26,9 @@ use swiftide_core::chat_completion::{Usage, UsageBuilder};
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
+use super::GenericOpenAI;
 use super::ensure_tool_schema_additional_properties_false;
 use super::openai_error_to_language_model_error;
-use super::GenericOpenAI;
 use super::responses_api::{
     ResponsesStreamAccumulator, StreamChunk, StreamControl, build_responses_request_from_chat,
     response_to_chat_completion,
