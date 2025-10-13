@@ -42,9 +42,17 @@ impl From<Stop> for Box<dyn Tool> {
 }
 
 /// `StopWithArgs` is an alternative stop tool that takes arguments
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct StopWithArgs {
     parameters_schema: Option<Schema>,
+}
+
+impl Default for StopWithArgs {
+    fn default() -> Self {
+        Self {
+            parameters_schema: Some(schema_for!(DefaultStopWithArgsSpec)),
+        }
+    }
 }
 
 impl StopWithArgs {
@@ -58,12 +66,17 @@ impl StopWithArgs {
     fn parameters_schema(&self) -> Schema {
         self.parameters_schema
             .clone()
-            .unwrap_or_else(|| schema_for!(StopWithArgsSpec))
+            .unwrap_or_else(|| schema_for!(StopWithArgsArgs))
     }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
-struct StopWithArgsSpec {
+struct DefaultStopWithArgsSpec {
+    pub output: String,
+}
+
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
+struct StopWithArgsArgs {
     pub output: serde_json::Value,
 }
 
@@ -74,7 +87,7 @@ impl Tool for StopWithArgs {
         _agent_context: &dyn AgentContext,
         tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        let args: StopWithArgsSpec = serde_json::from_str(
+        let args: StopWithArgsArgs = serde_json::from_str(
             tool_call
                 .args()
                 .ok_or(ToolError::missing_arguments("output"))?,
@@ -252,9 +265,17 @@ mod tests {
 
     #[test]
     fn test_stop_with_args_custom_schema() {
-        let schema = schema_for!(StopWithArgsSpec);
+        let schema = schema_for!(StopWithArgsArgs);
         let tool = StopWithArgs::with_parameters_schema(schema.clone());
         let spec = tool.tool_spec();
         assert_eq!(spec.parameters_schema, Some(schema));
+    }
+
+    #[test]
+    fn test_stop_with_args_default_schema_matches_previous() {
+        let tool = StopWithArgs::default();
+        let spec = tool.tool_spec();
+        let expected = schema_for!(DefaultStopWithArgsSpec);
+        assert_eq!(spec.parameters_schema, Some(expected));
     }
 }
