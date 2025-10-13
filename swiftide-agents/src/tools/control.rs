@@ -1,7 +1,7 @@
 //! Control tools manage control flow during agent's lifecycle.
 use anyhow::Result;
 use async_trait::async_trait;
-use schemars::schema_for;
+use schemars::{Schema, schema_for};
 use std::borrow::Cow;
 use swiftide_core::{
     AgentContext, ToolFeedback,
@@ -43,11 +43,28 @@ impl From<Stop> for Box<dyn Tool> {
 
 /// `StopWithArgs` is an alternative stop tool that takes arguments
 #[derive(Clone, Debug, Default)]
-pub struct StopWithArgs {}
+pub struct StopWithArgs {
+    parameters_schema: Option<Schema>,
+}
+
+impl StopWithArgs {
+    /// Create a new `StopWithArgs` tool with a custom parameters schema.
+    pub fn with_parameters_schema(schema: Schema) -> Self {
+        Self {
+            parameters_schema: Some(schema),
+        }
+    }
+
+    fn parameters_schema(&self) -> Schema {
+        self.parameters_schema
+            .clone()
+            .unwrap_or_else(|| schema_for!(StopWithArgsSpec))
+    }
+}
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 struct StopWithArgsSpec {
-    pub output: String,
+    pub output: serde_json::Value,
 }
 
 #[async_trait]
@@ -71,12 +88,13 @@ impl Tool for StopWithArgs {
     }
 
     fn tool_spec(&self) -> ToolSpec {
-        ToolSpec::builder()
+        let mut builder = ToolSpec::builder()
             .name("stop")
-            .description("When you have completed, your task, call this with your expected output")
-            .parameters_schema(schema_for!(StopWithArgsSpec))
-            .build()
-            .unwrap()
+            .description("When you have completed, your task, call this with your expected output");
+
+        let schema = self.parameters_schema();
+
+        builder.parameters_schema(schema).build().unwrap()
     }
 }
 
@@ -181,6 +199,7 @@ impl From<ApprovalRequired> for Box<dyn Tool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use schemars::schema_for;
 
     fn dummy_tool_call(name: &str, args: Option<&str>) -> ToolCall {
         let mut builder = ToolCall::builder().name(name).id("1").to_owned();
@@ -229,5 +248,13 @@ mod tests {
 
         // On unit; existing feedback is always present
         assert_eq!(out, ToolOutput::Stop(None));
+    }
+
+    #[test]
+    fn test_stop_with_args_custom_schema() {
+        let schema = schema_for!(StopWithArgsSpec);
+        let tool = StopWithArgs::with_parameters_schema(schema.clone());
+        let spec = tool.tool_spec();
+        assert_eq!(spec.parameters_schema, Some(schema));
     }
 }
