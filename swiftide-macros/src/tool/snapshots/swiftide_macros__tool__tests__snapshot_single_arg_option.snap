@@ -8,6 +8,7 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
     ::swiftide::reexports::schemars::JsonSchema,
     Debug
 )]
+#[schemars(crate = "::swiftide::reexports::schemars", deny_unknown_fields)]
 pub struct SearchCodeArgs {
     pub code_query: Option<String>,
 }

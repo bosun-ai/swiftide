@@ -201,7 +201,7 @@ impl ToolArgs {
                 ::swiftide::reexports::schemars::JsonSchema,
                 Debug
             )]
-            #[schemars(crate = "::swiftide::reexports::schemars")]
+            #[schemars(crate = "::swiftide::reexports::schemars", deny_unknown_fields)]
             pub struct #args_struct_ident {
                 #(#fields),*
             }
@@ -355,9 +355,7 @@ fn is_vec_type(ty: &syn::Type) -> bool {
 
 impl ParamOptions {
     fn should_pass_owned(&self) -> bool {
-        self.resolved_type
-            .as_ref()
-            .is_some_and(is_vec_type)
+        self.resolved_type.as_ref().is_some_and(is_vec_type)
     }
 }
 
