@@ -18,7 +18,7 @@ pub enum ToolOutput {
     Fail(String),
 
     /// Stops an agent with an optional message
-    Stop(Option<Cow<'static, str>>),
+    Stop(Option<serde_json::Value>),
 
     /// Indicates that the agent failed and should stop
     AgentFailed(Option<Cow<'static, str>>),
@@ -37,7 +37,7 @@ impl ToolOutput {
         ToolOutput::Stop(None)
     }
 
-    pub fn stop_with_args(output: impl Into<Cow<'static, str>>) -> Self {
+    pub fn stop_with_args(output: impl Into<serde_json::Value>) -> Self {
         ToolOutput::Stop(Some(output.into()))
     }
 
@@ -73,9 +73,9 @@ impl ToolOutput {
     }
 
     /// Get the inner text if the output is a `Stop` variant.
-    pub fn as_stop(&self) -> Option<&str> {
+    pub fn as_stop(&self) -> Option<&serde_json::Value> {
         match self {
-            ToolOutput::Stop(args) => args.as_deref(),
+            ToolOutput::Stop(args) => args.as_ref(),
             _ => None,
         }
     }
@@ -107,7 +107,13 @@ impl std::fmt::Display for ToolOutput {
         match self {
             ToolOutput::Text(value) => write!(f, "{value}"),
             ToolOutput::Fail(value) => write!(f, "Tool call failed: {value}"),
-            ToolOutput::Stop(args) => write!(f, "Stop {}", args.as_deref().unwrap_or_default()),
+            ToolOutput::Stop(args) => {
+                if let Some(value) = args {
+                    write!(f, "Stop {value}")
+                } else {
+                    write!(f, "Stop")
+                }
+            }
             ToolOutput::FeedbackRequired(_) => {
                 write!(f, "Feedback required")
             }
