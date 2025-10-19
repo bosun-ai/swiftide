@@ -386,7 +386,7 @@ impl ResponsesStreamState {
                         Some(done.arguments.as_str())
                     };
 
-                let name = (!done.name.is_empty()).then(|| done.name.as_str());
+                let name = (!done.name.is_empty()).then_some(done.name.as_str());
 
                 if arguments.is_some() || name.is_some() {
                     self.response
@@ -507,7 +507,7 @@ impl Stream for ResponsesStreamAdapter {
                     };
 
                     match this.state.apply_event(event, this.stream_full) {
-                        Ok(EventAction::None) => continue,
+                        Ok(EventAction::None) => {}
                         Ok(EventAction::Emit(item)) => {
                             if item.finished {
                                 this.finished = true;
@@ -789,7 +789,7 @@ mod tests {
     fn expect_emit(action: EventAction) -> ResponsesStreamItem {
         match action {
             EventAction::Emit(item) => item,
-            other => panic!("expected emit, got {other:?}"),
+            EventAction::None => panic!("expected emit, got EventAction::None"),
         }
     }
 
@@ -848,10 +848,9 @@ mod tests {
         let mut tools = HashSet::new();
         tools.insert(tool_spec);
 
-        #[allow(deprecated)]
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hi".into())])
-            .tools_spec(tools)
+            .tool_specs(tools)
             .build()
             .unwrap();
 
@@ -893,10 +892,9 @@ mod tests {
         let mut tools = HashSet::new();
         tools.insert(sample_tool_spec());
 
-        #[allow(deprecated)]
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hi".into())])
-            .tools_spec(tools)
+            .tool_specs(tools)
             .build()
             .unwrap();
 

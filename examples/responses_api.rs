@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use futures_util::StreamExt as _;
 use schemars::JsonSchema;
 use serde::Deserialize;
-use std::collections::HashSet;
 use std::io::Write as _;
 use swiftide::{
     chat_completion::{ChatCompletionRequest, ChatMessage, ToolOutput, ToolSpec},
@@ -94,7 +93,6 @@ async fn main() -> Result<()> {
     }
 
     let echo_spec = echo_tool_spec();
-    let tool_specs: HashSet<_> = std::iter::once(echo_spec.clone()).collect();
 
     let tool_request = ChatCompletionRequest::builder()
         .messages(vec![
@@ -105,7 +103,7 @@ async fn main() -> Result<()> {
                 "Call the echo tool with the phrase \"Hello Responses API\" and then summarise the result.",
             ),
         ])
-        .tools_spec(tool_specs.clone())
+        .tool_specs([echo_spec.clone()])
         .build()?;
 
     let tool_completion = openai.complete(&tool_request).await?;
@@ -139,7 +137,7 @@ async fn main() -> Result<()> {
 
         let follow_up_request = ChatCompletionRequest::builder()
             .messages(follow_up_messages)
-            .tools_spec(tool_specs)
+            .tools([echo_spec])
             .build()?;
 
         let final_completion = openai.complete(&follow_up_request).await?;

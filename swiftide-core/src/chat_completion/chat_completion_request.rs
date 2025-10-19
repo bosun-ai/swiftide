@@ -20,10 +20,15 @@ impl ChatCompletionRequest {
         ChatCompletionRequestBuilder::default()
     }
 
+    /// Appends a single chat message to the request.
     pub fn messages(&self) -> &[ChatMessage] {
         self.messages.as_slice()
     }
 
+    /// Sets tool specifications directly for the request.
+    ///
+    /// Prefer [`ChatCompletionRequestBuilder::tools`] so tool specs are derived from
+    /// concrete tool instances.
     pub fn tools_spec(&self) -> &HashSet<ToolSpec> {
         &self.tools_spec
     }
@@ -45,6 +50,7 @@ impl ChatCompletionRequestBuilder {
         self
     }
 
+    /// Adds multiple tools by deriving their specs from the provided instances.
     pub fn tools<I>(&mut self, tools: I) -> &mut Self
     where
         I: IntoIterator<Item = Arc<dyn Tool>>,
@@ -52,13 +58,15 @@ impl ChatCompletionRequestBuilder {
         self.tool_specs(tools.into_iter().map(|tool| tool.tool_spec()))
     }
 
-    pub fn tool<T>(&mut self, tool: Arc<T>) -> &mut Self
+    /// Adds a single tool instance to the request by deriving its spec.
+    pub fn tool<T>(&mut self, tool: &Arc<T>) -> &mut Self
     where
         T: Tool + 'static,
     {
         self.tool_specs(std::iter::once(tool.tool_spec()))
     }
 
+    /// Extends the request with additional tool specifications.
     pub fn tool_specs<I>(&mut self, specs: I) -> &mut Self
     where
         I: IntoIterator<Item = ToolSpec>,
@@ -68,6 +76,7 @@ impl ChatCompletionRequestBuilder {
         self
     }
 
+    /// Appends a single chat message to the request.
     pub fn message(&mut self, message: impl Into<ChatMessage>) -> &mut Self {
         self.messages
             .get_or_insert_with(Vec::new)
@@ -75,6 +84,7 @@ impl ChatCompletionRequestBuilder {
         self
     }
 
+    /// Extends the request with multiple chat messages.
     pub fn messages_iter<I>(&mut self, messages: I) -> &mut Self
     where
         I: IntoIterator<Item = ChatMessage>,

@@ -15,31 +15,34 @@ use crate::hooks::{
 
 #[macro_export]
 macro_rules! chat_request {
-    ($($message:expr),+; tools = [$($tool:expr),*]) => {
-        swiftide_core::chat_completion::ChatCompletionRequest::builder()
-            .messages(vec![$($message),*])
-            .tools_spec(
-                vec![$(Box::new($tool) as Box<dyn Tool>),*]
-                    .into_iter()
-                    .chain(Agent::default_tools())
-                    .map(|tool| tool.tool_spec())
-                    .collect::<std::collections::HashSet<_>>(),
-            )
-            .build()
-            .unwrap()
-    };
-    ($($message:expr),+; tool_specs = [$($tool:expr),*]) => {
-        swiftide_core::chat_completion::ChatCompletionRequest::builder()
-            .messages(vec![$($message),*])
-            .tools_spec(
-                vec![$(($tool)),*]
-                    .into_iter()
-                    .chain(Agent::default_tools().into_iter().map(|tool| tool.tool_spec()))
-                    .collect::<std::collections::HashSet<_>>(),
-            )
-            .build()
-            .unwrap()
-    }
+    ($($message:expr),+; tools = [$($tool:expr),*]) => {{
+        let mut builder = swiftide_core::chat_completion::ChatCompletionRequest::builder();
+        builder.messages(vec![$($message),*]);
+
+        let mut tool_specs = Vec::new();
+        $(tool_specs.push({
+            let tool = $tool;
+            tool.tool_spec()
+        });)*
+
+        tool_specs.extend(Agent::default_tools().into_iter().map(|tool| tool.tool_spec()));
+
+        builder.tool_specs(tool_specs);
+
+        builder.build().unwrap()
+    }};
+    ($($message:expr),+; tool_specs = [$($tool:expr),*]) => {{
+        let mut builder = swiftide_core::chat_completion::ChatCompletionRequest::builder();
+        builder.messages(vec![$($message),*]);
+
+        let mut tool_specs = Vec::new();
+        $(tool_specs.push($tool);)*
+        tool_specs.extend(Agent::default_tools().into_iter().map(|tool| tool.tool_spec()));
+
+        builder.tool_specs(tool_specs);
+
+        builder.build().unwrap()
+    }}
 }
 
 #[macro_export]
