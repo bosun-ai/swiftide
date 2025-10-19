@@ -58,8 +58,16 @@ impl LocalExecutor {
         LocalExecutorBuilder::default()
     }
 
+    fn resolve_workdir(&self, cmd: &Command) -> PathBuf {
+        match cmd.current_dir_path() {
+            Some(path) if path.is_absolute() => path.to_path_buf(),
+            Some(path) => self.workdir.join(path),
+            None => self.workdir.clone(),
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
-    async fn exec_shell(&self, cmd: &str) -> Result<CommandOutput, CommandError> {
+    async fn exec_shell(&self, cmd: &str, workdir: &Path) -> Result<CommandOutput, CommandError> {
         let lines: Vec<&str> = cmd.lines().collect();
         let mut child = if let Some(first_line) = lines.first()
             && first_line.starts_with("#!")
@@ -85,7 +93,7 @@ impl LocalExecutor {
             }
 
             let mut child = command
-                .current_dir(&self.workdir)
+                .current_dir(workdir)
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
@@ -103,7 +111,7 @@ impl LocalExecutor {
             let mut command = tokio::process::Command::new("sh");
 
             // Treat as shell command
-            command.arg("-c").arg(cmd).current_dir(&self.workdir);
+            command.arg("-c").arg(cmd).current_dir(workdir);
 
             if self.env_clear {
                 tracing::info!("clearing environment variables");
@@ -120,7 +128,7 @@ impl LocalExecutor {
                 command.env(key, value);
             }
             command
-                .current_dir(&self.workdir)
+                .current_dir(workdir)
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
@@ -188,8 +196,16 @@ impl LocalExecutor {
         }
     }
 
-    async fn exec_read_file(&self, path: &Path) -> Result<CommandOutput, CommandError> {
-        let path = self.workdir.join(path);
+    async fn exec_read_file(
+        &self,
+        workdir: &Path,
+        path: &Path,
+    ) -> Result<CommandOutput, CommandError> {
+        let path = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            workdir.join(path)
+        };
         let output = fs_err::tokio::read(&path).await?;
 
         Ok(String::from_utf8(output)
@@ -199,10 +215,15 @@ impl LocalExecutor {
 
     async fn exec_write_file(
         &self,
+        workdir: &Path,
         path: &Path,
         content: &str,
     ) -> Result<CommandOutput, CommandError> {
-        let path = self.workdir.join(path);
+        let path = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            workdir.join(path)
+        };
         if let Some(parent) = path.parent() {
             let _ = fs_err::tokio::create_dir_all(parent).await;
         }
@@ -216,10 +237,13 @@ impl ToolExecutor for LocalExecutor {
     /// Execute a `Command` on the local machine
     #[tracing::instrument(skip_self)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
+        let workdir = __self.resolve_workdir(cmd);
         match cmd {
-            Command::Shell(cmd) => __self.exec_shell(cmd).await,
-            Command::ReadFile(path) => __self.exec_read_file(path).await,
-            Command::WriteFile(path, content) => __self.exec_write_file(path, content).await,
+            Command::Shell { command, .. } => __self.exec_shell(command, &workdir).await,
+            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path).await,
+            Command::WriteFile { path, content, .. } => {
+                __self.exec_write_file(&workdir, path, content).await
+            }
             _ => unimplemented!("Unsupported command: {cmd:?}"),
         }
     }
@@ -244,7 +268,8 @@ mod tests {
     use super::*;
     use futures_util::StreamExt as _;
     use indoc::indoc;
-    use swiftide_core::{Command, ToolExecutor};
+    use std::{path::Path, sync::Arc};
+    use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
 
     #[tokio::test]
@@ -265,7 +290,7 @@ mod tests {
 
         // Write a shell command to create a file with the specified content
         let write_cmd =
-            Command::Shell(format!("echo '{}' > {}", file_content, file_path.display()));
+            Command::shell(format!("echo '{}' > {}", file_content, file_path.display()));
 
         // Execute the write command
         executor.exec_cmd(&write_cmd).await?;
@@ -274,7 +299,7 @@ mod tests {
         assert!(file_path.exists());
 
         // Write a shell command to read the file's content
-        let read_cmd = Command::Shell(format!("cat {}", file_path.display()));
+        let read_cmd = Command::shell(format!("cat {}", file_path.display()));
 
         // Execute the read command
         let output = executor.exec_cmd(&read_cmd).await?;
@@ -304,7 +329,7 @@ mod tests {
         };
 
         // Define the echo command
-        let echo_cmd = Command::Shell("echo 'hello world'".to_string());
+        let echo_cmd = Command::shell("echo 'hello world'");
 
         // Execute the echo command
         let output = executor.exec_cmd(&echo_cmd).await?;
@@ -329,7 +354,7 @@ mod tests {
         };
 
         // Define the echo command
-        let echo_cmd = Command::Shell("printenv".to_string());
+        let echo_cmd = Command::shell("printenv");
 
         // Execute the echo command
         let output = executor.exec_cmd(&echo_cmd).await?.to_string();
@@ -355,7 +380,7 @@ mod tests {
         };
 
         // Define the echo command
-        let echo_cmd = Command::Shell("printenv".to_string());
+        let echo_cmd = Command::shell("printenv");
 
         // Execute the echo command
         let output = executor.exec_cmd(&echo_cmd).await?.to_string();
@@ -383,7 +408,7 @@ mod tests {
         };
 
         // Define the echo command
-        let echo_cmd = Command::Shell("printenv".to_string());
+        let echo_cmd = Command::shell("printenv");
 
         // Execute the echo command
         let output = executor.exec_cmd(&echo_cmd).await?.to_string();
@@ -445,13 +470,13 @@ print(1 + 2)"#;
         "#};
 
         // Write a shell command to create a file with the specified content
-        let write_cmd = Command::Shell(format!("echo '{file_content}' > {file_path}"));
+        let write_cmd = Command::shell(format!("echo '{file_content}' > {file_path}"));
 
         // Execute the write command
         executor.exec_cmd(&write_cmd).await?;
 
         // Write a shell command to read the file's content
-        let read_cmd = Command::Shell(format!("cat {file_path}"));
+        let read_cmd = Command::shell(format!("cat {file_path}"));
 
         // Execute the read command
         let output = executor.exec_cmd(&read_cmd).await?;
@@ -479,7 +504,7 @@ print(1 + 2)"#;
         let file_content = "Hello, world!";
 
         // Assert that the file does not exist and it gives the correct error
-        let cmd = Command::ReadFile(file_path.clone());
+        let cmd = Command::read_file(file_path.clone());
         let result = executor.exec_cmd(&cmd).await;
 
         if let Err(err) = result {
@@ -489,7 +514,7 @@ print(1 + 2)"#;
         }
 
         // Create a write command
-        let write_cmd = Command::WriteFile(file_path.clone(), file_content.to_string());
+        let write_cmd = Command::write_file(file_path.clone(), file_content.to_string());
 
         // Execute the write command
         executor.exec_cmd(&write_cmd).await?;
@@ -498,7 +523,7 @@ print(1 + 2)"#;
         assert!(file_path.exists());
 
         // Create a read command
-        let read_cmd = Command::ReadFile(file_path.clone());
+        let read_cmd = Command::read_file(file_path.clone());
 
         // Execute the read command
         let output = executor.exec_cmd(&read_cmd).await?.output;
@@ -558,7 +583,7 @@ print(1 + 2)"#;
         };
 
         // 2. Run a shell command in workdir and check output is workdir
-        let pwd_cmd = Command::Shell("pwd".to_string());
+        let pwd_cmd = Command::shell("pwd");
         let pwd_output = executor.exec_cmd(&pwd_cmd).await?.to_string();
         let pwd_path = std::fs::canonicalize(pwd_output.trim())?;
         let temp_path = std::fs::canonicalize(temp_path)?;
@@ -566,7 +591,7 @@ print(1 + 2)"#;
 
         // 3. Write a file using WriteFile (should land in workdir)
         let fname = "workdir_check.txt";
-        let write_cmd = Command::WriteFile(fname.into(), "test123".into());
+        let write_cmd = Command::write_file(fname, "test123");
         executor.exec_cmd(&write_cmd).await?;
 
         // 4. Assert file exists in workdir, not current dir
@@ -575,12 +600,94 @@ print(1 + 2)"#;
         assert!(!Path::new(fname).exists());
 
         // 5. Write/read using ReadFile
-        let read_cmd = Command::ReadFile(fname.into());
+        let read_cmd = Command::read_file(fname);
         let read_output = executor.exec_cmd(&read_cmd).await?.to_string();
         assert_eq!(read_output.trim(), "test123");
 
         // 6. Clean up
         fs::remove_file(&expected_path)?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_command_current_dir() -> anyhow::Result<()> {
+        use std::fs;
+        use temp_dir::TempDir;
+
+        let temp_dir = TempDir::new()?;
+        let base_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: base_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let nested_dir = base_path.join("nested");
+        fs::create_dir_all(&nested_dir)?;
+
+        let mut pwd_cmd = Command::shell("pwd");
+        pwd_cmd.current_dir(Path::new("nested"));
+        let pwd_output = executor.exec_cmd(&pwd_cmd).await?.to_string();
+        let pwd_path = std::fs::canonicalize(pwd_output.trim())?;
+        assert_eq!(pwd_path, std::fs::canonicalize(&nested_dir)?);
+
+        let mut write_cmd = Command::write_file("file.txt", "hello");
+        write_cmd.current_dir(Path::new("nested"));
+        executor.exec_cmd(&write_cmd).await?;
+
+        assert!(!base_path.join("file.txt").exists());
+        assert!(nested_dir.join("file.txt").exists());
+
+        let mut read_cmd = Command::read_file("file.txt");
+        read_cmd.current_dir(Path::new("nested"));
+        let read_output = executor.exec_cmd(&read_cmd).await?.to_string();
+        assert_eq!(read_output.trim(), "hello");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_current_dir() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let base_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: base_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let nested = executor.scoped("nested");
+        nested
+            .exec_cmd(&Command::write_file("file.txt", "hello"))
+            .await?;
+
+        assert!(!base_path.join("file.txt").exists());
+        assert!(base_path.join("nested").join("file.txt").exists());
+        assert_eq!(executor.workdir, base_path);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_current_dir_dyn() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let base_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: base_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let dyn_exec: Arc<dyn swiftide_core::ToolExecutor> = Arc::new(executor.clone());
+        let nested = dyn_exec.scoped("nested");
+
+        nested
+            .exec_cmd(&Command::write_file("nested_file.txt", "hello"))
+            .await?;
+
+        assert!(base_path.join("nested").join("nested_file.txt").exists());
+        assert!(!base_path.join("nested_file.txt").exists());
 
         Ok(())
     }
