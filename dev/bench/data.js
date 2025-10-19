@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1760364703842,
+  "lastUpdate": 1760897516040,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28715,6 +28715,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259376,
             "range": "± 4391",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "29289d37cb9c49fba89376c125194fc430c57a37",
+          "message": "feat(agents)!: Add working directories for executor and commands (#941)\n\n- **feat: Create a copy of executors in a subdirectory**\n- **feat: Optional workdir on command**\n- **Use builder lite**",
+          "timestamp": "2025-10-19T20:02:55+02:00",
+          "tree_id": "989d7479c235be729a7618265c1592b5e43f88fc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/29289d37cb9c49fba89376c125194fc430c57a37"
+        },
+        "date": 1760897513308,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 622529,
+            "range": "± 19526",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 190358,
+            "range": "± 1776",
             "unit": "ns/iter"
           }
         ]
