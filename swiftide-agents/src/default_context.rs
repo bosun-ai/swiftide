@@ -18,7 +18,7 @@ use std::{
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{
-    AgentContext, Command, CommandError, CommandOutput, DynToolExecutor, MessageHistory,
+    AgentContext, Command, CommandError, CommandOutput, MessageHistory, ToolExecutor,
 };
 use swiftide_core::{
     ToolFeedback,
@@ -42,7 +42,7 @@ pub struct DefaultContext {
     current_completions_ptr: Arc<AtomicUsize>,
 
     /// The executor used to run tools. I.e. local, remote, docker
-    tool_executor: Arc<dyn DynToolExecutor>,
+    tool_executor: Arc<dyn ToolExecutor>,
 
     /// Stop if last message is from the assistant
     stop_on_assistant: bool,
@@ -56,7 +56,7 @@ impl Default for DefaultContext {
             message_history: Arc::new(Mutex::new(Vec::new())),
             completions_ptr: Arc::new(AtomicUsize::new(0)),
             current_completions_ptr: Arc::new(AtomicUsize::new(0)),
-            tool_executor: Arc::new(LocalExecutor::default()) as Arc<dyn DynToolExecutor>,
+            tool_executor: Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>,
             stop_on_assistant: true,
             feedback_received: Arc::new(Mutex::new(HashMap::new())),
         }
@@ -69,7 +69,7 @@ impl std::fmt::Debug for DefaultContext {
             .field("completion_history", &self.message_history)
             .field("completions_ptr", &self.completions_ptr)
             .field("current_completions_ptr", &self.current_completions_ptr)
-            .field("tool_executor", &"Arc<dyn DynToolExecutor>")
+            .field("tool_executor", &"Arc<dyn ToolExecutor>")
             .field("stop_on_assistant", &self.stop_on_assistant)
             .finish()
     }
@@ -77,7 +77,7 @@ impl std::fmt::Debug for DefaultContext {
 
 impl DefaultContext {
     /// Create a new context with a custom executor
-    pub fn from_executor<T: Into<Arc<dyn DynToolExecutor>>>(executor: T) -> DefaultContext {
+    pub fn from_executor<T: Into<Arc<dyn ToolExecutor>>>(executor: T) -> DefaultContext {
         DefaultContext {
             tool_executor: executor.into(),
             ..Default::default()
@@ -203,7 +203,7 @@ impl AgentContext for DefaultContext {
         self.tool_executor.exec_cmd(cmd).await
     }
 
-    fn executor(&self) -> &Arc<dyn DynToolExecutor> {
+    fn executor(&self) -> &Arc<dyn ToolExecutor> {
         &self.tool_executor
     }
 

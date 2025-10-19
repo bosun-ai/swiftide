@@ -234,8 +234,6 @@ impl LocalExecutor {
 }
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
-    type Owned = LocalExecutor;
-
     /// Execute a `Command` on the local machine
     #[tracing::instrument(skip_self)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
@@ -263,19 +261,6 @@ impl ToolExecutor for LocalExecutor {
 
         Ok(loader.into_stream())
     }
-
-    fn current_dir(&self, path: &Path) -> Result<Self::Owned, CommandError> {
-        let new_workdir = if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            self.workdir.join(path)
-        };
-
-        let mut executor = self.clone();
-        executor.workdir = new_workdir;
-
-        Ok(executor)
-    }
 }
 
 #[cfg(test)]
@@ -284,7 +269,7 @@ mod tests {
     use futures_util::StreamExt as _;
     use indoc::indoc;
     use std::{path::Path, sync::Arc};
-    use swiftide_core::{Command, ToolExecutor};
+    use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
 
     #[tokio::test]
@@ -672,7 +657,7 @@ print(1 + 2)"#;
             ..Default::default()
         };
 
-        let nested = executor.current_dir(Path::new("nested"))?;
+        let nested = executor.clone().scoped("nested");
         nested
             .exec_cmd(&Command::write_file("file.txt", "hello"))
             .await?;
@@ -694,8 +679,8 @@ print(1 + 2)"#;
             ..Default::default()
         };
 
-        let dyn_exec: Arc<dyn swiftide_core::DynToolExecutor> = Arc::new(executor.clone());
-        let nested = dyn_exec.current_dir(Path::new("nested"))?;
+        let dyn_exec: Arc<dyn swiftide_core::ToolExecutor> = Arc::new(executor.clone());
+        let nested = dyn_exec.clone().scoped("nested");
 
         nested
             .exec_cmd(&Command::write_file("nested_file.txt", "hello"))

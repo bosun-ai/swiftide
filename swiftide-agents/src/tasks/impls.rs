@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use swiftide_core::{
-    ChatCompletion, Command, CommandError, CommandOutput, DynToolExecutor, SimplePrompt,
+    ChatCompletion, Command, CommandError, CommandOutput, SimplePrompt, ToolExecutor,
     chat_completion::{ChatCompletionRequest, ChatCompletionResponse, errors::LanguageModelError},
     prompt::Prompt,
 };
@@ -123,7 +123,7 @@ impl TaskNode for Arc<dyn ChatCompletion> {
 }
 
 #[async_trait]
-impl TaskNode for Box<dyn DynToolExecutor> {
+impl TaskNode for Box<dyn ToolExecutor> {
     type Input = Command;
 
     type Output = CommandOutput;
@@ -142,7 +142,7 @@ impl TaskNode for Box<dyn DynToolExecutor> {
 }
 
 #[async_trait]
-impl TaskNode for Arc<dyn DynToolExecutor> {
+impl TaskNode for Arc<dyn ToolExecutor> {
     type Input = Command;
 
     type Output = CommandOutput;
