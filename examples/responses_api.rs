@@ -1,35 +1,40 @@
 use anyhow::{Context, Result};
 use futures_util::StreamExt as _;
 use schemars::JsonSchema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::io::Write as _;
 use swiftide::{
-    chat_completion::{ChatCompletionRequest, ChatMessage, ToolOutput, ToolSpec},
+    chat_completion::{ChatCompletionRequest, ChatMessage, ToolOutput, errors::ToolError},
     integrations::openai::{OpenAI, Options},
-    traits::{ChatCompletion, SimplePrompt, StructuredPrompt},
+    traits::{AgentContext, ChatCompletion, SimplePrompt, StructuredPrompt},
 };
 use tracing_subscriber::EnvFilter;
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 #[allow(dead_code)]
 struct WeatherSummary {
     description: String,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct EchoArgs {
     message: String,
 }
 
-fn echo_tool_spec() -> ToolSpec {
-    ToolSpec::builder()
-        .name("echo_tool")
-        .description("Echos the provided message back to the caller")
-        .parameters_schema(schemars::schema_for!(EchoArgs))
-        .build()
-        .expect("echo tool spec must be valid")
+/// Minimal echo tool used to demonstrate tool calling with the Responses API.
+/// The macro implements the `Tool` trait, derives the JSON schema, and generates
+/// a helper constructor (`echo_tool()`) that returns a boxed tool ready for use.
+#[swiftide::tool(
+    description = "Echos the provided message back to the caller.",
+    param(name = "payload", description = "Text to echo back")
+)]
+async fn echo_tool(
+    _context: &dyn AgentContext,
+    payload: EchoArgs,
+) -> Result<ToolOutput, ToolError> {
+    Ok(ToolOutput::text(format!("Echo: {}", payload.message)))
 }
 
 #[tokio::main]
@@ -92,8 +97,6 @@ async fn main() -> Result<()> {
         println!("Full streamed result: {streamed_message}");
     }
 
-    let echo_spec = echo_tool_spec();
-
     let tool_request = ChatCompletionRequest::builder()
         .messages(vec![
             ChatMessage::new_system(
@@ -103,7 +106,7 @@ async fn main() -> Result<()> {
                 "Call the echo tool with the phrase \"Hello Responses API\" and then summarise the result.",
             ),
         ])
-        .tool_specs([echo_spec.clone()])
+        .tool(echo_tool())
         .build()?;
 
     let tool_completion = openai.complete(&tool_request).await?;
@@ -137,7 +140,7 @@ async fn main() -> Result<()> {
 
         let follow_up_request = ChatCompletionRequest::builder()
             .messages(follow_up_messages)
-            .tools([echo_spec])
+            .tool(echo_tool())
             .build()?;
 
         let final_completion = openai.complete(&follow_up_request).await?;

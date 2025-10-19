@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::sync::Arc;
 
 use derive_builder::Builder;
 
@@ -20,15 +19,12 @@ impl ChatCompletionRequest {
         ChatCompletionRequestBuilder::default()
     }
 
-    /// Appends a single chat message to the request.
+    /// Returns the chat messages included in the request.
     pub fn messages(&self) -> &[ChatMessage] {
         self.messages.as_slice()
     }
 
-    /// Sets tool specifications directly for the request.
-    ///
-    /// Prefer [`ChatCompletionRequestBuilder::tools`] so tool specs are derived from
-    /// concrete tool instances.
+    /// Returns the tool specifications currently attached to the request.
     pub fn tools_spec(&self) -> &HashSet<ToolSpec> {
         &self.tools_spec
     }
@@ -51,19 +47,25 @@ impl ChatCompletionRequestBuilder {
     }
 
     /// Adds multiple tools by deriving their specs from the provided instances.
-    pub fn tools<I>(&mut self, tools: I) -> &mut Self
+    pub fn tools<I, T>(&mut self, tools: I) -> &mut Self
     where
-        I: IntoIterator<Item = Arc<dyn Tool>>,
+        I: IntoIterator<Item = T>,
+        T: Into<Box<dyn Tool>>,
     {
-        self.tool_specs(tools.into_iter().map(|tool| tool.tool_spec()))
+        let specs = tools.into_iter().map(|tool| {
+            let boxed: Box<dyn Tool> = tool.into();
+            boxed.tool_spec()
+        });
+        self.tool_specs(specs)
     }
 
     /// Adds a single tool instance to the request by deriving its spec.
-    pub fn tool<T>(&mut self, tool: &Arc<T>) -> &mut Self
+    pub fn tool<T>(&mut self, tool: T) -> &mut Self
     where
-        T: Tool + 'static,
+        T: Into<Box<dyn Tool>>,
     {
-        self.tool_specs(std::iter::once(tool.tool_spec()))
+        let boxed: Box<dyn Tool> = tool.into();
+        self.tool_specs(std::iter::once(boxed.tool_spec()))
     }
 
     /// Extends the request with additional tool specifications.
