@@ -214,10 +214,10 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                     ToolOutput::Text(text) | ToolOutput::Fail(text) => {
                         serde_json::Value::String(text.clone())
                     }
-                    ToolOutput::Stop(message) | ToolOutput::AgentFailed(message) => {
+                    ToolOutput::Stop(message) => message.clone().unwrap_or(serde_json::Value::Null),
+                    ToolOutput::AgentFailed(message) => {
                         serde_json::Value::String(message.clone().unwrap_or_default().into_owned())
                     }
-                    _ => serde_json::Value::Null,
                 };
 
                 payload.insert("output".into(), output_value);
