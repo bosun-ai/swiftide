@@ -178,11 +178,12 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
 
                 if let Some(tool_calls) = tool_calls {
                     for tool_call in tool_calls {
-                        let id = tool_call.id().to_owned();
+                        let call_id = tool_call.id();
+                        let id = normalize_responses_function_call_id(call_id);
                         let arguments = tool_call.args().unwrap_or_default().to_owned();
                         let function_call = async_openai::types::responses::FunctionCall {
                             id: id.clone(),
-                            call_id: id.clone(),
+                            call_id: call_id.to_owned(),
                             name: tool_call.name().to_owned(),
                             arguments,
                             status: OutputStatus::InProgress,
@@ -247,6 +248,16 @@ fn message_item(role: Role, content: String) -> LmResult<InputItem> {
             .build()
             .map_err(LanguageModelError::permanent)?,
     ))
+}
+
+fn normalize_responses_function_call_id(id: &str) -> String {
+    if id.starts_with("fc_") {
+        id.to_owned()
+    } else if let Some(stripped) = id.strip_prefix("call_") {
+        format!("fc_{stripped}")
+    } else {
+        id.to_owned()
+    }
 }
 
 #[derive(Default)]
@@ -1147,5 +1158,15 @@ mod tests {
                 .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
                 .unwrap(),
         );
+    }
+
+    #[test]
+    fn test_normalize_responses_function_call_id() {
+        assert_eq!(
+            normalize_responses_function_call_id("call_12345"),
+            "fc_12345"
+        );
+        assert_eq!(normalize_responses_function_call_id("fc_abc"), "fc_abc");
+        assert_eq!(normalize_responses_function_call_id("custom"), "custom");
     }
 }
