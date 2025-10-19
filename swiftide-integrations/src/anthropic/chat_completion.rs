@@ -345,7 +345,6 @@ fn tools_to_anthropic(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
     use super::*;
     use schemars::{JsonSchema, schema_for};
@@ -485,7 +484,7 @@ mod tests {
         // Prepare a sample request
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hello".into())])
-            .tools_spec(HashSet::from([FakeTool().tool_spec()]))
+            .tool_specs([FakeTool().tool_spec()])
             .build()
             .unwrap();
 

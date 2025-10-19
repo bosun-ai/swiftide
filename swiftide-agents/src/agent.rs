@@ -544,13 +544,8 @@ impl Agent {
         );
 
         let mut chat_completion_request = ChatCompletionRequest::builder()
-            .messages(messages)
-            .tools_spec(
-                self.tools
-                    .iter()
-                    .map(swiftide_core::Tool::tool_spec)
-                    .collect::<HashSet<_>>(),
-            )
+            .messages(messages.to_vec())
+            .tool_specs(self.tools.iter().map(swiftide_core::Tool::tool_spec))
             .build()
             .map_err(AgentError::FailedToBuildRequest)?;
 
