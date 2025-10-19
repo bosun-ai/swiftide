@@ -363,25 +363,32 @@ impl ResponsesStreamAccumulator {
             }
             ResponseEvent::ResponseFunctionCallArgumentsDone(done) => {
                 let index = self.ensure_tool_index(&done.item_id, done.output_index as usize);
-                if !done.arguments.is_empty() {
-                    let duplicate = self
-                        .response
+
+                let duplicate_arguments = (!done.arguments.is_empty()).then(|| {
+                    self.response
                         .tool_calls
                         .as_ref()
                         .and_then(|calls| calls.get(index))
                         .and_then(|tc| tc.args())
-                        .is_some_and(|existing| existing == done.arguments);
+                        .is_some_and(|existing| existing == done.arguments)
+                });
 
-                    if !duplicate {
-                        self.response.append_tool_call_delta(
-                            index,
-                            None,
-                            None,
-                            Some(done.arguments.as_str()),
-                        );
-                    }
+                let arguments =
+                    if matches!(duplicate_arguments, Some(true)) || done.arguments.is_empty() {
+                        None
+                    } else {
+                        Some(done.arguments.as_str())
+                    };
+
+                let name = (!done.name.is_empty()).then(|| done.name.as_str());
+
+                if arguments.is_some() || name.is_some() {
+                    self.response
+                        .append_tool_call_delta(index, None, name, arguments);
+                    return Ok(self.emit(stream_full));
                 }
-                return Ok(self.emit(stream_full));
+
+                return Ok(StreamControl::Skip);
             }
             ResponseEvent::ResponseCompleted(completed) => {
                 metadata_to_chat_completion(&completed.response, &mut self.response)?;
@@ -681,6 +688,7 @@ where
             schema: Some(schema),
             strict: Some(true),
         }),
+        verbosity: None,
     });
 
     args.build().map_err(openai_error_to_language_model_error)
@@ -984,6 +992,7 @@ mod tests {
             "sequence_number": 3,
             "item_id": "call",
             "output_index": 0,
+            "name": "lookup",
             "arguments": "{\"q\":\"rust\"}"
         }))
         .unwrap();
