@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -53,28 +54,30 @@ impl<E> ScopedExecutor<E> {
         }
     }
 
-    fn apply_scope(&self, cmd: &Command) -> Command {
-        let mut scoped = cmd.clone();
-        match scoped.current_dir_path() {
-            Some(path) if path.is_absolute() => scoped,
-            Some(path) => {
-                scoped.current_dir(self.scope.join(path));
-                scoped
+    fn apply_scope<'a>(&'a self, cmd: &'a Command) -> Cow<'a, Command> {
+        match cmd.current_dir_path() {
+            Some(path) if path.is_absolute() || self.scope.as_os_str().is_empty() => {
+                Cow::Borrowed(cmd)
             }
+            Some(path) => {
+                let mut scoped = cmd.clone();
+                scoped.current_dir(self.scope.join(path));
+                Cow::Owned(scoped)
+            }
+            None if self.scope.as_os_str().is_empty() => Cow::Borrowed(cmd),
             None => {
-                if !self.scope.as_os_str().is_empty() {
-                    scoped.current_dir(self.scope.clone());
-                }
-                scoped
+                let mut scoped = cmd.clone();
+                scoped.current_dir(self.scope.clone());
+                Cow::Owned(scoped)
             }
         }
     }
 
-    fn scoped_path(&self, path: &Path) -> PathBuf {
+    fn scoped_path<'a>(&'a self, path: &'a Path) -> Cow<'a, Path> {
         if path.is_absolute() || self.scope.as_os_str().is_empty() {
-            path.to_path_buf()
+            Cow::Borrowed(path)
         } else {
-            self.scope.join(path)
+            Cow::Owned(self.scope.join(path))
         }
     }
 
@@ -88,13 +91,13 @@ impl<E> ScopedExecutor<E> {
 }
 
 #[async_trait]
-impl<E> ToolExecutor for ScopedExecutor<E>
+impl<'a, E> ToolExecutor for ScopedExecutor<&'a E>
 where
-    E: ToolExecutor + Send + Sync + Clone,
+    E: ToolExecutor + Send + Sync + 'a,
 {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         let scoped_cmd = self.apply_scope(cmd);
-        self.executor.exec_cmd(&scoped_cmd).await
+        self.executor.exec_cmd(scoped_cmd.as_ref()).await
     }
 
     async fn stream_files(
@@ -103,17 +106,24 @@ where
         extensions: Option<Vec<String>>,
     ) -> Result<IndexingStream<String>> {
         let scoped_path = self.scoped_path(path);
-        self.executor.stream_files(&scoped_path, extensions).await
+        self.executor
+            .stream_files(scoped_path.as_ref(), extensions)
+            .await
     }
 }
 
-pub trait ExecutorExt: ToolExecutor + Sized {
-    fn scoped(self, path: impl Into<PathBuf>) -> ScopedExecutor<Self> {
+pub trait ExecutorExt {
+    fn scoped(&self, path: impl Into<PathBuf>) -> ScopedExecutor<&Self>;
+}
+
+impl<T> ExecutorExt for T
+where
+    T: ToolExecutor + ?Sized,
+{
+    fn scoped(&self, path: impl Into<PathBuf>) -> ScopedExecutor<&Self> {
         ScopedExecutor::new(self, path)
     }
 }
-
-impl<T> ExecutorExt for T where T: ToolExecutor + Sized {}
 
 #[async_trait]
 impl<T> ToolExecutor for &T

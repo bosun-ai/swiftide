@@ -657,7 +657,7 @@ print(1 + 2)"#;
             ..Default::default()
         };
 
-        let nested = executor.clone().scoped("nested");
+        let nested = executor.scoped("nested");
         nested
             .exec_cmd(&Command::write_file("file.txt", "hello"))
             .await?;
@@ -680,7 +680,7 @@ print(1 + 2)"#;
         };
 
         let dyn_exec: Arc<dyn swiftide_core::ToolExecutor> = Arc::new(executor.clone());
-        let nested = dyn_exec.clone().scoped("nested");
+        let nested = dyn_exec.scoped("nested");
 
         nested
             .exec_cmd(&Command::write_file("nested_file.txt", "hello"))
