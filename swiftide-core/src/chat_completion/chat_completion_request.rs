@@ -49,9 +49,38 @@ impl ChatCompletionRequestBuilder {
     where
         I: IntoIterator<Item = Arc<dyn Tool>>,
     {
-        let specs = tools.into_iter().map(|tool| tool.tool_spec());
+        self.tool_specs(tools.into_iter().map(|tool| tool.tool_spec()))
+    }
+
+    pub fn tool<T>(&mut self, tool: Arc<T>) -> &mut Self
+    where
+        T: Tool + 'static,
+    {
+        self.tool_specs(std::iter::once(tool.tool_spec()))
+    }
+
+    pub fn tool_specs<I>(&mut self, specs: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ToolSpec>,
+    {
         let entry = self.tools_spec.get_or_insert_with(HashSet::new);
         entry.extend(specs);
+        self
+    }
+
+    pub fn message(&mut self, message: impl Into<ChatMessage>) -> &mut Self {
+        self.messages
+            .get_or_insert_with(Vec::new)
+            .push(message.into());
+        self
+    }
+
+    pub fn messages_iter<I>(&mut self, messages: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ChatMessage>,
+    {
+        let entry = self.messages.get_or_insert_with(Vec::new);
+        entry.extend(messages);
         self
     }
 }
