@@ -1,10 +1,11 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use futures_util::StreamExt as _;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use std::collections::HashSet;
 use std::io::Write as _;
 use swiftide::{
-    chat_completion::{ChatCompletionRequest, ChatMessage},
+    chat_completion::{ChatCompletionRequest, ChatMessage, ToolOutput, ToolSpec},
     integrations::openai::{OpenAI, Options},
     traits::{ChatCompletion, SimplePrompt, StructuredPrompt},
 };
@@ -15,6 +16,21 @@ use tracing_subscriber::EnvFilter;
 #[allow(dead_code)]
 struct WeatherSummary {
     description: String,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct EchoArgs {
+    message: String,
+}
+
+fn echo_tool_spec() -> ToolSpec {
+    ToolSpec::builder()
+        .name("echo_tool")
+        .description("Echos the provided message back to the caller")
+        .parameters_schema(schemars::schema_for!(EchoArgs))
+        .build()
+        .expect("echo tool spec must be valid")
 }
 
 #[tokio::main]
@@ -75,6 +91,67 @@ async fn main() -> Result<()> {
         println!("Full streamed result: <no message>");
     } else {
         println!("Full streamed result: {streamed_message}");
+    }
+
+    let echo_spec = echo_tool_spec();
+    let tool_specs: HashSet<_> = std::iter::once(echo_spec.clone()).collect();
+
+    let tool_request = ChatCompletionRequest::builder()
+        .messages(vec![
+            ChatMessage::new_system(
+                "You are a precise assistant. Use available tools before replying directly.",
+            ),
+            ChatMessage::new_user(
+                "Call the echo tool with the phrase \"Hello Responses API\" and then summarise the result.",
+            ),
+        ])
+        .tools_spec(tool_specs.clone())
+        .build()?;
+
+    let tool_completion = openai.complete(&tool_request).await?;
+
+    if let Some(tool_call) = tool_completion
+        .tool_calls()
+        .and_then(|calls| calls.first())
+        .cloned()
+    {
+        println!(
+            "Assistant requested tool `{}` with arguments {}",
+            tool_call.name(),
+            tool_call.args().unwrap_or("<missing arguments>")
+        );
+
+        let args_json = tool_call
+            .args()
+            .context("echo tool call missing arguments")?;
+        let args: EchoArgs = serde_json::from_str(args_json)?;
+        let tool_output = format!("Echo: {}", args.message);
+
+        let mut follow_up_messages = tool_request.messages().to_vec();
+        follow_up_messages.push(ChatMessage::new_assistant(
+            None::<String>,
+            Some(vec![tool_call.clone()]),
+        ));
+        follow_up_messages.push(ChatMessage::new_tool_output(
+            tool_call.clone(),
+            ToolOutput::text(tool_output),
+        ));
+
+        let follow_up_request = ChatCompletionRequest::builder()
+            .messages(follow_up_messages)
+            .tools_spec(tool_specs)
+            .build()?;
+
+        let final_completion = openai.complete(&follow_up_request).await?;
+        println!(
+            "Final response after tool call: {}",
+            final_completion.message().unwrap_or("<no message>")
+        );
+    } else {
+        println!(
+            "Assistant responded without tool calls: {}",
+            tool_completion.message().unwrap_or("<no message>")
+        );
     }
 
     Ok(())
