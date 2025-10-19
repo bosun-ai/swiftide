@@ -848,6 +848,7 @@ mod tests {
         let mut tools = HashSet::new();
         tools.insert(tool_spec);
 
+        #[allow(deprecated)]
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hi".into())])
             .tools_spec(tools)
@@ -892,6 +893,7 @@ mod tests {
         let mut tools = HashSet::new();
         tools.insert(sample_tool_spec());
 
+        #[allow(deprecated)]
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hi".into())])
             .tools_spec(tools)

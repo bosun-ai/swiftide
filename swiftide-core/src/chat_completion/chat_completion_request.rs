@@ -1,8 +1,9 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use derive_builder::Builder;
 
-use super::{chat_message::ChatMessage, tools::ToolSpec};
+use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 
 /// A chat completion request represents a series of chat messages and tool interactions that can
 /// be send to any LLM.
@@ -10,7 +11,7 @@ use super::{chat_message::ChatMessage, tools::ToolSpec};
 #[builder(setter(into, strip_option))]
 pub struct ChatCompletionRequest {
     pub messages: Vec<ChatMessage>,
-    #[builder(default)]
+    #[builder(default, setter(custom))]
     pub tools_spec: HashSet<ToolSpec>,
 }
 
@@ -34,5 +35,23 @@ impl From<Vec<ChatMessage>> for ChatCompletionRequest {
             messages,
             tools_spec: HashSet::new(),
         }
+    }
+}
+
+impl ChatCompletionRequestBuilder {
+    #[deprecated(note = "Use `tools` with real Tool instances instead")]
+    pub fn tools_spec(&mut self, tools_spec: HashSet<ToolSpec>) -> &mut Self {
+        self.tools_spec = Some(tools_spec);
+        self
+    }
+
+    pub fn tools<I>(&mut self, tools: I) -> &mut Self
+    where
+        I: IntoIterator<Item = Arc<dyn Tool>>,
+    {
+        let specs = tools.into_iter().map(|tool| tool.tool_spec());
+        let entry = self.tools_spec.get_or_insert_with(HashSet::new);
+        entry.extend(specs);
+        self
     }
 }
