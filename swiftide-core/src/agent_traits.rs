@@ -40,6 +40,10 @@ pub trait ToolExecutor: Send + Sync + DynClone {
 
 dyn_clone::clone_trait_object!(ToolExecutor);
 
+/// Lightweight executor wrapper that applies a default working directory to forwarded commands.
+///
+/// Most callers should construct this via [`ExecutorExt::scoped`], which borrows the underlying
+/// executor and only clones commands/paths when the scope actually changes their resolution.
 #[derive(Debug, Clone)]
 pub struct ScopedExecutor<E> {
     executor: E,
@@ -47,6 +51,7 @@ pub struct ScopedExecutor<E> {
 }
 
 impl<E> ScopedExecutor<E> {
+    /// Build a new wrapper around `executor` that prefixes relative paths with `scope`.
     pub fn new(executor: E, scope: impl Into<PathBuf>) -> Self {
         Self {
             executor,
@@ -54,6 +59,7 @@ impl<E> ScopedExecutor<E> {
         }
     }
 
+    /// Returns either the original command or a scoped clone depending on the current directory.
     fn apply_scope<'a>(&'a self, cmd: &'a Command) -> Cow<'a, Command> {
         match cmd.current_dir_path() {
             Some(path) if path.is_absolute() || self.scope.as_os_str().is_empty() => {
@@ -73,6 +79,7 @@ impl<E> ScopedExecutor<E> {
         }
     }
 
+    /// Returns a path adjusted for the scope when the provided path is relative.
     fn scoped_path<'a>(&'a self, path: &'a Path) -> Cow<'a, Path> {
         if path.is_absolute() || self.scope.as_os_str().is_empty() {
             Cow::Borrowed(path)
@@ -81,10 +88,12 @@ impl<E> ScopedExecutor<E> {
         }
     }
 
+    /// Access the inner executor.
     pub fn inner(&self) -> &E {
         &self.executor
     }
 
+    /// Expose the scope that will be applied to relative paths.
     pub fn scope(&self) -> &Path {
         &self.scope
     }
@@ -112,7 +121,9 @@ where
     }
 }
 
+/// Convenience methods for scoping executors without cloning them.
 pub trait ExecutorExt {
+    /// Borrow `self` and return a wrapper that resolves relative operations inside `path`.
     fn scoped(&self, path: impl Into<PathBuf>) -> ScopedExecutor<&Self>;
 }
 
