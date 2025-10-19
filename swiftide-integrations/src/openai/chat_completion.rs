@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::{Context as _, Result};
-use async_openai::error::OpenAIError;
 use async_openai::types::ChatCompletionStreamOptions;
 use async_openai::types::{
     ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
@@ -12,7 +11,6 @@ use async_openai::types::{
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
-use futures_util::future;
 use futures_util::stream;
 use itertools::Itertools;
 use serde::Serialize;
@@ -30,8 +28,7 @@ use super::GenericOpenAI;
 use super::ensure_tool_schema_additional_properties_false;
 use super::openai_error_to_language_model_error;
 use super::responses_api::{
-    ResponsesStreamAccumulator, StreamChunk, StreamControl, build_responses_request_from_chat,
-    response_to_chat_completion,
+    build_responses_request_from_chat, response_to_chat_completion, responses_stream_adapter,
 };
 use tracing_futures::Instrument;
 
@@ -389,7 +386,6 @@ impl<
             Err(err) => return openai_error_to_language_model_error(err).into(),
         };
 
-        let aggregator = Arc::new(Mutex::new(ResponsesStreamAccumulator::new()));
         let stream_full = self.stream_full;
 
         let span = if cfg!(feature = "langfuse") {
@@ -398,74 +394,26 @@ impl<
             tracing::info_span!("responses_stream")
         };
 
-        let mapped_stream = stream
-            .then(move |event| {
-                let aggregator = aggregator.clone();
-                async move {
-                    match event {
-                        Ok(event) => {
-                            let mut guard = aggregator.lock().expect("mutex poisoned");
-                            match guard.apply_event(event, stream_full) {
-                                Ok(StreamControl::Emit(chunk)) => Some(Ok((chunk, false))),
-                                Ok(StreamControl::Finished(chunk)) => Some(Ok((chunk, true))),
-                                Ok(StreamControl::Skip) => None,
-                                Err(err) => Some(Err(err)),
-                            }
-                        }
-                        Err(err) => {
-                            if is_responses_stream_end_error(&err) {
-                                let mut guard = aggregator.lock().expect("mutex poisoned");
-
-                                if guard.has_emitted_finished() {
-                                    None
-                                } else {
-                                    let chunk = guard.snapshot(stream_full, true);
-                                    Some(Ok((chunk, true)))
-                                }
-                            } else {
-                                Some(Err(openai_error_to_language_model_error(err)))
-                            }
-                        }
-                    }
-                }
-            })
-            .filter_map(|maybe| async move { maybe });
-
-        let mapped_stream = mapped_stream.scan(false, |finished, result| {
-            if *finished {
-                return future::ready(None);
-            }
-
-            if result
-                .as_ref()
-                .map(|(_, finished)| *finished)
-                .unwrap_or(true)
-            {
-                *finished = true;
-            }
-
-            future::ready(Some(result))
-        });
+        let mapped_stream = responses_stream_adapter(stream, stream_full);
 
         let this = self.clone();
-        let mapped_stream = mapped_stream.map(
-            move |result: Result<(StreamChunk, bool), LanguageModelError>| {
-                result.map(|(chunk, finished)| {
-                    let response = chunk.response;
+        let tracked_request = create_request.clone();
 
-                    if finished {
-                        this.track_completion(
-                            &model_name,
-                            response.usage.as_ref(),
-                            Some(&create_request),
-                            Some(&response),
-                        );
-                    }
+        let mapped_stream = mapped_stream.map(move |result| match result {
+            Ok(item) => {
+                if item.finished {
+                    this.track_completion(
+                        &model_name,
+                        item.response.usage.as_ref(),
+                        Some(&tracked_request),
+                        Some(&item.response),
+                    );
+                }
 
-                    response
-                })
-            },
-        );
+                Ok(item.response)
+            }
+            Err(err) => Err(err),
+        });
 
         Box::pin(Instrument::instrument(mapped_stream, span))
     }
@@ -508,16 +456,6 @@ impl<
             langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
             langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
         );
-    }
-}
-
-fn is_responses_stream_end_error(error: &OpenAIError) -> bool {
-    match error {
-        OpenAIError::StreamError(message) => {
-            let normalized = message.trim().to_ascii_lowercase();
-            normalized == "stream ended" || normalized.contains("stream ended")
-        }
-        _ => false,
     }
 }
 
@@ -971,20 +909,5 @@ mod tests {
         let response = openai.complete(&request).await.unwrap();
 
         assert_eq!(response.message(), Some("All settings validated"));
-    }
-
-    #[test]
-    fn test_harmless_stream_end_detection() {
-        assert!(is_responses_stream_end_error(&OpenAIError::StreamError(
-            "Stream Ended".into()
-        )));
-
-        assert!(is_responses_stream_end_error(&OpenAIError::StreamError(
-            "connection closed: stream ended".into()
-        )));
-
-        assert!(!is_responses_stream_end_error(&OpenAIError::StreamError(
-            "Too Many Requests".into()
-        )));
     }
 }

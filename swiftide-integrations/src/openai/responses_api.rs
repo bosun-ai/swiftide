@@ -1,13 +1,16 @@
 use std::collections::HashMap;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use anyhow::{Context as _, Result};
 use async_openai::types::ResponseFormatJsonSchema;
 use async_openai::types::responses::{
     Content, CreateResponse, CreateResponseArgs, FunctionArgs, Input, InputContent, InputItem,
     InputMessageArgs, OutputContent, OutputItem, OutputMessage, OutputStatus, ReasoningConfigArgs,
-    Response, ResponseEvent, ResponseMetadata, Role, Status, TextConfig, TextResponseFormat,
-    ToolChoice, ToolChoiceMode, ToolDefinition, Usage as ResponsesUsage,
+    Response, ResponseEvent, ResponseMetadata, ResponseStream, Role, Status, TextConfig,
+    TextResponseFormat, ToolChoice, ToolChoiceMode, ToolDefinition, Usage as ResponsesUsage,
 };
+use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolOutput, ToolSpec,
@@ -247,56 +250,48 @@ fn message_item(role: Role, content: String) -> LmResult<InputItem> {
 }
 
 #[derive(Default)]
-pub(super) struct ResponsesStreamAccumulator {
+pub(super) struct ResponsesStreamState {
     response: ChatCompletionResponse,
     tool_index_by_item_id: HashMap<String, usize>,
     finished_emitted: bool,
 }
 
-#[derive(Debug)]
-pub(super) struct StreamChunk {
+#[derive(Debug, Clone)]
+pub(super) struct ResponsesStreamItem {
     pub response: ChatCompletionResponse,
+    pub finished: bool,
 }
 
 #[derive(Debug)]
-pub(super) enum StreamControl {
-    Emit(StreamChunk),
-    Finished(StreamChunk),
-    Skip,
+enum EventAction {
+    None,
+    Emit(ResponsesStreamItem),
 }
 
-impl ResponsesStreamAccumulator {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
+impl ResponsesStreamState {
     #[allow(clippy::too_many_lines)]
-    pub fn apply_event(
-        &mut self,
-        event: ResponseEvent,
-        stream_full: bool,
-    ) -> LmResult<StreamControl> {
+    fn apply_event(&mut self, event: ResponseEvent, stream_full: bool) -> LmResult<EventAction> {
         if self.finished_emitted {
-            return Ok(StreamControl::Skip);
+            return Ok(EventAction::None);
         }
 
         match event {
             ResponseEvent::ResponseOutputTextDelta(delta) => {
                 self.response
                     .append_message_delta(Some(delta.delta.as_str()));
-                return Ok(self.emit(stream_full));
+                return Ok(self.emit(stream_full, false));
             }
             ResponseEvent::ResponseContentPartAdded(part) => {
                 if let Some(text) = part.part.text.as_ref() {
                     self.response.append_message_delta(Some(text.as_str()));
-                    return Ok(self.emit(stream_full));
+                    return Ok(self.emit(stream_full, false));
                 }
             }
             ResponseEvent::ResponseFunctionCallArgumentsDelta(delta) => {
                 let index = self.ensure_tool_index(&delta.item_id, delta.output_index as usize);
                 self.response
                     .append_tool_call_delta(index, None, None, Some(delta.delta.as_str()));
-                return Ok(self.emit(stream_full));
+                return Ok(self.emit(stream_full, false));
             }
             ResponseEvent::ResponseOutputItemAdded(event) => match event.item {
                 OutputItem::FunctionCall(function_call) => {
@@ -327,12 +322,12 @@ impl ResponsesStreamAccumulator {
                         arguments,
                     );
 
-                    return Ok(self.emit(stream_full));
+                    return Ok(self.emit(stream_full, false));
                 }
                 OutputItem::Message(message) => {
                     if let Some(text) = collect_message_text_from_message(&message) {
                         self.response.append_message_delta(Some(text.as_str()));
-                        return Ok(self.emit(stream_full));
+                        return Ok(self.emit(stream_full, false));
                     }
                 }
                 _ => {}
@@ -358,7 +353,7 @@ impl ResponsesStreamAccumulator {
                         Some(function_call.name.as_str()),
                         None,
                     );
-                    return Ok(self.emit(stream_full));
+                    return Ok(self.emit(stream_full, false));
                 }
             }
             ResponseEvent::ResponseFunctionCallArgumentsDone(done) => {
@@ -385,20 +380,20 @@ impl ResponsesStreamAccumulator {
                 if arguments.is_some() || name.is_some() {
                     self.response
                         .append_tool_call_delta(index, None, name, arguments);
-                    return Ok(self.emit(stream_full));
+                    return Ok(self.emit(stream_full, false));
                 }
 
-                return Ok(StreamControl::Skip);
+                return Ok(EventAction::None);
             }
             ResponseEvent::ResponseCompleted(completed) => {
                 metadata_to_chat_completion(&completed.response, &mut self.response)?;
                 self.response.delta = None;
-                return Ok(self.finish(stream_full));
+                return Ok(self.emit(stream_full, true));
             }
             ResponseEvent::ResponseIncomplete(incomplete) => {
                 metadata_to_chat_completion(&incomplete.response, &mut self.response)?;
                 self.response.delta = None;
-                return Ok(self.finish(stream_full));
+                return Ok(self.emit(stream_full, true));
             }
             ResponseEvent::ResponseFailed(failed) => {
                 let message = failed.response.error.as_ref().map_or_else(
@@ -413,10 +408,10 @@ impl ResponsesStreamAccumulator {
             _ => {}
         }
 
-        Ok(StreamControl::Skip)
+        Ok(EventAction::None)
     }
 
-    pub fn snapshot(&mut self, stream_full: bool, finished: bool) -> StreamChunk {
+    pub fn snapshot(&mut self, stream_full: bool, finished: bool) -> ResponsesStreamItem {
         if finished {
             self.finished_emitted = true;
         }
@@ -437,7 +432,7 @@ impl ResponsesStreamAccumulator {
             response.usage.clone_from(&self.response.usage);
         }
 
-        StreamChunk { response }
+        ResponsesStreamItem { response, finished }
     }
 
     fn ensure_tool_index(&mut self, item_id: &str, output_index: usize) -> usize {
@@ -447,16 +442,86 @@ impl ResponsesStreamAccumulator {
             .or_insert(output_index)
     }
 
-    pub fn has_emitted_finished(&self) -> bool {
-        self.finished_emitted
+    fn emit(&mut self, stream_full: bool, finished: bool) -> EventAction {
+        EventAction::Emit(self.snapshot(stream_full, finished))
     }
+}
 
-    fn emit(&mut self, stream_full: bool) -> StreamControl {
-        StreamControl::Emit(self.snapshot(stream_full, false))
+pub(super) fn responses_stream_adapter(
+    stream: ResponseStream,
+    stream_full: bool,
+) -> ResponsesStreamAdapter {
+    ResponsesStreamAdapter::new(stream, stream_full)
+}
+
+pub(super) struct ResponsesStreamAdapter {
+    inner: ResponseStream,
+    state: ResponsesStreamState,
+    stream_full: bool,
+    finished: bool,
+}
+
+impl ResponsesStreamAdapter {
+    fn new(stream: ResponseStream, stream_full: bool) -> Self {
+        Self {
+            inner: stream,
+            state: ResponsesStreamState::default(),
+            stream_full,
+            finished: false,
+        }
     }
+}
 
-    fn finish(&mut self, stream_full: bool) -> StreamControl {
-        StreamControl::Finished(self.snapshot(stream_full, true))
+impl Stream for ResponsesStreamAdapter {
+    type Item = LmResult<ResponsesStreamItem>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let this = self.get_mut();
+
+        if this.finished {
+            return Poll::Ready(None);
+        }
+
+        loop {
+            match this.inner.as_mut().poll_next(cx) {
+                Poll::Ready(Some(result)) => {
+                    let event = match result {
+                        Ok(event) => event,
+                        Err(err) => {
+                            this.finished = true;
+                            return Poll::Ready(Some(Err(openai_error_to_language_model_error(
+                                err,
+                            ))));
+                        }
+                    };
+
+                    match this.state.apply_event(event, this.stream_full) {
+                        Ok(EventAction::None) => continue,
+                        Ok(EventAction::Emit(item)) => {
+                            if item.finished {
+                                this.finished = true;
+                            }
+                            return Poll::Ready(Some(Ok(item)));
+                        }
+                        Err(err) => {
+                            this.finished = true;
+                            return Poll::Ready(Some(Err(err)));
+                        }
+                    }
+                }
+                Poll::Ready(None) => {
+                    this.finished = true;
+
+                    if this.state.finished_emitted {
+                        return Poll::Ready(None);
+                    }
+
+                    let item = this.state.snapshot(this.stream_full, true);
+                    return Poll::Ready(Some(Ok(item)));
+                }
+                Poll::Pending => return Poll::Pending,
+            }
+        }
     }
 }
 
@@ -710,22 +775,15 @@ mod tests {
 
     use crate::openai::{OpenAI, Options};
 
-    fn expect_emit(control: StreamControl) -> StreamChunk {
-        match control {
-            StreamControl::Emit(chunk) => chunk,
+    fn expect_emit(action: EventAction) -> ResponsesStreamItem {
+        match action {
+            EventAction::Emit(item) => item,
             other => panic!("expected emit, got {other:?}"),
         }
     }
 
-    fn expect_finished(control: StreamControl) -> StreamChunk {
-        match control {
-            StreamControl::Finished(chunk) => chunk,
-            other => panic!("expected finished, got {other:?}"),
-        }
-    }
-
-    fn expect_skip(control: &StreamControl) {
-        assert!(matches!(control, StreamControl::Skip));
+    fn expect_none(action: &EventAction) {
+        assert!(matches!(action, EventAction::None));
     }
 
     fn sample_usage() -> ResponsesUsage {
@@ -925,7 +983,7 @@ mod tests {
 
     #[test]
     fn test_stream_accumulator_handles_text_and_tool_events() {
-        let mut accumulator = ResponsesStreamAccumulator::new();
+        let mut state = ResponsesStreamState::default();
 
         let delta: ResponseOutputTextDelta = serde_json::from_value(json!({
             "sequence_number": 0,
@@ -937,7 +995,7 @@ mod tests {
         .unwrap();
 
         let chunk = expect_emit(
-            accumulator
+            state
                 .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
                 .unwrap(),
         );
@@ -966,7 +1024,7 @@ mod tests {
         .unwrap();
 
         expect_emit(
-            accumulator
+            state
                 .apply_event(ResponseEvent::ResponseOutputItemAdded(item_added), false)
                 .unwrap(),
         );
@@ -980,7 +1038,7 @@ mod tests {
         .unwrap();
 
         expect_emit(
-            accumulator
+            state
                 .apply_event(
                     ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
                     false,
@@ -998,7 +1056,7 @@ mod tests {
         .unwrap();
 
         expect_emit(
-            accumulator
+            state
                 .apply_event(
                     ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
                     false,
@@ -1020,11 +1078,12 @@ mod tests {
         }))
         .unwrap();
 
-        let final_chunk = expect_finished(
-            accumulator
+        let final_chunk = expect_emit(
+            state
                 .apply_event(ResponseEvent::ResponseCompleted(completed), false)
                 .unwrap(),
         );
+        assert!(final_chunk.finished);
 
         assert_eq!(final_chunk.response.message(), Some("Hello"));
 
@@ -1041,17 +1100,17 @@ mod tests {
 
     #[test]
     fn test_stream_accumulator_tracks_finished_emission() {
-        let mut accumulator = ResponsesStreamAccumulator::new();
-        assert!(!accumulator.has_emitted_finished());
+        let mut state = ResponsesStreamState::default();
+        assert!(!state.finished_emitted);
 
-        let chunk = accumulator.snapshot(true, true);
-        assert!(accumulator.has_emitted_finished());
+        let chunk = state.snapshot(true, true);
+        assert!(state.finished_emitted);
         assert!(chunk.response.message().is_none());
     }
 
     #[test]
     fn test_stream_accumulator_skips_after_finished() {
-        let mut accumulator = ResponsesStreamAccumulator::new();
+        let mut state = ResponsesStreamState::default();
 
         let usage = sample_usage();
         let completed: ResponseCompleted = serde_json::from_value(json!({
@@ -1067,11 +1126,12 @@ mod tests {
         }))
         .unwrap();
 
-        expect_finished(
-            accumulator
+        let finished = expect_emit(
+            state
                 .apply_event(ResponseEvent::ResponseCompleted(completed), false)
                 .unwrap(),
         );
+        assert!(finished.finished);
 
         let delta: ResponseOutputTextDelta = serde_json::from_value(json!({
             "sequence_number": 1,
@@ -1082,8 +1142,8 @@ mod tests {
         }))
         .unwrap();
 
-        expect_skip(
-            &accumulator
+        expect_none(
+            &state
                 .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
                 .unwrap(),
         );
