@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1760897516040,
+  "lastUpdate": 1760897585927,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28769,6 +28769,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 190358,
             "range": "± 1776",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7873ce5941a7abf8ed60df4ec2ea8a7a4c1d1316",
+          "message": "fix(integrations/openai): Simplefy responses api and improve chat completion request ergonomics (#956)\n\n- **Update openai**\n- **wip**\n- **Fix type issue**\n- **Further cleanup**\n- **normalize tool call**\n- **More ergonomic chat completion request**\n- **Add more ergonomic helpers**\n- **Make it all work**\n- **Update example with new api**",
+          "timestamp": "2025-10-19T20:04:26+02:00",
+          "tree_id": "279301e1f7271c70fd73a44f17de8199c69aea6b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7873ce5941a7abf8ed60df4ec2ea8a7a4c1d1316"
+        },
+        "date": 1760897584113,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 806925,
+            "range": "± 12130",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 260149,
+            "range": "± 972",
             "unit": "ns/iter"
           }
         ]
