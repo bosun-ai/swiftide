@@ -50,13 +50,10 @@ impl ObservationUpdate {
     }
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum Type {
     #[serde(rename = "observation-update")]
+    #[default]
     ObservationUpdate,
 }
 
-impl Default for Type {
-    fn default() -> Type {
-        Self::ObservationUpdate
-    }
-}

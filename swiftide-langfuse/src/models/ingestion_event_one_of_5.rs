@@ -50,13 +50,10 @@ impl GenerationUpdate {
     }
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum Type {
     #[serde(rename = "generation-update")]
+    #[default]
     GenerationUpdate,
 }
 
-impl Default for Type {
-    fn default() -> Type {
-        Self::GenerationUpdate
-    }
-}
