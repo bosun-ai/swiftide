@@ -9,8 +9,10 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum ObservationLevel {
     #[serde(rename = "DEBUG")]
+    #[default]
     Debug,
     #[serde(rename = "DEFAULT")]
     Default,
@@ -31,8 +33,3 @@ impl std::fmt::Display for ObservationLevel {
     }
 }
 
-impl Default for ObservationLevel {
-    fn default() -> ObservationLevel {
-        Self::Debug
-    }
-}

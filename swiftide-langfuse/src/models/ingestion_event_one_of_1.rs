@@ -50,13 +50,10 @@ impl ScoreCreate {
     }
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum Type {
     #[serde(rename = "score-create")]
+    #[default]
     ScoreCreate,
 }
 
-impl Default for Type {
-    fn default() -> Type {
-        Self::ScoreCreate
-    }
-}

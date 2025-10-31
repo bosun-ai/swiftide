@@ -190,9 +190,9 @@ impl From<&[String]> for EvaluationDataSet {
             val.iter()
                 .map(|question| {
                     (
-                        question.to_string(),
+                        question.clone(),
                         EvaluationData {
-                            question: question.to_string(),
+                            question: question.clone(),
                             ..EvaluationData::default()
                         },
                     )

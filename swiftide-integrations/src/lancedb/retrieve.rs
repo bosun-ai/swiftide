@@ -145,7 +145,7 @@ impl LanceDB {
                             if field.name() == "chunk" {
                                 content = value;
                             } else {
-                                metadata.insert(field.name().to_string(), value);
+                                metadata.insert(field.name().clone(), value);
                             }
                         } else {
                             // Handle other array types as necessary

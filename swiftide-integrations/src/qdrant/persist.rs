@@ -65,7 +65,7 @@ impl Persist for Qdrant {
 
         self.client
             .upsert_points(
-                UpsertPointsBuilder::new(self.collection_name.to_string(), vec![point])
+                UpsertPointsBuilder::new(self.collection_name.clone(), vec![point])
                     .wait(cfg!(debug_assertions)),
             )
             .await?;
@@ -102,7 +102,7 @@ impl Persist for Qdrant {
         let result = self
             .client
             .upsert_points(
-                UpsertPointsBuilder::new(self.collection_name.to_string(), points)
+                UpsertPointsBuilder::new(self.collection_name.clone(), points)
                     .wait(cfg!(debug_assertions)),
             )
             .await;
