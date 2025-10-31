@@ -125,6 +125,7 @@ duckdb = { version = "1", default-features = false }
 libduckdb-sys = { version = "1", default-features = false }
 metrics = { version = "0.24", default-features = false }
 tiktoken-rs = { version = "0.7", default-features = false }
+reqwest-eventsource = { version = "0.6", default-features = false }
 
 # Testing
 test-log = { version = "0.2" }

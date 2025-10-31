@@ -84,6 +84,7 @@ aws-sdk-bedrockruntime = { workspace = true, features = [
 ], optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+reqwest-eventsource = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
   "rt_tokio_1",
@@ -163,7 +164,7 @@ tree-sitter = [
   "dep:tree-sitter-php",
 ]
 # OpenAI for embedding and prompting
-openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
+openai = ["dep:async-openai", "tiktoken-rs?/async-openai", "dep:reqwest-eventsource"]
 # Groq 
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Goolge Gemini

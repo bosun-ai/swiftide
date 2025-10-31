@@ -125,8 +125,8 @@ async fn main() -> Result<()> {
         let args_json = tool_call
             .args()
             .context("echo tool call missing arguments")?;
-        let args: EchoArgs = serde_json::from_str(args_json)?;
-        let tool_output = format!("Echo: {}", args.message);
+        let args: EchoToolArgs = serde_json::from_str(args_json)?;
+        let tool_output = format!("Echo: {}", args.payload.message);
 
         let mut follow_up_messages = tool_request.messages().to_vec();
         follow_up_messages.push(ChatMessage::new_assistant(
