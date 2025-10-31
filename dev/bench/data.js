@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1760897585927,
+  "lastUpdate": 1761921775005,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28823,6 +28823,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 260149,
             "range": "± 972",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8ad7d97b6911bd3c676c79a2d5318c31dad23e9f",
+          "message": "feat(agents): Add configurable timeouts to commands and local executor (#963)",
+          "timestamp": "2025-10-31T15:33:56+01:00",
+          "tree_id": "58563a1231b81e8e840594632b5e439bf3451019",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8ad7d97b6911bd3c676c79a2d5318c31dad23e9f"
+        },
+        "date": 1761921773376,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 622296,
+            "range": "± 13054",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 190845,
+            "range": "± 1748",
             "unit": "ns/iter"
           }
         ]
