@@ -5,6 +5,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     process::Stdio,
+    time::Duration,
 };
 
 use anyhow::{Context as _, Result};
@@ -14,13 +15,17 @@ use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{
     io::{AsyncBufReadExt as _, AsyncWriteExt as _},
-    task::JoinSet,
+    task::JoinHandle,
+    time,
 };
 
 #[derive(Debug, Clone, Builder)]
 pub struct LocalExecutor {
     #[builder(default = ".".into(), setter(into))]
     workdir: PathBuf,
+
+    #[builder(default)]
+    default_timeout: Option<Duration>,
 
     /// Clears env variables before executing commands.
     #[builder(default)]
@@ -37,6 +42,7 @@ impl Default for LocalExecutor {
     fn default() -> Self {
         LocalExecutor {
             workdir: ".".into(),
+            default_timeout: None,
             env_clear: false,
             env_remove: Vec::new(),
             envs: HashMap::new(),
@@ -48,6 +54,7 @@ impl LocalExecutor {
     pub fn new(workdir: impl Into<PathBuf>) -> Self {
         LocalExecutor {
             workdir: workdir.into(),
+            default_timeout: None,
             env_clear: false,
             env_remove: Vec::new(),
             envs: HashMap::new(),
@@ -66,8 +73,17 @@ impl LocalExecutor {
         }
     }
 
+    fn resolve_timeout(&self, cmd: &Command) -> Option<Duration> {
+        cmd.timeout_duration().copied().or(self.default_timeout)
+    }
+
     #[allow(clippy::too_many_lines)]
-    async fn exec_shell(&self, cmd: &str, workdir: &Path) -> Result<CommandOutput, CommandError> {
+    async fn exec_shell(
+        &self,
+        cmd: &str,
+        workdir: &Path,
+        timeout: Option<Duration>,
+    ) -> Result<CommandOutput, CommandError> {
         let lines: Vec<&str> = cmd.lines().collect();
         let mut child = if let Some(first_line) = lines.first()
             && first_line.starts_with("#!")
@@ -134,62 +150,68 @@ impl LocalExecutor {
                 .stderr(Stdio::piped())
                 .spawn()?
         };
-        // Run the command in a shell
 
-        let mut joinset = JoinSet::new();
-
-        if let Some(stdout) = child.stdout.take() {
-            joinset.spawn(async move {
+        let stdout_task = if let Some(stdout) = child.stdout.take() {
+            Some(tokio::spawn(async move {
                 let mut lines = tokio::io::BufReader::new(stdout).lines();
                 let mut out = Vec::new();
                 while let Ok(Some(line)) = lines.next_line().await {
                     out.push(line);
                 }
                 out
-            });
+            }))
         } else {
             tracing::warn!("Command has no stdout");
-        }
+            None
+        };
 
-        if let Some(stderr) = child.stderr.take() {
-            joinset.spawn(async move {
+        let stderr_task = if let Some(stderr) = child.stderr.take() {
+            Some(tokio::spawn(async move {
                 let mut lines = tokio::io::BufReader::new(stderr).lines();
                 let mut out = Vec::new();
                 while let Ok(Some(line)) = lines.next_line().await {
                     out.push(line);
                 }
                 out
-            });
+            }))
         } else {
             tracing::warn!("Command has no stderr");
-        }
-
-        let outputs = joinset.join_all().await;
-        let &[stdout, stderr] = outputs
-            .iter()
-            .map(Vec::as_slice)
-            .collect::<Vec<_>>()
-            .as_slice()
-        else {
-            // This should never happen
-            return Err(anyhow::anyhow!("Failed to get outputs from command").into());
+            None
         };
 
-        // outputs stdout and stderr should be empty
-        let output = child
-            .wait_with_output()
-            .await
-            .map_err(anyhow::Error::from)?;
+        let status = match timeout {
+            Some(limit) => {
+                if let Ok(result) = time::timeout(limit, child.wait()).await {
+                    result.map_err(|err| CommandError::ExecutorError(err.into()))?
+                } else {
+                    tracing::warn!(?limit, "command exceeded timeout; terminating");
+                    if let Err(err) = child.start_kill() {
+                        tracing::warn!(?err, "failed to start kill on timed out command");
+                    }
+                    if let Err(err) = child.wait().await {
+                        tracing::warn!(?err, "failed to reap command after timeout");
+                    }
 
-        let cmd_output = stdout
-            .iter()
-            .chain(stderr.iter())
-            .cloned()
-            .collect::<Vec<_>>()
-            .join("\n")
-            .into();
+                    let (stdout, stderr) =
+                        Self::collect_process_output(stdout_task, stderr_task).await;
+                    let cmd_output = Self::merge_output(&stdout, &stderr);
 
-        if output.status.success() {
+                    return Err(CommandError::TimedOut {
+                        timeout: limit,
+                        output: cmd_output,
+                    });
+                }
+            }
+            None => child
+                .wait()
+                .await
+                .map_err(|err| CommandError::ExecutorError(err.into()))?,
+        };
+
+        let (stdout, stderr) = Self::collect_process_output(stdout_task, stderr_task).await;
+        let cmd_output = Self::merge_output(&stdout, &stderr);
+
+        if status.success() {
             Ok(cmd_output)
         } else {
             Err(CommandError::NonZeroExit(cmd_output))
@@ -200,13 +222,26 @@ impl LocalExecutor {
         &self,
         workdir: &Path,
         path: &Path,
+        timeout: Option<Duration>,
     ) -> Result<CommandOutput, CommandError> {
         let path = if path.is_absolute() {
             path.to_path_buf()
         } else {
             workdir.join(path)
         };
-        let output = fs_err::tokio::read(&path).await?;
+        let read_future = fs_err::tokio::read(&path);
+        let output = match timeout {
+            Some(limit) => match time::timeout(limit, read_future).await {
+                Ok(result) => result?,
+                Err(_) => {
+                    return Err(CommandError::TimedOut {
+                        timeout: limit,
+                        output: CommandOutput::empty(),
+                    });
+                }
+            },
+            None => read_future.await?,
+        };
 
         Ok(String::from_utf8(output)
             .context("Failed to parse read file output")?
@@ -218,6 +253,7 @@ impl LocalExecutor {
         workdir: &Path,
         path: &Path,
         content: &str,
+        timeout: Option<Duration>,
     ) -> Result<CommandOutput, CommandError> {
         let path = if path.is_absolute() {
             path.to_path_buf()
@@ -227,9 +263,60 @@ impl LocalExecutor {
         if let Some(parent) = path.parent() {
             let _ = fs_err::tokio::create_dir_all(parent).await;
         }
-        fs_err::tokio::write(&path, content).await?;
+        let write_future = fs_err::tokio::write(&path, content);
+        match timeout {
+            Some(limit) => match time::timeout(limit, write_future).await {
+                Ok(result) => result?,
+                Err(_) => {
+                    return Err(CommandError::TimedOut {
+                        timeout: limit,
+                        output: CommandOutput::empty(),
+                    });
+                }
+            },
+            None => write_future.await?,
+        }
 
         Ok(CommandOutput::empty())
+    }
+
+    async fn collect_process_output(
+        stdout_task: Option<JoinHandle<Vec<String>>>,
+        stderr_task: Option<JoinHandle<Vec<String>>>,
+    ) -> (Vec<String>, Vec<String>) {
+        let stdout = match stdout_task {
+            Some(task) => match task.await {
+                Ok(lines) => lines,
+                Err(err) => {
+                    tracing::warn!(?err, "failed to collect stdout from command");
+                    Vec::new()
+                }
+            },
+            None => Vec::new(),
+        };
+
+        let stderr = match stderr_task {
+            Some(task) => match task.await {
+                Ok(lines) => lines,
+                Err(err) => {
+                    tracing::warn!(?err, "failed to collect stderr from command");
+                    Vec::new()
+                }
+            },
+            None => Vec::new(),
+        };
+
+        (stdout, stderr)
+    }
+
+    fn merge_output(stdout: &[String], stderr: &[String]) -> CommandOutput {
+        stdout
+            .iter()
+            .chain(stderr.iter())
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n")
+            .into()
     }
 }
 #[async_trait]
@@ -238,11 +325,14 @@ impl ToolExecutor for LocalExecutor {
     #[tracing::instrument(skip_self)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
         let workdir = __self.resolve_workdir(cmd);
+        let timeout = __self.resolve_timeout(cmd);
         match cmd {
-            Command::Shell { command, .. } => __self.exec_shell(command, &workdir).await,
-            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path).await,
+            Command::Shell { command, .. } => __self.exec_shell(command, &workdir, timeout).await,
+            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path, timeout).await,
             Command::WriteFile { path, content, .. } => {
-                __self.exec_write_file(&workdir, path, content).await
+                __self
+                    .exec_write_file(&workdir, path, content, timeout)
+                    .await
             }
             _ => unimplemented!("Unsupported command: {cmd:?}"),
         }
@@ -268,7 +358,7 @@ mod tests {
     use super::*;
     use futures_util::StreamExt as _;
     use indoc::indoc;
-    use std::{path::Path, sync::Arc};
+    use std::{path::Path, sync::Arc, time::Duration};
     use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
 
@@ -336,6 +426,51 @@ mod tests {
 
         // Verify that the output matches the expected content
         assert_eq!(output.to_string().trim(), "hello world");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_shell_timeout() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let mut cmd = Command::shell("echo ready && sleep 1 && echo done");
+        cmd.timeout(Duration::from_millis(100));
+
+        match executor.exec_cmd(&cmd).await {
+            Err(CommandError::TimedOut { timeout, output }) => {
+                assert_eq!(timeout, Duration::from_millis(100));
+                assert!(output.to_string().contains("ready"));
+            }
+            other => anyhow::bail!("expected timeout error, got {other:?}"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_default_timeout_applies() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        let executor = LocalExecutorBuilder::default()
+            .workdir(temp_path.to_path_buf())
+            .default_timeout(Some(Duration::from_millis(100)))
+            .build()?;
+
+        match executor.exec_cmd(&Command::shell("sleep 1")).await {
+            Err(CommandError::TimedOut { timeout, output }) => {
+                assert_eq!(timeout, Duration::from_millis(100));
+                assert!(output.to_string().is_empty());
+            }
+            other => anyhow::bail!("expected default timeout, got {other:?}"),
+        }
 
         Ok(())
     }

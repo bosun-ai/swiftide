@@ -2,6 +2,7 @@ use std::{
     borrow::Cow,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use crate::{
@@ -190,6 +191,13 @@ pub enum CommandError {
     #[error("executor error: {0:#}")]
     ExecutorError(#[from] anyhow::Error),
 
+    /// The command exceeded its allotted time budget
+    #[error("command timed out after {timeout:?}: {output}")]
+    TimedOut {
+        timeout: Duration,
+        output: CommandOutput,
+    },
+
     /// The command failed, i.e. failing tests with stderr. This error might be handled
     #[error("command failed with NonZeroExit: {0}")]
     NonZeroExit(CommandOutput),
@@ -217,15 +225,18 @@ pub enum Command {
     Shell {
         command: String,
         current_dir: Option<PathBuf>,
+        timeout: Option<Duration>,
     },
     ReadFile {
         path: PathBuf,
         current_dir: Option<PathBuf>,
+        timeout: Option<Duration>,
     },
     WriteFile {
         path: PathBuf,
         content: String,
         current_dir: Option<PathBuf>,
+        timeout: Option<Duration>,
     },
 }
 
@@ -234,6 +245,7 @@ impl Command {
         Command::Shell {
             command: cmd.into(),
             current_dir: None,
+            timeout: None,
         }
     }
 
@@ -241,6 +253,7 @@ impl Command {
         Command::ReadFile {
             path: path.into(),
             current_dir: None,
+            timeout: None,
         }
     }
 
@@ -249,6 +262,7 @@ impl Command {
             path: path.into(),
             content: content.into(),
             current_dir: None,
+            timeout: None,
         }
     }
 
@@ -292,6 +306,46 @@ impl Command {
             Command::Shell { current_dir, .. }
             | Command::ReadFile { current_dir, .. }
             | Command::WriteFile { current_dir, .. } => current_dir.as_deref(),
+        }
+    }
+
+    /// Override the timeout used when executing this command.
+    #[must_use]
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout(timeout);
+        self
+    }
+
+    /// Override the timeout using the builder-style API.
+    pub fn timeout(&mut self, timeout: Duration) -> &mut Self {
+        match self {
+            Command::Shell { timeout: slot, .. }
+            | Command::ReadFile { timeout: slot, .. }
+            | Command::WriteFile { timeout: slot, .. } => {
+                *slot = Some(timeout);
+            }
+        }
+        self
+    }
+
+    /// Remove any timeout previously configured on this command.
+    pub fn clear_timeout(&mut self) -> &mut Self {
+        match self {
+            Command::Shell { timeout, .. }
+            | Command::ReadFile { timeout, .. }
+            | Command::WriteFile { timeout, .. } => {
+                *timeout = None;
+            }
+        }
+        self
+    }
+
+    /// Returns the timeout associated with this command, if any.
+    pub fn timeout_duration(&self) -> Option<&Duration> {
+        match self {
+            Command::Shell { timeout, .. }
+            | Command::ReadFile { timeout, .. }
+            | Command::WriteFile { timeout, .. } => timeout.as_ref(),
         }
     }
 }
