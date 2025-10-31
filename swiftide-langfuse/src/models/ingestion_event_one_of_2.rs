@@ -49,14 +49,11 @@ impl SpanCreate {
         }
     }
 }
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Default,
+)]
 pub enum Type {
     #[serde(rename = "span-create")]
+    #[default]
     SpanCreate,
-}
-
-impl Default for Type {
-    fn default() -> Type {
-        Self::SpanCreate
-    }
 }

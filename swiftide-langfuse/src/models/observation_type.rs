@@ -8,9 +8,12 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Default,
+)]
 pub enum ObservationType {
     #[serde(rename = "SPAN")]
+    #[default]
     Span,
     #[serde(rename = "GENERATION")]
     Generation,
@@ -46,11 +49,5 @@ impl std::fmt::Display for ObservationType {
             Self::Embedding => write!(f, "EMBEDDING"),
             Self::Guardrail => write!(f, "GUARDRAIL"),
         }
-    }
-}
-
-impl Default for ObservationType {
-    fn default() -> ObservationType {
-        Self::Span
     }
 }

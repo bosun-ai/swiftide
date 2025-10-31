@@ -164,7 +164,12 @@ tree-sitter = [
   "dep:tree-sitter-php",
 ]
 # OpenAI for embedding and prompting
-openai = ["dep:async-openai", "tiktoken-rs?/async-openai", "dep:reqwest-eventsource"]
+openai = [
+  "dep:async-openai",
+  "tiktoken-rs?/async-openai",
+  "dep:reqwest-eventsource",
+  "dep:reqwest",
+]
 # Groq 
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Goolge Gemini
