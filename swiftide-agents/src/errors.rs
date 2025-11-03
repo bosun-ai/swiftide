@@ -26,7 +26,7 @@ pub enum AgentError {
     ToolFailedToJoin(String, JoinError),
 
     #[error("Failed to load tools from toolbox {0:#}")]
-    ToolBoxFailedToLoad(anyhow::Error),
+    ToolBoxFailedToLoad(#[source] ToolError),
 
     #[error("Chat completion stream was empty")]
     EmptyStream,

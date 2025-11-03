@@ -1,8 +1,9 @@
 //! Implements a flexible vector search strategy framework using closure-based configuration.
 //! Supports both synchronous and asynchronous query generation for different retrieval backends.
 
+use thiserror::Error;
+
 use crate::querying::{self, Query, states};
-use anyhow::{Result, anyhow};
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
@@ -10,12 +11,21 @@ use std::sync::Arc;
 
 // TODO: Should be possible to remove the static bounds and allow Q as borrowed with some fu
 
+#[derive(Debug, Error)]
+pub enum StrategyError {
+    #[error("No query function has been set")]
+    MissingQueryFct,
+}
+
 // Function type for generating retriever-specific queries
-type QueryGenerator<Q> = Arc<dyn Fn(&Query<states::Pending>) -> Result<Q> + Send + Sync>;
+type QueryGenerator<Q> =
+    Arc<dyn Fn(&Query<states::Pending>) -> Result<Q, StrategyError> + Send + Sync>;
 
 // Function type for async query generation
 type AsyncQueryGenerator<Q> = Arc<
-    dyn Fn(&Query<states::Pending>) -> Pin<Box<dyn Future<Output = Result<Q>> + Send>>
+    dyn Fn(
+            &Query<states::Pending>,
+        ) -> Pin<Box<dyn Future<Output = Result<Q, StrategyError>> + Send>>
         + Send
         + Sync,
 >;
@@ -53,7 +63,7 @@ impl<Q> Clone for CustomStrategy<Q> {
 impl<Q: Send + Sync> CustomStrategy<Q> {
     /// Creates a new strategy with a synchronous query generator.
     pub fn from_query(
-        query: impl Fn(&Query<states::Pending>) -> Result<Q> + Send + Sync + 'static,
+        query: impl Fn(&Query<states::Pending>) -> Result<Q, StrategyError> + Send + Sync + 'static,
     ) -> Self {
         Self {
             query: Some(Arc::new(query)),
@@ -67,7 +77,7 @@ impl<Q: Send + Sync> CustomStrategy<Q> {
         query: impl Fn(&Query<states::Pending>) -> F + Send + Sync + 'static,
     ) -> Self
     where
-        F: Future<Output = Result<Q>> + Send + 'static,
+        F: Future<Output = Result<Q, StrategyError>> + Send + 'static,
     {
         Self {
             query: None,
@@ -83,11 +93,14 @@ impl<Q: Send + Sync> CustomStrategy<Q> {
     /// Returns an error if:
     /// * No query generator has been configured
     /// * The configured query generator fails during query generation
-    pub async fn build_query(&self, query_node: &Query<states::Pending>) -> Result<Q> {
+    pub async fn build_query(
+        &self,
+        query_node: &Query<states::Pending>,
+    ) -> Result<Q, StrategyError> {
         match (&self.query, &self.async_query) {
             (Some(query_fn), _) => query_fn(query_node),
             (_, Some(async_fn)) => async_fn(query_node).await,
-            _ => Err(anyhow!("No query function has been set.")),
+            _ => Err(StrategyError::MissingQueryFct),
         }
     }
 }

@@ -47,7 +47,7 @@ mockall.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
 insta.workspace = true
-rmcp = { workspace = true, features = ["server"] }
+rmcp = { workspace = true }
 schemars = { workspace = true }
 
 [lints]
