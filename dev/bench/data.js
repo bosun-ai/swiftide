@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1761921775005,
+  "lastUpdate": 1762247364572,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28877,6 +28877,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 190845,
             "range": "± 1748",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ce724e56034d717aafde08bb6c2d9dc163c66caf",
+          "message": "feat(agents/mcp): Prefix mcp tools with the server name (#958)",
+          "timestamp": "2025-11-04T10:00:41+01:00",
+          "tree_id": "607917484df9531f727ce42ff38fe487dc1ed1f8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ce724e56034d717aafde08bb6c2d9dc163c66caf"
+        },
+        "date": 1762247362272,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 801713,
+            "range": "± 16269",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257876,
+            "range": "± 1529",
             "unit": "ns/iter"
           }
         ]
