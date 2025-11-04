@@ -294,14 +294,13 @@ pub(crate) fn ensure_tool_schema_required_matches_properties(
         .as_object_mut()
         .context("tool schema must be a JSON object")?;
 
-    let property_names: Vec<String> = match object.get("properties") {
-        Some(Value::Object(map)) => map.keys().cloned().collect(),
-        _ => {
-            object
-                .entry("required".to_string())
-                .or_insert_with(|| Value::Array(Vec::new()));
-            return Ok(());
-        }
+    let property_names: Vec<String> = if let Some(Value::Object(map)) = object.get("properties") {
+        map.keys().cloned().collect()
+    } else {
+        object
+            .entry("required".to_string())
+            .or_insert_with(|| Value::Array(Vec::new()));
+        return Ok(());
     };
 
     let required_entry = object
