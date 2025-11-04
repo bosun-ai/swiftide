@@ -25,10 +25,12 @@ use swiftide_core::chat_completion::{Usage, UsageBuilder};
 use swiftide_core::metrics::emit_usage;
 
 use super::GenericOpenAI;
-use super::ensure_tool_schema_additional_properties_false;
 use super::openai_error_to_language_model_error;
 use super::responses_api::{
     build_responses_request_from_chat, response_to_chat_completion, responses_stream_adapter,
+};
+use super::{
+    ensure_tool_schema_additional_properties_false, ensure_tool_schema_required_matches_properties,
 };
 use tracing_futures::Instrument;
 
@@ -488,12 +490,15 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
         None => json!({
             "type": "object",
             "properties": {},
+            "required": [],
             "additionalProperties": false,
         }),
     };
 
     ensure_tool_schema_additional_properties_false(&mut parameters)
         .context("tool schema must allow no additional properties")?;
+    ensure_tool_schema_required_matches_properties(&mut parameters)
+        .context("tool schema must list required properties")?;
     tracing::debug!(
         parameters = serde_json::to_string_pretty(&parameters).unwrap(),
         tool = %spec.name,

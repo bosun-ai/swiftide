@@ -45,39 +45,40 @@ impl From<Stop> for Box<dyn Tool> {
 #[derive(Clone, Debug)]
 pub struct StopWithArgs {
     parameters_schema: Option<Schema>,
+    expects_output_field: bool,
 }
 
 impl Default for StopWithArgs {
     fn default() -> Self {
         Self {
             parameters_schema: Some(schema_for!(DefaultStopWithArgsSpec)),
+            expects_output_field: true,
         }
     }
 }
 
 impl StopWithArgs {
     /// Create a new `StopWithArgs` tool with a custom parameters schema.
+    ///
+    /// When providing a custom schema the full argument payload will be forwarded to the
+    /// stop output without requiring an `output` field wrapper.
     pub fn with_parameters_schema(schema: Schema) -> Self {
         Self {
             parameters_schema: Some(schema),
+            expects_output_field: false,
         }
     }
 
     fn parameters_schema(&self) -> Schema {
         self.parameters_schema
             .clone()
-            .unwrap_or_else(|| schema_for!(StopWithArgsArgs))
+            .unwrap_or_else(|| schema_for!(DefaultStopWithArgsSpec))
     }
 }
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 struct DefaultStopWithArgsSpec {
     pub output: String,
-}
-
-#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
-struct StopWithArgsArgs {
-    pub output: serde_json::Value,
 }
 
 #[async_trait]
@@ -87,13 +88,21 @@ impl Tool for StopWithArgs {
         _agent_context: &dyn AgentContext,
         tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        let args: StopWithArgsArgs = serde_json::from_str(
-            tool_call
-                .args()
-                .ok_or(ToolError::missing_arguments("output"))?,
-        )?;
+        let raw_args = tool_call
+            .args()
+            .ok_or_else(|| ToolError::missing_arguments("arguments"))?;
 
-        Ok(ToolOutput::stop_with_args(args.output))
+        let json: serde_json::Value = serde_json::from_str(raw_args)?;
+
+        let output = if self.expects_output_field {
+            json.get("output")
+                .cloned()
+                .ok_or_else(|| ToolError::missing_arguments("output"))?
+        } else {
+            json
+        };
+
+        Ok(ToolOutput::stop_with_args(output))
     }
 
     fn name(&self) -> Cow<'_, str> {
@@ -101,13 +110,14 @@ impl Tool for StopWithArgs {
     }
 
     fn tool_spec(&self) -> ToolSpec {
-        let mut builder = ToolSpec::builder()
-            .name("stop")
-            .description("When you have completed, your task, call this with your expected output");
-
         let schema = self.parameters_schema();
 
-        builder.parameters_schema(schema).build().unwrap()
+        ToolSpec::builder()
+            .name("stop")
+            .description("When you have completed, your task, call this with your expected output")
+            .parameters_schema(schema)
+            .build()
+            .unwrap()
     }
 }
 
@@ -213,6 +223,7 @@ impl From<ApprovalRequired> for Box<dyn Tool> {
 mod tests {
     use super::*;
     use schemars::schema_for;
+    use serde_json::json;
 
     fn dummy_tool_call(name: &str, args: Option<&str>) -> ToolCall {
         let mut builder = ToolCall::builder().name(name).id("1").to_owned();
@@ -263,12 +274,28 @@ mod tests {
         assert_eq!(out, ToolOutput::Stop(None));
     }
 
+    #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    struct CustomStopArgs {
+        value: i32,
+    }
+
     #[test]
-    fn test_stop_with_args_custom_schema() {
-        let schema = schema_for!(StopWithArgsArgs);
+    fn test_stop_with_args_custom_schema_in_spec() {
+        let schema = schema_for!(CustomStopArgs);
         let tool = StopWithArgs::with_parameters_schema(schema.clone());
         let spec = tool.tool_spec();
         assert_eq!(spec.parameters_schema, Some(schema));
+    }
+
+    #[tokio::test]
+    async fn test_stop_with_args_custom_schema_forwards_payload() {
+        let schema = schema_for!(CustomStopArgs);
+        let tool = StopWithArgs::with_parameters_schema(schema);
+        let ctx = ();
+        let args = r#"{"value":42}"#;
+        let tool_call = dummy_tool_call("stop", Some(args));
+        let out = tool.invoke(&ctx, &tool_call).await.unwrap();
+        assert_eq!(out, ToolOutput::stop_with_args(json!({"value": 42})));
     }
 
     #[test]

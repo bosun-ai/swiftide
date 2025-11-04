@@ -19,7 +19,7 @@ use swiftide_core::chat_completion::{
 
 use super::{
     GenericOpenAI, ensure_tool_schema_additional_properties_false,
-    openai_error_to_language_model_error,
+    ensure_tool_schema_required_matches_properties, openai_error_to_language_model_error,
 };
 use crate::openai::LanguageModelError;
 
@@ -143,12 +143,15 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
         None => json!({
             "type": "object",
             "properties": {},
+            "required": [],
             "additionalProperties": false,
         }),
     };
 
     ensure_tool_schema_additional_properties_false(&mut parameters)
         .context("tool schema must allow no additional properties")?;
+    ensure_tool_schema_required_matches_properties(&mut parameters)
+        .context("tool schema must list required properties")?;
 
     let function = FunctionArgs::default()
         .name(&spec.name)
@@ -218,6 +221,7 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                     ToolOutput::AgentFailed(message) => {
                         serde_json::Value::String(message.clone().unwrap_or_default().into_owned())
                     }
+                    _ => serde_json::Value::Null,
                 };
 
                 payload.insert("output".into(), output_value);
