@@ -167,8 +167,7 @@ impl ToolBox for McpToolbox {
 
         let filter = self.filter.as_ref().clone();
         let mut server_name = peer_info
-            .map(|info| info.server_info.name.as_str())
-            .unwrap_or("mcp")
+            .map_or("mcp", |info| info.server_info.name.as_str())
             .trim()
             .to_owned();
         if server_name.is_empty() {
