@@ -56,13 +56,13 @@ async fn main() -> Result<()> {
         .tools([stop_tool.clone()])
         .on_stop(|_, reason, _| {
             Box::pin(async move {
-                if let StopReason::RequestedByTool(_, payload) = reason {
-                    if let Some(payload) = payload {
-                        println!(
-                            "agent stopped with structured payload:\n{}",
-                            to_string_pretty(&payload).unwrap_or_else(|_| payload.to_string()),
-                        );
-                    }
+                if let StopReason::RequestedByTool(_, payload) = reason
+                    && let Some(payload) = payload
+                {
+                    println!(
+                        "agent stopped with structured payload:\n{}",
+                        to_string_pretty(&payload).unwrap_or_else(|_| payload.to_string()),
+                    );
                 }
                 Ok(())
             })
