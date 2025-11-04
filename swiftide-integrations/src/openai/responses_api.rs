@@ -263,8 +263,7 @@ fn normalize_responses_function_call_id(id: &str) -> String {
 #[derive(Default)]
 pub(super) struct ResponsesStreamState {
     response: ChatCompletionResponse,
-    tool_index_by_item_id: HashMap<String, usize>,
-    finished_emitted: bool,
+    finished: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -273,140 +272,114 @@ pub(super) struct ResponsesStreamItem {
     pub finished: bool,
 }
 
-#[derive(Debug)]
-enum EventAction {
-    None,
-    Emit(ResponsesStreamItem),
-}
-
 impl ResponsesStreamState {
     #[allow(clippy::too_many_lines)]
-    fn apply_event(&mut self, event: ResponseEvent, stream_full: bool) -> LmResult<EventAction> {
-        if self.finished_emitted {
-            return Ok(EventAction::None);
+    fn apply_event(
+        &mut self,
+        event: ResponseEvent,
+        stream_full: bool,
+    ) -> LmResult<Option<ResponsesStreamItem>> {
+        if self.finished {
+            return Ok(None);
         }
 
-        match event {
+        let maybe_item = match event {
             ResponseEvent::ResponseOutputTextDelta(delta) => {
                 self.response
                     .append_message_delta(Some(delta.delta.as_str()));
-                return Ok(self.emit(stream_full, false));
+                Some(self.emit(stream_full, false))
             }
             ResponseEvent::ResponseContentPartAdded(part) => {
-                if let Some(text) = part.part.text.as_ref() {
-                    self.response.append_message_delta(Some(text.as_str()));
-                    return Ok(self.emit(stream_full, false));
-                }
-            }
-            ResponseEvent::ResponseFunctionCallArgumentsDelta(delta) => {
-                let index = self.ensure_tool_index(&delta.item_id, delta.output_index as usize);
-                self.response
-                    .append_tool_call_delta(index, None, None, Some(delta.delta.as_str()));
-                return Ok(self.emit(stream_full, false));
+                part.part.text.as_deref().map(|text| {
+                    self.response.append_message_delta(Some(text));
+                    self.emit(stream_full, false)
+                })
             }
             ResponseEvent::ResponseOutputItemAdded(event) => match event.item {
                 OutputItem::FunctionCall(function_call) => {
-                    let idx = event.output_index as usize;
-                    self.tool_index_by_item_id
-                        .insert(function_call.id.clone(), idx);
-                    if !function_call.call_id.is_empty() {
-                        self.tool_index_by_item_id
-                            .insert(function_call.call_id.clone(), idx);
-                    }
-
-                    let id = if function_call.call_id.is_empty() {
-                        function_call.id.clone()
-                    } else {
-                        function_call.call_id.clone()
-                    };
-
-                    let arguments = if function_call.arguments.is_empty() {
-                        None
-                    } else {
-                        Some(function_call.arguments.as_str())
-                    };
-
+                    let index = event.output_index as usize;
+                    let id = function_call_identifier(&function_call);
+                    let arguments = (!function_call.arguments.is_empty())
+                        .then_some(function_call.arguments.as_str());
                     self.response.append_tool_call_delta(
-                        idx,
-                        Some(id.as_str()),
+                        index,
+                        Some(id),
                         Some(function_call.name.as_str()),
                         arguments,
                     );
-
-                    return Ok(self.emit(stream_full, false));
+                    Some(self.emit(stream_full, false))
                 }
                 OutputItem::Message(message) => {
-                    if let Some(text) = collect_message_text_from_message(&message) {
+                    collect_message_text_from_message(&message).map(|text| {
                         self.response.append_message_delta(Some(text.as_str()));
-                        return Ok(self.emit(stream_full, false));
-                    }
+                        self.emit(stream_full, false)
+                    })
                 }
-                _ => {}
+                _ => None,
             },
             ResponseEvent::ResponseOutputItemDone(event) => {
                 if let OutputItem::FunctionCall(function_call) = event.item {
-                    let idx = event.output_index as usize;
-                    self.tool_index_by_item_id
-                        .insert(function_call.id.clone(), idx);
-                    if !function_call.call_id.is_empty() {
-                        self.tool_index_by_item_id
-                            .insert(function_call.call_id.clone(), idx);
-                    }
-
-                    let id = if function_call.call_id.is_empty() {
-                        function_call.id
-                    } else {
-                        function_call.call_id
-                    };
+                    let index = event.output_index as usize;
+                    let id = function_call_identifier(&function_call);
                     self.response.append_tool_call_delta(
-                        idx,
-                        Some(id.as_str()),
+                        index,
+                        Some(id),
                         Some(function_call.name.as_str()),
                         None,
                     );
-                    return Ok(self.emit(stream_full, false));
+                    Some(self.emit(stream_full, false))
+                } else {
+                    None
                 }
             }
+            ResponseEvent::ResponseFunctionCallArgumentsDelta(delta) => {
+                let index = delta.output_index as usize;
+                self.response
+                    .append_tool_call_delta(index, None, None, Some(delta.delta.as_str()));
+                Some(self.emit(stream_full, false))
+            }
             ResponseEvent::ResponseFunctionCallArgumentsDone(done) => {
-                let index = self.ensure_tool_index(&done.item_id, done.output_index as usize);
+                let index = done.output_index as usize;
 
-                let duplicate_arguments = (!done.arguments.is_empty()).then(|| {
-                    self.response
+                let name = (!done.name.is_empty()).then_some(done.name.as_str());
+
+                let mut arguments = None;
+                if !done.arguments.is_empty() {
+                    let new_args = done.arguments.as_str();
+                    let duplicate = self
+                        .response
                         .tool_calls
                         .as_ref()
                         .and_then(|calls| calls.get(index))
                         .and_then(|tc| tc.args())
-                        .is_some_and(|existing| existing == done.arguments)
-                });
-
-                let arguments =
-                    if matches!(duplicate_arguments, Some(true)) || done.arguments.is_empty() {
-                        None
-                    } else {
-                        Some(done.arguments.as_str())
-                    };
-
-                let name = (!done.name.is_empty()).then_some(done.name.as_str());
-
-                if arguments.is_some() || name.is_some() {
-                    self.response
-                        .append_tool_call_delta(index, None, name, arguments);
-                    return Ok(self.emit(stream_full, false));
+                        .is_some_and(|existing| existing == new_args);
+                    if !duplicate {
+                        arguments = Some(new_args);
+                    }
                 }
 
-                return Ok(EventAction::None);
+                if name.is_some() || arguments.is_some() {
+                    self.response
+                        .append_tool_call_delta(index, None, name, arguments);
+                    Some(self.emit(stream_full, false))
+                } else {
+                    None
+                }
             }
             ResponseEvent::ResponseCompleted(completed) => {
                 metadata_to_chat_completion(&completed.response, &mut self.response)?;
                 self.response.delta = None;
-                return Ok(self.emit(stream_full, true));
+                self.finished = true;
+                Some(self.emit(stream_full, true))
             }
             ResponseEvent::ResponseIncomplete(incomplete) => {
                 metadata_to_chat_completion(&incomplete.response, &mut self.response)?;
                 self.response.delta = None;
-                return Ok(self.emit(stream_full, true));
+                self.finished = true;
+                Some(self.emit(stream_full, true))
             }
             ResponseEvent::ResponseFailed(failed) => {
+                self.finished = true;
                 let message = failed.response.error.as_ref().map_or_else(
                     || "Responses API stream failed".to_string(),
                     |err| format!("{}: {}", err.code, err.message),
@@ -414,19 +387,16 @@ impl ResponsesStreamState {
                 return Err(LanguageModelError::permanent(message));
             }
             ResponseEvent::ResponseError(error) => {
+                self.finished = true;
                 return Err(LanguageModelError::permanent(error.message));
             }
-            _ => {}
-        }
+            _ => None,
+        };
 
-        Ok(EventAction::None)
+        Ok(maybe_item)
     }
 
-    pub fn snapshot(&mut self, stream_full: bool, finished: bool) -> ResponsesStreamItem {
-        if finished {
-            self.finished_emitted = true;
-        }
-
+    fn emit(&self, stream_full: bool, finished: bool) -> ResponsesStreamItem {
         let mut response = if stream_full || finished {
             self.response.clone()
         } else {
@@ -446,15 +416,13 @@ impl ResponsesStreamState {
         ResponsesStreamItem { response, finished }
     }
 
-    fn ensure_tool_index(&mut self, item_id: &str, output_index: usize) -> usize {
-        *self
-            .tool_index_by_item_id
-            .entry(item_id.to_owned())
-            .or_insert(output_index)
-    }
-
-    fn emit(&mut self, stream_full: bool, finished: bool) -> EventAction {
-        EventAction::Emit(self.snapshot(stream_full, finished))
+    fn take_final(&mut self, stream_full: bool) -> Option<ResponsesStreamItem> {
+        if self.finished {
+            None
+        } else {
+            self.finished = true;
+            Some(self.emit(stream_full, true))
+        }
     }
 }
 
@@ -507,13 +475,13 @@ impl Stream for ResponsesStreamAdapter {
                     };
 
                     match this.state.apply_event(event, this.stream_full) {
-                        Ok(EventAction::None) => {}
-                        Ok(EventAction::Emit(item)) => {
+                        Ok(Some(item)) => {
                             if item.finished {
                                 this.finished = true;
                             }
                             return Poll::Ready(Some(Ok(item)));
                         }
+                        Ok(None) => {}
                         Err(err) => {
                             this.finished = true;
                             return Poll::Ready(Some(Err(err)));
@@ -522,13 +490,10 @@ impl Stream for ResponsesStreamAdapter {
                 }
                 Poll::Ready(None) => {
                     this.finished = true;
-
-                    if this.state.finished_emitted {
-                        return Poll::Ready(None);
+                    if let Some(item) = this.state.take_final(this.stream_full) {
+                        return Poll::Ready(Some(Ok(item)));
                     }
-
-                    let item = this.state.snapshot(this.stream_full, true);
-                    return Poll::Ready(Some(Ok(item)));
+                    return Poll::Ready(None);
                 }
                 Poll::Pending => return Poll::Pending,
             }
@@ -665,27 +630,21 @@ fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
 }
 
 fn collect_tool_calls(output: &[OutputContent]) -> LmResult<Vec<ToolCall>> {
-    let mut tool_calls = Vec::new();
+    let calls = output.iter().filter_map(|item| match item {
+        OutputContent::FunctionCall(function_call) => Some(function_call),
+        _ => None,
+    });
 
-    for item in output {
-        if let OutputContent::FunctionCall(function_call) = item {
-            tool_calls.push(tool_call_from_function_call(function_call)?);
-        }
-    }
-
-    Ok(tool_calls)
+    tool_calls_from_iter(calls)
 }
 
 fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall>> {
-    let mut tool_calls = Vec::new();
+    let calls = output.iter().filter_map(|item| match item {
+        OutputItem::FunctionCall(function_call) => Some(function_call),
+        _ => None,
+    });
 
-    for item in output {
-        if let OutputItem::FunctionCall(function_call) = item {
-            tool_calls.push(tool_call_from_function_call(function_call)?);
-        }
-    }
-
-    Ok(tool_calls)
+    tool_calls_from_iter(calls)
 }
 
 fn tool_call_from_function_call(
@@ -707,6 +666,24 @@ fn tool_call_from_function_call(
         .build()
         .context("Failed to build tool call")
         .map_err(LanguageModelError::permanent)
+}
+
+fn tool_calls_from_iter<'a, I>(calls: I) -> LmResult<Vec<ToolCall>>
+where
+    I: IntoIterator<Item = &'a async_openai::types::responses::FunctionCall>,
+{
+    calls
+        .into_iter()
+        .map(tool_call_from_function_call)
+        .collect::<Result<Vec<_>, _>>()
+}
+
+fn function_call_identifier(function_call: &async_openai::types::responses::FunctionCall) -> &str {
+    if function_call.call_id.is_empty() {
+        function_call.id.as_str()
+    } else {
+        function_call.call_id.as_str()
+    }
 }
 
 pub(super) fn build_responses_request_from_prompt<C>(
@@ -786,15 +763,22 @@ mod tests {
 
     use crate::openai::{OpenAI, Options};
 
-    fn expect_emit(action: EventAction) -> ResponsesStreamItem {
-        match action {
-            EventAction::Emit(item) => item,
-            EventAction::None => panic!("expected emit, got EventAction::None"),
-        }
+    fn expect_emit(
+        state: &mut ResponsesStreamState,
+        event: ResponseEvent,
+        stream_full: bool,
+    ) -> ResponsesStreamItem {
+        state
+            .apply_event(event, stream_full)
+            .unwrap()
+            .expect("expected emission")
     }
 
-    fn expect_none(action: &EventAction) {
-        assert!(matches!(action, EventAction::None));
+    fn expect_no_emit(state: &mut ResponsesStreamState, event: ResponseEvent, stream_full: bool) {
+        assert!(
+            state.apply_event(event, stream_full).unwrap().is_none(),
+            "expected no emission"
+        );
     }
 
     fn sample_usage() -> ResponsesUsage {
@@ -1006,9 +990,9 @@ mod tests {
         .unwrap();
 
         let chunk = expect_emit(
-            state
-                .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
-                .unwrap(),
+            &mut state,
+            ResponseEvent::ResponseOutputTextDelta(delta),
+            false,
         );
 
         assert_eq!(
@@ -1035,9 +1019,9 @@ mod tests {
         .unwrap();
 
         expect_emit(
-            state
-                .apply_event(ResponseEvent::ResponseOutputItemAdded(item_added), false)
-                .unwrap(),
+            &mut state,
+            ResponseEvent::ResponseOutputItemAdded(item_added),
+            false,
         );
 
         let args_delta: ResponseFunctionCallArgumentsDelta = serde_json::from_value(json!({
@@ -1049,12 +1033,9 @@ mod tests {
         .unwrap();
 
         expect_emit(
-            state
-                .apply_event(
-                    ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
-                    false,
-                )
-                .unwrap(),
+            &mut state,
+            ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
+            false,
         );
 
         let args_done: ResponseFunctionCallArgumentsDone = serde_json::from_value(json!({
@@ -1067,12 +1048,9 @@ mod tests {
         .unwrap();
 
         expect_emit(
-            state
-                .apply_event(
-                    ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
-                    false,
-                )
-                .unwrap(),
+            &mut state,
+            ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
+            false,
         );
 
         let usage = sample_usage();
@@ -1090,9 +1068,9 @@ mod tests {
         .unwrap();
 
         let final_chunk = expect_emit(
-            state
-                .apply_event(ResponseEvent::ResponseCompleted(completed), false)
-                .unwrap(),
+            &mut state,
+            ResponseEvent::ResponseCompleted(completed),
+            false,
         );
         assert!(final_chunk.finished);
 
@@ -1110,17 +1088,14 @@ mod tests {
     }
 
     #[test]
-    fn test_stream_accumulator_tracks_finished_emission() {
+    fn test_stream_state_take_final_only_once() {
         let mut state = ResponsesStreamState::default();
-        assert!(!state.finished_emitted);
-
-        let chunk = state.snapshot(true, true);
-        assert!(state.finished_emitted);
-        assert!(chunk.response.message().is_none());
+        assert!(state.take_final(true).is_some());
+        assert!(state.take_final(true).is_none());
     }
 
     #[test]
-    fn test_stream_accumulator_skips_after_finished() {
+    fn test_stream_state_ignores_events_after_completion() {
         let mut state = ResponsesStreamState::default();
 
         let usage = sample_usage();
@@ -1138,9 +1113,9 @@ mod tests {
         .unwrap();
 
         let finished = expect_emit(
-            state
-                .apply_event(ResponseEvent::ResponseCompleted(completed), false)
-                .unwrap(),
+            &mut state,
+            ResponseEvent::ResponseCompleted(completed),
+            false,
         );
         assert!(finished.finished);
 
@@ -1153,10 +1128,10 @@ mod tests {
         }))
         .unwrap();
 
-        expect_none(
-            &state
-                .apply_event(ResponseEvent::ResponseOutputTextDelta(delta), false)
-                .unwrap(),
+        expect_no_emit(
+            &mut state,
+            ResponseEvent::ResponseOutputTextDelta(delta),
+            false,
         );
     }
 

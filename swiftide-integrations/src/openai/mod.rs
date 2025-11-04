@@ -4,11 +4,13 @@
 //! on the "openai" feature flag.
 
 use anyhow::Context as _;
-use async_openai::error::OpenAIError;
+use async_openai::error::{OpenAIError, StreamError};
 use async_openai::types::CreateChatCompletionRequestArgs;
 use async_openai::types::CreateEmbeddingRequestArgs;
 use async_openai::types::ReasoningEffort;
 use derive_builder::Builder;
+use reqwest::StatusCode;
+use reqwest_eventsource::Error as EventSourceError;
 use serde_json::Value;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -543,19 +545,19 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
             // recoverable
             LanguageModelError::transient(e)
         }
-        OpenAIError::JSONDeserialize(_) => {
+        OpenAIError::JSONDeserialize(_, _) => {
             // OpenAI generated a non-json response, probably a temporary problem on their side
             // (i.e. reverse proxy can't find an available backend)
             LanguageModelError::transient(e)
         }
-        OpenAIError::StreamError(e) => {
+        OpenAIError::StreamError(stream_error) => {
             // Note that this will _retry_ the stream. We have to assume that the stream just
-            // started if a 429 happens. For future readers, internally clients streaming crate
-            // (eventsource), has a backoff mechanism as well
-            if e.contains("Too Many Requests") {
-                LanguageModelError::transient(e)
+            // started if a 429 happens. For future readers, internally the streaming crate
+            // (eventsource) already applies backoff.
+            if is_rate_limited_stream_error(&stream_error) {
+                LanguageModelError::transient(OpenAIError::StreamError(stream_error))
             } else {
-                LanguageModelError::permanent(e)
+                LanguageModelError::permanent(OpenAIError::StreamError(stream_error))
             }
         }
         OpenAIError::FileSaveError(_)
@@ -564,10 +566,26 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
     }
 }
 
+fn is_rate_limited_stream_error(error: &StreamError) -> bool {
+    match error {
+        StreamError::ReqwestEventSource(inner) => match inner {
+            EventSourceError::InvalidStatusCode(status, _) => {
+                *status == StatusCode::TOO_MANY_REQUESTS
+            }
+            EventSourceError::Transport(source) => {
+                source.status() == Some(StatusCode::TOO_MANY_REQUESTS)
+            }
+            _ => false,
+        },
+        StreamError::UnknownEvent(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use async_openai::error::{ApiError, OpenAIError};
+    use async_openai::error::{ApiError, OpenAIError, StreamError};
+    use eventsource_stream::Event;
 
     /// test default embed model
     #[test]
@@ -677,7 +695,7 @@ mod test {
     #[test]
     fn test_stream_error_is_permanent() {
         // Create a stream error
-        let openai_error = OpenAIError::StreamError("Stream failed".to_string());
+        let openai_error = OpenAIError::StreamError(StreamError::UnknownEvent(Event::default()));
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as PermanentError

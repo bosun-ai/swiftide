@@ -506,7 +506,7 @@ impl<T: Chunk> Pipeline<T> {
     /// Throttles the stream of nodes, limiting the rate to 1 per duration.
     ///
     /// Useful for rate limiting the indexing pipeline. Uses `tokio_stream::StreamExt::throttle`
-    /// internally which has a granualarity of 1ms.
+    /// internally which has a granularity of 1ms.
     #[must_use]
     pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
         self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
