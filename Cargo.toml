@@ -137,6 +137,7 @@ wiremock = { version = "0.6" }
 test-case = { version = "3.3" }
 pretty_assertions = { version = "1.4" }
 insta = { version = "1.43", features = ["yaml", "filters"] }
+eventsource-stream = { version = "0.2" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

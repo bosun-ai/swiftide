@@ -132,6 +132,7 @@ indoc = { workspace = true }
 insta = { workspace = true }
 wiremock = { workspace = true }
 tokio-stream = { workspace = true }
+eventsource-stream.workspace = true
 
 
 [features]
