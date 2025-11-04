@@ -165,15 +165,38 @@ impl ToolBox for McpToolbox {
             .await
             .context("Failed to list tools")?;
 
+        let filter = self.filter.as_ref().clone();
+        let mut server_name = peer_info
+            .map_or("mcp", |info| info.server_info.name.as_str())
+            .trim()
+            .to_owned();
+        if server_name.is_empty() {
+            server_name = "mcp".into();
+        }
+
         let tools = tools
             .into_iter()
-            .map(|t| {
-                let schema_value = t.schema_as_json_value();
-                tracing::trace!(schema = ?schema_value, "Parsing tool input schema for {}", t.name);
+            .filter(|tool| match &filter {
+                Some(ToolFilter::Blacklist(blacklist)) => {
+                    !blacklist.iter().any(|blocked| blocked == &tool.name)
+                }
+                Some(ToolFilter::Whitelist(whitelist)) => {
+                    whitelist.iter().any(|allowed| allowed == &tool.name)
+                }
+                None => true,
+            })
+            .map(|tool| {
+                let schema_value = tool.schema_as_json_value();
+                tracing::trace!(
+                    schema = ?schema_value,
+                    "Parsing tool input schema for {}",
+                    tool.name
+                );
 
                 let mut tool_spec_builder = ToolSpec::builder();
-                tool_spec_builder.name(t.name.clone());
-                tool_spec_builder.description(t.description.unwrap_or_default());
+                let registered_name = format!("{}:{}", server_name, tool.name);
+                tool_spec_builder.name(registered_name.clone());
+                tool_spec_builder.description(tool.description.unwrap_or_default());
 
                 match schema_value {
                     serde_json::Value::Null => {}
@@ -187,36 +210,16 @@ impl ToolBox for McpToolbox {
                 let tool_spec = tool_spec_builder
                     .build()
                     .context("Failed to build tool spec")?;
-
                 Ok(Box::new(McpTool {
                     client: Arc::clone(&self.service),
-                    tool_name: t.name.into(),
+                    registered_name,
+                    server_tool_name: tool.name.into(),
                     tool_spec,
                 }) as Box<dyn Tool>)
             })
             .collect::<Result<Vec<_>>>()
             .context("Failed to build mcp tool specs")?;
-
-        if let Some(filter) = self.filter.as_ref() {
-            match filter {
-                ToolFilter::Blacklist(blacklist) => {
-                    let blacklist = blacklist.iter().map(String::as_str).collect::<Vec<_>>();
-                    Ok(tools
-                        .into_iter()
-                        .filter(|t| !blacklist.contains(&t.name().as_ref()))
-                        .collect())
-                }
-                ToolFilter::Whitelist(whitelist) => {
-                    let whitelist = whitelist.iter().map(String::as_str).collect::<Vec<_>>();
-                    Ok(tools
-                        .into_iter()
-                        .filter(|t| whitelist.contains(&t.name().as_ref()))
-                        .collect())
-                }
-            }
-        } else {
-            Ok(tools)
-        }
+        Ok(tools)
     }
 
     fn name(&self) -> Cow<'_, str> {
@@ -227,7 +230,8 @@ impl ToolBox for McpToolbox {
 #[derive(Clone)]
 struct McpTool {
     client: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParam>>>>,
-    tool_name: String,
+    registered_name: String,
+    server_tool_name: String,
     tool_spec: ToolSpec,
 }
 
@@ -247,7 +251,7 @@ impl Tool for McpTool {
         };
 
         let request = CallToolRequestParam {
-            name: self.tool_name.clone().into(),
+            name: self.server_tool_name.clone().into(),
             arguments: args,
         };
 
@@ -291,7 +295,7 @@ impl Tool for McpTool {
     }
 
     fn name(&self) -> std::borrow::Cow<'_, str> {
-        self.tool_name.as_str().into()
+        self.registered_name.as_str().into()
     }
 
     fn tool_spec(&self) -> ToolSpec {
@@ -307,6 +311,7 @@ mod tests {
     use tokio::net::{UnixListener, UnixStream};
 
     const SOCKET_PATH: &str = "/tmp/swiftide-mcp.sock";
+    const EXPECTED_PREFIX: &str = "rmcp";
 
     #[allow(clippy::similar_names)]
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
@@ -328,11 +333,19 @@ mod tests {
         let t = client.available_tools().await.unwrap();
         assert_eq!(client.available_tools().await.unwrap().len(), 3);
 
-        let mut names = t.iter().map(|t| t.name()).collect::<Vec<_>>();
+        let mut names = t.iter().map(|t| t.name().into_owned()).collect::<Vec<_>>();
         names.sort();
-        assert_eq!(names, ["optional", "sub", "sum"]);
+        assert_eq!(
+            names,
+            [
+                format!("{EXPECTED_PREFIX}:optional"),
+                format!("{EXPECTED_PREFIX}:sub"),
+                format!("{EXPECTED_PREFIX}:sum")
+            ]
+        );
 
-        let sum_tool = t.iter().find(|t| t.name() == "sum").unwrap();
+        let sum_name = format!("{EXPECTED_PREFIX}:sum");
+        let sum_tool = t.iter().find(|t| t.name().as_ref() == sum_name).unwrap();
         let mut builder = ToolCall::builder()
             .id("some")
             .args(r#"{"b": "hello"}"#)
@@ -340,7 +353,7 @@ mod tests {
             .name("test")
             .to_owned();
 
-        assert_eq!(sum_tool.tool_spec().name, "sum");
+        assert_eq!(sum_tool.tool_spec().name, sum_name);
 
         let tool_call = builder.args(r#"{"a": 10, "b": 20}"#).build().unwrap();
 
@@ -353,8 +366,9 @@ mod tests {
             .to_string();
         assert_eq!(result, "30");
 
-        let sub_tool = t.iter().find(|t| t.name() == "sub").unwrap();
-        assert_eq!(sub_tool.tool_spec().name, "sub");
+        let sub_name = format!("{EXPECTED_PREFIX}:sub");
+        let sub_tool = t.iter().find(|t| t.name().as_ref() == sub_name).unwrap();
+        assert_eq!(sub_tool.tool_spec().name, sub_name);
 
         let tool_call = builder.args(r#"{"a": 10, "b": 20}"#).build().unwrap();
 
@@ -368,8 +382,12 @@ mod tests {
         assert_eq!(result, "-10");
 
         // The input schema type for the input param is string with null allowed
-        let optional_tool = t.iter().find(|t| t.name() == "optional").unwrap();
-        assert_eq!(optional_tool.tool_spec().name, "optional");
+        let optional_name = format!("{EXPECTED_PREFIX}:optional");
+        let optional_tool = t
+            .iter()
+            .find(|t| t.name().as_ref() == optional_name)
+            .unwrap();
+        assert_eq!(optional_tool.tool_spec().name, optional_name);
         let spec = optional_tool.tool_spec();
         let schema = spec
             .parameters_schema
