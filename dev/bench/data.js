@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1762340413402,
+  "lastUpdate": 1762343576436,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28985,6 +28985,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258998,
             "range": "± 1739",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "449fb3be90cd9a3f7c3b85eb517989184a8bf48d",
+          "message": "chore: release v0.32.0 (#947)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n* `swiftide-macros`: 0.31.3 -> 0.32.0\n* `swiftide-indexing`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n* `swiftide-integrations`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n* `swiftide-langfuse`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n* `swiftide-query`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n* `swiftide`: 0.31.3 -> 0.32.0 (✓ API compatible changes)\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.32.0](https://github.com/bosun-ai/swiftide/compare/v0.31.3...v0.32.0)\n- 2025-11-05\n\n### New features\n\n-\n[9ae3331](https://github.com/bosun-ai/swiftide/commit/9ae33317bbcbf5e65e3aa7eb0bf378190b7c33b5)\n*(agents)* [**breaking**] Improve toolspec api with schemars and support\nall possible types\n([#940](https://github.com/bosun-ai/swiftide/pull/940))\n\n**BREAKING CHANGE**: macro-level `json_type` overrides beyond the basic\nprimitives are no longer enforced; rely on Rust type inference or\nprovide an explicit schemars-derived struct/custom schema when specific\nshapes are required\n\n-\n[a0cc8d7](https://github.com/bosun-ai/swiftide/commit/a0cc8d73a6ce9a82a03a78e8f83957d3c1455584)\n*(agents)* Stop with args with optional schema\n([#950](https://github.com/bosun-ai/swiftide/pull/950))\n\n-\n[8ad7d97](https://github.com/bosun-ai/swiftide/commit/8ad7d97b6911bd3c676c79a2d5318c31dad23e9f)\n*(agents)* Add configurable timeouts to commands and local executor\n([#963](https://github.com/bosun-ai/swiftide/pull/963))\n\n-\n[29289d3](https://github.com/bosun-ai/swiftide/commit/29289d37cb9c49fba89376c125194fc430c57a37)\n*(agents)* [**breaking**] Add working directories for executor and\ncommands ([#941](https://github.com/bosun-ai/swiftide/pull/941))\n\n**BREAKING CHANGE**: Add working directories for executor and commands\n([#941](https://github.com/bosun-ai/swiftide/pull/941))\n\n-\n[ce724e5](https://github.com/bosun-ai/swiftide/commit/ce724e56034d717aafde08bb6c2d9dc163c66caf)\n*(agents/mcp)* Prefix mcp tools with the server name\n([#958](https://github.com/bosun-ai/swiftide/pull/958))\n\n### Bug fixes\n\n-\n[04cd88b](https://github.com/bosun-ai/swiftide/commit/04cd88b74c7a0dd962c093181884db0afe7b6d2d)\n*(docs)* Replace `feature(doc_auto_cfg)` with `doc(auto_cfg)`\n\n-\n[7873ce5](https://github.com/bosun-ai/swiftide/commit/7873ce5941a7abf8ed60df4ec2ea8a7a4c1d1316)\n*(integrations/openai)* Simplefy responses api and improve chat\ncompletion request ergonomics\n([#956](https://github.com/bosun-ai/swiftide/pull/956))\n\n-\n[24328d0](https://github.com/bosun-ai/swiftide/commit/24328d07e61a4f02679ee6b63a38561d12acefd4)\n*(macros)* Ensure deny_unknown_attributes is set on generated args\n([#948](https://github.com/bosun-ai/swiftide/pull/948))\n\n-\n[54245d0](https://github.com/bosun-ai/swiftide/commit/54245d0e70aff580d0e12d68e174026edfdb4801)\nUpdate async-openai and fix responses api\n([#964](https://github.com/bosun-ai/swiftide/pull/964))\n\n-\n[72a6c92](https://github.com/bosun-ai/swiftide/commit/72a6c92764aeda4e88a7cf18d26ce600b7ba8a28)\nForce additionalProperties properly on completion requests\n([#949](https://github.com/bosun-ai/swiftide/pull/949))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.31.3...0.32.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2025-11-05T12:43:57+01:00",
+          "tree_id": "565179ad72821543aa760fe6ab983906050485d9",
+          "url": "https://github.com/bosun-ai/swiftide/commit/449fb3be90cd9a3f7c3b85eb517989184a8bf48d"
+        },
+        "date": 1762343573935,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796857,
+            "range": "± 15482",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257958,
+            "range": "± 4528",
             "unit": "ns/iter"
           }
         ]
