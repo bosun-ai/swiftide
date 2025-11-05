@@ -287,6 +287,44 @@ pub(crate) fn ensure_tool_schema_additional_properties_false(
     Ok(())
 }
 
+pub(crate) fn ensure_tool_schema_required_matches_properties(
+    parameters: &mut Value,
+) -> anyhow::Result<()> {
+    let object = parameters
+        .as_object_mut()
+        .context("tool schema must be a JSON object")?;
+
+    let property_names: Vec<String> = if let Some(Value::Object(map)) = object.get("properties") {
+        map.keys().cloned().collect()
+    } else {
+        object
+            .entry("required".to_string())
+            .or_insert_with(|| Value::Array(Vec::new()));
+        return Ok(());
+    };
+
+    let required_entry = object
+        .entry("required".to_string())
+        .or_insert_with(|| Value::Array(Vec::new()));
+
+    let required_array = required_entry
+        .as_array_mut()
+        .context("tool schema 'required' must be an array")?;
+
+    for name in property_names {
+        let name_ref = name.as_str();
+        let already_present = required_array
+            .iter()
+            .any(|value| value.as_str().is_some_and(|s| s == name_ref));
+
+        if !already_present {
+            required_array.push(Value::String(name));
+        }
+    }
+
+    Ok(())
+}
+
 impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
     pub fn builder() -> OpenAIBuilder {

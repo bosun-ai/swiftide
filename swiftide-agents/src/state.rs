@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use swiftide_core::chat_completion::ToolCall;
 
 #[derive(Clone, Debug, Default, strum_macros::EnumDiscriminants, strum_macros::EnumIs)]
@@ -29,7 +30,7 @@ impl State {
 #[derive(Clone, Debug, strum_macros::EnumIs, PartialEq, Serialize, Deserialize)]
 pub enum StopReason {
     /// A tool called stop
-    RequestedByTool(ToolCall, Option<Cow<'static, str>>),
+    RequestedByTool(ToolCall, Option<Value>),
 
     /// Agent failed to complete with optional message
     AgentFailed(Option<Cow<'static, str>>),
@@ -52,9 +53,9 @@ pub enum StopReason {
 }
 
 impl StopReason {
-    pub fn as_requested_by_tool(&self) -> Option<(&ToolCall, Option<&str>)> {
+    pub fn as_requested_by_tool(&self) -> Option<(&ToolCall, Option<&Value>)> {
         if let StopReason::RequestedByTool(t, message) = self {
-            Some((t, message.as_deref()))
+            Some((t, message.as_ref()))
         } else {
             None
         }
