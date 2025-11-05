@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.32.0](https://github.com/bosun-ai/swiftide/compare/v0.31.3...v0.32.0) - 2025-11-05
+
+### New features
+
+- [9ae3331](https://github.com/bosun-ai/swiftide/commit/9ae33317bbcbf5e65e3aa7eb0bf378190b7c33b5) *(agents)*  [**breaking**] Improve toolspec api with schemars and support all possible types ([#940](https://github.com/bosun-ai/swiftide/pull/940))
+
+**BREAKING CHANGE**: macro-level `json_type` overrides beyond the basic
+primitives are no longer enforced; rely on Rust type inference or
+provide an explicit schemars-derived struct/custom schema when specific
+shapes are required
+
+- [a0cc8d7](https://github.com/bosun-ai/swiftide/commit/a0cc8d73a6ce9a82a03a78e8f83957d3c1455584) *(agents)*  Stop with args with optional schema ([#950](https://github.com/bosun-ai/swiftide/pull/950))
+
+- [8ad7d97](https://github.com/bosun-ai/swiftide/commit/8ad7d97b6911bd3c676c79a2d5318c31dad23e9f) *(agents)*  Add configurable timeouts to commands and local executor ([#963](https://github.com/bosun-ai/swiftide/pull/963))
+
+- [29289d3](https://github.com/bosun-ai/swiftide/commit/29289d37cb9c49fba89376c125194fc430c57a37) *(agents)*  [**breaking**] Add working directories for executor and commands ([#941](https://github.com/bosun-ai/swiftide/pull/941))
+
+**BREAKING CHANGE**: Add working directories for executor and commands ([#941](https://github.com/bosun-ai/swiftide/pull/941))
+
+- [ce724e5](https://github.com/bosun-ai/swiftide/commit/ce724e56034d717aafde08bb6c2d9dc163c66caf) *(agents/mcp)*  Prefix mcp tools with the server name ([#958](https://github.com/bosun-ai/swiftide/pull/958))
+
+### Bug fixes
+
+- [04cd88b](https://github.com/bosun-ai/swiftide/commit/04cd88b74c7a0dd962c093181884db0afe7b6d2d) *(docs)*  Replace `feature(doc_auto_cfg)` with `doc(auto_cfg)`
+
+- [7873ce5](https://github.com/bosun-ai/swiftide/commit/7873ce5941a7abf8ed60df4ec2ea8a7a4c1d1316) *(integrations/openai)*  Simplefy responses api and improve chat completion request ergonomics ([#956](https://github.com/bosun-ai/swiftide/pull/956))
+
+- [24328d0](https://github.com/bosun-ai/swiftide/commit/24328d07e61a4f02679ee6b63a38561d12acefd4) *(macros)*  Ensure deny_unknown_attributes is set on generated args ([#948](https://github.com/bosun-ai/swiftide/pull/948))
+
+- [54245d0](https://github.com/bosun-ai/swiftide/commit/54245d0e70aff580d0e12d68e174026edfdb4801)  Update async-openai and fix responses api ([#964](https://github.com/bosun-ai/swiftide/pull/964))
+
+- [72a6c92](https://github.com/bosun-ai/swiftide/commit/72a6c92764aeda4e88a7cf18d26ce600b7ba8a28)  Force additionalProperties properly on completion requests ([#949](https://github.com/bosun-ai/swiftide/pull/949))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.3...0.32.0
+
+
+
 ## [0.31.3](https://github.com/bosun-ai/swiftide/compare/v0.31.2...v0.31.3) - 2025-10-06
 
 ### New features

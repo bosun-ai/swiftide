@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.31" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.31" }
+swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.32" }
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
