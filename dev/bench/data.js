@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1762247364572,
+  "lastUpdate": 1762340413402,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -28931,6 +28931,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257876,
             "range": "± 1529",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a0cc8d73a6ce9a82a03a78e8f83957d3c1455584",
+          "message": "feat(agents): Stop with args with optional schema (#950)",
+          "timestamp": "2025-11-05T11:51:33+01:00",
+          "tree_id": "5075329ad138fe527bba64bfb43023ae3837c1e3",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a0cc8d73a6ce9a82a03a78e8f83957d3c1455584"
+        },
+        "date": 1762340411480,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796779,
+            "range": "± 16255",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258998,
+            "range": "± 1739",
             "unit": "ns/iter"
           }
         ]
