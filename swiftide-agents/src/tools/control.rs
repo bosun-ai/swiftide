@@ -176,15 +176,13 @@ impl Tool for AgentCanFail {
         _agent_context: &dyn AgentContext,
         tool_call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        let raw_args = tool_call
-            .args()
-            .ok_or_else(|| {
-                if self.expects_reason_field {
-                    ToolError::missing_arguments("reason")
-                } else {
-                    ToolError::missing_arguments("arguments")
-                }
-            })?;
+        let raw_args = tool_call.args().ok_or_else(|| {
+            if self.expects_reason_field {
+                ToolError::missing_arguments("reason")
+            } else {
+                ToolError::missing_arguments("arguments")
+            }
+        })?;
 
         let reason = if self.expects_reason_field {
             let args: AgentFailedArgsSpec = serde_json::from_str(raw_args)?;
