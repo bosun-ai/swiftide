@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1762421380202,
+  "lastUpdate": 1762443083814,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29093,6 +29093,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 256622,
             "range": "± 3150",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8bca0efa246e6adac061006f5f72cc9dd038cc8f",
+          "message": "feat(integrations/tree-sitter): Add C# support (#967)\n\n- **Add tree-sitter-c-sharp**\n- **feat(integrations/tree-sitter): Add C# support**",
+          "timestamp": "2025-11-06T16:22:32+01:00",
+          "tree_id": "c7a6a65453c2abfc79bc250c39409f21b220819f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8bca0efa246e6adac061006f5f72cc9dd038cc8f"
+        },
+        "date": 1762443081365,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 796486,
+            "range": "± 16604",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 261477,
+            "range": "± 3534",
             "unit": "ns/iter"
           }
         ]
