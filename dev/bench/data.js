@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1762343576436,
+  "lastUpdate": 1762421380202,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29039,6 +29039,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257958,
             "range": "± 4528",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "6c4a693433ae6372e729d7a84f7846cc6c10d264",
+          "message": "fix: Include build.rs in release",
+          "timestamp": "2025-11-06T10:20:54+01:00",
+          "tree_id": "e64fa943f4420624c146cc2ce11ef17107408134",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6c4a693433ae6372e729d7a84f7846cc6c10d264"
+        },
+        "date": 1762421377382,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 779480,
+            "range": "± 14682",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 256622,
+            "range": "± 3150",
             "unit": "ns/iter"
           }
         ]
