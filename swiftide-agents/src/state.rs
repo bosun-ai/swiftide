@@ -1,7 +1,5 @@
 //! Internal state of the agent
 
-use std::borrow::Cow;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use swiftide_core::chat_completion::ToolCall;
@@ -33,7 +31,7 @@ pub enum StopReason {
     RequestedByTool(ToolCall, Option<Value>),
 
     /// Agent failed to complete with optional message
-    AgentFailed(Option<Cow<'static, str>>),
+    AgentFailed(Option<Value>),
 
     /// A tool repeatedly failed
     ToolCallsOverLimit(ToolCall),
