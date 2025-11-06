@@ -403,7 +403,7 @@ pub mod solidity {
 }
 // https://github.com/tree-sitter/tree-sitter-c-sharp/blob/master/queries/tags.scm
 pub mod csharp {
-    pub const DEFS: &str = r#"
+    pub const DEFS: &str = r"
         (class_declaration
             name: (identifier) @name)
 
@@ -415,9 +415,9 @@ pub mod csharp {
 
         (namespace_declaration
             name: (identifier) @name)
-    "#;
+    ";
 
-    pub const REFS: &str = r#"
+    pub const REFS: &str = r"
         (class_declaration
             (base_list (_) @name))
 
@@ -439,5 +439,5 @@ pub mod csharp {
         (invocation_expression
             function: (member_access_expression
                 name: (identifier) @name))
-    "#;
+    ";
 }
