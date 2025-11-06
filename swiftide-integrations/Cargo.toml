@@ -66,6 +66,7 @@ tree-sitter-go = { workspace = true, optional = true }
 tree-sitter-solidity = { workspace = true, optional = true }
 tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-cpp = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
 tree-sitter-elixir = { workspace = true, optional = true }
 tree-sitter-html = { workspace = true, optional = true }
 tree-sitter-php = { workspace = true, optional = true }
@@ -160,6 +161,7 @@ tree-sitter = [
   "dep:tree-sitter-solidity",
   "dep:tree-sitter-c",
   "dep:tree-sitter-cpp",
+  "dep:tree-sitter-c-sharp",
   "dep:tree-sitter-elixir",
   "dep:tree-sitter-html",
   "dep:tree-sitter-php",

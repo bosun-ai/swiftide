@@ -108,6 +108,7 @@ mod test {
     #[test_case("javascript", "function main() { console.log('Hello, World!'); }", "log", "main"; "javascript")]
     #[test_case("typescript", "function main() { console.log('Hello, World!'); }", "log", "main"; "typescript")]
     #[test_case("java", "public class Main { public static void main(String[] args) { System.out.println(\"Hello, World!\"); } }", "println", "Main,main"; "java")]
+    #[test_case("c-sharp", "public class Program { public static void Main(string[] args) { System.Console.WriteLine(\"Hello, World!\"); } }", "WriteLine", "Main,Program"; "c-sharp")]
     #[tokio::test]
     async fn assert_refs_defs_from_code(
         lang: &str,
