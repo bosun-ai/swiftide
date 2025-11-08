@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.32.1](https://github.com/bosun-ai/swiftide/compare/v0.32.0...v0.32.1) - 2025-11-08
+
+### New features
+
+- [8bca0ef](https://github.com/bosun-ai/swiftide/commit/8bca0efa246e6adac061006f5f72cc9dd038cc8f) *(integrations/tree-sitter)*  Add C# support ([#967](https://github.com/bosun-ai/swiftide/pull/967))
+
+- [da35870](https://github.com/bosun-ai/swiftide/commit/da358708c83459c7f990027759fa5c56a2b647b9)  Custom schema for fail tool ([#966](https://github.com/bosun-ai/swiftide/pull/966))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.32.0...0.32.1
+
+
+
 ## [0.32.0](https://github.com/bosun-ai/swiftide/compare/v0.31.3...v0.32.0) - 2025-11-05
 
 ### New features
