@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1762443083814,
+  "lastUpdate": 1762612486259,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29147,6 +29147,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 261477,
             "range": "± 3534",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "da358708c83459c7f990027759fa5c56a2b647b9",
+          "message": "feat: Custom schema for fail tool (#966)",
+          "timestamp": "2025-11-08T15:26:08+01:00",
+          "tree_id": "b60373cbaa4a77d20494a4b8c33924d647bc7b1f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/da358708c83459c7f990027759fa5c56a2b647b9"
+        },
+        "date": 1762612483873,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 780597,
+            "range": "± 18025",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258129,
+            "range": "± 1698",
             "unit": "ns/iter"
           }
         ]
