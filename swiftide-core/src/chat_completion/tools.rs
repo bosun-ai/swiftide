@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use derive_builder::Builder;
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
@@ -21,7 +19,7 @@ pub enum ToolOutput {
     Stop(Option<serde_json::Value>),
 
     /// Indicates that the agent failed and should stop
-    AgentFailed(Option<Cow<'static, str>>),
+    AgentFailed(Option<serde_json::Value>),
 }
 
 impl ToolOutput {
@@ -41,7 +39,7 @@ impl ToolOutput {
         ToolOutput::Stop(Some(output.into()))
     }
 
-    pub fn agent_failed(output: impl Into<Cow<'static, str>>) -> Self {
+    pub fn agent_failed(output: impl Into<serde_json::Value>) -> Self {
         ToolOutput::AgentFailed(Some(output.into()))
     }
 
@@ -81,9 +79,9 @@ impl ToolOutput {
     }
 
     /// Get the inner text if the output is an `AgentFailed` variant.
-    pub fn as_agent_failed(&self) -> Option<&str> {
+    pub fn as_agent_failed(&self) -> Option<&serde_json::Value> {
         match self {
-            ToolOutput::AgentFailed(args) => args.as_deref(),
+            ToolOutput::AgentFailed(args) => args.as_ref(),
             _ => None,
         }
     }
@@ -120,7 +118,7 @@ impl std::fmt::Display for ToolOutput {
             ToolOutput::AgentFailed(args) => write!(
                 f,
                 "Agent failed with output: {}",
-                args.as_deref().unwrap_or_default()
+                args.as_ref().unwrap_or_default()
             ),
         }
     }

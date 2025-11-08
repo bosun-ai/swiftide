@@ -160,6 +160,10 @@ name = "tasks"
 path = "tasks.rs"
 
 [[example]]
+name = "agent-can-fail-custom-schema"
+path = "agent_can_fail_custom_schema.rs"
+
+[[example]]
 name = "stop-with-args-custom-schema"
 path = "stop_with_args_custom_schema.rs"
 

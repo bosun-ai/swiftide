@@ -219,7 +219,7 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                     }
                     ToolOutput::Stop(message) => message.clone().unwrap_or(serde_json::Value::Null),
                     ToolOutput::AgentFailed(message) => {
-                        serde_json::Value::String(message.clone().unwrap_or_default().into_owned())
+                        message.clone().unwrap_or(serde_json::Value::Null)
                     }
                     _ => serde_json::Value::Null,
                 };
