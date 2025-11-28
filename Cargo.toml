@@ -23,9 +23,9 @@ anyhow = { version = "1.0", default-features = false }
 thiserror = { version = "2.0", default-features = false }
 async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
-fs-err = { version = "3.1", default-features = false }
+fs-err = { version = "3.2", default-features = false }
 futures-util = { version = "0.3", default-features = true }
-tokio = { version = "1.46", features = [
+tokio = { version = "1.48", features = [
   "rt-multi-thread",
   "time",
 ], default-features = false }
@@ -50,7 +50,7 @@ strum_macros = { version = "0.27", default-features = false }
 lazy_static = { version = "1.5", default-features = false }
 chrono = { version = "0.4", default-features = false }
 indoc = { version = "2.0", default-features = false }
-regex = { version = "1.11", default-features = false }
+regex = { version = "1.12", default-features = false }
 uuid = { version = "1.18", features = [
   "v3",
   "v4",
@@ -65,13 +65,13 @@ rmcp = { version = "0.5", default-features = false, features = [
   "macros",
   "server",
 ] }
-schemars = { version = "1.0", default-features = false }
+schemars = { version = "1.1", default-features = false }
 
 # Integrations
-spider = { version = "2.37", default-features = false }
+spider = { version = "2.38", default-features = false }
 # Needed because older responses api has issues
 async-openai = { version = ">=0.29.6", default-features = false }
-qdrant-client = { version = "1.15", default-features = false, features = [
+qdrant-client = { version = "1.16", default-features = false, features = [
   "serde",
 ] }
 fluvio = { version = "0.50.1", default-features = false }
@@ -88,7 +88,7 @@ sqlx = { version = "0.8", features = [
 aws-config = { version = "1.8", default-features = false }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
 aws-credential-types = { version = "1.2", default-features = false }
-aws-sdk-bedrockruntime = { version = "1.104", default-features = false }
+aws-sdk-bedrockruntime = { version = "1.107", default-features = false }
 criterion = { version = "0.7", default-features = false }
 darling = { version = "0.21", default-features = false }
 deadpool = { version = "0.12", default-features = false }
@@ -137,7 +137,7 @@ temp-dir = { version = "0.1" }
 wiremock = { version = "0.6" }
 test-case = { version = "3.3" }
 pretty_assertions = { version = "1.4" }
-insta = { version = "1.43", features = ["yaml", "filters"] }
+insta = { version = "1.44", features = ["yaml", "filters"] }
 eventsource-stream = { version = "0.2" }
 
 [workspace.lints.rust]
