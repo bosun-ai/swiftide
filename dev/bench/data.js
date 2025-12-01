@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1763215608716,
+  "lastUpdate": 1764605759477,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29255,6 +29255,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 262185,
             "range": "± 2180",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "283fbcfa9b161f99e216b2627301814e279c8c49",
+          "message": "feat: Add `scoped_owned` variant for owned executors with working dir",
+          "timestamp": "2025-12-01T17:06:40+01:00",
+          "tree_id": "442a75374d98c965ec75c61248a9f8b82fd91f76",
+          "url": "https://github.com/bosun-ai/swiftide/commit/283fbcfa9b161f99e216b2627301814e279c8c49"
+        },
+        "date": 1764605758075,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 797310,
+            "range": "± 15690",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259420,
+            "range": "± 1544",
             "unit": "ns/iter"
           }
         ]
