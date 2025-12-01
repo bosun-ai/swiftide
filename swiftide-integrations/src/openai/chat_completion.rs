@@ -64,8 +64,9 @@ impl<
             .as_ref()
             .context("Model not set")?;
 
-        let messages = request
-            .messages()
+        let (messages, completion_budget) = self.prepare_chat_messages(request).await?;
+
+        let messages = messages
             .iter()
             .map(message_to_openai)
             .collect::<Result<Vec<_>>>()?;
@@ -90,6 +91,10 @@ impl<
             if let Some(par) = self.default_options.parallel_tool_calls {
                 openai_request.parallel_tool_calls(par);
             }
+        }
+
+        if let Some(max_tokens) = completion_budget {
+            openai_request.max_completion_tokens(max_tokens);
         }
 
         let request = openai_request
@@ -172,8 +177,12 @@ impl<
         #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
         let _ = &model_name;
 
-        let messages = match request
-            .messages()
+        let (messages, completion_budget) = match self.prepare_chat_messages(request).await {
+            Ok(v) => v,
+            Err(e) => return e.into(),
+        };
+
+        let messages = match messages
             .iter()
             .map(message_to_openai)
             .collect::<Result<Vec<_>>>()
@@ -211,6 +220,10 @@ impl<
             if let Some(par) = self.default_options.parallel_tool_calls {
                 openai_request.parallel_tool_calls(par);
             }
+        }
+
+        if let Some(max_tokens) = completion_budget {
+            openai_request.max_completion_tokens(max_tokens);
         }
 
         let request = match openai_request.build() {
@@ -340,7 +353,10 @@ impl<
             .as_ref()
             .context("Model not set")?;
 
-        let create_request = build_responses_request_from_chat(self, request)?;
+        let (messages, completion_budget) = self.prepare_chat_messages(request).await?;
+
+        let create_request =
+            build_responses_request_from_chat(self, request, &messages, completion_budget)?;
 
         let response = self
             .client
@@ -371,10 +387,16 @@ impl<
             return LanguageModelError::permanent("Model not set").into();
         };
 
-        let mut create_request = match build_responses_request_from_chat(self, request) {
-            Ok(req) => req,
+        let (messages, completion_budget) = match self.prepare_chat_messages(request).await {
+            Ok(v) => v,
             Err(err) => return err.into(),
         };
+
+        let mut create_request =
+            match build_responses_request_from_chat(self, request, &messages, completion_budget) {
+                Ok(req) => req,
+                Err(err) => return err.into(),
+            };
 
         create_request.stream = Some(true);
 

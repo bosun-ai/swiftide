@@ -14,18 +14,24 @@ use reqwest_eventsource::Error as EventSourceError;
 use serde_json::Value;
 use std::pin::Pin;
 use std::sync::Arc;
+use swiftide_core::chat_completion::ChatCompletionRequest;
+use swiftide_core::chat_completion::ChatMessage;
 use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::errors::LanguageModelError;
+use token_estimator::TokenEstimator;
 
 mod chat_completion;
 mod embed;
+mod overflow;
 mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
+mod token_estimator;
 
 // expose type aliases to simplify downstream use of the open ai builder invocations
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
+pub use overflow::TokenOverflowStrategy;
 
 #[cfg(feature = "tiktoken")]
 use crate::tiktoken::TikToken;
@@ -33,8 +39,6 @@ use crate::tiktoken::TikToken;
 use anyhow::Result;
 #[cfg(feature = "tiktoken")]
 use swiftide_core::Estimatable;
-#[cfg(feature = "tiktoken")]
-use swiftide_core::EstimateTokens;
 
 /// The `OpenAI` struct encapsulates an `OpenAI` client and default options for embedding and prompt
 /// models. It uses the `Builder` pattern for flexible and customizable instantiation.
@@ -94,6 +98,14 @@ pub struct GenericOpenAI<
     #[cfg(feature = "tiktoken")]
     #[cfg_attr(feature = "tiktoken", builder(default))]
     pub(crate) tiktoken: TikToken,
+
+    /// Token estimator used for overflow checks.
+    #[builder(default = "token_estimator::default_token_estimator()", setter(custom))]
+    token_estimator: Arc<dyn TokenEstimator + Send + Sync>,
+
+    /// Optional strategy applied when the prompt would exceed a target budget.
+    #[builder(default, setter(strip_option))]
+    pub(crate) overflow_strategy: Option<TokenOverflowStrategy>,
 
     /// Convenience option to stream the full response. Defaults to true, because nobody has time
     /// to reconstruct the delta. Disabling this will make the streamed content only return the
@@ -369,6 +381,24 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
 
         self
     }
+
+    /// Set a custom token estimator used for overflow checks.
+    pub fn token_estimator<T>(&mut self, estimator: T) -> &mut Self
+    where
+        T: TokenEstimator + Send + Sync + 'static,
+    {
+        self.token_estimator = Some(Arc::new(estimator));
+        self
+    }
+
+    /// Configure how to handle prompts that would exceed a token budget.
+    pub fn token_overflow_strategy(
+        &mut self,
+        strategy: impl Into<Option<TokenOverflowStrategy>>,
+    ) -> &mut Self {
+        self.overflow_strategy = Some(strategy.into());
+        self
+    }
     /// Sets the `OpenAI` client for the `OpenAI` instance.
     ///
     /// # Parameters
@@ -489,6 +519,26 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
             ..self.default_options.clone()
         };
         self
+    }
+
+    /// Prepare messages and completion budget based on the configured overflow strategy.
+    pub(crate) async fn prepare_chat_messages(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<(Vec<ChatMessage>, Option<u32>), LanguageModelError> {
+        let mut messages = request.messages().to_owned();
+        let mut completion_budget = self.default_options.max_completion_tokens;
+
+        if let Some(strategy) = &self.overflow_strategy {
+            if let Some(budget) = strategy
+                .apply(&mut messages, self.token_estimator.as_ref())
+                .await?
+            {
+                completion_budget = Some(budget);
+            }
+        }
+
+        Ok((messages, completion_budget))
     }
 
     /// Retrieve a reference to the inner `OpenAI` client.
