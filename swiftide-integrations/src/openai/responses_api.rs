@@ -28,6 +28,8 @@ type LmResult<T> = Result<T, LanguageModelError>;
 pub(super) fn build_responses_request_from_chat<C>(
     client: &GenericOpenAI<C>,
     request: &ChatCompletionRequest,
+    messages: &[ChatMessage],
+    completion_override: Option<u32>,
 ) -> LmResult<CreateResponse>
 where
     C: async_openai::config::Config + Clone + Default,
@@ -38,9 +40,9 @@ where
         .as_ref()
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-    let mut args = base_request_args(client, model)?;
+    let mut args = base_request_args(client, model, completion_override)?;
 
-    let input_items = chat_messages_to_input_items(request.messages())?;
+    let input_items = chat_messages_to_input_items(messages)?;
     args.input(Input::Items(input_items));
 
     if !request.tools_spec().is_empty() {
@@ -60,7 +62,11 @@ where
     args.build().map_err(openai_error_to_language_model_error)
 }
 
-fn base_request_args<C>(client: &GenericOpenAI<C>, model: &str) -> LmResult<CreateResponseArgs>
+fn base_request_args<C>(
+    client: &GenericOpenAI<C>,
+    model: &str,
+    completion_override: Option<u32>,
+) -> LmResult<CreateResponseArgs>
 where
     C: async_openai::config::Config + Clone + Default,
 {
@@ -73,7 +79,7 @@ where
         args.parallel_tool_calls(parallel_tool_calls);
     }
 
-    if let Some(max_tokens) = options.max_completion_tokens {
+    if let Some(max_tokens) = completion_override.or(options.max_completion_tokens) {
         args.max_output_tokens(max_tokens);
     }
 
@@ -703,7 +709,7 @@ where
         .as_ref()
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-    let mut args = base_request_args(client, model)?;
+    let mut args = base_request_args(client, model, None)?;
     args.input(Input::Items(vec![InputItem::Message(
         InputMessageArgs::default()
             .role(Role::User)
@@ -729,7 +735,7 @@ where
         .as_ref()
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-    let mut args = base_request_args(client, model)?;
+    let mut args = base_request_args(client, model, None)?;
     args.input(Input::Items(vec![InputItem::Message(
         InputMessageArgs::default()
             .role(Role::User)
@@ -842,7 +848,8 @@ mod tests {
             .build()
             .unwrap();
 
-        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+        let create =
+            build_responses_request_from_chat(&openai, &request, request.messages(), None).unwrap();
 
         assert_eq!(create.model, "gpt-4.1");
         assert_eq!(create.user.as_deref(), Some("tester"));
@@ -886,7 +893,8 @@ mod tests {
             .build()
             .unwrap();
 
-        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+        let create =
+            build_responses_request_from_chat(&openai, &request, request.messages(), None).unwrap();
 
         let tools = create.tools.expect("tools present");
         assert_eq!(tools.len(), 1);
