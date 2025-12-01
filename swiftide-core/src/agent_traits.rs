@@ -101,9 +101,9 @@ impl<E> ScopedExecutor<E> {
 }
 
 #[async_trait]
-impl<'a, E> ToolExecutor for ScopedExecutor<&'a E>
+impl<E> ToolExecutor for ScopedExecutor<E>
 where
-    E: ToolExecutor + Send + Sync + 'a,
+    E: ToolExecutor + Send + Sync + Clone,
 {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         let scoped_cmd = self.apply_scope(cmd);
@@ -126,13 +126,21 @@ where
 pub trait ExecutorExt {
     /// Borrow `self` and return a wrapper that resolves relative operations inside `path`.
     fn scoped(&self, path: impl Into<PathBuf>) -> ScopedExecutor<&Self>;
+
+    fn scoped_owned(self, path: impl Into<PathBuf>) -> ScopedExecutor<Self>
+    where
+        Self: Sized;
 }
 
 impl<T> ExecutorExt for T
 where
-    T: ToolExecutor + ?Sized,
+    T: ToolExecutor,
 {
     fn scoped(&self, path: impl Into<PathBuf>) -> ScopedExecutor<&Self> {
+        ScopedExecutor::new(self, path)
+    }
+
+    fn scoped_owned(self, path: impl Into<PathBuf>) -> ScopedExecutor<Self> {
         ScopedExecutor::new(self, path)
     }
 }
