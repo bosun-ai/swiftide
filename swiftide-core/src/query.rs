@@ -110,13 +110,12 @@ impl<STATE: Clone + CanRetrieve> Query<STATE> {
         self.transformation_history
             .push(TransformationEvent::Retrieved {
                 before: self.current.clone(),
-                after: String::new(),
+                after: self.current.clone(),
                 documents,
             });
 
         let state = states::Retrieved;
 
-        self.current.clear();
         self.transition_to(state)
     }
 }
@@ -296,7 +295,6 @@ mod tests {
         let query = query.retrieved_documents(documents.clone());
         assert_eq!(query.documents(), &documents);
         assert_eq!(query.history().len(), 1);
-        assert!(query.current().is_empty());
         if let TransformationEvent::Retrieved {
             before,
             after,
@@ -304,7 +302,7 @@ mod tests {
         } = &query.history()[0]
         {
             assert_eq!(before, "test query");
-            assert_eq!(after, "");
+            assert_eq!(after, "test query");
             assert_eq!(retrieved_docs, &documents);
         } else {
             panic!("Unexpected event in history");
@@ -323,7 +321,7 @@ mod tests {
         assert_eq!(query.documents(), &documents);
         assert_eq!(query.original, "test query");
         if let TransformationEvent::Transformed { before, after } = &query.history()[1] {
-            assert_eq!(before, "");
+            assert_eq!(before, "test query");
             assert_eq!(after, "new response");
         } else {
             panic!("Unexpected event in history");
