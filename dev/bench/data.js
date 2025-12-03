@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1764605759477,
+  "lastUpdate": 1764788324204,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29309,6 +29309,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 259420,
             "range": "± 1544",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "65d44f2c4656eb20545750798a18fb877162f043",
+          "message": "feat(query): Add `original` and `current` question to `answers::Simple`",
+          "timestamp": "2025-12-03T19:49:26+01:00",
+          "tree_id": "86ab79085aea56a36faec8a6f69156054f769562",
+          "url": "https://github.com/bosun-ai/swiftide/commit/65d44f2c4656eb20545750798a18fb877162f043"
+        },
+        "date": 1764788322203,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 781494,
+            "range": "± 17113",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258058,
+            "range": "± 1076",
             "unit": "ns/iter"
           }
         ]
