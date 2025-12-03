@@ -6,7 +6,7 @@ use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
     prompt::Prompt,
-    querying::{Query, states},
+    querying::{Query, TransformationEvent, states},
 };
 
 /// Generate an answer based on the current query
@@ -89,7 +89,15 @@ impl Answer for Simple {
         context.insert("original", query.original());
         context.insert("current", query.current());
 
-        let documents = if !query.current().is_empty() {
+        // If there is a current transformation that is different from the original (transformed) query,
+        // use those as documents (i.e. a summary)
+        let documents = if !query.current().is_empty()
+            && query
+                .history()
+                .iter()
+                .rfind(|e| e.is_retrieval())
+                .is_some_and(|h| h.before() != query.current())
+        {
             query.current().to_string()
         } else if let Some(template) = &self.document_template {
             let mut rendered_documents = Vec::new();
@@ -159,6 +167,11 @@ mod test {
             .original("original")
             .current("A fictional generated summary")
             .state(states::Retrieved)
+            .transformation_history(vec![TransformationEvent::Retrieved {
+                before: "abc".to_string(),
+                after: "abc".to_string(),
+                documents: documents.clone(),
+            }])
             .documents(documents)
             .build()
             .unwrap();
@@ -199,6 +212,11 @@ mod test {
             .original("original")
             .current(String::default())
             .state(states::Retrieved)
+            .transformation_history(vec![TransformationEvent::Retrieved {
+                before: "abc".to_string(),
+                after: "abc".to_string(),
+                documents: documents.clone(),
+            }])
             .documents(documents)
             .build()
             .unwrap();

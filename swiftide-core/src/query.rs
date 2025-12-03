@@ -234,6 +234,42 @@ pub enum TransformationEvent {
     },
 }
 
+impl TransformationEvent {
+    /// Returns true if the event is a retrieval
+    pub fn is_retrieval(&self) -> bool {
+        matches!(self, TransformationEvent::Retrieved { .. })
+    }
+
+    /// Returns true if the event is a transformation
+    pub fn is_transformation(&self) -> bool {
+        matches!(self, TransformationEvent::Transformed { .. })
+    }
+
+    /// Returns the query before the transformation/retrieval
+    pub fn before(&self) -> &str {
+        match self {
+            TransformationEvent::Transformed { before, .. }
+            | TransformationEvent::Retrieved { before, .. } => before,
+        }
+    }
+
+    /// Returns the query after the transformation/retrieval
+    pub fn after(&self) -> &str {
+        match self {
+            TransformationEvent::Transformed { after, .. }
+            | TransformationEvent::Retrieved { after, .. } => after,
+        }
+    }
+
+    /// Returns the documents retrieved, if any
+    pub fn documents(&self) -> Option<&[Document]> {
+        match self {
+            TransformationEvent::Retrieved { documents, .. } => Some(documents),
+            TransformationEvent::Transformed { .. } => None,
+        }
+    }
+}
+
 impl std::fmt::Debug for TransformationEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
