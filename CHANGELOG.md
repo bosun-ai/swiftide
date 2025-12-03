@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.33.0](https://github.com/bosun-ai/swiftide/compare/v0.32.1...v0.33.0) - 2025-12-03
+
+### New features
+
+- [65d44f2](https://github.com/bosun-ai/swiftide/commit/65d44f2c4656eb20545750798a18fb877162f043) *(query)*  Add `original` and `current` question to `answers::Simple`
+
+- [283fbcf](https://github.com/bosun-ai/swiftide/commit/283fbcfa9b161f99e216b2627301814e279c8c49)  Add `scoped_owned` variant for owned executors with working dir
+
+### Bug fixes
+
+- [b28a1bb](https://github.com/bosun-ai/swiftide/commit/b28a1bb9b0b982165d9f5f641de43a4f147b90a1) *(query)*  Use current query in answers::Simple only if changed post retrieval
+
+- [5d65545](https://github.com/bosun-ai/swiftide/commit/5d65545fa8e8987dc5b7200aa211390438fa029a) *(query)*  Do not clear transformed query after retrieval
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.32.1...0.33.0
+
+
+
 ## [0.32.1](https://github.com/bosun-ai/swiftide/compare/v0.32.0...v0.32.1) - 2025-11-08
 
 ### New features
