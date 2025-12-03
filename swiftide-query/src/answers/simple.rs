@@ -16,6 +16,12 @@ use swiftide_core::{
 /// documents themselves, and will then feed them as context with the _original_ question to an llm
 /// to generate an answer.
 ///
+/// For the template context, the following variables are available:
+/// - **question**: The original question asked by the user
+/// - **original**: Alias for `question`
+/// - **current**: The current transformed query
+/// - **documents**: The documents to use as context
+///
 /// Optionally, a custom document template can be provided to render the documents in a specific
 /// way.
 #[derive(Debug, Clone, Builder)]
@@ -80,6 +86,8 @@ impl Answer for Simple {
         let mut context = tera::Context::new();
 
         context.insert("question", query.original());
+        context.insert("original", query.original());
+        context.insert("current", query.current());
 
         let documents = if !query.current().is_empty() {
             query.current().to_string()
