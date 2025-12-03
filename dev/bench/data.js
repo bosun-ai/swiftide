@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1764788324204,
+  "lastUpdate": 1764789655621,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29363,6 +29363,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 258058,
             "range": "± 1076",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "5d65545fa8e8987dc5b7200aa211390438fa029a",
+          "message": "fix(query): Do not clear transformed query after retrieval",
+          "timestamp": "2025-12-03T20:11:43+01:00",
+          "tree_id": "448c275d7cef5cc617dd618e84637be895671298",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5d65545fa8e8987dc5b7200aa211390438fa029a"
+        },
+        "date": 1764789653120,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 791879,
+            "range": "± 18266",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259650,
+            "range": "± 3336",
             "unit": "ns/iter"
           }
         ]
