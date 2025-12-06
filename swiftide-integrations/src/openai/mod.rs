@@ -5,9 +5,9 @@
 
 use anyhow::Context as _;
 use async_openai::error::{OpenAIError, StreamError};
-use async_openai::types::CreateChatCompletionRequestArgs;
-use async_openai::types::CreateEmbeddingRequestArgs;
-use async_openai::types::ReasoningEffort;
+use async_openai::types::chat::CreateChatCompletionRequestArgs;
+use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
+use async_openai::types::responses::ReasoningEffort;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
@@ -615,7 +615,7 @@ fn is_rate_limited_stream_error(error: &StreamError) -> bool {
             }
             _ => false,
         },
-        StreamError::UnknownEvent(_) => false,
+        StreamError::UnknownEvent(_) | StreamError::EventStream(_) => false,
     }
 }
 

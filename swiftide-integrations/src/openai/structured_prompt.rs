@@ -6,7 +6,8 @@
 //! implement `DynStructuredPrompt`, you get `StructuredPrompt` for free.
 
 use async_openai::types::{
-    ChatCompletionRequestUserMessageArgs, ResponseFormat, ResponseFormatJsonSchema,
+    chat::ChatCompletionRequestUserMessageArgs,
+    responses::{ResponseFormat, ResponseFormatJsonSchema},
 };
 use async_trait::async_trait;
 use schemars::Schema;

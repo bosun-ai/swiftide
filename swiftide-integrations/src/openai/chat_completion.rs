@@ -2,12 +2,12 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use anyhow::{Context as _, Result};
-use async_openai::types::ChatCompletionStreamOptions;
-use async_openai::types::{
-    ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
-    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
-    ChatCompletionRequestUserMessageArgs, ChatCompletionTool, ChatCompletionToolArgs,
-    ChatCompletionToolType, FunctionCall, FunctionObjectArgs,
+use async_openai::types::chat::{
+    ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
+    ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools,
+    FunctionCall, FunctionObject, ToolChoiceOptions,
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
@@ -86,7 +86,7 @@ impl<
                         .map(tools_to_openai)
                         .collect::<Result<Vec<_>>>()?,
                 )
-                .tool_choice("auto");
+                .tool_choice(ChatCompletionToolChoiceOption::Mode(ToolChoiceOptions::Auto));
             if let Some(par) = self.default_options.parallel_tool_calls {
                 openai_request.parallel_tool_calls(par);
             }
@@ -123,13 +123,16 @@ impl<
                     .map(|tool_calls| {
                         tool_calls
                             .iter()
-                            .map(|tool_call| {
-                                ToolCall::builder()
-                                    .id(tool_call.id.clone())
-                                    .args(tool_call.function.arguments.clone())
-                                    .name(tool_call.function.name.clone())
-                                    .build()
-                                    .expect("infallible")
+                            .filter_map(|tool_call| match tool_call {
+                                ChatCompletionMessageToolCalls::Function(call) => Some(
+                                    ToolCall::builder()
+                                        .id(call.id.clone())
+                                        .args(call.function.arguments.clone())
+                                        .name(call.function.name.clone())
+                                        .build()
+                                        .expect("infallible"),
+                                ),
+                                _ => None,
                             })
                             .collect_vec()
                     }),
@@ -188,7 +191,8 @@ impl<
             .model(&model_name)
             .messages(messages)
             .stream_options(ChatCompletionStreamOptions {
-                include_usage: true,
+                include_usage: Some(true),
+                include_obfuscation: None,
             })
             .to_owned();
 
@@ -207,7 +211,7 @@ impl<
                         }
                     },
                 )
-                .tool_choice("auto");
+                .tool_choice(ChatCompletionToolChoiceOption::Mode(ToolChoiceOptions::Auto));
             if let Some(par) = self.default_options.parallel_tool_calls {
                 openai_request.parallel_tool_calls(par);
             }
@@ -484,7 +488,7 @@ pub(crate) fn usage_from_counts(
     }
 }
 
-fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
+fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
     let mut parameters = match &spec.parameters_schema {
         Some(schema) => serde_json::to_value(schema)?,
         None => json!({
@@ -505,23 +509,21 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTool> {
         "Tool parameters schema"
     );
 
-    ChatCompletionToolArgs::default()
-        .r#type(ChatCompletionToolType::Function)
-        .function(
-            FunctionObjectArgs::default()
-                .name(&spec.name)
-                .description(&spec.description)
-                .strict(true)
-                .parameters(parameters)
-                .build()?,
-        )
-        .build()
-        .map_err(anyhow::Error::from)
+    let function = FunctionObject {
+        name: spec.name.clone(),
+        description: Some(spec.description.clone()),
+        parameters: Some(parameters),
+        strict: Some(true),
+    };
+
+    Ok(ChatCompletionTools::Function(async_openai::types::chat::ChatCompletionTool {
+        function,
+    }))
 }
 
 fn message_to_openai(
     message: &ChatMessage,
-) -> Result<async_openai::types::ChatCompletionRequestMessage> {
+) -> Result<async_openai::types::chat::ChatCompletionRequestMessage> {
     let openai_message = match message {
         ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
             .content(msg.as_str())
@@ -557,19 +559,20 @@ fn message_to_openai(
             }
 
             if let Some(tool_calls) = tool_calls {
-                builder.tool_calls(
-                    tool_calls
-                        .iter()
-                        .map(|tool_call| ChatCompletionMessageToolCall {
+                let calls = tool_calls
+                    .iter()
+                    .map(|tool_call| ChatCompletionMessageToolCalls::Function(
+                        ChatCompletionMessageToolCall {
                             id: tool_call.id().to_string(),
-                            r#type: ChatCompletionToolType::Function,
                             function: FunctionCall {
                                 name: tool_call.name().to_string(),
                                 arguments: tool_call.args().unwrap_or_default().to_string(),
                             },
-                        })
-                        .collect::<Vec<_>>(),
-                );
+                        },
+                    ))
+                    .collect::<Vec<_>>();
+
+                builder.tool_calls(calls);
             }
 
             builder.build()?.into()
@@ -604,10 +607,12 @@ mod tests {
 
         let tool = tools_to_openai(&spec).expect("tool conversion succeeds");
 
-        assert_eq!(tool.r#type, ChatCompletionToolType::Function);
+        let function = match tool {
+            ChatCompletionTools::Function(ref tool) => &tool.function,
+            _ => panic!("expected function tool"),
+        };
 
-        let additional_properties = tool
-            .function
+        let additional_properties = function
             .parameters
             .as_ref()
             .and_then(serde_json::Value::as_object)
@@ -618,7 +623,7 @@ mod tests {
             additional_properties,
             Some(serde_json::Value::Bool(false)),
             "Chat Completions require additionalProperties=false for tool parameters, got {}",
-            serde_json::to_string_pretty(&tool.function.parameters).unwrap()
+            serde_json::to_string_pretty(&function.parameters).unwrap()
         );
     }
 

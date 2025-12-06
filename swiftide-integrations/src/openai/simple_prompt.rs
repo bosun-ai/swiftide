@@ -2,7 +2,7 @@
 //! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt
 //! processing and generating responses as part of the Swiftide system.
 
-use async_openai::types::ChatCompletionRequestUserMessageArgs;
+use async_openai::types::chat::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
 use swiftide_core::{
     SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,

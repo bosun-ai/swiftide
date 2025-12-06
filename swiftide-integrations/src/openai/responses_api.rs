@@ -3,12 +3,14 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use anyhow::{Context as _, Result};
-use async_openai::types::ResponseFormatJsonSchema;
 use async_openai::types::responses::{
-    Content, CreateResponse, CreateResponseArgs, FunctionArgs, Input, InputContent, InputItem,
-    InputMessageArgs, OutputContent, OutputItem, OutputMessage, OutputStatus, ReasoningConfigArgs,
-    Response, ResponseEvent, ResponseMetadata, ResponseStream, Role, Status, TextConfig,
-    TextResponseFormat, ToolChoice, ToolChoiceMode, ToolDefinition, Usage as ResponsesUsage,
+    CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, InputItem, InputParam,
+    MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
+    ReasoningArgs,
+    Response, ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam,
+    ResponseUsage as ResponsesUsage, Role, Status, TextResponseFormatConfiguration, Tool,
+    ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
@@ -41,7 +43,7 @@ where
     let mut args = base_request_args(client, model)?;
 
     let input_items = chat_messages_to_input_items(request.messages())?;
-    args.input(Input::Items(input_items));
+    args.input(InputParam::Items(input_items));
 
     if !request.tools_spec().is_empty() {
         let tools = request
@@ -53,7 +55,7 @@ where
 
         args.tools(tools);
         if client.options().parallel_tool_calls.unwrap_or(true) {
-            args.tool_choice(ToolChoice::Mode(ToolChoiceMode::Auto));
+            args.tool_choice(ToolChoiceParam::Mode(ToolChoiceOptions::Auto));
         }
     }
 
@@ -82,7 +84,7 @@ where
     }
 
     if let Some(reasoning_effort) = options.reasoning_effort.clone() {
-        let reasoning = ReasoningConfigArgs::default()
+        let reasoning = ReasoningArgs::default()
             .effort(reasoning_effort)
             .build()
             .map_err(LanguageModelError::permanent)?;
@@ -111,10 +113,6 @@ where
         }
     }
 
-    if let Some(user) = options.user.as_ref() {
-        args.user(user.clone());
-    }
-
     Ok(args)
 }
 
@@ -135,7 +133,7 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
     }
 }
 
-fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
+fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
     let mut parameters = match &spec.parameters_schema {
         Some(schema) => {
             serde_json::to_value(schema).context("failed to serialize tool parameters schema")?
@@ -153,14 +151,14 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<ToolDefinition> {
     ensure_tool_schema_required_matches_properties(&mut parameters)
         .context("tool schema must list required properties")?;
 
-    let function = FunctionArgs::default()
-        .name(&spec.name)
-        .description(&spec.description)
-        .parameters(parameters)
-        .strict(true)
-        .build()?;
+    let function = FunctionTool {
+        name: spec.name.clone(),
+        parameters: Some(parameters),
+        strict: Some(true),
+        description: Some(spec.description.clone()),
+    };
 
-    Ok(ToolDefinition::Function(function))
+    Ok(Tool::Function(function))
 }
 
 fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputItem>> {
@@ -181,59 +179,46 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
 
                 if let Some(tool_calls) = tool_calls {
                     for tool_call in tool_calls {
-                        let call_id = tool_call.id();
-                        let id = normalize_responses_function_call_id(call_id);
+                        let call_id = normalize_responses_function_call_id(tool_call.id());
                         let arguments = tool_call.args().unwrap_or_default().to_owned();
-                        let function_call = async_openai::types::responses::FunctionCall {
-                            id: id.clone(),
-                            call_id: call_id.to_owned(),
-                            name: tool_call.name().to_owned(),
+
+                        let function_call = FunctionToolCall {
                             arguments,
-                            status: OutputStatus::InProgress,
+                            call_id: call_id.clone(),
+                            name: tool_call.name().to_owned(),
+                            id: None,
+                            status: Some(OutputStatus::InProgress),
                         };
 
-                        let value =
-                            serde_json::to_value(OutputContent::FunctionCall(function_call))
-                                .map_err(LanguageModelError::permanent)?;
-                        items.push(InputItem::Custom(value));
+                        items.push(InputItem::Item(
+                            async_openai::types::responses::Item::FunctionCall(function_call),
+                        ));
                     }
                 }
             }
             ChatMessage::ToolOutput(tool_call, tool_output) => {
-                let mut payload = serde_json::Map::new();
-                payload.insert(
-                    "type".into(),
-                    serde_json::Value::String("function_call_output".into()),
-                );
-                payload.insert(
-                    "call_id".into(),
-                    serde_json::Value::String(tool_call.id().to_owned()),
-                );
-
-                let output_value = match tool_output {
-                    ToolOutput::FeedbackRequired(value) => {
-                        value.clone().unwrap_or(serde_json::Value::Null)
+                let output = match tool_output {
+                    ToolOutput::FeedbackRequired(value)
+                    | ToolOutput::Stop(value)
+                    | ToolOutput::AgentFailed(value) => {
+                        FunctionCallOutput::Text(value.clone().unwrap_or_default().to_string())
                     }
                     ToolOutput::Text(text) | ToolOutput::Fail(text) => {
-                        serde_json::Value::String(text.clone())
+                        FunctionCallOutput::Text(text.clone())
                     }
-                    ToolOutput::Stop(message) => message.clone().unwrap_or(serde_json::Value::Null),
-                    ToolOutput::AgentFailed(message) => {
-                        message.clone().unwrap_or(serde_json::Value::Null)
-                    }
-                    _ => serde_json::Value::Null,
+                    _ => FunctionCallOutput::Text(String::new()),
                 };
 
-                payload.insert("output".into(), output_value);
+                let function_output = FunctionCallOutputItemParam {
+                    call_id: normalize_responses_function_call_id(tool_call.id()),
+                    output,
+                    id: None,
+                    status: Some(OutputStatus::Completed),
+                };
 
-                if matches!(
-                    tool_output,
-                    ToolOutput::Fail(_) | ToolOutput::AgentFailed(_)
-                ) {
-                    payload.insert("is_error".into(), serde_json::Value::Bool(true));
-                }
-
-                items.push(InputItem::Custom(serde_json::Value::Object(payload)));
+                items.push(InputItem::Item(
+                    async_openai::types::responses::Item::FunctionCallOutput(function_output),
+                ));
             }
             ChatMessage::Summary(content) => {
                 items.push(message_item(Role::Assistant, content.clone())?);
@@ -245,10 +230,11 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
 }
 
 fn message_item(role: Role, content: String) -> LmResult<InputItem> {
-    Ok(InputItem::Message(
-        InputMessageArgs::default()
+    Ok(InputItem::EasyMessage(
+        EasyInputMessageArgs::default()
+            .r#type(async_openai::types::responses::MessageType::Message)
             .role(role)
-            .content(InputContent::TextInput(content))
+            .content(EasyInputContent::Text(content))
             .build()
             .map_err(LanguageModelError::permanent)?,
     ))
@@ -280,7 +266,7 @@ impl ResponsesStreamState {
     #[allow(clippy::too_many_lines)]
     fn apply_event(
         &mut self,
-        event: ResponseEvent,
+        event: ResponseStreamEvent,
         stream_full: bool,
     ) -> LmResult<Option<ResponsesStreamItem>> {
         if self.finished {
@@ -288,18 +274,21 @@ impl ResponsesStreamState {
         }
 
         let maybe_item = match event {
-            ResponseEvent::ResponseOutputTextDelta(delta) => {
+            ResponseStreamEvent::ResponseOutputTextDelta(delta) => {
                 self.response
                     .append_message_delta(Some(delta.delta.as_str()));
                 Some(self.emit(stream_full, false))
             }
-            ResponseEvent::ResponseContentPartAdded(part) => {
-                part.part.text.as_deref().map(|text| {
-                    self.response.append_message_delta(Some(text));
-                    self.emit(stream_full, false)
-                })
+            ResponseStreamEvent::ResponseContentPartAdded(part) => {
+                match &part.part {
+                    OutputContent::OutputText(text) => {
+                        self.response.append_message_delta(Some(text.text.as_str()));
+                        Some(self.emit(stream_full, false))
+                    }
+                    _ => None,
+                }
             }
-            ResponseEvent::ResponseOutputItemAdded(event) => match event.item {
+            ResponseStreamEvent::ResponseOutputItemAdded(event) => match event.item {
                 OutputItem::FunctionCall(function_call) => {
                     let index = event.output_index as usize;
                     let id = function_call_identifier(&function_call);
@@ -321,7 +310,7 @@ impl ResponsesStreamState {
                 }
                 _ => None,
             },
-            ResponseEvent::ResponseOutputItemDone(event) => {
+            ResponseStreamEvent::ResponseOutputItemDone(event) => {
                 if let OutputItem::FunctionCall(function_call) = event.item {
                     let index = event.output_index as usize;
                     let id = function_call_identifier(&function_call);
@@ -336,16 +325,16 @@ impl ResponsesStreamState {
                     None
                 }
             }
-            ResponseEvent::ResponseFunctionCallArgumentsDelta(delta) => {
+            ResponseStreamEvent::ResponseFunctionCallArgumentsDelta(delta) => {
                 let index = delta.output_index as usize;
                 self.response
                     .append_tool_call_delta(index, None, None, Some(delta.delta.as_str()));
                 Some(self.emit(stream_full, false))
             }
-            ResponseEvent::ResponseFunctionCallArgumentsDone(done) => {
+            ResponseStreamEvent::ResponseFunctionCallArgumentsDone(done) => {
                 let index = done.output_index as usize;
 
-                let name = (!done.name.is_empty()).then_some(done.name.as_str());
+                let name = done.name.as_deref().filter(|n| !n.is_empty());
 
                 let mut arguments = None;
                 if !done.arguments.is_empty() {
@@ -370,19 +359,19 @@ impl ResponsesStreamState {
                     None
                 }
             }
-            ResponseEvent::ResponseCompleted(completed) => {
+            ResponseStreamEvent::ResponseCompleted(completed) => {
                 metadata_to_chat_completion(&completed.response, &mut self.response)?;
                 self.response.delta = None;
                 self.finished = true;
                 Some(self.emit(stream_full, true))
             }
-            ResponseEvent::ResponseIncomplete(incomplete) => {
+            ResponseStreamEvent::ResponseIncomplete(incomplete) => {
                 metadata_to_chat_completion(&incomplete.response, &mut self.response)?;
                 self.response.delta = None;
                 self.finished = true;
                 Some(self.emit(stream_full, true))
             }
-            ResponseEvent::ResponseFailed(failed) => {
+            ResponseStreamEvent::ResponseFailed(failed) => {
                 self.finished = true;
                 let message = failed.response.error.as_ref().map_or_else(
                     || "Responses API stream failed".to_string(),
@@ -390,7 +379,7 @@ impl ResponsesStreamState {
                 );
                 return Err(LanguageModelError::permanent(message));
             }
-            ResponseEvent::ResponseError(error) => {
+            ResponseStreamEvent::ResponseError(error) => {
                 self.finished = true;
                 return Err(LanguageModelError::permanent(error.message));
             }
@@ -516,13 +505,13 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
 
     let mut builder = ChatCompletionResponse::builder();
 
-    if let Some(text) = response.output_text.as_ref().filter(|s| !s.is_empty()) {
-        builder.message(text.clone());
-    } else if let Some(text) = collect_message_text(&response.output) {
+    if let Some(text) = response.output_text().filter(|s| !s.is_empty()) {
+        builder.message(text);
+    } else if let Some(text) = collect_message_text_from_items(&response.output) {
         builder.message(text);
     }
 
-    let tool_calls = collect_tool_calls(&response.output)?;
+    let tool_calls = collect_tool_calls_from_items(&response.output)?;
     if !tool_calls.is_empty() {
         builder.tool_calls(tool_calls);
     }
@@ -535,7 +524,7 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
 }
 
 pub(super) fn metadata_to_chat_completion(
-    metadata: &ResponseMetadata,
+    metadata: &Response,
     accumulator: &mut ChatCompletionResponse,
 ) -> LmResult<()> {
     if let Some(usage) = metadata.usage.as_ref() {
@@ -543,16 +532,13 @@ pub(super) fn metadata_to_chat_completion(
     }
 
     if accumulator.message.is_none()
-        && let Some(output) = metadata.output.as_ref()
-        && let Some(text) = collect_message_text_from_items(output)
+        && let Some(text) = collect_message_text_from_items(&metadata.output)
     {
         accumulator.message = Some(text);
     }
 
-    if accumulator.tool_calls.is_none()
-        && let Some(output) = metadata.output.as_ref()
-    {
-        let tool_calls = collect_tool_calls_from_items(output)?;
+    if accumulator.tool_calls.is_none() {
+        let tool_calls = collect_tool_calls_from_items(&metadata.output)?;
         if !tool_calls.is_empty() {
             accumulator.tool_calls = Some(tool_calls);
         }
@@ -570,13 +556,13 @@ fn convert_usage(usage: &ResponsesUsage) -> LmResult<Usage> {
         .map_err(LanguageModelError::permanent)
 }
 
-fn collect_message_text(output: &[OutputContent]) -> Option<String> {
+fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
     let mut buffer = String::new();
 
     for item in output {
-        if let OutputContent::Message(OutputMessage { content, .. }) = item {
+        if let OutputItem::Message(OutputMessage { content, .. }) = item {
             for part in content {
-                if let Content::OutputText(text) = part {
+                if let OutputMessageContent::OutputText(text) = part {
                     if !buffer.is_empty() {
                         buffer.push('\n');
                     }
@@ -597,7 +583,7 @@ fn collect_message_text_from_message(message: &OutputMessage) -> Option<String> 
     let mut buffer = String::new();
 
     for part in &message.content {
-        if let Content::OutputText(text) = part {
+        if let OutputMessageContent::OutputText(text) = part {
             if !buffer.is_empty() {
                 buffer.push('\n');
             }
@@ -612,36 +598,6 @@ fn collect_message_text_from_message(message: &OutputMessage) -> Option<String> 
     }
 }
 
-fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
-    let mut buffer = String::new();
-
-    for item in output {
-        if let OutputItem::Message(message) = item
-            && let Some(text) = collect_message_text_from_message(message)
-        {
-            if !buffer.is_empty() {
-                buffer.push('\n');
-            }
-            buffer.push_str(&text);
-        }
-    }
-
-    if buffer.is_empty() {
-        None
-    } else {
-        Some(buffer)
-    }
-}
-
-fn collect_tool_calls(output: &[OutputContent]) -> LmResult<Vec<ToolCall>> {
-    let calls = output.iter().filter_map(|item| match item {
-        OutputContent::FunctionCall(function_call) => Some(function_call),
-        _ => None,
-    });
-
-    tool_calls_from_iter(calls)
-}
-
 fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall>> {
     let calls = output.iter().filter_map(|item| match item {
         OutputItem::FunctionCall(function_call) => Some(function_call),
@@ -651,11 +607,13 @@ fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall
     tool_calls_from_iter(calls)
 }
 
-fn tool_call_from_function_call(
-    function_call: &async_openai::types::responses::FunctionCall,
-) -> LmResult<ToolCall> {
+fn tool_call_from_function_call(function_call: &FunctionToolCall) -> LmResult<ToolCall> {
     let id = if function_call.call_id.is_empty() {
-        function_call.id.clone()
+        function_call
+            .id
+            .as_deref()
+            .unwrap_or_default()
+            .to_string()
     } else {
         function_call.call_id.clone()
     };
@@ -674,7 +632,7 @@ fn tool_call_from_function_call(
 
 fn tool_calls_from_iter<'a, I>(calls: I) -> LmResult<Vec<ToolCall>>
 where
-    I: IntoIterator<Item = &'a async_openai::types::responses::FunctionCall>,
+    I: IntoIterator<Item = &'a FunctionToolCall>,
 {
     calls
         .into_iter()
@@ -682,9 +640,12 @@ where
         .collect::<Result<Vec<_>, _>>()
 }
 
-fn function_call_identifier(function_call: &async_openai::types::responses::FunctionCall) -> &str {
+fn function_call_identifier(function_call: &FunctionToolCall) -> &str {
     if function_call.call_id.is_empty() {
-        function_call.id.as_str()
+        function_call
+            .id
+            .as_deref()
+            .unwrap_or_else(|| function_call.call_id.as_str())
     } else {
         function_call.call_id.as_str()
     }
@@ -704,10 +665,11 @@ where
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
     let mut args = base_request_args(client, model)?;
-    args.input(Input::Items(vec![InputItem::Message(
-        InputMessageArgs::default()
+    args.input(InputParam::Items(vec![InputItem::EasyMessage(
+        EasyInputMessageArgs::default()
+            .r#type(MessageType::Message)
             .role(Role::User)
-            .content(InputContent::TextInput(prompt_text))
+            .content(EasyInputContent::Text(prompt_text))
             .build()
             .map_err(LanguageModelError::permanent)?,
     )]));
@@ -730,16 +692,17 @@ where
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
     let mut args = base_request_args(client, model)?;
-    args.input(Input::Items(vec![InputItem::Message(
-        InputMessageArgs::default()
+    args.input(InputParam::Items(vec![InputItem::EasyMessage(
+        EasyInputMessageArgs::default()
+            .r#type(MessageType::Message)
             .role(Role::User)
-            .content(InputContent::TextInput(prompt_text))
+            .content(EasyInputContent::Text(prompt_text))
             .build()
             .map_err(LanguageModelError::permanent)?,
     )]));
 
-    args.text(TextConfig {
-        format: TextResponseFormat::JsonSchema(ResponseFormatJsonSchema {
+    args.text(ResponseTextParam {
+        format: TextResponseFormatConfiguration::JsonSchema(ResponseFormatJsonSchema {
             description: None,
             name: "swiftide_structured_output".into(),
             schema: Some(schema),
@@ -756,10 +719,11 @@ where
 mod tests {
     use super::*;
     use async_openai::types::responses::{
-        CompletionTokensDetails, Content, FunctionCall as ResponsesFunctionCall, OutputContent,
-        OutputMessage, OutputStatus, OutputText, PromptTokensDetails, ResponseCompleted,
-        ResponseFunctionCallArgumentsDelta, ResponseFunctionCallArgumentsDone,
-        ResponseOutputItemAdded, ResponseOutputTextDelta, ToolDefinition, Usage as ResponsesUsage,
+        CompletionTokensDetails, FunctionToolCall as ResponsesFunctionCall, OutputItem,
+        OutputMessage, OutputMessageContent, OutputStatus, OutputText, PromptTokensDetails,
+        ResponseCompleted, ResponseFunctionCallArgumentsDelta, ResponseFunctionCallArgumentsDone,
+        ResponseOutputItemAdded, ResponseOutputTextDelta, ResponseStreamEvent, ToolDefinition,
+        Usage as ResponsesUsage,
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
@@ -769,7 +733,7 @@ mod tests {
 
     fn expect_emit(
         state: &mut ResponsesStreamState,
-        event: ResponseEvent,
+        event: ResponseStreamEvent,
         stream_full: bool,
     ) -> ResponsesStreamItem {
         state
@@ -778,7 +742,11 @@ mod tests {
             .expect("expected emission")
     }
 
-    fn expect_no_emit(state: &mut ResponsesStreamState, event: ResponseEvent, stream_full: bool) {
+    fn expect_no_emit(
+        state: &mut ResponsesStreamState,
+        event: ResponseStreamEvent,
+        stream_full: bool,
+    ) {
         assert!(
             state.apply_event(event, stream_full).unwrap().is_none(),
             "expected no emission"
@@ -857,7 +825,7 @@ mod tests {
             Some("demo"),
         );
 
-        let Input::Items(items) = &create.input else {
+        let InputParam::Items(items) = &create.input else {
             panic!("expected items input");
         };
         assert_eq!(items.len(), 1);
@@ -921,50 +889,34 @@ mod tests {
     #[test]
     fn test_response_to_chat_completion_maps_outputs() {
         let usage = sample_usage();
-        let response = Response {
-            created_at: 0,
-            error: None,
-            id: "resp".into(),
-            incomplete_details: None,
-            instructions: None,
-            max_output_tokens: None,
-            metadata: None,
-            model: "gpt-4.1".into(),
-            object: "response".into(),
-            output: vec![
-                OutputContent::Message(OutputMessage {
-                    content: vec![Content::OutputText(OutputText {
-                        annotations: Vec::new(),
-                        text: "Assistant reply".into(),
-                    })],
-                    id: "msg".into(),
-                    role: Role::Assistant,
-                    status: OutputStatus::Completed,
-                }),
-                OutputContent::FunctionCall(ResponsesFunctionCall {
-                    id: "tool".into(),
-                    call_id: "tool".into(),
-                    name: "get_weather".into(),
-                    arguments: "{\"city\":\"Oslo\"}".into(),
-                    status: OutputStatus::Completed,
-                }),
+        let response: Response = serde_json::from_value(json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "id": "msg",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [
+                        {"type": "output_text", "text": "Assistant reply"}
+                    ]
+                },
+                {
+                    "type": "function_call",
+                    "id": "tool",
+                    "call_id": "tool",
+                    "name": "get_weather",
+                    "arguments": "{\\\"city\\\":\\\"Oslo\\\"}",
+                    "status": "completed"
+                }
             ],
-            output_text: Some("Assistant reply".into()),
-            parallel_tool_calls: None,
-            previous_response_id: None,
-            reasoning: None,
-            store: None,
-            service_tier: None,
-            status: Status::Completed,
-            temperature: None,
-            text: None,
-            tool_choice: None,
-            tools: None,
-            top_p: None,
-            truncation: None,
-            usage: Some(usage.clone()),
-            user: None,
-        };
+            "usage": usage,
+        }))
+        .expect("valid response json");
 
         let completion = response_to_chat_completion(&response).unwrap();
         assert_eq!(completion.message(), Some("Assistant reply"));
@@ -995,7 +947,7 @@ mod tests {
 
         let chunk = expect_emit(
             &mut state,
-            ResponseEvent::ResponseOutputTextDelta(delta),
+            ResponseStreamEvent::ResponseOutputTextDelta(delta),
             false,
         );
 
@@ -1024,7 +976,7 @@ mod tests {
 
         expect_emit(
             &mut state,
-            ResponseEvent::ResponseOutputItemAdded(item_added),
+            ResponseStreamEvent::ResponseOutputItemAdded(item_added),
             false,
         );
 
@@ -1038,7 +990,7 @@ mod tests {
 
         expect_emit(
             &mut state,
-            ResponseEvent::ResponseFunctionCallArgumentsDelta(args_delta),
+            ResponseStreamEvent::ResponseFunctionCallArgumentsDelta(args_delta),
             false,
         );
 
@@ -1053,7 +1005,7 @@ mod tests {
 
         expect_emit(
             &mut state,
-            ResponseEvent::ResponseFunctionCallArgumentsDone(args_done),
+            ResponseStreamEvent::ResponseFunctionCallArgumentsDone(args_done),
             false,
         );
 
@@ -1073,7 +1025,7 @@ mod tests {
 
         let final_chunk = expect_emit(
             &mut state,
-            ResponseEvent::ResponseCompleted(completed),
+            ResponseStreamEvent::ResponseCompleted(completed),
             false,
         );
         assert!(final_chunk.finished);
@@ -1118,7 +1070,7 @@ mod tests {
 
         let finished = expect_emit(
             &mut state,
-            ResponseEvent::ResponseCompleted(completed),
+            ResponseStreamEvent::ResponseCompleted(completed),
             false,
         );
         assert!(finished.finished);
@@ -1134,7 +1086,7 @@ mod tests {
 
         expect_no_emit(
             &mut state,
-            ResponseEvent::ResponseOutputTextDelta(delta),
+            ResponseStreamEvent::ResponseOutputTextDelta(delta),
             false,
         );
     }
