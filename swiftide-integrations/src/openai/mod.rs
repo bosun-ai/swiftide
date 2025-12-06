@@ -528,8 +528,8 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
             args.temperature(temperature);
         }
 
-        if let Some(reasoning_effort) = &options.reasoning_effort {
-            args.reasoning_effort(reasoning_effort.clone());
+        if let Some(reasoning_effort) = options.reasoning_effort.clone() {
+            args.reasoning_effort(reasoning_effort);
         }
 
         if let Some(seed) = options.seed {

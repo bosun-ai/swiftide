@@ -119,7 +119,7 @@ impl<
                 response
                     .choices
                     .first()
-                    .and_then(|choice| choice.message.tool_calls.clone())
+                    .and_then(|choice| choice.message.tool_calls.as_ref())
                     .map(|tool_calls| {
                         tool_calls
                             .iter()

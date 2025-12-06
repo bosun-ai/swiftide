@@ -389,8 +389,13 @@ impl ResponsesStreamState {
         Ok(maybe_item)
     }
 
-    fn emit(&self, stream_full: bool, finished: bool) -> ResponsesStreamItem {
-        let mut response = if stream_full || finished {
+    fn emit(&mut self, stream_full: bool, finished: bool) -> ResponsesStreamItem {
+        let response = if finished {
+            // Stream is complete; move the accumulated response out of state.
+            let mut response = std::mem::take(&mut self.response);
+            response.delta = None;
+            response
+        } else if stream_full {
             self.response.clone()
         } else {
             ChatCompletionResponse {
@@ -401,10 +406,6 @@ impl ResponsesStreamState {
                 delta: self.response.delta.clone(),
             }
         };
-
-        if !stream_full && finished {
-            response.usage.clone_from(&self.response.usage);
-        }
 
         ResponsesStreamItem { response, finished }
     }
