@@ -717,9 +717,10 @@ where
 mod tests {
     use super::*;
     use async_openai::types::responses::{
-        InputTokenDetails, OutputTokenDetails, ResponseCompletedEvent,
-        ResponseFunctionCallArgumentsDeltaEvent, ResponseFunctionCallArgumentsDoneEvent,
-        ResponseOutputItemAddedEvent, ResponseStreamEvent, ResponseTextDeltaEvent,
+        InputTokenDetails, OutputTokenDetails, ResponseCompletedEvent, ResponseErrorEvent,
+        ResponseFailedEvent, ResponseFunctionCallArgumentsDeltaEvent,
+        ResponseFunctionCallArgumentsDoneEvent, ResponseOutputItemAddedEvent,
+        ResponseOutputItemDoneEvent, ResponseStreamEvent, ResponseTextDeltaEvent,
         ResponseUsage as ResponsesUsage, Tool,
     };
     use serde_json::{json, to_value};
@@ -765,7 +766,7 @@ mod tests {
     #[allow(dead_code)]
     #[derive(schemars::JsonSchema)]
     struct WeatherArgs {
-        city: String,
+        _city: String,
     }
 
     fn sample_tool_spec() -> ToolSpec {
@@ -863,7 +864,7 @@ mod tests {
         #[serde(deny_unknown_fields)]
         #[schemars(title = "WeatherArgs")]
         struct WeatherArgsCorrect {
-            city: String,
+            _city: String,
         }
 
         assert_eq!(
@@ -1084,6 +1085,216 @@ mod tests {
             ResponseStreamEvent::ResponseOutputTextDelta(delta),
             false,
         );
+    }
+
+    #[test]
+    fn test_stream_state_message_item_added_collects_text() {
+        let mut state = ResponsesStreamState::default();
+
+        let item_added: ResponseOutputItemAddedEvent = serde_json::from_value(json!({
+            "sequence_number": 0,
+            "output_index": 0,
+            "item": {
+                "type": "message",
+                "id": "msg",
+                "role": "assistant",
+                "status": "completed",
+                "content": [
+                    {"type": "output_text", "text": "Hello", "annotations": []},
+                    {"type": "output_text", "text": "World", "annotations": []}
+                ]
+            }
+        }))
+        .unwrap();
+
+        let chunk = expect_emit(
+            &mut state,
+            ResponseStreamEvent::ResponseOutputItemAdded(item_added),
+            true,
+        );
+
+        assert_eq!(chunk.response.message(), Some("Hello\nWorld"));
+    }
+
+    #[test]
+    fn test_stream_state_output_item_done_emits_tool_call() {
+        let mut state = ResponsesStreamState::default();
+
+        let item_added: ResponseOutputItemAddedEvent = serde_json::from_value(json!({
+            "sequence_number": 0,
+            "output_index": 0,
+            "item": {
+                "type": "function_call",
+                "id": "call",
+                "call_id": "call",
+                "name": "lookup",
+                "arguments": "",
+                "status": "in_progress"
+            }
+        }))
+        .unwrap();
+
+        expect_emit(
+            &mut state,
+            ResponseStreamEvent::ResponseOutputItemAdded(item_added),
+            true,
+        );
+
+        let done: ResponseOutputItemDoneEvent = serde_json::from_value(json!({
+            "sequence_number": 1,
+            "output_index": 0,
+            "item": {
+                "type": "function_call",
+                "id": "call-id",
+                "call_id": "",
+                "name": "lookup",
+                "arguments": "",
+                "status": "completed"
+            }
+        }))
+        .unwrap();
+
+        let chunk = expect_emit(
+            &mut state,
+            ResponseStreamEvent::ResponseOutputItemDone(done),
+            true,
+        );
+
+        let calls = chunk.response.tool_calls().expect("tool calls present");
+        assert_eq!(calls[0].id(), "call");
+        assert_eq!(calls[0].name(), "lookup");
+    }
+
+    #[test]
+    fn test_stream_state_duplicate_arguments_done_no_emit() {
+        let mut state = ResponsesStreamState::default();
+
+        let item_added: ResponseOutputItemAddedEvent = serde_json::from_value(json!({
+            "sequence_number": 0,
+            "output_index": 0,
+            "item": {
+                "type": "function_call",
+                "id": "call",
+                "call_id": "call",
+                "name": "lookup",
+                "arguments": "",
+                "status": "in_progress"
+            }
+        }))
+        .unwrap();
+        expect_emit(
+            &mut state,
+            ResponseStreamEvent::ResponseOutputItemAdded(item_added),
+            false,
+        );
+
+        let args_delta: ResponseFunctionCallArgumentsDeltaEvent = serde_json::from_value(json!({
+            "sequence_number": 1,
+            "item_id": "call",
+            "output_index": 0,
+            "delta": "{\"q\":1}"
+        }))
+        .unwrap();
+        expect_emit(
+            &mut state,
+            ResponseStreamEvent::ResponseFunctionCallArgumentsDelta(args_delta),
+            false,
+        );
+
+        let args_done: ResponseFunctionCallArgumentsDoneEvent = serde_json::from_value(json!({
+            "sequence_number": 2,
+            "item_id": "call",
+            "output_index": 0,
+            "arguments": "{\"q\":1}",
+            "name": ""
+        }))
+        .unwrap();
+
+        expect_no_emit(
+            &mut state,
+            ResponseStreamEvent::ResponseFunctionCallArgumentsDone(args_done),
+            false,
+        );
+    }
+
+    #[test]
+    fn test_stream_state_response_failed_and_error() {
+        let mut state = ResponsesStreamState::default();
+
+        let failed: ResponseFailedEvent = serde_json::from_value(json!({
+            "sequence_number": 0,
+            "response": {
+                "id": "resp",
+                "object": "response",
+                "created_at": 0,
+                "status": "failed",
+                "model": "gpt-4.1",
+                "output": [],
+                "error": {"code": "oops", "message": "boom"}
+            }
+        }))
+        .unwrap();
+
+        let err = state
+            .apply_event(ResponseStreamEvent::ResponseFailed(failed), false)
+            .unwrap_err();
+        assert!(
+            matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("oops"))
+        );
+
+        let mut state = ResponsesStreamState::default();
+        let err_event: ResponseErrorEvent = serde_json::from_value(json!({
+            "sequence_number": 1,
+            "message": "bad things"
+        }))
+        .unwrap();
+        let err = state
+            .apply_event(ResponseStreamEvent::ResponseError(err_event), false)
+            .unwrap_err();
+        assert!(
+            matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("bad things"))
+        );
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_failed_status_errors() {
+        let response: Response = serde_json::from_value(json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1",
+            "object": "response",
+            "status": "failed",
+            "error": {"code": "oops", "message": "boom"},
+            "output": []
+        }))
+        .unwrap();
+
+        let err = response_to_chat_completion(&response).unwrap_err();
+        assert!(
+            matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("oops"))
+        );
+    }
+
+    #[test]
+    fn test_convert_metadata_rejects_non_string_values() {
+        let metadata = json!({"tag": 123});
+        assert!(convert_metadata(&metadata).is_none());
+    }
+
+    #[test]
+    fn test_base_request_args_runs_with_seed_and_presence_penalty() {
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4.1")
+            .default_options(
+                Options::builder()
+                    .seed(7)
+                    .presence_penalty(0.4)
+                    .temperature(0.1),
+            )
+            .build()
+            .unwrap();
+
+        assert!(base_request_args(&openai, "gpt-4.1").is_ok());
     }
 
     #[test]

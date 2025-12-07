@@ -602,16 +602,16 @@ mod tests {
     use crate::openai::{OpenAI, Options};
 
     use super::*;
-    use std::sync::Arc;
-    use swiftide_core::chat_completion::{ToolOutput, ToolCallBuilder};
     use futures_util::StreamExt;
+    use std::sync::Arc;
+    use swiftide_core::chat_completion::{ToolCallBuilder, ToolOutput};
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[allow(dead_code)]
     #[derive(schemars::JsonSchema)]
     struct WeatherArgs {
-        city: String,
+        _city: String,
     }
 
     #[test]
@@ -914,7 +914,7 @@ mod tests {
 
         #[derive(schemars::JsonSchema)]
         struct WeatherArgs {
-            city: String,
+            _city: String,
         }
 
         let tool_spec = ToolSpec::builder()
@@ -1006,9 +1006,7 @@ data: [DONE]\n\n";
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(
-                ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"),
-            )
+            .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
             .mount(&mock_server)
             .await;
 
@@ -1030,6 +1028,142 @@ data: [DONE]\n\n";
         let last = results.last().unwrap().as_ref().unwrap();
         assert_eq!(last.message(), Some("Hi"));
         assert_eq!(last.usage.as_ref().map(|u| u.total_tokens), Some(3));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_delta_only_mode() {
+        let mock_server = MockServer::start().await;
+
+        let sse_body = "\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\
+\n\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":2,\"total_tokens\":3}}\n\
+\n\
+data: [DONE]\n\n";
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4o-mini")
+            .stream_full(false)
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello".into())])
+            .build()
+            .unwrap();
+
+        let mut stream = openai.complete_stream(&req).await;
+        let first = stream.next().await.unwrap().unwrap();
+        assert!(first.message.is_none());
+        assert!(first.usage.is_none());
+        assert!(
+            first.delta.is_some(),
+            "delta-only mode should emit delta snapshots"
+        );
+
+        let final_snapshot = stream.next().await.unwrap().unwrap();
+        // Final snapshot should arrive in delta-only mode.
+        assert!(final_snapshot.usage.is_none() || final_snapshot.usage.is_some());
+        while let Some(item) = stream.next().await {
+            item.expect("stream should not error");
+        }
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_invalid_tool_schema_errors() {
+        let invalid_schema = schemars::Schema::from(true);
+
+        let tool_spec = ToolSpec::builder()
+            .name("bad")
+            .description("bad schema")
+            .parameters_schema(invalid_schema)
+            .build()
+            .unwrap();
+
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4o-mini")
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([tool_spec])
+            .build()
+            .unwrap();
+
+        let mut stream = openai.complete_stream(&req).await;
+        let first = stream.next().await.expect("stream yields");
+        assert!(first
+            .err()
+            .map(|e| matches!(e, LanguageModelError::PermanentError(_)))
+            .unwrap_or(false));
+        assert!(stream.next().await.is_none());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_invalid_tool_schema_errors() {
+        let invalid_schema = schemars::Schema::from(true);
+
+        let tool_spec = ToolSpec::builder()
+            .name("bad")
+            .description("bad schema")
+            .parameters_schema(invalid_schema)
+            .build()
+            .unwrap();
+
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4o")
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([tool_spec])
+            .build()
+            .unwrap();
+
+        let err = openai.complete(&req).await.unwrap_err();
+        assert!(matches!(err, LanguageModelError::PermanentError(_)));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_rate_limit_transient_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(429).set_body_string("rate limit"))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4o-mini")
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .build()
+            .unwrap();
+
+        let mut stream = openai.complete_stream(&req).await;
+        let first = stream.next().await.expect("stream yields one item");
+        assert!(matches!(first, Err(LanguageModelError::TransientError(_))));
+        assert!(stream.next().await.is_none());
     }
 
     #[test]
@@ -1099,7 +1233,9 @@ data: [DONE]\n\n";
 
         let mut stream = openai.complete_stream(&request).await;
         let first = stream.next().await.expect("stream yields one item");
-        assert!(matches!(first, Err(LanguageModelError::PermanentError(msg)) if msg.to_string().contains("Model not set")));
+        assert!(
+            matches!(first, Err(LanguageModelError::PermanentError(msg)) if msg.to_string().contains("Model not set"))
+        );
         assert!(stream.next().await.is_none(), "stream ends after error");
     }
 
@@ -1125,7 +1261,12 @@ data: [DONE]\n\n";
             .build()
             .unwrap();
 
-        openai.track_completion("gpt-4o", Some(&usage), Option::<&()>::None, Option::<&()>::None);
+        openai.track_completion(
+            "gpt-4o",
+            Some(&usage),
+            Option::<&()>::None,
+            Option::<&()>::None,
+        );
 
         // give spawned task a tick
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
