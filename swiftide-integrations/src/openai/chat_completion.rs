@@ -602,6 +602,9 @@ mod tests {
     use crate::openai::{OpenAI, Options};
 
     use super::*;
+    use std::sync::Arc;
+    use swiftide_core::chat_completion::{ToolOutput, ToolCallBuilder};
+    use futures_util::StreamExt;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -902,5 +905,238 @@ mod tests {
         let response = openai.complete(&request).await.unwrap();
 
         assert_eq!(response.message(), Some("All settings validated"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_with_tools_sets_auto_choice_and_parallel_calls() {
+        use serde_json::Value;
+        use wiremock::{Request, Respond, ResponseTemplate};
+
+        #[derive(schemars::JsonSchema)]
+        struct WeatherArgs {
+            city: String,
+        }
+
+        let tool_spec = ToolSpec::builder()
+            .name("get_weather")
+            .description("weather")
+            .parameters_schema(schemars::schema_for!(WeatherArgs))
+            .build()
+            .unwrap();
+
+        let mock_server = MockServer::start().await;
+
+        let response_body = json!({
+          "id": "chatcmpl-xyz",
+          "object": "chat.completion",
+          "created": 1,
+          "model": "gpt-4o",
+          "choices": [{
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Here",
+              "refusal": null,
+              "annotations": []
+            },
+            "finish_reason": "stop"
+          }],
+          "usage": {
+            "prompt_tokens": 2,
+            "completion_tokens": 3,
+            "total_tokens": 5,
+            "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+            "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}
+          }
+        });
+
+        struct Validate(Value);
+        impl Respond for Validate {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let v: Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(v["model"], "gpt-4o");
+                assert_eq!(v["parallel_tool_calls"], true);
+                assert_eq!(v["tool_choice"], "auto");
+                let tools = v["tools"].as_array().unwrap();
+                assert_eq!(tools.len(), 1);
+                assert_eq!(tools[0]["function"]["name"], "get_weather");
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "application/json")
+                    .set_body_json(self.0.clone())
+            }
+        }
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(Validate(response_body.clone()))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4o")
+            .parallel_tool_calls(Some(true))
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([tool_spec])
+            .build()
+            .unwrap();
+
+        let resp = openai.complete(&req).await.unwrap();
+        assert_eq!(resp.message(), Some("Here"));
+        assert_eq!(resp.usage.unwrap().total_tokens, 5);
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_happy_path() {
+        let mock_server = MockServer::start().await;
+
+        let sse_body = "\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\
+\n\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":2,\"total_tokens\":3}}\n\
+\n\
+data: [DONE]\n\n";
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4o-mini")
+            .build()
+            .unwrap();
+
+        let req = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello".into())])
+            .build()
+            .unwrap();
+
+        let results: Vec<_> = openai.complete_stream(&req).await.collect().await;
+        let last = results.last().unwrap().as_ref().unwrap();
+        assert_eq!(last.message(), Some("Hi"));
+        assert_eq!(last.usage.as_ref().map(|u| u.total_tokens), Some(3));
+    }
+
+    #[test]
+    fn test_message_to_openai_tool_output_without_content() {
+        let tool_call = ToolCallBuilder::default()
+            .id("call_1")
+            .name("noop")
+            .build()
+            .unwrap();
+        let msg = ChatMessage::ToolOutput(tool_call, ToolOutput::stop());
+
+        let converted = message_to_openai(&msg).expect("conversion succeeds");
+        match converted {
+            async_openai::types::chat::ChatCompletionRequestMessage::Tool(m) => {
+                assert_eq!(m.tool_call_id, "call_1");
+                assert_eq!(
+                    m.content,
+                    async_openai::types::chat::ChatCompletionRequestToolMessageContent::Text(
+                        "".into()
+                    )
+                );
+            }
+            other => panic!("expected tool message, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_message_to_openai_assistant_with_tool_calls_and_text() {
+        let tool_call = ToolCallBuilder::default()
+            .id("call_2")
+            .name("math")
+            .args("{\"x\":1}")
+            .build()
+            .unwrap();
+
+        let msg = ChatMessage::Assistant(Some("pending".into()), Some(vec![tool_call.clone()]));
+        let converted = message_to_openai(&msg).expect("conversion succeeds");
+        match converted {
+            async_openai::types::chat::ChatCompletionRequestMessage::Assistant(m) => {
+                assert_eq!(m.content.unwrap(), "pending".into());
+                let calls = m.tool_calls.unwrap();
+                assert_eq!(calls.len(), 1);
+                let async_openai::types::chat::ChatCompletionMessageToolCalls::Function(call) =
+                    &calls[0]
+                else {
+                    panic!("expected function tool call");
+                };
+                assert_eq!(call.id, "call_2");
+                assert_eq!(call.function.name, "math");
+                assert_eq!(call.function.arguments, "{\"x\":1}");
+            }
+            other => panic!("expected assistant message, got {other:?}"),
+        }
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_model_missing_errors_immediately() {
+        let openai = OpenAI::builder()
+            .default_embed_model("unused")
+            .build()
+            .expect("builder without prompt model still constructs");
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .build()
+            .unwrap();
+
+        let mut stream = openai.complete_stream(&request).await;
+        let first = stream.next().await.expect("stream yields one item");
+        assert!(matches!(first, Err(LanguageModelError::PermanentError(msg)) if msg.to_string().contains("Model not set")));
+        assert!(stream.next().await.is_none(), "stream ends after error");
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_track_completion_invokes_on_usage_callback() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        let hits = Arc::new(AtomicUsize::new(0));
+        let hits_clone = hits.clone();
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4o")
+            .on_usage(move |_usage| {
+                hits_clone.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            })
+            .build()
+            .unwrap();
+
+        let usage = UsageBuilder::default()
+            .prompt_tokens(1)
+            .completion_tokens(1)
+            .total_tokens(2)
+            .build()
+            .unwrap();
+
+        openai.track_completion("gpt-4o", Some(&usage), Option::<&()>::None, Option::<&()>::None);
+
+        // give spawned task a tick
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        assert_eq!(hits.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn test_usage_from_counts_helper() {
+        let usage = usage_from_counts(3, 4, 7);
+        assert_eq!(usage.prompt_tokens, 3);
+        assert_eq!(usage.completion_tokens, 4);
+        assert_eq!(usage.total_tokens, 7);
     }
 }
