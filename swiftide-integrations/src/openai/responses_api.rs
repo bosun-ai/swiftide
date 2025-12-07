@@ -201,7 +201,13 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                     ToolOutput::FeedbackRequired(value)
                     | ToolOutput::Stop(value)
                     | ToolOutput::AgentFailed(value) => {
-                        FunctionCallOutput::Text(value.clone().unwrap_or_default().to_string())
+        FunctionCallOutput::Text(
+            value
+                .as_ref()
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string(),
+        )
                     }
                     ToolOutput::Text(text) | ToolOutput::Fail(text) => {
                         FunctionCallOutput::Text(text.clone())

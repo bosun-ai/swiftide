@@ -85,10 +85,12 @@ impl<
         );
 
         // Send the request to the OpenAI API and await the response.
+        // Move the request; we logged key fields above if needed.
+        let tracking_request = request.clone();
         let response = self
             .client
             .chat()
-            .create(request.clone())
+            .create(request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -108,7 +110,12 @@ impl<
             )
         });
 
-        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
+        self.track_completion(
+            model,
+            usage.as_ref(),
+            Some(&tracking_request),
+            Some(&response),
+        );
 
         Ok(message)
     }

@@ -1,13 +1,10 @@
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use anyhow::{Context as _, Result};
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
     ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
-    ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools,
-    FunctionCall, FunctionObject, ToolChoiceOptions,
+    ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools, FunctionCall,
+    FunctionObject, ToolChoiceOptions,
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
@@ -86,7 +83,9 @@ impl<
                         .map(tools_to_openai)
                         .collect::<Result<Vec<_>>>()?,
                 )
-                .tool_choice(ChatCompletionToolChoiceOption::Mode(ToolChoiceOptions::Auto));
+                .tool_choice(ChatCompletionToolChoiceOption::Mode(
+                    ToolChoiceOptions::Auto,
+                ));
             if let Some(par) = self.default_options.parallel_tool_calls {
                 openai_request.parallel_tool_calls(par);
             }
@@ -98,10 +97,11 @@ impl<
 
         tracing::trace!(model, ?request, "Sending request to OpenAI");
 
+        let tracking_request = request.clone();
         let response = self
             .client
             .chat()
-            .create(request.clone())
+            .create(request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -155,7 +155,7 @@ impl<
         self.track_completion(
             model,
             our_response.usage.as_ref(),
-            Some(&request),
+            Some(&tracking_request),
             Some(&our_response),
         );
 
@@ -190,6 +190,7 @@ impl<
             .chat_completion_request_defaults()
             .model(&model_name)
             .messages(messages)
+            .stream(true)
             .stream_options(ChatCompletionStreamOptions {
                 include_usage: Some(true),
                 include_obfuscation: None,
@@ -211,7 +212,9 @@ impl<
                         }
                     },
                 )
-                .tool_choice(ChatCompletionToolChoiceOption::Mode(ToolChoiceOptions::Auto));
+                .tool_choice(ChatCompletionToolChoiceOption::Mode(
+                    ToolChoiceOptions::Auto,
+                ));
             if let Some(par) = self.default_options.parallel_tool_calls {
                 openai_request.parallel_tool_calls(par);
             }
@@ -226,101 +229,110 @@ impl<
 
         tracing::trace!(model = %model_name, ?request, "Sending request to OpenAI");
 
-        let response = match self.client.chat().create_stream(request.clone()).await {
+        let response_stream = match self.client.chat().create_stream(request.clone()).await {
             Ok(response) => response,
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
 
-        let accumulating_response = Arc::new(Mutex::new(ChatCompletionResponse::default()));
-        let final_response = accumulating_response.clone();
         let stream_full = self.stream_full;
+        let model_name_for_track = model_name.clone();
+        let self_for_stream = self.clone();
+        let tracking_request = request;
 
         let span = if cfg!(feature = "langfuse") {
-            tracing::info_span!(
-                "stream",
-                langfuse.type = "GENERATION",
-            )
+            tracing::info_span!("stream", langfuse.type = "GENERATION")
         } else {
             tracing::info_span!("stream")
         };
 
-        let self_for_stream = self.clone();
-        let stream = response
-            .map(move |chunk| match chunk {
-                Ok(chunk) => {
-                    let accumulating_response = Arc::clone(&accumulating_response);
+        let stream = stream::unfold(
+            (
+                response_stream,
+                ChatCompletionResponse::default(),
+                tracking_request.clone(),
+                false, // finished
+            ),
+            move |(mut response_stream, mut state, tracking_request, finished)| {
+                let stream_full = stream_full;
+                let self_for_stream = self_for_stream.clone();
+                let model_name_for_track = model_name_for_track.clone();
+                async move {
+                    if finished {
+                        return None;
+                    }
 
-                    let delta_message = chunk
-                        .choices
-                        .first()
-                        .and_then(|d| d.delta.content.as_deref());
-                    let delta_tool_calls = chunk
-                        .choices
-                        .first()
-                        .and_then(|d| d.delta.tool_calls.as_deref());
-                    let usage = chunk.usage.as_ref();
+                    match response_stream.next().await {
+                        Some(Ok(chunk)) => {
+                            let delta_message = chunk
+                                .choices
+                                .first()
+                                .and_then(|d| d.delta.content.as_deref());
+                            let delta_tool_calls = chunk
+                                .choices
+                                .first()
+                                .and_then(|d| d.delta.tool_calls.as_deref());
+                            let usage = chunk.usage.as_ref();
 
-                    let chat_completion_response = {
-                        let mut lock = accumulating_response.lock().unwrap();
-                        lock.append_message_delta(delta_message);
-
-                        if let Some(delta_tool_calls) = delta_tool_calls {
-                            for tc in delta_tool_calls {
-                                lock.append_tool_call_delta(
-                                    tc.index as usize,
-                                    tc.id.as_deref(),
-                                    tc.function.as_ref().and_then(|f| f.name.as_deref()),
-                                    tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
+                            state.append_message_delta(delta_message);
+                            if let Some(delta_tool_calls) = delta_tool_calls {
+                                for tc in delta_tool_calls {
+                                    state.append_tool_call_delta(
+                                        tc.index as usize,
+                                        tc.id.as_deref(),
+                                        tc.function.as_ref().and_then(|f| f.name.as_deref()),
+                                        tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
+                                    );
+                                }
+                            }
+                            if let Some(usage) = usage {
+                                state.append_usage_delta(
+                                    usage.prompt_tokens,
+                                    usage.completion_tokens,
+                                    usage.total_tokens,
                                 );
                             }
-                        }
 
-                        if let Some(usage) = usage {
-                            lock.append_usage_delta(
-                                usage.prompt_tokens,
-                                usage.completion_tokens,
-                                usage.total_tokens,
+                            let snapshot = if stream_full {
+                                state.clone()
+                            } else {
+                                ChatCompletionResponse {
+                                    id: state.id,
+                                    message: None,
+                                    tool_calls: None,
+                                    usage: None,
+                                    delta: state.delta.clone(),
+                                }
+                            };
+
+                            Some((
+                                Ok(snapshot),
+                                (response_stream, state, tracking_request, false),
+                            ))
+                        }
+                        Some(Err(err)) => Some((
+                            Err(openai_error_to_language_model_error(err)),
+                            (response_stream, state, tracking_request, true),
+                        )),
+                        None => {
+                            // Final emission; track completion with the full state.
+                            self_for_stream.track_completion(
+                                &model_name_for_track,
+                                state.usage.as_ref(),
+                                Some(&tracking_request),
+                                Some(&state),
                             );
+                            let final_snapshot = state.clone();
+                            Some((
+                                Ok(final_snapshot),
+                                (response_stream, state, tracking_request, true),
+                            ))
                         }
-
-                        if stream_full {
-                            lock.clone()
-                        } else {
-                            // If we are not streaming the full response, we return a clone of the
-                            // current state to avoid holding the lock
-                            // for too long.
-                            ChatCompletionResponse {
-                                id: lock.id,
-                                message: None,
-                                tool_calls: None,
-                                usage: None,
-                                delta: lock.delta.clone(),
-                            }
-                        }
-                    };
-
-                    Ok(chat_completion_response)
+                    }
                 }
-                Err(e) => Err(openai_error_to_language_model_error(e)),
-            })
-            .chain(
-                stream::iter(vec![final_response]).map(move |accumulating_response| {
-                    let lock = accumulating_response.lock().unwrap();
+            },
+        );
 
-                    self_for_stream.track_completion(
-                        &model_name,
-                        lock.usage.as_ref(),
-                        Some(&request),
-                        Some(&*lock),
-                    );
-
-                    Ok(lock.clone())
-                }),
-            );
-
-        let stream = tracing_futures::Instrument::instrument(stream, span);
-
-        Box::pin(stream)
+        Box::pin(tracing_futures::Instrument::instrument(stream, span))
     }
 }
 
@@ -345,11 +357,12 @@ impl<
             .context("Model not set")?;
 
         let create_request = build_responses_request_from_chat(self, request)?;
+        let tracking_request = create_request.clone();
 
         let response = self
             .client
             .responses()
-            .create(create_request.clone())
+            .create(create_request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -358,7 +371,7 @@ impl<
         self.track_completion(
             model,
             completion.usage.as_ref(),
-            Some(&create_request),
+            Some(&tracking_request),
             Some(&completion),
         );
 
@@ -403,7 +416,7 @@ impl<
         let mapped_stream = responses_stream_adapter(stream, stream_full);
 
         let this = self.clone();
-        let tracked_request = create_request.clone();
+        let tracked_request = create_request;
 
         let mapped_stream = mapped_stream.map(move |result| match result {
             Ok(item) => {
@@ -503,11 +516,13 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
         .context("tool schema must allow no additional properties")?;
     ensure_tool_schema_required_matches_properties(&mut parameters)
         .context("tool schema must list required properties")?;
-    tracing::debug!(
-        parameters = serde_json::to_string_pretty(&parameters).unwrap(),
-        tool = %spec.name,
-        "Tool parameters schema"
-    );
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        tracing::debug!(
+            parameters = serde_json::to_string_pretty(&parameters).unwrap(),
+            tool = %spec.name,
+            "Tool parameters schema"
+        );
+    }
 
     let function = FunctionObject {
         name: spec.name.clone(),
@@ -516,9 +531,9 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
         strict: Some(true),
     };
 
-    Ok(ChatCompletionTools::Function(async_openai::types::chat::ChatCompletionTool {
-        function,
-    }))
+    Ok(ChatCompletionTools::Function(
+        async_openai::types::chat::ChatCompletionTool { function },
+    ))
 }
 
 fn message_to_openai(
@@ -561,15 +576,15 @@ fn message_to_openai(
             if let Some(tool_calls) = tool_calls {
                 let calls = tool_calls
                     .iter()
-                    .map(|tool_call| ChatCompletionMessageToolCalls::Function(
-                        ChatCompletionMessageToolCall {
+                    .map(|tool_call| {
+                        ChatCompletionMessageToolCalls::Function(ChatCompletionMessageToolCall {
                             id: tool_call.id().to_string(),
                             function: FunctionCall {
                                 name: tool_call.name().to_string(),
                                 arguments: tool_call.args().unwrap_or_default().to_string(),
                             },
-                        },
-                    ))
+                        })
+                    })
                     .collect::<Vec<_>>();
 
                 builder.tool_calls(calls);

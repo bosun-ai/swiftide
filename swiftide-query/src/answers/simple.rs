@@ -6,7 +6,7 @@ use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
     prompt::Prompt,
-    querying::{Query, TransformationEvent, states},
+    querying::{Query, states},
 };
 
 /// Generate an answer based on the current query

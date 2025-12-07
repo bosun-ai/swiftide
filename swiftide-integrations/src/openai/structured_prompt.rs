@@ -176,11 +176,12 @@ impl<
             prompt_text.clone(),
             schema_value,
         )?;
+        let tracking_request = create_request.clone();
 
         let response = self
             .client
             .responses()
-            .create(create_request.clone())
+            .create(create_request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -193,7 +194,7 @@ impl<
         self.track_completion(
             model,
             completion.usage.as_ref(),
-            Some(&create_request),
+            Some(&tracking_request),
             Some(&completion),
         );
 
