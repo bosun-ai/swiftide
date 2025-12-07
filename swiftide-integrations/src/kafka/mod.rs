@@ -125,11 +125,11 @@ impl Kafka {
     }
 
     fn node_to_key_payload(&self, node: &TextNode) -> Result<(String, String)> {
-        let key = self.persist_key_for_node(node).map_err(|e| {
-            anyhow::anyhow!("persist_key_for_node failed: {:?} (node: {:?})", e, node)
-        })?;
+        let key = self
+            .persist_key_for_node(node)
+            .map_err(|e| anyhow::anyhow!("persist_key_for_node failed: {e:?} (node: {node:?})"))?;
         let payload = self.persist_value_for_node(node).map_err(|e| {
-            anyhow::anyhow!("persist_value_for_node failed: {:?} (node: {:?})", e, node)
+            anyhow::anyhow!("persist_value_for_node failed: {e:?} (node: {node:?})")
         })?;
 
         Ok((key, payload))

@@ -7,10 +7,9 @@ use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
     FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, InputItem, InputParam,
     MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
-    ReasoningArgs,
-    Response, ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam,
-    ResponseUsage as ResponsesUsage, Role, Status, TextResponseFormatConfiguration, Tool,
-    ToolChoiceOptions, ToolChoiceParam,
+    ReasoningArgs, Response, ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent,
+    ResponseTextParam, ResponseUsage as ResponsesUsage, Role, Status,
+    TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
@@ -200,15 +199,13 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                 let output = match tool_output {
                     ToolOutput::FeedbackRequired(value)
                     | ToolOutput::Stop(value)
-                    | ToolOutput::AgentFailed(value) => {
-        FunctionCallOutput::Text(
-            value
-                .as_ref()
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_string(),
-        )
-                    }
+                    | ToolOutput::AgentFailed(value) => FunctionCallOutput::Text(
+                        value
+                            .as_ref()
+                            .and_then(|v| v.as_str())
+                            .unwrap_or_default()
+                            .to_string(),
+                    ),
                     ToolOutput::Text(text) | ToolOutput::Fail(text) => {
                         FunctionCallOutput::Text(text.clone())
                     }
@@ -285,15 +282,13 @@ impl ResponsesStreamState {
                     .append_message_delta(Some(delta.delta.as_str()));
                 Some(self.emit(stream_full, false))
             }
-            ResponseStreamEvent::ResponseContentPartAdded(part) => {
-                match &part.part {
-                    OutputContent::OutputText(text) => {
-                        self.response.append_message_delta(Some(text.text.as_str()));
-                        Some(self.emit(stream_full, false))
-                    }
-                    _ => None,
+            ResponseStreamEvent::ResponseContentPartAdded(part) => match &part.part {
+                OutputContent::OutputText(text) => {
+                    self.response.append_message_delta(Some(text.text.as_str()));
+                    Some(self.emit(stream_full, false))
                 }
-            }
+                _ => None,
+            },
             ResponseStreamEvent::ResponseOutputItemAdded(event) => match event.item {
                 OutputItem::FunctionCall(function_call) => {
                     let index = event.output_index as usize;
@@ -616,11 +611,7 @@ fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall
 
 fn tool_call_from_function_call(function_call: &FunctionToolCall) -> LmResult<ToolCall> {
     let id = if function_call.call_id.is_empty() {
-        function_call
-            .id
-            .as_deref()
-            .unwrap_or_default()
-            .to_string()
+        function_call.id.as_deref().unwrap_or_default().to_string()
     } else {
         function_call.call_id.clone()
     };
@@ -652,7 +643,7 @@ fn function_call_identifier(function_call: &FunctionToolCall) -> &str {
         function_call
             .id
             .as_deref()
-            .unwrap_or_else(|| function_call.call_id.as_str())
+            .unwrap_or(function_call.call_id.as_str())
     } else {
         function_call.call_id.as_str()
     }
@@ -764,7 +755,9 @@ mod tests {
             input_tokens: 5,
             input_tokens_details: InputTokenDetails { cached_tokens: 0 },
             output_tokens: 3,
-            output_tokens_details: OutputTokenDetails { reasoning_tokens: 0 },
+            output_tokens_details: OutputTokenDetails {
+                reasoning_tokens: 0,
+            },
             total_tokens: 8,
         }
     }

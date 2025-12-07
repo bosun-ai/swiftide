@@ -52,7 +52,12 @@ impl<
             total_tokens: response.usage.total_tokens,
         };
 
-        self.track_completion(model, Some(&usage), Some(&tracking_request), Some(&response));
+        self.track_completion(
+            model,
+            Some(&usage),
+            Some(&tracking_request),
+            Some(&response),
+        );
 
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");

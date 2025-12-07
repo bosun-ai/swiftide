@@ -89,8 +89,8 @@ impl Answer for Simple {
         context.insert("original", query.original());
         context.insert("current", query.current());
 
-        // If there is a current transformation that is different from the original (transformed) query,
-        // use those as documents (i.e. a summary)
+        // If there is a current transformation that is different from the original (transformed)
+        // query, use those as documents (i.e. a summary)
         let documents = if !query.current().is_empty()
             && query
                 .history()
@@ -134,7 +134,7 @@ mod test {
     use std::sync::Mutex;
 
     use insta::assert_snapshot;
-    use swiftide_core::{querying::TransformationEvent, MockSimplePrompt, indexing::Metadata};
+    use swiftide_core::{MockSimplePrompt, indexing::Metadata, querying::TransformationEvent};
 
     use super::*;
 

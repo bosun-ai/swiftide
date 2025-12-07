@@ -720,7 +720,7 @@ mod tests {
     #[test_log::test(tokio::test)]
     #[allow(clippy::items_after_statements)]
     async fn test_complete_responses_api() {
-        use serde_json::{json, Value};
+        use serde_json::{Value, json};
         use wiremock::{Request, Respond};
 
         let mock_server = MockServer::start().await;
