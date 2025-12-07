@@ -132,7 +132,7 @@ impl<
                                         .build()
                                         .expect("infallible"),
                                 ),
-                                _ => None,
+                                ChatCompletionMessageToolCalls::Custom(_) => None,
                             })
                             .collect_vec()
                     }),
