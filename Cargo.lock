@@ -773,8 +773,6 @@ dependencies = [
  "derive_builder 0.20.2",
  "eventsource-stream",
  "futures",
- "hex",
- "hmac",
  "rand 0.9.2",
  "reqwest 0.12.24",
  "reqwest-eventsource 0.6.0",
@@ -782,11 +780,9 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sha2",
  "thiserror 2.0.17",
  "tokio",
  "tokio-stream",
- "tokio-tungstenite",
  "tokio-util",
  "tracing",
  "url",
@@ -10580,18 +10576,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-tungstenite"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d25a406cddcc431a75d3d9afc6a7c0f7428d4891dd973e4d54c56b46127bf857"
-dependencies = [
- "futures-util",
- "log",
- "tokio",
- "tungstenite",
-]
-
-[[package]]
 name = "tokio-uring"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11079,19 +11063,6 @@ dependencies = [
  "target-triple",
  "termcolor",
  "toml 0.9.8",
-]
-
-[[package]]
-name = "tungstenite"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8628dcc84e5a09eb3d8423d6cb682965dea9133204e8fb3efee74c2a0c259442"
-dependencies = [
- "bytes",
- "log",
- "rand 0.9.2",
- "thiserror 2.0.17",
- "utf-8",
 ]
 
 [[package]]

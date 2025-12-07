@@ -69,11 +69,7 @@ schemars = { version = "1.0", default-features = false }
 
 # Integrations
 spider = { version = "2.37", default-features = false }
-# Needed because older responses api has issues
-# Enable the full API surface (types + clients) and rustls TLS. The async-openai
-# crate gates most request/response types behind feature flags, so turn them on
-# explicitly while still keeping default-features off to control TLS choice.
-async-openai = { version = ">=0.29.6", default-features = false, features = ["full", "rustls"] }
+async-openai = { version = ">=0.31.0", default-features = false }
 qdrant-client = { version = "1.15", default-features = false, features = [
   "serde",
 ] }
