@@ -720,68 +720,36 @@ mod tests {
     #[test_log::test(tokio::test)]
     #[allow(clippy::items_after_statements)]
     async fn test_complete_responses_api() {
-        use serde_json::Value;
+        use serde_json::{json, Value};
         use wiremock::{Request, Respond};
 
         let mock_server = MockServer::start().await;
 
-        use async_openai::types::responses::{
-            CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus,
-            OutputText, PromptTokensDetails, Response as ResponsesResponse, Role, Status,
-            Usage as ResponsesUsage,
-        };
-
-        let response = ResponsesResponse {
-            created_at: 123,
-            error: None,
-            id: "resp_123".into(),
-            incomplete_details: None,
-            instructions: None,
-            max_output_tokens: None,
-            metadata: None,
-            model: "gpt-4.1-mini".into(),
-            object: "response".into(),
-            output: vec![OutputContent::Message(OutputMessage {
-                content: vec![Content::OutputText(OutputText {
-                    annotations: Vec::new(),
-                    text: "Hello via responses".into(),
-                })],
-                id: "msg_1".into(),
-                role: Role::Assistant,
-                status: OutputStatus::Completed,
-            })],
-            output_text: Some("Hello via responses".into()),
-            parallel_tool_calls: None,
-            previous_response_id: None,
-            reasoning: None,
-            store: None,
-            service_tier: None,
-            status: Status::Completed,
-            temperature: None,
-            text: None,
-            tool_choice: None,
-            tools: None,
-            top_p: None,
-            truncation: None,
-            usage: Some(ResponsesUsage {
-                input_tokens: 5,
-                input_tokens_details: PromptTokensDetails {
-                    audio_tokens: Some(0),
-                    cached_tokens: Some(0),
-                },
-                output_tokens: 3,
-                output_tokens_details: CompletionTokensDetails {
-                    accepted_prediction_tokens: Some(0),
-                    audio_tokens: Some(0),
-                    reasoning_tokens: Some(0),
-                    rejected_prediction_tokens: Some(0),
-                },
-                total_tokens: 8,
-            }),
-            user: None,
-        };
-
-        let response_body = serde_json::to_value(&response).unwrap();
+        let response_body = json!({
+            "created_at": 123,
+            "id": "resp_123",
+            "model": "gpt-4.1-mini",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "id": "msg_1",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [
+                        {"type": "output_text", "text": "Hello via responses", "annotations": []}
+                    ]
+                }
+            ],
+            "usage": {
+                "input_tokens": 5,
+                "input_tokens_details": {"cached_tokens": 0},
+                "output_tokens": 3,
+                "output_tokens_details": {"reasoning_tokens": 0},
+                "total_tokens": 8
+            }
+        });
 
         struct ValidateResponsesRequest {
             expected_model: &'static str,
@@ -915,7 +883,7 @@ mod tests {
                 Options::builder()
                     .max_completion_tokens(77)
                     .temperature(0.42)
-                    .reasoning_effort(async_openai::types::ReasoningEffort::Low)
+                    .reasoning_effort(async_openai::types::responses::ReasoningEffort::Low)
                     .seed(42)
                     .presence_penalty(1.1)
                     .metadata(serde_json::json!({"key": "value"}))

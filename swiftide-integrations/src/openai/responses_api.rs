@@ -726,11 +726,10 @@ where
 mod tests {
     use super::*;
     use async_openai::types::responses::{
-        CompletionTokensDetails, FunctionToolCall as ResponsesFunctionCall, OutputItem,
-        OutputMessage, OutputMessageContent, OutputStatus, OutputText, PromptTokensDetails,
-        ResponseCompleted, ResponseFunctionCallArgumentsDelta, ResponseFunctionCallArgumentsDone,
-        ResponseOutputItemAdded, ResponseOutputTextDelta, ResponseStreamEvent, ToolDefinition,
-        Usage as ResponsesUsage,
+        InputTokenDetails, OutputTokenDetails, ResponseCompletedEvent,
+        ResponseFunctionCallArgumentsDeltaEvent, ResponseFunctionCallArgumentsDoneEvent,
+        ResponseOutputItemAddedEvent, ResponseStreamEvent, ResponseTextDeltaEvent,
+        ResponseUsage as ResponsesUsage, Tool,
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
@@ -763,17 +762,9 @@ mod tests {
     fn sample_usage() -> ResponsesUsage {
         ResponsesUsage {
             input_tokens: 5,
-            input_tokens_details: PromptTokensDetails {
-                audio_tokens: Some(0),
-                cached_tokens: Some(0),
-            },
+            input_tokens_details: InputTokenDetails { cached_tokens: 0 },
             output_tokens: 3,
-            output_tokens_details: CompletionTokensDetails {
-                accepted_prediction_tokens: Some(0),
-                audio_tokens: Some(0),
-                reasoning_tokens: Some(0),
-                rejected_prediction_tokens: Some(0),
-            },
+            output_tokens_details: OutputTokenDetails { reasoning_tokens: 0 },
             total_tokens: 8,
         }
     }
@@ -819,8 +810,7 @@ mod tests {
 
         let create = build_responses_request_from_chat(&openai, &request).unwrap();
 
-        assert_eq!(create.model, "gpt-4.1");
-        assert_eq!(create.user.as_deref(), Some("tester"));
+        assert_eq!(create.model.as_deref(), Some("gpt-4.1"));
         assert_eq!(create.temperature, Some(0.2));
         assert_eq!(create.parallel_tool_calls, Some(true));
         assert_eq!(
@@ -841,7 +831,7 @@ mod tests {
         assert_eq!(tools.len(), 1);
         assert_eq!(
             create.tool_choice,
-            Some(ToolChoice::Mode(ToolChoiceMode::Auto))
+            Some(ToolChoiceParam::Mode(ToolChoiceOptions::Auto))
         );
     }
 
@@ -866,11 +856,14 @@ mod tests {
         let tools = create.tools.expect("tools present");
         assert_eq!(tools.len(), 1);
 
-        let ToolDefinition::Function(function) = &tools[0] else {
+        let Tool::Function(function) = &tools[0] else {
             panic!("expected function tool");
         };
 
-        let additional_properties = function.parameters.get("additionalProperties").cloned();
+        let additional_properties = function
+            .parameters
+            .as_ref()
+            .and_then(|params| params.get("additionalProperties").cloned());
 
         #[allow(dead_code)]
         #[derive(schemars::JsonSchema)]
@@ -889,7 +882,7 @@ mod tests {
 
         assert_eq!(
             function.parameters,
-            serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap()
+            Some(serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap())
         );
     }
 
@@ -909,7 +902,7 @@ mod tests {
                     "role": "assistant",
                     "status": "completed",
                     "content": [
-                        {"type": "output_text", "text": "Assistant reply"}
+                        {"type": "output_text", "text": "Assistant reply", "annotations": []}
                     ]
                 },
                 {
@@ -917,7 +910,7 @@ mod tests {
                     "id": "tool",
                     "call_id": "tool",
                     "name": "get_weather",
-                    "arguments": "{\\\"city\\\":\\\"Oslo\\\"}",
+                    "arguments": "{\"city\":\"Oslo\"}",
                     "status": "completed"
                 }
             ],
@@ -943,7 +936,7 @@ mod tests {
     fn test_stream_accumulator_handles_text_and_tool_events() {
         let mut state = ResponsesStreamState::default();
 
-        let delta: ResponseOutputTextDelta = serde_json::from_value(json!({
+        let delta: ResponseTextDeltaEvent = serde_json::from_value(json!({
             "sequence_number": 0,
             "item_id": "msg_1",
             "output_index": 0,
@@ -967,7 +960,7 @@ mod tests {
             Some("Hello")
         );
 
-        let item_added: ResponseOutputItemAdded = serde_json::from_value(json!({
+        let item_added: ResponseOutputItemAddedEvent = serde_json::from_value(json!({
             "sequence_number": 1,
             "output_index": 0,
             "item": {
@@ -987,7 +980,7 @@ mod tests {
             false,
         );
 
-        let args_delta: ResponseFunctionCallArgumentsDelta = serde_json::from_value(json!({
+        let args_delta: ResponseFunctionCallArgumentsDeltaEvent = serde_json::from_value(json!({
             "sequence_number": 2,
             "item_id": "call",
             "output_index": 0,
@@ -1001,7 +994,7 @@ mod tests {
             false,
         );
 
-        let args_done: ResponseFunctionCallArgumentsDone = serde_json::from_value(json!({
+        let args_done: ResponseFunctionCallArgumentsDoneEvent = serde_json::from_value(json!({
             "sequence_number": 3,
             "item_id": "call",
             "output_index": 0,
@@ -1017,7 +1010,7 @@ mod tests {
         );
 
         let usage = sample_usage();
-        let completed: ResponseCompleted = serde_json::from_value(json!({
+        let completed: ResponseCompletedEvent = serde_json::from_value(json!({
             "sequence_number": 4,
             "response": {
                 "id": "resp",
@@ -1025,6 +1018,7 @@ mod tests {
                 "created_at": 0,
                 "status": "completed",
                 "model": "gpt-4.1",
+                "output": [],
                 "usage": to_value(&usage).unwrap()
             }
         }))
@@ -1062,7 +1056,7 @@ mod tests {
         let mut state = ResponsesStreamState::default();
 
         let usage = sample_usage();
-        let completed: ResponseCompleted = serde_json::from_value(json!({
+        let completed: ResponseCompletedEvent = serde_json::from_value(json!({
             "sequence_number": 0,
             "response": {
                 "id": "resp",
@@ -1070,6 +1064,7 @@ mod tests {
                 "created_at": 0,
                 "status": "completed",
                 "model": "gpt-4.1",
+                "output": [],
                 "usage": to_value(&usage).unwrap()
             }
         }))
@@ -1082,7 +1077,7 @@ mod tests {
         );
         assert!(finished.finished);
 
-        let delta: ResponseOutputTextDelta = serde_json::from_value(json!({
+        let delta: ResponseTextDeltaEvent = serde_json::from_value(json!({
             "sequence_number": 1,
             "item_id": "msg_1",
             "output_index": 0,

@@ -134,7 +134,7 @@ mod test {
     use std::sync::Mutex;
 
     use insta::assert_snapshot;
-    use swiftide_core::{MockSimplePrompt, indexing::Metadata};
+    use swiftide_core::{querying::TransformationEvent, MockSimplePrompt, indexing::Metadata};
 
     use super::*;
 

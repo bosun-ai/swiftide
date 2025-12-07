@@ -214,12 +214,9 @@ mod tests {
     use super::*;
     use async_openai::Client;
     use async_openai::config::OpenAIConfig;
-    use async_openai::types::responses::{
-        CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus, OutputText,
-        PromptTokensDetails, Response as ResponsesResponse, Role, Status, Usage as ResponsesUsage,
-    };
     use schemars::{JsonSchema, schema_for};
     use serde::{Deserialize, Serialize};
+    use serde_json::json;
     use wiremock::{
         Mock, MockServer, ResponseTemplate,
         matchers::{method, path},
@@ -338,60 +335,31 @@ mod tests {
     async fn test_structured_prompt_via_responses_api() {
         let mock_server = MockServer::start().await;
 
-        let response = ResponsesResponse {
-            created_at: 0,
-            error: None,
-            id: "resp".into(),
-            incomplete_details: None,
-            instructions: None,
-            max_output_tokens: None,
-            metadata: None,
-            model: "gpt-4.1-mini".into(),
-            object: "response".into(),
-            output: vec![OutputContent::Message(OutputMessage {
-                content: vec![Content::OutputText(OutputText {
-                    annotations: Vec::new(),
-                    text: serde_json::to_string(&SimpleOutput {
-                        answer: "structured".into(),
-                    })
-                    .unwrap(),
-                })],
-                id: "msg".into(),
-                role: Role::Assistant,
-                status: OutputStatus::Completed,
-            })],
-            output_text: None,
-            parallel_tool_calls: None,
-            previous_response_id: None,
-            reasoning: None,
-            store: None,
-            service_tier: None,
-            status: Status::Completed,
-            temperature: None,
-            text: None,
-            tool_choice: None,
-            tools: None,
-            top_p: None,
-            truncation: None,
-            usage: Some(ResponsesUsage {
-                input_tokens: 10,
-                input_tokens_details: PromptTokensDetails {
-                    audio_tokens: Some(0),
-                    cached_tokens: Some(0),
-                },
-                output_tokens: 4,
-                output_tokens_details: CompletionTokensDetails {
-                    accepted_prediction_tokens: Some(0),
-                    audio_tokens: Some(0),
-                    reasoning_tokens: Some(0),
-                    rejected_prediction_tokens: Some(0),
-                },
-                total_tokens: 14,
-            }),
-            user: None,
-        };
-
-        let response_body = serde_json::to_value(&response).unwrap();
+        let response_body = json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1-mini",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "id": "msg",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [
+                        {"type": "output_text", "text": serde_json::to_string(&SimpleOutput { answer: "structured".into() }).unwrap(), "annotations": []}
+                    ]
+                }
+            ],
+            "usage": {
+                "input_tokens": 10,
+                "input_tokens_details": {"cached_tokens": 0},
+                "output_tokens": 4,
+                "output_tokens_details": {"reasoning_tokens": 0},
+                "total_tokens": 14
+            }
+        });
 
         Mock::given(method("POST"))
             .and(path("/responses"))
@@ -427,41 +395,24 @@ mod tests {
     async fn test_structured_prompt_via_responses_api_invalid_json_errors() {
         let mock_server = MockServer::start().await;
 
-        let bad_response = ResponsesResponse {
-            created_at: 0,
-            error: None,
-            id: "resp".into(),
-            incomplete_details: None,
-            instructions: None,
-            max_output_tokens: None,
-            metadata: None,
-            model: "gpt-4.1-mini".into(),
-            object: "response".into(),
-            output: vec![OutputContent::Message(OutputMessage {
-                content: vec![Content::OutputText(OutputText {
-                    annotations: Vec::new(),
-                    text: "not json".into(),
-                })],
-                id: "msg".into(),
-                role: Role::Assistant,
-                status: OutputStatus::Completed,
-            })],
-            output_text: Some("not json".into()),
-            parallel_tool_calls: None,
-            previous_response_id: None,
-            reasoning: None,
-            store: None,
-            service_tier: None,
-            status: Status::Completed,
-            temperature: None,
-            text: None,
-            tool_choice: None,
-            tools: None,
-            top_p: None,
-            truncation: None,
-            usage: None,
-            user: None,
-        };
+        let bad_response = json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1-mini",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "id": "msg",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [
+                        {"type": "output_text", "text": "not json", "annotations": []}
+                    ]
+                }
+            ]
+        });
 
         Mock::given(method("POST"))
             .and(path("/responses"))

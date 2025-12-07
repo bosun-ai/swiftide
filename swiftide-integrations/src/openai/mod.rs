@@ -733,7 +733,7 @@ mod test {
     #[test]
     fn test_stream_error_is_permanent() {
         // Create a stream error
-        let openai_error = OpenAIError::StreamError(StreamError::UnknownEvent(Event::default()));
+        let openai_error = OpenAIError::StreamError(Box::new(StreamError::UnknownEvent(Event::default())));
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as PermanentError
