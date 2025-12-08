@@ -161,11 +161,11 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
 }
 
 fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputItem>> {
-    let mut items = Vec::with_capacity(messages.len());
+        let mut items = Vec::with_capacity(messages.len());
 
-    for message in messages {
-        match message {
-            ChatMessage::System(content) => {
+        for message in messages {
+            match message {
+                ChatMessage::System(content) => {
                 items.push(message_item(Role::System, content.clone())?);
             }
             ChatMessage::User(content) => {
@@ -199,13 +199,12 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                 let output = match tool_output {
                     ToolOutput::FeedbackRequired(value)
                     | ToolOutput::Stop(value)
-                    | ToolOutput::AgentFailed(value) => FunctionCallOutput::Text(
-                        value
-                            .as_ref()
-                            .and_then(|v| v.as_str())
-                            .unwrap_or_default()
-                            .to_string(),
-                    ),
+                    | ToolOutput::AgentFailed(value) => {
+                        FunctionCallOutput::Text(value.as_ref().map_or_else(
+                            String::new,
+                            serde_json::Value::to_string,
+                        ))
+                    }
                     ToolOutput::Text(text) | ToolOutput::Fail(text) => {
                         FunctionCallOutput::Text(text.clone())
                     }
@@ -878,6 +877,53 @@ mod tests {
             function.parameters,
             Some(serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap())
         );
+    }
+
+    #[test]
+    fn test_tool_output_preserves_structured_values() {
+        let tool_call = ToolCall::builder()
+            .id("fc_test")
+            .name("demo")
+            .maybe_args(Some("{\"ok\":true}".to_owned()))
+            .build()
+            .unwrap();
+
+        let messages = vec![
+            ChatMessage::ToolOutput(
+                tool_call.clone(),
+                ToolOutput::Stop(Some(json!({"foo": "bar"}))),
+            ),
+            ChatMessage::ToolOutput(
+                tool_call.clone(),
+                ToolOutput::FeedbackRequired(Some(json!({"nested": {"a": 1}}))),
+            ),
+            ChatMessage::ToolOutput(
+                tool_call.clone(),
+                ToolOutput::AgentFailed(Some(json!([1, 2, 3]))),
+            ),
+        ];
+
+        let items = chat_messages_to_input_items(&messages).expect("conversion succeeds");
+        assert_eq!(items.len(), 3);
+
+        for (item, expected) in items.iter().zip([
+            r#"{"foo":"bar"}"#,
+            r#"{"nested":{"a":1}}"#,
+            r#"[1,2,3]"#,
+        ]) {
+            let InputItem::Item(async_openai::types::responses::Item::FunctionCallOutput(
+                function_output,
+            )) = item
+            else {
+                panic!("expected function call output item");
+            };
+
+            assert_eq!(function_output.call_id, "fc_test");
+            assert_eq!(
+                function_output.output,
+                FunctionCallOutput::Text(expected.to_string())
+            );
+        }
     }
 
     #[test]
