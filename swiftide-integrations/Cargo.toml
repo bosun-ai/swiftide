@@ -34,7 +34,12 @@ tracing-futures = { version = "0.2.5", features = ["futures-03"] }
 schemars.workspace = true
 
 # Integrations
-async-openai = { workspace = true, optional = true }
+async-openai = { workspace = true, optional = true, features = [
+  "rustls",
+  "chat-completion",
+  "embedding",
+  "responses",
+] }
 async-anthropic = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",

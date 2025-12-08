@@ -38,10 +38,11 @@ impl<
             model = &model,
             "[Embed] Request to openai"
         );
+        let tracking_request = request.clone();
         let response = self
             .client
             .embeddings()
-            .create(request.clone())
+            .create(request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -51,7 +52,12 @@ impl<
             total_tokens: response.usage.total_tokens,
         };
 
-        self.track_completion(model, Some(&usage), Some(&request), Some(&response));
+        self.track_completion(
+            model,
+            Some(&usage),
+            Some(&tracking_request),
+            Some(&response),
+        );
 
         let num_embeddings = response.data.len();
         tracing::debug!(num_embeddings = num_embeddings, "[Embed] Response openai");

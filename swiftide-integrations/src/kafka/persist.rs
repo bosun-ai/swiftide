@@ -39,7 +39,7 @@ impl Persist for Kafka {
                 Duration::from_secs(0),
             )
             .await
-            .map_err(|(e, _)| anyhow::anyhow!("Failed to send node: {:?}", e))?;
+            .map_err(|(e, _)| anyhow::anyhow!("Failed to send node: {e:?}"))?;
         Ok(node)
     }
 
@@ -56,7 +56,7 @@ impl Persist for Kafka {
                         )
                         .await
                     {
-                        return vec![Err(anyhow::anyhow!("failed to send node: {:?}", e))].into();
+                        return vec![Err(anyhow::anyhow!("failed to send node: {e:?}"))].into();
                     }
                 }
                 Err(e) => {

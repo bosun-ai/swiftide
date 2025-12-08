@@ -23,4 +23,4 @@ tmp
 
 **/.fastembed_cache
 .idea/
-.history
+.history.cargo

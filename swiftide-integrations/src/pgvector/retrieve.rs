@@ -172,7 +172,7 @@ impl Retrieve<CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>> for P
             .build_query_as::<VectorSearchResult>() // Convert to a typed query
             .fetch_all(pool) // Execute and get all results
             .await
-            .map_err(|e| anyhow!("Failed to execute search query: {}", e))?;
+            .map_err(|e| anyhow!("Failed to execute search query: {e}"))?;
 
         // Transform results into documents
         let documents = results.into_iter().map(Into::into).collect();

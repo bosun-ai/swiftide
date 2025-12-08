@@ -264,11 +264,11 @@ impl PgVector {
         query
             .execute(&mut *tx)
             .await
-            .map_err(|e| anyhow!("Failed to store nodes: {:?}", e))?;
+            .map_err(|e| anyhow!("Failed to store nodes: {e:?}"))?;
 
         tx.commit()
             .await
-            .map_err(|e| anyhow!("Failed to commit transaction: {:?}", e))
+            .map_err(|e| anyhow!("Failed to commit transaction: {e:?}"))
     }
 
     /// Prepares data from nodes into vectors for bulk processing.
