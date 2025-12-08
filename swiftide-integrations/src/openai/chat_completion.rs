@@ -516,13 +516,6 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
         .context("tool schema must allow no additional properties")?;
     ensure_tool_schema_required_matches_properties(&mut parameters)
         .context("tool schema must list required properties")?;
-    if tracing::enabled!(tracing::Level::DEBUG) {
-        tracing::debug!(
-            parameters = serde_json::to_string_pretty(&parameters).unwrap(),
-            tool = %spec.name,
-            "Tool parameters schema"
-        );
-    }
 
     let function = FunctionObject {
         name: spec.name.clone(),
@@ -1103,10 +1096,12 @@ data: [DONE]\n\n";
 
         let mut stream = openai.complete_stream(&req).await;
         let first = stream.next().await.expect("stream yields");
-        assert!(first
-            .err()
-            .map(|e| matches!(e, LanguageModelError::PermanentError(_)))
-            .unwrap_or(false));
+        assert!(
+            first
+                .err()
+                .map(|e| matches!(e, LanguageModelError::PermanentError(_)))
+                .unwrap_or(false)
+        );
         assert!(stream.next().await.is_none());
     }
 
