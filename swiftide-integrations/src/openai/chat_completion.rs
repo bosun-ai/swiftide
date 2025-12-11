@@ -1099,8 +1099,7 @@ data: [DONE]\n\n";
         assert!(
             first
                 .err()
-                .map(|e| matches!(e, LanguageModelError::PermanentError(_)))
-                .unwrap_or(false)
+                .is_some_and(|e| matches!(e, LanguageModelError::PermanentError(_)))
         );
         assert!(stream.next().await.is_none());
     }
@@ -1177,7 +1176,7 @@ data: [DONE]\n\n";
                 assert_eq!(
                     m.content,
                     async_openai::types::chat::ChatCompletionRequestToolMessageContent::Text(
-                        "".into()
+                        String::new()
                     )
                 );
             }

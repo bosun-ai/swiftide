@@ -161,11 +161,11 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
 }
 
 fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputItem>> {
-        let mut items = Vec::with_capacity(messages.len());
+    let mut items = Vec::with_capacity(messages.len());
 
-        for message in messages {
-            match message {
-                ChatMessage::System(content) => {
+    for message in messages {
+        match message {
+            ChatMessage::System(content) => {
                 items.push(message_item(Role::System, content.clone())?);
             }
             ChatMessage::User(content) => {
@@ -199,12 +199,11 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                 let output = match tool_output {
                     ToolOutput::FeedbackRequired(value)
                     | ToolOutput::Stop(value)
-                    | ToolOutput::AgentFailed(value) => {
-                        FunctionCallOutput::Text(value.as_ref().map_or_else(
-                            String::new,
-                            serde_json::Value::to_string,
-                        ))
-                    }
+                    | ToolOutput::AgentFailed(value) => FunctionCallOutput::Text(
+                        value
+                            .as_ref()
+                            .map_or_else(String::new, serde_json::Value::to_string),
+                    ),
                     ToolOutput::Text(text) | ToolOutput::Fail(text) => {
                         FunctionCallOutput::Text(text.clone())
                     }
@@ -906,11 +905,11 @@ mod tests {
         let items = chat_messages_to_input_items(&messages).expect("conversion succeeds");
         assert_eq!(items.len(), 3);
 
-        for (item, expected) in items.iter().zip([
-            r#"{"foo":"bar"}"#,
-            r#"{"nested":{"a":1}}"#,
-            r#"[1,2,3]"#,
-        ]) {
+        for (item, expected) in
+            items
+                .iter()
+                .zip([r#"{"foo":"bar"}"#, r#"{"nested":{"a":1}}"#, r"[1,2,3]"])
+        {
             let InputItem::Item(async_openai::types::responses::Item::FunctionCallOutput(
                 function_output,
             )) = item

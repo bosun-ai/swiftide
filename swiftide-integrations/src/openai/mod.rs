@@ -840,7 +840,9 @@ mod test {
         assert_eq!(built.presence_penalty, Some(1.1));
         assert_eq!(
             built.metadata,
-            Some(async_openai::types::Metadata::from(serde_json::json!({"tag": "demo"})))
+            Some(async_openai::types::Metadata::from(
+                serde_json::json!({"tag": "demo"})
+            ))
         );
         assert_eq!(built.user, Some("user-1".to_string()));
     }
