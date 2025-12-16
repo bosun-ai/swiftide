@@ -620,7 +620,7 @@ mod tests {
 
         let function = match tool {
             ChatCompletionTools::Function(ref tool) => &tool.function,
-            _ => panic!("expected function tool"),
+            ChatCompletionTools::Custom(_) => panic!("expected function tool"),
         };
 
         let additional_properties = function
@@ -943,7 +943,9 @@ mod tests {
           }
         });
 
+        #[allow(clippy::items_after_statements)]
         struct Validate(Value);
+        #[allow(clippy::items_after_statements)]
         impl Respond for Validate {
             fn respond(&self, request: &Request) -> ResponseTemplate {
                 let v: Value = serde_json::from_slice(&request.body).unwrap();
