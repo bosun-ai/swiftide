@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1764791123871,
+  "lastUpdate": 1766066043030,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29471,6 +29471,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 261457,
             "range": "± 1877",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "50510a530e681dd0a8eca841b1d31b9448760837",
+          "message": "chore(integrations/openai): Update async-openai to 0.31 (#978)\n\n- **Bump version**\n- **Draft**\n- **Reduce allocs**\n- **Reduce allocs**\n- **wip**\n- **Fix tests**\n- **Clippy + fmt**\n- **Improve tests**\n- **Add more tests**\n- **Minimal feature flags**",
+          "timestamp": "2025-12-18T14:45:16+01:00",
+          "tree_id": "ce772822e82c6d5bd2039dd72db83bbf18899412",
+          "url": "https://github.com/bosun-ai/swiftide/commit/50510a530e681dd0a8eca841b1d31b9448760837"
+        },
+        "date": 1766066041084,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 762528,
+            "range": "± 17249",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 225891,
+            "range": "± 1211",
             "unit": "ns/iter"
           }
         ]
