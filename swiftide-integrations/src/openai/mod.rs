@@ -5,9 +5,9 @@
 
 use anyhow::Context as _;
 use async_openai::error::{OpenAIError, StreamError};
-use async_openai::types::CreateChatCompletionRequestArgs;
-use async_openai::types::CreateEmbeddingRequestArgs;
-use async_openai::types::ReasoningEffort;
+use async_openai::types::chat::CreateChatCompletionRequestArgs;
+use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
+use async_openai::types::responses::ReasoningEffort;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
@@ -528,8 +528,8 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
             args.temperature(temperature);
         }
 
-        if let Some(reasoning_effort) = &options.reasoning_effort {
-            args.reasoning_effort(reasoning_effort.clone());
+        if let Some(reasoning_effort) = options.reasoning_effort.clone() {
+            args.reasoning_effort(reasoning_effort);
         }
 
         if let Some(seed) = options.seed {
@@ -615,7 +615,7 @@ fn is_rate_limited_stream_error(error: &StreamError) -> bool {
             }
             _ => false,
         },
-        StreamError::UnknownEvent(_) => false,
+        StreamError::UnknownEvent(_) | StreamError::EventStream(_) => false,
     }
 }
 
@@ -733,7 +733,8 @@ mod test {
     #[test]
     fn test_stream_error_is_permanent() {
         // Create a stream error
-        let openai_error = OpenAIError::StreamError(StreamError::UnknownEvent(Event::default()));
+        let openai_error =
+            OpenAIError::StreamError(Box::new(StreamError::UnknownEvent(Event::default())));
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as PermanentError
@@ -754,5 +755,113 @@ mod test {
             LanguageModelError::PermanentError(_) => {} // Expected
             _ => panic!("Expected PermanentError, got {result:?}"),
         }
+    }
+
+    #[test]
+    fn test_ensure_tool_schema_required_matches_properties_populates_required() {
+        let mut value = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "a": { "type": "string" },
+                "b": { "type": "number" }
+            },
+            "required": []
+        });
+
+        ensure_tool_schema_required_matches_properties(&mut value).unwrap();
+        let required = value["required"].as_array().unwrap();
+        let names: std::collections::HashSet<_> =
+            required.iter().map(|v| v.as_str().unwrap()).collect();
+        assert!(names.contains("a") && names.contains("b"));
+    }
+
+    #[test]
+    fn test_ensure_tool_schema_additional_properties_false_errors_on_non_object() {
+        let mut value = serde_json::json!(["not", "an", "object"]);
+        let err = ensure_tool_schema_additional_properties_false(&mut value).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("tool schema must be a JSON object"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_options_merge_overrides_set_fields() {
+        let mut base = Options::builder()
+            .prompt_model("a")
+            .temperature(0.1)
+            .build()
+            .unwrap();
+
+        let overlay = Options::builder()
+            .prompt_model("b")
+            .presence_penalty(0.2)
+            .build()
+            .unwrap();
+
+        base.merge(&overlay);
+
+        assert_eq!(base.prompt_model.as_deref(), Some("b"));
+        assert_eq!(base.temperature, Some(0.1));
+        assert_eq!(base.presence_penalty, Some(0.2));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_chat_completion_request_defaults_sets_all_options() {
+        let openai: OpenAI = OpenAI::builder()
+            .default_options(
+                Options::builder()
+                    .parallel_tool_calls(true)
+                    .max_completion_tokens(42)
+                    .temperature(0.3)
+                    .reasoning_effort(ReasoningEffort::Low)
+                    .seed(7)
+                    .presence_penalty(1.1)
+                    .metadata(serde_json::json!({"tag": "demo"}))
+                    .user("user-1"),
+            )
+            .build()
+            .unwrap();
+
+        let built = openai
+            .chat_completion_request_defaults()
+            .messages(Vec::new())
+            .model("gpt-4o")
+            .build()
+            .unwrap();
+
+        assert_eq!(built.parallel_tool_calls, Some(true));
+        assert_eq!(built.max_completion_tokens, Some(42));
+        assert_eq!(built.temperature, Some(0.3));
+        assert_eq!(built.reasoning_effort, Some(ReasoningEffort::Low));
+        assert_eq!(built.seed, Some(7));
+        assert_eq!(built.presence_penalty, Some(1.1));
+        assert_eq!(
+            built.metadata,
+            Some(async_openai::types::Metadata::from(
+                serde_json::json!({"tag": "demo"})
+            ))
+        );
+        assert_eq!(built.user, Some("user-1".to_string()));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_embed_request_defaults_sets_user_and_dimensions() {
+        let openai: OpenAI = OpenAI::builder()
+            .default_options(Options::builder().user("end-user").dimensions(128))
+            .build()
+            .unwrap();
+
+        let built = openai
+            .embed_request_defaults()
+            .model("text-embedding-3-small")
+            .input("hello")
+            .build()
+            .unwrap();
+        assert_eq!(built.user, Some("end-user".to_string()));
+        assert_eq!(built.dimensions, Some(128));
     }
 }

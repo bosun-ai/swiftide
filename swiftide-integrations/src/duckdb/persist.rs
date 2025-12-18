@@ -65,7 +65,7 @@ impl<T: Chunk + AsRef<str>> Duckdb<T> {
 
         for field in self.vectors.keys() {
             let Some(vector) = node_vectors.get(field) else {
-                anyhow::bail!("Expected vector for field {} in node", field);
+                anyhow::bail!("Expected vector for field {field} in node");
             };
 
             values.push(TextNodeValues::Embedding(vector.into()));

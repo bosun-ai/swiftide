@@ -2,7 +2,7 @@
 //! It defines an asynchronous function to interact with the `OpenAI` API, allowing prompt
 //! processing and generating responses as part of the Swiftide system.
 
-use async_openai::types::ChatCompletionRequestUserMessageArgs;
+use async_openai::types::chat::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
 use swiftide_core::{
     SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
@@ -85,10 +85,12 @@ impl<
         );
 
         // Send the request to the OpenAI API and await the response.
+        // Move the request; we logged key fields above if needed.
+        let tracking_request = request.clone();
         let response = self
             .client
             .chat()
-            .create(request.clone())
+            .create(request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -108,7 +110,12 @@ impl<
             )
         });
 
-        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
+        self.track_completion(
+            model,
+            usage.as_ref(),
+            Some(&tracking_request),
+            Some(&response),
+        );
 
         Ok(message)
     }
@@ -163,10 +170,6 @@ impl<
 mod tests {
     use super::*;
     use crate::openai::OpenAI;
-    use async_openai::types::responses::{
-        CompletionTokensDetails, Content, OutputContent, OutputMessage, OutputStatus, OutputText,
-        PromptTokensDetails, Response as ResponsesResponse, Role, Status, Usage as ResponsesUsage,
-    };
     use serde_json::Value;
     use wiremock::{
         Mock, MockServer, Request, Respond, ResponseTemplate,
@@ -184,57 +187,31 @@ mod tests {
     async fn test_prompt_via_responses_api_returns_message() {
         let mock_server = MockServer::start().await;
 
-        let response = ResponsesResponse {
-            created_at: 0,
-            error: None,
-            id: "resp".into(),
-            incomplete_details: None,
-            instructions: None,
-            max_output_tokens: None,
-            metadata: None,
-            model: "gpt-4.1-mini".into(),
-            object: "response".into(),
-            output: vec![OutputContent::Message(OutputMessage {
-                content: vec![Content::OutputText(OutputText {
-                    annotations: Vec::new(),
-                    text: "Hello world".into(),
-                })],
-                id: "msg".into(),
-                role: Role::Assistant,
-                status: OutputStatus::Completed,
-            })],
-            output_text: Some("Hello world".into()),
-            parallel_tool_calls: None,
-            previous_response_id: None,
-            reasoning: None,
-            store: None,
-            service_tier: None,
-            status: Status::Completed,
-            temperature: None,
-            text: None,
-            tool_choice: None,
-            tools: None,
-            top_p: None,
-            truncation: None,
-            usage: Some(ResponsesUsage {
-                input_tokens: 4,
-                input_tokens_details: PromptTokensDetails {
-                    audio_tokens: Some(0),
-                    cached_tokens: Some(0),
-                },
-                output_tokens: 2,
-                output_tokens_details: CompletionTokensDetails {
-                    accepted_prediction_tokens: Some(0),
-                    audio_tokens: Some(0),
-                    reasoning_tokens: Some(0),
-                    rejected_prediction_tokens: Some(0),
-                },
-                total_tokens: 6,
-            }),
-            user: None,
-        };
-
-        let response_body = serde_json::to_value(&response).unwrap();
+        let response_body = serde_json::json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1-mini",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "id": "msg",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [
+                        {"type": "output_text", "text": "Hello world", "annotations": []}
+                    ]
+                }
+            ],
+            "usage": {
+                "input_tokens": 4,
+                "input_tokens_details": {"cached_tokens": 0},
+                "output_tokens": 2,
+                "output_tokens_details": {"reasoning_tokens": 0},
+                "total_tokens": 6
+            }
+        });
 
         struct ValidatePromptRequest {
             response: Value,
