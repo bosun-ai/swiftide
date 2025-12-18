@@ -118,6 +118,9 @@ impl McpToolbox {
             client_info: Implementation {
                 name: "swiftide".into(),
                 version: env!("CARGO_PKG_VERSION").into(),
+                title: None,
+                icons: None,
+                website_url: None,
             },
             ..Default::default()
         }
@@ -165,7 +168,7 @@ impl ToolBox for McpToolbox {
             .await
             .context("Failed to list tools")?;
 
-        let filter = self.filter.as_ref().clone();
+        let filter = self.filter.as_ref();
         let mut server_name = peer_info
             .map_or("mcp", |info| info.server_info.name.as_str())
             .trim()
@@ -268,27 +271,33 @@ impl Tool for McpTool {
             .context("Failed to call tool")?;
 
         tracing::debug!(response = ?response, tool = self.name().as_ref(), "Received response from mcp tool");
-        let Some(content) = response.content else {
-            if response.is_error.unwrap_or(false) {
-                return Err(ToolError::Unknown(anyhow::anyhow!(
-                    "Error received from mcp tool without content"
-                )));
-            }
+        let rmcp::model::CallToolResult {
+            content,
+            structured_content,
+            is_error,
+            ..
+        } = response;
 
-            return Ok("Tool executed successfully".into());
+        let content = if !content.is_empty() {
+            content
+                .into_iter()
+                .filter_map(|c| c.as_text().map(|t| t.text.clone()))
+                .collect::<Vec<_>>()
+                .join("\n")
+        } else if let Some(structured) = structured_content {
+            structured.to_string()
+        } else {
+            String::new()
         };
-        let content = content
-            .into_iter()
-            .filter_map(|c| c.as_text().map(|t| t.text.clone()))
-            .collect::<Vec<_>>()
-            .join("\n");
 
-        if let Some(error) = response.is_error
-            && error
-        {
+        if is_error.unwrap_or(false) {
             return Err(ToolError::Unknown(anyhow::anyhow!(
                 "Failed to execute mcp tool: {content}"
             )));
+        }
+
+        if content.is_empty() {
+            return Ok("Tool executed successfully".into());
         }
 
         Ok(content.into())
@@ -462,7 +471,7 @@ mod tests {
     mod copied_from_rmcp {
         use rmcp::{
             ErrorData as McpError, ServerHandler,
-            handler::server::tool::{Parameters, ToolRouter},
+            handler::server::{tool::ToolRouter, wrapper::Parameters},
             model::{CallToolResult, Content, ServerCapabilities, ServerInfo},
             schemars, tool, tool_handler,
         };

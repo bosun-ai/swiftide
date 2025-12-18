@@ -7,14 +7,15 @@ use super::{EmbeddingModelType, FastEmbed};
 impl EmbeddingModel for FastEmbed {
     #[tracing::instrument(skip_all)]
     async fn embed(&self, input: Vec<String>) -> Result<Embeddings, LanguageModelError> {
-        if let EmbeddingModelType::Dense(embedding_model) = &*self.embedding_model {
-            embedding_model
+        let mut embedding_model = self.embedding_model.lock().await;
+
+        match &mut *embedding_model {
+            EmbeddingModelType::Dense(model) => model
                 .embed(input, self.batch_size)
-                .map_err(LanguageModelError::permanent)
-        } else {
-            Err(LanguageModelError::PermanentError(
+                .map_err(LanguageModelError::permanent),
+            EmbeddingModelType::Sparse(_) => Err(LanguageModelError::PermanentError(
                 "Expected dense model, got sparse".into(),
-            ))
+            )),
         }
     }
 }
