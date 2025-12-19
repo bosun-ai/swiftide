@@ -1,4 +1,5 @@
 #![allow(clippy::used_underscore_binding)]
+#![allow(clippy::needless_continue)]
 
 use args::ToolArgs;
 use darling::{Error, FromDeriveInput};
@@ -91,6 +92,7 @@ pub(crate) fn tool_attribute_impl(input_args: &TokenStream, input: &ItemFn) -> T
     }
 }
 
+#[allow(clippy::needless_continue)]
 #[derive(FromDeriveInput)]
 #[darling(attributes(tool), supports(struct_any), and_then = ToolDerive::update_defaults, forward_attrs(allow, doc, cfg))]
 struct ToolDerive {

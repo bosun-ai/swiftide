@@ -118,6 +118,9 @@ impl McpToolbox {
             client_info: Implementation {
                 name: "swiftide".into(),
                 version: env!("CARGO_PKG_VERSION").into(),
+                title: None,
+                icons: None,
+                website_url: None,
             },
             ..Default::default()
         }
@@ -165,7 +168,7 @@ impl ToolBox for McpToolbox {
             .await
             .context("Failed to list tools")?;
 
-        let filter = self.filter.as_ref().clone();
+        let filter = self.filter.as_ref();
         let mut server_name = peer_info
             .map_or("mcp", |info| info.server_info.name.as_str())
             .trim()
@@ -194,9 +197,18 @@ impl ToolBox for McpToolbox {
                 );
 
                 let mut tool_spec_builder = ToolSpec::builder();
-                let registered_name = format!("{}:{}", server_name, tool.name);
+
+                // Preallocate to avoid repeated string growth.
+                let mut registered_name =
+                    String::with_capacity(server_name.len() + tool.name.len() + 1);
+                registered_name.push_str(&server_name);
+                registered_name.push(':');
+                registered_name.push_str(&tool.name);
+
                 tool_spec_builder.name(registered_name.clone());
-                tool_spec_builder.description(tool.description.unwrap_or_default());
+                if let Some(description) = tool.description {
+                    tool_spec_builder.description(description);
+                }
 
                 match schema_value {
                     serde_json::Value::Null => {}
@@ -268,30 +280,45 @@ impl Tool for McpTool {
             .context("Failed to call tool")?;
 
         tracing::debug!(response = ?response, tool = self.name().as_ref(), "Received response from mcp tool");
-        let Some(content) = response.content else {
-            if response.is_error.unwrap_or(false) {
-                return Err(ToolError::Unknown(anyhow::anyhow!(
-                    "Error received from mcp tool without content"
-                )));
-            }
+        let rmcp::model::CallToolResult {
+            content,
+            structured_content,
+            is_error,
+            ..
+        } = response;
 
-            return Ok("Tool executed successfully".into());
+        let content = if content.is_empty() {
+            structured_content.map(|structured| structured.to_string())
+        } else {
+            let mut iter = content.into_iter().filter_map(|c| match c.raw {
+                rmcp::model::RawContent::Text(rmcp::model::RawTextContent { text, .. }) => {
+                    Some(text)
+                }
+                _ => None,
+            });
+            iter.next().map(|first| {
+                let mut joined = first;
+                for part in iter {
+                    joined.push('\n');
+                    joined.push_str(&part);
+                }
+                joined
+            })
         };
-        let content = content
-            .into_iter()
-            .filter_map(|c| c.as_text().map(|t| t.text.clone()))
-            .collect::<Vec<_>>()
-            .join("\n");
 
-        if let Some(error) = response.is_error
-            && error
-        {
+        if is_error.unwrap_or(false) {
+            let content = content.unwrap_or_else(|| "Unknown error".to_string());
             return Err(ToolError::Unknown(anyhow::anyhow!(
                 "Failed to execute mcp tool: {content}"
             )));
         }
 
-        Ok(content.into())
+        match content {
+            Some(content) => Ok(content.into()),
+            // Some MCP tools may legitimately return no textual or structured content
+            // while still being successful (e.g. optional echo with null input).
+            None => Ok("Tool executed successfully".into()),
+        }
     }
 
     fn name(&self) -> std::borrow::Cow<'_, str> {
@@ -462,7 +489,7 @@ mod tests {
     mod copied_from_rmcp {
         use rmcp::{
             ErrorData as McpError, ServerHandler,
-            handler::server::tool::{Parameters, ToolRouter},
+            handler::server::{tool::ToolRouter, wrapper::Parameters},
             model::{CallToolResult, Content, ServerCapabilities, ServerInfo},
             schemars, tool, tool_handler,
         };

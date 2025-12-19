@@ -31,6 +31,9 @@ async fn main() -> Result<()> {
         client_info: Implementation {
             name: "swiftide-example".into(),
             version: env!("CARGO_PKG_VERSION").into(),
+            title: None,
+            icons: None,
+            website_url: None,
         },
         ..Default::default()
     };

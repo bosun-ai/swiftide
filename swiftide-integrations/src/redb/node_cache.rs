@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use redb::ReadableDatabase;
 use swiftide_core::{NodeCache, indexing::TextNode};
 
 use super::Redb;
