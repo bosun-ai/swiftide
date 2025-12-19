@@ -28,8 +28,11 @@ pub mod traits {
     #[doc(inline)]
     pub use swiftide_core::query_traits::*;
     #[doc(inline)]
-    pub use swiftide_core::tokenizer::*;
+    pub use swiftide_core::token_estimation::{Estimatable, EstimateTokens};
 }
+
+#[doc(inline)]
+pub use swiftide_core::token_estimation::CharEstimator;
 
 /// Abstractions for chat completions and LLM interactions.
 #[doc(inline)]
