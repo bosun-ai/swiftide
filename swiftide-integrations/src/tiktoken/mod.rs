@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::tokenizer::{Estimatable, EstimateTokens};
+use swiftide_core::token_estimation::{Estimatable, EstimateTokens};
 use tiktoken_rs::{CoreBPE, get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer};
 
 /// A tiktoken based tokenizer for openai models. Can also be used for other models.
@@ -21,7 +21,7 @@ use tiktoken_rs::{CoreBPE, get_bpe_from_model, get_bpe_from_tokenizer, tokenizer
 /// # Example
 ///
 /// ```no_run
-/// # use swiftide_core::tokenizer::EstimateTokens;
+/// # use swiftide_core::token_estimation::EstimateTokens;
 /// # use swiftide_integrations::tiktoken::TikToken;
 ///
 /// # async fn test() {
@@ -116,7 +116,7 @@ mod tests {
         // 11x hello + 1x world + 2x 4 per message + 1x 3 for full + 2 whatever = 23
 
         let tokenizer = TikToken::try_from_model("gpt-4-0314").unwrap();
-        dbg!(messages.as_slice().for_estimate().await.unwrap());
+        dbg!(messages.as_slice().for_estimate().unwrap());
 
         assert_eq!(tokenizer.estimate(messages.as_slice()).await.unwrap(), 23);
     }
