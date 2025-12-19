@@ -110,13 +110,12 @@ impl<STATE: Clone + CanRetrieve> Query<STATE> {
         self.transformation_history
             .push(TransformationEvent::Retrieved {
                 before: self.current.clone(),
-                after: String::new(),
+                after: self.current.clone(),
                 documents,
             });
 
         let state = states::Retrieved;
 
-        self.current.clear();
         self.transition_to(state)
     }
 }
@@ -235,6 +234,42 @@ pub enum TransformationEvent {
     },
 }
 
+impl TransformationEvent {
+    /// Returns true if the event is a retrieval
+    pub fn is_retrieval(&self) -> bool {
+        matches!(self, TransformationEvent::Retrieved { .. })
+    }
+
+    /// Returns true if the event is a transformation
+    pub fn is_transformation(&self) -> bool {
+        matches!(self, TransformationEvent::Transformed { .. })
+    }
+
+    /// Returns the query before the transformation/retrieval
+    pub fn before(&self) -> &str {
+        match self {
+            TransformationEvent::Transformed { before, .. }
+            | TransformationEvent::Retrieved { before, .. } => before,
+        }
+    }
+
+    /// Returns the query after the transformation/retrieval
+    pub fn after(&self) -> &str {
+        match self {
+            TransformationEvent::Transformed { after, .. }
+            | TransformationEvent::Retrieved { after, .. } => after,
+        }
+    }
+
+    /// Returns the documents retrieved, if any
+    pub fn documents(&self) -> Option<&[Document]> {
+        match self {
+            TransformationEvent::Retrieved { documents, .. } => Some(documents),
+            TransformationEvent::Transformed { .. } => None,
+        }
+    }
+}
+
 impl std::fmt::Debug for TransformationEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -296,7 +331,6 @@ mod tests {
         let query = query.retrieved_documents(documents.clone());
         assert_eq!(query.documents(), &documents);
         assert_eq!(query.history().len(), 1);
-        assert!(query.current().is_empty());
         if let TransformationEvent::Retrieved {
             before,
             after,
@@ -304,7 +338,7 @@ mod tests {
         } = &query.history()[0]
         {
             assert_eq!(before, "test query");
-            assert_eq!(after, "");
+            assert_eq!(after, "test query");
             assert_eq!(retrieved_docs, &documents);
         } else {
             panic!("Unexpected event in history");
@@ -323,7 +357,7 @@ mod tests {
         assert_eq!(query.documents(), &documents);
         assert_eq!(query.original, "test query");
         if let TransformationEvent::Transformed { before, after } = &query.history()[1] {
-            assert_eq!(before, "");
+            assert_eq!(before, "test query");
             assert_eq!(after, "new response");
         } else {
             panic!("Unexpected event in history");

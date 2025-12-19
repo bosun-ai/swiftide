@@ -10,9 +10,12 @@ use serde::{Deserialize, Serialize};
 
 /// `ModelUsageUnit` : Unit of usage in Langfuse
 /// Unit of usage in Langfuse
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Default,
+)]
 pub enum ModelUsageUnit {
     #[serde(rename = "CHARACTERS")]
+    #[default]
     Characters,
     #[serde(rename = "TOKENS")]
     Tokens,
@@ -36,11 +39,5 @@ impl std::fmt::Display for ModelUsageUnit {
             Self::Images => write!(f, "IMAGES"),
             Self::Requests => write!(f, "REQUESTS"),
         }
-    }
-}
-
-impl Default for ModelUsageUnit {
-    fn default() -> ModelUsageUnit {
-        Self::Characters
     }
 }

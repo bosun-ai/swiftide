@@ -46,6 +46,7 @@ impl Default for ChatCompletionResponse {
 }
 
 #[derive(Clone, Default, Builder, Debug, Serialize, Deserialize, PartialEq)]
+#[allow(clippy::struct_field_names)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,

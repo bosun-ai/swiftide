@@ -16,6 +16,12 @@ use swiftide_core::{
 /// documents themselves, and will then feed them as context with the _original_ question to an llm
 /// to generate an answer.
 ///
+/// For the template context, the following variables are available:
+/// - **question**: The original question asked by the user
+/// - **original**: Alias for `question`
+/// - **current**: The current transformed query
+/// - **documents**: The documents to use as context
+///
 /// Optionally, a custom document template can be provided to render the documents in a specific
 /// way.
 #[derive(Debug, Clone, Builder)]
@@ -80,8 +86,18 @@ impl Answer for Simple {
         let mut context = tera::Context::new();
 
         context.insert("question", query.original());
+        context.insert("original", query.original());
+        context.insert("current", query.current());
 
-        let documents = if !query.current().is_empty() {
+        // If there is a current transformation that is different from the original (transformed)
+        // query, use those as documents (i.e. a summary)
+        let documents = if !query.current().is_empty()
+            && query
+                .history()
+                .iter()
+                .rfind(|e| e.is_retrieval())
+                .is_some_and(|h| h.before() != query.current())
+        {
             query.current().to_string()
         } else if let Some(template) = &self.document_template {
             let mut rendered_documents = Vec::new();
@@ -118,7 +134,7 @@ mod test {
     use std::sync::Mutex;
 
     use insta::assert_snapshot;
-    use swiftide_core::{MockSimplePrompt, indexing::Metadata};
+    use swiftide_core::{MockSimplePrompt, indexing::Metadata, querying::TransformationEvent};
 
     use super::*;
 
@@ -151,6 +167,11 @@ mod test {
             .original("original")
             .current("A fictional generated summary")
             .state(states::Retrieved)
+            .transformation_history(vec![TransformationEvent::Retrieved {
+                before: "abc".to_string(),
+                after: "abc".to_string(),
+                documents: documents.clone(),
+            }])
             .documents(documents)
             .build()
             .unwrap();
@@ -191,6 +212,11 @@ mod test {
             .original("original")
             .current(String::default())
             .state(states::Retrieved)
+            .transformation_history(vec![TransformationEvent::Retrieved {
+                before: "abc".to_string(),
+                after: "abc".to_string(),
+                documents: documents.clone(),
+            }])
             .documents(documents)
             .build()
             .unwrap();

@@ -31,35 +31,6 @@ impl Default for IngestionEvent {
         Self::TraceCreate(Default::default())
     }
 }
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
-pub enum Type {
-    #[serde(rename = "trace-create")]
-    TraceCreate,
-    #[serde(rename = "score-create")]
-    ScoreCreate,
-    #[serde(rename = "span-create")]
-    SpanCreate,
-    #[serde(rename = "span-update")]
-    SpanUpdate,
-    #[serde(rename = "generation-create")]
-    GenerationCreate,
-    #[serde(rename = "generation-update")]
-    GenerationUpdate,
-    #[serde(rename = "event-create")]
-    EventCreate,
-    #[serde(rename = "sdk-log")]
-    SdkLog,
-    #[serde(rename = "observation-create")]
-    ObservationCreate,
-    #[serde(rename = "observation-update")]
-    ObservationUpdate,
-}
-
-impl Default for Type {
-    fn default() -> Type {
-        Self::TraceCreate
-    }
-}
 
 impl IngestionEvent {
     pub fn new_trace_create(body: models::TraceBody) -> Self {

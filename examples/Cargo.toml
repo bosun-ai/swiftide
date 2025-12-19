@@ -29,6 +29,7 @@ swiftide = { path = "../swiftide/", features = [
   "anthropic",
   "gemini",
   "metrics",
+  "langfuse",
 ] }
 swiftide-macros = { path = "../swiftide-macros" }
 tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
@@ -37,6 +38,7 @@ spider = { workspace = true }
 fluvio = { workspace = true }
 temp-dir = { workspace = true }
 anyhow = { workspace = true }
+futures-util = { workspace = true }
 sqlx = { workspace = true }
 swiftide-test-utils = { path = "../swiftide-test-utils" }
 tracing = { workspace = true }
@@ -158,5 +160,25 @@ name = "tasks"
 path = "tasks.rs"
 
 [[example]]
+name = "agent-can-fail-custom-schema"
+path = "agent_can_fail_custom_schema.rs"
+
+[[example]]
+name = "stop-with-args-custom-schema"
+path = "stop_with_args_custom_schema.rs"
+
+[[example]]
+name = "responses-api"
+path = "responses_api.rs"
+
+[[example]]
 name = "structured-prompt"
 path = "structured_prompt.rs"
+
+[[example]]
+name = "langfuse"
+path = "langfuse.rs"
+
+[[example]]
+name = "tool-custom-schema"
+path = "tool_custom_schema.rs"

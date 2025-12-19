@@ -70,6 +70,21 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         }
     }
 
+    /// Returns the current context as the input type, if it matches
+    pub fn current_input(&self) -> Option<&Input> {
+        let input = self.current_context.as_ref()?;
+
+        input.downcast_ref::<Input>()
+    }
+
+    /// Returns the current context as the output type, if it matches
+    pub fn current_output(&self) -> Option<&Output> {
+        let input = self.current_context.as_ref()?;
+
+        input.downcast_ref::<Output>()
+    }
+
+    /// Returns the `done` node for this task
     pub fn done(&self) -> NodeId<NoopNode<Output>> {
         NodeId::new(0, &NoopNode::default())
     }

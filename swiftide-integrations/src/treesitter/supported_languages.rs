@@ -56,6 +56,15 @@ pub enum SupportedLanguages {
     Java,
     #[serde(alias = "go")]
     Go,
+    #[serde(rename = "c-sharp", alias = "csharp", alias = "c#", alias = "C#")]
+    #[strum(
+        serialize = "csharp",
+        serialize = "c-sharp",
+        serialize = "c#",
+        serialize = "C#",
+        to_string = "c-sharp"
+    )]
+    CSharp,
     #[serde(alias = "solidity")]
     Solidity,
     #[serde(alias = "c")]
@@ -72,6 +81,8 @@ pub enum SupportedLanguages {
     Elixir,
     #[serde(alias = "html", alias = "Html")]
     HTML,
+    #[serde(alias = "php", alias = "PHP", alias = "Php")]
+    PHP,
 }
 
 impl Hash for SupportedLanguages {
@@ -107,6 +118,9 @@ static JAVA_EXTENSIONS: &[&str] = &["java"];
 /// Static array of file extensions for Go files.
 static GO_EXTENSIONS: &[&str] = &["go"];
 
+/// Static array of file extensions for C# files.
+static C_SHARP_EXTENSIONS: &[&str] = &["cs", "csx"];
+
 /// Static array of file extensions for Solidity files.
 static SOLIDITY_EXTENSIONS: &[&str] = &["sol"];
 
@@ -119,6 +133,8 @@ static CPP_EXTENSIONS: &[&str] = &["c", "h", "o", "cc", "cpp"];
 static ELIXIR_EXTENSIONS: &[&str] = &["ex", "exs"];
 
 static HTML_EXTENSIONS: &[&str] = &["html", "htm", "xhtml"];
+
+static PHP_EXTENSIONS: &[&str] = &["php"];
 
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
@@ -134,11 +150,13 @@ impl SupportedLanguages {
             SupportedLanguages::Javascript => JAVASCRIPT_EXTENSIONS,
             SupportedLanguages::Java => JAVA_EXTENSIONS,
             SupportedLanguages::Go => GO_EXTENSIONS,
+            SupportedLanguages::CSharp => C_SHARP_EXTENSIONS,
             SupportedLanguages::Solidity => SOLIDITY_EXTENSIONS,
             SupportedLanguages::C => C_EXTENSIONS,
             SupportedLanguages::Cpp => CPP_EXTENSIONS,
             SupportedLanguages::Elixir => ELIXIR_EXTENSIONS,
             SupportedLanguages::HTML => HTML_EXTENSIONS,
+            SupportedLanguages::PHP => PHP_EXTENSIONS,
         }
     }
 }
@@ -164,11 +182,13 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Ruby => tree_sitter_ruby::LANGUAGE,
             SupportedLanguages::Java => tree_sitter_java::LANGUAGE,
             SupportedLanguages::Go => tree_sitter_go::LANGUAGE,
+            SupportedLanguages::CSharp => tree_sitter_c_sharp::LANGUAGE,
             SupportedLanguages::Solidity => tree_sitter_solidity::LANGUAGE,
             SupportedLanguages::C => tree_sitter_c::LANGUAGE,
             SupportedLanguages::Cpp => tree_sitter_cpp::LANGUAGE,
             SupportedLanguages::Elixir => tree_sitter_elixir::LANGUAGE,
             SupportedLanguages::HTML => tree_sitter_html::LANGUAGE,
+            SupportedLanguages::PHP => tree_sitter_php::LANGUAGE_PHP,
         }
         .into()
     }
@@ -194,6 +214,10 @@ mod test {
             SupportedLanguages::from_str("java"),
             Ok(SupportedLanguages::Java)
         );
+        assert_eq!(
+            SupportedLanguages::from_str("c-sharp"),
+            Ok(SupportedLanguages::CSharp)
+        );
     }
 
     /// Tests the case-insensitive string conversion for `SupportedLanguages` with different casing.
@@ -211,6 +235,10 @@ mod test {
         assert_eq!(
             SupportedLanguages::from_str("Java"),
             Ok(SupportedLanguages::Java)
+        );
+        assert_eq!(
+            SupportedLanguages::from_str("C-Sharp"),
+            Ok(SupportedLanguages::CSharp)
         );
         assert_eq!(
             SupportedLanguages::from_str("C++"),

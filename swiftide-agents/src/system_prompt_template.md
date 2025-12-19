@@ -34,3 +34,5 @@
 
 - Always respond with your thoughts and reasoning for your actions in one or two sentences. Even when calling tools.
 - Once the goal is achieved, call the `stop` tool
+
+{{additional}}

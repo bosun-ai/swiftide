@@ -48,7 +48,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/bosun-ai/swiftide">
-    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/logo.png" alt="Logo" width="250" height="250">
+    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/logo.png" alt="Logo" width="250" height="250">
   </a>
 
   <h3 align="center">Swiftide</h3>
@@ -78,20 +78,21 @@ Fast, streaming indexing, query, and agentic LLM applications in Rust
 
 <!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
 
-Swiftide is a Rust library for building LLM applications, enabling fast data ingestion, transformation, and indexing for effective querying and prompt injection, known as Retrieval Augmented Generation. It provides flexible building blocks for creating various agents, allowing rapid development from concept to production with minimal code.
+Swiftide is a Rust library for building LLM applications. From performing a simple prompt completion, to building fast, streaming indexing and querying pipelines, to building agents that can use tools and call other agents.
 
 ### High level features
 
+- Simple primitives for common LLM tasks
 - Build fast, streaming indexing and querying pipelines
 - Easily build agents, mix and match with previously built pipelines
 - A modular and extendable API, with minimal abstractions
 - Integrations with popular LLMs and storage providers
-- Ready to use pipeline transformations
+- Ready to use pipeline transformations or bring your own
 - Build graph like workflows with Tasks
 - [Langfuse](https://langfuse.com) support
 
 <div align="center">
-    <img src="https://github.com/bosun-ai/swiftide/blob/master/images/rag-dark.svg" alt="RAG" width="100%" >
+    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/overview.png" alt="Swiftide overview" width="100%" >
 </div>
 
 Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
@@ -105,22 +106,17 @@ We <3 feedback: project ideas, suggestions, and complaints are very welcome. Fee
 
 ## Latest updates on our blog :fire:
 
+- [Swiftide 0.31 - Tasks, Langfuse, Multi-Modal, and more](http://blog.bosun.ai/swiftide-0-31/)
+- [Swiftide 0.27 - Easy human-in-the-loop flows for agentic AI](http://blog.bosun.ai/swiftide-0-27/)
+- [Swiftide 0.26 - Streaming agents](http://blog.bosun.ai/swiftide-0-26/)
 - [Releasing kwaak with kwaak](https://bosun.ai/posts/releasing-kwaak-with-kwaak/)
-- [Release - Swiftide 0.16](https://bosun.ai/posts/swiftide-0-16/)
+- [Swiftide 0.16 - AI Agents in Rust](https://bosun.ai/posts/swiftide-0-16/)
 - [Rust in LLM based tools for performance](https://bosun.ai/posts/rust-for-genai-performance/)
 - [Evaluate Swiftide pipelines with Ragas](https://bosun.ai/posts/evaluating-swiftide-with-ragas/) (2024-09-15)
 - [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
-- [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04
+- [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04)
 
-- [Release - Swiftide 0.9](https://bosun.ai/posts/swiftide-0-9/) (2024-09-02)
-- [Bring your own transformers](https://bosun.ai/posts/bring-your-own-transformers-in-swiftide/) (2024-08-13)
-- [Release - Swiftide 0.8](https://bosun.ai/posts/swiftide-0-8/) (2024-08-12)
-- [Release - Swiftide 0.7](https://bosun.ai/posts/swiftide-0-7/) (2024-07-28)
-- [Building a code question answering pipeline](https://bosun.ai/posts/indexing-and-querying-code-with-swiftide/) (2024-07-13)
-- [Release - Swiftide 0.6](https://bosun.ai/posts/swiftide-0-6/) (2024-07-12)
-- [Release - Swiftide 0.5](https://bosun.ai/posts/swiftide-0-5/) (2024-07-1)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+More on our [blog](https://blog.bosun.ai/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -209,6 +205,7 @@ Our goal is to create a fast, extendable platform for building LLM applications 
 
 ## Features
 
+- Simple primitives for common LLM tasks
 - Fast, modular streaming indexing pipeline with async, parallel processing
 - Experimental query pipeline
 - Experimental agent framework
@@ -221,16 +218,19 @@ Our goal is to create a fast, extendable platform for building LLM applications 
 - Evaluate pipelines with RAGAS
 - Sparse vector support for hybrid search
 - `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
+- Tracing layer for exporting to Langfuse
 
 ### In detail
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Supported Large Language Model providers** | OpenAI (and Azure) <br> Anthropic <br> Gemini <br> OpenRouter <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                 |
-| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Other pipelines and streams                                                                                        |
-| **Transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
+| **Agents**                           | All the boiler plate for autonomous agents so you don't have to                                                                                     |
+| **Tasks** | Build graph like workflows with tasks, combining all the above to build complex applications                                                                                     |
+| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Kafka <br> Other pipelines and streams                                                                                        |
+| **Example and pre-build transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
 | **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
-| **Storage**                                  | Qdrant <br> Redis <br> LanceDB                                                                                                                                       |
+| **Storage**                                  | Qdrant <br> Redis <br> LanceDB <br> Postgres <br> Duckdb                                                                                                                                       |
 | **Query pipeline**                           | Similarity and hybrid search, query and response transformations, and evaluation                                                                                     |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -317,6 +317,10 @@ Swiftide is in a very early stage and we are aware that we lack features for the
 If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 Don't forget to give the project a star! Thanks again!
 
+Indexing and querying are performance sensitive tasks. Please make sure to consider allocations and performance when contributing.
+
+AI Generated code is welcome and not frowned upon. Please be genuine and think critically about what you add.
+
 If you just want to contribute (bless you!), see [our issues](https://github.com/bosun-ai/swiftide/issues) or join us on Discord.
 
 1. Fork the Project
@@ -325,7 +329,7 @@ If you just want to contribute (bless you!), see [our issues](https://github.com
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-See [CONTRIBUTING](https://github.com/bosun-ai/swiftide/blob/master/CONTRIBUTING.md) for more
+AI Agents can refer to [AGENTS.md](AGENTS.md) for workspace layout, commands, and expectations tailored to agents.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

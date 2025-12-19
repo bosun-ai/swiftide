@@ -8,9 +8,12 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize, Default,
+)]
 pub enum ScoreDataType {
     #[serde(rename = "NUMERIC")]
+    #[default]
     Numeric,
     #[serde(rename = "BOOLEAN")]
     Boolean,
@@ -25,11 +28,5 @@ impl std::fmt::Display for ScoreDataType {
             Self::Boolean => write!(f, "BOOLEAN"),
             Self::Categorical => write!(f, "CATEGORICAL"),
         }
-    }
-}
-
-impl Default for ScoreDataType {
-    fn default() -> ScoreDataType {
-        Self::Numeric
     }
 }

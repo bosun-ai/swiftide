@@ -9,6 +9,14 @@ description.workspace = true
 categories.workspace = true
 repository.workspace = true
 homepage.workspace = true
+include = [
+  "build.rs",
+  "../README.md",
+  "../images/",
+  "src/",
+  "../examples",
+  "tests/",
+]
 
 [badges]
 
@@ -16,19 +24,20 @@ homepage.workspace = true
 document-features = { workspace = true }
 
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.30" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.30" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.30" }
-swiftide-query = { path = "../swiftide-query", version = "0.30" }
-swiftide-agents = { path = "../swiftide-agents", version = "0.30", optional = true }
-swiftide-macros = { path = "../swiftide-macros", version = "0.30", optional = true }
-swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.30", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.32" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.32" }
+swiftide-query = { path = "../swiftide-query", version = "0.32" }
+swiftide-agents = { path = "../swiftide-agents", version = "0.32", optional = true }
+swiftide-macros = { path = "../swiftide-macros", version = "0.32", optional = true }
+swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.32", optional = true }
 
 # Re-exports for macros and ease of use
 anyhow.workspace = true
 async-trait.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+schemars = { workspace = true, features = ["derive"] }
 
 [features]
 ## By default only macros are enabled

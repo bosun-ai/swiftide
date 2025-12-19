@@ -8,7 +8,9 @@ use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _, Tree};
 use anyhow::{Context as _, Result};
 use std::collections::HashSet;
 
-use crate::treesitter::queries::{go, java, javascript, python, ruby, rust, solidity, typescript};
+use crate::treesitter::queries::{
+    csharp, go, java, javascript, python, ruby, rust, solidity, typescript,
+};
 
 use super::SupportedLanguages;
 
@@ -108,7 +110,8 @@ impl CodeTree<'_> {
 
 fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
     use SupportedLanguages::{
-        C, Cpp, Elixir, Go, HTML, Java, Javascript, Python, Ruby, Rust, Solidity, Typescript,
+        C, CSharp, Cpp, Elixir, Go, HTML, Java, Javascript, PHP, Python, Ruby, Rust, Solidity,
+        Typescript,
     };
 
     match language {
@@ -120,8 +123,9 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Ruby => (ruby::DEFS, ruby::REFS),
         Java => (java::DEFS, java::REFS),
         Go => (go::DEFS, go::REFS),
+        CSharp => (csharp::DEFS, csharp::REFS),
         Solidity => (solidity::DEFS, solidity::REFS),
-        C | Cpp | Elixir | HTML => unimplemented!(),
+        C | Cpp | Elixir | PHP | HTML => unimplemented!(),
     }
 }
 
@@ -203,6 +207,26 @@ mod tests {
         let result = tree.references_and_definitions().unwrap();
         assert_eq!(result.references, ["print", "range"]);
         assert_eq!(result.definitions, vec!["A", "hello_world"]);
+    }
+
+    #[test]
+    fn test_parsing_on_c_sharp() {
+        let parser = CodeParser::from_language(SupportedLanguages::CSharp);
+        let code = r#"
+        public class Greeter
+        {
+            public void SayHello()
+            {
+                System.Console.WriteLine("Hello, world!");
+            }
+        }
+        "#;
+
+        let tree = parser.parse(code).unwrap();
+        let result = tree.references_and_definitions().unwrap();
+
+        assert_eq!(result.references, vec!["WriteLine"]);
+        assert_eq!(result.definitions, vec!["Greeter", "SayHello"]);
     }
 
     #[test]

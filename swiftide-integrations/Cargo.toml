@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.30" }
-swiftide-macros = { path = "../swiftide-macros", version = "0.30" }
+swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.32" }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
@@ -34,7 +34,12 @@ tracing-futures = { version = "0.2.5", features = ["futures-03"] }
 schemars.workspace = true
 
 # Integrations
-async-openai = { workspace = true, optional = true }
+async-openai = { workspace = true, optional = true, features = [
+  "rustls",
+  "chat-completion",
+  "embedding",
+  "responses",
+] }
 async-anthropic = { workspace = true, optional = true }
 qdrant-client = { workspace = true, optional = true, default-features = false, features = [
   "serde",
@@ -66,8 +71,10 @@ tree-sitter-go = { workspace = true, optional = true }
 tree-sitter-solidity = { workspace = true, optional = true }
 tree-sitter-c = { workspace = true, optional = true }
 tree-sitter-cpp = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
 tree-sitter-elixir = { workspace = true, optional = true }
 tree-sitter-html = { workspace = true, optional = true }
+tree-sitter-php = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true, default-features = true }
@@ -83,6 +90,7 @@ aws-sdk-bedrockruntime = { workspace = true, features = [
 ], optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+reqwest-eventsource = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
   "rt_tokio_1",
@@ -130,6 +138,7 @@ indoc = { workspace = true }
 insta = { workspace = true }
 wiremock = { workspace = true }
 tokio-stream = { workspace = true }
+eventsource-stream.workspace = true
 
 
 [features]
@@ -157,11 +166,18 @@ tree-sitter = [
   "dep:tree-sitter-solidity",
   "dep:tree-sitter-c",
   "dep:tree-sitter-cpp",
+  "dep:tree-sitter-c-sharp",
   "dep:tree-sitter-elixir",
   "dep:tree-sitter-html",
+  "dep:tree-sitter-php",
 ]
 # OpenAI for embedding and prompting
-openai = ["dep:async-openai", "tiktoken-rs?/async-openai"]
+openai = [
+  "dep:async-openai",
+  "tiktoken-rs?/async-openai",
+  "dep:reqwest-eventsource",
+  "dep:reqwest",
+]
 # Groq 
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Goolge Gemini

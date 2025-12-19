@@ -2,6 +2,176 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.32.1](https://github.com/bosun-ai/swiftide/compare/v0.32.0...v0.32.1) - 2025-11-08
+
+### New features
+
+- [8bca0ef](https://github.com/bosun-ai/swiftide/commit/8bca0efa246e6adac061006f5f72cc9dd038cc8f) *(integrations/tree-sitter)*  Add C# support ([#967](https://github.com/bosun-ai/swiftide/pull/967))
+
+- [da35870](https://github.com/bosun-ai/swiftide/commit/da358708c83459c7f990027759fa5c56a2b647b9)  Custom schema for fail tool ([#966](https://github.com/bosun-ai/swiftide/pull/966))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.32.0...0.32.1
+
+
+
+## [0.32.0](https://github.com/bosun-ai/swiftide/compare/v0.31.3...v0.32.0) - 2025-11-05
+
+### New features
+
+- [9ae3331](https://github.com/bosun-ai/swiftide/commit/9ae33317bbcbf5e65e3aa7eb0bf378190b7c33b5) *(agents)*  [**breaking**] Improve toolspec api with schemars and support all possible types ([#940](https://github.com/bosun-ai/swiftide/pull/940))
+
+**BREAKING CHANGE**: macro-level `json_type` overrides beyond the basic
+primitives are no longer enforced; rely on Rust type inference or
+provide an explicit schemars-derived struct/custom schema when specific
+shapes are required
+
+- [a0cc8d7](https://github.com/bosun-ai/swiftide/commit/a0cc8d73a6ce9a82a03a78e8f83957d3c1455584) *(agents)*  Stop with args with optional schema ([#950](https://github.com/bosun-ai/swiftide/pull/950))
+
+- [8ad7d97](https://github.com/bosun-ai/swiftide/commit/8ad7d97b6911bd3c676c79a2d5318c31dad23e9f) *(agents)*  Add configurable timeouts to commands and local executor ([#963](https://github.com/bosun-ai/swiftide/pull/963))
+
+- [29289d3](https://github.com/bosun-ai/swiftide/commit/29289d37cb9c49fba89376c125194fc430c57a37) *(agents)*  [**breaking**] Add working directories for executor and commands ([#941](https://github.com/bosun-ai/swiftide/pull/941))
+
+**BREAKING CHANGE**: Add working directories for executor and commands ([#941](https://github.com/bosun-ai/swiftide/pull/941))
+
+- [ce724e5](https://github.com/bosun-ai/swiftide/commit/ce724e56034d717aafde08bb6c2d9dc163c66caf) *(agents/mcp)*  Prefix mcp tools with the server name ([#958](https://github.com/bosun-ai/swiftide/pull/958))
+
+### Bug fixes
+
+- [04cd88b](https://github.com/bosun-ai/swiftide/commit/04cd88b74c7a0dd962c093181884db0afe7b6d2d) *(docs)*  Replace `feature(doc_auto_cfg)` with `doc(auto_cfg)`
+
+- [7873ce5](https://github.com/bosun-ai/swiftide/commit/7873ce5941a7abf8ed60df4ec2ea8a7a4c1d1316) *(integrations/openai)*  Simplefy responses api and improve chat completion request ergonomics ([#956](https://github.com/bosun-ai/swiftide/pull/956))
+
+- [24328d0](https://github.com/bosun-ai/swiftide/commit/24328d07e61a4f02679ee6b63a38561d12acefd4) *(macros)*  Ensure deny_unknown_attributes is set on generated args ([#948](https://github.com/bosun-ai/swiftide/pull/948))
+
+- [54245d0](https://github.com/bosun-ai/swiftide/commit/54245d0e70aff580d0e12d68e174026edfdb4801)  Update async-openai and fix responses api ([#964](https://github.com/bosun-ai/swiftide/pull/964))
+
+- [72a6c92](https://github.com/bosun-ai/swiftide/commit/72a6c92764aeda4e88a7cf18d26ce600b7ba8a28)  Force additionalProperties properly on completion requests ([#949](https://github.com/bosun-ai/swiftide/pull/949))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.3...0.32.0
+
+
+
+## [0.31.3](https://github.com/bosun-ai/swiftide/compare/v0.31.2...v0.31.3) - 2025-10-06
+
+### New features
+
+- [a189ae6](https://github.com/bosun-ai/swiftide/commit/a189ae6de51571810f98cf58f9fdb58e7707f29a) *(integrations/openai)*  Opt-in responses api ([#943](https://github.com/bosun-ai/swiftide/pull/943))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.2...0.31.3
+
+
+
+## [0.31.2](https://github.com/bosun-ai/swiftide/compare/v0.31.1...v0.31.2) - 2025-09-23
+
+### New features
+
+- [f35c9b5](https://github.com/bosun-ai/swiftide/commit/f35c9b507e11f76ff7e78de35843b3310a25f3db) *(agents)*  Add builder lite methods to SystemPrompt
+
+- [9f533f5](https://github.com/bosun-ai/swiftide/commit/9f533f57b2c7ed4ac1988f9e3567cda42f64b824) *(agents)*  Add helpers to retrieve or mutate the system prompt
+
+- [febb7eb](https://github.com/bosun-ai/swiftide/commit/febb7eb282af98ce1124636cb66a8819265e3585) *(agents)*  Support appending any kind of string to default SystemPrompt
+
+- [992478e](https://github.com/bosun-ai/swiftide/commit/992478ec8912554f73e3af6467784fd9326461c5) *(integrations/tree-sitter)*  Splitter support for PHP ([#932](https://github.com/bosun-ai/swiftide/pull/932))
+
+### Bug fixes
+
+- [5df7a48](https://github.com/bosun-ai/swiftide/commit/5df7a483bed7d980bceef5e69fd7e1415da7563f) *(agents)*  Only log error tool calls if error after hook
+
+- [54dceec](https://github.com/bosun-ai/swiftide/commit/54dceece5b939a0b534891ee5902593920a3fdeb) *(agents/local-executor)*  Also respect workdir in read file and write file
+
+- [6a688b4](https://github.com/bosun-ai/swiftide/commit/6a688b4be6a5a443ac72aa8ec0165ce6a0bebf11) *(agents/local-executor)*  Respect workdir when running commands
+
+- [5b01c58](https://github.com/bosun-ai/swiftide/commit/5b01c5854432569638fa54225268e48b4133178d) *(langfuse)*  Use swiftide Usage in SimplePrompt ([#929](https://github.com/bosun-ai/swiftide/pull/929))
+
+### Miscellaneous
+
+- [ec1e301](https://github.com/bosun-ai/swiftide/commit/ec1e301eec2793613186b9e3bcb02de52741b936) *(agents)*  Explicit read file test for local executor
+
+- [8882a53](https://github.com/bosun-ai/swiftide/commit/8882a538f30c7ff457dcb3a1d48e623fbc5aad1d)  Improve tests for control tools ([#928](https://github.com/bosun-ai/swiftide/pull/928))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.1...0.31.2
+
+
+
+## [0.31.1](https://github.com/bosun-ai/swiftide/compare/v0.31.0...v0.31.1) - 2025-09-16
+
+### Docs
+
+- [866b77a](https://github.com/bosun-ai/swiftide/commit/866b77a8c33b6b7935f260c1df099d89492cb048) *(readme)*  Use raw links for images so they work on crates/docs
+
+- [513c143](https://github.com/bosun-ai/swiftide/commit/513c143cd11ae6ddda48f73012844f1f6d026ef7) *(readme)*  Remove double back-to-top
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.31.0...0.31.1
+
+
+
+## [0.31.0](https://github.com/bosun-ai/swiftide/compare/v0.30.1...v0.31.0) - 2025-09-16
+
+### New features
+
+- [ad6655d](https://github.com/bosun-ai/swiftide/commit/ad6655dc448defc3a9ef8401f0528da11e16a256) *(agents)*  Add helper to remove default stop tool from agent builder
+
+- [708ebe4](https://github.com/bosun-ai/swiftide/commit/708ebe436b4d2e9456723cfc95557071f2c636c9) *(agents)*  Implement From<SystemPrompt> for SystemPromptBuilder
+
+- [db79f21](https://github.com/bosun-ai/swiftide/commit/db79f21c323abca462a5f469814c4c03cc949b7e) *(agents/tasks)*  Add helper to create instant transitions from node ids
+
+- [ac7cd22](https://github.com/bosun-ai/swiftide/commit/ac7cd2209e1792b693acbde251a1aa756bb35541) *(indexing)*  [**breaking**] Prepare for multi modal and node transformations with generic indexing ([#899](https://github.com/bosun-ai/swiftide/pull/899))
+
+**BREAKING CHANGE**: Indexing pipelines are now generic over their inner
+type. This is a major change that enables major cool stuff in the
+future. Most of Swiftide still runs on Node<String>, and will be
+migrated when needed/appropriate. A `TextNode` alias is provided and
+most indexing traits now take the node's inner generic parameter as
+Input/Output associated types.
+
+- [4e20804](https://github.com/bosun-ai/swiftide/commit/4e20804cc78a90e61a1c816abe5810b2a34007af) *(integrations)*  More convenient usage reporting via callback ([#897](https://github.com/bosun-ai/swiftide/pull/897))
+
+- [5923532](https://github.com/bosun-ai/swiftide/commit/592353259018b39d4ce43b4a15a9dea1aa1d2904) *(integrations/openai, core)*  Add `StructuredPrompt` and implement for OpenAI ([#912](https://github.com/bosun-ai/swiftide/pull/912))
+
+- [d2681d5](https://github.com/bosun-ai/swiftide/commit/d2681d53ce235439885ace40ac08a6d4a058259a)  Integrate with Langfuse via tracing and make traces consistent and pretty ([#907](https://github.com/bosun-ai/swiftide/pull/907))
+
+- [b3f18cd](https://github.com/bosun-ai/swiftide/commit/b3f18cd00f9019496274142aa89342da115c6843)  Add convenience helpers to get ToolOutput values as ref
+
+### Bug fixes
+
+- [0071b72](https://github.com/bosun-ai/swiftide/commit/0071b721520d585f36d1ec6ff90eb88d669da043) *(agents)*  Replace tools when adding multiple with the same name
+
+- [dab4cf7](https://github.com/bosun-ai/swiftide/commit/dab4cf771cd9a6d90ae0985c83171fd87b213cba) *(integrations)*  Remove sync requirement in future from `on_usage_async`
+
+- [6702314](https://github.com/bosun-ai/swiftide/commit/6702314eb6d937353324ce601f2a35c2a13d4cc1) *(langfuse)*  Ensure all data is on the right generation span ([#913](https://github.com/bosun-ai/swiftide/pull/913))
+
+- [e389c8b](https://github.com/bosun-ai/swiftide/commit/e389c8ba72435ba1c1af109934b2b580fb6be7c1) *(langfuse)*  Set type field correctly on `SimplePrompt`
+
+### Miscellaneous
+
+- [5ba9a7d](https://github.com/bosun-ai/swiftide/commit/5ba9a7db6f844687b04c5fa5d9a2119f456108c6) *(agents)*  Implement default for `AgentCanFail` tool
+
+- [412dacb](https://github.com/bosun-ai/swiftide/commit/412dacb554d2b1478f3286a47352a6daed3079b9) *(agents/tasks)*  Clean up closure api for node registration
+
+- [478d583](https://github.com/bosun-ai/swiftide/commit/478d5830fa194b880595b2c2ef9ef409cc5b34c4) *(openai)*  Remove double `include_usage` in complete_stream
+
+### Docs
+
+- [2117190](https://github.com/bosun-ai/swiftide/commit/211719038d1912f3ee3f165cdb721c216fa48286)  Update blog post links in readme
+
+- [d5e0323](https://github.com/bosun-ai/swiftide/commit/d5e0323691a22a0b413d14d02e3bafb391e9dd7a)  Update readme
+
+- [a574860](https://github.com/bosun-ai/swiftide/commit/a5748604d14e10c4010384e020e09c6082d2a7c1)  Update readme
+
+### Style
+
+- [7081e29](https://github.com/bosun-ai/swiftide/commit/7081e291216491618fb07e1ac3f947a99b140c7f)  Fmt
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.30.1...0.31.0
+
+
+
 ## [0.30.1](https://github.com/bosun-ai/swiftide/compare/v0.30.0...v0.30.1) - 2025-08-19
 
 ### Bug fixes

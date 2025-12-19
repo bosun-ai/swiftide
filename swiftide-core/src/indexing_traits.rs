@@ -837,7 +837,7 @@ impl WithBatchIndexingDefaults for MockBatchableTransformer {}
 #[async_trait]
 /// Given a string prompt, queries an LLM to return structured data
 pub trait StructuredPrompt: Debug + Send + Sync + DynClone {
-    async fn structured_prompt<T: serde::Serialize + DeserializeOwned + JsonSchema>(
+    async fn structured_prompt<T: DeserializeOwned + JsonSchema>(
         &self,
         prompt: Prompt,
     ) -> Result<T, LanguageModelError>;
@@ -873,7 +873,7 @@ impl<C> StructuredPrompt for C
 where
     C: DynStructuredPrompt + Debug + Send + Sync + DynClone,
 {
-    async fn structured_prompt<T: serde::Serialize + DeserializeOwned + JsonSchema>(
+    async fn structured_prompt<T: DeserializeOwned + JsonSchema>(
         &self,
         prompt: Prompt,
     ) -> Result<T, LanguageModelError> {

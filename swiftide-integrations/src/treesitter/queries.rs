@@ -401,3 +401,43 @@ pub mod solidity {
     import_name: (_) @name )
     ";
 }
+// https://github.com/tree-sitter/tree-sitter-c-sharp/blob/master/queries/tags.scm
+pub mod csharp {
+    pub const DEFS: &str = r"
+        (class_declaration
+            name: (identifier) @name)
+
+        (interface_declaration
+            name: (identifier) @name)
+
+        (method_declaration
+            name: (identifier) @name)
+
+        (namespace_declaration
+            name: (identifier) @name)
+    ";
+
+    pub const REFS: &str = r"
+        (class_declaration
+            (base_list (_) @name))
+
+        (interface_declaration
+            (base_list (_) @name))
+
+        (object_creation_expression
+            type: (identifier) @name)
+
+        (type_parameter_constraints_clause
+            (identifier) @name)
+
+        (type_parameter_constraint
+            (type type: (identifier) @name))
+
+        (variable_declaration
+            type: (identifier) @name)
+
+        (invocation_expression
+            function: (member_access_expression
+                name: (identifier) @name))
+    ";
+}

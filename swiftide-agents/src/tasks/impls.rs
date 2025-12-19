@@ -12,7 +12,9 @@ use crate::{Agent, errors::AgentError};
 
 use super::node::{NodeArg, NodeId, TaskNode};
 
-// TODO: Consider removing this and providing docs instead
+/// An example of wrapping an Agent as a `TaskNode`
+///
+/// For more control you can always roll your own
 #[derive(Clone, Debug)]
 pub struct TaskAgent(Arc<Mutex<Agent>>);
 
@@ -23,8 +25,6 @@ impl From<Agent> for TaskAgent {
 }
 
 /// A 'default' implementation for an agent where there is no output
-///
-/// TODO: Make this nicer :))
 #[async_trait]
 impl TaskNode for TaskAgent {
     type Input = Prompt;

@@ -1,9 +1,5 @@
-use std::borrow::Cow;
-use std::fmt;
-
 use derive_builder::Builder;
-use serde::de::{Deserializer, Error as DeError, SeqAccess, Unexpected, Visitor};
-use serde::ser::{Error as SerError, SerializeSeq, Serializer};
+use schemars::Schema;
 use serde::{Deserialize, Serialize};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
@@ -20,10 +16,10 @@ pub enum ToolOutput {
     Fail(String),
 
     /// Stops an agent with an optional message
-    Stop(Option<Cow<'static, str>>),
+    Stop(Option<serde_json::Value>),
 
     /// Indicates that the agent failed and should stop
-    AgentFailed(Option<Cow<'static, str>>),
+    AgentFailed(Option<serde_json::Value>),
 }
 
 impl ToolOutput {
@@ -39,11 +35,11 @@ impl ToolOutput {
         ToolOutput::Stop(None)
     }
 
-    pub fn stop_with_args(output: impl Into<Cow<'static, str>>) -> Self {
+    pub fn stop_with_args(output: impl Into<serde_json::Value>) -> Self {
         ToolOutput::Stop(Some(output.into()))
     }
 
-    pub fn agent_failed(output: impl Into<Cow<'static, str>>) -> Self {
+    pub fn agent_failed(output: impl Into<serde_json::Value>) -> Self {
         ToolOutput::AgentFailed(Some(output.into()))
     }
 
@@ -75,17 +71,17 @@ impl ToolOutput {
     }
 
     /// Get the inner text if the output is a `Stop` variant.
-    pub fn as_stop(&self) -> Option<&str> {
+    pub fn as_stop(&self) -> Option<&serde_json::Value> {
         match self {
-            ToolOutput::Stop(args) => args.as_deref(),
+            ToolOutput::Stop(args) => args.as_ref(),
             _ => None,
         }
     }
 
     /// Get the inner text if the output is an `AgentFailed` variant.
-    pub fn as_agent_failed(&self) -> Option<&str> {
+    pub fn as_agent_failed(&self) -> Option<&serde_json::Value> {
         match self {
-            ToolOutput::AgentFailed(args) => args.as_deref(),
+            ToolOutput::AgentFailed(args) => args.as_ref(),
             _ => None,
         }
     }
@@ -109,14 +105,20 @@ impl std::fmt::Display for ToolOutput {
         match self {
             ToolOutput::Text(value) => write!(f, "{value}"),
             ToolOutput::Fail(value) => write!(f, "Tool call failed: {value}"),
-            ToolOutput::Stop(args) => write!(f, "Stop {}", args.as_deref().unwrap_or_default()),
+            ToolOutput::Stop(args) => {
+                if let Some(value) = args {
+                    write!(f, "Stop {value}")
+                } else {
+                    write!(f, "Stop")
+                }
+            }
             ToolOutput::FeedbackRequired(_) => {
                 write!(f, "Feedback required")
             }
             ToolOutput::AgentFailed(args) => write!(
                 f,
                 "Agent failed with output: {}",
-                args.as_deref().unwrap_or_default()
+                args.as_ref().unwrap_or_default()
             ),
         }
     }
@@ -195,18 +197,20 @@ impl ToolCallBuilder {
 /// A typed tool specification intended to be usable for multiple LLMs
 ///
 /// i.e. the json spec `OpenAI` uses to define their tools
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, Builder, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Builder, Default)]
 #[builder(setter(into), derive(Debug, Serialize, Deserialize))]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
 pub struct ToolSpec {
     /// Name of the tool
     pub name: String,
     /// Description passed to the LLM for the tool
     pub description: String,
 
-    #[builder(default)]
-    /// Optional parameters for the tool
-    pub parameters: Vec<ParamSpec>,
+    #[builder(default, setter(strip_option))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional JSON schema describing the tool arguments
+    pub parameters_schema: Option<Schema>,
 }
 
 impl ToolSpec {
@@ -215,199 +219,59 @@ impl ToolSpec {
     }
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Default, strum_macros::AsRefStr)]
-#[strum(serialize_all = "camelCase")]
-#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
-pub enum ParamType {
-    #[default]
-    String,
-    Number,
-    Boolean,
-    Array,
-    Nullable(Box<ParamType>),
-}
+impl Eq for ToolSpec {}
 
-pub enum InnerParamType {
-    String,
-    Number,
-    Boolean,
-    Array,
-}
-
-impl Serialize for ParamType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            // Non-nullable => single string
-            ParamType::String => serializer.serialize_str("string"),
-            ParamType::Number => serializer.serialize_str("number"),
-            ParamType::Boolean => serializer.serialize_str("boolean"),
-            ParamType::Array => serializer.serialize_str("array"),
-
-            // Nullable => an array of exactly two items, e.g. ["string", "null"]
-            ParamType::Nullable(inner) => {
-                // If you want to forbid nested nullables:
-                if let ParamType::Nullable(_) = inner.as_ref() {
-                    return Err(serde::ser::Error::custom("Nested Nullable not supported"));
-                }
-                // Otherwise, produce an array like `["string", "null"]`.
-                let mut seq = serializer.serialize_seq(Some(2))?;
-                seq.serialize_element(&primitive_variant_str(inner).map_err(S::Error::custom)?)?;
-                seq.serialize_element("null")?;
-                seq.end()
-            }
+impl std::hash::Hash for ToolSpec {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.description.hash(state);
+        if let Some(schema) = &self.parameters_schema
+            && let Ok(serialized) = serde_json::to_vec(schema)
+        {
+            serialized.hash(state);
         }
-    }
-}
-
-fn primitive_variant_str(pt: &ParamType) -> Result<&'static str, &'static str> {
-    match pt {
-        ParamType::String => Ok("string"),
-        ParamType::Number => Ok("number"),
-        ParamType::Boolean => Ok("boolean"),
-        ParamType::Array => Ok("array"),
-        ParamType::Nullable(_) => Err("Nested Nullable found"),
-    }
-}
-
-impl<'de> Deserialize<'de> for ParamType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(ParamTypeVisitor)
-    }
-}
-
-struct ParamTypeVisitor;
-
-impl<'de> Visitor<'de> for ParamTypeVisitor {
-    type Value = ParamType;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            formatter,
-            "a string (e.g. \"string\", \"number\") \
-             or a 2-element array [<type>, \"null\"]"
-        )
-    }
-
-    // Single strings => simple ParamType
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: DeError,
-    {
-        match value {
-            "string" => Ok(ParamType::String),
-            "number" => Ok(ParamType::Number),
-            "boolean" => Ok(ParamType::Boolean),
-            "array" => Ok(ParamType::Array),
-            other => Err(E::unknown_variant(
-                other,
-                &["string", "number", "boolean", "array"],
-            )),
-        }
-    }
-
-    // Arrays => expect exactly 2 items, one must be "null"
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut items = Vec::new();
-        while let Some(item) = seq.next_element::<String>()? {
-            items.push(item);
-        }
-
-        // Must have exactly 2 elements
-        if items.len() != 2 {
-            return Err(A::Error::invalid_length(items.len(), &"2"));
-        }
-
-        let mut first = items[0].as_str();
-        let mut second = items[1].as_str();
-
-        // If the first is "null", swap so second is "null" and first is the real type
-        if first == "null" {
-            std::mem::swap(&mut first, &mut second);
-        }
-
-        // Now 'second' must be "null".
-        if second != "null" {
-            return Err(A::Error::invalid_value(
-                Unexpected::Str(second),
-                &"expected exactly one 'null' in [<type>, 'null']",
-            ));
-        }
-
-        // 'first' must be a known primitive
-        let inner = match first {
-            "string" => ParamType::String,
-            "number" => ParamType::Number,
-            "boolean" => ParamType::Boolean,
-            "array" => ParamType::Array,
-            other => {
-                return Err(A::Error::unknown_variant(
-                    other,
-                    &["string", "number", "boolean", "array", "null"],
-                ));
-            }
-        };
-
-        Ok(ParamType::Nullable(Box::new(inner)))
-    }
-}
-/// Parameters for tools
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Builder, Serialize, Deserialize)]
-#[builder(setter(into))]
-#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
-pub struct ParamSpec {
-    /// Name of the parameter
-    pub name: String,
-    /// Description of the parameter
-    pub description: String,
-    /// Json spec type of the parameter
-    #[serde(rename = "type")]
-    #[builder(default)]
-    pub ty: ParamType,
-    /// Whether the parameter is required
-    #[builder(default = true)]
-    pub required: bool,
-}
-
-impl ParamSpec {
-    pub fn builder() -> ParamSpecBuilder {
-        ParamSpecBuilder::default()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
-    #[test]
-    fn test_serialize_param_type() {
-        let param = ParamType::Nullable(Box::new(ParamType::String));
-        let serialized = serde_json::to_string(&param).unwrap();
-        assert_eq!(serialized, r#"["string","null"]"#);
-
-        let deserialized: ParamType = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(param, deserialized);
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    struct ExampleArgs {
+        value: String,
     }
 
     #[test]
-    fn test_deserialize_param_type() {
-        let serialized = r#"["string","null"]"#;
-        let deserialized: ParamType = serde_json::from_str(serialized).unwrap();
-        assert_eq!(
-            deserialized,
-            ParamType::Nullable(Box::new(ParamType::String))
-        );
+    fn tool_spec_serializes_schema() {
+        let schema = schemars::schema_for!(ExampleArgs);
 
-        let serialized = r#""string""#;
-        let deserialized: ParamType = serde_json::from_str(serialized).unwrap();
-        assert_eq!(deserialized, ParamType::String);
+        let spec = ToolSpec::builder()
+            .name("example")
+            .description("An example tool")
+            .parameters_schema(schema)
+            .build()
+            .unwrap();
+
+        let json = serde_json::to_value(&spec).unwrap();
+        assert_eq!(json.get("name").and_then(|v| v.as_str()), Some("example"));
+        assert!(json.get("parameters_schema").is_some());
+    }
+
+    #[test]
+    fn tool_spec_is_hashable() {
+        let schema = schemars::schema_for!(ExampleArgs);
+        let spec = ToolSpec::builder()
+            .name("example")
+            .description("An example tool")
+            .parameters_schema(schema)
+            .build()
+            .unwrap();
+
+        let mut set = HashSet::new();
+        set.insert(spec.clone());
+
+        assert!(set.contains(&spec));
     }
 }

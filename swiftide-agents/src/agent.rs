@@ -75,6 +75,8 @@ pub struct Agent {
     ///
     /// Swiftide provides a default system prompt for all agents.
     ///
+    /// Alternatively you can also provide a `Prompt` directly, or disable the system prompt.
+    ///
     /// # Example
     ///
     /// ```no_run
@@ -210,14 +212,11 @@ impl AgentBuilder {
 
     /// Adds a tool to the agent
     pub fn add_tool(&mut self, tool: impl Tool + 'static) -> &mut Self {
-        self.tools = Some(
-            self.tools
-                .take()
-                .unwrap_or_default()
-                .into_iter()
-                .chain([Box::new(tool) as Box<dyn Tool>])
-                .collect(),
-        );
+        let tools = self.tools.get_or_insert_with(HashSet::new);
+        if let Some(tool) = tools.replace(tool.boxed()) {
+            tracing::debug!("Tool {} already exists, replacing", tool.name());
+        }
+
         self
     }
 
@@ -293,6 +292,15 @@ impl AgentBuilder {
         self
     }
 
+    /// Removes the default `stop` tool from the agent. This allows you to add your own or use
+    /// other methods to stop the agent.
+    ///
+    /// Note that you can also just override the tool if the name of the tool is `stop`.
+    pub fn without_default_stop_tool(&mut self) -> &mut Self {
+        self.clear_default_tools = Some(true);
+        self
+    }
+
     fn builder_default_tools(&self) -> HashSet<Box<dyn Tool>> {
         if self.clear_default_tools.is_some_and(|b| b) {
             HashSet::new()
@@ -310,10 +318,9 @@ impl AgentBuilder {
         TOOL: Into<Box<dyn Tool>>,
     {
         self.tools = Some(
-            tools
+            self.builder_default_tools()
                 .into_iter()
-                .map(Into::into)
-                .chain(self.builder_default_tools())
+                .chain(tools.into_iter().map(Into::into))
                 .collect(),
         );
         self
@@ -368,7 +375,9 @@ impl Agent {
 
     /// Adds a tool to an agent at run time
     pub fn add_tool(&mut self, tool: Box<dyn Tool>) {
-        self.tools.insert(tool);
+        if let Some(tool) = self.tools.replace(tool) {
+            tracing::debug!("Tool {} already exists, replacing", tool.name());
+        }
     }
 
     /// Modify the tools of the agent at runtime
@@ -535,13 +544,8 @@ impl Agent {
         );
 
         let mut chat_completion_request = ChatCompletionRequest::builder()
-            .messages(messages)
-            .tools_spec(
-                self.tools
-                    .iter()
-                    .map(swiftide_core::Tool::tool_spec)
-                    .collect::<HashSet<_>>(),
-            )
+            .messages(messages.to_vec())
+            .tool_specs(self.tools.iter().map(swiftide_core::Tool::tool_spec))
             .build()
             .map_err(AgentError::FailedToBuildRequest)?;
 
@@ -626,8 +630,7 @@ impl Agent {
             let handle = tokio::spawn(async move {
                     let handle_tool_call = handle_tool_call;
                     let output = tool.invoke(&*context, &handle_tool_call)
-                        .await
-                        .map_err(|e| { tracing::error!(error = %e, "Failed tool call"); e })?;
+                        .await?;
 
                 if cfg!(feature = "langfuse") {
                     tracing::debug!(
@@ -733,6 +736,18 @@ impl Agent {
             }
             _ => (),
         }
+    }
+
+    /// Retrieve the system prompt, if it is set.
+    pub fn system_prompt(&self) -> Option<&SystemPrompt> {
+        self.system_prompt.as_ref()
+    }
+
+    /// Retrieve a mutable reference to the system prompt, if it is set.
+    ///
+    /// Note that the system prompt is rendered only once, when the agent starts for the first time
+    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+        self.system_prompt.as_mut()
     }
 
     fn tool_calls_over_limit(&mut self, tool_call: &ToolCall) -> bool {
@@ -1631,5 +1646,25 @@ mod tests {
             .expect("Could not find refusal message");
 
         assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_removing_default_stop_tool() {
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("mock_tool");
+
+        // Build agent with without_default_stop_tool
+        let agent = Agent::builder()
+            .without_default_stop_tool()
+            .tools([mock_tool.clone()])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // Check that "stop" tool is NOT included
+        assert!(agent.find_tool_by_name("stop").is_none());
+        // Check that our provided tool is still present
+        assert!(agent.find_tool_by_name("mock_tool").is_some());
     }
 }

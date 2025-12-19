@@ -3,11 +3,15 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
-use async_openai::error::OpenAIError;
-use async_openai::types::CreateChatCompletionRequestArgs;
-use async_openai::types::CreateEmbeddingRequestArgs;
-use async_openai::types::ReasoningEffort;
+use anyhow::Context as _;
+use async_openai::error::{OpenAIError, StreamError};
+use async_openai::types::chat::CreateChatCompletionRequestArgs;
+use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
+use async_openai::types::responses::ReasoningEffort;
 use derive_builder::Builder;
+use reqwest::StatusCode;
+use reqwest_eventsource::Error as EventSourceError;
+use serde_json::Value;
 use std::pin::Pin;
 use std::sync::Arc;
 use swiftide_core::chat_completion::Usage;
@@ -15,6 +19,7 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
+mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
 
@@ -101,6 +106,10 @@ pub struct GenericOpenAI<
     /// Optional metadata to attach to metrics emitted by this client.
     metric_metadata: Option<std::collections::HashMap<String, String>>,
 
+    /// Opt-in flag to use `OpenAI`'s Responses API instead of the legacy Chat Completions API.
+    #[builder(default)]
+    pub(crate) use_responses_api: bool,
+
     /// A callback function that is called when usage information is available.
     #[builder(default, setter(custom))]
     #[allow(clippy::type_complexity)]
@@ -109,7 +118,7 @@ pub struct GenericOpenAI<
             dyn for<'a> Fn(
                     &'a Usage,
                 ) -> Pin<
-                    Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
+                    Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'a>,
                 > + Send
                 + Sync,
         >,
@@ -124,6 +133,7 @@ impl<C: async_openai::config::Config + Default + std::fmt::Debug> std::fmt::Debu
             .field("client", &self.client)
             .field("default_options", &self.default_options)
             .field("stream_full", &self.stream_full)
+            .field("use_responses_api", &self.use_responses_api)
             .finish_non_exhaustive()
     }
 }
@@ -265,6 +275,56 @@ impl From<&mut OptionsBuilder> for Options {
     }
 }
 
+pub(crate) fn ensure_tool_schema_additional_properties_false(
+    parameters: &mut Value,
+) -> anyhow::Result<()> {
+    let object = parameters
+        .as_object_mut()
+        .context("tool schema must be a JSON object")?;
+
+    object.insert("additionalProperties".to_string(), Value::Bool(false));
+
+    Ok(())
+}
+
+pub(crate) fn ensure_tool_schema_required_matches_properties(
+    parameters: &mut Value,
+) -> anyhow::Result<()> {
+    let object = parameters
+        .as_object_mut()
+        .context("tool schema must be a JSON object")?;
+
+    let property_names: Vec<String> = if let Some(Value::Object(map)) = object.get("properties") {
+        map.keys().cloned().collect()
+    } else {
+        object
+            .entry("required".to_string())
+            .or_insert_with(|| Value::Array(Vec::new()));
+        return Ok(());
+    };
+
+    let required_entry = object
+        .entry("required".to_string())
+        .or_insert_with(|| Value::Array(Vec::new()));
+
+    let required_array = required_entry
+        .as_array_mut()
+        .context("tool schema 'required' must be an array")?;
+
+    for name in property_names {
+        let name_ref = name.as_str();
+        let already_present = required_array
+            .iter()
+            .any(|value| value.as_str().is_some_and(|s| s == name_ref));
+
+        if !already_present {
+            required_array.push(Value::String(name));
+        }
+    }
+
+    Ok(())
+}
+
 impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
     pub fn builder() -> OpenAIBuilder {
@@ -295,9 +355,9 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     where
         F: for<'a> Fn(
                 &'a Usage,
-            ) -> Pin<
-                Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + Sync + 'a>,
-            > + Send
+            )
+                -> Pin<Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'a>>
+            + Send
             + Sync
             + 'static,
     {
@@ -446,6 +506,11 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
         &mut self.default_options
     }
 
+    /// Returns whether the Responses API is enabled for this client.
+    pub fn is_responses_api_enabled(&self) -> bool {
+        self.use_responses_api
+    }
+
     fn chat_completion_request_defaults(&self) -> CreateChatCompletionRequestArgs {
         let mut args = CreateChatCompletionRequestArgs::default();
 
@@ -463,8 +528,8 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
             args.temperature(temperature);
         }
 
-        if let Some(reasoning_effort) = &options.reasoning_effort {
-            args.reasoning_effort(reasoning_effort.clone());
+        if let Some(reasoning_effort) = options.reasoning_effort.clone() {
+            args.reasoning_effort(reasoning_effort);
         }
 
         if let Some(seed) = options.seed {
@@ -518,19 +583,19 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
             // recoverable
             LanguageModelError::transient(e)
         }
-        OpenAIError::JSONDeserialize(_) => {
+        OpenAIError::JSONDeserialize(_, _) => {
             // OpenAI generated a non-json response, probably a temporary problem on their side
             // (i.e. reverse proxy can't find an available backend)
             LanguageModelError::transient(e)
         }
-        OpenAIError::StreamError(e) => {
+        OpenAIError::StreamError(stream_error) => {
             // Note that this will _retry_ the stream. We have to assume that the stream just
-            // started if a 429 happens. For future readers, internally clients streaming crate
-            // (eventsource), has a backoff mechanism as well
-            if e.contains("Too Many Requests") {
-                LanguageModelError::transient(e)
+            // started if a 429 happens. For future readers, internally the streaming crate
+            // (eventsource) already applies backoff.
+            if is_rate_limited_stream_error(&stream_error) {
+                LanguageModelError::transient(OpenAIError::StreamError(stream_error))
             } else {
-                LanguageModelError::permanent(e)
+                LanguageModelError::permanent(OpenAIError::StreamError(stream_error))
             }
         }
         OpenAIError::FileSaveError(_)
@@ -539,10 +604,26 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
     }
 }
 
+fn is_rate_limited_stream_error(error: &StreamError) -> bool {
+    match error {
+        StreamError::ReqwestEventSource(inner) => match inner {
+            EventSourceError::InvalidStatusCode(status, _) => {
+                *status == StatusCode::TOO_MANY_REQUESTS
+            }
+            EventSourceError::Transport(source) => {
+                source.status() == Some(StatusCode::TOO_MANY_REQUESTS)
+            }
+            _ => false,
+        },
+        StreamError::UnknownEvent(_) | StreamError::EventStream(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use async_openai::error::{ApiError, OpenAIError};
+    use async_openai::error::{ApiError, OpenAIError, StreamError};
+    use eventsource_stream::Event;
 
     /// test default embed model
     #[test]
@@ -574,6 +655,13 @@ mod test {
             openai.default_options.embed_model,
             Some("gpt-3".to_string())
         );
+    }
+
+    #[test]
+    fn test_use_responses_api_flag() {
+        let openai: OpenAI = OpenAI::builder().use_responses_api(true).build().unwrap();
+
+        assert!(openai.is_responses_api_enabled());
     }
 
     #[test]
@@ -645,7 +733,8 @@ mod test {
     #[test]
     fn test_stream_error_is_permanent() {
         // Create a stream error
-        let openai_error = OpenAIError::StreamError("Stream failed".to_string());
+        let openai_error =
+            OpenAIError::StreamError(Box::new(StreamError::UnknownEvent(Event::default())));
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as PermanentError
@@ -666,5 +755,113 @@ mod test {
             LanguageModelError::PermanentError(_) => {} // Expected
             _ => panic!("Expected PermanentError, got {result:?}"),
         }
+    }
+
+    #[test]
+    fn test_ensure_tool_schema_required_matches_properties_populates_required() {
+        let mut value = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "a": { "type": "string" },
+                "b": { "type": "number" }
+            },
+            "required": []
+        });
+
+        ensure_tool_schema_required_matches_properties(&mut value).unwrap();
+        let required = value["required"].as_array().unwrap();
+        let names: std::collections::HashSet<_> =
+            required.iter().map(|v| v.as_str().unwrap()).collect();
+        assert!(names.contains("a") && names.contains("b"));
+    }
+
+    #[test]
+    fn test_ensure_tool_schema_additional_properties_false_errors_on_non_object() {
+        let mut value = serde_json::json!(["not", "an", "object"]);
+        let err = ensure_tool_schema_additional_properties_false(&mut value).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("tool schema must be a JSON object"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_options_merge_overrides_set_fields() {
+        let mut base = Options::builder()
+            .prompt_model("a")
+            .temperature(0.1)
+            .build()
+            .unwrap();
+
+        let overlay = Options::builder()
+            .prompt_model("b")
+            .presence_penalty(0.2)
+            .build()
+            .unwrap();
+
+        base.merge(&overlay);
+
+        assert_eq!(base.prompt_model.as_deref(), Some("b"));
+        assert_eq!(base.temperature, Some(0.1));
+        assert_eq!(base.presence_penalty, Some(0.2));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_chat_completion_request_defaults_sets_all_options() {
+        let openai: OpenAI = OpenAI::builder()
+            .default_options(
+                Options::builder()
+                    .parallel_tool_calls(true)
+                    .max_completion_tokens(42)
+                    .temperature(0.3)
+                    .reasoning_effort(ReasoningEffort::Low)
+                    .seed(7)
+                    .presence_penalty(1.1)
+                    .metadata(serde_json::json!({"tag": "demo"}))
+                    .user("user-1"),
+            )
+            .build()
+            .unwrap();
+
+        let built = openai
+            .chat_completion_request_defaults()
+            .messages(Vec::new())
+            .model("gpt-4o")
+            .build()
+            .unwrap();
+
+        assert_eq!(built.parallel_tool_calls, Some(true));
+        assert_eq!(built.max_completion_tokens, Some(42));
+        assert_eq!(built.temperature, Some(0.3));
+        assert_eq!(built.reasoning_effort, Some(ReasoningEffort::Low));
+        assert_eq!(built.seed, Some(7));
+        assert_eq!(built.presence_penalty, Some(1.1));
+        assert_eq!(
+            built.metadata,
+            Some(async_openai::types::Metadata::from(
+                serde_json::json!({"tag": "demo"})
+            ))
+        );
+        assert_eq!(built.user, Some("user-1".to_string()));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_embed_request_defaults_sets_user_and_dimensions() {
+        let openai: OpenAI = OpenAI::builder()
+            .default_options(Options::builder().user("end-user").dimensions(128))
+            .build()
+            .unwrap();
+
+        let built = openai
+            .embed_request_defaults()
+            .model("text-embedding-3-small")
+            .input("hello")
+            .build()
+            .unwrap();
+        assert_eq!(built.user, Some("end-user".to_string()));
+        assert_eq!(built.dimensions, Some(128));
     }
 }

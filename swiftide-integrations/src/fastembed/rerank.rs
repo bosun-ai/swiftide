@@ -112,7 +112,7 @@ impl TransformResponse for Rerank {
                 false,
                 self.model_batch_size,
             )
-            .map_err(|e| anyhow::anyhow!("Failed to rerank documents: {:?}", e))?
+            .map_err(|e| anyhow::anyhow!("Failed to rerank documents: {e:?}"))?
             .iter()
             .take(self.top_k)
             .map(|r| current_documents[r.index].clone())
