@@ -287,7 +287,9 @@ impl Tool for McpTool {
             ..
         } = response;
 
-        let content = if !content.is_empty() {
+        let content = if content.is_empty() {
+            structured_content.map(|structured| structured.to_string())
+        } else {
             let mut iter = content.into_iter().filter_map(|c| match c.raw {
                 rmcp::model::RawContent::Text(rmcp::model::RawTextContent { text, .. }) => {
                     Some(text)
@@ -302,10 +304,6 @@ impl Tool for McpTool {
                 }
                 joined
             })
-        } else if let Some(structured) = structured_content {
-            Some(structured.to_string())
-        } else {
-            None
         };
 
         if is_error.unwrap_or(false) {
@@ -319,7 +317,7 @@ impl Tool for McpTool {
             Some(content) => Ok(content.into()),
             // Some MCP tools may legitimately return no textual or structured content
             // while still being successful (e.g. optional echo with null input).
-            None => Ok(String::new().into()),
+            None => Ok("Tool executed successfully".into()),
         }
     }
 
