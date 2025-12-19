@@ -17,7 +17,7 @@ mod query_stream;
 pub mod query_traits;
 mod search_strategies;
 mod stream_backoff;
-pub mod tokenizer;
+pub mod token_estimation;
 pub mod type_aliases;
 
 pub mod document;
@@ -32,7 +32,7 @@ pub use crate::agent_traits::*;
 pub use crate::chat_completion::traits::*;
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
-pub use crate::tokenizer::*;
+pub use crate::token_estimation::*;
 
 // Decorators are available from the root
 pub use crate::indexing_decorators::*;
