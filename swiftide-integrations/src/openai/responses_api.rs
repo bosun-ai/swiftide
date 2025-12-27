@@ -182,28 +182,28 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                 items.push(message_item(Role::User, content.clone())?);
             }
             ChatMessage::Assistant(message) => {
-                if !message.is_reasoning_summary {
-                    if let Some(text) = message.content.as_ref() {
-                        items.push(message_item(Role::Assistant, text.clone())?);
-                    }
+                if !message.is_reasoning_summary
+                    && let Some(text) = message.content.as_ref()
+                {
+                    items.push(message_item(Role::Assistant, text.clone())?);
+                }
 
-                    if let Some(tool_calls) = message.tool_calls.as_ref() {
-                        for tool_call in tool_calls {
-                            let call_id = normalize_responses_function_call_id(tool_call.id());
-                            let arguments = tool_call.args().unwrap_or_default().to_owned();
+                if let Some(tool_calls) = message.tool_calls.as_ref() {
+                    for tool_call in tool_calls {
+                        let call_id = normalize_responses_function_call_id(tool_call.id());
+                        let arguments = tool_call.args().unwrap_or_default().to_owned();
 
-                            let function_call = FunctionToolCall {
-                                arguments,
-                                call_id: call_id.clone(),
-                                name: tool_call.name().to_owned(),
-                                id: None,
-                                status: Some(OutputStatus::InProgress),
-                            };
+                        let function_call = FunctionToolCall {
+                            arguments,
+                            call_id: call_id.clone(),
+                            name: tool_call.name().to_owned(),
+                            id: None,
+                            status: Some(OutputStatus::InProgress),
+                        };
 
-                            items.push(InputItem::Item(
-                                async_openai::types::responses::Item::FunctionCall(function_call),
-                            ));
-                        }
+                        items.push(InputItem::Item(
+                            async_openai::types::responses::Item::FunctionCall(function_call),
+                        ));
                     }
                 }
 

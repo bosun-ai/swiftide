@@ -290,14 +290,13 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
         ),
         Summary(msg) | System(msg) | User(msg) => builder.content(msg),
         Assistant(msg) => {
-            if msg.is_reasoning_summary {
-                return Ok(None);
-            }
             builder.role(MessageRole::Assistant);
 
             let mut content_list: Vec<MessageContent> = Vec::new();
 
-            if let Some(content) = msg.content.as_ref() {
+            if !msg.is_reasoning_summary
+                && let Some(content) = msg.content.as_ref()
+            {
                 content_list.push(content.as_str().into());
             }
 
@@ -311,6 +310,10 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
 
                     content_list.push(tool_call.into());
                 }
+            }
+
+            if content_list.is_empty() {
+                return Ok(None);
             }
 
             let content_list = MessageContentList(content_list);

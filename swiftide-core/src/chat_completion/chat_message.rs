@@ -10,7 +10,7 @@ pub struct ReasoningItem {
     pub encrypted_content: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize, Default)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct AssistantMessage {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
@@ -20,45 +20,6 @@ pub struct AssistantMessage {
     pub is_reasoning_summary: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<Vec<ReasoningItem>>,
-}
-
-impl<'de> Deserialize<'de> for AssistantMessage {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum AssistantMessageRepr {
-            Tuple(Option<String>, Option<Vec<ToolCall>>),
-            Struct {
-                content: Option<String>,
-                tool_calls: Option<Vec<ToolCall>>,
-                is_reasoning_summary: Option<bool>,
-                reasoning: Option<Vec<ReasoningItem>>,
-            },
-        }
-
-        match AssistantMessageRepr::deserialize(deserializer)? {
-            AssistantMessageRepr::Tuple(content, tool_calls) => Ok(AssistantMessage {
-                content,
-                tool_calls,
-                is_reasoning_summary: false,
-                reasoning: None,
-            }),
-            AssistantMessageRepr::Struct {
-                content,
-                tool_calls,
-                is_reasoning_summary,
-                reasoning,
-            } => Ok(AssistantMessage {
-                content,
-                tool_calls,
-                is_reasoning_summary: is_reasoning_summary.unwrap_or(false),
-                reasoning,
-            }),
-        }
-    }
 }
 
 #[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]

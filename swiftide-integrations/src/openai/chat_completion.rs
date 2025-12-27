@@ -561,12 +561,17 @@ fn message_to_openai(
                 .into()
         }
         ChatMessage::Assistant(msg) => {
-            if msg.is_reasoning_summary {
-                return Ok(None);
-            }
             let mut builder = ChatCompletionRequestAssistantMessageArgs::default();
 
-            if let Some(content) = msg.content.as_deref() {
+            let has_tool_calls = msg
+                .tool_calls
+                .as_ref()
+                .is_some_and(|calls| !calls.is_empty());
+            let include_content = !msg.is_reasoning_summary;
+
+            if include_content
+                && let Some(content) = msg.content.as_deref()
+            {
                 builder.content(content);
             }
 
@@ -585,6 +590,10 @@ fn message_to_openai(
                     .collect::<Vec<_>>();
 
                 builder.tool_calls(calls);
+            }
+
+            if !include_content && !has_tool_calls {
+                return Ok(None);
             }
 
             builder.build()?.into()

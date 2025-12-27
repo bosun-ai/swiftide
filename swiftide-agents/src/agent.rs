@@ -604,13 +604,7 @@ impl Agent {
                 reasoning: response.reasoning.clone(),
             };
 
-        let has_tool_calls = assistant_message
-            .tool_calls
-            .as_ref()
-            .is_some_and(|calls| !calls.is_empty());
-
         if assistant_message.content.is_none()
-            && !has_tool_calls
             && let Some(reasoning_items) = assistant_message.reasoning.as_ref()
         {
             let summary = reasoning_items
@@ -621,8 +615,8 @@ impl Agent {
                 .join("\n");
             if !summary.is_empty() {
                 assistant_message.content = Some(summary);
+                assistant_message.is_reasoning_summary = true;
             }
-            assistant_message.is_reasoning_summary = true;
         }
 
         self.add_message(ChatMessage::Assistant(assistant_message))
