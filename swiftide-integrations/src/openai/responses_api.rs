@@ -5,11 +5,11 @@ use std::task::{Context, Poll};
 use anyhow::{Context as _, Result};
 use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
-    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, IncludeEnum, InputItem, InputParam,
-    MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
-    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
-    ResponseStreamEvent, ResponseTextParam, ResponseUsage as ResponsesUsage, Role, Status,
-    TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, IncludeEnum, InputItem,
+    InputParam, MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent,
+    OutputStatus, ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema,
+    ResponseStream, ResponseStreamEvent, ResponseTextParam, ResponseUsage as ResponsesUsage, Role,
+    Status, TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
@@ -91,9 +91,7 @@ where
             args.include(vec![IncludeEnum::ReasoningEncryptedContent]);
         }
 
-        let reasoning = reasoning
-            .build()
-            .map_err(LanguageModelError::permanent)?;
+        let reasoning = reasoning.build().map_err(LanguageModelError::permanent)?;
         args.reasoning(reasoning);
 
         // Reasoning models should always be stateless in Responses API usage.
@@ -213,9 +211,11 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                             .summary
                             .iter()
                             .cloned()
-                            .map(|text| async_openai::types::responses::SummaryPart::SummaryText(
-                                async_openai::types::responses::Summary { text },
-                            ))
+                            .map(|text| {
+                                async_openai::types::responses::SummaryPart::SummaryText(
+                                    async_openai::types::responses::Summary { text },
+                                )
+                            })
                             .collect();
 
                         let reasoning_item = async_openai::types::responses::ReasoningItem {
@@ -797,8 +797,8 @@ mod tests {
     use serde_json::{json, to_value};
     use std::collections::HashSet;
     use swiftide_core::chat_completion::{
-        AssistantMessage, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem,
-        ToolCall, ToolSpec, Usage,
+        AssistantMessage, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
+        ReasoningItem, ToolCall, ToolSpec, Usage,
     };
 
     use crate::openai::{OpenAI, Options};
@@ -888,7 +888,7 @@ mod tests {
                 "summary": [
                     {"type": "summary_text", "text": "metadata summary"}
                 ]
-            })
+            }),
         ];
 
         serde_json::from_value(json!({
@@ -1097,7 +1097,10 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["First", "Second"]
         );
-        assert_eq!(reasoning_item.encrypted_content.as_deref(), Some("encrypted"));
+        assert_eq!(
+            reasoning_item.encrypted_content.as_deref(),
+            Some("encrypted")
+        );
     }
 
     #[test]

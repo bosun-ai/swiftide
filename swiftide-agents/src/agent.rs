@@ -596,13 +596,12 @@ impl Agent {
 
         invoke_hooks!(AfterCompletion, self, &mut response);
 
-        let mut assistant_message =
-            swiftide_core::chat_completion::AssistantMessage {
-                content: response.message,
-                tool_calls: response.tool_calls.clone(),
-                is_reasoning_summary: false,
-                reasoning: response.reasoning.clone(),
-            };
+        let mut assistant_message = swiftide_core::chat_completion::AssistantMessage {
+            content: response.message,
+            tool_calls: response.tool_calls.clone(),
+            is_reasoning_summary: false,
+            reasoning: response.reasoning.clone(),
+        };
 
         if assistant_message.content.is_none()
             && let Some(reasoning_items) = assistant_message.reasoning.as_ref()

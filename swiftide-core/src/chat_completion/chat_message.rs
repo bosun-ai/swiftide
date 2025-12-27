@@ -43,12 +43,15 @@ impl std::fmt::Display for ChatMessage {
                 f,
                 "Assistant: \"{}\", tools: {}",
                 message.content.as_deref().unwrap_or("None"),
-                message.tool_calls.as_deref().map_or("None".to_string(), |tc| {
-                    tc.iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                })
+                message
+                    .tool_calls
+                    .as_deref()
+                    .map_or("None".to_string(), |tc| {
+                        tc.iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
             ),
             ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
             ChatMessage::Summary(s) => write!(f, "Summary: \"{s}\""),
@@ -65,10 +68,7 @@ impl ChatMessage {
         ChatMessage::User(message.into())
     }
 
-    pub fn new_assistant(
-        message: Option<String>,
-        tool_calls: Option<Vec<ToolCall>>,
-    ) -> Self {
+    pub fn new_assistant(message: Option<String>, tool_calls: Option<Vec<ToolCall>>) -> Self {
         ChatMessage::Assistant(AssistantMessage {
             content: message,
             tool_calls,

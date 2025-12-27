@@ -548,10 +548,12 @@ fn message_to_openai(
             .into(),
         ChatMessage::ToolOutput(tool_call, tool_output) => {
             let Some(content) = tool_output.content() else {
-                return Ok(Some(ChatCompletionRequestToolMessageArgs::default()
-                    .tool_call_id(tool_call.id())
-                    .build()?
-                    .into()));
+                return Ok(Some(
+                    ChatCompletionRequestToolMessageArgs::default()
+                        .tool_call_id(tool_call.id())
+                        .build()?
+                        .into(),
+                ));
             };
 
             ChatCompletionRequestToolMessageArgs::default()
@@ -569,9 +571,7 @@ fn message_to_openai(
                 .is_some_and(|calls| !calls.is_empty());
             let include_content = !msg.is_reasoning_summary;
 
-            if include_content
-                && let Some(content) = msg.content.as_deref()
-            {
+            if include_content && let Some(content) = msg.content.as_deref() {
                 builder.content(content);
             }
 

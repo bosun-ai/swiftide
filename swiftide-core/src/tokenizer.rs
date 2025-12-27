@@ -99,7 +99,7 @@ impl Estimatable for &ChatMessage {
                     && message
                         .tool_calls
                         .as_ref()
-                        .map_or(true, |calls| calls.is_empty()) =>
+                        .is_none_or(std::vec::Vec::is_empty) =>
             {
                 0
             }

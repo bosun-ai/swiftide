@@ -3,11 +3,7 @@
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector
 //! database.
 
-#![cfg(all(
-    feature = "qdrant",
-    feature = "fastembed",
-    feature = "tree-sitter"
-))]
+#![cfg(all(feature = "qdrant", feature = "fastembed", feature = "tree-sitter"))]
 
 use qdrant_client::qdrant::{
     Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder, ScrollPointsBuilder,

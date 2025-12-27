@@ -273,7 +273,7 @@ fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage>
                     && assistant
                         .tool_calls
                         .as_ref()
-                        .map_or(true, |calls| calls.is_empty())
+                        .is_none_or(std::vec::Vec::is_empty)
         )
     });
 
