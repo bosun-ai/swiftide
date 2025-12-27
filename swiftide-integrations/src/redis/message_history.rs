@@ -170,7 +170,7 @@ mod tests {
         redis.push_owned(m1.clone()).await.unwrap();
         redis.push_owned(m2.clone()).await.unwrap();
 
-        let m3 = ChatMessage::Assistant(Some("Overwritten".to_string()), None);
+        let m3 = ChatMessage::new_assistant(Some("Overwritten".to_string()), None);
         redis.overwrite(vec![m3.clone()]).await.unwrap();
 
         let hist = redis.history().await.unwrap();

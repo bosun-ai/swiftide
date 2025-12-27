@@ -69,7 +69,10 @@ macro_rules! summary {
 #[macro_export]
 macro_rules! assistant {
     ($message:expr) => {
-        swiftide_core::chat_completion::ChatMessage::Assistant(Some($message.to_string()), None)
+        swiftide_core::chat_completion::ChatMessage::new_assistant(
+            Some($message.to_string()),
+            None,
+        )
     };
     ($message:expr, [$($tool_call_name:expr),*]) => {{
         let tool_calls = vec![
@@ -82,7 +85,7 @@ macro_rules! assistant {
             ),*
         ];
 
-        ChatMessage::Assistant(Some($message.to_string()), Some(tool_calls))
+        ChatMessage::new_assistant(Some($message.to_string()), Some(tool_calls))
     }};
 }
 

@@ -1,4 +1,12 @@
 //! Tests for dyn trait objects
+#![cfg(all(
+    feature = "openai",
+    feature = "qdrant",
+    feature = "redis",
+    feature = "fastembed",
+    feature = "tree-sitter"
+))]
+
 use swiftide::{indexing::transformers::ChunkCode, integrations};
 use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, EmbeddingModel, Loader, NodeCache, Persist,

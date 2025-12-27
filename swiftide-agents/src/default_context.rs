@@ -157,7 +157,7 @@ impl AgentContext for DefaultContext {
 
         if history[current..].is_empty()
             || (self.stop_on_assistant
-                && matches!(history.last(), Some(ChatMessage::Assistant(_, _)))
+                && matches!(history.last(), Some(ChatMessage::Assistant(_)))
                 && self.feedback_received.lock().unwrap().is_empty())
         {
             tracing::debug!(?history, "No new messages for completion");
@@ -265,6 +265,18 @@ fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage>
 
     messages.reverse();
 
+    messages.retain(|message| {
+        !matches!(
+            message,
+            ChatMessage::Assistant(assistant)
+                if assistant.is_reasoning_summary
+                    && assistant
+                        .tool_calls
+                        .as_ref()
+                        .is_none_or(std::vec::Vec::is_empty)
+        )
+    });
+
     messages
 }
 
@@ -350,7 +362,7 @@ mod tests {
         let messages = vec![
             ChatMessage::System("System message".into()),
             ChatMessage::User("Hello".into()),
-            ChatMessage::Assistant(Some("Hello there".into()), None),
+            ChatMessage::new_assistant(Some("Hello there".into()), None),
             ChatMessage::Summary("Summary message".into()),
             ChatMessage::User("This should be ignored".into()),
         ];
@@ -379,7 +391,7 @@ mod tests {
         let messages = vec![
             ChatMessage::System("System message".into()),
             ChatMessage::User("Hello".into()),
-            ChatMessage::Assistant(Some("Hello there".into()), None),
+            ChatMessage::new_assistant(Some("Hello there".into()), None),
         ];
         let mut context = DefaultContext::default();
         context.with_stop_on_assistant(false);
@@ -391,7 +403,7 @@ mod tests {
         assert_eq!(new_messages.len(), 3);
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
         assert!(matches!(new_messages[1], ChatMessage::User(_)));
-        assert!(matches!(new_messages[2], ChatMessage::Assistant(_, _)));
+        assert!(matches!(new_messages[2], ChatMessage::Assistant(_)));
 
         context
             .add_message(ChatMessage::Summary("Summary message 1".into()))
@@ -411,7 +423,7 @@ mod tests {
 
         let messages = vec![
             ChatMessage::User("Hello again".into()),
-            ChatMessage::Assistant(Some("Hello there again".into()), None),
+            ChatMessage::new_assistant(Some("Hello there again".into()), None),
         ];
 
         context.add_messages(messages).await.unwrap();
@@ -426,7 +438,7 @@ mod tests {
         assert_eq!(new_messages[2], ChatMessage::User("Hello again".into()));
         assert_eq!(
             new_messages[3],
-            ChatMessage::Assistant(Some("Hello there again".to_string()), None)
+            ChatMessage::new_assistant(Some("Hello there again".to_string()), None)
         );
 
         context

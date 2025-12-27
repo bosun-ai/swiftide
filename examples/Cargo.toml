@@ -172,6 +172,10 @@ name = "responses-api"
 path = "responses_api.rs"
 
 [[example]]
+name = "responses-api-reasoning"
+path = "responses_api_reasoning.rs"
+
+[[example]]
 name = "structured-prompt"
 path = "structured_prompt.rs"
 

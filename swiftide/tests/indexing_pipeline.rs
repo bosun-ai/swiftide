@@ -3,6 +3,13 @@
 //! from a temporary file, simulates API responses, and stores data accurately in the Qdrant vector
 //! database.
 
+#![cfg(all(
+    feature = "openai",
+    feature = "qdrant",
+    feature = "redis",
+    feature = "tree-sitter"
+))]
+
 use qdrant_client::qdrant::vectors_output::VectorsOptions;
 use qdrant_client::qdrant::{ScrollPointsBuilder, SearchPointsBuilder, Value};
 use swiftide::indexing::*;

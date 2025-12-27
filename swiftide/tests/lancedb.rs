@@ -1,3 +1,10 @@
+#![cfg(all(
+    feature = "openai",
+    feature = "lancedb",
+    feature = "fastembed",
+    feature = "tree-sitter"
+))]
+
 use anyhow::Context;
 use lancedb::query::{self as lance_query_builder, QueryBase};
 use swiftide::indexing::{self, TextNode};

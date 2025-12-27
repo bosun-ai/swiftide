@@ -1,3 +1,10 @@
+#![cfg(all(
+    feature = "openai",
+    feature = "qdrant",
+    feature = "fastembed",
+    feature = "tree-sitter"
+))]
+
 use swiftide::indexing::{self, *};
 use swiftide::query::search_strategies::HybridSearch;
 use swiftide::{integrations, query};
