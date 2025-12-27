@@ -5,17 +5,17 @@ use std::task::{Context, Poll};
 use anyhow::{Context as _, Result};
 use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
-    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, InputItem, InputParam,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, IncludeEnum, InputItem, InputParam,
     MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
-    ReasoningArgs, Response, ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent,
-    ResponseTextParam, ResponseUsage as ResponsesUsage, Role, Status,
+    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
+    ResponseStreamEvent, ResponseTextParam, ResponseUsage as ResponsesUsage, Role, Status,
     TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolOutput, ToolSpec,
-    Usage, UsageBuilder,
+    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem, ToolCall,
+    ToolOutput, ToolSpec, Usage, UsageBuilder,
 };
 
 use super::{
@@ -83,11 +83,21 @@ where
     }
 
     if let Some(reasoning_effort) = options.reasoning_effort.clone() {
-        let reasoning = ReasoningArgs::default()
-            .effort(reasoning_effort)
+        let mut reasoning = ReasoningArgs::default();
+        reasoning.effort(reasoning_effort);
+
+        if options.reasoning_features.unwrap_or(false) {
+            reasoning.summary(ReasoningSummary::Auto);
+            args.include(vec![IncludeEnum::ReasoningEncryptedContent]);
+        }
+
+        let reasoning = reasoning
             .build()
             .map_err(LanguageModelError::permanent)?;
         args.reasoning(reasoning);
+
+        // Reasoning models should always be stateless in Responses API usage.
+        args.store(false);
     }
 
     if let Some(seed) = options.seed {
@@ -171,26 +181,53 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
             ChatMessage::User(content) => {
                 items.push(message_item(Role::User, content.clone())?);
             }
-            ChatMessage::Assistant(content, tool_calls) => {
-                if let Some(text) = content {
-                    items.push(message_item(Role::Assistant, text.clone())?);
+            ChatMessage::Assistant(message) => {
+                if !message.is_reasoning_summary {
+                    if let Some(text) = message.content.as_ref() {
+                        items.push(message_item(Role::Assistant, text.clone())?);
+                    }
+
+                    if let Some(tool_calls) = message.tool_calls.as_ref() {
+                        for tool_call in tool_calls {
+                            let call_id = normalize_responses_function_call_id(tool_call.id());
+                            let arguments = tool_call.args().unwrap_or_default().to_owned();
+
+                            let function_call = FunctionToolCall {
+                                arguments,
+                                call_id: call_id.clone(),
+                                name: tool_call.name().to_owned(),
+                                id: None,
+                                status: Some(OutputStatus::InProgress),
+                            };
+
+                            items.push(InputItem::Item(
+                                async_openai::types::responses::Item::FunctionCall(function_call),
+                            ));
+                        }
+                    }
                 }
 
-                if let Some(tool_calls) = tool_calls {
-                    for tool_call in tool_calls {
-                        let call_id = normalize_responses_function_call_id(tool_call.id());
-                        let arguments = tool_call.args().unwrap_or_default().to_owned();
+                if let Some(reasoning) = message.reasoning.as_ref() {
+                    for item in reasoning {
+                        let summary = item
+                            .summary
+                            .iter()
+                            .cloned()
+                            .map(|text| async_openai::types::responses::SummaryPart::SummaryText(
+                                async_openai::types::responses::Summary { text },
+                            ))
+                            .collect();
 
-                        let function_call = FunctionToolCall {
-                            arguments,
-                            call_id: call_id.clone(),
-                            name: tool_call.name().to_owned(),
-                            id: None,
-                            status: Some(OutputStatus::InProgress),
+                        let reasoning_item = async_openai::types::responses::ReasoningItem {
+                            id: item.id.clone(),
+                            summary,
+                            content: None,
+                            encrypted_content: item.encrypted_content.clone(),
+                            status: None,
                         };
 
                         items.push(InputItem::Item(
-                            async_openai::types::responses::Item::FunctionCall(function_call),
+                            async_openai::types::responses::Item::Reasoning(reasoning_item),
                         ));
                     }
                 }
@@ -402,6 +439,7 @@ impl ResponsesStreamState {
                 message: None,
                 tool_calls: None,
                 usage: None,
+                reasoning: None,
                 delta: self.response.delta.clone(),
             }
         };
@@ -516,6 +554,11 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
         builder.tool_calls(tool_calls);
     }
 
+    let reasoning_items = collect_reasoning_items_from_items(&response.output);
+    if !reasoning_items.is_empty() {
+        builder.reasoning(reasoning_items);
+    }
+
     if let Some(usage) = response.usage.as_ref() {
         builder.usage(convert_usage(usage)?);
     }
@@ -541,6 +584,13 @@ pub(super) fn metadata_to_chat_completion(
         let tool_calls = collect_tool_calls_from_items(&metadata.output)?;
         if !tool_calls.is_empty() {
             accumulator.tool_calls = Some(tool_calls);
+        }
+    }
+
+    if accumulator.reasoning.is_none() {
+        let reasoning_items = collect_reasoning_items_from_items(&metadata.output);
+        if !reasoning_items.is_empty() {
+            accumulator.reasoning = Some(reasoning_items);
         }
     }
 
@@ -605,6 +655,28 @@ fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall
     });
 
     tool_calls_from_iter(calls)
+}
+
+fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningItem> {
+    output
+        .iter()
+        .filter_map(|item| match item {
+            OutputItem::Reasoning(reasoning) => Some(ReasoningItem {
+                id: reasoning.id.clone(),
+                summary: reasoning
+                    .summary
+                    .iter()
+                    .filter_map(|part| match part {
+                        async_openai::types::responses::SummaryPart::SummaryText(summary) => {
+                            Some(summary.text.clone())
+                        }
+                    })
+                    .collect(),
+                encrypted_content: reasoning.encrypted_content.clone(),
+            }),
+            _ => None,
+        })
+        .collect()
 }
 
 fn tool_call_from_function_call(function_call: &FunctionToolCall) -> LmResult<ToolCall> {
@@ -715,11 +787,11 @@ where
 mod tests {
     use super::*;
     use async_openai::types::responses::{
-        InputTokenDetails, OutputTokenDetails, ResponseCompletedEvent, ResponseErrorEvent,
-        ResponseFailedEvent, ResponseFunctionCallArgumentsDeltaEvent,
-        ResponseFunctionCallArgumentsDoneEvent, ResponseOutputItemAddedEvent,
-        ResponseOutputItemDoneEvent, ResponseStreamEvent, ResponseTextDeltaEvent,
-        ResponseUsage as ResponsesUsage, Tool,
+        IncludeEnum, InputTokenDetails, OutputTokenDetails, ReasoningEffort, ReasoningSummary,
+        ResponseCompletedEvent, ResponseErrorEvent, ResponseFailedEvent,
+        ResponseFunctionCallArgumentsDeltaEvent, ResponseFunctionCallArgumentsDoneEvent,
+        ResponseOutputItemAddedEvent, ResponseOutputItemDoneEvent, ResponseStreamEvent,
+        ResponseTextDeltaEvent, ResponseUsage as ResponsesUsage, Tool,
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
@@ -875,6 +947,34 @@ mod tests {
         assert_eq!(
             function.parameters,
             Some(serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap())
+        );
+    }
+
+    #[test]
+    fn test_build_responses_request_reasoning_is_stateless_with_summary_and_encrypted_content() {
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4.1")
+            .default_options(Options::builder().reasoning_effort(ReasoningEffort::Low))
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .build()
+            .unwrap();
+
+        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+
+        assert_eq!(create.store, Some(false));
+        assert_eq!(
+            create.reasoning.as_ref().and_then(|r| r.summary),
+            Some(ReasoningSummary::Auto)
+        );
+        assert!(
+            create
+                .include
+                .as_ref()
+                .is_some_and(|items| items.contains(&IncludeEnum::ReasoningEncryptedContent))
         );
     }
 

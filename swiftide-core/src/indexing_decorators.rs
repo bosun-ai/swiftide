@@ -214,6 +214,7 @@ mod tests {
                     tool_calls: None,
                     delta: None,
                     usage: None,
+                    reasoning: None,
                 })
             }
         }

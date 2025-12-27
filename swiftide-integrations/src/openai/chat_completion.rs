@@ -64,7 +64,7 @@ impl<
         let messages = request
             .messages()
             .iter()
-            .map(message_to_openai)
+            .filter_map(|message| message_to_openai(message).transpose())
             .collect::<Result<Vec<_>>>()?;
 
         // Build the request to be sent to the OpenAI API.
@@ -178,7 +178,7 @@ impl<
         let messages = match request
             .messages()
             .iter()
-            .map(message_to_openai)
+            .filter_map(|message| message_to_openai(message).transpose())
             .collect::<Result<Vec<_>>>()
         {
             Ok(messages) => messages,
@@ -300,6 +300,7 @@ impl<
                                     message: None,
                                     tool_calls: None,
                                     usage: None,
+                                    reasoning: None,
                                     delta: state.delta.clone(),
                                 }
                             };
@@ -531,7 +532,7 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
 
 fn message_to_openai(
     message: &ChatMessage,
-) -> Result<async_openai::types::chat::ChatCompletionRequestMessage> {
+) -> Result<Option<async_openai::types::chat::ChatCompletionRequestMessage>> {
     let openai_message = match message {
         ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
             .content(msg.as_str())
@@ -547,10 +548,10 @@ fn message_to_openai(
             .into(),
         ChatMessage::ToolOutput(tool_call, tool_output) => {
             let Some(content) = tool_output.content() else {
-                return Ok(ChatCompletionRequestToolMessageArgs::default()
+                return Ok(Some(ChatCompletionRequestToolMessageArgs::default()
                     .tool_call_id(tool_call.id())
                     .build()?
-                    .into());
+                    .into()));
             };
 
             ChatCompletionRequestToolMessageArgs::default()
@@ -559,14 +560,17 @@ fn message_to_openai(
                 .build()?
                 .into()
         }
-        ChatMessage::Assistant(msg, tool_calls) => {
+        ChatMessage::Assistant(msg) => {
+            if msg.is_reasoning_summary {
+                return Ok(None);
+            }
             let mut builder = ChatCompletionRequestAssistantMessageArgs::default();
 
-            if let Some(msg) = msg {
-                builder.content(msg.as_str());
+            if let Some(content) = msg.content.as_deref() {
+                builder.content(content);
             }
 
-            if let Some(tool_calls) = tool_calls {
+            if let Some(tool_calls) = msg.tool_calls.as_ref() {
                 let calls = tool_calls
                     .iter()
                     .map(|tool_call| {
@@ -587,7 +591,7 @@ fn message_to_openai(
         }
     };
 
-    Ok(openai_message)
+    Ok(Some(openai_message))
 }
 
 #[cfg(test)]
@@ -1171,7 +1175,9 @@ data: [DONE]\n\n";
             .unwrap();
         let msg = ChatMessage::ToolOutput(tool_call, ToolOutput::stop());
 
-        let converted = message_to_openai(&msg).expect("conversion succeeds");
+        let converted = message_to_openai(&msg)
+            .expect("conversion succeeds")
+            .expect("message is not filtered");
         match converted {
             async_openai::types::chat::ChatCompletionRequestMessage::Tool(m) => {
                 assert_eq!(m.tool_call_id, "call_1");
@@ -1195,8 +1201,10 @@ data: [DONE]\n\n";
             .build()
             .unwrap();
 
-        let msg = ChatMessage::Assistant(Some("pending".into()), Some(vec![tool_call.clone()]));
-        let converted = message_to_openai(&msg).expect("conversion succeeds");
+        let msg = ChatMessage::new_assistant(Some("pending".into()), Some(vec![tool_call.clone()]));
+        let converted = message_to_openai(&msg)
+            .expect("conversion succeeds")
+            .expect("message is not filtered");
         match converted {
             async_openai::types::chat::ChatCompletionRequestMessage::Assistant(m) => {
                 assert_eq!(m.content.unwrap(), "pending".into());

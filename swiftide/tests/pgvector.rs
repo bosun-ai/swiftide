@@ -2,6 +2,13 @@
 //! The tests validate the functionality of the pipeline, ensuring that data is correctly indexed
 //! and processed from temporary files, database configurations, and simulated environments.
 
+#![cfg(all(
+    feature = "openai",
+    feature = "pgvector",
+    feature = "fastembed",
+    feature = "tree-sitter"
+))]
+
 use swiftide_core::document::Document;
 use swiftide_integrations::treesitter::metadata_qa_code;
 use temp_dir::TempDir;

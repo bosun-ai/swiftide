@@ -170,6 +170,14 @@ pub struct Options {
     #[builder(default, setter(into))]
     pub reasoning_effort: Option<ReasoningEffort>,
 
+    /// Enable reasoning summary/encrypted content handling for the Responses API.
+    ///
+    /// When enabled and reasoning is requested, the client will request a reasoning summary and
+    /// encrypted reasoning content from OpenAI, and will store and replay it for stateless
+    /// reasoning conversations.
+    #[builder(default, setter(into))]
+    pub reasoning_features: Option<bool>,
+
     /// This feature is in Beta. If specified, our system will make a best effort to sample
     /// deterministically, such that repeated requests with the same seed and parameters should
     /// return the same result. Determinism is not guaranteed, and you should refer to the
@@ -223,6 +231,9 @@ impl Options {
         if let Some(reasoning_effort) = &other.reasoning_effort {
             self.reasoning_effort = Some(reasoning_effort.clone());
         }
+        if let Some(reasoning_features) = other.reasoning_features {
+            self.reasoning_features = Some(reasoning_features);
+        }
         if let Some(seed) = other.seed {
             self.seed = Some(seed);
         }
@@ -234,6 +245,9 @@ impl Options {
         }
         if let Some(user) = &other.user {
             self.user = Some(user.clone());
+        }
+        if let Some(dimensions) = other.dimensions {
+            self.dimensions = Some(dimensions);
         }
     }
 }
@@ -247,6 +261,7 @@ impl From<OptionsBuilder> for Options {
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
+            reasoning_features: value.reasoning_features.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
@@ -266,6 +281,7 @@ impl From<&mut OptionsBuilder> for Options {
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
+            reasoning_features: value.reasoning_features.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
@@ -328,7 +344,12 @@ pub(crate) fn ensure_tool_schema_required_matches_properties(
 impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
     pub fn builder() -> OpenAIBuilder {
-        OpenAIBuilder::default()
+        let mut builder = OpenAIBuilder::default();
+        builder.default_options(Options {
+            reasoning_features: Some(true),
+            ..Default::default()
+        });
+        builder
     }
 }
 

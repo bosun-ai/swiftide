@@ -495,11 +495,17 @@ impl Agent {
 
             // If the last message contains tool calls that have not been completed,
             // run the tools first
-            if let Some(&ChatMessage::Assistant(.., Some(ref tool_calls))) =
+            if let Some(ChatMessage::Assistant(assistant)) =
                 maybe_tool_call_without_output(&messages)
+                && assistant
+                    .tool_calls
+                    .as_ref()
+                    .is_some_and(|tool_calls| !tool_calls.is_empty())
             {
                 tracing::debug!("Uncompleted tool calls found; invoking tools");
-                self.invoke_tools(tool_calls).await?;
+                if let Some(tool_calls) = assistant.tool_calls.as_ref() {
+                    self.invoke_tools(tool_calls).await?;
+                }
                 // Move on to the next tick, so that the
                 continue;
             }
@@ -590,11 +596,37 @@ impl Agent {
 
         invoke_hooks!(AfterCompletion, self, &mut response);
 
-        self.add_message(ChatMessage::Assistant(
-            response.message,
-            response.tool_calls.clone(),
-        ))
-        .await?;
+        let mut assistant_message =
+            swiftide_core::chat_completion::AssistantMessage {
+                content: response.message,
+                tool_calls: response.tool_calls.clone(),
+                is_reasoning_summary: false,
+                reasoning: response.reasoning.clone(),
+            };
+
+        let has_tool_calls = assistant_message
+            .tool_calls
+            .as_ref()
+            .is_some_and(|calls| !calls.is_empty());
+
+        if assistant_message.content.is_none()
+            && !has_tool_calls
+            && let Some(reasoning_items) = assistant_message.reasoning.as_ref()
+        {
+            let summary = reasoning_items
+                .iter()
+                .flat_map(|item| item.summary.iter())
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n");
+            if !summary.is_empty() {
+                assistant_message.content = Some(summary);
+            }
+            assistant_message.is_reasoning_summary = true;
+        }
+
+        self.add_message(ChatMessage::Assistant(assistant_message))
+            .await?;
 
         if let Some(tool_calls) = response.tool_calls {
             self.invoke_tools(&tool_calls).await?;
@@ -865,8 +897,11 @@ fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessa
             return None;
         }
 
-        if let ChatMessage::Assistant(.., Some(tool_calls)) = message
-            && !tool_calls.is_empty()
+        if let ChatMessage::Assistant(assistant) = message
+            && assistant
+                .tool_calls
+                .as_ref()
+                .is_some_and(|tool_calls| !tool_calls.is_empty())
         {
             return Some(message);
         }
