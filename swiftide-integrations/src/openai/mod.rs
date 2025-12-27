@@ -7,7 +7,6 @@ use anyhow::Context as _;
 use async_openai::error::{OpenAIError, StreamError};
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
-use async_openai::types::responses::ReasoningEffort;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
@@ -26,6 +25,7 @@ mod structured_prompt;
 // expose type aliases to simplify downstream use of the open ai builder invocations
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
+pub use async_openai::types::responses::ReasoningEffort;
 
 #[cfg(feature = "tiktoken")]
 use crate::tiktoken::TikToken;
