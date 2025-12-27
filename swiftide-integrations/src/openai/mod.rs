@@ -172,9 +172,12 @@ pub struct Options {
 
     /// Enable reasoning summary/encrypted content handling for the Responses API.
     ///
-    /// When enabled and reasoning is requested, the client will request a reasoning summary and
-    /// encrypted reasoning content from OpenAI, and will store and replay it for stateless
-    /// reasoning conversations.
+    /// This is enabled by default, but only takes effect when `reasoning_effort` is set.
+    /// Disable it with `reasoning_features(false)` if you do not want summaries or encrypted
+    /// reasoning stored and replayed.
+    ///
+    /// Note: reasoning summaries/encrypted content require an OpenAI organization that is
+    /// verified for reasoning access; unverified orgs may receive no summaries.
     #[builder(default, setter(into))]
     pub reasoning_features: Option<bool>,
 

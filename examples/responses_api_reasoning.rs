@@ -29,7 +29,9 @@ async fn main() -> Result<()> {
         .init();
 
     // Reasoning models require the Responses API. Enabling reasoning effort also asks for a
-    // summary and encrypted reasoning content, which Swiftide stores on assistant messages.
+    // summary and encrypted reasoning content (enabled by default). If your OpenAI org is not
+    // verified for reasoning access, summaries may be absent. Disable with
+    // `reasoning_features(false)` if desired.
     let openai = OpenAI::builder()
         .default_prompt_model("o3-mini")
         .default_options(Options::builder().reasoning_effort(ReasoningEffort::Low))
