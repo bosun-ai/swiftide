@@ -787,15 +787,19 @@ where
 mod tests {
     use super::*;
     use async_openai::types::responses::{
-        IncludeEnum, InputTokenDetails, OutputTokenDetails, ReasoningEffort, ReasoningSummary,
-        ResponseCompletedEvent, ResponseErrorEvent, ResponseFailedEvent,
+        AssistantRole, FunctionToolCall, IncludeEnum, InputTokenDetails, OutputItem, OutputMessage,
+        OutputMessageContent, OutputStatus, OutputTextContent, OutputTokenDetails, ReasoningEffort,
+        ReasoningSummary, ResponseCompletedEvent, ResponseErrorEvent, ResponseFailedEvent,
         ResponseFunctionCallArgumentsDeltaEvent, ResponseFunctionCallArgumentsDoneEvent,
         ResponseOutputItemAddedEvent, ResponseOutputItemDoneEvent, ResponseStreamEvent,
-        ResponseTextDeltaEvent, ResponseUsage as ResponsesUsage, Tool,
+        ResponseTextDeltaEvent, ResponseUsage as ResponsesUsage, SummaryPart, Tool,
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
-    use swiftide_core::chat_completion::{ChatCompletionRequest, ChatMessage, ToolSpec};
+    use swiftide_core::chat_completion::{
+        AssistantMessage, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem,
+        ToolCall, ToolSpec, Usage,
+    };
 
     use crate::openai::{OpenAI, Options};
 
@@ -846,6 +850,57 @@ mod tests {
             .parameters_schema(schemars::schema_for!(WeatherArgs))
             .build()
             .unwrap()
+    }
+
+    fn output_message(id: &str, parts: &[&str]) -> OutputMessage {
+        OutputMessage {
+            content: parts
+                .iter()
+                .map(|text| {
+                    OutputMessageContent::OutputText(OutputTextContent {
+                        annotations: Vec::new(),
+                        logprobs: None,
+                        text: (*text).to_string(),
+                    })
+                })
+                .collect(),
+            id: id.to_string(),
+            role: AssistantRole::Assistant,
+            status: OutputStatus::Completed,
+        }
+    }
+
+    fn response_with_message_tool_reasoning(message: &str) -> Response {
+        let output_message = OutputItem::Message(output_message("msg", &[message]));
+        let output = vec![
+            serde_json::to_value(output_message).expect("output message serializes"),
+            json!({
+                "type": "function_call",
+                "id": "call",
+                "call_id": "call",
+                "name": "metadata_tool",
+                "arguments": "{\"ok\":true}",
+                "status": "completed"
+            }),
+            json!({
+                "type": "reasoning",
+                "id": "reasoning_meta",
+                "summary": [
+                    {"type": "summary_text", "text": "metadata summary"}
+                ]
+            })
+        ];
+
+        serde_json::from_value(json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1",
+            "object": "response",
+            "status": "completed",
+            "output": output,
+            "usage": sample_usage(),
+        }))
+        .expect("valid response json")
     }
 
     #[test]
@@ -979,6 +1034,187 @@ mod tests {
     }
 
     #[test]
+    fn test_chat_messages_to_input_items_keeps_tool_calls_for_reasoning_summary() {
+        let tool_call = ToolCall::builder()
+            .id("call_123")
+            .name("lookup")
+            .maybe_args(Some("{\"q\":\"rust\"}".to_string()))
+            .build()
+            .unwrap();
+
+        let message = ChatMessage::Assistant(AssistantMessage {
+            content: Some("Summary text".to_string()),
+            tool_calls: Some(vec![tool_call]),
+            is_reasoning_summary: true,
+            reasoning: None,
+        });
+
+        let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
+        assert_eq!(items.len(), 1);
+
+        let InputItem::Item(async_openai::types::responses::Item::FunctionCall(function_call)) =
+            &items[0]
+        else {
+            panic!("expected function call item");
+        };
+
+        assert_eq!(function_call.call_id, "fc_123");
+        assert_eq!(function_call.name, "lookup");
+        assert_eq!(function_call.arguments, "{\"q\":\"rust\"}");
+        assert_eq!(function_call.status, Some(OutputStatus::InProgress));
+    }
+
+    #[test]
+    fn test_chat_messages_to_input_items_includes_reasoning_with_encrypted_content() {
+        let message = ChatMessage::Assistant(AssistantMessage {
+            content: None,
+            tool_calls: None,
+            is_reasoning_summary: true,
+            reasoning: Some(vec![ReasoningItem {
+                id: "reasoning_1".to_string(),
+                summary: vec!["First".to_string(), "Second".to_string()],
+                encrypted_content: Some("encrypted".to_string()),
+            }]),
+        });
+
+        let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
+        assert_eq!(items.len(), 1);
+
+        let InputItem::Item(async_openai::types::responses::Item::Reasoning(reasoning_item)) =
+            &items[0]
+        else {
+            panic!("expected reasoning item");
+        };
+
+        assert_eq!(reasoning_item.id, "reasoning_1");
+        assert_eq!(
+            reasoning_item
+                .summary
+                .iter()
+                .filter_map(|part| match part {
+                    SummaryPart::SummaryText(summary) => Some(summary.text.as_str()),
+                })
+                .collect::<Vec<_>>(),
+            vec!["First", "Second"]
+        );
+        assert_eq!(reasoning_item.encrypted_content.as_deref(), Some("encrypted"));
+    }
+
+    #[test]
+    fn test_chat_messages_to_input_items_ignores_empty_assistant() {
+        let message = ChatMessage::Assistant(AssistantMessage {
+            content: None,
+            tool_calls: None,
+            is_reasoning_summary: false,
+            reasoning: None,
+        });
+
+        let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
+        assert!(items.is_empty());
+    }
+
+    #[test]
+    fn test_tool_call_from_function_call_uses_id_when_call_id_missing() {
+        let function_call = FunctionToolCall {
+            arguments: String::new(),
+            call_id: String::new(),
+            name: "lookup".to_string(),
+            id: Some("call_456".to_string()),
+            status: Some(OutputStatus::Completed),
+        };
+
+        let tool_call = tool_call_from_function_call(&function_call).expect("tool call");
+        assert_eq!(tool_call.id(), "call_456");
+        assert_eq!(tool_call.name(), "lookup");
+        assert!(tool_call.args().is_none());
+    }
+
+    #[test]
+    fn test_collect_message_text_helpers_join_parts() {
+        let output = vec![
+            OutputItem::Message(output_message("msg_1", &["First", "Second"])),
+            OutputItem::FunctionCall(FunctionToolCall {
+                arguments: "{}".to_string(),
+                call_id: "call".to_string(),
+                name: "noop".to_string(),
+                id: None,
+                status: Some(OutputStatus::Completed),
+            }),
+            OutputItem::Message(output_message("msg_2", &["Third"])),
+        ];
+
+        let collected = collect_message_text_from_items(&output).expect("text present");
+        assert_eq!(collected, "First\nSecond\nThird");
+
+        let message = output_message("msg_single", &["Line one", "Line two"]);
+        let collected_message =
+            collect_message_text_from_message(&message).expect("message text present");
+        assert_eq!(collected_message, "Line one\nLine two");
+    }
+
+    #[test]
+    fn test_metadata_to_chat_completion_respects_existing_fields() {
+        let metadata = response_with_message_tool_reasoning("metadata message");
+
+        let mut empty = ChatCompletionResponse::default();
+        metadata_to_chat_completion(&metadata, &mut empty).expect("metadata applies");
+        assert_eq!(empty.message.as_deref(), Some("metadata message"));
+        assert!(empty.tool_calls.is_some());
+        assert!(empty.reasoning.is_some());
+        assert!(empty.usage.is_some());
+
+        let existing_tool = ToolCall::builder()
+            .id("existing")
+            .name("existing_tool")
+            .maybe_args(Some("{\"keep\":true}".to_string()))
+            .build()
+            .unwrap();
+
+        let existing_reasoning = ReasoningItem {
+            id: "existing_reasoning".to_string(),
+            summary: vec!["keep".to_string()],
+            encrypted_content: None,
+        };
+
+        let existing_usage = Usage {
+            prompt_tokens: 1,
+            completion_tokens: 1,
+            total_tokens: 2,
+        };
+
+        let mut existing = ChatCompletionResponse::builder()
+            .message("existing message")
+            .tool_calls(vec![existing_tool.clone()])
+            .reasoning(vec![existing_reasoning.clone()])
+            .usage(existing_usage)
+            .build()
+            .unwrap();
+
+        metadata_to_chat_completion(&metadata, &mut existing).expect("metadata applies");
+        assert_eq!(existing.message.as_deref(), Some("existing message"));
+        assert_eq!(
+            existing
+                .tool_calls
+                .as_ref()
+                .and_then(|calls| calls.first())
+                .map(ToolCall::id),
+            Some("existing")
+        );
+        assert_eq!(
+            existing
+                .reasoning
+                .as_ref()
+                .and_then(|items| items.first())
+                .map(|item| item.id.as_str()),
+            Some("existing_reasoning")
+        );
+        assert_eq!(
+            existing.usage.as_ref().map(|usage| usage.total_tokens),
+            Some(sample_usage().total_tokens)
+        );
+    }
+
+    #[test]
     fn test_tool_output_preserves_structured_values() {
         let tool_call = ToolCall::builder()
             .id("fc_test")
@@ -1069,6 +1305,42 @@ mod tests {
         assert_eq!(usage.prompt_tokens, 5);
         assert_eq!(usage.completion_tokens, 3);
         assert_eq!(usage.total_tokens, 8);
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_collects_reasoning_summary_and_encrypted_content() {
+        let usage = sample_usage();
+        let response: Response = serde_json::from_value(json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "reasoning",
+                    "id": "reasoning_1",
+                    "summary": [
+                        {"type": "summary_text", "text": "First"},
+                        {"type": "summary_text", "text": "Second"}
+                    ],
+                    "encrypted_content": "encrypted"
+                }
+            ],
+            "usage": usage,
+        }))
+        .expect("valid response json");
+
+        let completion = response_to_chat_completion(&response).unwrap();
+        let reasoning = completion.reasoning.expect("reasoning items present");
+
+        assert_eq!(reasoning.len(), 1);
+        assert_eq!(reasoning[0].id, "reasoning_1");
+        assert_eq!(
+            reasoning[0].summary,
+            vec!["First".to_string(), "Second".to_string()]
+        );
+        assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("encrypted"));
     }
 
     #[test]
