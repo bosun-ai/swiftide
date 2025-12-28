@@ -71,6 +71,8 @@ pub use swiftide_macros::*;
 /// and store it in a Qdrant index:
 ///
 /// ```no_run
+/// # #[cfg(all(feature = "openai", feature = "qdrant"))]
+/// # {
 /// use swiftide::{
 ///     indexing::{
 ///         self,
@@ -104,11 +106,14 @@ pub use swiftide_macros::*;
 ///
 ///   Ok(())
 /// }
+/// # }
 /// ```
 ///
 /// We could then define a query pipeline that uses the Qdrant index to answer questions:
 ///
 /// ```no_run
+/// # #[cfg(all(feature = "openai", feature = "qdrant"))]
+/// # {
 /// # use swiftide::{
 /// #     indexing::{
 /// #         self,
@@ -150,6 +155,7 @@ pub use swiftide_macros::*;
 ///
 /// println!("{:?}", result.answer());
 /// # Ok(())
+/// # }
 /// # }
 /// ```
 ///

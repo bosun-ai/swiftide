@@ -495,11 +495,16 @@ impl Agent {
 
             // If the last message contains tool calls that have not been completed,
             // run the tools first
-            if let Some(&ChatMessage::Assistant(.., Some(ref tool_calls))) =
+            if let Some(ChatMessage::Assistant(_, tool_calls)) =
                 maybe_tool_call_without_output(&messages)
+                && tool_calls
+                    .as_ref()
+                    .is_some_and(|tool_calls| !tool_calls.is_empty())
             {
                 tracing::debug!("Uncompleted tool calls found; invoking tools");
-                self.invoke_tools(tool_calls).await?;
+                if let Some(tool_calls) = tool_calls.as_ref() {
+                    self.invoke_tools(tool_calls).await?;
+                }
                 // Move on to the next tick, so that the
                 continue;
             }
@@ -590,11 +595,26 @@ impl Agent {
 
         invoke_hooks!(AfterCompletion, self, &mut response);
 
-        self.add_message(ChatMessage::Assistant(
-            response.message,
-            response.tool_calls.clone(),
-        ))
-        .await?;
+        let assistant_content = response.message.take();
+        let assistant_tool_calls = response.tool_calls.clone();
+
+        if assistant_content.is_some()
+            || assistant_tool_calls
+                .as_ref()
+                .is_some_and(|calls| !calls.is_empty())
+        {
+            self.add_message(ChatMessage::Assistant(
+                assistant_content,
+                assistant_tool_calls,
+            ))
+            .await?;
+        }
+
+        if let Some(reasoning_items) = response.reasoning.take() {
+            for item in reasoning_items {
+                self.add_message(ChatMessage::Reasoning(item)).await?;
+            }
+        }
 
         if let Some(tool_calls) = response.tool_calls {
             self.invoke_tools(&tool_calls).await?;
@@ -865,8 +885,10 @@ fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessa
             return None;
         }
 
-        if let ChatMessage::Assistant(.., Some(tool_calls)) = message
-            && !tool_calls.is_empty()
+        if let ChatMessage::Assistant(_, tool_calls) = message
+            && tool_calls
+                .as_ref()
+                .is_some_and(|tool_calls| !tool_calls.is_empty())
         {
             return Some(message);
         }
