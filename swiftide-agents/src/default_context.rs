@@ -157,7 +157,7 @@ impl AgentContext for DefaultContext {
 
         if history[current..].is_empty()
             || (self.stop_on_assistant
-                && matches!(history.last(), Some(ChatMessage::Assistant(_)))
+                && matches!(history.last(), Some(ChatMessage::Assistant(..)))
                 && self.feedback_received.lock().unwrap().is_empty())
         {
             tracing::debug!(?history, "No new messages for completion");
@@ -391,7 +391,7 @@ mod tests {
         assert_eq!(new_messages.len(), 3);
         assert!(matches!(new_messages[0], ChatMessage::System(_)));
         assert!(matches!(new_messages[1], ChatMessage::User(_)));
-        assert!(matches!(new_messages[2], ChatMessage::Assistant(_)));
+        assert!(matches!(new_messages[2], ChatMessage::Assistant(..)));
 
         context
             .add_message(ChatMessage::Summary("Summary message 1".into()))
