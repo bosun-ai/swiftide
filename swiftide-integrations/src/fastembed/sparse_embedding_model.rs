@@ -10,8 +10,10 @@ impl SparseEmbeddingModel for FastEmbed {
         &self,
         input: Vec<String>,
     ) -> Result<SparseEmbeddings, LanguageModelError> {
-        if let EmbeddingModelType::Sparse(embedding_model) = &*self.embedding_model {
-            embedding_model
+        let mut embedding_model = self.embedding_model.lock().await;
+
+        match &mut *embedding_model {
+            EmbeddingModelType::Sparse(model) => model
                 .embed(input, self.batch_size)
                 .map_err(LanguageModelError::permanent)
                 .and_then(|embeddings| {
@@ -30,11 +32,10 @@ impl SparseEmbeddingModel for FastEmbed {
                             })
                         })
                         .collect()
-                })
-        } else {
-            Err(LanguageModelError::PermanentError(
+                }),
+            EmbeddingModelType::Dense(_) => Err(LanguageModelError::PermanentError(
                 "Expected sparse model, got dense".into(),
-            ))
+            )),
         }
     }
 }

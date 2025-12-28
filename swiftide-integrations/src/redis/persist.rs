@@ -54,7 +54,7 @@ impl<T: Chunk + Serialize> Persist for Redis<T> {
     async fn batch_store(&self, nodes: Vec<Node<T>>) -> IndexingStream<T> {
         // use mset for batch store
         if let Some(mut cm) = self.lazy_connect().await {
-            let args = nodes
+            let args = match nodes
                 .iter()
                 .map(|node| -> Result<Vec<String>> {
                     let key = self.persist_key_for_node(node)?;
@@ -62,9 +62,8 @@ impl<T: Chunk + Serialize> Persist for Redis<T> {
 
                     Ok(vec![key, value])
                 })
-                .collect::<Result<Vec<_>>>();
-
-            let args = match args {
+                .collect::<Result<Vec<_>>>()
+            {
                 Ok(args) => args,
                 Err(err) => return vec![Err(err)].into(),
             };

@@ -29,10 +29,10 @@ const TOP_K: usize = 10;
 pub struct Rerank {
     /// The reranker model from [`Fastembed`]
     #[builder(
-        default = "Arc::new(TextRerank::try_new(RerankInitOptions::default()).expect(\"Failed to build default rerank from Fastembed.rs\"))",
+        default = "Arc::new(tokio::sync::Mutex::new(TextRerank::try_new(RerankInitOptions::default()).expect(\"Failed to build default rerank from Fastembed.rs\")))",
         setter(into)
     )]
-    model: Arc<TextRerank>,
+    model: Arc<tokio::sync::Mutex<TextRerank>>,
 
     /// The number of top documents returned by the reranker.
     #[builder(default = TOP_K)]
@@ -67,10 +67,10 @@ impl Rerank {
 impl Default for Rerank {
     fn default() -> Self {
         Self {
-            model: Arc::new(
+            model: Arc::new(tokio::sync::Mutex::new(
                 TextRerank::try_new(RerankInitOptions::default())
                     .expect("Failed to build default rerank from Fastembed.rs"),
-            ),
+            )),
             top_k: TOP_K,
             document_template: None,
             model_batch_size: None,
@@ -104,11 +104,15 @@ impl TransformResponse for Rerank {
                 .collect()
         };
 
-        let reranked_documents = self
-            .model
+        let mut model = self.model.lock().await;
+
+        let reranked_documents = model
             .rerank(
                 query.original(),
-                docs_for_rerank.iter().map(String::as_ref).collect(),
+                docs_for_rerank
+                    .iter()
+                    .map(String::as_ref)
+                    .collect::<Vec<&str>>(),
                 false,
                 self.model_batch_size,
             )

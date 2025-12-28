@@ -99,19 +99,17 @@ impl Persist for Qdrant {
 
         tracing::debug!("Storing batch of {} nodes", points.len());
 
-        let result = self
+        match self
             .client
             .upsert_points(
                 UpsertPointsBuilder::new(self.collection_name.clone(), points)
                     .wait(cfg!(debug_assertions)),
             )
-            .await;
-
-        if let Err(err) = result {
-            return vec![Err(err.into())].into();
+            .await
+        {
+            Ok(_) => IndexingStream::iter(nodes.into_iter().map(Ok)),
+            Err(err) => vec![Err(err.into())].into(),
         }
-
-        IndexingStream::iter(nodes.into_iter().map(Ok))
     }
 }
 
