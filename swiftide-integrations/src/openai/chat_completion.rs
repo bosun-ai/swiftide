@@ -565,9 +565,7 @@ fn message_to_openai(
         ChatMessage::Assistant(content, tool_calls) => {
             let mut builder = ChatCompletionRequestAssistantMessageArgs::default();
 
-            let has_tool_calls = tool_calls
-                .as_ref()
-                .is_some_and(|calls| !calls.is_empty());
+            let has_tool_calls = tool_calls.as_ref().is_some_and(|calls| !calls.is_empty());
 
             if let Some(content) = content.as_deref() {
                 builder.content(content);

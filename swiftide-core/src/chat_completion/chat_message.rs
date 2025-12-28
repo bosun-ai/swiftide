@@ -32,14 +32,12 @@ impl std::fmt::Display for ChatMessage {
                 f,
                 "Assistant: \"{}\", tools: {}",
                 content.as_deref().unwrap_or("None"),
-                tool_calls
-                    .as_deref()
-                    .map_or("None".to_string(), |tc| {
-                        tc.iter()
-                            .map(ToString::to_string)
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    })
+                tool_calls.as_deref().map_or("None".to_string(), |tc| {
+                    tc.iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                })
             ),
             ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
             ChatMessage::Reasoning(item) => write!(
