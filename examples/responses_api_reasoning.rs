@@ -41,10 +41,10 @@ async fn main() -> Result<()> {
     let mut agent = Agent::builder()
         .llm(&openai)
         .on_new_message(|_, message| {
-            if let ChatMessage::Assistant(content, _) = message {
-                if let Some(content) = content.as_deref() {
-                    println!("Assistant: {content}");
-                }
+            if let ChatMessage::Assistant(content, _) = message
+                && let Some(content) = content.as_deref()
+            {
+                println!("Assistant: {content}");
             }
             Box::pin(async move { Ok(()) })
         })
