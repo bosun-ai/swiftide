@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1766933351038,
+  "lastUpdate": 1766933502500,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29621,6 +29621,60 @@ window.BENCHMARK_DATA = {
             "name": "run_local_pipeline",
             "value": 0,
             "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8ffe4de799b30a707f0fb9013f3f90f61e2e2dc3",
+          "message": "chore(deps): Update all crates (#984)\n\n- **chore(deps): Update crates**\n- **Update packages**",
+          "timestamp": "2025-12-28T15:43:36+01:00",
+          "tree_id": "d6b81c0190af18962db0fa837c8e90b9f283501c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8ffe4de799b30a707f0fb9013f3f90f61e2e2dc3"
+        },
+        "date": 1766933500467,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 795454,
+            "range": "± 28277",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 228553,
+            "range": "± 2268",
             "unit": "ns/iter"
           }
         ]
