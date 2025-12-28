@@ -659,9 +659,9 @@ fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningIte
                 summary: reasoning
                     .summary
                     .iter()
-                    .filter_map(|part| match part {
+                    .map(|part| match part {
                         async_openai::types::responses::SummaryPart::SummaryText(summary) => {
-                            Some(summary.text.clone())
+                            summary.text.clone()
                         }
                     })
                     .collect(),

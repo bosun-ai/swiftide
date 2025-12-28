@@ -107,11 +107,11 @@ impl Persist for Qdrant {
             )
             .await;
 
-        if result.is_ok() {
-            IndexingStream::iter(nodes.into_iter().map(Ok))
-        } else {
-            vec![Err(result.unwrap_err().into())].into()
+        if let Err(err) = result {
+            return vec![Err(err.into())].into();
         }
+
+        IndexingStream::iter(nodes.into_iter().map(Ok))
     }
 }
 
