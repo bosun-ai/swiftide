@@ -562,20 +562,18 @@ fn message_to_openai(
                 .build()?
                 .into()
         }
-        ChatMessage::Assistant(msg) => {
+        ChatMessage::Assistant(content, tool_calls) => {
             let mut builder = ChatCompletionRequestAssistantMessageArgs::default();
 
-            let has_tool_calls = msg
-                .tool_calls
+            let has_tool_calls = tool_calls
                 .as_ref()
                 .is_some_and(|calls| !calls.is_empty());
-            let include_content = !msg.is_reasoning_summary;
 
-            if include_content && let Some(content) = msg.content.as_deref() {
+            if let Some(content) = content.as_deref() {
                 builder.content(content);
             }
 
-            if let Some(tool_calls) = msg.tool_calls.as_ref() {
+            if let Some(tool_calls) = tool_calls.as_ref() {
                 let calls = tool_calls
                     .iter()
                     .map(|tool_call| {
@@ -592,12 +590,13 @@ fn message_to_openai(
                 builder.tool_calls(calls);
             }
 
-            if !include_content && !has_tool_calls {
+            if content.is_none() && !has_tool_calls {
                 return Ok(None);
             }
 
             builder.build()?.into()
         }
+        ChatMessage::Reasoning(_) => return Ok(None),
     };
 
     Ok(Some(openai_message))

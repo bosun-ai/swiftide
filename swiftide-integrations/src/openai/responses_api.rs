@@ -179,14 +179,12 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
             ChatMessage::User(content) => {
                 items.push(message_item(Role::User, content.clone())?);
             }
-            ChatMessage::Assistant(message) => {
-                if !message.is_reasoning_summary
-                    && let Some(text) = message.content.as_ref()
-                {
+            ChatMessage::Assistant(content, tool_calls) => {
+                if let Some(text) = content.as_ref() {
                     items.push(message_item(Role::Assistant, text.clone())?);
                 }
 
-                if let Some(tool_calls) = message.tool_calls.as_ref() {
+                if let Some(tool_calls) = tool_calls.as_ref() {
                     for tool_call in tool_calls {
                         let call_id = normalize_responses_function_call_id(tool_call.id());
                         let arguments = tool_call.args().unwrap_or_default().to_owned();
@@ -201,33 +199,6 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
 
                         items.push(InputItem::Item(
                             async_openai::types::responses::Item::FunctionCall(function_call),
-                        ));
-                    }
-                }
-
-                if let Some(reasoning) = message.reasoning.as_ref() {
-                    for item in reasoning {
-                        let summary = item
-                            .summary
-                            .iter()
-                            .cloned()
-                            .map(|text| {
-                                async_openai::types::responses::SummaryPart::SummaryText(
-                                    async_openai::types::responses::Summary { text },
-                                )
-                            })
-                            .collect();
-
-                        let reasoning_item = async_openai::types::responses::ReasoningItem {
-                            id: item.id.clone(),
-                            summary,
-                            content: None,
-                            encrypted_content: item.encrypted_content.clone(),
-                            status: None,
-                        };
-
-                        items.push(InputItem::Item(
-                            async_openai::types::responses::Item::Reasoning(reasoning_item),
                         ));
                     }
                 }
@@ -256,6 +227,23 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
 
                 items.push(InputItem::Item(
                     async_openai::types::responses::Item::FunctionCallOutput(function_output),
+                ));
+            }
+            ChatMessage::Reasoning(item) => {
+                if item.encrypted_content.is_none() {
+                    continue;
+                }
+
+                let reasoning_item = async_openai::types::responses::ReasoningItem {
+                    id: item.id.clone(),
+                    summary: Vec::new(),
+                    content: None,
+                    encrypted_content: item.encrypted_content.clone(),
+                    status: None,
+                };
+
+                items.push(InputItem::Item(
+                    async_openai::types::responses::Item::Reasoning(reasoning_item),
                 ));
             }
             ChatMessage::Summary(content) => {
@@ -792,13 +780,13 @@ mod tests {
         ReasoningSummary, ResponseCompletedEvent, ResponseErrorEvent, ResponseFailedEvent,
         ResponseFunctionCallArgumentsDeltaEvent, ResponseFunctionCallArgumentsDoneEvent,
         ResponseOutputItemAddedEvent, ResponseOutputItemDoneEvent, ResponseStreamEvent,
-        ResponseTextDeltaEvent, ResponseUsage as ResponsesUsage, SummaryPart, Tool,
+        ResponseTextDeltaEvent, ResponseUsage as ResponsesUsage, Tool,
     };
     use serde_json::{json, to_value};
     use std::collections::HashSet;
     use swiftide_core::chat_completion::{
-        AssistantMessage, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
-        ReasoningItem, ToolCall, ToolSpec, Usage,
+        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem, ToolCall,
+        ToolSpec, Usage,
     };
 
     use crate::openai::{OpenAI, Options};
@@ -1034,7 +1022,7 @@ mod tests {
     }
 
     #[test]
-    fn test_chat_messages_to_input_items_keeps_tool_calls_for_reasoning_summary() {
+    fn test_chat_messages_to_input_items_keeps_tool_calls_without_content() {
         let tool_call = ToolCall::builder()
             .id("call_123")
             .name("lookup")
@@ -1042,12 +1030,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let message = ChatMessage::Assistant(AssistantMessage {
-            content: Some("Summary text".to_string()),
-            tool_calls: Some(vec![tool_call]),
-            is_reasoning_summary: true,
-            reasoning: None,
-        });
+        let message = ChatMessage::Assistant(None, Some(vec![tool_call]));
 
         let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
         assert_eq!(items.len(), 1);
@@ -1066,15 +1049,10 @@ mod tests {
 
     #[test]
     fn test_chat_messages_to_input_items_includes_reasoning_with_encrypted_content() {
-        let message = ChatMessage::Assistant(AssistantMessage {
-            content: None,
-            tool_calls: None,
-            is_reasoning_summary: true,
-            reasoning: Some(vec![ReasoningItem {
-                id: "reasoning_1".to_string(),
-                summary: vec!["First".to_string(), "Second".to_string()],
-                encrypted_content: Some("encrypted".to_string()),
-            }]),
+        let message = ChatMessage::Reasoning(ReasoningItem {
+            id: "reasoning_1".to_string(),
+            summary: vec!["First".to_string(), "Second".to_string()],
+            encrypted_content: Some("encrypted".to_string()),
         });
 
         let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
@@ -1087,16 +1065,7 @@ mod tests {
         };
 
         assert_eq!(reasoning_item.id, "reasoning_1");
-        assert_eq!(
-            reasoning_item
-                .summary
-                .iter()
-                .filter_map(|part| match part {
-                    SummaryPart::SummaryText(summary) => Some(summary.text.as_str()),
-                })
-                .collect::<Vec<_>>(),
-            vec!["First", "Second"]
-        );
+        assert!(reasoning_item.summary.is_empty());
         assert_eq!(
             reasoning_item.encrypted_content.as_deref(),
             Some("encrypted")
@@ -1105,12 +1074,7 @@ mod tests {
 
     #[test]
     fn test_chat_messages_to_input_items_ignores_empty_assistant() {
-        let message = ChatMessage::Assistant(AssistantMessage {
-            content: None,
-            tool_calls: None,
-            is_reasoning_summary: false,
-            reasoning: None,
-        });
+        let message = ChatMessage::Assistant(None, None);
 
         let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
         assert!(items.is_empty());

@@ -279,7 +279,7 @@ impl Anthropic {
 fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
-    use ChatMessage::{Assistant, Summary, System, ToolOutput, User};
+    use ChatMessage::{Assistant, Reasoning, Summary, System, ToolOutput, User};
 
     match message {
         ToolOutput(tool_call, tool_output) => builder.content(
@@ -289,18 +289,16 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                 .build()?,
         ),
         Summary(msg) | System(msg) | User(msg) => builder.content(msg),
-        Assistant(msg) => {
+        Assistant(content, tool_calls) => {
             builder.role(MessageRole::Assistant);
 
             let mut content_list: Vec<MessageContent> = Vec::new();
 
-            if !msg.is_reasoning_summary
-                && let Some(content) = msg.content.as_ref()
-            {
+            if let Some(content) = content.as_ref() {
                 content_list.push(content.as_str().into());
             }
 
-            if let Some(tool_calls) = msg.tool_calls.as_ref() {
+            if let Some(tool_calls) = tool_calls.as_ref() {
                 for tool_call in tool_calls {
                     let tool_call = ToolUseBuilder::default()
                         .id(tool_call.id())
@@ -320,6 +318,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
 
             builder.content(content_list)
         }
+        Reasoning(_) => return Ok(None),
     };
 
     builder.build().context("Failed to build message").map(Some)

@@ -265,18 +265,6 @@ fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage>
 
     messages.reverse();
 
-    messages.retain(|message| {
-        !matches!(
-            message,
-            ChatMessage::Assistant(assistant)
-                if assistant.is_reasoning_summary
-                    && assistant
-                        .tool_calls
-                        .as_ref()
-                        .is_none_or(std::vec::Vec::is_empty)
-        )
-    });
-
     messages
 }
 

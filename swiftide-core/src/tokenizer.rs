@@ -51,24 +51,18 @@ impl Estimatable for &ChatMessage {
             ChatMessage::User(msg) | ChatMessage::Summary(msg) | ChatMessage::System(msg) => {
                 Cow::Borrowed(msg)
             }
-            ChatMessage::Assistant(msg) => {
+            ChatMessage::Assistant(content, tool_calls) => {
                 // Note that this is not super accurate.
                 //
                 // It's a bit verbose to avoid unnecessary allocations. Is what it is.
-                let tool_calls = msg.tool_calls.as_ref().map(|vec| {
+                let tool_calls = tool_calls.as_ref().map(|vec| {
                     vec.iter()
                         .map(std::string::ToString::to_string)
                         .collect::<Vec<String>>()
                         .join(" ")
                 });
 
-                let content = if msg.is_reasoning_summary {
-                    None
-                } else {
-                    msg.content.as_deref()
-                };
-
-                if let Some(msg) = content {
+                if let Some(msg) = content.as_deref() {
                     if let Some(tool_calls) = tool_calls {
                         format!("{msg} {tool_calls}").into()
                     } else {
@@ -86,6 +80,7 @@ impl Estimatable for &ChatMessage {
 
                 format!("{tool_call_id} {tool_output_content}").into()
             }
+            ChatMessage::Reasoning(_) => "".into(),
         })
     }
 
@@ -93,18 +88,7 @@ impl Estimatable for &ChatMessage {
     //
     // See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     fn additional_tokens(&self) -> usize {
-        match self {
-            ChatMessage::Assistant(message)
-                if message.is_reasoning_summary
-                    && message
-                        .tool_calls
-                        .as_ref()
-                        .is_none_or(std::vec::Vec::is_empty) =>
-            {
-                0
-            }
-            _ => 4,
-        }
+        4
     }
 }
 

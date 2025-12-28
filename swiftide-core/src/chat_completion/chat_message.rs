@@ -10,24 +10,13 @@ pub struct ReasoningItem {
     pub encrypted_content: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
-pub struct AssistantMessage {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub content: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tool_calls: Option<Vec<ToolCall>>,
-    #[serde(default)]
-    pub is_reasoning_summary: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub reasoning: Option<Vec<ReasoningItem>>,
-}
-
 #[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]
 pub enum ChatMessage {
     System(String),
     User(String),
-    Assistant(AssistantMessage),
+    Assistant(Option<String>, Option<Vec<ToolCall>>),
     ToolOutput(ToolCall, ToolOutput),
+    Reasoning(ReasoningItem),
 
     // A summary of the chat. If encountered all previous messages are ignored, except the system
     // prompt
@@ -39,12 +28,11 @@ impl std::fmt::Display for ChatMessage {
         match self {
             ChatMessage::System(s) => write!(f, "System: \"{s}\""),
             ChatMessage::User(s) => write!(f, "User: \"{s}\""),
-            ChatMessage::Assistant(message) => write!(
+            ChatMessage::Assistant(content, tool_calls) => write!(
                 f,
                 "Assistant: \"{}\", tools: {}",
-                message.content.as_deref().unwrap_or("None"),
-                message
-                    .tool_calls
+                content.as_deref().unwrap_or("None"),
+                tool_calls
                     .as_deref()
                     .map_or("None".to_string(), |tc| {
                         tc.iter()
@@ -54,6 +42,12 @@ impl std::fmt::Display for ChatMessage {
                     })
             ),
             ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
+            ChatMessage::Reasoning(item) => write!(
+                f,
+                "Reasoning: \"{}\", encrypted: {}",
+                item.summary.join("\n"),
+                item.encrypted_content.is_some()
+            ),
             ChatMessage::Summary(s) => write!(f, "Summary: \"{s}\""),
         }
     }
@@ -69,25 +63,15 @@ impl ChatMessage {
     }
 
     pub fn new_assistant(message: Option<String>, tool_calls: Option<Vec<ToolCall>>) -> Self {
-        ChatMessage::Assistant(AssistantMessage {
-            content: message,
-            tool_calls,
-            is_reasoning_summary: false,
-            reasoning: None,
-        })
-    }
-
-    pub fn new_reasoning_summary(message: impl Into<String>) -> Self {
-        ChatMessage::Assistant(AssistantMessage {
-            content: Some(message.into()),
-            tool_calls: None,
-            is_reasoning_summary: true,
-            reasoning: None,
-        })
+        ChatMessage::Assistant(message, tool_calls)
     }
 
     pub fn new_tool_output(tool_call: impl Into<ToolCall>, output: impl Into<ToolOutput>) -> Self {
         ChatMessage::ToolOutput(tool_call.into(), output.into())
+    }
+
+    pub fn new_reasoning(message: ReasoningItem) -> Self {
+        ChatMessage::Reasoning(message)
     }
 
     pub fn new_summary(message: impl Into<String>) -> Self {
@@ -104,8 +88,9 @@ impl AsRef<str> for ChatMessage {
     fn as_ref(&self) -> &str {
         match self {
             ChatMessage::System(s) | ChatMessage::User(s) | ChatMessage::Summary(s) => s,
-            ChatMessage::Assistant(message) => message.content.as_deref().unwrap_or(""),
+            ChatMessage::Assistant(message, _) => message.as_deref().unwrap_or(""),
             ChatMessage::ToolOutput(_, output) => output.content().unwrap_or(""),
+            ChatMessage::Reasoning(_) => "",
         }
     }
 }
