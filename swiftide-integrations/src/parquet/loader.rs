@@ -57,8 +57,7 @@ impl Loader for Parquet {
             assert!(batch.num_columns() == 1, "Number of columns _must_ be 1");
 
             let column = batch.column(0); // Should only have one column at this point
-            let node_values = if let Some(values) = column.as_any().downcast_ref::<StringArray>()
-            {
+            let node_values = if let Some(values) = column.as_any().downcast_ref::<StringArray>() {
                 values
                     .iter()
                     .flatten()
