@@ -64,11 +64,10 @@ impl<T: Chunk + Serialize> Persist for Redis<T> {
                 })
                 .collect::<Result<Vec<_>>>();
 
-            if args.is_err() {
-                return vec![Err(args.unwrap_err())].into();
-            }
-
-            let args = args.unwrap();
+            let args = match args {
+                Ok(args) => args,
+                Err(err) => return vec![Err(err)].into(),
+            };
 
             let result: Result<()> = redis::cmd("MSET")
                 .arg(args)

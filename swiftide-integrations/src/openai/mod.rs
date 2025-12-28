@@ -7,7 +7,6 @@ use anyhow::Context as _;
 use async_openai::error::{OpenAIError, StreamError};
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
-use async_openai::types::responses::ReasoningEffort;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
@@ -26,6 +25,7 @@ mod structured_prompt;
 // expose type aliases to simplify downstream use of the open ai builder invocations
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
+pub use async_openai::types::responses::ReasoningEffort;
 
 #[cfg(feature = "tiktoken")]
 use crate::tiktoken::TikToken;
@@ -170,6 +170,17 @@ pub struct Options {
     #[builder(default, setter(into))]
     pub reasoning_effort: Option<ReasoningEffort>,
 
+    /// Enable reasoning summary/encrypted content handling for the Responses API.
+    ///
+    /// This is enabled by default, but only takes effect when `reasoning_effort` is set.
+    /// Disable it with `reasoning_features(false)` if you do not want summaries or encrypted
+    /// reasoning stored and replayed.
+    ///
+    /// Note: reasoning summaries/encrypted content require an `OpenAI` organization that is
+    /// verified for reasoning access; unverified orgs may receive no summaries.
+    #[builder(default, setter(into))]
+    pub reasoning_features: Option<bool>,
+
     /// This feature is in Beta. If specified, our system will make a best effort to sample
     /// deterministically, such that repeated requests with the same seed and parameters should
     /// return the same result. Determinism is not guaranteed, and you should refer to the
@@ -223,6 +234,9 @@ impl Options {
         if let Some(reasoning_effort) = &other.reasoning_effort {
             self.reasoning_effort = Some(reasoning_effort.clone());
         }
+        if let Some(reasoning_features) = other.reasoning_features {
+            self.reasoning_features = Some(reasoning_features);
+        }
         if let Some(seed) = other.seed {
             self.seed = Some(seed);
         }
@@ -234,6 +248,9 @@ impl Options {
         }
         if let Some(user) = &other.user {
             self.user = Some(user.clone());
+        }
+        if let Some(dimensions) = other.dimensions {
+            self.dimensions = Some(dimensions);
         }
     }
 }
@@ -247,6 +264,7 @@ impl From<OptionsBuilder> for Options {
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
+            reasoning_features: value.reasoning_features.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
@@ -266,6 +284,7 @@ impl From<&mut OptionsBuilder> for Options {
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
+            reasoning_features: value.reasoning_features.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
@@ -328,7 +347,12 @@ pub(crate) fn ensure_tool_schema_required_matches_properties(
 impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
     pub fn builder() -> OpenAIBuilder {
-        OpenAIBuilder::default()
+        let mut builder = OpenAIBuilder::default();
+        builder.default_options(Options {
+            reasoning_features: Some(true),
+            ..Default::default()
+        });
+        builder
     }
 }
 

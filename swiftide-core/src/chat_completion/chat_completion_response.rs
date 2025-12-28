@@ -4,7 +4,7 @@ use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{ToolCallBuilder, tools::ToolCall};
+use super::{ReasoningItem, ToolCallBuilder, tools::ToolCall};
 
 /// A generic response from chat completions
 ///
@@ -28,6 +28,9 @@ pub struct ChatCompletionResponse {
     #[builder(default)]
     pub usage: Option<Usage>,
 
+    #[builder(default)]
+    pub reasoning: Option<Vec<ReasoningItem>>,
+
     /// Streaming response
     #[builder(default)]
     pub delta: Option<ChatCompletionResponseDelta>,
@@ -41,6 +44,7 @@ impl Default for ChatCompletionResponse {
             tool_calls: None,
             delta: None,
             usage: None,
+            reasoning: None,
         }
     }
 }
