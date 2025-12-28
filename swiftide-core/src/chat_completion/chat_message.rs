@@ -60,8 +60,11 @@ impl ChatMessage {
         ChatMessage::User(message.into())
     }
 
-    pub fn new_assistant(message: Option<String>, tool_calls: Option<Vec<ToolCall>>) -> Self {
-        ChatMessage::Assistant(message, tool_calls)
+    pub fn new_assistant(
+        message: Option<impl Into<String>>,
+        tool_calls: Option<Vec<ToolCall>>,
+    ) -> Self {
+        ChatMessage::Assistant(message.map(Into::into), tool_calls)
     }
 
     pub fn new_tool_output(tool_call: impl Into<ToolCall>, output: impl Into<ToolOutput>) -> Self {

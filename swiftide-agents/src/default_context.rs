@@ -350,7 +350,7 @@ mod tests {
         let messages = vec![
             ChatMessage::System("System message".into()),
             ChatMessage::User("Hello".into()),
-            ChatMessage::new_assistant(Some("Hello there".into()), None),
+            ChatMessage::new_assistant(Some("Hello there"), None),
             ChatMessage::Summary("Summary message".into()),
             ChatMessage::User("This should be ignored".into()),
         ];
@@ -379,7 +379,7 @@ mod tests {
         let messages = vec![
             ChatMessage::System("System message".into()),
             ChatMessage::User("Hello".into()),
-            ChatMessage::new_assistant(Some("Hello there".into()), None),
+            ChatMessage::new_assistant(Some("Hello there"), None),
         ];
         let mut context = DefaultContext::default();
         context.with_stop_on_assistant(false);
@@ -411,7 +411,7 @@ mod tests {
 
         let messages = vec![
             ChatMessage::User("Hello again".into()),
-            ChatMessage::new_assistant(Some("Hello there again".into()), None),
+            ChatMessage::new_assistant(Some("Hello there again"), None),
         ];
 
         context.add_messages(messages).await.unwrap();

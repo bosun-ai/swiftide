@@ -1207,7 +1207,7 @@ data: [DONE]\n\n";
             .build()
             .unwrap();
 
-        let msg = ChatMessage::new_assistant(Some("pending".into()), Some(vec![tool_call.clone()]));
+        let msg = ChatMessage::new_assistant(Some("pending"), Some(vec![tool_call.clone()]));
         let converted = message_to_openai(&msg)
             .expect("conversion succeeds")
             .expect("message is not filtered");
