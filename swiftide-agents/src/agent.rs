@@ -595,7 +595,7 @@ impl Agent {
 
         invoke_hooks!(AfterCompletion, self, &mut response);
 
-        let assistant_content = response.message;
+        let assistant_content = response.message.take();
         let assistant_tool_calls = response.tool_calls.clone();
 
         if assistant_content.is_some()
@@ -610,7 +610,7 @@ impl Agent {
             .await?;
         }
 
-        if let Some(reasoning_items) = response.reasoning.clone() {
+        if let Some(reasoning_items) = response.reasoning.take() {
             for item in reasoning_items {
                 self.add_message(ChatMessage::Reasoning(item)).await?;
             }
