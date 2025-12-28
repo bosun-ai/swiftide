@@ -9716,6 +9716,7 @@ version = "0.32.1"
 dependencies = [
  "anyhow",
  "arrow-array 56.2.0",
+ "arrow-array 57.1.0",
  "async-anthropic",
  "async-openai 0.31.1",
  "async-trait",

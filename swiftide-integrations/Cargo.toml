@@ -98,6 +98,7 @@ deadpool = { workspace = true, features = [
 fluvio = { workspace = true, optional = true }
 rdkafka = { workspace = true, optional = true }
 arrow-array = { version = "56.2", default-features = false, optional = true }
+arrow-array-57 = { package = "arrow-array", version = "57.1", default-features = false, optional = true }
 lancedb = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true, features = [
   "async",
@@ -208,7 +209,7 @@ fluvio = ["dep:fluvio"]
 # Kafka loader
 kafka = ["dep:rdkafka"]
 # Paruqet loader
-parquet = ["dep:arrow-array", "dep:parquet"]
+parquet = ["dep:arrow-array-57", "dep:parquet"]
 # Anthropic for prompting and completions
 anthropic = ["dep:async-anthropic"]
 # Duckdb for indexing and retrieval

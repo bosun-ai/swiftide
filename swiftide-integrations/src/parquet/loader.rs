@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result};
-use arrow_array::StringArray;
+use arrow_array_57::{LargeStringArray, StringArray, StringViewArray};
 use fs_err::tokio::File;
 use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
@@ -56,16 +56,37 @@ impl Loader for Parquet {
             };
             assert!(batch.num_columns() == 1, "Number of columns _must_ be 1");
 
-            let node_values = batch
-                .column(0) // Should only have one column at this point
-                .as_any()
-                .downcast_ref::<StringArray>()
-                .unwrap()
-                .into_iter()
-                .flatten()
-                .map(TextNode::from)
-                .map(Ok)
-                .collect::<Vec<_>>();
+            let column = batch.column(0); // Should only have one column at this point
+            let node_values = if let Some(values) = column.as_any().downcast_ref::<StringArray>()
+            {
+                values
+                    .iter()
+                    .flatten()
+                    .map(TextNode::from)
+                    .map(Ok)
+                    .collect::<Vec<_>>()
+            } else if let Some(values) = column.as_any().downcast_ref::<LargeStringArray>() {
+                values
+                    .iter()
+                    .flatten()
+                    .map(TextNode::from)
+                    .map(Ok)
+                    .collect::<Vec<_>>()
+            } else if let Some(values) = column.as_any().downcast_ref::<StringViewArray>() {
+                values
+                    .iter()
+                    .flatten()
+                    .map(TextNode::from)
+                    .map(Ok)
+                    .collect::<Vec<_>>()
+            } else {
+                let new_result: Result<TextNode> = Err(anyhow::anyhow!(
+                    "Parquet column is not a string array (got {:?})",
+                    column.data_type()
+                ));
+
+                return vec![new_result].into();
+            };
 
             IndexingStream::iter(node_values)
         });
