@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1766066043030,
+  "lastUpdate": 1766931785884,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29525,6 +29525,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 225891,
             "range": "± 1211",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "360b3af86ea85784741089aa72140ab079b5d048",
+          "message": "feat(integrations/openai)!: Present and re-use reasoning in responses api (#988)\n\nEnsures the the compacted reasoning prompt is present in follow up turns\nwhen using agents with reasoning. Enabled by default if reasoning is\nenabled.\n\nBREAKING CHANGE: Adds a `ChatMessage::Reasoning` that will include both\nthe summary and compressed reasoning, so follow up turns in agents can\nuse it properly, and users can display the summary in the UI if they\nwant.",
+          "timestamp": "2025-12-28T15:14:11+01:00",
+          "tree_id": "91e77a52cdd7007b56617416136057002e75a52a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/360b3af86ea85784741089aa72140ab079b5d048"
+        },
+        "date": 1766931783991,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 774670,
+            "range": "± 17047",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 230089,
+            "range": "± 1374",
             "unit": "ns/iter"
           }
         ]
