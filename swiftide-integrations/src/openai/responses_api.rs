@@ -41,7 +41,9 @@ where
 
     let mut args = base_request_args(client, model)?;
 
-    let input_items = chat_messages_to_input_items(request.messages())?;
+    let options = client.options();
+    let include_reasoning = options.reasoning_effort.is_some();
+    let input_items = chat_messages_to_input_items(request.messages(), include_reasoning)?;
     args.input(InputParam::Items(input_items));
 
     if !request.tools_spec().is_empty() {
@@ -168,7 +170,10 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
     Ok(Tool::Function(function))
 }
 
-fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputItem>> {
+fn chat_messages_to_input_items(
+    messages: &[ChatMessage],
+    include_reasoning: bool,
+) -> LmResult<Vec<InputItem>> {
     let mut items = Vec::with_capacity(messages.len());
 
     for message in messages {
@@ -230,7 +235,7 @@ fn chat_messages_to_input_items(messages: &[ChatMessage]) -> LmResult<Vec<InputI
                 ));
             }
             ChatMessage::Reasoning(item) => {
-                if item.encrypted_content.is_none() {
+                if !include_reasoning || item.encrypted_content.is_none() {
                     continue;
                 }
 
@@ -1032,7 +1037,7 @@ mod tests {
 
         let message = ChatMessage::Assistant(None, Some(vec![tool_call]));
 
-        let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
+        let items = chat_messages_to_input_items(&[message], true).expect("conversion succeeds");
         assert_eq!(items.len(), 1);
 
         let InputItem::Item(async_openai::types::responses::Item::FunctionCall(function_call)) =
@@ -1055,7 +1060,7 @@ mod tests {
             encrypted_content: Some("encrypted".to_string()),
         });
 
-        let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
+        let items = chat_messages_to_input_items(&[message], true).expect("conversion succeeds");
         assert_eq!(items.len(), 1);
 
         let InputItem::Item(async_openai::types::responses::Item::Reasoning(reasoning_item)) =
@@ -1076,7 +1081,7 @@ mod tests {
     fn test_chat_messages_to_input_items_ignores_empty_assistant() {
         let message = ChatMessage::Assistant(None, None);
 
-        let items = chat_messages_to_input_items(&[message]).expect("conversion succeeds");
+        let items = chat_messages_to_input_items(&[message], true).expect("conversion succeeds");
         assert!(items.is_empty());
     }
 
@@ -1205,7 +1210,7 @@ mod tests {
             ),
         ];
 
-        let items = chat_messages_to_input_items(&messages).expect("conversion succeeds");
+        let items = chat_messages_to_input_items(&messages, true).expect("conversion succeeds");
         assert_eq!(items.len(), 3);
 
         for (item, expected) in
