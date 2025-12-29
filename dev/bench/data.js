@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767009530361,
+  "lastUpdate": 1767018058412,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29729,6 +29729,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 225702,
             "range": "± 7121",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d8f44cdb0f03930713c372e8623dccadd6959593",
+          "message": "fix(integrations/openai): Add reasoning items before all other items on response (#993)",
+          "timestamp": "2025-12-29T15:12:09+01:00",
+          "tree_id": "2416f020449bd0da648fa4e8ba7032d726eccd45",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d8f44cdb0f03930713c372e8623dccadd6959593"
+        },
+        "date": 1767018055545,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 614139,
+            "range": "± 19650",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 154314,
+            "range": "± 581",
             "unit": "ns/iter"
           }
         ]
