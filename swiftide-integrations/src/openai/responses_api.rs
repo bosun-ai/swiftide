@@ -88,7 +88,7 @@ where
         let mut reasoning = ReasoningArgs::default();
         reasoning.effort(reasoning_effort);
 
-        if options.reasoning_features.unwrap_or(false) {
+        if options.reasoning_features.unwrap_or(true) {
             reasoning.summary(ReasoningSummary::Auto);
             args.include(vec![IncludeEnum::ReasoningEncryptedContent]);
         }
@@ -235,7 +235,13 @@ fn chat_messages_to_input_items(
                 ));
             }
             ChatMessage::Reasoning(item) => {
-                if !include_reasoning || item.encrypted_content.is_none() {
+                if !include_reasoning
+                    || item.encrypted_content.is_none()
+                    || item
+                        .encrypted_content
+                        .as_ref()
+                        .is_some_and(String::is_empty)
+                {
                     continue;
                 }
 
@@ -542,14 +548,14 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
         builder.message(text);
     }
 
-    let tool_calls = collect_tool_calls_from_items(&response.output)?;
-    if !tool_calls.is_empty() {
-        builder.tool_calls(tool_calls);
-    }
-
     let reasoning_items = collect_reasoning_items_from_items(&response.output);
     if !reasoning_items.is_empty() {
         builder.reasoning(reasoning_items);
+    }
+
+    let tool_calls = collect_tool_calls_from_items(&response.output)?;
+    if !tool_calls.is_empty() {
+        builder.tool_calls(tool_calls);
     }
 
     if let Some(usage) = response.usage.as_ref() {
@@ -665,6 +671,27 @@ fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningIte
                         }
                     })
                     .collect(),
+                content: reasoning
+                    .content
+                    .as_ref()
+                    .map(|c| c.iter().map(|c| c.text.clone()).collect()),
+                status: {
+                    if let Some(status) = &reasoning.status {
+                        match status {
+                            OutputStatus::Completed => {
+                                Some(swiftide_core::chat_completion::ReasoningStatus::Completed)
+                            }
+                            OutputStatus::InProgress => {
+                                Some(swiftide_core::chat_completion::ReasoningStatus::InProgress)
+                            }
+                            OutputStatus::Incomplete => {
+                                Some(swiftide_core::chat_completion::ReasoningStatus::Incomplete)
+                            }
+                        }
+                    } else {
+                        None
+                    }
+                },
                 encrypted_content: reasoning.encrypted_content.clone(),
             }),
             _ => None,
@@ -1058,6 +1085,7 @@ mod tests {
             id: "reasoning_1".to_string(),
             summary: vec!["First".to_string(), "Second".to_string()],
             encrypted_content: Some("encrypted".to_string()),
+            ..Default::default()
         });
 
         let items = chat_messages_to_input_items(&[message], true).expect("conversion succeeds");
@@ -1146,6 +1174,7 @@ mod tests {
             id: "existing_reasoning".to_string(),
             summary: vec!["keep".to_string()],
             encrypted_content: None,
+            ..Default::default()
         };
 
         let existing_usage = Usage {

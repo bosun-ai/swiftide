@@ -2,12 +2,30 @@ use serde::{Deserialize, Serialize};
 
 use super::tools::{ToolCall, ToolOutput};
 
+/// Reasoning items returned by the Responses API (openai specific)
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct ReasoningItem {
+    /// Unique identifier for this reasoning item
     pub id: String,
+    /// Reasoning summary content
     pub summary: Vec<String>,
+    /// Reasoning text content
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub encrypted_content: Option<String>,
+    /// The status of the item. One of `in_progress`, `completed`, or `incomplete`.
+    /// Populated when items are returned via API.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<ReasoningStatus>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ReasoningStatus {
+    InProgress,
+    Completed,
+    Incomplete,
 }
 
 #[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]
