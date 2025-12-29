@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1766933502500,
+  "lastUpdate": 1767009530361,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29675,6 +29675,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 228553,
             "range": "± 2268",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1dd44173e7c8d0ad7612f6bbcd76f49b21b4d052",
+          "message": "fix(integrations/openai): Properly set default on reasoning features and exclude empty encrypted content (#992)",
+          "timestamp": "2025-12-29T12:50:56+01:00",
+          "tree_id": "cc0febb93399b2eb76920be1f18636c456a8a06f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1dd44173e7c8d0ad7612f6bbcd76f49b21b4d052"
+        },
+        "date": 1767009528145,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 759218,
+            "range": "± 15228",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 225702,
+            "range": "± 7121",
             "unit": "ns/iter"
           }
         ]
