@@ -79,6 +79,11 @@ impl EstimateTokens for CharEstimator {
 /// }
 /// ```
 pub trait Estimatable: Send + Sync {
+    /// A list of string slices used for estimation
+    ///
+    /// # Errors
+    ///
+    /// Some estimatable values may fail to render or prepare for estimation.
     fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>>;
 
     /// Optionally return extra tokens that should be added to the estimate.
@@ -141,6 +146,7 @@ impl Estimatable for &ChatMessage {
 
                 vec![Cow::Borrowed(tool_output_content)]
             }
+            ChatMessage::Reasoning(_reasoning_item) => vec![],
         })
     }
 
