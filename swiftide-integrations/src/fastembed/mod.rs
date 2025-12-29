@@ -66,9 +66,9 @@ const DEFAULT_BATCH_SIZE: usize = 256;
 pub struct FastEmbed {
     #[builder(
         setter(custom),
-        default = "Arc::new(TextEmbedding::try_new(Default::default())?.into())"
+        default = "Arc::new(tokio::sync::Mutex::new(TextEmbedding::try_new(Default::default())?.into()))"
     )]
-    embedding_model: Arc<EmbeddingModelType>,
+    embedding_model: Arc<tokio::sync::Mutex<EmbeddingModelType>>,
     #[builder(default = "Some(DEFAULT_BATCH_SIZE)")]
     batch_size: Option<usize>,
 }
@@ -112,7 +112,7 @@ impl FastEmbed {
 impl FastEmbedBuilder {
     #[must_use]
     pub fn embedding_model(mut self, fastembed: impl Into<EmbeddingModelType>) -> Self {
-        self.embedding_model = Some(Arc::new(fastembed.into()));
+        self.embedding_model = Some(Arc::new(tokio::sync::Mutex::new(fastembed.into())));
 
         self
     }

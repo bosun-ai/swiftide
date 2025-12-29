@@ -247,7 +247,7 @@ impl Anthropic {
 
         let messages = messages
             .iter()
-            .map(message_to_antropic)
+            .filter_map(|message| message_to_antropic(message).transpose())
             .collect::<Result<Vec<_>>>()?;
 
         let mut anthropic_request = CreateMessagesRequestBuilder::default()
@@ -276,10 +276,10 @@ impl Anthropic {
 }
 
 #[allow(clippy::items_after_statements)]
-fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
+fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
-    use ChatMessage::{Assistant, Summary, System, ToolOutput, User};
+    use ChatMessage::{Assistant, Reasoning, Summary, System, ToolOutput, User};
 
     match message {
         ToolOutput(tool_call, tool_output) => builder.content(
@@ -289,16 +289,16 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
                 .build()?,
         ),
         Summary(msg) | System(msg) | User(msg) => builder.content(msg),
-        Assistant(msg, tool_calls) => {
+        Assistant(content, tool_calls) => {
             builder.role(MessageRole::Assistant);
 
             let mut content_list: Vec<MessageContent> = Vec::new();
 
-            if let Some(msg) = msg {
-                content_list.push(msg.into());
+            if let Some(content) = content.as_ref() {
+                content_list.push(content.as_str().into());
             }
 
-            if let Some(tool_calls) = tool_calls {
+            if let Some(tool_calls) = tool_calls.as_ref() {
                 for tool_call in tool_calls {
                     let tool_call = ToolUseBuilder::default()
                         .id(tool_call.id())
@@ -310,13 +310,18 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Message> {
                 }
             }
 
+            if content_list.is_empty() {
+                return Ok(None);
+            }
+
             let content_list = MessageContentList(content_list);
 
             builder.content(content_list)
         }
+        Reasoning(_) => return Ok(None),
     };
 
-    builder.build().context("Failed to build message")
+    builder.build().context("Failed to build message").map(Some)
 }
 
 fn tools_to_anthropic(
