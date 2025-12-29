@@ -542,15 +542,15 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
 
     let mut builder = ChatCompletionResponse::builder();
 
+    let reasoning_items = collect_reasoning_items_from_items(&response.output);
+    if !reasoning_items.is_empty() {
+        builder.reasoning(reasoning_items);
+    }
+
     if let Some(text) = response.output_text().filter(|s| !s.is_empty()) {
         builder.message(text);
     } else if let Some(text) = collect_message_text_from_items(&response.output) {
         builder.message(text);
-    }
-
-    let reasoning_items = collect_reasoning_items_from_items(&response.output);
-    if !reasoning_items.is_empty() {
-        builder.reasoning(reasoning_items);
     }
 
     let tool_calls = collect_tool_calls_from_items(&response.output)?;
