@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767093429711,
+  "lastUpdate": 1767093440084,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29891,6 +29891,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 154038,
             "range": "± 7004",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5d4da152f2402a441894189502ef5be169a38eb6",
+          "message": "chore(deps): bump docker/login-action from 3.5.0 to 3.6.0 (#938)\n\nBumps [docker/login-action](https://github.com/docker/login-action) from\n3.5.0 to 3.6.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/docker/login-action/releases\">docker/login-action's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v3.6.0</h2>\n<ul>\n<li>Add <code>registry-auth</code> input for raw authentication to\nregistries by <a\nhref=\"https://github.com/crazy-max\"><code>@​crazy-max</code></a> in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/887\">docker/login-action#887</a></li>\n<li>Bump <code>@​aws-sdk/client-ecr</code> to 3.890.0 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/882\">docker/login-action#882</a>\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/890\">docker/login-action#890</a></li>\n<li>Bump <code>@​aws-sdk/client-ecr-public</code> to 3.890.0 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/882\">docker/login-action#882</a>\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/890\">docker/login-action#890</a></li>\n<li>Bump <code>@​docker/actions-toolkit</code> from 0.62.1 to 0.63.0 in\n<a\nhref=\"https://redirect.github.com/docker/login-action/pull/883\">docker/login-action#883</a></li>\n<li>Bump brace-expansion from 1.1.11 to 1.1.12 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/880\">docker/login-action#880</a></li>\n<li>Bump undici from 5.28.4 to 5.29.0 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/879\">docker/login-action#879</a></li>\n<li>Bump tmp from 0.2.3 to 0.2.4 in <a\nhref=\"https://redirect.github.com/docker/login-action/pull/881\">docker/login-action#881</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a\nhref=\"https://github.com/docker/login-action/compare/v3.5.0...v3.6.0\">https://github.com/docker/login-action/compare/v3.5.0...v3.6.0</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/5e57cd118135c172c3672efd75eb46360885c0ef\"><code>5e57cd1</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/890\">#890</a>\nfrom docker/dependabot/npm_and_yarn/aws-sdk-dependenc...</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/97e31439e8b415da4e1322633630e1563c42c0f2\"><code>97e3143</code></a>\nchore: update generated content</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/3a0796b57f440ff1af59165907392527fa832e0c\"><code>3a0796b</code></a>\nbuild(deps): bump the aws-sdk-dependencies group with 2 updates</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/5b7b28b1cc417bbd34cd8c225a957c9ce9adf7f2\"><code>5b7b28b</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/882\">#882</a>\nfrom docker/dependabot/npm_and_yarn/aws-sdk-dependenc...</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/abc9fb3154ad354cf35d6c78a862bee018dd4cb8\"><code>abc9fb3</code></a>\nchore: update generated content</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/d46868881477a1d16bdcc80a5b2c05208b1befe4\"><code>d468688</code></a>\nbuild(deps): bump the aws-sdk-dependencies group with 2 updates</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/a99b2f88fc4efabea32b8ba09581cf535c1577e9\"><code>a99b2f8</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/883\">#883</a>\nfrom docker/dependabot/npm_and_yarn/docker/actions-to...</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/0d7fae8057d840a981e4132ce97862f6c8f48b42\"><code>0d7fae8</code></a>\nchore: update generated content</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/9832253cb7b14f93bd4134396bd26e855e8e4bd2\"><code>9832253</code></a>\nbuild(deps): bump <code>@​docker/actions-toolkit</code> from 0.62.1 to\n0.63.0</li>\n<li><a\nhref=\"https://github.com/docker/login-action/commit/09e05bbdf68bd9ce9eedefa6d2ebe03008c32b08\"><code>09e05bb</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/docker/login-action/issues/881\">#881</a>\nfrom docker/dependabot/npm_and_yarn/tmp-0.2.4</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/docker/login-action/compare/184bdaa0721073962dff0199f1fb9940f07167d1...5e57cd118135c172c3672efd75eb46360885c0ef\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=docker/login-action&package-manager=github_actions&previous-version=3.5.0&new-version=3.6.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-12-30T12:09:30+01:00",
+          "tree_id": "f9f1458837cd0261d2c52a8effe216da679d80ed",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5d4da152f2402a441894189502ef5be169a38eb6"
+        },
+        "date": 1767093437584,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 759275,
+            "range": "± 33420",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 224719,
+            "range": "± 15638",
             "unit": "ns/iter"
           }
         ]
