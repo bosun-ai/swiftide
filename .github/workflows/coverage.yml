@@ -26,7 +26,7 @@ jobs:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
