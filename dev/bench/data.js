@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767093410836,
+  "lastUpdate": 1767093429711,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29837,6 +29837,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 225225,
             "range": "± 3654",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "33d65269caa690b9693a272725e4a2b064f64c49",
+          "message": "chore(deps): bump rmcp from 0.11.0 to 0.12.0 (#991)\n\nBumps [rmcp](https://github.com/modelcontextprotocol/rust-sdk) from\n0.11.0 to 0.12.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/releases\">rmcp's\nreleases</a>.</em></p>\n<blockquote>\n<h2>rmcp-macros-v0.12.0</h2>\n<h3>Other</h3>\n<ul>\n<li>merge cached_schema_for_type into schema_for_type (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/581\">#581</a>)</li>\n<li>Add NexusCore MCP to project list (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/573\">#573</a>)</li>\n<li><em>(deps)</em> update darling requirement from 0.21 to 0.23 (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/574\">#574</a>)</li>\n</ul>\n<h2>rmcp-v0.12.0</h2>\n<h3>Added</h3>\n<ul>\n<li>add support for custom requests (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/590\">#590</a>)</li>\n<li>add support for custom server notifications (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/580\">#580</a>)</li>\n</ul>\n<h3>Fixed</h3>\n<ul>\n<li>update process-wrap to v9.0 (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/586\">#586</a>)</li>\n<li><em>(oauth)</em> rfc8414 should judement the response_types (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/485\">#485</a>)</li>\n</ul>\n<h3>Other</h3>\n<ul>\n<li>Add SEP-991 (CIMD) support for URL-based client IDs (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/570\">#570</a>)</li>\n<li>merge cached_schema_for_type into schema_for_type (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/581\">#581</a>)</li>\n<li>Add NexusCore MCP to project list (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/pull/573\">#573</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/0d65822c3862c042b58f64d85e052c0aa303a016\"><code>0d65822</code></a>\nchore: release v0.12.0 (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/577\">#577</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/e0faf1ed51267ee2d19163cf442182e6e0ff1600\"><code>e0faf1e</code></a>\nfeat: add support for custom requests (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/590\">#590</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/2e3cc4a9739bbb5899909410c8e2f0be6b4fdc50\"><code>2e3cc4a</code></a>\nfeat: add support for custom server notifications (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/580\">#580</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/31d242b1e4c6908d2f937b0f3aae0931942b8a52\"><code>31d242b</code></a>\nfix: correct redirect URI in client-metadata.json (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/585\">#585</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/d7a05aa43ffa4c63a49a6099b1c0ab7e69bd4c96\"><code>d7a05aa</code></a>\nfix: update process-wrap to v9.0 (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/586\">#586</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/f20ed202af7ff11ffbc1d6a9260139c657205018\"><code>f20ed20</code></a>\nAdd SEP-991 (CIMD) support for URL-based client IDs (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/570\">#570</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/e3fd384a457d8b2ba52b6bd9a4b11977cf914c8e\"><code>e3fd384</code></a>\nfix(docs): update CONTRIBUTE.MD (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/579\">#579</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/8d33b155b69a41aa85451543aefb437d60693bd0\"><code>8d33b15</code></a>\nrefactor: merge cached_schema_for_type into schema_for_type (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/581\">#581</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/bce055506861e30a650889bf48df7667bc2403eb\"><code>bce0555</code></a>\nfix(oauth): rfc8414 should judement the response_types (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/485\">#485</a>)</li>\n<li><a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/commit/d4fcac02f86a983226dcef0a99d75d0348646e9d\"><code>d4fcac0</code></a>\nAdd NexusCore MCP to project list (<a\nhref=\"https://redirect.github.com/modelcontextprotocol/rust-sdk/issues/573\">#573</a>)</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/modelcontextprotocol/rust-sdk/compare/rmcp-v0.11.0...rmcp-v0.12.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=rmcp&package-manager=cargo&previous-version=0.11.0&new-version=0.12.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after\nyour CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge\nand block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating\nit. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2025-12-30T12:09:04+01:00",
+          "tree_id": "9cf89b6ec566e44d4963e7ce4ad58f4ae4d014b5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/33d65269caa690b9693a272725e4a2b064f64c49"
+        },
+        "date": 1767093427597,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 566723,
+            "range": "± 17644",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 154038,
+            "range": "± 7004",
             "unit": "ns/iter"
           }
         ]
