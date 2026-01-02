@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767093445634,
+  "lastUpdate": 1767383794729,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -29999,6 +29999,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 154809,
             "range": "± 625",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7ff5a43c61b3d2298970f9ca11c3a05d876e1148",
+          "message": "feat(agents): Allow fully overwriting agent history via context (#997)\n\nNovel context engineering approaches alter chat history in such a way\nthat it might need to be rewritten. Since there are so *many* different\nways, I'll leave it up to users to implement their own AgentContext if\nthey want something more novel or efficient. This at least makes it\npossible to do anything without reimplementing it.",
+          "timestamp": "2026-01-02T20:48:34+01:00",
+          "tree_id": "14b8206f5370bcef705d642b9aab3c6421d2353a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7ff5a43c61b3d2298970f9ca11c3a05d876e1148"
+        },
+        "date": 1767383793498,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 785585,
+            "range": "± 18809",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 226797,
+            "range": "± 1439",
             "unit": "ns/iter"
           }
         ]
