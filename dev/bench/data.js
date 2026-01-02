@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767383794729,
+  "lastUpdate": 1767383849671,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30053,6 +30053,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 226797,
             "range": "± 1439",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4ff6adfe423a9442283579b15f2707e2cf8b1a62",
+          "message": "feat(tokenizer): Add default char estimator (#917)",
+          "timestamp": "2026-01-02T20:49:23+01:00",
+          "tree_id": "3ccb6a64c590894a8b40ad6234f822aba15cff80",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4ff6adfe423a9442283579b15f2707e2cf8b1a62"
+        },
+        "date": 1767383847446,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 790875,
+            "range": "± 15795",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 228471,
+            "range": "± 2393",
             "unit": "ns/iter"
           }
         ]
