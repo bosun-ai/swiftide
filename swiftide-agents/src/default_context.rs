@@ -245,6 +245,14 @@ impl AgentContext for DefaultContext {
 
         Ok(())
     }
+
+    /// Replace the entire conversation history
+    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+        self.message_history.overwrite(items).await?;
+        self.completions_ptr.store(0, Ordering::SeqCst);
+        self.current_completions_ptr.store(0, Ordering::SeqCst);
+        Ok(())
+    }
 }
 
 fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage> {
@@ -547,6 +555,40 @@ mod tests {
         assert_eq!(messages.len(), 2);
 
         // Second call should be empty again
+        assert!(context.next_completion().await.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_replace_history_replaces_and_resets_pointers() {
+        let context = DefaultContext::default();
+
+        // Add some initial messages
+        context
+            .add_messages(vec![
+                ChatMessage::System("Initial".into()),
+                ChatMessage::User("Hello".into()),
+                ChatMessage::Assistant("Hi.".into()),
+            ])
+            .await
+            .unwrap();
+
+        // Consume the messages so pointers are moved
+        let orig = context.next_completion().await.unwrap().unwrap();
+        assert_eq!(orig.len(), 3);
+        assert!(context.next_completion().await.unwrap().is_none());
+
+        // Replace history with a new set
+        let new_msgs = vec![
+            ChatMessage::System("System2".into()),
+            ChatMessage::User("User2".into()),
+        ];
+        context.replace_history(new_msgs.clone()).await.unwrap();
+
+        // After replacement, next_completion should return only the new messages
+        let replaced = context.next_completion().await.unwrap().unwrap();
+        assert_eq!(replaced, new_msgs);
+
+        // Next call should yield None again
         assert!(context.next_completion().await.unwrap().is_none());
     }
 }

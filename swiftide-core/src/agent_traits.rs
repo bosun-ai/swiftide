@@ -474,6 +474,9 @@ pub trait AgentContext: Send + Sync {
 
     async fn history(&self) -> Result<Vec<ChatMessage>>;
 
+    /// Replace the entire history with the given items
+    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()>;
+
     /// Pops the last messages up until the last completion
     ///
     /// LLMs failing completion for various reasons is unfortunately a common occurrence
@@ -516,6 +519,10 @@ impl AgentContext for Box<dyn AgentContext> {
 
     async fn history(&self) -> Result<Vec<ChatMessage>> {
         (**self).history().await
+    }
+
+    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+        (**self).replace_history(items).await
     }
 
     async fn redrive(&self) -> Result<()> {
@@ -562,6 +569,10 @@ impl AgentContext for Arc<dyn AgentContext> {
         (**self).history().await
     }
 
+    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+        (**self).replace_history(items).await
+    }
+
     async fn redrive(&self) -> Result<()> {
         (**self).redrive().await
     }
@@ -604,6 +615,10 @@ impl AgentContext for &dyn AgentContext {
 
     async fn history(&self) -> Result<Vec<ChatMessage>> {
         (**self).history().await
+    }
+
+    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+        (**self).replace_history(items).await
     }
 
     async fn redrive(&self) -> Result<()> {
@@ -652,6 +667,10 @@ impl AgentContext for () {
 
     async fn history(&self) -> Result<Vec<ChatMessage>> {
         Ok(Vec::new())
+    }
+
+    async fn replace_history(&self, _items: Vec<ChatMessage>) -> Result<()> {
+        Ok(())
     }
 
     async fn redrive(&self) -> Result<()> {
