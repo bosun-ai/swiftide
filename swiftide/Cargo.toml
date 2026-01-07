@@ -24,13 +24,13 @@ include = [
 document-features = { workspace = true }
 
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.32" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.32" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.32" }
-swiftide-query = { path = "../swiftide-query", version = "0.32" }
-swiftide-agents = { path = "../swiftide-agents", version = "0.32", optional = true }
-swiftide-macros = { path = "../swiftide-macros", version = "0.32", optional = true }
-swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.32", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.33" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.33" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.33" }
+swiftide-query = { path = "../swiftide-query", version = "0.33" }
+swiftide-agents = { path = "../swiftide-agents", version = "0.33", optional = true }
+swiftide-macros = { path = "../swiftide-macros", version = "0.33", optional = true }
+swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.33", optional = true }
 
 # Re-exports for macros and ease of use
 anyhow.workspace = true
