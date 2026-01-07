@@ -25,7 +25,7 @@ async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
 fs-err = { version = "3.1", default-features = false }
 futures-util = { version = "0.3", default-features = true }
-tokio = { version = "1.46", features = [
+tokio = { version = "1.49", features = [
   "rt-multi-thread",
   "time",
 ], default-features = false }
@@ -68,7 +68,7 @@ rmcp = { version = "0.12", default-features = false, features = [
 schemars = { version = "1.0", default-features = false }
 
 # Integrations
-spider = { version = "2.37", default-features = false }
+spider = { version = "2.38", default-features = false }
 async-openai = { version = ">=0.31.0", default-features = false }
 qdrant-client = { version = "1.15", default-features = false, features = [
   "serde",
@@ -92,7 +92,7 @@ criterion = { version = "0.8", default-features = false }
 darling = { version = "0.23", default-features = false }
 deadpool = { version = "0.12", default-features = false }
 document-features = { version = "0.2" }
-fastembed = { version = "5.5", default-features = false }
+fastembed = { version = "5.6", default-features = false }
 flv-util = { version = "0.5", default-features = false }
 htmd = { version = "0.5", default-features = false }
 ignore = { version = "0.4", default-features = false }
@@ -136,7 +136,7 @@ temp-dir = { version = "0.1" }
 wiremock = { version = "0.6" }
 test-case = { version = "3.3" }
 pretty_assertions = { version = "1.4" }
-insta = { version = "1.45", features = ["yaml", "filters"] }
+insta = { version = "1.46", features = ["yaml", "filters"] }
 eventsource-stream = { version = "0.2" }
 
 [workspace.lints.rust]
