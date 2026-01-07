@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767798508819,
+  "lastUpdate": 1767806542843,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30161,6 +30161,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 224525,
             "range": "± 1737",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "0a8dcdf89269f39b54cc534b0322545f8205fac6",
+          "message": "fix(agents): Resolve pending tool calls before new user message on restart",
+          "timestamp": "2026-01-07T18:12:30+01:00",
+          "tree_id": "d85b45abf60b19b7ec0086ed1bcec8e22680942b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/0a8dcdf89269f39b54cc534b0322545f8205fac6"
+        },
+        "date": 1767806540715,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 759820,
+            "range": "± 16500",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 226526,
+            "range": "± 3365",
             "unit": "ns/iter"
           }
         ]
