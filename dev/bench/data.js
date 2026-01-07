@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767806542843,
+  "lastUpdate": 1767811272460,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30215,6 +30215,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 226526,
             "range": "± 3365",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "60be8ed1731eb5474192df5665db0d34248a9a7b",
+          "message": "fix(integrations/redis): Extend owned should not overwrite history",
+          "timestamp": "2026-01-07T19:33:05+01:00",
+          "tree_id": "706caad4d5ab49f17bc93a0172d15db4b51508f8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/60be8ed1731eb5474192df5665db0d34248a9a7b"
+        },
+        "date": 1767811270567,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 761199,
+            "range": "± 19638",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 227277,
+            "range": "± 4277",
             "unit": "ns/iter"
           }
         ]
