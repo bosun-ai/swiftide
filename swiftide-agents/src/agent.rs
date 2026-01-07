@@ -12,7 +12,7 @@ use crate::{
     tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     hash::{DefaultHasher, Hash as _, Hasher as _},
     sync::Arc,
 };
@@ -131,6 +131,10 @@ pub struct Agent {
     /// The name of the agent; optional
     #[builder(default = "unnamed_agent".into(), setter(into))]
     pub(crate) name: String,
+
+    /// User messages waiting for any pending tool calls to complete.
+    #[builder(private, default)]
+    pub(crate) pending_user_messages: VecDeque<String>,
 }
 
 impl Clone for Agent {
@@ -149,6 +153,7 @@ impl Clone for Agent {
             streaming: self.streaming,
             name: self.name.clone(),
             clear_default_tools: self.clear_default_tools,
+            pending_user_messages: VecDeque::new(),
         }
     }
 }
@@ -468,11 +473,20 @@ impl Agent {
             if cfg!(feature = "langfuse") {
                 debug!(langfuse.input = query);
             }
-            self.context
-                .add_message(ChatMessage::User(query))
-                .await
-                .map_err(AgentError::MessageHistoryError)?;
+            tracing::debug!("Queueing user message until tool outputs are recorded");
+            self.pending_user_messages.push_back(query);
         }
+
+        self.invoke_pending_tool_calls().await?;
+
+        if self.has_unfulfilled_tool_calls().await? {
+            tracing::warn!(
+                "Unfulfilled tool calls remain after invocation; agent/tool configuration is invalid"
+            );
+            return Err(AgentError::UnfulfilledToolCalls);
+        }
+
+        self.flush_pending_user_messages().await?;
 
         invoke_hooks!(OnStart, self);
 
@@ -869,6 +883,53 @@ impl Agent {
 
     pub fn stop_reason(&self) -> Option<&StopReason> {
         self.state.stop_reason()
+    }
+
+    async fn has_unfulfilled_tool_calls(&self) -> Result<bool, AgentError> {
+        let history = self
+            .context
+            .history()
+            .await
+            .map_err(AgentError::MessageHistoryError)?;
+        Ok(maybe_tool_call_without_output(&history).is_some())
+    }
+
+    async fn invoke_pending_tool_calls(&mut self) -> Result<(), AgentError> {
+        let history = self
+            .context
+            .history()
+            .await
+            .map_err(AgentError::MessageHistoryError)?;
+
+        if let Some(ChatMessage::Assistant(_, tool_calls)) =
+            maybe_tool_call_without_output(&history)
+            && tool_calls
+                .as_ref()
+                .is_some_and(|tool_calls| !tool_calls.is_empty())
+            && let Some(tool_calls) = tool_calls.as_ref()
+        {
+            self.invoke_tools(tool_calls).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn flush_pending_user_messages(&mut self) -> Result<(), AgentError> {
+        if self.pending_user_messages.is_empty() {
+            return Ok(());
+        }
+
+        let messages = self
+            .pending_user_messages
+            .drain(..)
+            .map(ChatMessage::User)
+            .collect();
+
+        self.context
+            .add_messages(messages)
+            .await
+            .map_err(AgentError::MessageHistoryError)?;
+        Ok(())
     }
 
     async fn load_toolboxes(&mut self) -> Result<(), AgentError> {
@@ -1675,6 +1736,44 @@ mod tests {
             .expect("Could not find refusal message");
 
         assert!(agent.is_stopped());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_defers_user_message_until_pending_tool_calls_complete() {
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::default();
+        mock_tool.expect_invoke_ok("Tool done".into(), None);
+
+        let context = DefaultContext::default()
+            .with_existing_messages(vec![user!("Hello"), assistant!("Need tool", ["mock_tool"])])
+            .await
+            .unwrap()
+            .to_owned();
+
+        let expected_request = chat_request! {
+            user!("Hello"),
+            assistant!("Need tool", ["mock_tool"]),
+            tool_output!("mock_tool", "Tool done"),
+            user!("Next");
+
+            tools = [mock_tool.clone()]
+        };
+
+        let response = chat_response! {
+            "All set";
+            tool_calls = ["stop"]
+        };
+        mock_llm.expect_complete(expected_request, Ok(response));
+
+        let mut agent = Agent::builder()
+            .context(context)
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        agent.query_once("Next").await.unwrap();
     }
 
     #[test_log::test(tokio::test)]

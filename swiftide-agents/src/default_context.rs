@@ -567,7 +567,7 @@ mod tests {
             .add_messages(vec![
                 ChatMessage::System("Initial".into()),
                 ChatMessage::User("Hello".into()),
-                ChatMessage::Assistant("Hi.".into()),
+                ChatMessage::new_assistant(Some("Hi."), None),
             ])
             .await
             .unwrap();

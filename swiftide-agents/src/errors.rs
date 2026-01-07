@@ -36,4 +36,7 @@ pub enum AgentError {
 
     #[error("Error with message history {0:#}")]
     MessageHistoryError(anyhow::Error),
+
+    #[error("Unfulfilled tool calls remain after invocation")]
+    UnfulfilledToolCalls,
 }
