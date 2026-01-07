@@ -41,11 +41,9 @@ impl<T: Chunk> MessageHistory for Redis<T> {
 
     async fn extend_owned(&self, items: Vec<ChatMessage>) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
-            // If it does not exist yet, we can just push the items
-            let _ = redis::cmd("DEL")
-                .arg(&self.message_history_key)
-                .query_async::<()>(&mut cm)
-                .await;
+            if items.is_empty() {
+                return Ok(());
+            }
 
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
@@ -188,16 +186,15 @@ mod tests {
 
         let m1 = ChatMessage::System("First".to_string());
         let m2 = ChatMessage::User("Second".to_string());
+        redis.push_owned(m1.clone()).await.unwrap();
+
+        let m3 = ChatMessage::new_assistant(Some("Third".to_string()), None);
         redis
-            .extend_owned(vec![m1.clone(), m2.clone()])
+            .extend_owned(vec![m2.clone(), m3.clone()])
             .await
             .unwrap();
 
         let hist = redis.history().await.unwrap();
-        assert_eq!(
-            hist,
-            vec![m1, m2],
-            "History should only contain the overwritten message"
-        );
+        assert_eq!(hist, vec![m1, m2, m3], "History should append on extend");
     }
 }
