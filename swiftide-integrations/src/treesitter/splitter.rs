@@ -187,7 +187,7 @@ impl CodeSplitter {
         let root_node = tree.root_node();
 
         if root_node.has_error() {
-            tracing::error!("Syntax error parsing code: {:?}", code);
+            tracing::warn!("Syntax error parsing code: {code:?}");
             return Ok(vec![code.to_string()]);
         }
 
