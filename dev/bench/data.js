@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767383849671,
+  "lastUpdate": 1767798508819,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30107,6 +30107,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 228471,
             "range": "± 2393",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "mail@timonv.nl",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "distinct": true,
+          "id": "55b5b3c3ba18a29637c4c5bf33d48a653ed474a2",
+          "message": "chore(integrations/tree-sitter): Log parse errors as warning instead of errors",
+          "timestamp": "2026-01-07T15:59:53+01:00",
+          "tree_id": "8e8189fe7010fefa72d88544841a4c6ad8b75657",
+          "url": "https://github.com/bosun-ai/swiftide/commit/55b5b3c3ba18a29637c4c5bf33d48a653ed474a2"
+        },
+        "date": 1767798506720,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 788858,
+            "range": "± 17831",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 224525,
+            "range": "± 1737",
             "unit": "ns/iter"
           }
         ]
