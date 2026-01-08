@@ -14,6 +14,8 @@ pub use custom_strategy::*;
 pub use hybrid_search::*;
 pub use similarity_single_embedding::*;
 
+use crate::SearchStrategy;
+
 pub trait SearchFilter: Clone + Sync + Send {}
 
 #[cfg(feature = "qdrant")]
@@ -23,3 +25,8 @@ impl SearchFilter for qdrant_client::qdrant::Filter {}
 impl SearchFilter for () {}
 // Lancedb uses a string filter
 impl SearchFilter for String {}
+
+#[derive(Debug, Clone, Default)]
+pub struct Multiple {}
+
+impl SearchStrategy for Multiple {}
