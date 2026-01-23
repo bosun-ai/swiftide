@@ -291,10 +291,9 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
         Summary(msg) | System(msg) => builder.content(msg),
         User(content) => builder.content(content),
         UserWithParts(parts) => {
-            if parts
-                .iter()
-                .any(|part| matches!(part, swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. }))
-            {
+            if parts.iter().any(|part| {
+                matches!(part, swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. })
+            }) {
                 anyhow::bail!("Anthropic chat completions do not support image inputs");
             }
             let text_parts = parts

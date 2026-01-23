@@ -37,7 +37,7 @@ pub enum ImageDetail {
     High,
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ChatMessageContentPart {
     Text {
@@ -59,6 +59,24 @@ impl ChatMessageContentPart {
         ChatMessageContentPart::ImageUrl {
             url: url.into(),
             detail,
+        }
+    }
+}
+
+impl std::fmt::Debug for ChatMessageContentPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ChatMessageContentPart::Text { text } => f
+                .debug_struct("Text")
+                .field("text", text)
+                .finish(),
+            ChatMessageContentPart::ImageUrl { url, detail } => {
+                let truncated = truncate_data_url(url);
+                f.debug_struct("ImageUrl")
+                    .field("url", &truncated)
+                    .field("detail", detail)
+                    .finish()
+            }
         }
     }
 }
@@ -176,4 +194,27 @@ fn summarize_user_parts(parts: &[ChatMessageContentPart]) -> (String, usize) {
         }
     }
     (text_parts.join(" "), images)
+}
+
+fn truncate_data_url(url: &str) -> std::borrow::Cow<'_, str> {
+    const MAX_DATA_PREVIEW: usize = 32;
+
+    if !url.starts_with("data:") {
+        return std::borrow::Cow::Borrowed(url);
+    }
+
+    let Some((prefix, data)) = url.split_once(',') else {
+        return std::borrow::Cow::Borrowed(url);
+    };
+
+    if data.len() <= MAX_DATA_PREVIEW {
+        return std::borrow::Cow::Borrowed(url);
+    }
+
+    let preview = &data[..MAX_DATA_PREVIEW];
+    let truncated = data.len() - MAX_DATA_PREVIEW;
+
+    std::borrow::Cow::Owned(format!(
+        "{prefix},{preview}...[truncated {truncated} chars]"
+    ))
 }

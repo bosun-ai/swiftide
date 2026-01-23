@@ -94,17 +94,17 @@ impl<
             }
         }
 
-        let request = openai_request
+        let openai_request = openai_request
             .build()
             .map_err(openai_error_to_language_model_error)?;
 
-        tracing::trace!(model, ?request, "Sending request to OpenAI");
+        tracing::trace!(model, request = ?request, "Sending request to OpenAI");
 
-        let tracking_request = request.clone();
+        let tracking_request = openai_request.clone();
         let response = self
             .client
             .chat()
-            .create(request)
+            .create(openai_request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -223,16 +223,16 @@ impl<
             }
         }
 
-        let request = match openai_request.build() {
+        let openai_request = match openai_request.build() {
             Ok(request) => request,
             Err(e) => {
                 return openai_error_to_language_model_error(e).into();
             }
         };
 
-        tracing::trace!(model = %model_name, ?request, "Sending request to OpenAI");
+        tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let response_stream = match self.client.chat().create_stream(request.clone()).await {
+        let response_stream = match self.client.chat().create_stream(openai_request.clone()).await {
             Ok(response) => response,
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
@@ -240,7 +240,7 @@ impl<
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
         let self_for_stream = self.clone();
-        let tracking_request = request;
+        let tracking_request = openai_request;
 
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!("stream", langfuse.type = "GENERATION")
@@ -475,7 +475,7 @@ impl<
         #[cfg(feature = "langfuse")]
         tracing::debug!(
             langfuse.model = model,
-            langfuse.input = request.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.input = request.and_then(langfuse_json_redacted).unwrap_or_default(),
             langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
             langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
         );
@@ -485,6 +485,61 @@ impl<
 #[cfg(feature = "langfuse")]
 pub(crate) fn langfuse_json<T: Serialize + ?Sized>(value: &T) -> Option<String> {
     serde_json::to_string_pretty(value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+pub(crate) fn langfuse_json_redacted<T: Serialize + ?Sized>(value: &T) -> Option<String> {
+    let mut value = serde_json::to_value(value).ok()?;
+    redact_image_urls(&mut value);
+    serde_json::to_string_pretty(&value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+fn redact_image_urls(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            if let Some(image_url) = map.get_mut("image_url") {
+                if let serde_json::Value::Object(image_obj) = image_url {
+                    if let Some(serde_json::Value::String(url)) = image_obj.get_mut("url") {
+                        if let Some(truncated) = truncate_data_url(url) {
+                            *url = truncated;
+                        }
+                    }
+                }
+            }
+
+            for val in map.values_mut() {
+                redact_image_urls(val);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for val in arr {
+                redact_image_urls(val);
+            }
+        }
+        _ => {}
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn truncate_data_url(url: &str) -> Option<String> {
+    const MAX_DATA_PREVIEW: usize = 32;
+
+    if !url.starts_with("data:") {
+        return None;
+    }
+
+    let (prefix, data) = url.split_once(',')?;
+    if data.len() <= MAX_DATA_PREVIEW {
+        return None;
+    }
+
+    let preview = &data[..MAX_DATA_PREVIEW];
+    let truncated = data.len() - MAX_DATA_PREVIEW;
+
+    Some(format!(
+        "{prefix},{preview}...[truncated {truncated} chars]"
+    ))
 }
 
 #[cfg(not(feature = "langfuse"))]
@@ -607,7 +662,9 @@ fn message_to_openai(
     Ok(Some(openai_message))
 }
 
-fn user_parts_to_openai(parts: &[ChatMessageContentPart]) -> ChatCompletionRequestUserMessageContent {
+fn user_parts_to_openai(
+    parts: &[ChatMessageContentPart],
+) -> ChatCompletionRequestUserMessageContent {
     let mapped = parts
         .iter()
         .map(|part| match part {
@@ -619,9 +676,7 @@ fn user_parts_to_openai(parts: &[ChatMessageContentPart]) -> ChatCompletionReque
             ChatMessageContentPart::ImageUrl { url, detail } => {
                 let image_url = ImageUrl {
                     url: url.clone(),
-                    detail: detail
-                        .as_ref()
-                        .map(|detail| map_image_detail(*detail)),
+                    detail: detail.as_ref().map(|detail| map_image_detail(*detail)),
                 };
                 ChatCompletionRequestUserMessageContentPart::from(
                     ChatCompletionRequestMessageContentPartImage { image_url },
