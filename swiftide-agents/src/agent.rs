@@ -922,7 +922,7 @@ impl Agent {
         let messages = self
             .pending_user_messages
             .drain(..)
-            .map(ChatMessage::User)
+            .map(ChatMessage::new_user)
             .collect();
 
         self.context

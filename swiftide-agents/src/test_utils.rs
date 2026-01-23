@@ -48,7 +48,7 @@ macro_rules! chat_request {
 #[macro_export]
 macro_rules! user {
     ($message:expr) => {
-        swiftide_core::chat_completion::ChatMessage::User($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::new_user($message)
     };
 }
 
