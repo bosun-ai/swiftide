@@ -66,10 +66,9 @@ impl ChatMessageContentPart {
 impl std::fmt::Debug for ChatMessageContentPart {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChatMessageContentPart::Text { text } => f
-                .debug_struct("Text")
-                .field("text", text)
-                .finish(),
+            ChatMessageContentPart::Text { text } => {
+                f.debug_struct("Text").field("text", text).finish()
+            }
             ChatMessageContentPart::ImageUrl { url, detail } => {
                 let truncated = truncate_data_url(url);
                 f.debug_struct("ImageUrl")

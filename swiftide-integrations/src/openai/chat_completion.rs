@@ -232,7 +232,12 @@ impl<
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let response_stream = match self.client.chat().create_stream(openai_request.clone()).await {
+        let response_stream = match self
+            .client
+            .chat()
+            .create_stream(openai_request.clone())
+            .await
+        {
             Ok(response) => response,
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
@@ -498,14 +503,12 @@ pub(crate) fn langfuse_json_redacted<T: Serialize + ?Sized>(value: &T) -> Option
 fn redact_image_urls(value: &mut serde_json::Value) {
     match value {
         serde_json::Value::Object(map) => {
-            if let Some(image_url) = map.get_mut("image_url") {
-                if let serde_json::Value::Object(image_obj) = image_url {
-                    if let Some(serde_json::Value::String(url)) = image_obj.get_mut("url") {
-                        if let Some(truncated) = truncate_data_url(url) {
-                            *url = truncated;
-                        }
-                    }
-                }
+            if let Some(image_url) = map.get_mut("image_url")
+                && let serde_json::Value::Object(image_obj) = image_url
+                && let Some(serde_json::Value::String(url)) = image_obj.get_mut("url")
+                && let Some(truncated) = truncate_data_url(url)
+            {
+                *url = truncated;
             }
 
             for val in map.values_mut() {
