@@ -622,7 +622,7 @@ fn user_content_to_openai(
                     ChatMessageContentPart::ImageUrl { url, detail } => {
                         let image_url = ImageUrl {
                             url: url.clone(),
-                            detail: detail.as_ref().map(map_image_detail),
+                            detail: detail.map(map_image_detail),
                         };
                         Ok(ChatCompletionRequestUserMessageContentPart::from(
                             ChatCompletionRequestMessageContentPartImage { image_url },
@@ -636,7 +636,7 @@ fn user_content_to_openai(
     }
 }
 
-fn map_image_detail(detail: &CoreImageDetail) -> OpenAIImageDetail {
+fn map_image_detail(detail: CoreImageDetail) -> OpenAIImageDetail {
     match detail {
         CoreImageDetail::Auto => OpenAIImageDetail::Auto,
         CoreImageDetail::Low => OpenAIImageDetail::Low,

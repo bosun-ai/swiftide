@@ -302,7 +302,7 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
         }
         ChatMessageContentPart::ImageUrl { url, detail } => {
             let image = InputImageContent {
-                detail: detail.as_ref().map(map_image_detail).unwrap_or_default(),
+                detail: detail.map(map_image_detail).unwrap_or_default(),
                 file_id: None,
                 image_url: Some(url.clone()),
             };
@@ -311,7 +311,7 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
     }
 }
 
-fn map_image_detail(detail: &CoreImageDetail) -> ResponsesImageDetail {
+fn map_image_detail(detail: CoreImageDetail) -> ResponsesImageDetail {
     match detail {
         CoreImageDetail::Auto => ResponsesImageDetail::Auto,
         CoreImageDetail::Low => ResponsesImageDetail::Low,
