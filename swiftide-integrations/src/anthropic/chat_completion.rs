@@ -1,5 +1,4 @@
 use futures_util::{StreamExt as _, TryStreamExt as _, stream};
-use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context as _, Result};
@@ -280,7 +279,7 @@ impl Anthropic {
 fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
-    use ChatMessage::{Assistant, Reasoning, Summary, System, ToolOutput, User};
+    use ChatMessage::{Assistant, Reasoning, Summary, System, ToolOutput, User, UserWithParts};
 
     match message {
         ToolOutput(tool_call, tool_output) => builder.content(
@@ -290,17 +289,24 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                 .build()?,
         ),
         Summary(msg) | System(msg) => builder.content(msg),
-        User(content) => {
-            if content.has_images() {
+        User(content) => builder.content(content),
+        UserWithParts(parts) => {
+            if parts
+                .iter()
+                .any(|part| matches!(part, swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. }))
+            {
                 anyhow::bail!("Anthropic chat completions do not support image inputs");
             }
-            let text = content.text_fragments();
-            let merged = if text.is_empty() {
-                String::new()
-            } else {
-                text.iter().map(Cow::as_ref).collect::<Vec<_>>().join(" ")
-            };
-            builder.content(merged)
+            let text_parts = parts
+                .iter()
+                .filter_map(|part| match part {
+                    swiftide_core::chat_completion::ChatMessageContentPart::Text { text } => {
+                        Some(text.as_str())
+                    }
+                    swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. } => None,
+                })
+                .collect::<Vec<_>>();
+            builder.content(text_parts.join(" "))
         }
         Assistant(content, tool_calls) => {
             builder.role(MessageRole::Assistant);

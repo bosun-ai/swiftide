@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
 use super::tools::{ToolCall, ToolOutput};
 
@@ -62,103 +61,13 @@ impl ChatMessageContentPart {
             detail,
         }
     }
-
-    fn is_image(&self) -> bool {
-        matches!(self, ChatMessageContentPart::ImageUrl { .. })
-    }
-
-    fn text_ref(&self) -> Option<&str> {
-        match self {
-            ChatMessageContentPart::Text { text } => Some(text.as_str()),
-            ChatMessageContentPart::ImageUrl { .. } => None,
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ChatMessageContent {
-    Text(String),
-    Parts(Vec<ChatMessageContentPart>),
-}
-
-impl ChatMessageContent {
-    pub fn text(message: impl Into<String>) -> Self {
-        ChatMessageContent::Text(message.into())
-    }
-
-    pub fn parts(parts: impl Into<Vec<ChatMessageContentPart>>) -> Self {
-        ChatMessageContent::Parts(parts.into())
-    }
-
-    pub fn has_images(&self) -> bool {
-        match self {
-            ChatMessageContent::Text(_) => false,
-            ChatMessageContent::Parts(parts) => parts.iter().any(ChatMessageContentPart::is_image),
-        }
-    }
-
-    pub fn as_text(&self) -> Option<&str> {
-        match self {
-            ChatMessageContent::Text(text) => Some(text.as_str()),
-            ChatMessageContent::Parts(parts) => match parts.as_slice() {
-                [ChatMessageContentPart::Text { text }] => Some(text.as_str()),
-                _ => None,
-            },
-        }
-    }
-
-    pub fn text_fragments(&self) -> Vec<Cow<'_, str>> {
-        match self {
-            ChatMessageContent::Text(text) => vec![Cow::Borrowed(text.as_str())],
-            ChatMessageContent::Parts(parts) => parts
-                .iter()
-                .filter_map(ChatMessageContentPart::text_ref)
-                .map(Cow::Borrowed)
-                .collect(),
-        }
-    }
-
-    fn summary(&self) -> (String, usize) {
-        match self {
-            ChatMessageContent::Text(text) => (text.clone(), 0),
-            ChatMessageContent::Parts(parts) => {
-                let mut text_parts = Vec::new();
-                let mut images = 0;
-                for part in parts {
-                    match part {
-                        ChatMessageContentPart::Text { text } => text_parts.push(text.as_str()),
-                        ChatMessageContentPart::ImageUrl { .. } => images += 1,
-                    }
-                }
-                (text_parts.join(" "), images)
-            }
-        }
-    }
-}
-
-impl From<String> for ChatMessageContent {
-    fn from(value: String) -> Self {
-        ChatMessageContent::Text(value)
-    }
-}
-
-impl From<&str> for ChatMessageContent {
-    fn from(value: &str) -> Self {
-        ChatMessageContent::Text(value.to_string())
-    }
-}
-
-impl From<Vec<ChatMessageContentPart>> for ChatMessageContent {
-    fn from(value: Vec<ChatMessageContentPart>) -> Self {
-        ChatMessageContent::Parts(value)
-    }
 }
 
 #[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]
 pub enum ChatMessage {
     System(String),
-    User(ChatMessageContent),
+    User(String),
+    UserWithParts(Vec<ChatMessageContentPart>),
     Assistant(Option<String>, Option<Vec<ToolCall>>),
     ToolOutput(ToolCall, ToolOutput),
     Reasoning(ReasoningItem),
@@ -172,8 +81,9 @@ impl std::fmt::Display for ChatMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ChatMessage::System(s) => write!(f, "System: \"{s}\""),
-            ChatMessage::User(content) => {
-                let (text, images) = content.summary();
+            ChatMessage::User(s) => write!(f, "User: \"{s}\""),
+            ChatMessage::UserWithParts(parts) => {
+                let (text, images) = summarize_user_parts(parts);
                 if images == 0 {
                     write!(f, "User: \"{text}\"")
                 } else {
@@ -208,8 +118,12 @@ impl ChatMessage {
         ChatMessage::System(message.into())
     }
 
-    pub fn new_user(message: impl Into<ChatMessageContent>) -> Self {
+    pub fn new_user(message: impl Into<String>) -> Self {
         ChatMessage::User(message.into())
+    }
+
+    pub fn new_user_with_parts(parts: impl Into<Vec<ChatMessageContentPart>>) -> Self {
+        ChatMessage::UserWithParts(parts.into())
     }
 
     pub fn new_assistant(
@@ -240,11 +154,26 @@ impl ChatMessage {
 impl AsRef<str> for ChatMessage {
     fn as_ref(&self) -> &str {
         match self {
-            ChatMessage::System(s) | ChatMessage::Summary(s) => s,
-            ChatMessage::User(content) => content.as_text().unwrap_or(""),
+            ChatMessage::System(s) | ChatMessage::User(s) | ChatMessage::Summary(s) => s,
+            ChatMessage::UserWithParts(parts) => match parts.as_slice() {
+                [ChatMessageContentPart::Text { text }] => text.as_str(),
+                _ => "",
+            },
             ChatMessage::Assistant(message, _) => message.as_deref().unwrap_or(""),
             ChatMessage::ToolOutput(_, output) => output.content().unwrap_or(""),
             ChatMessage::Reasoning(_) => "",
         }
     }
+}
+
+fn summarize_user_parts(parts: &[ChatMessageContentPart]) -> (String, usize) {
+    let mut text_parts = Vec::new();
+    let mut images = 0;
+    for part in parts {
+        match part {
+            ChatMessageContentPart::Text { text } => text_parts.push(text.as_str()),
+            ChatMessageContentPart::ImageUrl { .. } => images += 1,
+        }
+    }
+    (text_parts.join(" "), images)
 }

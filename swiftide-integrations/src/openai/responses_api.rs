@@ -16,9 +16,9 @@ use async_openai::types::responses::{
 use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContent,
-    ChatMessageContentPart, ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolOutput,
-    ToolSpec, Usage, UsageBuilder,
+    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
+    ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
+    UsageBuilder,
 };
 
 use super::{
@@ -185,7 +185,10 @@ fn chat_messages_to_input_items(
                 items.push(message_item(Role::System, content.clone())?);
             }
             ChatMessage::User(content) => {
-                let content = user_content_to_easy_input_content(content);
+                items.push(message_item(Role::User, content.clone())?);
+            }
+            ChatMessage::UserWithParts(parts) => {
+                let content = user_parts_to_easy_input_content(parts);
                 items.push(message_item_with_content(Role::User, content)?);
             }
             ChatMessage::Assistant(content, tool_calls) => {
@@ -285,14 +288,9 @@ fn message_item_with_content(role: Role, content: EasyInputContent) -> LmResult<
     ))
 }
 
-fn user_content_to_easy_input_content(content: &ChatMessageContent) -> EasyInputContent {
-    match content {
-        ChatMessageContent::Text(text) => EasyInputContent::Text(text.clone()),
-        ChatMessageContent::Parts(parts) => {
-            let mapped = parts.iter().map(part_to_input_content).collect();
-            EasyInputContent::ContentList(mapped)
-        }
-    }
+fn user_parts_to_easy_input_content(parts: &[ChatMessageContentPart]) -> EasyInputContent {
+    let mapped = parts.iter().map(part_to_input_content).collect();
+    EasyInputContent::ContentList(mapped)
 }
 
 fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
@@ -302,7 +300,10 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
         }
         ChatMessageContentPart::ImageUrl { url, detail } => {
             let image = InputImageContent {
-                detail: detail.map(map_image_detail).unwrap_or_default(),
+                detail: detail
+                    .as_ref()
+                    .map(|detail| map_image_detail(*detail))
+                    .unwrap_or_default(),
                 file_id: None,
                 image_url: Some(url.clone()),
             };
@@ -859,9 +860,8 @@ mod tests {
     use serde_json::{json, to_value};
     use std::collections::HashSet;
     use swiftide_core::chat_completion::{
-        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContent,
-        ChatMessageContentPart, ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolSpec,
-        Usage,
+        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
+        ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolSpec, Usage,
     };
 
     use crate::openai::{OpenAI, Options};
@@ -916,16 +916,16 @@ mod tests {
     }
 
     #[test]
-    fn test_user_content_to_easy_input_content_with_image() {
-        let content = ChatMessageContent::parts(vec![
+    fn test_user_parts_to_easy_input_content_with_image() {
+        let parts = vec![
             ChatMessageContentPart::text("Describe this image."),
             ChatMessageContentPart::image_url(
                 "https://example.com/image.png",
                 Some(CoreImageDetail::Low),
             ),
-        ]);
+        ];
 
-        let easy = user_content_to_easy_input_content(&content);
+        let easy = user_parts_to_easy_input_content(&parts);
         let value = to_value(easy).expect("serialize easy content");
         let parts = value.as_array().expect("expected content list array");
 

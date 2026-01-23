@@ -16,7 +16,7 @@ use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
 use swiftide_core::chat_completion::{
-    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContent,
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
     ChatMessageContentPart, ImageDetail as CoreImageDetail, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
@@ -537,8 +537,12 @@ fn message_to_openai(
     message: &ChatMessage,
 ) -> Result<Option<async_openai::types::chat::ChatCompletionRequestMessage>> {
     let openai_message = match message {
-        ChatMessage::User(content) => ChatCompletionRequestUserMessageArgs::default()
-            .content(user_content_to_openai(content)?)
+        ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
+            .content(msg.as_str())
+            .build()?
+            .into(),
+        ChatMessage::UserWithParts(parts) => ChatCompletionRequestUserMessageArgs::default()
+            .content(user_parts_to_openai(parts))
             .build()?
             .into(),
         ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
@@ -603,37 +607,30 @@ fn message_to_openai(
     Ok(Some(openai_message))
 }
 
-fn user_content_to_openai(
-    content: &ChatMessageContent,
-) -> Result<ChatCompletionRequestUserMessageContent> {
-    match content {
-        ChatMessageContent::Text(text) => {
-            Ok(ChatCompletionRequestUserMessageContent::Text(text.clone()))
-        }
-        ChatMessageContent::Parts(parts) => {
-            let mapped = parts
-                .iter()
-                .map(|part| match part {
-                    ChatMessageContentPart::Text { text } => {
-                        Ok(ChatCompletionRequestUserMessageContentPart::from(
-                            ChatCompletionRequestMessageContentPartText::from(text.as_str()),
-                        ))
-                    }
-                    ChatMessageContentPart::ImageUrl { url, detail } => {
-                        let image_url = ImageUrl {
-                            url: url.clone(),
-                            detail: detail.map(map_image_detail),
-                        };
-                        Ok(ChatCompletionRequestUserMessageContentPart::from(
-                            ChatCompletionRequestMessageContentPartImage { image_url },
-                        ))
-                    }
-                })
-                .collect::<Result<Vec<_>>>()?;
+fn user_parts_to_openai(parts: &[ChatMessageContentPart]) -> ChatCompletionRequestUserMessageContent {
+    let mapped = parts
+        .iter()
+        .map(|part| match part {
+            ChatMessageContentPart::Text { text } => {
+                ChatCompletionRequestUserMessageContentPart::from(
+                    ChatCompletionRequestMessageContentPartText::from(text.as_str()),
+                )
+            }
+            ChatMessageContentPart::ImageUrl { url, detail } => {
+                let image_url = ImageUrl {
+                    url: url.clone(),
+                    detail: detail
+                        .as_ref()
+                        .map(|detail| map_image_detail(*detail)),
+                };
+                ChatCompletionRequestUserMessageContentPart::from(
+                    ChatCompletionRequestMessageContentPartImage { image_url },
+                )
+            }
+        })
+        .collect::<Vec<_>>();
 
-            Ok(ChatCompletionRequestUserMessageContent::Array(mapped))
-        }
-    }
+    ChatCompletionRequestUserMessageContent::Array(mapped)
 }
 
 fn map_image_detail(detail: CoreImageDetail) -> OpenAIImageDetail {
@@ -694,13 +691,13 @@ mod tests {
 
     #[test]
     fn test_message_to_openai_with_image_parts() {
-        let message = ChatMessage::User(ChatMessageContent::parts(vec![
+        let message = ChatMessage::new_user_with_parts(vec![
             ChatMessageContentPart::text("Describe this image."),
             ChatMessageContentPart::image_url(
                 "https://example.com/image.png",
                 Some(CoreImageDetail::High),
             ),
-        ]));
+        ]);
 
         let openai_message = message_to_openai(&message)
             .expect("message conversion succeeds")
