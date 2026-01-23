@@ -1,4 +1,5 @@
 use futures_util::{StreamExt as _, TryStreamExt as _, stream};
+use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Context as _, Result};
@@ -288,7 +289,19 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                 .content(tool_output.content().unwrap_or("Success"))
                 .build()?,
         ),
-        Summary(msg) | System(msg) | User(msg) => builder.content(msg),
+        Summary(msg) | System(msg) => builder.content(msg),
+        User(content) => {
+            if content.has_images() {
+                anyhow::bail!("Anthropic chat completions do not support image inputs");
+            }
+            let text = content.text_fragments();
+            let merged = if text.is_empty() {
+                String::new()
+            } else {
+                text.iter().map(Cow::as_ref).collect::<Vec<_>>().join(" ")
+            };
+            builder.content(merged)
+        }
         Assistant(content, tool_calls) => {
             builder.role(MessageRole::Assistant);
 

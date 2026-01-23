@@ -114,9 +114,8 @@ impl Estimatable for &Prompt {
 impl Estimatable for &ChatMessage {
     fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
         Ok(match self {
-            ChatMessage::User(msg) | ChatMessage::Summary(msg) | ChatMessage::System(msg) => {
-                vec![Cow::Borrowed(msg)]
-            }
+            ChatMessage::User(content) => content.text_fragments(),
+            ChatMessage::Summary(msg) | ChatMessage::System(msg) => vec![Cow::Borrowed(msg)],
             ChatMessage::Assistant(msg, vec) => {
                 // Note that this is not super accurate.
                 //

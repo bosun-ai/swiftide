@@ -1,10 +1,12 @@
 use anyhow::{Context as _, Result};
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessageContentPartImage,
+    ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageArgs,
     ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
+    ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
     ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools, FunctionCall,
-    FunctionObject, ToolChoiceOptions,
+    FunctionObject, ImageDetail as OpenAIImageDetail, ImageUrl, ToolChoiceOptions,
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
@@ -14,7 +16,8 @@ use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
 use swiftide_core::chat_completion::{
-    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContent,
+    ChatMessageContentPart, ImageDetail as CoreImageDetail, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
 use swiftide_core::chat_completion::{Usage, UsageBuilder};
@@ -534,8 +537,8 @@ fn message_to_openai(
     message: &ChatMessage,
 ) -> Result<Option<async_openai::types::chat::ChatCompletionRequestMessage>> {
     let openai_message = match message {
-        ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
-            .content(msg.as_str())
+        ChatMessage::User(content) => ChatCompletionRequestUserMessageArgs::default()
+            .content(user_content_to_openai(content)?)
             .build()?
             .into(),
         ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
@@ -600,6 +603,47 @@ fn message_to_openai(
     Ok(Some(openai_message))
 }
 
+fn user_content_to_openai(
+    content: &ChatMessageContent,
+) -> Result<ChatCompletionRequestUserMessageContent> {
+    match content {
+        ChatMessageContent::Text(text) => Ok(ChatCompletionRequestUserMessageContent::Text(
+            text.clone(),
+        )),
+        ChatMessageContent::Parts(parts) => {
+            let mapped = parts
+                .iter()
+                .map(|part| match part {
+                    ChatMessageContentPart::Text { text } => Ok(
+                        ChatCompletionRequestUserMessageContentPart::from(
+                            ChatCompletionRequestMessageContentPartText::from(text.as_str()),
+                        ),
+                    ),
+                    ChatMessageContentPart::ImageUrl { url, detail } => {
+                        let image_url = ImageUrl {
+                            url: url.clone(),
+                            detail: detail.as_ref().map(map_image_detail),
+                        };
+                        Ok(ChatCompletionRequestUserMessageContentPart::from(
+                            ChatCompletionRequestMessageContentPartImage { image_url },
+                        ))
+                    }
+                })
+                .collect::<Result<Vec<_>>>()?;
+
+            Ok(ChatCompletionRequestUserMessageContent::Array(mapped))
+        }
+    }
+}
+
+fn map_image_detail(detail: &CoreImageDetail) -> OpenAIImageDetail {
+    match detail {
+        CoreImageDetail::Auto => OpenAIImageDetail::Auto,
+        CoreImageDetail::Low => OpenAIImageDetail::Low,
+        CoreImageDetail::High => OpenAIImageDetail::High,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::openai::{OpenAI, Options};
@@ -646,6 +690,33 @@ mod tests {
             "Chat Completions require additionalProperties=false for tool parameters, got {}",
             serde_json::to_string_pretty(&function.parameters).unwrap()
         );
+    }
+
+    #[test]
+    fn test_message_to_openai_with_image_parts() {
+        let message = ChatMessage::User(ChatMessageContent::parts(vec![
+            ChatMessageContentPart::text("Describe this image."),
+            ChatMessageContentPart::image_url(
+                "https://example.com/image.png",
+                Some(CoreImageDetail::High),
+            ),
+        ]));
+
+        let openai_message = message_to_openai(&message)
+            .expect("message conversion succeeds")
+            .expect("message present");
+
+        let value = serde_json::to_value(openai_message).expect("serialize message");
+        let content = value
+            .get("content")
+            .and_then(serde_json::Value::as_array)
+            .expect("content array");
+
+        assert_eq!(content[0]["type"], "text");
+        assert_eq!(content[0]["text"], "Describe this image.");
+        assert_eq!(content[1]["type"], "image_url");
+        assert_eq!(content[1]["image_url"]["url"], "https://example.com/image.png");
+        assert_eq!(content[1]["image_url"]["detail"], "high");
     }
 
     #[test_log::test(tokio::test)]
@@ -706,7 +777,7 @@ mod tests {
 
         // Prepare a test request
         let request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("Hi".to_string())])
+            .messages(vec![ChatMessage::User("Hi".into())])
             .build()
             .unwrap();
 
@@ -798,7 +869,7 @@ mod tests {
             .expect("Can create OpenAI client.");
 
         let request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("Hello via prompt".to_string())])
+            .messages(vec![ChatMessage::User("Hello via prompt".into())])
             .build()
             .unwrap();
 
@@ -900,7 +971,7 @@ mod tests {
 
         let request = swiftide_core::chat_completion::ChatCompletionRequest::builder()
             .messages(vec![swiftide_core::chat_completion::ChatMessage::User(
-                "Test".to_string(),
+                "Test".into(),
             )])
             .build()
             .unwrap();

@@ -135,7 +135,7 @@ mod tests {
         let redis = Redis::try_from_url(url, "tests").unwrap();
 
         let m1 = ChatMessage::System("System test".to_string());
-        let m2 = ChatMessage::User("User test".to_string());
+        let m2 = ChatMessage::User("User test".into());
 
         redis.push_owned(m1.clone()).await.unwrap();
         redis.push_owned(m2.clone()).await.unwrap();
@@ -164,7 +164,7 @@ mod tests {
         redis.overwrite(vec![]).await.unwrap();
 
         let m1 = ChatMessage::System("First".to_string());
-        let m2 = ChatMessage::User("Second".to_string());
+        let m2 = ChatMessage::User("Second".into());
         redis.push_owned(m1.clone()).await.unwrap();
         redis.push_owned(m2.clone()).await.unwrap();
 
@@ -185,7 +185,7 @@ mod tests {
         let redis = Redis::try_from_url(url, "tests").unwrap();
 
         let m1 = ChatMessage::System("First".to_string());
-        let m2 = ChatMessage::User("Second".to_string());
+        let m2 = ChatMessage::User("Second".into());
         redis.push_owned(m1.clone()).await.unwrap();
 
         let m3 = ChatMessage::new_assistant(Some("Third".to_string()), None);
