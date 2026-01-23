@@ -3,7 +3,7 @@
 //! Set the `OPENAI_API_KEY` environment variable before running.
 
 use anyhow::{Context as _, Result};
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use swiftide::chat_completion::{
     ChatCompletionRequest, ChatMessage, ChatMessageContent, ChatMessageContentPart, ImageDetail,
 };
@@ -17,10 +17,8 @@ async fn main() -> Result<()> {
         .default_prompt_model("gpt-4o-mini")
         .build()?;
 
-    let image_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../images/logo.png");
-    let image_bytes =
-        std::fs::read(&image_path).with_context(|| format!("Read {image_path:?}"))?;
+    let image_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../images/logo.png");
+    let image_bytes = std::fs::read(&image_path).with_context(|| format!("Read {image_path:?}"))?;
     let encoded = general_purpose::STANDARD.encode(&image_bytes);
     let data_url = format!("data:image/png;base64,{encoded}");
 

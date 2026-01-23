@@ -5,12 +5,13 @@ use std::task::{Context, Poll};
 use anyhow::{Context as _, Result};
 use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
-    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, ImageDetail as ResponsesImageDetail,
-    IncludeEnum, InputContent, InputImageContent, InputItem, InputParam, InputTextContent,
-    MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
-    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
-    ResponseStreamEvent, ResponseTextParam, ResponseUsage as ResponsesUsage, Role, Status,
-    TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall,
+    ImageDetail as ResponsesImageDetail, IncludeEnum, InputContent, InputImageContent, InputItem,
+    InputParam, InputTextContent, MessageType, OutputContent, OutputItem, OutputMessage,
+    OutputMessageContent, OutputStatus, ReasoningArgs, ReasoningSummary, Response,
+    ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam,
+    ResponseUsage as ResponsesUsage, Role, Status, TextResponseFormatConfiguration, Tool,
+    ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
@@ -926,9 +927,7 @@ mod tests {
 
         let easy = user_content_to_easy_input_content(&content);
         let value = to_value(easy).expect("serialize easy content");
-        let parts = value
-            .as_array()
-            .expect("expected content list array");
+        let parts = value.as_array().expect("expected content list array");
 
         assert_eq!(parts[0]["type"], "input_text");
         assert_eq!(parts[0]["text"], "Describe this image.");

@@ -607,18 +607,18 @@ fn user_content_to_openai(
     content: &ChatMessageContent,
 ) -> Result<ChatCompletionRequestUserMessageContent> {
     match content {
-        ChatMessageContent::Text(text) => Ok(ChatCompletionRequestUserMessageContent::Text(
-            text.clone(),
-        )),
+        ChatMessageContent::Text(text) => {
+            Ok(ChatCompletionRequestUserMessageContent::Text(text.clone()))
+        }
         ChatMessageContent::Parts(parts) => {
             let mapped = parts
                 .iter()
                 .map(|part| match part {
-                    ChatMessageContentPart::Text { text } => Ok(
-                        ChatCompletionRequestUserMessageContentPart::from(
+                    ChatMessageContentPart::Text { text } => {
+                        Ok(ChatCompletionRequestUserMessageContentPart::from(
                             ChatCompletionRequestMessageContentPartText::from(text.as_str()),
-                        ),
-                    ),
+                        ))
+                    }
                     ChatMessageContentPart::ImageUrl { url, detail } => {
                         let image_url = ImageUrl {
                             url: url.clone(),
@@ -715,7 +715,10 @@ mod tests {
         assert_eq!(content[0]["type"], "text");
         assert_eq!(content[0]["text"], "Describe this image.");
         assert_eq!(content[1]["type"], "image_url");
-        assert_eq!(content[1]["image_url"]["url"], "https://example.com/image.png");
+        assert_eq!(
+            content[1]["image_url"]["url"],
+            "https://example.com/image.png"
+        );
         assert_eq!(content[1]["image_url"]["detail"], "high");
     }
 
