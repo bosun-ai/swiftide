@@ -5,17 +5,20 @@ use std::task::{Context, Poll};
 use anyhow::{Context as _, Result};
 use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
-    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, IncludeEnum, InputItem,
-    InputParam, MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent,
-    OutputStatus, ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema,
-    ResponseStream, ResponseStreamEvent, ResponseTextParam, ResponseUsage as ResponsesUsage, Role,
-    Status, TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall,
+    ImageDetail as ResponsesImageDetail, IncludeEnum, InputContent, InputImageContent, InputItem,
+    InputParam, InputTextContent, MessageType, OutputContent, OutputItem, OutputMessage,
+    OutputMessageContent, OutputStatus, ReasoningArgs, ReasoningSummary, Response,
+    ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam,
+    ResponseUsage as ResponsesUsage, Role, Status, TextResponseFormatConfiguration, Tool,
+    ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
-    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem, ToolCall,
-    ToolOutput, ToolSpec, Usage, UsageBuilder,
+    ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
+    ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
+    UsageBuilder,
 };
 
 use super::{
@@ -184,6 +187,10 @@ fn chat_messages_to_input_items(
             ChatMessage::User(content) => {
                 items.push(message_item(Role::User, content.clone())?);
             }
+            ChatMessage::UserWithParts(parts) => {
+                let content = user_parts_to_easy_input_content(parts);
+                items.push(message_item_with_content(Role::User, content)?);
+            }
             ChatMessage::Assistant(content, tool_calls) => {
                 if let Some(text) = content.as_ref() {
                     items.push(message_item(Role::Assistant, text.clone())?);
@@ -267,14 +274,50 @@ fn chat_messages_to_input_items(
 }
 
 fn message_item(role: Role, content: String) -> LmResult<InputItem> {
+    message_item_with_content(role, EasyInputContent::Text(content))
+}
+
+fn message_item_with_content(role: Role, content: EasyInputContent) -> LmResult<InputItem> {
     Ok(InputItem::EasyMessage(
         EasyInputMessageArgs::default()
-            .r#type(async_openai::types::responses::MessageType::Message)
+            .r#type(MessageType::Message)
             .role(role)
-            .content(EasyInputContent::Text(content))
+            .content(content)
             .build()
             .map_err(LanguageModelError::permanent)?,
     ))
+}
+
+fn user_parts_to_easy_input_content(parts: &[ChatMessageContentPart]) -> EasyInputContent {
+    let mapped = parts.iter().map(part_to_input_content).collect();
+    EasyInputContent::ContentList(mapped)
+}
+
+fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
+    match part {
+        ChatMessageContentPart::Text { text } => {
+            InputContent::from(InputTextContent::from(text.as_str()))
+        }
+        ChatMessageContentPart::ImageUrl { url, detail } => {
+            let image = InputImageContent {
+                detail: detail
+                    .as_ref()
+                    .map(|detail| map_image_detail(*detail))
+                    .unwrap_or_default(),
+                file_id: None,
+                image_url: Some(url.clone()),
+            };
+            InputContent::from(image)
+        }
+    }
+}
+
+fn map_image_detail(detail: CoreImageDetail) -> ResponsesImageDetail {
+    match detail {
+        CoreImageDetail::Auto => ResponsesImageDetail::Auto,
+        CoreImageDetail::Low => ResponsesImageDetail::Low,
+        CoreImageDetail::High => ResponsesImageDetail::High,
+    }
 }
 
 fn normalize_responses_function_call_id(id: &str) -> String {
@@ -817,8 +860,8 @@ mod tests {
     use serde_json::{json, to_value};
     use std::collections::HashSet;
     use swiftide_core::chat_completion::{
-        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem, ToolCall,
-        ToolSpec, Usage,
+        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
+        ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolSpec, Usage,
     };
 
     use crate::openai::{OpenAI, Options};
@@ -870,6 +913,27 @@ mod tests {
             .parameters_schema(schemars::schema_for!(WeatherArgs))
             .build()
             .unwrap()
+    }
+
+    #[test]
+    fn test_user_parts_to_easy_input_content_with_image() {
+        let parts = vec![
+            ChatMessageContentPart::text("Describe this image."),
+            ChatMessageContentPart::image_url(
+                "https://example.com/image.png",
+                Some(CoreImageDetail::Low),
+            ),
+        ];
+
+        let easy = user_parts_to_easy_input_content(&parts);
+        let value = to_value(easy).expect("serialize easy content");
+        let parts = value.as_array().expect("expected content list array");
+
+        assert_eq!(parts[0]["type"], "input_text");
+        assert_eq!(parts[0]["text"], "Describe this image.");
+        assert_eq!(parts[1]["type"], "input_image");
+        assert_eq!(parts[1]["image_url"], "https://example.com/image.png");
+        assert_eq!(parts[1]["detail"], "low");
     }
 
     fn output_message(id: &str, parts: &[&str]) -> OutputMessage {

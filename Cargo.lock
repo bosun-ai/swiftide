@@ -9669,6 +9669,7 @@ name = "swiftide-examples"
 version = "0.32.1"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "fluvio",
  "futures-util",
  "metrics",

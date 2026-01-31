@@ -1,10 +1,12 @@
 use anyhow::{Context as _, Result};
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessageContentPartImage,
+    ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageArgs,
     ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
+    ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
     ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools, FunctionCall,
-    FunctionObject, ToolChoiceOptions,
+    FunctionObject, ImageDetail as OpenAIImageDetail, ImageUrl, ToolChoiceOptions,
 };
 use async_trait::async_trait;
 use futures_util::StreamExt as _;
@@ -14,7 +16,8 @@ use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
 use swiftide_core::chat_completion::{
-    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
+    ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
+    ChatMessageContentPart, ImageDetail as CoreImageDetail, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
 use swiftide_core::chat_completion::{Usage, UsageBuilder};
@@ -91,17 +94,17 @@ impl<
             }
         }
 
-        let request = openai_request
+        let openai_request = openai_request
             .build()
             .map_err(openai_error_to_language_model_error)?;
 
-        tracing::trace!(model, ?request, "Sending request to OpenAI");
+        tracing::trace!(model, request = ?request, "Sending request to OpenAI");
 
-        let tracking_request = request.clone();
+        let tracking_request = openai_request.clone();
         let response = self
             .client
             .chat()
-            .create(request)
+            .create(openai_request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -220,16 +223,21 @@ impl<
             }
         }
 
-        let request = match openai_request.build() {
+        let openai_request = match openai_request.build() {
             Ok(request) => request,
             Err(e) => {
                 return openai_error_to_language_model_error(e).into();
             }
         };
 
-        tracing::trace!(model = %model_name, ?request, "Sending request to OpenAI");
+        tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let response_stream = match self.client.chat().create_stream(request.clone()).await {
+        let response_stream = match self
+            .client
+            .chat()
+            .create_stream(openai_request.clone())
+            .await
+        {
             Ok(response) => response,
             Err(e) => return openai_error_to_language_model_error(e).into(),
         };
@@ -237,7 +245,7 @@ impl<
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
         let self_for_stream = self.clone();
-        let tracking_request = request;
+        let tracking_request = openai_request;
 
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!("stream", langfuse.type = "GENERATION")
@@ -472,7 +480,7 @@ impl<
         #[cfg(feature = "langfuse")]
         tracing::debug!(
             langfuse.model = model,
-            langfuse.input = request.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.input = request.and_then(langfuse_json_redacted).unwrap_or_default(),
             langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
             langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
         );
@@ -482,6 +490,59 @@ impl<
 #[cfg(feature = "langfuse")]
 pub(crate) fn langfuse_json<T: Serialize + ?Sized>(value: &T) -> Option<String> {
     serde_json::to_string_pretty(value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+pub(crate) fn langfuse_json_redacted<T: Serialize + ?Sized>(value: &T) -> Option<String> {
+    let mut value = serde_json::to_value(value).ok()?;
+    redact_image_urls(&mut value);
+    serde_json::to_string_pretty(&value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+fn redact_image_urls(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            if let Some(image_url) = map.get_mut("image_url")
+                && let serde_json::Value::Object(image_obj) = image_url
+                && let Some(serde_json::Value::String(url)) = image_obj.get_mut("url")
+                && let Some(truncated) = truncate_data_url(url)
+            {
+                *url = truncated;
+            }
+
+            for val in map.values_mut() {
+                redact_image_urls(val);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for val in arr {
+                redact_image_urls(val);
+            }
+        }
+        _ => {}
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn truncate_data_url(url: &str) -> Option<String> {
+    const MAX_DATA_PREVIEW: usize = 32;
+
+    if !url.starts_with("data:") {
+        return None;
+    }
+
+    let (prefix, data) = url.split_once(',')?;
+    if data.len() <= MAX_DATA_PREVIEW {
+        return None;
+    }
+
+    let preview = &data[..MAX_DATA_PREVIEW];
+    let truncated = data.len() - MAX_DATA_PREVIEW;
+
+    Some(format!(
+        "{prefix},{preview}...[truncated {truncated} chars]"
+    ))
 }
 
 #[cfg(not(feature = "langfuse"))]
@@ -536,6 +597,10 @@ fn message_to_openai(
     let openai_message = match message {
         ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
             .content(msg.as_str())
+            .build()?
+            .into(),
+        ChatMessage::UserWithParts(parts) => ChatCompletionRequestUserMessageArgs::default()
+            .content(user_parts_to_openai(parts))
             .build()?
             .into(),
         ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
@@ -600,6 +665,40 @@ fn message_to_openai(
     Ok(Some(openai_message))
 }
 
+fn user_parts_to_openai(
+    parts: &[ChatMessageContentPart],
+) -> ChatCompletionRequestUserMessageContent {
+    let mapped = parts
+        .iter()
+        .map(|part| match part {
+            ChatMessageContentPart::Text { text } => {
+                ChatCompletionRequestUserMessageContentPart::from(
+                    ChatCompletionRequestMessageContentPartText::from(text.as_str()),
+                )
+            }
+            ChatMessageContentPart::ImageUrl { url, detail } => {
+                let image_url = ImageUrl {
+                    url: url.clone(),
+                    detail: detail.as_ref().map(|detail| map_image_detail(*detail)),
+                };
+                ChatCompletionRequestUserMessageContentPart::from(
+                    ChatCompletionRequestMessageContentPartImage { image_url },
+                )
+            }
+        })
+        .collect::<Vec<_>>();
+
+    ChatCompletionRequestUserMessageContent::Array(mapped)
+}
+
+fn map_image_detail(detail: CoreImageDetail) -> OpenAIImageDetail {
+    match detail {
+        CoreImageDetail::Auto => OpenAIImageDetail::Auto,
+        CoreImageDetail::Low => OpenAIImageDetail::Low,
+        CoreImageDetail::High => OpenAIImageDetail::High,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::openai::{OpenAI, Options};
@@ -646,6 +745,36 @@ mod tests {
             "Chat Completions require additionalProperties=false for tool parameters, got {}",
             serde_json::to_string_pretty(&function.parameters).unwrap()
         );
+    }
+
+    #[test]
+    fn test_message_to_openai_with_image_parts() {
+        let message = ChatMessage::new_user_with_parts(vec![
+            ChatMessageContentPart::text("Describe this image."),
+            ChatMessageContentPart::image_url(
+                "https://example.com/image.png",
+                Some(CoreImageDetail::High),
+            ),
+        ]);
+
+        let openai_message = message_to_openai(&message)
+            .expect("message conversion succeeds")
+            .expect("message present");
+
+        let value = serde_json::to_value(openai_message).expect("serialize message");
+        let content = value
+            .get("content")
+            .and_then(serde_json::Value::as_array)
+            .expect("content array");
+
+        assert_eq!(content[0]["type"], "text");
+        assert_eq!(content[0]["text"], "Describe this image.");
+        assert_eq!(content[1]["type"], "image_url");
+        assert_eq!(
+            content[1]["image_url"]["url"],
+            "https://example.com/image.png"
+        );
+        assert_eq!(content[1]["image_url"]["detail"], "high");
     }
 
     #[test_log::test(tokio::test)]
@@ -706,7 +835,7 @@ mod tests {
 
         // Prepare a test request
         let request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("Hi".to_string())])
+            .messages(vec![ChatMessage::User("Hi".into())])
             .build()
             .unwrap();
 
@@ -798,7 +927,7 @@ mod tests {
             .expect("Can create OpenAI client.");
 
         let request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("Hello via prompt".to_string())])
+            .messages(vec![ChatMessage::User("Hello via prompt".into())])
             .build()
             .unwrap();
 
@@ -900,7 +1029,7 @@ mod tests {
 
         let request = swiftide_core::chat_completion::ChatCompletionRequest::builder()
             .messages(vec![swiftide_core::chat_completion::ChatMessage::User(
-                "Test".to_string(),
+                "Test".into(),
             )])
             .build()
             .unwrap();
