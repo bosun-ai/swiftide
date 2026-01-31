@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767811272460,
+  "lastUpdate": 1769885481419,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30269,6 +30269,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 227277,
             "range": "± 4277",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dc488683e78fb69735bda5ca46e625b57838fe1f",
+          "message": "feat!: Support images in chat completion (#1007)\n\nBREAKING CHANGE: Adds a new variant to chat messages that for user and image parts.",
+          "timestamp": "2026-01-31T19:43:34+01:00",
+          "tree_id": "952ec6a7d82612574ac3d0da269f1c0e1ff43fe7",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dc488683e78fb69735bda5ca46e625b57838fe1f"
+        },
+        "date": 1769885479145,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 765909,
+            "range": "± 15780",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 225038,
+            "range": "± 1987",
             "unit": "ns/iter"
           }
         ]
