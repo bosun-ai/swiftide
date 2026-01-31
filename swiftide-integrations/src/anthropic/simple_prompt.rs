@@ -57,6 +57,7 @@ impl SimplePrompt for Anthropic {
                     completion_tokens: usage.output_tokens.unwrap_or_default(),
                     total_tokens: (usage.input_tokens.unwrap_or_default()
                         + usage.output_tokens.unwrap_or_default()),
+                    details: None,
                 };
                 callback(&usage).await?;
             }

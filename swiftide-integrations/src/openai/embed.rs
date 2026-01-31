@@ -46,11 +46,7 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let usage = Usage {
-            prompt_tokens: response.usage.prompt_tokens,
-            completion_tokens: 0,
-            total_tokens: response.usage.total_tokens,
-        };
+        let usage = Usage::from(&response.usage);
 
         self.track_completion(
             model,

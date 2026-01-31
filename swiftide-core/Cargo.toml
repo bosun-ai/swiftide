@@ -30,6 +30,7 @@ pin-project = { workspace = true }
 thiserror = { workspace = true }
 metrics = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"] }
+async-openai = { workspace = true, optional = true }
 
 tera = { workspace = true }
 uuid = { workspace = true, features = ["v4", "v3"] }
@@ -54,6 +55,7 @@ qdrant = ["dep:qdrant-client"]
 truncate-debug = []
 metrics = ["dep:metrics"]
 json-schema = []
+openai = ["dep:async-openai"]
 
 [lints]
 workspace = true

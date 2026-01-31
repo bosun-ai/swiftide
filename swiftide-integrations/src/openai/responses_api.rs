@@ -15,7 +15,7 @@ use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ReasoningItem, ToolCall,
-    ToolOutput, ToolSpec, Usage, UsageBuilder,
+    ToolOutput, ToolSpec, Usage,
 };
 
 use super::{
@@ -559,7 +559,7 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
     }
 
     if let Some(usage) = response.usage.as_ref() {
-        builder.usage(convert_usage(usage)?);
+        builder.usage(Usage::from(usage));
     }
 
     builder.build().map_err(LanguageModelError::from)
@@ -570,7 +570,7 @@ pub(super) fn metadata_to_chat_completion(
     accumulator: &mut ChatCompletionResponse,
 ) -> LmResult<()> {
     if let Some(usage) = metadata.usage.as_ref() {
-        accumulator.usage = Some(convert_usage(usage)?);
+        accumulator.usage = Some(Usage::from(usage));
     }
 
     if accumulator.message.is_none()
@@ -594,15 +594,6 @@ pub(super) fn metadata_to_chat_completion(
     }
 
     Ok(())
-}
-
-fn convert_usage(usage: &ResponsesUsage) -> LmResult<Usage> {
-    UsageBuilder::default()
-        .prompt_tokens(usage.input_tokens)
-        .completion_tokens(usage.output_tokens)
-        .total_tokens(usage.total_tokens)
-        .build()
-        .map_err(LanguageModelError::permanent)
 }
 
 fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
@@ -1181,6 +1172,7 @@ mod tests {
             prompt_tokens: 1,
             completion_tokens: 1,
             total_tokens: 2,
+            details: None,
         };
 
         let mut existing = ChatCompletionResponse::builder()

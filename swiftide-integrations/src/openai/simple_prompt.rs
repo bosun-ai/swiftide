@@ -5,11 +5,12 @@
 use async_openai::types::chat::ChatCompletionRequestUserMessageArgs;
 use async_trait::async_trait;
 use swiftide_core::{
-    SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
+    SimplePrompt,
+    chat_completion::{Usage, errors::LanguageModelError},
+    prompt::Prompt,
     util::debug_long_utf8,
 };
 
-use super::chat_completion::usage_from_counts;
 use super::responses_api::{build_responses_request_from_prompt, response_to_chat_completion};
 use crate::openai::openai_error_to_language_model_error;
 
@@ -102,13 +103,7 @@ impl<
                 LanguageModelError::PermanentError("Expected content in response".into())
             })?;
 
-        let usage = response.usage.as_ref().map(|usage| {
-            usage_from_counts(
-                usage.prompt_tokens,
-                usage.completion_tokens,
-                usage.total_tokens,
-            )
-        });
+        let usage = response.usage.as_ref().map(Usage::from);
 
         self.track_completion(
             model,

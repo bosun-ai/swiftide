@@ -93,6 +93,7 @@ impl ChatCompletion for Anthropic {
                 prompt_tokens: input_tokens,
                 completion_tokens: output_tokens,
                 total_tokens,
+                details: None,
             };
             if let Some(callback) = &self.on_usage {
                 callback(&usage).await?;

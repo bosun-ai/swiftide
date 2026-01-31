@@ -12,11 +12,12 @@ use async_openai::types::{
 use async_trait::async_trait;
 use schemars::Schema;
 use swiftide_core::{
-    DynStructuredPrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
+    DynStructuredPrompt,
+    chat_completion::{Usage, errors::LanguageModelError},
+    prompt::Prompt,
     util::debug_long_utf8,
 };
 
-use super::chat_completion::usage_from_counts;
 use super::responses_api::{
     build_responses_request_from_prompt_with_schema, response_to_chat_completion,
 };
@@ -127,13 +128,7 @@ impl<
                 LanguageModelError::PermanentError("Expected content in response".into())
             })?;
 
-        let usage = response.usage.as_ref().map(|usage| {
-            usage_from_counts(
-                usage.prompt_tokens,
-                usage.completion_tokens,
-                usage.total_tokens,
-            )
-        });
+        let usage = response.usage.as_ref().map(Usage::from);
 
         self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
 

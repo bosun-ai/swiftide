@@ -178,6 +178,7 @@ openai = [
   "tiktoken-rs?/async-openai",
   "dep:reqwest-eventsource",
   "dep:reqwest",
+  "swiftide-core/openai",
 ]
 # Groq 
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]

@@ -13,11 +13,11 @@ use itertools::Itertools;
 use serde::Serialize;
 use serde_json::json;
 use swiftide_core::ChatCompletionStream;
+use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
-use swiftide_core::chat_completion::{Usage, UsageBuilder};
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
@@ -140,14 +140,7 @@ impl<
             .to_owned();
 
         if let Some(usage) = &response.usage {
-            let usage = UsageBuilder::default()
-                .prompt_tokens(usage.prompt_tokens)
-                .completion_tokens(usage.completion_tokens)
-                .total_tokens(usage.total_tokens)
-                .build()
-                .map_err(LanguageModelError::permanent)?;
-
-            builder.usage(usage);
+            builder.usage(Usage::from(usage));
         }
 
         let our_response = builder.build().map_err(LanguageModelError::from)?;
@@ -285,6 +278,7 @@ impl<
                                 }
                             }
                             if let Some(usage) = usage {
+                                let usage = Usage::from(usage);
                                 state.append_usage_delta(
                                     usage.prompt_tokens,
                                     usage.completion_tokens,
@@ -490,18 +484,6 @@ pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
     None
 }
 
-pub(crate) fn usage_from_counts(
-    prompt_tokens: u32,
-    completion_tokens: u32,
-    total_tokens: u32,
-) -> Usage {
-    Usage {
-        prompt_tokens,
-        completion_tokens,
-        total_tokens,
-    }
-}
-
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
     let mut parameters = match &spec.parameters_schema {
         Some(schema) => serde_json::to_value(schema)?,
@@ -607,7 +589,7 @@ mod tests {
     use super::*;
     use futures_util::StreamExt;
     use std::sync::Arc;
-    use swiftide_core::chat_completion::{ToolCallBuilder, ToolOutput};
+    use swiftide_core::chat_completion::{ToolCallBuilder, ToolOutput, UsageBuilder};
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -721,6 +703,27 @@ mod tests {
         assert_eq!(usage.prompt_tokens, 19);
         assert_eq!(usage.completion_tokens, 10);
         assert_eq!(usage.total_tokens, 29);
+
+        let details = usage.details.as_ref().expect("usage details");
+        assert_eq!(
+            details
+                .prompt_tokens_details
+                .as_ref()
+                .and_then(|d| d.cached_tokens),
+            Some(0)
+        );
+        assert_eq!(
+            details
+                .completion_tokens_details
+                .as_ref()
+                .and_then(|d| d.reasoning_tokens),
+            Some(0)
+        );
+
+        let normalized = usage.normalized();
+        let normalized_details = normalized.details.expect("normalized details");
+        assert_eq!(normalized_details.input.cached_tokens, Some(0));
+        assert_eq!(normalized_details.output.reasoning_tokens, Some(0));
     }
 
     #[test_log::test(tokio::test)]
@@ -810,6 +813,27 @@ mod tests {
         assert_eq!(usage.prompt_tokens, 5);
         assert_eq!(usage.completion_tokens, 3);
         assert_eq!(usage.total_tokens, 8);
+
+        let details = usage.details.as_ref().expect("usage details");
+        assert_eq!(
+            details
+                .input_tokens_details
+                .as_ref()
+                .and_then(|d| d.cached_tokens),
+            Some(0)
+        );
+        assert_eq!(
+            details
+                .output_tokens_details
+                .as_ref()
+                .and_then(|d| d.reasoning_tokens),
+            Some(0)
+        );
+
+        let normalized = usage.normalized();
+        let normalized_details = normalized.details.expect("normalized details");
+        assert_eq!(normalized_details.input.cached_tokens, Some(0));
+        assert_eq!(normalized_details.output.reasoning_tokens, Some(0));
     }
 
     #[test_log::test(tokio::test)]
@@ -1281,13 +1305,5 @@ data: [DONE]\n\n";
         // give spawned task a tick
         tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         assert_eq!(hits.load(Ordering::SeqCst), 1);
-    }
-
-    #[test]
-    fn test_usage_from_counts_helper() {
-        let usage = usage_from_counts(3, 4, 7);
-        assert_eq!(usage.prompt_tokens, 3);
-        assert_eq!(usage.completion_tokens, 4);
-        assert_eq!(usage.total_tokens, 7);
     }
 }

@@ -9637,6 +9637,7 @@ name = "swiftide-core"
 version = "0.32.1"
 dependencies = [
  "anyhow",
+ "async-openai 0.32.2",
  "async-trait",
  "backoff",
  "derive_builder 0.20.2",
