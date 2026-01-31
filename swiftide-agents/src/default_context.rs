@@ -560,7 +560,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_replace_history_replaces_and_resets_pointers() {
-        let context = DefaultContext::default();
+        let mut context = DefaultContext::default();
+        context.with_stop_on_assistant(false);
 
         // Add some initial messages
         context
