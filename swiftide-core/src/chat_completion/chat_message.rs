@@ -28,10 +28,63 @@ pub enum ReasoningStatus {
     Incomplete,
 }
 
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ImageDetail {
+    #[default]
+    Auto,
+    Low,
+    High,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ChatMessageContentPart {
+    Text {
+        text: String,
+    },
+    ImageUrl {
+        url: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        detail: Option<ImageDetail>,
+    },
+}
+
+impl ChatMessageContentPart {
+    pub fn text(text: impl Into<String>) -> Self {
+        ChatMessageContentPart::Text { text: text.into() }
+    }
+
+    pub fn image_url(url: impl Into<String>, detail: Option<ImageDetail>) -> Self {
+        ChatMessageContentPart::ImageUrl {
+            url: url.into(),
+            detail,
+        }
+    }
+}
+
+impl std::fmt::Debug for ChatMessageContentPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ChatMessageContentPart::Text { text } => {
+                f.debug_struct("Text").field("text", text).finish()
+            }
+            ChatMessageContentPart::ImageUrl { url, detail } => {
+                let truncated = truncate_data_url(url);
+                f.debug_struct("ImageUrl")
+                    .field("url", &truncated)
+                    .field("detail", detail)
+                    .finish()
+            }
+        }
+    }
+}
+
 #[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]
 pub enum ChatMessage {
     System(String),
     User(String),
+    UserWithParts(Vec<ChatMessageContentPart>),
     Assistant(Option<String>, Option<Vec<ToolCall>>),
     ToolOutput(ToolCall, ToolOutput),
     Reasoning(ReasoningItem),
@@ -46,6 +99,14 @@ impl std::fmt::Display for ChatMessage {
         match self {
             ChatMessage::System(s) => write!(f, "System: \"{s}\""),
             ChatMessage::User(s) => write!(f, "User: \"{s}\""),
+            ChatMessage::UserWithParts(parts) => {
+                let (text, images) = summarize_user_parts(parts);
+                if images == 0 {
+                    write!(f, "User: \"{text}\"")
+                } else {
+                    write!(f, "User: \"{text}\", images: {images}")
+                }
+            }
             ChatMessage::Assistant(content, tool_calls) => write!(
                 f,
                 "Assistant: \"{}\", tools: {}",
@@ -78,6 +139,10 @@ impl ChatMessage {
         ChatMessage::User(message.into())
     }
 
+    pub fn new_user_with_parts(parts: impl Into<Vec<ChatMessageContentPart>>) -> Self {
+        ChatMessage::UserWithParts(parts.into())
+    }
+
     pub fn new_assistant(
         message: Option<impl Into<String>>,
         tool_calls: Option<Vec<ToolCall>>,
@@ -107,9 +172,48 @@ impl AsRef<str> for ChatMessage {
     fn as_ref(&self) -> &str {
         match self {
             ChatMessage::System(s) | ChatMessage::User(s) | ChatMessage::Summary(s) => s,
+            ChatMessage::UserWithParts(parts) => match parts.as_slice() {
+                [ChatMessageContentPart::Text { text }] => text.as_str(),
+                _ => "",
+            },
             ChatMessage::Assistant(message, _) => message.as_deref().unwrap_or(""),
             ChatMessage::ToolOutput(_, output) => output.content().unwrap_or(""),
             ChatMessage::Reasoning(_) => "",
         }
     }
+}
+
+fn summarize_user_parts(parts: &[ChatMessageContentPart]) -> (String, usize) {
+    let mut text_parts = Vec::new();
+    let mut images = 0;
+    for part in parts {
+        match part {
+            ChatMessageContentPart::Text { text } => text_parts.push(text.as_str()),
+            ChatMessageContentPart::ImageUrl { .. } => images += 1,
+        }
+    }
+    (text_parts.join(" "), images)
+}
+
+fn truncate_data_url(url: &str) -> std::borrow::Cow<'_, str> {
+    const MAX_DATA_PREVIEW: usize = 32;
+
+    if !url.starts_with("data:") {
+        return std::borrow::Cow::Borrowed(url);
+    }
+
+    let Some((prefix, data)) = url.split_once(',') else {
+        return std::borrow::Cow::Borrowed(url);
+    };
+
+    if data.len() <= MAX_DATA_PREVIEW {
+        return std::borrow::Cow::Borrowed(url);
+    }
+
+    let preview = &data[..MAX_DATA_PREVIEW];
+    let truncated = data.len() - MAX_DATA_PREVIEW;
+
+    std::borrow::Cow::Owned(format!(
+        "{prefix},{preview}...[truncated {truncated} chars]"
+    ))
 }

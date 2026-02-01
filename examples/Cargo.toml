@@ -50,6 +50,7 @@ rmcp = { workspace = true, features = [
 ] }
 metrics = { workspace = true }
 schemars.workspace = true
+base64 = { workspace = true }
 
 
 [[example]]
@@ -118,6 +119,10 @@ path = "kafka.rs"
 [[example]]
 name = "lancedb"
 path = "lancedb.rs"
+
+[[example]]
+name = "describe-image"
+path = "describe_image.rs"
 
 [[example]]
 name = "hello-agents"

@@ -58,6 +58,7 @@ uuid = { version = "1.18", features = [
 ], default-features = false }
 dyn-clone = { version = "1.0", default-features = false }
 convert_case = { version = "0.10", default-features = false }
+base64 = { version = "0.22", default-features = false, features = ["std"] }
 
 # Mcp
 rmcp = { version = "0.12", default-features = false, features = [
