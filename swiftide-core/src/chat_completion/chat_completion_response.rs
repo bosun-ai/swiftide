@@ -227,9 +227,9 @@ pub struct PromptTokensDetails {
     pub cached_tokens: Option<u32>,
 }
 
-#[cfg(feature = "openai")]
 impl PromptTokensDetails {
-    fn is_empty(&self) -> bool {
+    /// Returns true when no prompt token detail values are set.
+    pub fn is_empty(&self) -> bool {
         self.audio_tokens.is_none() && self.cached_tokens.is_none()
     }
 }
@@ -251,9 +251,9 @@ pub struct CompletionTokensDetails {
     pub rejected_prediction_tokens: Option<u32>,
 }
 
-#[cfg(feature = "openai")]
 impl CompletionTokensDetails {
-    fn is_empty(&self) -> bool {
+    /// Returns true when no completion token detail values are set.
+    pub fn is_empty(&self) -> bool {
         self.accepted_prediction_tokens.is_none()
             && self.audio_tokens.is_none()
             && self.reasoning_tokens.is_none()
