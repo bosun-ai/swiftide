@@ -9,16 +9,14 @@ use async_openai::types::responses::{
     ImageDetail as ResponsesImageDetail, IncludeEnum, InputContent, InputImageContent, InputItem,
     InputParam, InputTextContent, MessageType, OutputContent, OutputItem, OutputMessage,
     OutputMessageContent, OutputStatus, ReasoningArgs, ReasoningSummary, Response,
-    ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam,
-    ResponseUsage as ResponsesUsage, Role, Status, TextResponseFormatConfiguration, Tool,
-    ToolChoiceOptions, ToolChoiceParam,
+    ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam, Role, Status,
+    TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
 };
 use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
-    ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
-    UsageBuilder,
+    ImageDetail, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
 };
 
 use super::{
@@ -312,11 +310,11 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
     }
 }
 
-fn map_image_detail(detail: CoreImageDetail) -> ResponsesImageDetail {
+fn map_image_detail(detail: ImageDetail) -> ResponsesImageDetail {
     match detail {
-        CoreImageDetail::Auto => ResponsesImageDetail::Auto,
-        CoreImageDetail::Low => ResponsesImageDetail::Low,
-        CoreImageDetail::High => ResponsesImageDetail::High,
+        ImageDetail::Auto => ResponsesImageDetail::Auto,
+        ImageDetail::Low => ResponsesImageDetail::Low,
+        ImageDetail::High => ResponsesImageDetail::High,
     }
 }
 
@@ -602,7 +600,7 @@ pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatC
     }
 
     if let Some(usage) = response.usage.as_ref() {
-        builder.usage(convert_usage(usage)?);
+        builder.usage(Usage::from(usage));
     }
 
     builder.build().map_err(LanguageModelError::from)
@@ -613,7 +611,7 @@ pub(super) fn metadata_to_chat_completion(
     accumulator: &mut ChatCompletionResponse,
 ) -> LmResult<()> {
     if let Some(usage) = metadata.usage.as_ref() {
-        accumulator.usage = Some(convert_usage(usage)?);
+        accumulator.usage = Some(Usage::from(usage));
     }
 
     if accumulator.message.is_none()
@@ -637,15 +635,6 @@ pub(super) fn metadata_to_chat_completion(
     }
 
     Ok(())
-}
-
-fn convert_usage(usage: &ResponsesUsage) -> LmResult<Usage> {
-    UsageBuilder::default()
-        .prompt_tokens(usage.input_tokens)
-        .completion_tokens(usage.output_tokens)
-        .total_tokens(usage.total_tokens)
-        .build()
-        .map_err(LanguageModelError::permanent)
 }
 
 fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
@@ -1245,6 +1234,7 @@ mod tests {
             prompt_tokens: 1,
             completion_tokens: 1,
             total_tokens: 2,
+            details: None,
         };
 
         let mut existing = ChatCompletionResponse::builder()

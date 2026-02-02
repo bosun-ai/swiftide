@@ -496,6 +496,7 @@ mod tests {
             prompt_tokens: 5,
             completion_tokens: 9,
             total_tokens: 14,
+            details: None,
         };
 
         // Start a GENERATION span, record fields, and drop/end.
