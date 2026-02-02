@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769885481419,
+  "lastUpdate": 1770030859463,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30323,6 +30323,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 225038,
             "range": "± 1987",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7a4d61a14fa4ae5c0cceee14d60bd423dc2afe7b",
+          "message": "feat: Add usage details with normalized view (#1013)",
+          "timestamp": "2026-02-02T12:06:20+01:00",
+          "tree_id": "041279d3c494d420bc757e0f47036e1d1a79f84a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7a4d61a14fa4ae5c0cceee14d60bd423dc2afe7b"
+        },
+        "date": 1770030857481,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 775302,
+            "range": "± 14519",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 230128,
+            "range": "± 1696",
             "unit": "ns/iter"
           }
         ]
