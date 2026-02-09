@@ -1,3 +1,4 @@
+use async_openai::types::embeddings::{CreateEmbeddingRequest, CreateEmbeddingResponse};
 use async_trait::async_trait;
 
 use swiftide_core::{
@@ -38,7 +39,6 @@ impl<
             model = &model,
             "[Embed] Request to openai"
         );
-        let tracking_request = request.clone();
         let response = self
             .client
             .embeddings()
@@ -48,11 +48,12 @@ impl<
 
         let usage = Usage::from(&response.usage);
 
+        // Only track usage for embedding calls, as requests and responses are extremely verbose
         self.track_completion(
             model,
             Some(&usage),
-            Some(&tracking_request),
-            Some(&response),
+            None::<&CreateEmbeddingRequest>,
+            None::<&CreateEmbeddingResponse>,
         );
 
         let num_embeddings = response.data.len();
