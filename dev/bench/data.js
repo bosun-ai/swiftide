@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770030859463,
+  "lastUpdate": 1770898987875,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30377,6 +30377,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 230128,
             "range": "± 1696",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "69d1376b9475c30d11d3e003cf34c79a121cac28",
+          "message": "fix(integrations/openai): Only log model and usage for langfuse for embeddings (#1021)",
+          "timestamp": "2026-02-12T13:15:24+01:00",
+          "tree_id": "dc31c8d4632eeeb45d90e1bfdd55dc2eb6ac6ec5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/69d1376b9475c30d11d3e003cf34c79a121cac28"
+        },
+        "date": 1770898985641,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 744499,
+            "range": "± 18875",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 224473,
+            "range": "± 1259",
             "unit": "ns/iter"
           }
         ]
