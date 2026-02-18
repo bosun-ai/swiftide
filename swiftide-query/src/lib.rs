@@ -8,6 +8,7 @@ pub mod answers;
 mod query;
 pub mod query_transformers;
 pub mod response_transformers;
+pub mod routed_retriever;
 
 pub use query::*;
 pub mod evaluators;
