@@ -93,6 +93,12 @@ pub struct Options {
     /// Stop sequences for response generation.
     #[builder(default, setter(into))]
     pub stop_sequences: Option<Vec<String>>,
+
+    /// Whether tool calls should enforce strict schema validation.
+    ///
+    /// Defaults to `true` when not set.
+    #[builder(default)]
+    pub tool_strict: Option<bool>,
 }
 
 impl Options {
@@ -115,6 +121,9 @@ impl Options {
         }
         if let Some(stop_sequences) = &other.stop_sequences {
             self.stop_sequences = Some(stop_sequences.clone());
+        }
+        if let Some(tool_strict) = other.tool_strict {
+            self.tool_strict = Some(tool_strict);
         }
     }
 }

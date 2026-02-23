@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use aws_sdk_bedrockruntime::types::{
-    ContentBlock, ConversationRole, ConverseOutput as ConverseResult, JsonSchemaDefinition,
-    Message, OutputConfig, OutputFormat, OutputFormatStructure, OutputFormatType,
+    ContentBlock, ConversationRole, JsonSchemaDefinition, Message, OutputConfig, OutputFormat,
+    OutputFormatStructure, OutputFormatType,
 };
 use schemars::Schema;
 use swiftide_core::{
@@ -56,17 +56,21 @@ impl DynStructuredPrompt for AwsBedrock {
             )
             .await?;
 
-        let response_text = extract_response_text(&response).or_else(|error| {
+        let completion = super::chat_completion::response_to_chat_completion(&response)?;
+
+        if let Some(usage) = completion.usage.as_ref() {
+            self.report_usage(model, usage).await?;
+        }
+
+        let response_text = completion.message.ok_or_else(|| {
             if super::is_context_length_stop_reason(response.stop_reason()) {
-                Err(LanguageModelError::context_length_exceeded(
-                    "Model context window exceeded",
-                ))
+                LanguageModelError::context_length_exceeded("Model context window exceeded")
             } else {
-                Err(error)
+                LanguageModelError::permanent("No text in response")
             }
         })?;
 
-        parse_json_response(&response_text)
+        parse_json_response(response_text.trim())
     }
 }
 
@@ -78,39 +82,18 @@ fn parse_json_response(text: &str) -> Result<serde_json::Value, LanguageModelErr
     })
 }
 
-fn extract_response_text(
-    response: &aws_sdk_bedrockruntime::operation::converse::ConverseOutput,
-) -> Result<String, LanguageModelError> {
-    let message = response
-        .output()
-        .and_then(|output| match output {
-            ConverseResult::Message(message) => Some(message),
-            _ => None,
-        })
-        .ok_or_else(|| LanguageModelError::permanent("No message in Converse response"))?;
-
-    let mut text = String::new();
-    for block in message.content() {
-        if let ContentBlock::Text(value) = block {
-            text.push_str(value);
-        }
-    }
-
-    if text.is_empty() {
-        return Err(LanguageModelError::permanent(
-            "No text content in Converse response",
-        ));
-    }
-
-    Ok(text)
-}
-
 #[cfg(test)]
 mod tests {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    };
+
     use aws_sdk_bedrockruntime::{
         operation::converse::ConverseOutput,
         types::{
             ContentBlock, ConversationRole, ConverseOutput as ConverseResult, Message, StopReason,
+            TokenUsage,
         },
     };
     use schemars::{JsonSchema, schema_for};
@@ -187,5 +170,58 @@ mod tests {
     fn test_parse_json_response_accepts_json() {
         let parsed = parse_json_response("{\"answer\":\"ok\"}").unwrap();
         assert_eq!(parsed, serde_json::json!({"answer":"ok"}));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_reports_usage() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .returning(|_, _, _, _, _, _| {
+                Ok(ConverseOutput::builder()
+                    .output(ConverseResult::Message(
+                        Message::builder()
+                            .role(ConversationRole::Assistant)
+                            .content(ContentBlock::Text("{\"answer\":\"42\"}".to_string()))
+                            .build()
+                            .unwrap(),
+                    ))
+                    .usage(
+                        TokenUsage::builder()
+                            .input_tokens(9)
+                            .output_tokens(5)
+                            .total_tokens(14)
+                            .build()
+                            .unwrap(),
+                    )
+                    .stop_reason(StopReason::EndTurn)
+                    .build()
+                    .unwrap())
+            });
+
+        let observed_total = Arc::new(AtomicU32::new(0));
+        let observed_total_for_callback = observed_total.clone();
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .on_usage(move |usage| {
+                observed_total_for_callback.store(usage.total_tokens, Ordering::Relaxed);
+                Ok(())
+            })
+            .build()
+            .unwrap();
+
+        let _ = bedrock
+            .structured_prompt_dyn(
+                "What is two times twenty one?".into(),
+                schema_for!(StructuredOutput),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(observed_total.load(Ordering::Relaxed), 14);
     }
 }

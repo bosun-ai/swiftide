@@ -268,7 +268,7 @@ fn build_converse_input(
         messages,
         (!system.is_empty()).then_some(system),
         super::inference_config_from_options(options),
-        tool_config_from_specs(request.tools_spec())?,
+        tool_config_from_specs(request.tools_spec(), options.tool_strict.unwrap_or(true))?,
     ))
 }
 
@@ -350,6 +350,7 @@ fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageMo
 
 fn tool_config_from_specs(
     tool_specs: &HashSet<ToolSpec>,
+    strict: bool,
 ) -> Result<Option<ToolConfiguration>, LanguageModelError> {
     if tool_specs.is_empty() {
         return Ok(None);
@@ -357,7 +358,7 @@ fn tool_config_from_specs(
 
     let tools = tool_specs
         .iter()
-        .map(tool_spec_to_bedrock)
+        .map(|spec| tool_spec_to_bedrock(spec, strict))
         .collect::<Result<Vec<_>, _>>()?;
 
     let tool_config = ToolConfiguration::builder()
@@ -369,20 +370,20 @@ fn tool_config_from_specs(
     Ok(Some(tool_config))
 }
 
-fn tool_spec_to_bedrock(spec: &ToolSpec) -> Result<Tool, LanguageModelError> {
-    let schema_value = match spec.parameters_schema.as_ref() {
-        Some(schema) => serde_json::to_value(schema).map_err(LanguageModelError::permanent)?,
-        None => serde_json::json!({
-            "type": "object",
-            "properties": {}
-        }),
+fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageModelError> {
+    let input_schema = match spec.parameters_schema.as_ref() {
+        Some(schema) => {
+            let schema_value =
+                serde_json::to_value(schema).map_err(LanguageModelError::permanent)?;
+            ToolInputSchema::Json(json_value_to_document(&schema_value)?)
+        }
+        None => ToolInputSchema::Json(Document::Object(HashMap::new())),
     };
-    let input_schema = ToolInputSchema::Json(json_value_to_document(&schema_value)?);
 
     let mut builder = ToolSpecification::builder()
         .name(spec.name.clone())
         .input_schema(input_schema)
-        .strict(true);
+        .strict(strict);
 
     if !spec.description.is_empty() {
         builder = builder.description(spec.description.clone());
@@ -392,7 +393,7 @@ fn tool_spec_to_bedrock(spec: &ToolSpec) -> Result<Tool, LanguageModelError> {
     Ok(Tool::ToolSpec(tool_spec))
 }
 
-fn response_to_chat_completion(
+pub(super) fn response_to_chat_completion(
     response: &ConverseOutput,
 ) -> Result<ChatCompletionResponse, LanguageModelError> {
     let (message, tool_calls) = match response.output() {
@@ -664,6 +665,51 @@ mod tests {
         assert_eq!(response.usage.unwrap().total_tokens, 18);
     }
 
+    #[test_log::test(tokio::test)]
+    #[allow(deprecated)]
+    async fn test_complete_respects_tool_strict_option() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .withf(|model_id, _, _, _, tool_config, output_config| {
+                model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+                    && output_config.is_none()
+                    && tool_config
+                        .as_ref()
+                        .and_then(|config| config.tools().first())
+                        .is_some_and(|tool| match tool {
+                            Tool::ToolSpec(spec) => spec.strict() == Some(false),
+                            _ => false,
+                        })
+            })
+            .returning(|_, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .default_options(Options {
+                tool_strict: Some(false),
+                ..Default::default()
+            })
+            .build()
+            .unwrap();
+
+        let tool_spec = ToolSpec::builder()
+            .name("get_weather")
+            .description("Get weather")
+            .build()
+            .unwrap();
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Check weather".into())])
+            .tools_spec(HashSet::from([tool_spec]))
+            .build()
+            .unwrap();
+
+        let _ = bedrock.complete(&request).await.unwrap();
+    }
+
     #[test]
     fn test_tool_config_from_specs_builds_schema() {
         let tool_spec = ToolSpec::builder()
@@ -673,7 +719,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]))
+        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]), true)
             .unwrap()
             .expect("tool config");
         assert_eq!(tool_config.tools().len(), 1);
@@ -685,10 +731,31 @@ mod tests {
 
         assert_eq!(spec.name(), "get_weather");
         assert_eq!(spec.description(), Some("Get weather by location"));
+        assert_eq!(spec.strict(), Some(true));
         assert!(matches!(
             spec.input_schema(),
             Some(ToolInputSchema::Json(Document::Object(_)))
         ));
+    }
+
+    #[test]
+    fn test_tool_config_from_specs_can_disable_strict() {
+        let tool_spec = ToolSpec::builder()
+            .name("get_weather")
+            .description("Get weather")
+            .build()
+            .unwrap();
+
+        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]), false)
+            .unwrap()
+            .expect("tool config");
+
+        let spec = match &tool_config.tools()[0] {
+            Tool::ToolSpec(spec) => spec,
+            _ => panic!("expected tool spec"),
+        };
+
+        assert_eq!(spec.strict(), Some(false));
     }
 
     #[test]
