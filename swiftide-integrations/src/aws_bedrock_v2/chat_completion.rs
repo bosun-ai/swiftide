@@ -47,13 +47,7 @@ impl ChatCompletion for AwsBedrock {
 
         let response = self
             .client
-            .converse(
-                model,
-                messages,
-                system,
-                inference_config,
-                tool_config,
-            )
+            .converse(model, messages, system, inference_config, tool_config, None)
             .await?;
 
         tracing::debug!(response = ?response, "[ChatCompletion] Response from bedrock converse");
@@ -94,13 +88,7 @@ impl ChatCompletion for AwsBedrock {
 
         let stream_output = match self
             .client
-            .converse_stream(
-                &model,
-                messages,
-                system,
-                inference_config,
-                tool_config,
-            )
+            .converse_stream(&model, messages, system, inference_config, tool_config)
             .await
         {
             Ok(stream_output) => stream_output,
@@ -393,7 +381,8 @@ fn tool_spec_to_bedrock(spec: &ToolSpec) -> Result<Tool, LanguageModelError> {
 
     let mut builder = ToolSpecification::builder()
         .name(spec.name.clone())
-        .input_schema(input_schema);
+        .input_schema(input_schema)
+        .strict(true);
 
     if !spec.description.is_empty() {
         builder = builder.description(spec.description.clone());
@@ -636,15 +625,16 @@ mod tests {
             .expect_converse()
             .once()
             .withf(
-                |model_id, messages, system, inference_config, tool_config| {
+                |model_id, messages, system, inference_config, tool_config, output_config| {
                     model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
                         && messages.len() == 1
                         && system.is_none()
                         && inference_config.is_none()
                         && tool_config.is_none()
+                        && output_config.is_none()
                 },
             )
-            .returning(|_, _, _, _, _| Ok(response_with_text_and_tool_call()));
+            .returning(|_, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
 
         let bedrock = AwsBedrock::builder()
             .test_client(bedrock_mock)

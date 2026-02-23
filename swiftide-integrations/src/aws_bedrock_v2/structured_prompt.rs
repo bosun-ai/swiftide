@@ -1,8 +1,11 @@
-use anyhow::Context as _;
 use async_trait::async_trait;
+use aws_sdk_bedrockruntime::types::{
+    ContentBlock, ConversationRole, ConverseOutput as ConverseResult, JsonSchemaDefinition,
+    Message, OutputConfig, OutputFormat, OutputFormatStructure, OutputFormatType,
+};
 use schemars::Schema;
 use swiftide_core::{
-    DynStructuredPrompt, SimplePrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
+    DynStructuredPrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
 };
 
 use super::AwsBedrock;
@@ -16,72 +19,90 @@ impl DynStructuredPrompt for AwsBedrock {
         schema: Schema,
     ) -> Result<serde_json::Value, LanguageModelError> {
         let prompt_text = prompt.render()?;
-        let schema_value = serde_json::to_value(&schema).map_err(LanguageModelError::permanent)?;
-        let schema_json =
-            serde_json::to_string_pretty(&schema_value).context("Failed to serialize schema")?;
+        let model = self.prompt_model()?;
+        let schema_json = serde_json::to_string(&schema).map_err(LanguageModelError::permanent)?;
 
-        let constrained_prompt = format!(
-            "{prompt_text}\n\n\
-             Return ONLY valid JSON (no markdown, no prose) that matches this JSON Schema exactly:\n\
-             {schema_json}"
-        );
+        let message = Message::builder()
+            .role(ConversationRole::User)
+            .content(ContentBlock::Text(prompt_text))
+            .build()
+            .map_err(LanguageModelError::permanent)?;
 
-        let response_text = self.prompt(constrained_prompt.into()).await?;
+        let output_config = OutputConfig::builder()
+            .text_format(
+                OutputFormat::builder()
+                    .r#type(OutputFormatType::JsonSchema)
+                    .structure(OutputFormatStructure::JsonSchema(
+                        JsonSchemaDefinition::builder()
+                            .schema(schema_json)
+                            .name("structured_prompt")
+                            .build()
+                            .map_err(LanguageModelError::permanent)?,
+                    ))
+                    .build()
+                    .map_err(LanguageModelError::permanent)?,
+            )
+            .build();
+
+        let response = self
+            .client
+            .converse(
+                model,
+                vec![message],
+                None,
+                super::inference_config_from_options(&self.default_options),
+                None,
+                Some(output_config),
+            )
+            .await?;
+
+        let response_text = extract_response_text(&response).or_else(|error| {
+            if super::is_context_length_stop_reason(response.stop_reason()) {
+                Err(LanguageModelError::context_length_exceeded(
+                    "Model context window exceeded",
+                ))
+            } else {
+                Err(error)
+            }
+        })?;
+
         parse_json_response(&response_text)
     }
 }
 
 fn parse_json_response(text: &str) -> Result<serde_json::Value, LanguageModelError> {
-    let trimmed = text.trim();
-
-    if let Ok(parsed) = serde_json::from_str(trimmed) {
-        return Ok(parsed);
-    }
-
-    if let Some(stripped) = strip_markdown_code_fence(trimmed)
-        && let Ok(parsed) = serde_json::from_str(stripped.trim())
-    {
-        return Ok(parsed);
-    }
-
-    if let Some(candidate) = extract_json_span(trimmed)
-        && let Ok(parsed) = serde_json::from_str(candidate)
-    {
-        return Ok(parsed);
-    }
-
-    Err(LanguageModelError::permanent(anyhow::anyhow!(
-        "Failed to parse model response as JSON: {trimmed}"
-    )))
+    serde_json::from_str(text.trim()).map_err(|error| {
+        LanguageModelError::permanent(anyhow::anyhow!(
+            "Failed to parse model response as JSON: {error}"
+        ))
+    })
 }
 
-fn strip_markdown_code_fence(input: &str) -> Option<&str> {
-    if !input.starts_with("```") {
-        return None;
-    }
+fn extract_response_text(
+    response: &aws_sdk_bedrockruntime::operation::converse::ConverseOutput,
+) -> Result<String, LanguageModelError> {
+    let message = response
+        .output()
+        .and_then(|output| match output {
+            ConverseResult::Message(message) => Some(message),
+            _ => None,
+        })
+        .ok_or_else(|| LanguageModelError::permanent("No message in Converse response"))?;
 
-    let (_, rest) = input.split_once('\n')?;
-    rest.strip_suffix("```")
-}
-
-fn extract_json_span(input: &str) -> Option<&str> {
-    let object_span = input.find('{').zip(input.rfind('}'));
-    let array_span = input.find('[').zip(input.rfind(']'));
-
-    let span = match (object_span, array_span) {
-        (Some(object_span), Some(array_span)) => {
-            if object_span.0 <= array_span.0 {
-                object_span
-            } else {
-                array_span
-            }
+    let mut text = String::new();
+    for block in message.content() {
+        if let ContentBlock::Text(value) = block {
+            text.push_str(value);
         }
-        (Some(object_span), None) => object_span,
-        (None, Some(array_span)) => array_span,
-        (None, None) => return None,
-    };
+    }
 
-    (span.0 <= span.1).then_some(&input[span.0..=span.1])
+    if text.is_empty() {
+        return Err(LanguageModelError::permanent(
+            "No text content in Converse response",
+        ));
+    }
+
+    Ok(text)
 }
 
 #[cfg(test)]
@@ -109,14 +130,24 @@ mod tests {
         bedrock_mock
             .expect_converse()
             .once()
-            .withf(|_, messages, _, _, _| {
+            .withf(|_, messages, _, _, _, output_config| {
                 messages
                     .first()
                     .and_then(|message| message.content().first())
                     .and_then(|content| content.as_text().ok())
-                    .is_some_and(|text| text.contains("JSON Schema exactly"))
+                    .is_some_and(|text| text == "What is two times twenty one?")
+                    && output_config
+                        .as_ref()
+                        .and_then(|config| config.text_format())
+                        .is_some_and(|format| {
+                            matches!(format.r#type(), OutputFormatType::JsonSchema)
+                                && format
+                                    .structure()
+                                    .and_then(|structure| structure.as_json_schema().ok())
+                                    .is_some_and(|schema| schema.schema().contains("\"answer\""))
+                        })
             })
-            .returning(|_, _, _, _, _| {
+            .returning(|_, _, _, _, _, _| {
                 Ok(ConverseOutput::builder()
                     .output(ConverseResult::Message(
                         Message::builder()
@@ -153,8 +184,8 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_json_response_accepts_fenced_json() {
-        let parsed = parse_json_response("```json\n{\"answer\":\"ok\"}\n```").unwrap();
+    fn test_parse_json_response_accepts_json() {
+        let parsed = parse_json_response("{\"answer\":\"ok\"}").unwrap();
         assert_eq!(parsed, serde_json::json!({"answer":"ok"}));
     }
 }

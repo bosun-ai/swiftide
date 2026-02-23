@@ -11,7 +11,7 @@ use aws_sdk_bedrockruntime::{
         },
     },
     types::{
-        InferenceConfiguration, Message, StopReason, SystemContentBlock, TokenUsage,
+        InferenceConfiguration, Message, OutputConfig, StopReason, SystemContentBlock, TokenUsage,
         ToolConfiguration, error::ConverseStreamOutputError,
     },
 };
@@ -266,6 +266,7 @@ trait BedrockConverse: std::fmt::Debug + Send + Sync {
         system: Option<Vec<SystemContentBlock>>,
         inference_config: Option<InferenceConfiguration>,
         tool_config: Option<ToolConfiguration>,
+        output_config: Option<OutputConfig>,
     ) -> Result<ConverseOutput, LanguageModelError>;
 
     async fn converse_stream(
@@ -287,13 +288,15 @@ impl BedrockConverse for Client {
         system: Option<Vec<SystemContentBlock>>,
         inference_config: Option<InferenceConfiguration>,
         tool_config: Option<ToolConfiguration>,
+        output_config: Option<OutputConfig>,
     ) -> Result<ConverseOutput, LanguageModelError> {
         let mut request = self
             .converse()
             .model_id(model_id)
             .set_messages(Some(messages))
             .set_system(system)
-            .set_tool_config(tool_config);
+            .set_tool_config(tool_config)
+            .set_output_config(output_config);
 
         if let Some(inference_config) = inference_config {
             request = request.inference_config(inference_config);
