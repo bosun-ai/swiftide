@@ -88,6 +88,7 @@ aws-credential-types = { workspace = true, features = [
 aws-sdk-bedrockruntime = { workspace = true, features = [
   "behavior-version-latest",
 ], optional = true }
+aws-smithy-types = { workspace = true, optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 reqwest-eventsource = { workspace = true, optional = true }
@@ -203,6 +204,7 @@ aws-bedrock = [
   "dep:aws-config",
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
+  "dep:aws-smithy-types",
 ]
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
 # Fluvio loader
