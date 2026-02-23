@@ -22,9 +22,6 @@ use swiftide_core::{
     },
 };
 
-#[cfg(feature = "metrics")]
-use swiftide_core::metrics::emit_usage;
-
 use super::{AwsBedrock, Options};
 
 #[async_trait]
@@ -54,13 +51,12 @@ impl ChatCompletion for AwsBedrock {
 
         let completion = response_to_chat_completion(&response)?;
 
-        if completion.message.is_none()
-            && completion.tool_calls.is_none()
-            && super::is_context_length_stop_reason(response.stop_reason())
-        {
-            return Err(LanguageModelError::context_length_exceeded(
-                "Model context window exceeded",
-            ));
+        if let Some(error) = super::context_length_exceeded_if_empty(
+            completion.message.is_some(),
+            completion.tool_calls.is_some(),
+            Some(response.stop_reason()),
+        ) {
+            return Err(error);
         }
 
         if let Some(usage) = completion.usage.as_ref() {
@@ -77,9 +73,6 @@ impl ChatCompletion for AwsBedrock {
             Err(error) => return error.into(),
         };
 
-        #[cfg(not(feature = "metrics"))]
-        let _ = &model;
-
         let (messages, system, inference_config, tool_config) =
             match build_converse_input(request, &self.default_options) {
                 Ok(parts) => parts,
@@ -95,9 +88,7 @@ impl ChatCompletion for AwsBedrock {
             Err(error) => return error.into(),
         };
 
-        let on_usage = self.on_usage.clone();
-        #[cfg(feature = "metrics")]
-        let metric_metadata = self.metric_metadata.clone();
+        let bedrock = self.clone();
 
         let event_stream = stream_output.stream;
         let stream = stream::unfold(
@@ -106,75 +97,54 @@ impl ChatCompletion for AwsBedrock {
                 ChatCompletionResponse::default(),
                 None::<StopReason>,
                 false,
+                model,
+                bedrock,
             ),
-            move |(mut event_stream, mut response, mut stop_reason, finished)| {
-                let on_usage = on_usage.clone();
-                let model = model.clone();
-                #[cfg(not(feature = "metrics"))]
-                let _ = &model;
-                #[cfg(feature = "metrics")]
-                let metric_metadata = metric_metadata.clone();
+            move |(mut event_stream, mut response, mut stop_reason, finished, model, bedrock)| async move {
+                if finished {
+                    return None;
+                }
 
-                async move {
-                    if finished {
-                        return None;
+                match event_stream.recv().await {
+                    Ok(Some(event)) => {
+                        apply_stream_event(&event, &mut response, &mut stop_reason);
+                        Some((
+                            Ok(response.clone()),
+                            (event_stream, response, stop_reason, false, model, bedrock),
+                        ))
                     }
-
-                    match event_stream.recv().await {
-                        Ok(Some(event)) => {
-                            apply_stream_event(&event, &mut response, &mut stop_reason);
-                            Some((
-                                Ok(response.clone()),
-                                (event_stream, response, stop_reason, false),
-                            ))
+                    Ok(None) => {
+                        if let Some(error) = super::context_length_exceeded_if_empty(
+                            response.message.is_some(),
+                            response.tool_calls.is_some(),
+                            stop_reason.as_ref(),
+                        ) {
+                            return Some((
+                                Err(error),
+                                (event_stream, response, stop_reason, true, model, bedrock),
+                            ));
                         }
-                        Ok(None) => {
-                            if response.message.is_none()
-                                && response.tool_calls.is_none()
-                                && stop_reason
-                                    .as_ref()
-                                    .is_some_and(super::is_context_length_stop_reason)
-                            {
+
+                        if let Some(usage) = response.usage.as_ref() {
+                            if let Err(error) = bedrock.report_usage(&model, usage).await {
                                 return Some((
-                                    Err(LanguageModelError::context_length_exceeded(
-                                        "Model context window exceeded",
-                                    )),
-                                    (event_stream, response, stop_reason, true),
+                                    Err(error),
+                                    (event_stream, response, stop_reason, true, model, bedrock),
                                 ));
                             }
-
-                            if let Some(usage) = response.usage.as_ref() {
-                                if let Some(callback) = on_usage.as_ref()
-                                    && let Err(error) = callback(usage).await
-                                {
-                                    return Some((
-                                        Err(LanguageModelError::permanent(error)),
-                                        (event_stream, response, stop_reason, true),
-                                    ));
-                                }
-
-                                #[cfg(feature = "metrics")]
-                                emit_usage(
-                                    &model,
-                                    usage.prompt_tokens.into(),
-                                    usage.completion_tokens.into(),
-                                    usage.total_tokens.into(),
-                                    metric_metadata.as_ref(),
-                                );
-                            }
-
-                            Some((
-                                Ok(response.clone()),
-                                (event_stream, response, stop_reason, true),
-                            ))
                         }
-                        Err(error) => Some((
-                            Err(super::converse_stream_output_error_to_language_model_error(
-                                error,
-                            )),
-                            (event_stream, response, stop_reason, true),
-                        )),
+
+                        Some((
+                            Ok(response.clone()),
+                            (event_stream, response, stop_reason, true, model, bedrock),
+                        ))
                     }
+                    Err(error) => Some((
+                        Err(super::converse_stream_output_error_to_language_model_error(
+                            error,
+                        )),
+                        (event_stream, response, stop_reason, true, model, bedrock),
+                    )),
                 }
             },
         );
@@ -268,7 +238,7 @@ fn build_converse_input(
         messages,
         (!system.is_empty()).then_some(system),
         super::inference_config_from_options(options),
-        tool_config_from_specs(request.tools_spec(), options.tool_strict.unwrap_or(true))?,
+        tool_config_from_specs(request.tools_spec(), options.tool_strict_enabled())?,
     ))
 }
 

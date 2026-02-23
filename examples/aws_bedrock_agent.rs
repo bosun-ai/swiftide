@@ -17,9 +17,7 @@ use swiftide::{
     traits::{AgentContext, Command},
 };
 
-#[swiftide::tool(
-    description = "Get the current UTC date and time in RFC3339 format"
-)]
+#[swiftide::tool(description = "Get the current UTC date and time in RFC3339 format")]
 async fn current_utc_time(context: &dyn AgentContext) -> Result<ToolOutput, ToolError> {
     let command_output = context
         .executor()

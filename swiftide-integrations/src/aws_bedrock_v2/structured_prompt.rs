@@ -62,13 +62,17 @@ impl DynStructuredPrompt for AwsBedrock {
             self.report_usage(model, usage).await?;
         }
 
-        let response_text = completion.message.ok_or_else(|| {
-            if super::is_context_length_stop_reason(response.stop_reason()) {
-                LanguageModelError::context_length_exceeded("Model context window exceeded")
-            } else {
-                LanguageModelError::permanent("No text in response")
+        let Some(response_text) = completion.message else {
+            if let Some(error) = super::context_length_exceeded_if_empty(
+                false,
+                completion.tool_calls.is_some(),
+                Some(response.stop_reason()),
+            ) {
+                return Err(error);
             }
-        })?;
+
+            return Err(LanguageModelError::permanent("No text in response"));
+        };
 
         parse_json_response(response_text.trim())
     }

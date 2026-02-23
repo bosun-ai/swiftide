@@ -106,6 +106,10 @@ impl Options {
         OptionsBuilder::default()
     }
 
+    pub fn tool_strict_enabled(&self) -> bool {
+        self.tool_strict.unwrap_or(true)
+    }
+
     pub fn merge(&mut self, other: &Options) {
         if let Some(prompt_model) = &other.prompt_model {
             self.prompt_model = Some(prompt_model.clone());
@@ -349,29 +353,16 @@ fn converse_error_to_language_model_error<R>(
 where
     R: std::fmt::Debug + Send + Sync + 'static,
 {
-    let is_transient = match &error {
-        SdkError::TimeoutError(_) | SdkError::DispatchFailure(_) | SdkError::ResponseError(_) => {
-            true
-        }
-        SdkError::ServiceError(service_error) => {
-            matches!(
-                service_error.err(),
-                ConverseError::ThrottlingException(_)
-                    | ConverseError::ServiceUnavailableException(_)
-                    | ConverseError::ModelNotReadyException(_)
-                    | ConverseError::ModelTimeoutException(_)
-                    | ConverseError::InternalServerException(_)
-            )
-        }
-        SdkError::ConstructionFailure(_) => false,
-        _ => false,
-    };
-
-    if is_transient {
-        LanguageModelError::transient(error)
-    } else {
-        LanguageModelError::permanent(error)
-    }
+    sdk_error_to_language_model_error(error, |service_error| {
+        matches!(
+            service_error,
+            ConverseError::ThrottlingException(_)
+                | ConverseError::ServiceUnavailableException(_)
+                | ConverseError::ModelNotReadyException(_)
+                | ConverseError::ModelTimeoutException(_)
+                | ConverseError::InternalServerException(_)
+        )
+    })
 }
 
 fn converse_stream_error_to_language_model_error<R>(
@@ -380,30 +371,17 @@ fn converse_stream_error_to_language_model_error<R>(
 where
     R: std::fmt::Debug + Send + Sync + 'static,
 {
-    let is_transient = match &error {
-        SdkError::TimeoutError(_) | SdkError::DispatchFailure(_) | SdkError::ResponseError(_) => {
-            true
-        }
-        SdkError::ServiceError(service_error) => {
-            matches!(
-                service_error.err(),
-                ConverseStreamError::ThrottlingException(_)
-                    | ConverseStreamError::ServiceUnavailableException(_)
-                    | ConverseStreamError::ModelNotReadyException(_)
-                    | ConverseStreamError::ModelTimeoutException(_)
-                    | ConverseStreamError::InternalServerException(_)
-                    | ConverseStreamError::ModelStreamErrorException(_)
-            )
-        }
-        SdkError::ConstructionFailure(_) => false,
-        _ => false,
-    };
-
-    if is_transient {
-        LanguageModelError::transient(error)
-    } else {
-        LanguageModelError::permanent(error)
-    }
+    sdk_error_to_language_model_error(error, |service_error| {
+        matches!(
+            service_error,
+            ConverseStreamError::ThrottlingException(_)
+                | ConverseStreamError::ServiceUnavailableException(_)
+                | ConverseStreamError::ModelNotReadyException(_)
+                | ConverseStreamError::ModelTimeoutException(_)
+                | ConverseStreamError::InternalServerException(_)
+                | ConverseStreamError::ModelStreamErrorException(_)
+        )
+    })
 }
 
 fn converse_stream_output_error_to_language_model_error<R>(
@@ -412,19 +390,30 @@ fn converse_stream_output_error_to_language_model_error<R>(
 where
     R: std::fmt::Debug + Send + Sync + 'static,
 {
+    sdk_error_to_language_model_error(error, |service_error| {
+        matches!(
+            service_error,
+            ConverseStreamOutputError::ThrottlingException(_)
+                | ConverseStreamOutputError::ServiceUnavailableException(_)
+                | ConverseStreamOutputError::InternalServerException(_)
+                | ConverseStreamOutputError::ModelStreamErrorException(_)
+        )
+    })
+}
+
+fn sdk_error_to_language_model_error<E, R>(
+    error: SdkError<E, R>,
+    is_transient_service_error: impl Fn(&E) -> bool,
+) -> LanguageModelError
+where
+    E: std::error::Error + Send + Sync + 'static,
+    R: std::fmt::Debug + Send + Sync + 'static,
+{
     let is_transient = match &error {
         SdkError::TimeoutError(_) | SdkError::DispatchFailure(_) | SdkError::ResponseError(_) => {
             true
         }
-        SdkError::ServiceError(service_error) => {
-            matches!(
-                service_error.err(),
-                ConverseStreamOutputError::ThrottlingException(_)
-                    | ConverseStreamOutputError::ServiceUnavailableException(_)
-                    | ConverseStreamOutputError::InternalServerException(_)
-                    | ConverseStreamOutputError::ModelStreamErrorException(_)
-            )
-        }
+        SdkError::ServiceError(service_error) => is_transient_service_error(service_error.err()),
         SdkError::ConstructionFailure(_) => false,
         _ => false,
     };
@@ -484,8 +473,21 @@ fn usage_from_bedrock(usage: &TokenUsage) -> Usage {
     }
 }
 
-fn is_context_length_stop_reason(stop_reason: &StopReason) -> bool {
-    matches!(stop_reason, StopReason::ModelContextWindowExceeded)
+fn context_length_exceeded_if_empty(
+    has_message: bool,
+    has_tool_calls: bool,
+    stop_reason: Option<&StopReason>,
+) -> Option<LanguageModelError> {
+    if has_message
+        || has_tool_calls
+        || !matches!(stop_reason, Some(StopReason::ModelContextWindowExceeded))
+    {
+        return None;
+    }
+
+    Some(LanguageModelError::context_length_exceeded(
+        "Model context window exceeded",
+    ))
 }
 
 fn i32_to_u32(value: i32) -> Option<u32> {
