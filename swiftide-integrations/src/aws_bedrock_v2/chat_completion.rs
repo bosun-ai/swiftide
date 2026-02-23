@@ -11,9 +11,8 @@ use aws_sdk_bedrockruntime::{
         ToolResultBlock, ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
     },
 };
-use aws_smithy_types::{Document, Number};
+use aws_smithy_types::Document;
 use futures_util::stream;
-use serde_json::Number as JsonNumber;
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
@@ -35,12 +34,13 @@ impl ChatCompletion for AwsBedrock {
         request: &ChatCompletionRequest,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self.prompt_model()?;
-        let request_parts = build_converse_request_parts(request, &self.default_options)?;
+        let (messages, system, inference_config, tool_config) =
+            build_converse_input(request, &self.default_options)?;
 
         tracing::debug!(
             model = model,
-            inference_config = ?request_parts.inference_config,
-            has_tool_config = request_parts.tool_config.is_some(),
+            inference_config = ?inference_config,
+            has_tool_config = tool_config.is_some(),
             "[ChatCompletion] Request to bedrock converse"
         );
 
@@ -48,10 +48,10 @@ impl ChatCompletion for AwsBedrock {
             .client
             .converse(
                 model,
-                request_parts.messages,
-                request_parts.system,
-                request_parts.inference_config,
-                request_parts.tool_config,
+                messages,
+                system,
+                inference_config,
+                tool_config,
             )
             .await?;
 
@@ -85,19 +85,20 @@ impl ChatCompletion for AwsBedrock {
         #[cfg(not(feature = "metrics"))]
         let _ = &model;
 
-        let request_parts = match build_converse_request_parts(request, &self.default_options) {
-            Ok(parts) => parts,
-            Err(error) => return error.into(),
-        };
+        let (messages, system, inference_config, tool_config) =
+            match build_converse_input(request, &self.default_options) {
+                Ok(parts) => parts,
+                Err(error) => return error.into(),
+            };
 
         let stream_output = match self
             .client
             .converse_stream(
                 &model,
-                request_parts.messages,
-                request_parts.system,
-                request_parts.inference_config,
-                request_parts.tool_config,
+                messages,
+                system,
+                inference_config,
+                tool_config,
             )
             .await
         {
@@ -193,26 +194,78 @@ impl ChatCompletion for AwsBedrock {
     }
 }
 
-#[derive(Debug)]
-struct ConverseRequestParts {
-    messages: Vec<Message>,
-    system: Option<Vec<SystemContentBlock>>,
-    inference_config: Option<InferenceConfiguration>,
-    tool_config: Option<ToolConfiguration>,
-}
-
-fn build_converse_request_parts(
+fn build_converse_input(
     request: &ChatCompletionRequest,
     options: &Options,
-) -> Result<ConverseRequestParts, LanguageModelError> {
-    let mut messages = Vec::new();
+) -> Result<
+    (
+        Vec<Message>,
+        Option<Vec<SystemContentBlock>>,
+        Option<InferenceConfiguration>,
+        Option<ToolConfiguration>,
+    ),
+    LanguageModelError,
+> {
+    let source_messages = request.messages();
+    let mut messages = Vec::with_capacity(source_messages.len());
     let mut system = Vec::new();
 
-    for message in request.messages() {
-        match chat_message_to_bedrock(message)? {
-            BedrockMessagePart::Message(message) => messages.push(message),
-            BedrockMessagePart::System(content) => system.push(content),
-            BedrockMessagePart::Skip => {}
+    for message in source_messages {
+        match message {
+            ChatMessage::System(text) => system.push(SystemContentBlock::Text(text.clone())),
+            ChatMessage::Summary(text) => messages.push(user_message_from_text(text.clone())?),
+            ChatMessage::User(text) => messages.push(user_message_from_text(text.clone())?),
+            ChatMessage::UserWithParts(parts) => messages.push(user_message_from_parts(parts)?),
+            ChatMessage::Assistant(content, maybe_tool_calls) => {
+                let mut blocks = Vec::with_capacity(
+                    usize::from(content.as_ref().is_some_and(|text| !text.is_empty()))
+                        + maybe_tool_calls.as_ref().map_or(0, Vec::len),
+                );
+
+                if let Some(content) = content.as_ref()
+                    && !content.is_empty()
+                {
+                    blocks.push(ContentBlock::Text(content.clone()));
+                }
+
+                if let Some(tool_calls) = maybe_tool_calls.as_ref() {
+                    for tool_call in tool_calls {
+                        let input =
+                            tool_call_args_to_document(tool_call.args()).with_context(|| {
+                                format!("Invalid JSON args for tool call {}", tool_call.name())
+                            })?;
+                        let tool_use = ToolUseBlock::builder()
+                            .tool_use_id(tool_call.id())
+                            .name(tool_call.name())
+                            .input(input)
+                            .build()
+                            .map_err(LanguageModelError::permanent)?;
+                        blocks.push(ContentBlock::ToolUse(tool_use));
+                    }
+                }
+
+                if !blocks.is_empty() {
+                    messages.push(assistant_message_from_blocks(blocks)?);
+                }
+            }
+            ChatMessage::ToolOutput(tool_call, output) => {
+                let status = match output {
+                    ToolOutput::Fail(_) => Some(ToolResultStatus::Error),
+                    _ => Some(ToolResultStatus::Success),
+                };
+
+                let tool_result = ToolResultBlock::builder()
+                    .tool_use_id(tool_call.id())
+                    .content(tool_output_to_content_block(output)?)
+                    .set_status(status)
+                    .build()
+                    .map_err(LanguageModelError::permanent)?;
+
+                messages.push(user_message_from_blocks(vec![ContentBlock::ToolResult(
+                    tool_result,
+                )])?);
+            }
+            ChatMessage::Reasoning(_) => {}
         }
     }
 
@@ -222,85 +275,12 @@ fn build_converse_request_parts(
         ));
     }
 
-    Ok(ConverseRequestParts {
+    Ok((
         messages,
-        system: (!system.is_empty()).then_some(system),
-        inference_config: super::inference_config_from_options(options),
-        tool_config: tool_config_from_specs(request.tools_spec())?,
-    })
-}
-
-enum BedrockMessagePart {
-    Message(Message),
-    System(SystemContentBlock),
-    Skip,
-}
-
-fn chat_message_to_bedrock(
-    message: &ChatMessage,
-) -> Result<BedrockMessagePart, LanguageModelError> {
-    match message {
-        ChatMessage::System(text) => Ok(BedrockMessagePart::System(SystemContentBlock::Text(
-            text.clone(),
-        ))),
-        ChatMessage::Summary(text) => {
-            user_message_from_text(text.clone()).map(BedrockMessagePart::Message)
-        }
-        ChatMessage::User(text) => {
-            user_message_from_text(text.clone()).map(BedrockMessagePart::Message)
-        }
-        ChatMessage::UserWithParts(parts) => {
-            user_message_from_parts(parts).map(BedrockMessagePart::Message)
-        }
-        ChatMessage::Assistant(content, maybe_tool_calls) => {
-            let mut blocks = Vec::new();
-
-            if let Some(content) = content.as_ref()
-                && !content.is_empty()
-            {
-                blocks.push(ContentBlock::Text(content.clone()));
-            }
-
-            if let Some(tool_calls) = maybe_tool_calls.as_ref() {
-                for tool_call in tool_calls {
-                    let input =
-                        tool_call_args_to_document(tool_call.args()).with_context(|| {
-                            format!("Invalid JSON args for tool call {}", tool_call.name())
-                        })?;
-                    let tool_use = ToolUseBlock::builder()
-                        .tool_use_id(tool_call.id())
-                        .name(tool_call.name())
-                        .input(input)
-                        .build()
-                        .map_err(LanguageModelError::permanent)?;
-                    blocks.push(ContentBlock::ToolUse(tool_use));
-                }
-            }
-
-            if blocks.is_empty() {
-                Ok(BedrockMessagePart::Skip)
-            } else {
-                assistant_message_from_blocks(blocks).map(BedrockMessagePart::Message)
-            }
-        }
-        ChatMessage::ToolOutput(tool_call, output) => {
-            let status = match output {
-                ToolOutput::Fail(_) => Some(ToolResultStatus::Error),
-                _ => Some(ToolResultStatus::Success),
-            };
-
-            let tool_result = ToolResultBlock::builder()
-                .tool_use_id(tool_call.id())
-                .content(tool_output_to_content_block(output)?)
-                .set_status(status)
-                .build()
-                .map_err(LanguageModelError::permanent)?;
-
-            user_message_from_blocks(vec![ContentBlock::ToolResult(tool_result)])
-                .map(BedrockMessagePart::Message)
-        }
-        ChatMessage::Reasoning(_) => Ok(BedrockMessagePart::Skip),
-    }
+        (!system.is_empty()).then_some(system),
+        super::inference_config_from_options(options),
+        tool_config_from_specs(request.tools_spec())?,
+    ))
 }
 
 fn user_message_from_text(text: String) -> Result<Message, LanguageModelError> {
@@ -310,23 +290,22 @@ fn user_message_from_text(text: String) -> Result<Message, LanguageModelError> {
 fn user_message_from_parts(
     parts: &[ChatMessageContentPart],
 ) -> Result<Message, LanguageModelError> {
-    if parts
-        .iter()
-        .any(|part| matches!(part, ChatMessageContentPart::ImageUrl { .. }))
-    {
-        return Err(LanguageModelError::permanent(
-            "Bedrock chat completions do not support image_url inputs yet",
-        ));
+    let mut text = String::new();
+    for part in parts {
+        match part {
+            ChatMessageContentPart::Text { text: part_text } => {
+                if !text.is_empty() {
+                    text.push(' ');
+                }
+                text.push_str(part_text);
+            }
+            ChatMessageContentPart::ImageUrl { .. } => {
+                return Err(LanguageModelError::permanent(
+                    "Bedrock chat completions do not support image_url inputs yet",
+                ));
+            }
+        }
     }
-
-    let text = parts
-        .iter()
-        .filter_map(|part| match part {
-            ChatMessageContentPart::Text { text } => Some(text.as_str()),
-            ChatMessageContentPart::ImageUrl { .. } => None,
-        })
-        .collect::<Vec<_>>()
-        .join(" ");
 
     if text.is_empty() {
         return Err(LanguageModelError::permanent(
@@ -363,22 +342,19 @@ fn tool_output_to_content_block(
         ToolOutput::FeedbackRequired(Some(value))
         | ToolOutput::Stop(Some(value))
         | ToolOutput::AgentFailed(Some(value)) => {
-            Ok(ToolResultContentBlock::Json(serde_json_to_document(value)?))
+            Ok(ToolResultContentBlock::Json(
+                serde_json::from_value(value.clone()).map_err(LanguageModelError::permanent)?,
+            ))
         }
-        ToolOutput::FeedbackRequired(None)
-        | ToolOutput::Stop(None)
-        | ToolOutput::AgentFailed(None) => Ok(ToolResultContentBlock::Text(output.to_string())),
         _ => Ok(ToolResultContentBlock::Text(output.to_string())),
     }
 }
 
 fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageModelError> {
     match args.map(str::trim) {
-        Some(args) if !args.is_empty() => {
-            let value: serde_json::Value = serde_json::from_str(args)
-                .with_context(|| format!("Failed to parse tool args as JSON: {args}"))?;
-            serde_json_to_document(&value)
-        }
+        Some(args) if !args.is_empty() => serde_json::from_str(args)
+            .with_context(|| format!("Failed to parse tool args as JSON: {args}"))
+            .map_err(LanguageModelError::permanent),
         _ => Ok(Document::Object(HashMap::new())),
     }
 }
@@ -412,7 +388,9 @@ fn tool_spec_to_bedrock(spec: &ToolSpec) -> Result<Tool, LanguageModelError> {
             "properties": {}
         }),
     };
-    let input_schema = ToolInputSchema::Json(serde_json_to_document(&schema_value)?);
+    let input_schema = ToolInputSchema::Json(
+        serde_json::from_value(schema_value).map_err(LanguageModelError::permanent)?,
+    );
 
     let mut builder = ToolSpecification::builder()
         .name(spec.name.clone())
@@ -454,7 +432,7 @@ fn extract_message_and_tool_calls(
 ) -> Result<(Option<String>, Option<Vec<ToolCall>>), LanguageModelError> {
     let mut text = String::new();
     let mut has_text = false;
-    let mut tool_calls = Vec::new();
+    let mut tool_calls = Vec::with_capacity(message.content().len());
 
     for block in message.content() {
         match block {
@@ -483,7 +461,7 @@ fn extract_message_and_tool_calls(
 }
 
 fn document_to_json_string(document: &Document) -> Result<String, LanguageModelError> {
-    serde_json::to_string(&document_to_serde_json(document)).map_err(LanguageModelError::permanent)
+    serde_json::to_string(document).map_err(LanguageModelError::permanent)
 }
 
 fn apply_stream_event(
@@ -532,62 +510,6 @@ fn apply_stream_event(
             }
         }
         _ => {}
-    }
-}
-
-fn serde_json_to_document(value: &serde_json::Value) -> Result<Document, LanguageModelError> {
-    match value {
-        serde_json::Value::Null => Ok(Document::Null),
-        serde_json::Value::Bool(boolean) => Ok(Document::Bool(*boolean)),
-        serde_json::Value::Number(number) => {
-            if let Some(number) = number.as_u64() {
-                Ok(Document::Number(Number::PosInt(number)))
-            } else if let Some(number) = number.as_i64() {
-                Ok(Document::Number(Number::NegInt(number)))
-            } else if let Some(number) = number.as_f64() {
-                Ok(Document::Number(Number::Float(number)))
-            } else {
-                Err(LanguageModelError::permanent("Unsupported JSON number"))
-            }
-        }
-        serde_json::Value::String(string) => Ok(Document::String(string.clone())),
-        serde_json::Value::Array(array) => array
-            .iter()
-            .map(serde_json_to_document)
-            .collect::<Result<Vec<_>, _>>()
-            .map(Document::Array),
-        serde_json::Value::Object(object) => object
-            .iter()
-            .map(|(key, value)| Ok((key.clone(), serde_json_to_document(value)?)))
-            .collect::<Result<HashMap<_, _>, LanguageModelError>>()
-            .map(Document::Object),
-    }
-}
-
-fn document_to_serde_json(document: &Document) -> serde_json::Value {
-    match document {
-        Document::Object(object) => serde_json::Value::Object(
-            object
-                .iter()
-                .map(|(key, value)| (key.clone(), document_to_serde_json(value)))
-                .collect(),
-        ),
-        Document::Array(array) => {
-            serde_json::Value::Array(array.iter().map(document_to_serde_json).collect())
-        }
-        Document::Number(number) => {
-            let maybe_number = match number {
-                Number::PosInt(number) => Some(JsonNumber::from(*number)),
-                Number::NegInt(number) => Some(JsonNumber::from(*number)),
-                Number::Float(number) => JsonNumber::from_f64(*number),
-            };
-            maybe_number
-                .map(serde_json::Value::Number)
-                .unwrap_or(serde_json::Value::Null)
-        }
-        Document::String(string) => serde_json::Value::String(string.clone()),
-        Document::Bool(boolean) => serde_json::Value::Bool(*boolean),
-        Document::Null => serde_json::Value::Null,
     }
 }
 
