@@ -11,8 +11,9 @@ use aws_sdk_bedrockruntime::{
         ToolResultBlock, ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
     },
 };
-use aws_smithy_types::Document;
+use aws_smithy_types::{Document, Number};
 use futures_util::stream;
+use serde_json::Number as JsonNumber;
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
@@ -342,9 +343,7 @@ fn tool_output_to_content_block(
         ToolOutput::FeedbackRequired(Some(value))
         | ToolOutput::Stop(Some(value))
         | ToolOutput::AgentFailed(Some(value)) => {
-            Ok(ToolResultContentBlock::Json(
-                serde_json::from_value(value.clone()).map_err(LanguageModelError::permanent)?,
-            ))
+            Ok(ToolResultContentBlock::Json(json_value_to_document(value)?))
         }
         _ => Ok(ToolResultContentBlock::Text(output.to_string())),
     }
@@ -352,9 +351,11 @@ fn tool_output_to_content_block(
 
 fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageModelError> {
     match args.map(str::trim) {
-        Some(args) if !args.is_empty() => serde_json::from_str(args)
-            .with_context(|| format!("Failed to parse tool args as JSON: {args}"))
-            .map_err(LanguageModelError::permanent),
+        Some(args) if !args.is_empty() => {
+            let value: serde_json::Value = serde_json::from_str(args)
+                .with_context(|| format!("Failed to parse tool args as JSON: {args}"))?;
+            json_value_to_document(&value)
+        }
         _ => Ok(Document::Object(HashMap::new())),
     }
 }
@@ -388,9 +389,7 @@ fn tool_spec_to_bedrock(spec: &ToolSpec) -> Result<Tool, LanguageModelError> {
             "properties": {}
         }),
     };
-    let input_schema = ToolInputSchema::Json(
-        serde_json::from_value(schema_value).map_err(LanguageModelError::permanent)?,
-    );
+    let input_schema = ToolInputSchema::Json(json_value_to_document(&schema_value)?);
 
     let mut builder = ToolSpecification::builder()
         .name(spec.name.clone())
@@ -461,7 +460,7 @@ fn extract_message_and_tool_calls(
 }
 
 fn document_to_json_string(document: &Document) -> Result<String, LanguageModelError> {
-    serde_json::to_string(document).map_err(LanguageModelError::permanent)
+    serde_json::to_string(&document_to_json_value(document)?).map_err(LanguageModelError::permanent)
 }
 
 fn apply_stream_event(
@@ -510,6 +509,65 @@ fn apply_stream_event(
             }
         }
         _ => {}
+    }
+}
+
+fn json_value_to_document(value: &serde_json::Value) -> Result<Document, LanguageModelError> {
+    match value {
+        serde_json::Value::Null => Ok(Document::Null),
+        serde_json::Value::Bool(boolean) => Ok(Document::Bool(*boolean)),
+        serde_json::Value::Number(number) => {
+            if let Some(number) = number.as_u64() {
+                Ok(Document::Number(Number::PosInt(number)))
+            } else if let Some(number) = number.as_i64() {
+                Ok(Document::Number(Number::NegInt(number)))
+            } else if let Some(number) = number.as_f64() {
+                Ok(Document::Number(Number::Float(number)))
+            } else {
+                Err(LanguageModelError::permanent("Unsupported JSON number"))
+            }
+        }
+        serde_json::Value::String(string) => Ok(Document::String(string.clone())),
+        serde_json::Value::Array(array) => array
+            .iter()
+            .map(json_value_to_document)
+            .collect::<Result<Vec<_>, _>>()
+            .map(Document::Array),
+        serde_json::Value::Object(object) => object
+            .iter()
+            .map(|(key, value)| Ok((key.clone(), json_value_to_document(value)?)))
+            .collect::<Result<HashMap<_, _>, LanguageModelError>>()
+            .map(Document::Object),
+    }
+}
+
+fn document_to_json_value(document: &Document) -> Result<serde_json::Value, LanguageModelError> {
+    match document {
+        Document::Object(object) => object
+            .iter()
+            .map(|(key, value)| Ok((key.clone(), document_to_json_value(value)?)))
+            .collect::<Result<serde_json::Map<_, _>, LanguageModelError>>()
+            .map(serde_json::Value::Object),
+        Document::Array(array) => array
+            .iter()
+            .map(document_to_json_value)
+            .collect::<Result<Vec<_>, LanguageModelError>>()
+            .map(serde_json::Value::Array),
+        Document::Number(number) => {
+            let maybe_number = match number {
+                Number::PosInt(number) => Some(JsonNumber::from(*number)),
+                Number::NegInt(number) => Some(JsonNumber::from(*number)),
+                Number::Float(number) => JsonNumber::from_f64(*number),
+            };
+            maybe_number.map(serde_json::Value::Number).ok_or_else(|| {
+                LanguageModelError::permanent(
+                    "Document contains non-finite float which is not valid JSON",
+                )
+            })
+        }
+        Document::String(string) => Ok(serde_json::Value::String(string.clone())),
+        Document::Bool(boolean) => Ok(serde_json::Value::Bool(*boolean)),
+        Document::Null => Ok(serde_json::Value::Null),
     }
 }
 
