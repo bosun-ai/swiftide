@@ -431,7 +431,7 @@ impl Agent {
     ///
     /// Error if the message history cannot be retrieved, e.g. if the context is not set up or a
     /// connection fails
-    pub async fn history(&self) -> Result<Vec<ChatMessage>, AgentError> {
+    pub async fn history(&self) -> Result<Vec<ChatMessage<'static>>, AgentError> {
         self.context
             .history()
             .await
@@ -547,7 +547,7 @@ impl Agent {
     #[tracing::instrument(skip(self, messages), err, fields(otel.name))]
     async fn step(
         &mut self,
-        messages: &[ChatMessage],
+        messages: &[ChatMessage<'_>],
         step_count: usize,
     ) -> Result<(), AgentError> {
         tracing::Span::current().record("otel.name", format!("step-{step_count}"));
@@ -818,7 +818,7 @@ impl Agent {
     /// Errors if the message cannot be added to the context. With the default in memory context
     /// that is not supposed to happen.
     #[tracing::instrument(skip_all, fields(message = message.to_string()))]
-    pub async fn add_message(&self, mut message: ChatMessage) -> Result<(), AgentError> {
+    pub async fn add_message(&self, mut message: ChatMessage<'static>) -> Result<(), AgentError> {
         invoke_hooks!(OnNewMessage, self, &mut message);
 
         self.context
@@ -948,7 +948,9 @@ impl Agent {
 
 /// Reverse searches through messages, if it encounters a tool call before encountering an output,
 /// it will return the chat message with the tool calls, otherwise it returns None
-fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessage> {
+fn maybe_tool_call_without_output<'a>(
+    messages: &'a [ChatMessage<'a>],
+) -> Option<&'a ChatMessage<'a>> {
     for message in messages.iter().rev() {
         if let ChatMessage::ToolOutput(..) = message {
             return None;
@@ -1541,8 +1543,8 @@ mod tests {
         let serialized = serde_json::to_string(&history).unwrap();
 
         // Retrieve it
-        let history: Vec<ChatMessage> = serde_json::from_str::<
-            Vec<swiftide_core::chat_completion::ChatMessageValue<'_>>,
+        let history: Vec<ChatMessage<'static>> = serde_json::from_str::<
+            Vec<swiftide_core::chat_completion::ChatMessage<'_>>,
         >(&serialized)
         .unwrap()
         .into_iter()

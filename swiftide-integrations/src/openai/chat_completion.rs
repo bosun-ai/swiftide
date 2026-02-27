@@ -54,7 +54,7 @@ impl<
     )]
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         if self.is_responses_api_enabled() {
             return self.complete_via_responses_api(request).await;
@@ -161,7 +161,7 @@ impl<
     }
 
     #[tracing::instrument(skip_all)]
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         if self.is_responses_api_enabled() {
             return self.complete_stream_via_responses_api(request).await;
         }
@@ -353,7 +353,7 @@ impl<
 {
     async fn complete_via_responses_api(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self
             .default_options
@@ -386,7 +386,7 @@ impl<
     #[allow(clippy::too_many_lines)]
     async fn complete_stream_via_responses_api(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> ChatCompletionStream {
         #[allow(unused_variables)]
         let Some(model_name) = self.default_options.prompt_model.clone() else {

@@ -26,7 +26,7 @@ impl ChatCompletion for Anthropic {
     #[tracing::instrument(skip_all, err)]
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = &self.default_options.prompt_model;
         let request = self
@@ -112,7 +112,7 @@ impl ChatCompletion for Anthropic {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let model = &self.default_options.prompt_model;
         let request = match self
             .build_request(request)
@@ -236,7 +236,7 @@ fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletio
 impl Anthropic {
     fn build_request(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<async_anthropic::types::CreateMessagesRequestBuilder, LanguageModelError> {
         let model = &self.default_options.prompt_model;
         let mut messages = request.messages().to_vec();

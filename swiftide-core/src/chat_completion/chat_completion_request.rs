@@ -8,19 +8,19 @@ use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 /// be send to any LLM.
 #[derive(Builder, Clone, PartialEq, Debug)]
 #[builder(setter(into, strip_option))]
-pub struct ChatCompletionRequest {
-    pub messages: Vec<ChatMessage>,
+pub struct ChatCompletionRequest<'a> {
+    pub messages: Vec<ChatMessage<'a>>,
     #[builder(default, setter(custom))]
     pub tools_spec: HashSet<ToolSpec>,
 }
 
-impl ChatCompletionRequest {
-    pub fn builder() -> ChatCompletionRequestBuilder {
+impl<'a> ChatCompletionRequest<'a> {
+    pub fn builder() -> ChatCompletionRequestBuilder<'a> {
         ChatCompletionRequestBuilder::default()
     }
 
     /// Returns the chat messages included in the request.
-    pub fn messages(&self) -> &[ChatMessage] {
+    pub fn messages(&self) -> &[ChatMessage<'a>] {
         self.messages.as_slice()
     }
 
@@ -30,8 +30,8 @@ impl ChatCompletionRequest {
     }
 }
 
-impl From<Vec<ChatMessage>> for ChatCompletionRequest {
-    fn from(messages: Vec<ChatMessage>) -> Self {
+impl<'a> From<Vec<ChatMessage<'a>>> for ChatCompletionRequest<'a> {
+    fn from(messages: Vec<ChatMessage<'a>>) -> Self {
         ChatCompletionRequest {
             messages,
             tools_spec: HashSet::new(),
@@ -39,7 +39,7 @@ impl From<Vec<ChatMessage>> for ChatCompletionRequest {
     }
 }
 
-impl ChatCompletionRequestBuilder {
+impl<'a> ChatCompletionRequestBuilder<'a> {
     #[deprecated(note = "Use `tools` with real Tool instances instead")]
     pub fn tools_spec(&mut self, tools_spec: HashSet<ToolSpec>) -> &mut Self {
         self.tools_spec = Some(tools_spec);
@@ -79,7 +79,7 @@ impl ChatCompletionRequestBuilder {
     }
 
     /// Appends a single chat message to the request.
-    pub fn message(&mut self, message: impl Into<ChatMessage>) -> &mut Self {
+    pub fn message(&mut self, message: impl Into<ChatMessage<'a>>) -> &mut Self {
         self.messages
             .get_or_insert_with(Vec::new)
             .push(message.into());
@@ -89,7 +89,7 @@ impl ChatCompletionRequestBuilder {
     /// Extends the request with multiple chat messages.
     pub fn messages_iter<I>(&mut self, messages: I) -> &mut Self
     where
-        I: IntoIterator<Item = ChatMessage>,
+        I: IntoIterator<Item = ChatMessage<'a>>,
     {
         let entry = self.messages.get_or_insert_with(Vec::new);
         entry.extend(messages);

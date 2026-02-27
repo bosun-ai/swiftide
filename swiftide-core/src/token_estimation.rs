@@ -111,7 +111,7 @@ impl Estimatable for &Prompt {
     }
 }
 
-impl Estimatable for &ChatMessage {
+impl Estimatable for &ChatMessage<'_> {
     fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
         Ok(match self {
             ChatMessage::User(msg) | ChatMessage::Summary(msg) | ChatMessage::System(msg) => {
@@ -170,7 +170,7 @@ impl Estimatable for &ChatMessage {
     }
 }
 
-impl Estimatable for &[ChatMessage] {
+impl Estimatable for &[ChatMessage<'_>] {
     fn for_estimate(&self) -> Result<Vec<Cow<'_, str>>> {
         let mut total = Vec::new();
         for msg in *self {

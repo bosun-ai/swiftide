@@ -105,7 +105,7 @@ impl DefaultContext {
     /// # Panics
     ///
     /// Panics if the inner mutex is poisoned
-    pub async fn with_existing_messages<I: IntoIterator<Item = ChatMessage>>(
+    pub async fn with_existing_messages<I: IntoIterator<Item = ChatMessage<'static>>>(
         &mut self,
         message_history: I,
     ) -> Result<&mut Self> {
@@ -131,7 +131,7 @@ impl DefaultContext {
 #[async_trait]
 impl AgentContext for DefaultContext {
     /// Retrieve messages for the next completion
-    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage<'static>>>> {
         let history = self.message_history.history().await?;
 
         let mut current = self.completions_ptr.load(Ordering::SeqCst);
@@ -172,7 +172,7 @@ impl AgentContext for DefaultContext {
     }
 
     /// Returns the messages the agent is currently completing on
-    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage<'static>>> {
         let current = self.current_completions_ptr.load(Ordering::SeqCst);
         let end = self.completions_ptr.load(Ordering::SeqCst);
 
@@ -184,17 +184,17 @@ impl AgentContext for DefaultContext {
     }
 
     /// Retrieve all messages in the conversation history
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         self.message_history.history().await
     }
 
     /// Add multiple messages to the conversation history
-    async fn add_messages(&self, messages: Vec<ChatMessage>) -> Result<()> {
+    async fn add_messages(&self, messages: Vec<ChatMessage<'static>>) -> Result<()> {
         self.message_history.extend_owned(messages).await
     }
 
     /// Add a single message to the conversation history
-    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+    async fn add_message(&self, item: ChatMessage<'static>) -> Result<()> {
         self.message_history.push_owned(item).await
     }
 
@@ -247,7 +247,7 @@ impl AgentContext for DefaultContext {
     }
 
     /// Replace the entire conversation history
-    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn replace_history(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         self.message_history.overwrite(items).await?;
         self.completions_ptr.store(0, Ordering::SeqCst);
         self.current_completions_ptr.store(0, Ordering::SeqCst);
@@ -255,7 +255,7 @@ impl AgentContext for DefaultContext {
     }
 }
 
-fn filter_messages_since_summary(messages: Vec<ChatMessage>) -> Vec<ChatMessage> {
+fn filter_messages_since_summary<'a>(messages: Vec<ChatMessage<'a>>) -> Vec<ChatMessage<'a>> {
     let mut summary_found = false;
     let mut messages = messages
         .into_iter()

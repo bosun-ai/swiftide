@@ -453,16 +453,16 @@ pub trait AgentContext: Send + Sync {
     ///
     /// TODO: Figure out a nice way to return a reference instead while still supporting i.e.
     /// mutexes
-    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>>;
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage<'static>>>>;
 
     /// Lists only the new messages after calling `new_completion`
-    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>>;
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage<'static>>>;
 
     /// Add messages for the next completion
-    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()>;
+    async fn add_messages(&self, item: Vec<ChatMessage<'static>>) -> Result<()>;
 
     /// Add messages for the next completion
-    async fn add_message(&self, item: ChatMessage) -> Result<()>;
+    async fn add_message(&self, item: ChatMessage<'static>) -> Result<()>;
 
     /// Execute a command if the context supports it
     ///
@@ -472,10 +472,10 @@ pub trait AgentContext: Send + Sync {
 
     fn executor(&self) -> &Arc<dyn ToolExecutor>;
 
-    async fn history(&self) -> Result<Vec<ChatMessage>>;
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>>;
 
     /// Replace the entire history with the given items
-    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()>;
+    async fn replace_history(&self, items: Vec<ChatMessage<'static>>) -> Result<()>;
 
     /// Pops the last messages up until the last completion
     ///
@@ -492,19 +492,19 @@ pub trait AgentContext: Send + Sync {
 
 #[async_trait]
 impl AgentContext for Box<dyn AgentContext> {
-    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage<'static>>>> {
         (**self).next_completion().await
     }
 
-    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage<'static>>> {
         (**self).current_new_messages().await
     }
 
-    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()> {
+    async fn add_messages(&self, item: Vec<ChatMessage<'static>>) -> Result<()> {
         (**self).add_messages(item).await
     }
 
-    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+    async fn add_message(&self, item: ChatMessage<'static>) -> Result<()> {
         (**self).add_message(item).await
     }
 
@@ -517,11 +517,11 @@ impl AgentContext for Box<dyn AgentContext> {
         (**self).executor()
     }
 
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         (**self).history().await
     }
 
-    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn replace_history(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         (**self).replace_history(items).await
     }
 
@@ -540,19 +540,19 @@ impl AgentContext for Box<dyn AgentContext> {
 
 #[async_trait]
 impl AgentContext for Arc<dyn AgentContext> {
-    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage<'static>>>> {
         (**self).next_completion().await
     }
 
-    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage<'static>>> {
         (**self).current_new_messages().await
     }
 
-    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()> {
+    async fn add_messages(&self, item: Vec<ChatMessage<'static>>) -> Result<()> {
         (**self).add_messages(item).await
     }
 
-    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+    async fn add_message(&self, item: ChatMessage<'static>) -> Result<()> {
         (**self).add_message(item).await
     }
 
@@ -565,11 +565,11 @@ impl AgentContext for Arc<dyn AgentContext> {
         (**self).executor()
     }
 
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         (**self).history().await
     }
 
-    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn replace_history(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         (**self).replace_history(items).await
     }
 
@@ -588,19 +588,19 @@ impl AgentContext for Arc<dyn AgentContext> {
 
 #[async_trait]
 impl AgentContext for &dyn AgentContext {
-    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage<'static>>>> {
         (**self).next_completion().await
     }
 
-    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage<'static>>> {
         (**self).current_new_messages().await
     }
 
-    async fn add_messages(&self, item: Vec<ChatMessage>) -> Result<()> {
+    async fn add_messages(&self, item: Vec<ChatMessage<'static>>) -> Result<()> {
         (**self).add_messages(item).await
     }
 
-    async fn add_message(&self, item: ChatMessage) -> Result<()> {
+    async fn add_message(&self, item: ChatMessage<'static>) -> Result<()> {
         (**self).add_message(item).await
     }
 
@@ -613,11 +613,11 @@ impl AgentContext for &dyn AgentContext {
         (**self).executor()
     }
 
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         (**self).history().await
     }
 
-    async fn replace_history(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn replace_history(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         (**self).replace_history(items).await
     }
 
@@ -639,19 +639,19 @@ impl AgentContext for &dyn AgentContext {
 /// Errors if tools attempt to execute commands
 #[async_trait]
 impl AgentContext for () {
-    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage>>> {
+    async fn next_completion(&self) -> Result<Option<Vec<ChatMessage<'static>>>> {
         Ok(None)
     }
 
-    async fn current_new_messages(&self) -> Result<Vec<ChatMessage>> {
+    async fn current_new_messages(&self) -> Result<Vec<ChatMessage<'static>>> {
         Ok(Vec::new())
     }
 
-    async fn add_messages(&self, _item: Vec<ChatMessage>) -> Result<()> {
+    async fn add_messages(&self, _item: Vec<ChatMessage<'static>>) -> Result<()> {
         Ok(())
     }
 
-    async fn add_message(&self, _item: ChatMessage) -> Result<()> {
+    async fn add_message(&self, _item: ChatMessage<'static>) -> Result<()> {
         Ok(())
     }
 
@@ -665,11 +665,11 @@ impl AgentContext for () {
         unimplemented!("Empty agent context does not have a tool executor")
     }
 
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         Ok(Vec::new())
     }
 
-    async fn replace_history(&self, _items: Vec<ChatMessage>) -> Result<()> {
+    async fn replace_history(&self, _items: Vec<ChatMessage<'static>>) -> Result<()> {
         Ok(())
     }
 
@@ -690,33 +690,33 @@ impl AgentContext for () {
     }
 }
 
-/// A backend for the agent context. A default is provided for Arc<Mutex<Vec<ChatMessage>>>
+/// A backend for the agent context. A default is provided for Arc<Mutex<Vec<ChatMessage<'static>>>>
 ///
 /// If you want to use for instance a database, implement this trait and pass it to the agent
 /// context when creating it.
 #[async_trait]
 pub trait MessageHistory: Send + Sync + std::fmt::Debug {
     /// Returns the history of messages
-    async fn history(&self) -> Result<Vec<ChatMessage>>;
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>>;
 
     /// Add a message to the history
-    async fn push_owned(&self, item: ChatMessage) -> Result<()>;
+    async fn push_owned(&self, item: ChatMessage<'static>) -> Result<()>;
 
     /// Overwrite the history with the given items
-    async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()>;
+    async fn overwrite(&self, items: Vec<ChatMessage<'static>>) -> Result<()>;
 
     /// Add a message to the history
-    async fn push(&self, item: &ChatMessage) -> Result<()> {
+    async fn push(&self, item: &ChatMessage<'static>) -> Result<()> {
         self.push_owned(item.clone()).await
     }
 
     /// Extend the history with the given items
-    async fn extend(&self, items: &[ChatMessage]) -> Result<()> {
+    async fn extend(&self, items: &[ChatMessage<'static>]) -> Result<()> {
         self.extend_owned(items.to_vec()).await
     }
 
     /// Extend the history with the given items, taking ownership of them
-    async fn extend_owned(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn extend_owned(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         for item in items {
             self.push_owned(item).await?;
         }
@@ -726,18 +726,18 @@ pub trait MessageHistory: Send + Sync + std::fmt::Debug {
 }
 
 #[async_trait]
-impl MessageHistory for Mutex<Vec<ChatMessage>> {
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+impl MessageHistory for Mutex<Vec<ChatMessage<'static>>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         Ok(self.lock().unwrap().clone())
     }
 
-    async fn push_owned(&self, item: ChatMessage) -> Result<()> {
+    async fn push_owned(&self, item: ChatMessage<'static>) -> Result<()> {
         self.lock().unwrap().push(item);
 
         Ok(())
     }
 
-    async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn overwrite(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         let mut lock = self.lock().unwrap();
         *lock = items;
 

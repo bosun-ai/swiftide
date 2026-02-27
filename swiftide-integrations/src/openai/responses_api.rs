@@ -30,7 +30,7 @@ type LmResult<T> = Result<T, LanguageModelError>;
 
 pub(super) fn build_responses_request_from_chat<C>(
     client: &GenericOpenAI<C>,
-    request: &ChatCompletionRequest,
+    request: &ChatCompletionRequest<'_>,
 ) -> LmResult<CreateResponse>
 where
     C: async_openai::config::Config + Clone + Default,

@@ -107,7 +107,7 @@ impl<P: EmbeddingModel + Clone> EmbeddingModel for LanguageModelWithBackOff<P> {
 impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LLM> {
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let strategy = self.strategy();
 
@@ -128,7 +128,7 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
         backoff::future::retry(strategy, op).await
     }
 
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let strategy = self.strategy();
 
         let stream = self.inner.complete_stream(request).await;
@@ -188,7 +188,7 @@ mod tests {
     impl ChatCompletion for MockChatCompletion {
         async fn complete(
             &self,
-            _request: &ChatCompletionRequest,
+            _request: &ChatCompletionRequest<'_>,
         ) -> Result<ChatCompletionResponse, LanguageModelError> {
             let count = self.call_count.fetch_add(1, Ordering::SeqCst);
 

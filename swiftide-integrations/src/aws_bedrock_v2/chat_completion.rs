@@ -38,7 +38,7 @@ impl ChatCompletion for AwsBedrock {
     #[tracing::instrument(skip_all, err)]
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self.prompt_model()?;
         let (messages, system, inference_config, tool_config) =
@@ -91,7 +91,7 @@ impl ChatCompletion for AwsBedrock {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let model = match self.prompt_model() {
             Ok(model) => model.to_string(),
             Err(error) => return error.into(),
@@ -210,7 +210,7 @@ impl ChatCompletion for AwsBedrock {
 }
 
 fn build_converse_input(
-    request: &ChatCompletionRequest,
+    request: &ChatCompletionRequest<'_>,
     options: &Options,
 ) -> Result<
     (

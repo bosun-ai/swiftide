@@ -1,16 +1,12 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use swiftide_core::{
-    MessageHistory,
-    chat_completion::{ChatMessage, ChatMessageValue},
-    indexing::Chunk,
-};
+use swiftide_core::{MessageHistory, chat_completion::ChatMessage, indexing::Chunk};
 
 use super::Redis;
 
 #[async_trait]
 impl<T: Chunk> MessageHistory for Redis<T> {
-    async fn history(&self) -> Result<Vec<ChatMessage>> {
+    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
         if let Some(mut cm) = self.lazy_connect().await {
             let messages: Vec<String> = redis::cmd("LRANGE")
                 .arg(&self.message_history_key)
@@ -19,10 +15,10 @@ impl<T: Chunk> MessageHistory for Redis<T> {
                 .query_async(&mut cm)
                 .await
                 .context("Error fetching message history")?;
-            let chat_messages: Result<Vec<ChatMessage>> = messages
+            let chat_messages: Result<Vec<ChatMessage<'static>>> = messages
                 .into_iter()
                 .map(|msg| {
-                    serde_json::from_str::<ChatMessageValue<'_>>(&msg)
+                    serde_json::from_str::<ChatMessage<'_>>(&msg)
                         .map(|msg| msg.to_owned())
                         .context("Error deserializing message")
                 })
@@ -33,7 +29,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
         }
     }
 
-    async fn push_owned(&self, item: ChatMessage) -> Result<()> {
+    async fn push_owned(&self, item: ChatMessage<'static>) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
@@ -47,7 +43,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
         }
     }
 
-    async fn extend_owned(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn extend_owned(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
             if items.is_empty() {
                 return Ok(());
@@ -70,7 +66,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
         }
     }
 
-    async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()> {
+    async fn overwrite(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
             // If it does not exist yet, we can just push the items
             let _ = redis::cmd("DEL")
