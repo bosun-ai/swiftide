@@ -18,8 +18,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
             let chat_messages: Result<Vec<ChatMessage<'static>>> = messages
                 .into_iter()
                 .map(|msg| {
-                    serde_json::from_str::<ChatMessage<'_>>(&msg)
-                        .map(|msg| msg.to_owned())
+                    serde_json::from_str::<ChatMessage<'static>>(&msg)
                         .context("Error deserializing message")
                 })
                 .collect();

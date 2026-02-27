@@ -19,20 +19,6 @@ impl<'a> ChatCompletionRequest<'a> {
         ChatCompletionRequestBuilder::default()
     }
 
-    pub fn from_messages(messages: Vec<ChatMessage<'a>>) -> Self {
-        ChatCompletionRequest {
-            messages: Cow::Owned(messages),
-            tools_spec: HashSet::new(),
-        }
-    }
-
-    pub fn from_message_slice(messages: &'a [ChatMessage<'a>]) -> Self {
-        ChatCompletionRequest {
-            messages: Cow::Borrowed(messages),
-            tools_spec: HashSet::new(),
-        }
-    }
-
     /// Returns the chat messages included in the request.
     pub fn messages(&self) -> &[ChatMessage<'a>] {
         self.messages.as_ref()
@@ -53,13 +39,19 @@ impl<'a> ChatCompletionRequest<'a> {
 
 impl<'a> From<Vec<ChatMessage<'a>>> for ChatCompletionRequest<'a> {
     fn from(messages: Vec<ChatMessage<'a>>) -> Self {
-        Self::from_messages(messages)
+        ChatCompletionRequest {
+            messages: Cow::Owned(messages),
+            tools_spec: HashSet::new(),
+        }
     }
 }
 
 impl<'a> From<&'a [ChatMessage<'a>]> for ChatCompletionRequest<'a> {
     fn from(messages: &'a [ChatMessage<'a>]) -> Self {
-        Self::from_message_slice(messages)
+        ChatCompletionRequest {
+            messages: Cow::Borrowed(messages),
+            tools_spec: HashSet::new(),
+        }
     }
 }
 

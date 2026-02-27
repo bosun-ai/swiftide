@@ -15,10 +15,13 @@ use aws_sdk_bedrockruntime::{
         VideoFormat, VideoSource,
     },
 };
-use aws_smithy_types::{Blob, Document, Number};
+use aws_smithy_json::{
+    deserialize::{json_token_iter, token::expect_document},
+    serialize::JsonValueWriter,
+};
+use aws_smithy_types::{Blob, Document};
 use base64::Engine as _;
 use futures_util::stream;
-use serde_json::Number as JsonNumber;
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
@@ -438,112 +441,57 @@ fn video_block_from_part(
 fn image_source_from_content_source(
     source: &ChatMessageContentSource,
 ) -> Result<ImageSource, LanguageModelError> {
-    match source {
-        ChatMessageContentSource::Bytes { data, .. } => {
-            Ok(ImageSource::Bytes(Blob::new(data.clone())))
-        }
-        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(ImageSource::S3Location(
-            s3_location(uri, bucket_owner.as_deref())?,
-        )),
-        ChatMessageContentSource::Url { url } => {
-            if is_s3_url(url) {
-                Ok(ImageSource::S3Location(s3_location(url, None)?))
-            } else if let Some((_, encoded)) = parse_data_url(url) {
-                let data = decode_data_url_bytes(encoded)?;
-                Ok(ImageSource::Bytes(Blob::new(data)))
-            } else {
-                Err(LanguageModelError::permanent(
-                    "Bedrock image source URL must be data: or s3://",
-                ))
-            }
-        }
-        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
-            "Bedrock does not support file_id message sources",
-        )),
-    }
+    source_from_content_source(source, "image", ImageSource::Bytes, ImageSource::S3Location)
 }
 
 fn document_source_from_content_source(
     source: &ChatMessageContentSource,
 ) -> Result<DocumentSource, LanguageModelError> {
-    match source {
-        ChatMessageContentSource::Bytes { data, .. } => {
-            Ok(DocumentSource::Bytes(Blob::new(data.clone())))
-        }
-        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(DocumentSource::S3Location(
-            s3_location(uri, bucket_owner.as_deref())?,
-        )),
-        ChatMessageContentSource::Url { url } => {
-            if is_s3_url(url) {
-                Ok(DocumentSource::S3Location(s3_location(url, None)?))
-            } else if let Some((_, encoded)) = parse_data_url(url) {
-                let data = decode_data_url_bytes(encoded)?;
-                Ok(DocumentSource::Bytes(Blob::new(data)))
-            } else {
-                Err(LanguageModelError::permanent(
-                    "Bedrock document source URL must be data: or s3://",
-                ))
-            }
-        }
-        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
-            "Bedrock does not support file_id message sources",
-        )),
-    }
+    source_from_content_source(
+        source,
+        "document",
+        DocumentSource::Bytes,
+        DocumentSource::S3Location,
+    )
 }
 
 fn audio_source_from_content_source(
     source: &ChatMessageContentSource,
 ) -> Result<AudioSource, LanguageModelError> {
-    match source {
-        ChatMessageContentSource::Bytes { data, .. } => {
-            Ok(AudioSource::Bytes(Blob::new(data.clone())))
-        }
-        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(AudioSource::S3Location(
-            s3_location(uri, bucket_owner.as_deref())?,
-        )),
-        ChatMessageContentSource::Url { url } => {
-            if is_s3_url(url) {
-                Ok(AudioSource::S3Location(s3_location(url, None)?))
-            } else if let Some((_, encoded)) = parse_data_url(url) {
-                let data = decode_data_url_bytes(encoded)?;
-                Ok(AudioSource::Bytes(Blob::new(data)))
-            } else {
-                Err(LanguageModelError::permanent(
-                    "Bedrock audio source URL must be data: or s3://",
-                ))
-            }
-        }
-        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
-            "Bedrock does not support file_id message sources",
-        )),
-    }
+    source_from_content_source(source, "audio", AudioSource::Bytes, AudioSource::S3Location)
 }
 
 fn video_source_from_content_source(
     source: &ChatMessageContentSource,
 ) -> Result<VideoSource, LanguageModelError> {
+    source_from_content_source(source, "video", VideoSource::Bytes, VideoSource::S3Location)
+}
+
+fn source_from_content_source<T>(
+    source: &ChatMessageContentSource,
+    label: &str,
+    from_bytes: impl Fn(Blob) -> T,
+    from_s3: impl Fn(S3Location) -> T,
+) -> Result<T, LanguageModelError> {
     match source {
-        ChatMessageContentSource::Bytes { data, .. } => {
-            Ok(VideoSource::Bytes(Blob::new(data.clone())))
+        ChatMessageContentSource::Bytes { data, .. } => Ok(from_bytes(Blob::new(data.to_vec()))),
+        ChatMessageContentSource::S3 { uri, bucket_owner } => {
+            Ok(from_s3(s3_location(uri, bucket_owner.as_deref())?))
         }
-        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(VideoSource::S3Location(
-            s3_location(uri, bucket_owner.as_deref())?,
-        )),
         ChatMessageContentSource::Url { url } => {
             if is_s3_url(url) {
-                Ok(VideoSource::S3Location(s3_location(url, None)?))
+                Ok(from_s3(s3_location(url, None)?))
             } else if let Some((_, encoded)) = parse_data_url(url) {
-                let data = decode_data_url_bytes(encoded)?;
-                Ok(VideoSource::Bytes(Blob::new(data)))
+                Ok(from_bytes(Blob::new(decode_data_url_bytes(encoded)?)))
             } else {
-                Err(LanguageModelError::permanent(
-                    "Bedrock video source URL must be data: or s3://",
-                ))
+                Err(LanguageModelError::permanent(format!(
+                    "Bedrock {label} source URL must be data: or s3://"
+                )))
             }
         }
-        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
-            "Bedrock does not support file_id message sources",
-        )),
+        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(format!(
+            "Bedrock does not support file_id {label} sources"
+        ))),
     }
 }
 
@@ -872,11 +820,9 @@ fn tool_output_to_content_block(
 
 fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageModelError> {
     match args.map(str::trim) {
-        Some(args) if !args.is_empty() => {
-            let value: serde_json::Value = serde_json::from_str(args)
-                .with_context(|| format!("Failed to parse tool args as JSON: {args}"))?;
-            json_value_to_document(&value)
-        }
+        Some(args) if !args.is_empty() => parse_document_json(args)
+            .with_context(|| format!("Failed to parse tool args as JSON: {args}"))
+            .map_err(LanguageModelError::permanent),
         _ => Ok(Document::Object(HashMap::new())),
     }
 }
@@ -997,7 +943,9 @@ fn extract_message_and_tool_calls(
 }
 
 fn document_to_json_string(document: &Document) -> Result<String, LanguageModelError> {
-    serde_json::to_string(&document_to_json_value(document)?).map_err(LanguageModelError::permanent)
+    let mut output = String::new();
+    JsonValueWriter::new(&mut output).document(document);
+    Ok(output)
 }
 
 fn apply_stream_event(
@@ -1149,62 +1097,23 @@ fn ensure_reasoning_item(
 }
 
 fn json_value_to_document(value: &serde_json::Value) -> Result<Document, LanguageModelError> {
-    match value {
-        serde_json::Value::Null => Ok(Document::Null),
-        serde_json::Value::Bool(boolean) => Ok(Document::Bool(*boolean)),
-        serde_json::Value::Number(number) => {
-            if let Some(number) = number.as_u64() {
-                Ok(Document::Number(Number::PosInt(number)))
-            } else if let Some(number) = number.as_i64() {
-                Ok(Document::Number(Number::NegInt(number)))
-            } else if let Some(number) = number.as_f64() {
-                Ok(Document::Number(Number::Float(number)))
-            } else {
-                Err(LanguageModelError::permanent("Unsupported JSON number"))
-            }
-        }
-        serde_json::Value::String(string) => Ok(Document::String(string.clone())),
-        serde_json::Value::Array(array) => array
-            .iter()
-            .map(json_value_to_document)
-            .collect::<Result<Vec<_>, _>>()
-            .map(Document::Array),
-        serde_json::Value::Object(object) => object
-            .iter()
-            .map(|(key, value)| Ok((key.clone(), json_value_to_document(value)?)))
-            .collect::<Result<HashMap<_, _>, LanguageModelError>>()
-            .map(Document::Object),
-    }
+    let bytes = serde_json::to_vec(value).map_err(LanguageModelError::permanent)?;
+    parse_document_json_bytes(&bytes).map_err(LanguageModelError::permanent)
 }
 
-fn document_to_json_value(document: &Document) -> Result<serde_json::Value, LanguageModelError> {
-    match document {
-        Document::Object(object) => object
-            .iter()
-            .map(|(key, value)| Ok((key.clone(), document_to_json_value(value)?)))
-            .collect::<Result<serde_json::Map<_, _>, LanguageModelError>>()
-            .map(serde_json::Value::Object),
-        Document::Array(array) => array
-            .iter()
-            .map(document_to_json_value)
-            .collect::<Result<Vec<_>, LanguageModelError>>()
-            .map(serde_json::Value::Array),
-        Document::Number(number) => {
-            let maybe_number = match number {
-                Number::PosInt(number) => Some(JsonNumber::from(*number)),
-                Number::NegInt(number) => Some(JsonNumber::from(*number)),
-                Number::Float(number) => JsonNumber::from_f64(*number),
-            };
-            maybe_number.map(serde_json::Value::Number).ok_or_else(|| {
-                LanguageModelError::permanent(
-                    "Document contains non-finite float which is not valid JSON",
-                )
-            })
-        }
-        Document::String(string) => Ok(serde_json::Value::String(string.clone())),
-        Document::Bool(boolean) => Ok(serde_json::Value::Bool(*boolean)),
-        Document::Null => Ok(serde_json::Value::Null),
+fn parse_document_json(input: &str) -> anyhow::Result<Document> {
+    parse_document_json_bytes(input.as_bytes())
+}
+
+fn parse_document_json_bytes(input: &[u8]) -> anyhow::Result<Document> {
+    let mut tokens = json_token_iter(input).peekable();
+    let document = expect_document(&mut tokens)?;
+
+    if tokens.next().transpose()?.is_some() {
+        anyhow::bail!("JSON input must contain exactly one value");
     }
+
+    Ok(document)
 }
 
 #[cfg(test)]
@@ -1327,10 +1236,7 @@ mod tests {
 
         let mut thinking = HashMap::new();
         thinking.insert("type".to_string(), Document::String("enabled".to_string()));
-        thinking.insert(
-            "budget_tokens".to_string(),
-            Document::Number(Number::PosInt(512)),
-        );
+        thinking.insert("budget_tokens".to_string(), Document::from(512_u64));
         let mut request_fields = HashMap::new();
         request_fields.insert("thinking".to_string(), Document::Object(thinking));
         let request_fields = Document::Object(request_fields);
@@ -1575,6 +1481,65 @@ mod tests {
             .expect("image block");
         assert!(matches!(image.format(), ImageFormat::Png));
         assert!(image.source().is_some_and(|source| source.is_bytes()));
+    }
+
+    #[test]
+    fn test_build_converse_input_maps_audio_part() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user_with_parts(vec![
+                ChatMessageContentPart::text("Transcribe this"),
+                ChatMessageContentPart::audio(ChatMessageContentSource::bytes(
+                    vec![1_u8, 2_u8, 3_u8],
+                    Some("audio/mpeg".to_string()),
+                )),
+            ])])
+            .build()
+            .unwrap();
+
+        let (messages, _system, _inference, _tool_config) =
+            build_converse_input(&request, &Options::default()).unwrap();
+        let audio = messages[0]
+            .content()
+            .get(1)
+            .and_then(|content| content.as_audio().ok())
+            .expect("audio block");
+        assert!(matches!(audio.format(), AudioFormat::Mp3));
+        assert!(audio.source().is_some_and(|source| source.is_bytes()));
+    }
+
+    #[test]
+    fn test_build_converse_input_maps_video_part() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user_with_parts(vec![
+                ChatMessageContentPart::text("Describe this clip"),
+                ChatMessageContentPart::video("s3://bucket/video.mp4"),
+            ])])
+            .build()
+            .unwrap();
+
+        let (messages, _system, _inference, _tool_config) =
+            build_converse_input(&request, &Options::default()).unwrap();
+        let video = messages[0]
+            .content()
+            .get(1)
+            .and_then(|content| content.as_video().ok())
+            .expect("video block");
+        assert!(matches!(video.format(), VideoFormat::Mp4));
+        assert!(video.source().is_some_and(|source| source.is_s3_location()));
+    }
+
+    #[test]
+    fn test_build_converse_input_rejects_audio_http_url() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user_with_parts(vec![
+                ChatMessageContentPart::text("Transcribe this"),
+                ChatMessageContentPart::audio("https://example.com/audio.mp3"),
+            ])])
+            .build()
+            .unwrap();
+
+        let error = build_converse_input(&request, &Options::default()).unwrap_err();
+        assert!(format!("{error}").contains("audio source URL must be data: or s3://"));
     }
 
     #[test]

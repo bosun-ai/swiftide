@@ -349,7 +349,7 @@ mod tests {
 
         let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
-        let request = ChatCompletionRequest::from_messages(Vec::new());
+        let request: ChatCompletionRequest<'static> = Vec::new().into();
 
         let result = model_with_backoff.complete(&request).await;
 
@@ -379,7 +379,7 @@ mod tests {
 
         let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
-        let request = ChatCompletionRequest::from_messages(Vec::new());
+        let request: ChatCompletionRequest<'static> = Vec::new().into();
 
         let result = model_with_backoff.complete(&request).await;
 
@@ -411,7 +411,7 @@ mod tests {
 
         let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
-        let request = ChatCompletionRequest::from_messages(Vec::new());
+        let request: ChatCompletionRequest<'static> = Vec::new().into();
 
         let result = model_with_backoff.complete(&request).await;
 

@@ -712,11 +712,8 @@ pub trait MessageHistory: Send + Sync + std::fmt::Debug {
 
     /// Extend the history with the given items.
     async fn extend(&self, items: &[ChatMessage<'_>]) -> Result<()> {
-        for item in items {
-            self.push_owned(item.to_owned()).await?;
-        }
-
-        Ok(())
+        self.extend_owned(items.iter().map(ChatMessage::to_owned).collect())
+            .await
     }
 
     /// Extend the history with the given items, taking ownership of them
