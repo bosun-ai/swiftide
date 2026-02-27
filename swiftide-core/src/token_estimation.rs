@@ -123,7 +123,10 @@ impl Estimatable for &ChatMessage {
                     crate::chat_completion::ChatMessageContentPart::Text { text } => {
                         Some(Cow::Borrowed(text.as_str()))
                     }
-                    crate::chat_completion::ChatMessageContentPart::ImageUrl { .. } => None,
+                    crate::chat_completion::ChatMessageContentPart::Image { .. }
+                    | crate::chat_completion::ChatMessageContentPart::Document { .. }
+                    | crate::chat_completion::ChatMessageContentPart::Audio { .. }
+                    | crate::chat_completion::ChatMessageContentPart::Video { .. } => None,
                 })
                 .collect(),
             ChatMessage::Assistant(msg, vec) => {

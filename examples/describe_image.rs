@@ -4,9 +4,7 @@
 
 use anyhow::{Context as _, Result};
 use base64::{Engine as _, engine::general_purpose};
-use swiftide::chat_completion::{
-    ChatCompletionRequest, ChatMessage, ChatMessageContentPart, ImageDetail,
-};
+use swiftide::chat_completion::{ChatCompletionRequest, ChatMessage, ChatMessageContentPart};
 use swiftide::traits::ChatCompletion;
 
 #[tokio::main]
@@ -24,7 +22,7 @@ async fn main() -> Result<()> {
 
     let message = ChatMessage::new_user_with_parts(vec![
         ChatMessageContentPart::text("Describe this image in one sentence."),
-        ChatMessageContentPart::image_url(data_url, Some(ImageDetail::Auto)),
+        ChatMessageContentPart::image(data_url),
     ]);
 
     let request = ChatCompletionRequest::builder()

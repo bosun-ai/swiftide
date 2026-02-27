@@ -9766,6 +9766,7 @@ dependencies = [
  "aws-credential-types",
  "aws-sdk-bedrockruntime",
  "aws-smithy-types",
+ "base64 0.22.1",
  "chrono",
  "deadpool",
  "derive_builder 0.20.2",

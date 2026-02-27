@@ -293,12 +293,12 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
         User(content) => builder.content(content),
         UserWithParts(parts) => {
             if parts.iter().any(|part| {
-                matches!(
+                !matches!(
                     part,
-                    swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. }
+                    swiftide_core::chat_completion::ChatMessageContentPart::Text { .. }
                 )
             }) {
-                anyhow::bail!("Anthropic chat completions do not support image inputs");
+                anyhow::bail!("Anthropic chat completions only support text message parts");
             }
             let text_parts = parts
                 .iter()
@@ -306,7 +306,10 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                     swiftide_core::chat_completion::ChatMessageContentPart::Text { text } => {
                         Some(text.as_str())
                     }
-                    swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. } => None,
+                    swiftide_core::chat_completion::ChatMessageContentPart::Image { .. }
+                    | swiftide_core::chat_completion::ChatMessageContentPart::Document { .. }
+                    | swiftide_core::chat_completion::ChatMessageContentPart::Audio { .. }
+                    | swiftide_core::chat_completion::ChatMessageContentPart::Video { .. } => None,
                 })
                 .collect::<Vec<_>>();
             builder.content(text_parts.join(" "))

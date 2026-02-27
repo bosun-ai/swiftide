@@ -5,21 +5,26 @@ use async_trait::async_trait;
 use aws_sdk_bedrockruntime::{
     operation::converse::ConverseOutput,
     types::{
-        AutoToolChoice, ContentBlock, ContentBlockDelta, ContentBlockStart, ConversationRole,
-        ConverseOutput as ConverseResult, ConverseStreamOutput, InferenceConfiguration, Message,
-        ReasoningContentBlock, ReasoningContentBlockDelta, ReasoningTextBlock, StopReason,
-        SystemContentBlock, Tool, ToolChoice, ToolConfiguration, ToolInputSchema, ToolResultBlock,
-        ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
+        AudioBlock, AudioFormat, AudioSource, AutoToolChoice, ContentBlock, ContentBlockDelta,
+        ContentBlockStart, ConversationRole, ConverseOutput as ConverseResult,
+        ConverseStreamOutput, DocumentBlock, DocumentFormat, DocumentSource, ImageBlock,
+        ImageFormat, ImageSource, InferenceConfiguration, Message, ReasoningContentBlock,
+        ReasoningContentBlockDelta, ReasoningTextBlock, S3Location, StopReason, SystemContentBlock,
+        Tool, ToolChoice, ToolConfiguration, ToolInputSchema, ToolResultBlock,
+        ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock, VideoBlock,
+        VideoFormat, VideoSource,
     },
 };
-use aws_smithy_types::{Document, Number};
+use aws_smithy_types::{Blob, Document, Number};
+use base64::Engine as _;
 use futures_util::stream;
 use serde_json::Number as JsonNumber;
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
         ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
-        ReasoningItem, ToolCall, ToolOutput, ToolSpec, errors::LanguageModelError,
+        ChatMessageContentSource, ReasoningItem, ToolCall, ToolOutput, ToolSpec,
+        errors::LanguageModelError,
     },
 };
 
@@ -305,30 +310,531 @@ fn user_message_from_text(text: String) -> Result<Message, LanguageModelError> {
 fn user_message_from_parts(
     parts: &[ChatMessageContentPart],
 ) -> Result<Message, LanguageModelError> {
-    let mut text = String::new();
+    let mut blocks = Vec::with_capacity(parts.len());
+    let mut has_text = false;
+    let mut has_document = false;
+
     for part in parts {
         match part {
-            ChatMessageContentPart::Text { text: part_text } => {
+            ChatMessageContentPart::Text { text } => {
                 if !text.is_empty() {
-                    text.push(' ');
+                    blocks.push(ContentBlock::Text(text.clone()));
+                    has_text = true;
                 }
-                text.push_str(part_text);
             }
-            ChatMessageContentPart::ImageUrl { .. } => {
-                return Err(LanguageModelError::permanent(
-                    "Bedrock chat completions do not support image_url inputs yet",
-                ));
+            ChatMessageContentPart::Image { source, format } => {
+                blocks.push(ContentBlock::Image(image_block_from_part(
+                    source,
+                    format.as_deref(),
+                )?));
+            }
+            ChatMessageContentPart::Document {
+                source,
+                format,
+                name,
+            } => {
+                blocks.push(ContentBlock::Document(document_block_from_part(
+                    source,
+                    format.as_deref(),
+                    name.as_deref(),
+                )?));
+                has_document = true;
+            }
+            ChatMessageContentPart::Audio { source, format } => {
+                blocks.push(ContentBlock::Audio(audio_block_from_part(
+                    source,
+                    format.as_deref(),
+                )?));
+            }
+            ChatMessageContentPart::Video { source, format } => {
+                blocks.push(ContentBlock::Video(video_block_from_part(
+                    source,
+                    format.as_deref(),
+                )?));
             }
         }
     }
 
-    if text.is_empty() {
+    if blocks.is_empty() {
         return Err(LanguageModelError::permanent(
-            "UserWithParts requires at least one text part",
+            "UserWithParts requires at least one content part",
         ));
     }
 
-    user_message_from_text(text)
+    if has_document && !has_text {
+        return Err(LanguageModelError::permanent(
+            "Bedrock document parts require at least one text part in the same message",
+        ));
+    }
+
+    message_from_blocks(ConversationRole::User, blocks)
+}
+
+fn image_block_from_part(
+    source: &ChatMessageContentSource,
+    format: Option<&str>,
+) -> Result<ImageBlock, LanguageModelError> {
+    let format = image_format_from_source(format, source)?;
+    let source = image_source_from_content_source(source)?;
+
+    ImageBlock::builder()
+        .format(format)
+        .source(source)
+        .build()
+        .map_err(LanguageModelError::permanent)
+}
+
+fn document_block_from_part(
+    source: &ChatMessageContentSource,
+    format: Option<&str>,
+    name: Option<&str>,
+) -> Result<DocumentBlock, LanguageModelError> {
+    let format = document_format_from_source(format, source)?;
+    let source = document_source_from_content_source(source)?;
+    let name = name.unwrap_or("document");
+
+    DocumentBlock::builder()
+        .format(format)
+        .name(name)
+        .source(source)
+        .build()
+        .map_err(LanguageModelError::permanent)
+}
+
+fn audio_block_from_part(
+    source: &ChatMessageContentSource,
+    format: Option<&str>,
+) -> Result<AudioBlock, LanguageModelError> {
+    let format = audio_format_from_source(format, source)?;
+    let source = audio_source_from_content_source(source)?;
+
+    AudioBlock::builder()
+        .format(format)
+        .source(source)
+        .build()
+        .map_err(LanguageModelError::permanent)
+}
+
+fn video_block_from_part(
+    source: &ChatMessageContentSource,
+    format: Option<&str>,
+) -> Result<VideoBlock, LanguageModelError> {
+    let format = video_format_from_source(format, source)?;
+    let source = video_source_from_content_source(source)?;
+
+    VideoBlock::builder()
+        .format(format)
+        .source(source)
+        .build()
+        .map_err(LanguageModelError::permanent)
+}
+
+fn image_source_from_content_source(
+    source: &ChatMessageContentSource,
+) -> Result<ImageSource, LanguageModelError> {
+    match source {
+        ChatMessageContentSource::Bytes { data, .. } => {
+            Ok(ImageSource::Bytes(Blob::new(data.clone())))
+        }
+        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(ImageSource::S3Location(
+            s3_location(uri, bucket_owner.as_deref())?,
+        )),
+        ChatMessageContentSource::Url { url } => {
+            if is_s3_url(url) {
+                Ok(ImageSource::S3Location(s3_location(url, None)?))
+            } else if let Some((_, encoded)) = parse_data_url(url) {
+                let data = decode_data_url_bytes(encoded)?;
+                Ok(ImageSource::Bytes(Blob::new(data)))
+            } else {
+                Err(LanguageModelError::permanent(
+                    "Bedrock image source URL must be data: or s3://",
+                ))
+            }
+        }
+        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
+            "Bedrock does not support file_id message sources",
+        )),
+    }
+}
+
+fn document_source_from_content_source(
+    source: &ChatMessageContentSource,
+) -> Result<DocumentSource, LanguageModelError> {
+    match source {
+        ChatMessageContentSource::Bytes { data, .. } => {
+            Ok(DocumentSource::Bytes(Blob::new(data.clone())))
+        }
+        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(DocumentSource::S3Location(
+            s3_location(uri, bucket_owner.as_deref())?,
+        )),
+        ChatMessageContentSource::Url { url } => {
+            if is_s3_url(url) {
+                Ok(DocumentSource::S3Location(s3_location(url, None)?))
+            } else if let Some((_, encoded)) = parse_data_url(url) {
+                let data = decode_data_url_bytes(encoded)?;
+                Ok(DocumentSource::Bytes(Blob::new(data)))
+            } else {
+                Err(LanguageModelError::permanent(
+                    "Bedrock document source URL must be data: or s3://",
+                ))
+            }
+        }
+        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
+            "Bedrock does not support file_id message sources",
+        )),
+    }
+}
+
+fn audio_source_from_content_source(
+    source: &ChatMessageContentSource,
+) -> Result<AudioSource, LanguageModelError> {
+    match source {
+        ChatMessageContentSource::Bytes { data, .. } => {
+            Ok(AudioSource::Bytes(Blob::new(data.clone())))
+        }
+        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(AudioSource::S3Location(
+            s3_location(uri, bucket_owner.as_deref())?,
+        )),
+        ChatMessageContentSource::Url { url } => {
+            if is_s3_url(url) {
+                Ok(AudioSource::S3Location(s3_location(url, None)?))
+            } else if let Some((_, encoded)) = parse_data_url(url) {
+                let data = decode_data_url_bytes(encoded)?;
+                Ok(AudioSource::Bytes(Blob::new(data)))
+            } else {
+                Err(LanguageModelError::permanent(
+                    "Bedrock audio source URL must be data: or s3://",
+                ))
+            }
+        }
+        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
+            "Bedrock does not support file_id message sources",
+        )),
+    }
+}
+
+fn video_source_from_content_source(
+    source: &ChatMessageContentSource,
+) -> Result<VideoSource, LanguageModelError> {
+    match source {
+        ChatMessageContentSource::Bytes { data, .. } => {
+            Ok(VideoSource::Bytes(Blob::new(data.clone())))
+        }
+        ChatMessageContentSource::S3 { uri, bucket_owner } => Ok(VideoSource::S3Location(
+            s3_location(uri, bucket_owner.as_deref())?,
+        )),
+        ChatMessageContentSource::Url { url } => {
+            if is_s3_url(url) {
+                Ok(VideoSource::S3Location(s3_location(url, None)?))
+            } else if let Some((_, encoded)) = parse_data_url(url) {
+                let data = decode_data_url_bytes(encoded)?;
+                Ok(VideoSource::Bytes(Blob::new(data)))
+            } else {
+                Err(LanguageModelError::permanent(
+                    "Bedrock video source URL must be data: or s3://",
+                ))
+            }
+        }
+        ChatMessageContentSource::FileId { .. } => Err(LanguageModelError::permanent(
+            "Bedrock does not support file_id message sources",
+        )),
+    }
+}
+
+fn image_format_from_source(
+    format: Option<&str>,
+    source: &ChatMessageContentSource,
+) -> Result<ImageFormat, LanguageModelError> {
+    resolve_format(
+        format,
+        source,
+        infer_image_format_from_source,
+        |value| ImageFormat::try_parse(value).ok(),
+        "image",
+    )
+}
+
+fn document_format_from_source(
+    format: Option<&str>,
+    source: &ChatMessageContentSource,
+) -> Result<DocumentFormat, LanguageModelError> {
+    resolve_format(
+        format,
+        source,
+        infer_document_format_from_source,
+        |value| DocumentFormat::try_parse(value).ok(),
+        "document",
+    )
+}
+
+fn audio_format_from_source(
+    format: Option<&str>,
+    source: &ChatMessageContentSource,
+) -> Result<AudioFormat, LanguageModelError> {
+    resolve_format(
+        format,
+        source,
+        infer_audio_format_from_source,
+        |value| AudioFormat::try_parse(value).ok(),
+        "audio",
+    )
+}
+
+fn video_format_from_source(
+    format: Option<&str>,
+    source: &ChatMessageContentSource,
+) -> Result<VideoFormat, LanguageModelError> {
+    resolve_format(
+        format,
+        source,
+        infer_video_format_from_source,
+        |value| VideoFormat::try_parse(value).ok(),
+        "video",
+    )
+}
+
+fn resolve_format<T>(
+    explicit_format: Option<&str>,
+    source: &ChatMessageContentSource,
+    infer: impl Fn(&ChatMessageContentSource) -> Option<&'static str>,
+    parse: impl Fn(&str) -> Option<T>,
+    label: &str,
+) -> Result<T, LanguageModelError> {
+    let value = explicit_format.or_else(|| infer(source)).ok_or_else(|| {
+        LanguageModelError::permanent(format!("Bedrock {label} format is required"))
+    })?;
+
+    parse(value).ok_or_else(|| {
+        LanguageModelError::permanent(format!("Unsupported Bedrock {label} format: {value}"))
+    })
+}
+
+fn infer_image_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
+    match source {
+        ChatMessageContentSource::Bytes { media_type, .. } => media_type
+            .as_deref()
+            .and_then(map_image_media_type_to_format),
+        ChatMessageContentSource::Url { url } => {
+            if let Some((media_type, _)) = parse_data_url(url) {
+                map_image_media_type_to_format(media_type)
+            } else {
+                extension_from_url(url).and_then(map_image_extension_to_format)
+            }
+        }
+        ChatMessageContentSource::S3 { uri, .. } => {
+            extension_from_url(uri).and_then(map_image_extension_to_format)
+        }
+        ChatMessageContentSource::FileId { .. } => None,
+    }
+}
+
+fn infer_document_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
+    match source {
+        ChatMessageContentSource::Bytes { media_type, .. } => media_type
+            .as_deref()
+            .and_then(map_document_media_type_to_format)
+            .or(Some("txt")),
+        ChatMessageContentSource::Url { url } => if let Some((media_type, _)) = parse_data_url(url)
+        {
+            map_document_media_type_to_format(media_type)
+        } else {
+            extension_from_url(url).and_then(map_document_extension_to_format)
+        }
+        .or(Some("txt")),
+        ChatMessageContentSource::S3 { uri, .. } => extension_from_url(uri)
+            .and_then(map_document_extension_to_format)
+            .or(Some("txt")),
+        ChatMessageContentSource::FileId { .. } => Some("txt"),
+    }
+}
+
+fn infer_audio_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
+    match source {
+        ChatMessageContentSource::Bytes { media_type, .. } => media_type
+            .as_deref()
+            .and_then(map_audio_media_type_to_format),
+        ChatMessageContentSource::Url { url } => {
+            if let Some((media_type, _)) = parse_data_url(url) {
+                map_audio_media_type_to_format(media_type)
+            } else {
+                extension_from_url(url).and_then(map_audio_extension_to_format)
+            }
+        }
+        ChatMessageContentSource::S3 { uri, .. } => {
+            extension_from_url(uri).and_then(map_audio_extension_to_format)
+        }
+        ChatMessageContentSource::FileId { .. } => None,
+    }
+}
+
+fn infer_video_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
+    match source {
+        ChatMessageContentSource::Bytes { media_type, .. } => media_type
+            .as_deref()
+            .and_then(map_video_media_type_to_format),
+        ChatMessageContentSource::Url { url } => {
+            if let Some((media_type, _)) = parse_data_url(url) {
+                map_video_media_type_to_format(media_type)
+            } else {
+                extension_from_url(url).and_then(map_video_extension_to_format)
+            }
+        }
+        ChatMessageContentSource::S3 { uri, .. } => {
+            extension_from_url(uri).and_then(map_video_extension_to_format)
+        }
+        ChatMessageContentSource::FileId { .. } => None,
+    }
+}
+
+fn s3_location(uri: &str, bucket_owner: Option<&str>) -> Result<S3Location, LanguageModelError> {
+    let mut builder = S3Location::builder().uri(uri);
+    if let Some(bucket_owner) = bucket_owner {
+        builder = builder.bucket_owner(bucket_owner);
+    }
+
+    builder.build().map_err(LanguageModelError::permanent)
+}
+
+fn is_s3_url(url: &str) -> bool {
+    url.starts_with("s3://")
+}
+
+fn parse_data_url(url: &str) -> Option<(&str, &str)> {
+    let rest = url.strip_prefix("data:")?;
+    let (header, data) = rest.split_once(',')?;
+    let media_type = header.strip_suffix(";base64")?;
+    Some((media_type, data))
+}
+
+fn decode_data_url_bytes(encoded: &str) -> Result<Vec<u8>, LanguageModelError> {
+    base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(LanguageModelError::permanent)
+}
+
+fn extension_from_url(url: &str) -> Option<&str> {
+    let without_query = url.split(['?', '#']).next()?;
+    let filename = without_query.rsplit('/').next()?;
+    let (_, extension) = filename.rsplit_once('.')?;
+    Some(extension)
+}
+
+fn map_image_media_type_to_format(media_type: &str) -> Option<&'static str> {
+    match media_type {
+        "image/gif" => Some("gif"),
+        "image/jpeg" | "image/jpg" => Some("jpeg"),
+        "image/png" => Some("png"),
+        "image/webp" => Some("webp"),
+        _ => None,
+    }
+}
+
+fn map_image_extension_to_format(extension: &str) -> Option<&'static str> {
+    match extension {
+        "gif" => Some("gif"),
+        "jpeg" | "jpg" => Some("jpeg"),
+        "png" => Some("png"),
+        "webp" => Some("webp"),
+        _ => None,
+    }
+}
+
+fn map_document_media_type_to_format(media_type: &str) -> Option<&'static str> {
+    match media_type {
+        "text/csv" => Some("csv"),
+        "application/msword" => Some("doc"),
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => Some("docx"),
+        "text/html" => Some("html"),
+        "text/markdown" | "text/x-markdown" => Some("md"),
+        "application/pdf" => Some("pdf"),
+        "text/plain" => Some("txt"),
+        "application/vnd.ms-excel" => Some("xls"),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => Some("xlsx"),
+        _ => None,
+    }
+}
+
+fn map_document_extension_to_format(extension: &str) -> Option<&'static str> {
+    match extension {
+        "csv" => Some("csv"),
+        "doc" => Some("doc"),
+        "docx" => Some("docx"),
+        "html" | "htm" => Some("html"),
+        "md" | "markdown" => Some("md"),
+        "pdf" => Some("pdf"),
+        "txt" => Some("txt"),
+        "xls" => Some("xls"),
+        "xlsx" => Some("xlsx"),
+        _ => None,
+    }
+}
+
+fn map_audio_media_type_to_format(media_type: &str) -> Option<&'static str> {
+    match media_type {
+        "audio/aac" => Some("aac"),
+        "audio/flac" => Some("flac"),
+        "audio/m4a" => Some("m4a"),
+        "audio/mka" => Some("mka"),
+        "audio/x-matroska" => Some("mkv"),
+        "audio/mpeg" | "audio/mp3" => Some("mp3"),
+        "audio/mp4" => Some("mp4"),
+        "audio/ogg" => Some("ogg"),
+        "audio/opus" => Some("opus"),
+        "audio/wav" | "audio/x-wav" | "audio/wave" => Some("wav"),
+        "audio/webm" => Some("webm"),
+        "audio/x-aac" => Some("x-aac"),
+        _ => None,
+    }
+}
+
+fn map_audio_extension_to_format(extension: &str) -> Option<&'static str> {
+    match extension {
+        "aac" => Some("aac"),
+        "flac" => Some("flac"),
+        "m4a" => Some("m4a"),
+        "mka" => Some("mka"),
+        "mkv" => Some("mkv"),
+        "mp3" => Some("mp3"),
+        "mp4" => Some("mp4"),
+        "mpeg" => Some("mpeg"),
+        "mpga" => Some("mpga"),
+        "ogg" => Some("ogg"),
+        "opus" => Some("opus"),
+        "pcm" => Some("pcm"),
+        "wav" => Some("wav"),
+        "webm" => Some("webm"),
+        "x-aac" => Some("x-aac"),
+        _ => None,
+    }
+}
+
+fn map_video_media_type_to_format(media_type: &str) -> Option<&'static str> {
+    match media_type {
+        "video/x-flv" => Some("flv"),
+        "video/x-matroska" => Some("mkv"),
+        "video/quicktime" => Some("mov"),
+        "video/mp4" => Some("mp4"),
+        "video/mpeg" => Some("mpeg"),
+        "video/3gpp" => Some("three_gp"),
+        "video/webm" => Some("webm"),
+        "video/x-ms-wmv" => Some("wmv"),
+        _ => None,
+    }
+}
+
+fn map_video_extension_to_format(extension: &str) -> Option<&'static str> {
+    match extension {
+        "flv" => Some("flv"),
+        "mkv" => Some("mkv"),
+        "mov" => Some("mov"),
+        "mp4" => Some("mp4"),
+        "mpeg" => Some("mpeg"),
+        "mpg" => Some("mpg"),
+        "3gp" => Some("three_gp"),
+        "webm" => Some("webm"),
+        "wmv" => Some("wmv"),
+        _ => None,
+    }
 }
 
 fn message_from_blocks(
@@ -707,7 +1213,9 @@ mod tests {
         },
     };
     use schemars::{JsonSchema, schema_for};
-    use swiftide_core::chat_completion::{ChatMessage, ReasoningItem, ToolSpec};
+    use swiftide_core::chat_completion::{
+        ChatMessage, ChatMessageContentPart, ChatMessageContentSource, ReasoningItem, ToolSpec,
+    };
 
     use super::*;
     use crate::aws_bedrock_v2::{AwsBedrock, MockBedrockConverse};
@@ -1037,6 +1545,46 @@ mod tests {
             .expect("reasoning content");
         assert_eq!(reasoning.text(), "I should call a weather tool");
         assert_eq!(reasoning.signature(), Some("sig_123"));
+    }
+
+    #[test]
+    fn test_build_converse_input_maps_image_part() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user_with_parts(vec![
+                ChatMessageContentPart::text("Describe this image"),
+                ChatMessageContentPart::image("data:image/png;base64,AA=="),
+            ])])
+            .build()
+            .unwrap();
+
+        let (messages, _system, _inference, _tool_config) =
+            build_converse_input(&request, &Options::default()).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert!(matches!(messages[0].role(), ConversationRole::User));
+        assert_eq!(messages[0].content().len(), 2);
+        let image = messages[0]
+            .content()
+            .get(1)
+            .and_then(|content| content.as_image().ok())
+            .expect("image block");
+        assert!(matches!(image.format(), ImageFormat::Png));
+        assert!(image.source().is_some_and(|source| source.is_bytes()));
+    }
+
+    #[test]
+    fn test_build_converse_input_rejects_document_without_text() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user_with_parts(vec![
+                ChatMessageContentPart::document(ChatMessageContentSource::bytes(
+                    vec![1_u8, 2_u8],
+                    Some("text/plain".to_string()),
+                )),
+            ])])
+            .build()
+            .unwrap();
+
+        let error = build_converse_input(&request, &Options::default()).unwrap_err();
+        assert!(format!("{error}").contains("require at least one text part"));
     }
 
     #[test]
