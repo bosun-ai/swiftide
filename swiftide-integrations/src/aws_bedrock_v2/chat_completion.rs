@@ -22,6 +22,9 @@ use swiftide_core::{
     },
 };
 
+#[cfg(feature = "metrics")]
+use swiftide_core::metrics::emit_usage;
+
 use super::{AwsBedrock, Options};
 
 #[async_trait]
@@ -88,7 +91,9 @@ impl ChatCompletion for AwsBedrock {
             Err(error) => return error.into(),
         };
 
-        let bedrock = self.clone();
+        let on_usage = self.on_usage.clone();
+        #[cfg(feature = "metrics")]
+        let metric_metadata = std::sync::Arc::new(self.metric_metadata.clone());
 
         let event_stream = stream_output.stream;
         let stream = stream::unfold(
@@ -98,53 +103,69 @@ impl ChatCompletion for AwsBedrock {
                 None::<StopReason>,
                 false,
                 model,
-                bedrock,
             ),
-            move |(mut event_stream, mut response, mut stop_reason, finished, model, bedrock)| async move {
-                if finished {
-                    return None;
-                }
+            move |(mut event_stream, mut response, mut stop_reason, finished, model)| {
+                let on_usage = on_usage.clone();
+                #[cfg(feature = "metrics")]
+                let metric_metadata = metric_metadata.clone();
 
-                match event_stream.recv().await {
-                    Ok(Some(event)) => {
-                        apply_stream_event(&event, &mut response, &mut stop_reason);
-                        Some((
-                            Ok(response.clone()),
-                            (event_stream, response, stop_reason, false, model, bedrock),
-                        ))
+                async move {
+                    if finished {
+                        return None;
                     }
-                    Ok(None) => {
-                        if let Some(error) = super::context_length_exceeded_if_empty(
-                            response.message.is_some(),
-                            response.tool_calls.is_some(),
-                            stop_reason.as_ref(),
-                        ) {
-                            return Some((
-                                Err(error),
-                                (event_stream, response, stop_reason, true, model, bedrock),
-                            ));
-                        }
 
-                        if let Some(usage) = response.usage.as_ref() {
-                            if let Err(error) = bedrock.report_usage(&model, usage).await {
+                    match event_stream.recv().await {
+                        Ok(Some(event)) => {
+                            apply_stream_event(&event, &mut response, &mut stop_reason);
+                            Some((
+                                Ok(response.clone()),
+                                (event_stream, response, stop_reason, false, model),
+                            ))
+                        }
+                        Ok(None) => {
+                            if let Some(error) = super::context_length_exceeded_if_empty(
+                                response.message.is_some(),
+                                response.tool_calls.is_some(),
+                                stop_reason.as_ref(),
+                            ) {
                                 return Some((
                                     Err(error),
-                                    (event_stream, response, stop_reason, true, model, bedrock),
+                                    (event_stream, response, stop_reason, true, model),
                                 ));
                             }
-                        }
 
-                        Some((
-                            Ok(response.clone()),
-                            (event_stream, response, stop_reason, true, model, bedrock),
-                        ))
-                    }
-                    Err(error) => Some((
-                        Err(super::converse_stream_output_error_to_language_model_error(
-                            error,
+                            if let Some(usage) = response.usage.as_ref() {
+                                if let Some(callback) = on_usage.as_ref()
+                                    && let Err(error) = callback(usage).await
+                                {
+                                    return Some((
+                                        Err(LanguageModelError::permanent(error)),
+                                        (event_stream, response, stop_reason, true, model),
+                                    ));
+                                }
+
+                                #[cfg(feature = "metrics")]
+                                emit_usage(
+                                    &model,
+                                    usage.prompt_tokens.into(),
+                                    usage.completion_tokens.into(),
+                                    usage.total_tokens.into(),
+                                    metric_metadata.as_ref().as_ref(),
+                                );
+                            }
+
+                            Some((
+                                Ok(response.clone()),
+                                (event_stream, response, stop_reason, true, model),
+                            ))
+                        }
+                        Err(error) => Some((
+                            Err(super::converse_stream_output_error_to_language_model_error(
+                                error,
+                            )),
+                            (event_stream, response, stop_reason, true, model),
                         )),
-                        (event_stream, response, stop_reason, true, model, bedrock),
-                    )),
+                    }
                 }
             },
         );
@@ -204,7 +225,7 @@ fn build_converse_input(
                 }
 
                 if !blocks.is_empty() {
-                    messages.push(assistant_message_from_blocks(blocks)?);
+                    messages.push(message_from_blocks(ConversationRole::Assistant, blocks)?);
                 }
             }
             ChatMessage::ToolOutput(tool_call, output) => {
@@ -220,9 +241,10 @@ fn build_converse_input(
                     .build()
                     .map_err(LanguageModelError::permanent)?;
 
-                messages.push(user_message_from_blocks(vec![ContentBlock::ToolResult(
-                    tool_result,
-                )])?);
+                messages.push(message_from_blocks(
+                    ConversationRole::User,
+                    vec![ContentBlock::ToolResult(tool_result)],
+                )?);
             }
             ChatMessage::Reasoning(_) => {}
         }
@@ -243,7 +265,7 @@ fn build_converse_input(
 }
 
 fn user_message_from_text(text: String) -> Result<Message, LanguageModelError> {
-    user_message_from_blocks(vec![ContentBlock::Text(text)])
+    message_from_blocks(ConversationRole::User, vec![ContentBlock::Text(text)])
 }
 
 fn user_message_from_parts(
@@ -275,17 +297,12 @@ fn user_message_from_parts(
     user_message_from_text(text)
 }
 
-fn user_message_from_blocks(blocks: Vec<ContentBlock>) -> Result<Message, LanguageModelError> {
+fn message_from_blocks(
+    role: ConversationRole,
+    blocks: Vec<ContentBlock>,
+) -> Result<Message, LanguageModelError> {
     Message::builder()
-        .role(ConversationRole::User)
-        .set_content(Some(blocks))
-        .build()
-        .map_err(LanguageModelError::permanent)
-}
-
-fn assistant_message_from_blocks(blocks: Vec<ContentBlock>) -> Result<Message, LanguageModelError> {
-    Message::builder()
-        .role(ConversationRole::Assistant)
+        .role(role)
         .set_content(Some(blocks))
         .build()
         .map_err(LanguageModelError::permanent)

@@ -110,9 +110,9 @@ impl Options {
         self.tool_strict.unwrap_or(true)
     }
 
-    pub fn merge(&mut self, other: &Options) {
-        if let Some(prompt_model) = &other.prompt_model {
-            self.prompt_model = Some(prompt_model.clone());
+    pub fn merge(&mut self, other: Options) {
+        if let Some(prompt_model) = other.prompt_model {
+            self.prompt_model = Some(prompt_model);
         }
         if let Some(max_tokens) = other.max_tokens {
             self.max_tokens = Some(max_tokens);
@@ -123,8 +123,8 @@ impl Options {
         if let Some(top_p) = other.top_p {
             self.top_p = Some(top_p);
         }
-        if let Some(stop_sequences) = &other.stop_sequences {
-            self.stop_sequences = Some(stop_sequences.clone());
+        if let Some(stop_sequences) = other.stop_sequences {
+            self.stop_sequences = Some(stop_sequences);
         }
         if let Some(tool_strict) = other.tool_strict {
             self.tool_strict = Some(tool_strict);
@@ -217,10 +217,11 @@ impl AwsBedrockBuilder {
     ///
     /// Merges with existing options if already set.
     pub fn default_options(&mut self, options: impl Into<Options>) -> &mut Self {
+        let options = options.into();
         if let Some(existing_options) = self.default_options.as_mut() {
-            existing_options.merge(&options.into());
+            existing_options.merge(options);
         } else {
-            self.default_options = Some(options.into());
+            self.default_options = Some(options);
         }
 
         self
