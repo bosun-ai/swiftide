@@ -84,19 +84,20 @@ impl ChatCompletion for MockChatCompletion {
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        let request = request.to_owned();
         let (expected_request, response) =
             self.expectations.lock().unwrap().pop().unwrap_or_else(|| {
                 panic!(
                     "Received completion request, but no expectations are set\n {}",
-                    pretty_request(request)
+                    pretty_request(&request)
                 )
             });
 
         assert_eq!(
             &expected_request,
-            request,
+            &request,
             "Unexpected request\n: {}\nRemaining expectations:\n{}",
-            pretty_request(request),
+            pretty_request(&request),
             pretty_expectation(&(expected_request.clone(), response))
                 + "---\n"
                 + &self
@@ -117,7 +118,7 @@ impl ChatCompletion for MockChatCompletion {
 
             tracing::debug!(
                 "[MockChatCompletion] Received request:\n{}\nResponse:\n{}",
-                pretty_request(request),
+                pretty_request(&request),
                 pretty_response(&response)
             );
             Ok(response)

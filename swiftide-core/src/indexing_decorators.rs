@@ -159,7 +159,6 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use std::collections::HashSet;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -350,10 +349,7 @@ mod tests {
 
         let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
-        let request = ChatCompletionRequest {
-            messages: vec![],
-            tools_spec: HashSet::default(),
-        };
+        let request = ChatCompletionRequest::from_messages(Vec::new());
 
         let result = model_with_backoff.complete(&request).await;
 
@@ -383,10 +379,7 @@ mod tests {
 
         let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
-        let request = ChatCompletionRequest {
-            messages: vec![],
-            tools_spec: HashSet::default(),
-        };
+        let request = ChatCompletionRequest::from_messages(Vec::new());
 
         let result = model_with_backoff.complete(&request).await;
 
@@ -418,10 +411,7 @@ mod tests {
 
         let model_with_backoff = LanguageModelWithBackOff::new(mock_chat, config);
 
-        let request = ChatCompletionRequest {
-            messages: vec![],
-            tools_spec: HashSet::default(),
-        };
+        let request = ChatCompletionRequest::from_messages(Vec::new());
 
         let result = model_with_backoff.complete(&request).await;
 

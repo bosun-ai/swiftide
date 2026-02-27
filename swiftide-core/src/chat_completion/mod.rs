@@ -4,9 +4,8 @@
 //! returns a `ChatCompletionResponse`.
 //!
 //! A chat completion request is comprised of a list of `ChatMessage` to complete, with
-//! optionally tool specifications. The builder provides fluent helpers like `message(...)`
-//! and `tools(...)` so you can accumulate messages and register tool instances directly
-//! while still exposing `tool_specs` for compatibility.
+//! optionally tool specifications. The builder accepts either owned or borrowed messages and
+//! provides `tools(...)` while still exposing `tool_specs` for compatibility.
 mod chat_completion_request;
 mod chat_completion_response;
 mod chat_message;

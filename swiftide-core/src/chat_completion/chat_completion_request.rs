@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 use derive_builder::Builder;
 
@@ -9,7 +9,7 @@ use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 #[derive(Builder, Clone, PartialEq, Debug)]
 #[builder(setter(into, strip_option))]
 pub struct ChatCompletionRequest<'a> {
-    pub messages: Vec<ChatMessage<'a>>,
+    pub messages: Cow<'a, [ChatMessage<'a>]>,
     #[builder(default, setter(custom))]
     pub tools_spec: HashSet<ToolSpec>,
 }
@@ -19,23 +19,47 @@ impl<'a> ChatCompletionRequest<'a> {
         ChatCompletionRequestBuilder::default()
     }
 
+    pub fn from_messages(messages: Vec<ChatMessage<'a>>) -> Self {
+        ChatCompletionRequest {
+            messages: Cow::Owned(messages),
+            tools_spec: HashSet::new(),
+        }
+    }
+
+    pub fn from_message_slice(messages: &'a [ChatMessage<'a>]) -> Self {
+        ChatCompletionRequest {
+            messages: Cow::Borrowed(messages),
+            tools_spec: HashSet::new(),
+        }
+    }
+
     /// Returns the chat messages included in the request.
     pub fn messages(&self) -> &[ChatMessage<'a>] {
-        self.messages.as_slice()
+        self.messages.as_ref()
     }
 
     /// Returns the tool specifications currently attached to the request.
     pub fn tools_spec(&self) -> &HashSet<ToolSpec> {
         &self.tools_spec
     }
+
+    pub fn to_owned(&self) -> ChatCompletionRequest<'static> {
+        ChatCompletionRequest {
+            messages: Cow::Owned(self.messages.iter().map(ChatMessage::to_owned).collect()),
+            tools_spec: self.tools_spec.clone(),
+        }
+    }
 }
 
 impl<'a> From<Vec<ChatMessage<'a>>> for ChatCompletionRequest<'a> {
     fn from(messages: Vec<ChatMessage<'a>>) -> Self {
-        ChatCompletionRequest {
-            messages,
-            tools_spec: HashSet::new(),
-        }
+        Self::from_messages(messages)
+    }
+}
+
+impl<'a> From<&'a [ChatMessage<'a>]> for ChatCompletionRequest<'a> {
+    fn from(messages: &'a [ChatMessage<'a>]) -> Self {
+        Self::from_message_slice(messages)
     }
 }
 
@@ -75,24 +99,6 @@ impl<'a> ChatCompletionRequestBuilder<'a> {
     {
         let entry = self.tools_spec.get_or_insert_with(HashSet::new);
         entry.extend(specs);
-        self
-    }
-
-    /// Appends a single chat message to the request.
-    pub fn message(&mut self, message: impl Into<ChatMessage<'a>>) -> &mut Self {
-        self.messages
-            .get_or_insert_with(Vec::new)
-            .push(message.into());
-        self
-    }
-
-    /// Extends the request with multiple chat messages.
-    pub fn messages_iter<I>(&mut self, messages: I) -> &mut Self
-    where
-        I: IntoIterator<Item = ChatMessage<'a>>,
-    {
-        let entry = self.messages.get_or_insert_with(Vec::new);
-        entry.extend(messages);
         self
     }
 }
