@@ -81,12 +81,20 @@ mod tests {
         bedrock_mock
             .expect_converse()
             .once()
-            .withf(|model_id, messages, system, inference_config, tool_config, output_config| {
-                model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
-                    && messages.len() == 1
-                    && matches!(messages[0].role(), ConversationRole::User)
-                    && matches!(messages[0].content().first(), Some(ContentBlock::Text(text)) if text == "Hello")
-                    && system.is_none()
+            .withf(
+                |model_id,
+                 messages,
+                 system,
+                 inference_config,
+                 tool_config,
+                 output_config,
+                 _additional_model_request_fields,
+                 _additional_model_response_field_paths| {
+                    model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+                        && messages.len() == 1
+                        && matches!(messages[0].role(), ConversationRole::User)
+                        && matches!(messages[0].content().first(), Some(ContentBlock::Text(text)) if text == "Hello")
+                        && system.is_none()
                     && tool_config.is_none()
                     && output_config.is_none()
                     && inference_config
@@ -97,8 +105,9 @@ mod tests {
                                 && config.top_p() == Some(0.9)
                                 && config.stop_sequences() == ["STOP"]
                         })
-            })
-            .returning(|_, _, _, _, _, _| Ok(response_with_text("Hello, world!")));
+                },
+            )
+            .returning(|_, _, _, _, _, _, _, _| Ok(response_with_text("Hello, world!")));
 
         let bedrock = AwsBedrock::builder()
             .test_client(bedrock_mock)
@@ -125,7 +134,7 @@ mod tests {
         bedrock_mock
             .expect_converse()
             .once()
-            .returning(|_, _, _, _, _, _| {
+            .returning(|_, _, _, _, _, _, _, _| {
                 Ok(ConverseOutput::builder()
                     .stop_reason(StopReason::ModelContextWindowExceeded)
                     .build()
@@ -153,7 +162,7 @@ mod tests {
         bedrock_mock
             .expect_converse()
             .once()
-            .returning(|_, _, _, _, _, _| {
+            .returning(|_, _, _, _, _, _, _, _| {
                 Ok(ConverseOutput::builder()
                     .output(ConverseResult::Message(
                         Message::builder()

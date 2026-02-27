@@ -15,6 +15,7 @@ use aws_sdk_bedrockruntime::{
         ToolConfiguration, error::ConverseStreamOutputError,
     },
 };
+use aws_smithy_types::Document;
 use derive_builder::Builder;
 use swiftide_core::chat_completion::{
     InputTokenDetails, Usage, UsageDetails, errors::LanguageModelError,
@@ -99,6 +100,16 @@ pub struct Options {
     /// Defaults to `true` when not set.
     #[builder(default)]
     pub tool_strict: Option<bool>,
+
+    /// Provider-specific model request parameters passed to Converse.
+    ///
+    /// This is the Bedrock equivalent of model-specific reasoning controls.
+    #[builder(default)]
+    pub additional_model_request_fields: Option<Document>,
+
+    /// JSON Pointer paths for model-specific response fields.
+    #[builder(default, setter(into))]
+    pub additional_model_response_field_paths: Option<Vec<String>>,
 }
 
 impl Options {
@@ -128,6 +139,15 @@ impl Options {
         }
         if let Some(tool_strict) = other.tool_strict {
             self.tool_strict = Some(tool_strict);
+        }
+        if let Some(additional_model_request_fields) = other.additional_model_request_fields {
+            self.additional_model_request_fields = Some(additional_model_request_fields);
+        }
+        if let Some(additional_model_response_field_paths) =
+            other.additional_model_response_field_paths
+        {
+            self.additional_model_response_field_paths =
+                Some(additional_model_response_field_paths);
         }
     }
 }
@@ -281,6 +301,8 @@ trait BedrockConverse: std::fmt::Debug + Send + Sync {
         inference_config: Option<InferenceConfiguration>,
         tool_config: Option<ToolConfiguration>,
         output_config: Option<OutputConfig>,
+        additional_model_request_fields: Option<Document>,
+        additional_model_response_field_paths: Option<Vec<String>>,
     ) -> Result<ConverseOutput, LanguageModelError>;
 
     async fn converse_stream(
@@ -290,6 +312,8 @@ trait BedrockConverse: std::fmt::Debug + Send + Sync {
         system: Option<Vec<SystemContentBlock>>,
         inference_config: Option<InferenceConfiguration>,
         tool_config: Option<ToolConfiguration>,
+        additional_model_request_fields: Option<Document>,
+        additional_model_response_field_paths: Option<Vec<String>>,
     ) -> Result<BedrockConverseStreamOutput, LanguageModelError>;
 }
 
@@ -303,6 +327,8 @@ impl BedrockConverse for Client {
         inference_config: Option<InferenceConfiguration>,
         tool_config: Option<ToolConfiguration>,
         output_config: Option<OutputConfig>,
+        additional_model_request_fields: Option<Document>,
+        additional_model_response_field_paths: Option<Vec<String>>,
     ) -> Result<ConverseOutput, LanguageModelError> {
         let mut request = self
             .converse()
@@ -310,7 +336,9 @@ impl BedrockConverse for Client {
             .set_messages(Some(messages))
             .set_system(system)
             .set_tool_config(tool_config)
-            .set_output_config(output_config);
+            .set_output_config(output_config)
+            .set_additional_model_request_fields(additional_model_request_fields)
+            .set_additional_model_response_field_paths(additional_model_response_field_paths);
 
         if let Some(inference_config) = inference_config {
             request = request.inference_config(inference_config);
@@ -329,13 +357,17 @@ impl BedrockConverse for Client {
         system: Option<Vec<SystemContentBlock>>,
         inference_config: Option<InferenceConfiguration>,
         tool_config: Option<ToolConfiguration>,
+        additional_model_request_fields: Option<Document>,
+        additional_model_response_field_paths: Option<Vec<String>>,
     ) -> Result<BedrockConverseStreamOutput, LanguageModelError> {
         let mut request = self
             .converse_stream()
             .model_id(model_id)
             .set_messages(Some(messages))
             .set_system(system)
-            .set_tool_config(tool_config);
+            .set_tool_config(tool_config)
+            .set_additional_model_request_fields(additional_model_request_fields)
+            .set_additional_model_response_field_paths(additional_model_response_field_paths);
 
         if let Some(inference_config) = inference_config {
             request = request.inference_config(inference_config);
@@ -477,10 +509,12 @@ fn usage_from_bedrock(usage: &TokenUsage) -> Usage {
 fn context_length_exceeded_if_empty(
     has_message: bool,
     has_tool_calls: bool,
+    has_reasoning: bool,
     stop_reason: Option<&StopReason>,
 ) -> Option<LanguageModelError> {
     if has_message
         || has_tool_calls
+        || has_reasoning
         || !matches!(stop_reason, Some(StopReason::ModelContextWindowExceeded))
     {
         return None;

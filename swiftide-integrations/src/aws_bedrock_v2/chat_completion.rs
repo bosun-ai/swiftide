@@ -7,8 +7,9 @@ use aws_sdk_bedrockruntime::{
     types::{
         AutoToolChoice, ContentBlock, ContentBlockDelta, ContentBlockStart, ConversationRole,
         ConverseOutput as ConverseResult, ConverseStreamOutput, InferenceConfiguration, Message,
-        StopReason, SystemContentBlock, Tool, ToolChoice, ToolConfiguration, ToolInputSchema,
-        ToolResultBlock, ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
+        ReasoningContentBlock, ReasoningContentBlockDelta, ReasoningTextBlock, StopReason,
+        SystemContentBlock, Tool, ToolChoice, ToolConfiguration, ToolInputSchema, ToolResultBlock,
+        ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
     },
 };
 use aws_smithy_types::{Document, Number};
@@ -18,7 +19,7 @@ use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
         ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
-        ToolCall, ToolOutput, ToolSpec, errors::LanguageModelError,
+        ReasoningItem, ToolCall, ToolOutput, ToolSpec, errors::LanguageModelError,
     },
 };
 
@@ -47,7 +48,18 @@ impl ChatCompletion for AwsBedrock {
 
         let response = self
             .client
-            .converse(model, messages, system, inference_config, tool_config, None)
+            .converse(
+                model,
+                messages,
+                system,
+                inference_config,
+                tool_config,
+                None,
+                self.default_options.additional_model_request_fields.clone(),
+                self.default_options
+                    .additional_model_response_field_paths
+                    .clone(),
+            )
             .await?;
 
         tracing::debug!(response = ?response, "[ChatCompletion] Response from bedrock converse");
@@ -57,6 +69,10 @@ impl ChatCompletion for AwsBedrock {
         if let Some(error) = super::context_length_exceeded_if_empty(
             completion.message.is_some(),
             completion.tool_calls.is_some(),
+            completion
+                .reasoning
+                .as_ref()
+                .is_some_and(|reasoning| !reasoning.is_empty()),
             Some(response.stop_reason()),
         ) {
             return Err(error);
@@ -84,7 +100,17 @@ impl ChatCompletion for AwsBedrock {
 
         let stream_output = match self
             .client
-            .converse_stream(&model, messages, system, inference_config, tool_config)
+            .converse_stream(
+                &model,
+                messages,
+                system,
+                inference_config,
+                tool_config,
+                self.default_options.additional_model_request_fields.clone(),
+                self.default_options
+                    .additional_model_response_field_paths
+                    .clone(),
+            )
             .await
         {
             Ok(stream_output) => stream_output,
@@ -126,6 +152,10 @@ impl ChatCompletion for AwsBedrock {
                             if let Some(error) = super::context_length_exceeded_if_empty(
                                 response.message.is_some(),
                                 response.tool_calls.is_some(),
+                                response
+                                    .reasoning
+                                    .as_ref()
+                                    .is_some_and(|reasoning| !reasoning.is_empty()),
                                 stop_reason.as_ref(),
                             ) {
                                 return Some((
@@ -246,7 +276,11 @@ fn build_converse_input(
                     vec![ContentBlock::ToolResult(tool_result)],
                 )?);
             }
-            ChatMessage::Reasoning(_) => {}
+            ChatMessage::Reasoning(item) => {
+                if let Some(reasoning_message) = assistant_reasoning_message_from_item(item)? {
+                    messages.push(reasoning_message);
+                }
+            }
         }
     }
 
@@ -383,18 +417,22 @@ fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageM
 pub(super) fn response_to_chat_completion(
     response: &ConverseOutput,
 ) -> Result<ChatCompletionResponse, LanguageModelError> {
-    let (message, tool_calls) = match response.output() {
+    let (message, tool_calls, reasoning) = match response.output() {
         Some(output) => match output {
             ConverseResult::Message(message) => extract_message_and_tool_calls(message)?,
-            _ => (None, None),
+            _ => (None, None, Vec::new()),
         },
-        None => (None, None),
+        None => (None, None, Vec::new()),
     };
 
     let mut builder = ChatCompletionResponse::builder()
         .maybe_message(message)
         .maybe_tool_calls(tool_calls)
         .to_owned();
+
+    if !reasoning.is_empty() {
+        builder.reasoning(reasoning);
+    }
 
     if let Some(usage) = response.usage() {
         builder.usage(super::usage_from_bedrock(usage));
@@ -405,12 +443,13 @@ pub(super) fn response_to_chat_completion(
 
 fn extract_message_and_tool_calls(
     message: &Message,
-) -> Result<(Option<String>, Option<Vec<ToolCall>>), LanguageModelError> {
+) -> Result<(Option<String>, Option<Vec<ToolCall>>, Vec<ReasoningItem>), LanguageModelError> {
     let mut text = String::new();
     let mut has_text = false;
     let mut tool_calls = Vec::with_capacity(message.content().len());
+    let mut reasoning = Vec::new();
 
-    for block in message.content() {
+    for (content_block_index, block) in message.content().iter().enumerate() {
         match block {
             ContentBlock::Text(block_text) => {
                 text.push_str(block_text);
@@ -426,6 +465,15 @@ fn extract_message_and_tool_calls(
                     .map_err(LanguageModelError::permanent)?;
                 tool_calls.push(tool_call);
             }
+            ContentBlock::ReasoningContent(ReasoningContentBlock::ReasoningText(
+                reasoning_text,
+            )) => {
+                reasoning.push(reasoning_item_from_reasoning_text(
+                    content_block_index,
+                    reasoning_text.text(),
+                    reasoning_text.signature(),
+                ));
+            }
             _ => {}
         }
     }
@@ -433,7 +481,7 @@ fn extract_message_and_tool_calls(
     let message = has_text.then_some(text);
     let tool_calls = (!tool_calls.is_empty()).then_some(tool_calls);
 
-    Ok((message, tool_calls))
+    Ok((message, tool_calls, reasoning))
 }
 
 fn document_to_json_string(document: &Document) -> Result<String, LanguageModelError> {
@@ -474,6 +522,9 @@ fn apply_stream_event(
                 ContentBlockDelta::ToolUse(delta) => {
                     response.append_tool_call_delta(index, None, None, Some(delta.input()));
                 }
+                ContentBlockDelta::ReasoningContent(delta) => {
+                    apply_reasoning_delta(response, index, delta);
+                }
                 _ => {}
             }
         }
@@ -487,6 +538,102 @@ fn apply_stream_event(
         }
         _ => {}
     }
+}
+
+fn assistant_reasoning_message_from_item(
+    item: &ReasoningItem,
+) -> Result<Option<Message>, LanguageModelError> {
+    let text = item
+        .content
+        .as_ref()
+        .and_then(|content| content.first())
+        .map(String::as_str)
+        .filter(|text| !text.is_empty());
+    let signature = item
+        .encrypted_content
+        .as_deref()
+        .filter(|value| !value.is_empty());
+
+    let (Some(text), Some(signature)) = (text, signature) else {
+        return Ok(None);
+    };
+
+    let reasoning_text_block = ReasoningTextBlock::builder()
+        .text(text)
+        .signature(signature)
+        .build()
+        .map_err(LanguageModelError::permanent)?;
+
+    message_from_blocks(
+        ConversationRole::Assistant,
+        vec![ContentBlock::ReasoningContent(
+            ReasoningContentBlock::ReasoningText(reasoning_text_block),
+        )],
+    )
+    .map(Some)
+}
+
+fn reasoning_item_from_reasoning_text(
+    content_block_index: usize,
+    text: &str,
+    signature: Option<&str>,
+) -> ReasoningItem {
+    ReasoningItem {
+        id: format!("bedrock_reasoning_{content_block_index}"),
+        summary: Vec::new(),
+        content: Some(vec![text.to_string()]),
+        encrypted_content: signature.map(ToString::to_string),
+        status: None,
+    }
+}
+
+fn apply_reasoning_delta(
+    response: &mut ChatCompletionResponse,
+    content_block_index: usize,
+    delta: &ReasoningContentBlockDelta,
+) {
+    let reasoning_item = ensure_reasoning_item(response, content_block_index);
+
+    match delta {
+        ReasoningContentBlockDelta::Text(text) => {
+            let content = reasoning_item
+                .content
+                .get_or_insert_with(|| vec![String::new()]);
+            if content.is_empty() {
+                content.push(String::new());
+            }
+            content[0].push_str(text);
+        }
+        ReasoningContentBlockDelta::Signature(signature) => {
+            reasoning_item.encrypted_content = Some(signature.clone());
+        }
+        _ => {}
+    }
+}
+
+fn ensure_reasoning_item(
+    response: &mut ChatCompletionResponse,
+    content_block_index: usize,
+) -> &mut ReasoningItem {
+    let reasoning = response.reasoning.get_or_insert_with(Vec::new);
+    let reasoning_id = format!("bedrock_reasoning_{content_block_index}");
+    if let Some(position) = reasoning.iter().position(|item| item.id == reasoning_id) {
+        return reasoning
+            .get_mut(position)
+            .expect("position from iter().position must exist");
+    }
+
+    reasoning.push(ReasoningItem {
+        id: reasoning_id,
+        summary: Vec::new(),
+        content: None,
+        encrypted_content: None,
+        status: None,
+    });
+
+    reasoning
+        .last_mut()
+        .expect("pushed reasoning item must exist")
 }
 
 fn json_value_to_document(value: &serde_json::Value) -> Result<Document, LanguageModelError> {
@@ -554,12 +701,13 @@ mod tests {
         operation::converse::ConverseOutput,
         types::{
             ContentBlockDeltaEvent, ContentBlockStart, ContentBlockStartEvent,
-            ConverseOutput as ConverseResult, Message, MessageStopEvent, StopReason, TokenUsage,
+            ConverseOutput as ConverseResult, Message, MessageStopEvent, ReasoningContentBlock,
+            ReasoningContentBlockDelta, ReasoningTextBlock, StopReason, TokenUsage,
             ToolUseBlockDelta, ToolUseBlockStart,
         },
     };
     use schemars::{JsonSchema, schema_for};
-    use swiftide_core::chat_completion::{ChatMessage, ToolSpec};
+    use swiftide_core::chat_completion::{ChatMessage, ReasoningItem, ToolSpec};
 
     use super::*;
     use crate::aws_bedrock_v2::{AwsBedrock, MockBedrockConverse};
@@ -613,7 +761,14 @@ mod tests {
             .expect_converse()
             .once()
             .withf(
-                |model_id, messages, system, inference_config, tool_config, output_config| {
+                |model_id,
+                 messages,
+                 system,
+                 inference_config,
+                 tool_config,
+                 output_config,
+                 _additional_model_request_fields,
+                 _additional_model_response_field_paths| {
                     model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
                         && messages.len() == 1
                         && system.is_none()
@@ -622,7 +777,7 @@ mod tests {
                         && output_config.is_none()
                 },
             )
-            .returning(|_, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
+            .returning(|_, _, _, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
 
         let bedrock = AwsBedrock::builder()
             .test_client(bedrock_mock)
@@ -653,6 +808,70 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn test_complete_passes_additional_model_fields() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        let mut thinking = HashMap::new();
+        thinking.insert("type".to_string(), Document::String("enabled".to_string()));
+        thinking.insert(
+            "budget_tokens".to_string(),
+            Document::Number(Number::PosInt(512)),
+        );
+        let mut request_fields = HashMap::new();
+        request_fields.insert("thinking".to_string(), Document::Object(thinking));
+        let request_fields = Document::Object(request_fields);
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .withf(
+                |model_id,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _,
+                 additional_model_request_fields,
+                 additional_model_response_field_paths| {
+                    model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+                        && additional_model_request_fields
+                            .as_ref()
+                            .is_some_and(|fields| {
+                                fields
+                                    .as_object()
+                                    .and_then(|map| map.get("thinking"))
+                                    .and_then(Document::as_object)
+                                    .and_then(|thinking| thinking.get("type"))
+                                    .and_then(Document::as_string)
+                                    == Some("enabled")
+                            })
+                        && additional_model_response_field_paths
+                            .as_ref()
+                            .is_some_and(|paths| paths == &vec!["/thinking".to_string()])
+                },
+            )
+            .returning(|_, _, _, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .default_options(Options {
+                additional_model_request_fields: Some(request_fields),
+                additional_model_response_field_paths: Some(vec!["/thinking".to_string()]),
+                ..Default::default()
+            })
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello".into())])
+            .build()
+            .unwrap();
+
+        let _ = bedrock.complete(&request).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
     #[allow(deprecated)]
     async fn test_complete_respects_tool_strict_option() {
         let mut bedrock_mock = MockBedrockConverse::new();
@@ -660,18 +879,27 @@ mod tests {
         bedrock_mock
             .expect_converse()
             .once()
-            .withf(|model_id, _, _, _, tool_config, output_config| {
-                model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
-                    && output_config.is_none()
-                    && tool_config
-                        .as_ref()
-                        .and_then(|config| config.tools().first())
-                        .is_some_and(|tool| match tool {
-                            Tool::ToolSpec(spec) => spec.strict() == Some(false),
-                            _ => false,
-                        })
-            })
-            .returning(|_, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
+            .withf(
+                |model_id,
+                 _,
+                 _,
+                 _,
+                 tool_config,
+                 output_config,
+                 _additional_model_request_fields,
+                 _additional_model_response_field_paths| {
+                    model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+                        && output_config.is_none()
+                        && tool_config
+                            .as_ref()
+                            .and_then(|config| config.tools().first())
+                            .is_some_and(|tool| match tool {
+                                Tool::ToolSpec(spec) => spec.strict() == Some(false),
+                                _ => false,
+                            })
+                },
+            )
+            .returning(|_, _, _, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
 
         let bedrock = AwsBedrock::builder()
             .test_client(bedrock_mock)
@@ -746,6 +974,72 @@ mod tests {
     }
 
     #[test]
+    fn test_response_to_chat_completion_maps_reasoning_content() {
+        let response = ConverseOutput::builder()
+            .output(ConverseResult::Message(
+                Message::builder()
+                    .role(ConversationRole::Assistant)
+                    .content(ContentBlock::ReasoningContent(
+                        ReasoningContentBlock::ReasoningText(
+                            ReasoningTextBlock::builder()
+                                .text("I should call a weather tool")
+                                .signature("sig_123")
+                                .build()
+                                .unwrap(),
+                        ),
+                    ))
+                    .content(ContentBlock::Text("Working on it".to_string()))
+                    .build()
+                    .unwrap(),
+            ))
+            .stop_reason(StopReason::EndTurn)
+            .build()
+            .unwrap();
+
+        let completion = response_to_chat_completion(&response).unwrap();
+        assert_eq!(completion.message.as_deref(), Some("Working on it"));
+        let reasoning = completion.reasoning.expect("reasoning items");
+        assert_eq!(reasoning.len(), 1);
+        assert_eq!(reasoning[0].id, "bedrock_reasoning_0");
+        assert_eq!(
+            reasoning[0].content.as_ref().and_then(|c| c.first()),
+            Some(&"I should call a weather tool".to_string())
+        );
+        assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("sig_123"));
+    }
+
+    #[test]
+    fn test_build_converse_input_replays_reasoning_items() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![
+                ChatMessage::Reasoning(ReasoningItem {
+                    id: "r1".to_string(),
+                    summary: Vec::new(),
+                    content: Some(vec!["I should call a weather tool".to_string()]),
+                    encrypted_content: Some("sig_123".to_string()),
+                    status: None,
+                }),
+                ChatMessage::User("Use tool".to_string()),
+            ])
+            .build()
+            .unwrap();
+
+        let (messages, _system, _inference, _tool_config) =
+            build_converse_input(&request, &Options::default()).unwrap();
+
+        assert_eq!(messages.len(), 2);
+        assert!(matches!(messages[0].role(), ConversationRole::Assistant));
+        let reasoning = messages[0]
+            .content()
+            .first()
+            .and_then(|content| content.as_reasoning_content().ok())
+            .and_then(|content| content.as_reasoning_text().ok())
+            .expect("reasoning content");
+        assert_eq!(reasoning.text(), "I should call a weather tool");
+        assert_eq!(reasoning.signature(), Some("sig_123"));
+    }
+
+    #[test]
     fn test_apply_stream_event_accumulates_deltas() {
         let mut response = ChatCompletionResponse::default();
         let mut stop_reason = None;
@@ -798,6 +1092,34 @@ mod tests {
         );
 
         apply_stream_event(
+            &ConverseStreamOutput::ContentBlockDelta(
+                ContentBlockDeltaEvent::builder()
+                    .content_block_index(2)
+                    .delta(ContentBlockDelta::ReasoningContent(
+                        ReasoningContentBlockDelta::Text("Thinking...".to_string()),
+                    ))
+                    .build()
+                    .unwrap(),
+            ),
+            &mut response,
+            &mut stop_reason,
+        );
+
+        apply_stream_event(
+            &ConverseStreamOutput::ContentBlockDelta(
+                ContentBlockDeltaEvent::builder()
+                    .content_block_index(2)
+                    .delta(ContentBlockDelta::ReasoningContent(
+                        ReasoningContentBlockDelta::Signature("sig_123".to_string()),
+                    ))
+                    .build()
+                    .unwrap(),
+            ),
+            &mut response,
+            &mut stop_reason,
+        );
+
+        apply_stream_event(
             &ConverseStreamOutput::Metadata(
                 aws_sdk_bedrockruntime::types::ConverseStreamMetadataEvent::builder()
                     .usage(
@@ -834,6 +1156,14 @@ mod tests {
         assert_eq!(tool_call.id(), "call_1");
         assert_eq!(tool_call.name(), "get_weather");
         assert_eq!(tool_call.args(), Some("{\"location\":\"Amsterdam\"}"));
+        let reasoning = response.reasoning.expect("reasoning item");
+        assert_eq!(reasoning.len(), 1);
+        assert_eq!(reasoning[0].id, "bedrock_reasoning_2");
+        assert_eq!(
+            reasoning[0].content.as_ref().and_then(|c| c.first()),
+            Some(&"Thinking...".to_string())
+        );
+        assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("sig_123"));
         assert_eq!(response.usage.unwrap().total_tokens, 8);
         assert!(matches!(stop_reason, Some(StopReason::ToolUse)));
     }
