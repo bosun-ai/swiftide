@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 use super::tools::{ToolCall, ToolOutput};
@@ -28,69 +30,96 @@ pub enum ReasoningStatus {
     Incomplete,
 }
 
+pub type ChatMessageContentSource = ChatMessageContentSourceValue<'static>;
+pub type ChatMessageContentPart = ChatMessageContentPartValue<'static>;
+pub type ChatMessage = ChatMessageValue<'static>;
+
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum ChatMessageContentSource {
+pub enum ChatMessageContentSourceValue<'a> {
     Url {
-        url: String,
+        url: Cow<'a, str>,
     },
     Bytes {
-        data: Vec<u8>,
+        data: Cow<'a, [u8]>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        media_type: Option<String>,
+        media_type: Option<Cow<'a, str>>,
     },
     S3 {
-        uri: String,
+        uri: Cow<'a, str>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        bucket_owner: Option<String>,
+        bucket_owner: Option<Cow<'a, str>>,
     },
     FileId {
-        file_id: String,
+        file_id: Cow<'a, str>,
     },
 }
 
-impl ChatMessageContentSource {
-    pub fn url(url: impl Into<String>) -> Self {
+impl<'a> ChatMessageContentSourceValue<'a> {
+    pub fn url(url: impl Into<Cow<'a, str>>) -> Self {
         Self::Url { url: url.into() }
     }
 
-    pub fn bytes(data: impl Into<Vec<u8>>, media_type: Option<String>) -> Self {
+    pub fn bytes<M>(data: impl Into<Cow<'a, [u8]>>, media_type: Option<M>) -> Self
+    where
+        M: Into<Cow<'a, str>>,
+    {
         Self::Bytes {
             data: data.into(),
-            media_type,
+            media_type: media_type.map(Into::into),
         }
     }
 
-    pub fn s3(uri: impl Into<String>, bucket_owner: Option<String>) -> Self {
+    pub fn s3<O>(uri: impl Into<Cow<'a, str>>, bucket_owner: Option<O>) -> Self
+    where
+        O: Into<Cow<'a, str>>,
+    {
         Self::S3 {
             uri: uri.into(),
-            bucket_owner,
+            bucket_owner: bucket_owner.map(Into::into),
         }
     }
 
-    pub fn file_id(file_id: impl Into<String>) -> Self {
+    pub fn file_id(file_id: impl Into<Cow<'a, str>>) -> Self {
         Self::FileId {
             file_id: file_id.into(),
         }
     }
 }
 
-impl From<String> for ChatMessageContentSource {
+impl From<String> for ChatMessageContentSourceValue<'static> {
     fn from(value: String) -> Self {
-        Self::Url { url: value }
-    }
-}
-
-impl From<&str> for ChatMessageContentSource {
-    fn from(value: &str) -> Self {
         Self::Url {
-            url: value.to_owned(),
+            url: Cow::Owned(value),
         }
     }
 }
 
-impl From<Vec<u8>> for ChatMessageContentSource {
+impl<'a> From<Cow<'a, str>> for ChatMessageContentSourceValue<'a> {
+    fn from(value: Cow<'a, str>) -> Self {
+        Self::Url { url: value }
+    }
+}
+
+impl<'a> From<&'a str> for ChatMessageContentSourceValue<'a> {
+    fn from(value: &'a str) -> Self {
+        Self::Url {
+            url: Cow::Borrowed(value),
+        }
+    }
+}
+
+impl From<Vec<u8>> for ChatMessageContentSourceValue<'static> {
     fn from(value: Vec<u8>) -> Self {
+        Self::Bytes {
+            data: Cow::Owned(value),
+            media_type: None,
+        }
+    }
+}
+
+impl<'a> From<Cow<'a, [u8]>> for ChatMessageContentSourceValue<'a> {
+    fn from(value: Cow<'a, [u8]>) -> Self {
         Self::Bytes {
             data: value,
             media_type: None,
@@ -98,24 +127,33 @@ impl From<Vec<u8>> for ChatMessageContentSource {
     }
 }
 
-impl std::fmt::Debug for ChatMessageContentSource {
+impl<'a> From<&'a [u8]> for ChatMessageContentSourceValue<'a> {
+    fn from(value: &'a [u8]) -> Self {
+        Self::Bytes {
+            data: Cow::Borrowed(value),
+            media_type: None,
+        }
+    }
+}
+
+impl std::fmt::Debug for ChatMessageContentSourceValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChatMessageContentSource::Url { url } => f
+            ChatMessageContentSourceValue::Url { url } => f
                 .debug_struct("Url")
                 .field("url", &truncate_data_url(url))
                 .finish(),
-            ChatMessageContentSource::Bytes { data, media_type } => f
+            ChatMessageContentSourceValue::Bytes { data, media_type } => f
                 .debug_struct("Bytes")
                 .field("len", &data.len())
                 .field("media_type", media_type)
                 .finish(),
-            ChatMessageContentSource::S3 { uri, bucket_owner } => f
+            ChatMessageContentSourceValue::S3 { uri, bucket_owner } => f
                 .debug_struct("S3")
                 .field("uri", uri)
                 .field("bucket_owner", bucket_owner)
                 .finish(),
-            ChatMessageContentSource::FileId { file_id } => {
+            ChatMessageContentSourceValue::FileId { file_id } => {
                 f.debug_struct("FileId").field("file_id", file_id).finish()
             }
         }
@@ -124,58 +162,58 @@ impl std::fmt::Debug for ChatMessageContentSource {
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum ChatMessageContentPart {
+pub enum ChatMessageContentPartValue<'a> {
     Text {
-        text: String,
+        text: Cow<'a, str>,
     },
     Image {
-        source: ChatMessageContentSource,
+        source: ChatMessageContentSourceValue<'a>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        format: Option<String>,
+        format: Option<Cow<'a, str>>,
     },
     Document {
-        source: ChatMessageContentSource,
+        source: ChatMessageContentSourceValue<'a>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        format: Option<String>,
+        format: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        name: Option<String>,
+        name: Option<Cow<'a, str>>,
     },
     Audio {
-        source: ChatMessageContentSource,
+        source: ChatMessageContentSourceValue<'a>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        format: Option<String>,
+        format: Option<Cow<'a, str>>,
     },
     Video {
-        source: ChatMessageContentSource,
+        source: ChatMessageContentSourceValue<'a>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        format: Option<String>,
+        format: Option<Cow<'a, str>>,
     },
 }
 
-impl ChatMessageContentPart {
-    pub fn text(text: impl Into<String>) -> Self {
-        ChatMessageContentPart::Text { text: text.into() }
+impl<'a> ChatMessageContentPartValue<'a> {
+    pub fn text(text: impl Into<Cow<'a, str>>) -> Self {
+        Self::Text { text: text.into() }
     }
 
-    pub fn image(source: impl Into<ChatMessageContentSource>) -> Self {
-        ChatMessageContentPart::Image {
+    pub fn image(source: impl Into<ChatMessageContentSourceValue<'a>>) -> Self {
+        Self::Image {
             source: source.into(),
             format: None,
         }
     }
 
     pub fn image_with_format(
-        source: impl Into<ChatMessageContentSource>,
-        format: impl Into<String>,
+        source: impl Into<ChatMessageContentSourceValue<'a>>,
+        format: impl Into<Cow<'a, str>>,
     ) -> Self {
-        ChatMessageContentPart::Image {
+        Self::Image {
             source: source.into(),
             format: Some(format.into()),
         }
     }
 
-    pub fn document(source: impl Into<ChatMessageContentSource>) -> Self {
-        ChatMessageContentPart::Document {
+    pub fn document(source: impl Into<ChatMessageContentSourceValue<'a>>) -> Self {
+        Self::Document {
             source: source.into(),
             format: None,
             name: None,
@@ -183,43 +221,43 @@ impl ChatMessageContentPart {
     }
 
     pub fn document_with_name(
-        source: impl Into<ChatMessageContentSource>,
-        name: impl Into<String>,
+        source: impl Into<ChatMessageContentSourceValue<'a>>,
+        name: impl Into<Cow<'a, str>>,
     ) -> Self {
-        ChatMessageContentPart::Document {
+        Self::Document {
             source: source.into(),
             format: None,
             name: Some(name.into()),
         }
     }
 
-    pub fn audio(source: impl Into<ChatMessageContentSource>) -> Self {
-        ChatMessageContentPart::Audio {
+    pub fn audio(source: impl Into<ChatMessageContentSourceValue<'a>>) -> Self {
+        Self::Audio {
             source: source.into(),
             format: None,
         }
     }
 
-    pub fn video(source: impl Into<ChatMessageContentSource>) -> Self {
-        ChatMessageContentPart::Video {
+    pub fn video(source: impl Into<ChatMessageContentSourceValue<'a>>) -> Self {
+        Self::Video {
             source: source.into(),
             format: None,
         }
     }
 }
 
-impl std::fmt::Debug for ChatMessageContentPart {
+impl std::fmt::Debug for ChatMessageContentPartValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChatMessageContentPart::Text { text } => {
+            ChatMessageContentPartValue::Text { text } => {
                 f.debug_struct("Text").field("text", text).finish()
             }
-            ChatMessageContentPart::Image { source, format } => f
+            ChatMessageContentPartValue::Image { source, format } => f
                 .debug_struct("Image")
                 .field("source", source)
                 .field("format", format)
                 .finish(),
-            ChatMessageContentPart::Document {
+            ChatMessageContentPartValue::Document {
                 source,
                 format,
                 name,
@@ -229,12 +267,12 @@ impl std::fmt::Debug for ChatMessageContentPart {
                 .field("format", format)
                 .field("name", name)
                 .finish(),
-            ChatMessageContentPart::Audio { source, format } => f
+            ChatMessageContentPartValue::Audio { source, format } => f
                 .debug_struct("Audio")
                 .field("source", source)
                 .field("format", format)
                 .finish(),
-            ChatMessageContentPart::Video { source, format } => f
+            ChatMessageContentPartValue::Video { source, format } => f
                 .debug_struct("Video")
                 .field("source", source)
                 .field("format", format)
@@ -244,25 +282,25 @@ impl std::fmt::Debug for ChatMessageContentPart {
 }
 
 #[derive(Clone, strum_macros::EnumIs, PartialEq, Debug, Serialize, Deserialize)]
-pub enum ChatMessage {
-    System(String),
-    User(String),
-    UserWithParts(Vec<ChatMessageContentPart>),
-    Assistant(Option<String>, Option<Vec<ToolCall>>),
+pub enum ChatMessageValue<'a> {
+    System(Cow<'a, str>),
+    User(Cow<'a, str>),
+    UserWithParts(Vec<ChatMessageContentPartValue<'a>>),
+    Assistant(Option<Cow<'a, str>>, Option<Vec<ToolCall>>),
     ToolOutput(ToolCall, ToolOutput),
     Reasoning(ReasoningItem),
 
     // A summary of the chat. If encountered all previous messages are ignored, except the system
     // prompt
-    Summary(String),
+    Summary(Cow<'a, str>),
 }
 
-impl std::fmt::Display for ChatMessage {
+impl std::fmt::Display for ChatMessageValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChatMessage::System(s) => write!(f, "System: \"{s}\""),
-            ChatMessage::User(s) => write!(f, "User: \"{s}\""),
-            ChatMessage::UserWithParts(parts) => {
+            Self::System(s) => write!(f, "System: \"{s}\""),
+            Self::User(s) => write!(f, "User: \"{s}\""),
+            Self::UserWithParts(parts) => {
                 let (text, attachments) = summarize_user_parts(parts);
                 if attachments == 0 {
                     write!(f, "User: \"{text}\"")
@@ -270,7 +308,7 @@ impl std::fmt::Display for ChatMessage {
                     write!(f, "User: \"{text}\", attachments: {attachments}")
                 }
             }
-            ChatMessage::Assistant(content, tool_calls) => write!(
+            Self::Assistant(content, tool_calls) => write!(
                 f,
                 "Assistant: \"{}\", tools: {}",
                 content.as_deref().unwrap_or("None"),
@@ -281,48 +319,72 @@ impl std::fmt::Display for ChatMessage {
                         .join(", ")
                 })
             ),
-            ChatMessage::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
-            ChatMessage::Reasoning(item) => write!(
+            Self::ToolOutput(tc, to) => write!(f, "ToolOutput: \"{tc}\": \"{to}\""),
+            Self::Reasoning(item) => write!(
                 f,
                 "Reasoning: \"{}\", encrypted: {}",
                 item.summary.join("\n"),
                 item.encrypted_content.is_some()
             ),
-            ChatMessage::Summary(s) => write!(f, "Summary: \"{s}\""),
+            Self::Summary(s) => write!(f, "Summary: \"{s}\""),
         }
     }
 }
 
-impl ChatMessage {
-    pub fn new_system(message: impl Into<String>) -> Self {
-        ChatMessage::System(message.into())
+impl<'a> ChatMessageValue<'a> {
+    pub fn new_system(message: impl Into<Cow<'a, str>>) -> Self {
+        Self::System(message.into())
     }
 
-    pub fn new_user(message: impl Into<String>) -> Self {
-        ChatMessage::User(message.into())
+    pub fn new_user(message: impl Into<Cow<'a, str>>) -> Self {
+        Self::User(message.into())
     }
 
-    pub fn new_user_with_parts(parts: impl Into<Vec<ChatMessageContentPart>>) -> Self {
-        ChatMessage::UserWithParts(parts.into())
+    pub fn new_user_with_parts(parts: impl Into<Vec<ChatMessageContentPartValue<'a>>>) -> Self {
+        Self::UserWithParts(parts.into())
     }
 
     pub fn new_assistant(
-        message: Option<impl Into<String>>,
+        message: Option<impl Into<Cow<'a, str>>>,
         tool_calls: Option<Vec<ToolCall>>,
     ) -> Self {
-        ChatMessage::Assistant(message.map(Into::into), tool_calls)
+        Self::Assistant(message.map(Into::into), tool_calls)
     }
 
     pub fn new_tool_output(tool_call: impl Into<ToolCall>, output: impl Into<ToolOutput>) -> Self {
-        ChatMessage::ToolOutput(tool_call.into(), output.into())
+        Self::ToolOutput(tool_call.into(), output.into())
     }
 
     pub fn new_reasoning(message: ReasoningItem) -> Self {
-        ChatMessage::Reasoning(message)
+        Self::Reasoning(message)
     }
 
-    pub fn new_summary(message: impl Into<String>) -> Self {
-        ChatMessage::Summary(message.into())
+    pub fn new_summary(message: impl Into<Cow<'a, str>>) -> Self {
+        Self::Summary(message.into())
+    }
+
+    pub fn to_owned(&self) -> ChatMessage {
+        match self {
+            Self::System(text) => ChatMessage::System(Cow::Owned(text.to_string())),
+            Self::User(text) => ChatMessage::User(Cow::Owned(text.to_string())),
+            Self::UserWithParts(parts) => ChatMessage::UserWithParts(
+                parts
+                    .iter()
+                    .map(chat_message_content_part_to_owned)
+                    .collect(),
+            ),
+            Self::Assistant(message, tool_calls) => ChatMessage::Assistant(
+                message
+                    .as_deref()
+                    .map(|message| Cow::Owned(message.to_string())),
+                tool_calls.clone(),
+            ),
+            Self::ToolOutput(tool_call, output) => {
+                ChatMessage::ToolOutput(tool_call.clone(), output.clone())
+            }
+            Self::Reasoning(reasoning) => ChatMessage::Reasoning(reasoning.clone()),
+            Self::Summary(text) => ChatMessage::Summary(Cow::Owned(text.to_string())),
+        }
     }
 }
 
@@ -331,55 +393,121 @@ impl ChatMessage {
 /// Note that this omits the tool calls from the assistant message.
 ///
 /// If used for estimating tokens, consider this a very rought estimate
-impl AsRef<str> for ChatMessage {
+impl AsRef<str> for ChatMessageValue<'_> {
     fn as_ref(&self) -> &str {
         match self {
-            ChatMessage::System(s) | ChatMessage::User(s) | ChatMessage::Summary(s) => s,
-            ChatMessage::UserWithParts(parts) => match parts.as_slice() {
-                [ChatMessageContentPart::Text { text }] => text.as_str(),
+            Self::System(s) | Self::User(s) | Self::Summary(s) => s,
+            Self::UserWithParts(parts) => match parts.as_slice() {
+                [ChatMessageContentPartValue::Text { text }] => text.as_ref(),
                 _ => "",
             },
-            ChatMessage::Assistant(message, _) => message.as_deref().unwrap_or(""),
-            ChatMessage::ToolOutput(_, output) => output.content().unwrap_or(""),
-            ChatMessage::Reasoning(_) => "",
+            Self::Assistant(message, _) => message.as_deref().unwrap_or(""),
+            Self::ToolOutput(_, output) => output.content().unwrap_or(""),
+            Self::Reasoning(_) => "",
         }
     }
 }
 
-fn summarize_user_parts(parts: &[ChatMessageContentPart]) -> (String, usize) {
+fn summarize_user_parts(parts: &[ChatMessageContentPartValue<'_>]) -> (String, usize) {
     let mut text_parts = Vec::new();
     let mut attachments = 0;
     for part in parts {
         match part {
-            ChatMessageContentPart::Text { text } => text_parts.push(text.as_str()),
-            ChatMessageContentPart::Image { .. }
-            | ChatMessageContentPart::Document { .. }
-            | ChatMessageContentPart::Audio { .. }
-            | ChatMessageContentPart::Video { .. } => attachments += 1,
+            ChatMessageContentPartValue::Text { text } => text_parts.push(text.as_ref()),
+            ChatMessageContentPartValue::Image { .. }
+            | ChatMessageContentPartValue::Document { .. }
+            | ChatMessageContentPartValue::Audio { .. }
+            | ChatMessageContentPartValue::Video { .. } => attachments += 1,
         }
     }
     (text_parts.join(" "), attachments)
 }
 
-fn truncate_data_url(url: &str) -> std::borrow::Cow<'_, str> {
+fn chat_message_content_source_to_owned(
+    source: &ChatMessageContentSourceValue<'_>,
+) -> ChatMessageContentSource {
+    match source {
+        ChatMessageContentSourceValue::Url { url } => ChatMessageContentSource::Url {
+            url: Cow::Owned(url.to_string()),
+        },
+        ChatMessageContentSourceValue::Bytes { data, media_type } => {
+            ChatMessageContentSource::Bytes {
+                data: Cow::Owned(data.to_vec()),
+                media_type: media_type
+                    .as_deref()
+                    .map(|media_type| Cow::Owned(media_type.to_string())),
+            }
+        }
+        ChatMessageContentSourceValue::S3 { uri, bucket_owner } => ChatMessageContentSource::S3 {
+            uri: Cow::Owned(uri.to_string()),
+            bucket_owner: bucket_owner
+                .as_deref()
+                .map(|bucket_owner| Cow::Owned(bucket_owner.to_string())),
+        },
+        ChatMessageContentSourceValue::FileId { file_id } => ChatMessageContentSource::FileId {
+            file_id: Cow::Owned(file_id.to_string()),
+        },
+    }
+}
+
+fn chat_message_content_part_to_owned(
+    part: &ChatMessageContentPartValue<'_>,
+) -> ChatMessageContentPart {
+    match part {
+        ChatMessageContentPartValue::Text { text } => ChatMessageContentPart::Text {
+            text: Cow::Owned(text.to_string()),
+        },
+        ChatMessageContentPartValue::Image { source, format } => ChatMessageContentPart::Image {
+            source: chat_message_content_source_to_owned(source),
+            format: format
+                .as_deref()
+                .map(|format| Cow::Owned(format.to_string())),
+        },
+        ChatMessageContentPartValue::Document {
+            source,
+            format,
+            name,
+        } => ChatMessageContentPart::Document {
+            source: chat_message_content_source_to_owned(source),
+            format: format
+                .as_deref()
+                .map(|format| Cow::Owned(format.to_string())),
+            name: name.as_deref().map(|name| Cow::Owned(name.to_string())),
+        },
+        ChatMessageContentPartValue::Audio { source, format } => ChatMessageContentPart::Audio {
+            source: chat_message_content_source_to_owned(source),
+            format: format
+                .as_deref()
+                .map(|format| Cow::Owned(format.to_string())),
+        },
+        ChatMessageContentPartValue::Video { source, format } => ChatMessageContentPart::Video {
+            source: chat_message_content_source_to_owned(source),
+            format: format
+                .as_deref()
+                .map(|format| Cow::Owned(format.to_string())),
+        },
+    }
+}
+
+fn truncate_data_url(url: &str) -> Cow<'_, str> {
     const MAX_DATA_PREVIEW: usize = 32;
 
     if !url.starts_with("data:") {
-        return std::borrow::Cow::Borrowed(url);
+        return Cow::Borrowed(url);
     }
 
     let Some((prefix, data)) = url.split_once(',') else {
-        return std::borrow::Cow::Borrowed(url);
+        return Cow::Borrowed(url);
     };
 
     if data.len() <= MAX_DATA_PREVIEW {
-        return std::borrow::Cow::Borrowed(url);
+        return Cow::Borrowed(url);
     }
 
     let preview = &data[..MAX_DATA_PREVIEW];
     let truncated = data.len() - MAX_DATA_PREVIEW;
 
-    std::borrow::Cow::Owned(format!(
+    Cow::Owned(format!(
         "{prefix},{preview}...[truncated {truncated} chars]"
     ))
 }

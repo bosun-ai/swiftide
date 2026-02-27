@@ -580,7 +580,7 @@ fn message_to_openai(
 ) -> Result<Option<async_openai::types::chat::ChatCompletionRequestMessage>> {
     let openai_message = match message {
         ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
-            .content(msg.as_str())
+            .content(msg.as_ref())
             .build()?
             .into(),
         ChatMessage::UserWithParts(parts) => ChatCompletionRequestUserMessageArgs::default()
@@ -588,11 +588,11 @@ fn message_to_openai(
             .build()?
             .into(),
         ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
-            .content(msg.as_str())
+            .content(msg.as_ref())
             .build()?
             .into(),
         ChatMessage::Summary(msg) => ChatCompletionRequestAssistantMessageArgs::default()
-            .content(msg.as_str())
+            .content(msg.as_ref())
             .build()?
             .into(),
         ChatMessage::ToolOutput(tool_call, tool_output) => {
@@ -665,7 +665,7 @@ fn part_to_openai_user_content_part(
 ) -> Result<ChatCompletionRequestUserMessageContentPart> {
     Ok(match part {
         ChatMessageContentPart::Text { text } => ChatCompletionRequestUserMessageContentPart::from(
-            ChatCompletionRequestMessageContentPartText::from(text.as_str()),
+            ChatCompletionRequestMessageContentPartText::from(text.as_ref()),
         ),
         ChatMessageContentPart::Image { source, .. } => {
             let image_url = ImageUrl {
@@ -707,7 +707,7 @@ fn part_to_openai_user_content_part(
 
 fn source_to_openai_url(source: &ChatMessageContentSource) -> Result<String> {
     match source {
-        ChatMessageContentSource::Url { url } => Ok(url.clone()),
+        ChatMessageContentSource::Url { url } => Ok(url.as_ref().to_owned()),
         ChatMessageContentSource::FileId { .. } => {
             anyhow::bail!("OpenAI chat image_url does not accept file_id sources")
         }

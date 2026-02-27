@@ -1,6 +1,10 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use swiftide_core::{MessageHistory, chat_completion::ChatMessage, indexing::Chunk};
+use swiftide_core::{
+    MessageHistory,
+    chat_completion::{ChatMessage, ChatMessageValue},
+    indexing::Chunk,
+};
 
 use super::Redis;
 
@@ -17,7 +21,11 @@ impl<T: Chunk> MessageHistory for Redis<T> {
                 .context("Error fetching message history")?;
             let chat_messages: Result<Vec<ChatMessage>> = messages
                 .into_iter()
-                .map(|msg| serde_json::from_str(&msg).context("Error deserializing message"))
+                .map(|msg| {
+                    serde_json::from_str::<ChatMessageValue<'_>>(&msg)
+                        .map(|msg| msg.to_owned())
+                        .context("Error deserializing message")
+                })
                 .collect();
             chat_messages
         } else {
@@ -134,7 +142,7 @@ mod tests {
         let (url, _container) = start_redis().await;
         let redis = Redis::try_from_url(url, "tests").unwrap();
 
-        let m1 = ChatMessage::System("System test".to_string());
+        let m1 = ChatMessage::new_system("System test");
         let m2 = ChatMessage::User("User test".into());
 
         redis.push_owned(m1.clone()).await.unwrap();
@@ -163,7 +171,7 @@ mod tests {
         // Check that overwrite on empty also works
         redis.overwrite(vec![]).await.unwrap();
 
-        let m1 = ChatMessage::System("First".to_string());
+        let m1 = ChatMessage::new_system("First");
         let m2 = ChatMessage::User("Second".into());
         redis.push_owned(m1.clone()).await.unwrap();
         redis.push_owned(m2.clone()).await.unwrap();
@@ -184,7 +192,7 @@ mod tests {
         let (url, _container) = start_redis().await;
         let redis = Redis::try_from_url(url, "tests").unwrap();
 
-        let m1 = ChatMessage::System("First".to_string());
+        let m1 = ChatMessage::new_system("First");
         let m2 = ChatMessage::User("Second".into());
         redis.push_owned(m1.clone()).await.unwrap();
 

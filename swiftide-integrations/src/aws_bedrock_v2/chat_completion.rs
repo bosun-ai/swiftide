@@ -227,9 +227,15 @@ fn build_converse_input(
 
     for message in source_messages {
         match message {
-            ChatMessage::System(text) => system.push(SystemContentBlock::Text(text.clone())),
-            ChatMessage::Summary(text) => messages.push(user_message_from_text(text.clone())?),
-            ChatMessage::User(text) => messages.push(user_message_from_text(text.clone())?),
+            ChatMessage::System(text) => {
+                system.push(SystemContentBlock::Text(text.as_ref().to_owned()))
+            }
+            ChatMessage::Summary(text) => {
+                messages.push(user_message_from_text(text.as_ref().to_owned())?)
+            }
+            ChatMessage::User(text) => {
+                messages.push(user_message_from_text(text.as_ref().to_owned())?)
+            }
             ChatMessage::UserWithParts(parts) => messages.push(user_message_from_parts(parts)?),
             ChatMessage::Assistant(content, maybe_tool_calls) => {
                 let mut blocks = Vec::with_capacity(
@@ -240,7 +246,7 @@ fn build_converse_input(
                 if let Some(content) = content.as_ref()
                     && !content.is_empty()
                 {
-                    blocks.push(ContentBlock::Text(content.clone()));
+                    blocks.push(ContentBlock::Text(content.as_ref().to_owned()));
                 }
 
                 if let Some(tool_calls) = maybe_tool_calls.as_ref() {
@@ -318,7 +324,7 @@ fn user_message_from_parts(
         match part {
             ChatMessageContentPart::Text { text } => {
                 if !text.is_empty() {
-                    blocks.push(ContentBlock::Text(text.clone()));
+                    blocks.push(ContentBlock::Text(text.as_ref().to_owned()));
                     has_text = true;
                 }
             }
@@ -1527,7 +1533,7 @@ mod tests {
                     encrypted_content: Some("sig_123".to_string()),
                     status: None,
                 }),
-                ChatMessage::User("Use tool".to_string()),
+                ChatMessage::new_user("Use tool"),
             ])
             .build()
             .unwrap();

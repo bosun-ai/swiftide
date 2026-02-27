@@ -458,7 +458,8 @@ impl Agent {
                         system_prompt
                             .to_prompt()
                             .render()
-                            .map_err(AgentError::FailedToRenderSystemPrompt)?,
+                            .map_err(AgentError::FailedToRenderSystemPrompt)?
+                            .into(),
                     )])
                     .await
                     .map_err(AgentError::MessageHistoryError)?;
@@ -631,7 +632,7 @@ impl Agent {
 
         if has_assistant_message {
             self.add_message(ChatMessage::Assistant(
-                assistant_content,
+                assistant_content.map(Into::into),
                 assistant_tool_calls,
             ))
             .await?;
@@ -1540,7 +1541,13 @@ mod tests {
         let serialized = serde_json::to_string(&history).unwrap();
 
         // Retrieve it
-        let history: Vec<ChatMessage> = serde_json::from_str(&serialized).unwrap();
+        let history: Vec<ChatMessage> = serde_json::from_str::<
+            Vec<swiftide_core::chat_completion::ChatMessageValue<'_>>,
+        >(&serialized)
+        .unwrap()
+        .into_iter()
+        .map(|message| message.to_owned())
+        .collect();
 
         // Build a context from the history
         let context = DefaultContext::default()

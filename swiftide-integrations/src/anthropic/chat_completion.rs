@@ -280,18 +280,16 @@ impl Anthropic {
 fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
-    use ChatMessage::{Assistant, Reasoning, Summary, System, ToolOutput, User, UserWithParts};
-
     match message {
-        ToolOutput(tool_call, tool_output) => builder.content(
+        ChatMessage::ToolOutput(tool_call, tool_output) => builder.content(
             ToolResultBuilder::default()
                 .tool_use_id(tool_call.id())
                 .content(tool_output.content().unwrap_or("Success"))
                 .build()?,
         ),
-        Summary(msg) | System(msg) => builder.content(msg),
-        User(content) => builder.content(content),
-        UserWithParts(parts) => {
+        ChatMessage::Summary(msg) | ChatMessage::System(msg) => builder.content(msg.as_ref()),
+        ChatMessage::User(content) => builder.content(content.as_ref()),
+        ChatMessage::UserWithParts(parts) => {
             if parts.iter().any(|part| {
                 !matches!(
                     part,
@@ -304,7 +302,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                 .iter()
                 .filter_map(|part| match part {
                     swiftide_core::chat_completion::ChatMessageContentPart::Text { text } => {
-                        Some(text.as_str())
+                        Some(text.as_ref())
                     }
                     swiftide_core::chat_completion::ChatMessageContentPart::Image { .. }
                     | swiftide_core::chat_completion::ChatMessageContentPart::Document { .. }
@@ -314,13 +312,13 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                 .collect::<Vec<_>>();
             builder.content(text_parts.join(" "))
         }
-        Assistant(content, tool_calls) => {
+        ChatMessage::Assistant(content, tool_calls) => {
             builder.role(MessageRole::Assistant);
 
             let mut content_list: Vec<MessageContent> = Vec::new();
 
             if let Some(content) = content.as_ref() {
-                content_list.push(content.as_str().into());
+                content_list.push(content.as_ref().into());
             }
 
             if let Some(tool_calls) = tool_calls.as_ref() {
@@ -343,7 +341,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
 
             builder.content(content_list)
         }
-        Reasoning(_) => return Ok(None),
+        ChatMessage::Reasoning(_) => return Ok(None),
     };
 
     builder.build().context("Failed to build message").map(Some)

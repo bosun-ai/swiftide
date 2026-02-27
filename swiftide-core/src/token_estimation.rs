@@ -121,7 +121,7 @@ impl Estimatable for &ChatMessage {
                 .iter()
                 .filter_map(|part| match part {
                     crate::chat_completion::ChatMessageContentPart::Text { text } => {
-                        Some(Cow::Borrowed(text.as_str()))
+                        Some(Cow::Borrowed(text.as_ref()))
                     }
                     crate::chat_completion::ChatMessageContentPart::Image { .. }
                     | crate::chat_completion::ChatMessageContentPart::Document { .. }
@@ -141,7 +141,7 @@ impl Estimatable for &ChatMessage {
 
                 if let Some(msg) = msg {
                     if let Some(tool_calls) = tool_calls.as_mut() {
-                        let mut msg = vec![Cow::Borrowed(msg.as_str())];
+                        let mut msg = vec![Cow::Borrowed(msg.as_ref())];
                         msg.append(tool_calls);
                         msg
                     } else {

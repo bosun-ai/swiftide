@@ -181,10 +181,10 @@ fn chat_messages_to_input_items(
     for message in messages {
         match message {
             ChatMessage::System(content) => {
-                items.push(message_item(Role::System, content.clone())?);
+                items.push(message_item(Role::System, content.as_ref().to_owned())?);
             }
             ChatMessage::User(content) => {
-                items.push(message_item(Role::User, content.clone())?);
+                items.push(message_item(Role::User, content.as_ref().to_owned())?);
             }
             ChatMessage::UserWithParts(parts) => {
                 let content = user_parts_to_easy_input_content(parts)?;
@@ -192,7 +192,7 @@ fn chat_messages_to_input_items(
             }
             ChatMessage::Assistant(content, tool_calls) => {
                 if let Some(text) = content.as_ref() {
-                    items.push(message_item(Role::Assistant, text.clone())?);
+                    items.push(message_item(Role::Assistant, text.as_ref().to_owned())?);
                 }
 
                 if let Some(tool_calls) = tool_calls.as_ref() {
@@ -264,7 +264,7 @@ fn chat_messages_to_input_items(
                 ));
             }
             ChatMessage::Summary(content) => {
-                items.push(message_item(Role::Assistant, content.clone())?);
+                items.push(message_item(Role::Assistant, content.as_ref().to_owned())?);
             }
         }
     }
@@ -300,18 +300,18 @@ fn user_parts_to_easy_input_content(
 fn part_to_input_content(part: &ChatMessageContentPart) -> LmResult<InputContent> {
     Ok(match part {
         ChatMessageContentPart::Text { text } => {
-            InputContent::from(InputTextContent::from(text.as_str()))
+            InputContent::from(InputTextContent::from(text.as_ref()))
         }
         ChatMessageContentPart::Image { source, .. } => {
             let image = match source {
                 ChatMessageContentSource::Url { url } => InputImageContent {
                     detail: Default::default(),
                     file_id: None,
-                    image_url: Some(url.clone()),
+                    image_url: Some(url.as_ref().to_owned()),
                 },
                 ChatMessageContentSource::FileId { file_id } => InputImageContent {
                     detail: Default::default(),
-                    file_id: Some(file_id.clone()),
+                    file_id: Some(file_id.as_ref().to_owned()),
                     image_url: None,
                 },
                 ChatMessageContentSource::Bytes { data, media_type } => {
@@ -345,10 +345,10 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> LmResult<InputContent
 
             match source {
                 ChatMessageContentSource::Url { url } => {
-                    builder.file_url(url.clone());
+                    builder.file_url(url.as_ref());
                 }
                 ChatMessageContentSource::FileId { file_id } => {
-                    builder.file_id(file_id.clone());
+                    builder.file_id(file_id.as_ref());
                 }
                 ChatMessageContentSource::Bytes { data, .. } => {
                     let encoded = base64::engine::general_purpose::STANDARD.encode(data);

@@ -17,7 +17,7 @@ impl SimplePrompt for AwsBedrock {
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         let prompt_text = prompt.render()?;
         let request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User(prompt_text)])
+            .messages(vec![ChatMessage::new_user(prompt_text)])
             .build()
             .map_err(LanguageModelError::permanent)?;
 
