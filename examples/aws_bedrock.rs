@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     let aws_bedrock = integrations::aws_bedrock_v2::AwsBedrock::builder()
-        .default_prompt_model("anthropic.claude-haiku-4-5-20251001-v1:0")
+        .default_prompt_model("global.anthropic.claude-haiku-4-5-20251001-v1:0")
         .build()?;
 
     let memory_storage = MemoryStorage::default();
