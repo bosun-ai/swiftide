@@ -690,7 +690,9 @@ impl AgentContext for () {
     }
 }
 
-/// A backend for the agent context. A default is provided for Arc<Mutex<Vec<ChatMessage<'static>>>>
+/// A backend for the agent context.
+///
+/// A default is provided for `Arc<Mutex<Vec<ChatMessage<'static>>>>`.
 ///
 /// If you want to use for instance a database, implement this trait and pass it to the agent
 /// context when creating it.

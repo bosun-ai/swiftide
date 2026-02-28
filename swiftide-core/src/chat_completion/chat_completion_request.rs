@@ -29,6 +29,7 @@ impl<'a> ChatCompletionRequest<'a> {
         &self.tools_spec
     }
 
+    /// Returns an owned request with `'static` data.
     pub fn to_owned(&self) -> ChatCompletionRequest<'static> {
         ChatCompletionRequest {
             messages: Cow::Owned(self.messages.iter().map(ChatMessage::to_owned).collect()),
@@ -55,7 +56,7 @@ impl<'a> From<&'a [ChatMessage<'a>]> for ChatCompletionRequest<'a> {
     }
 }
 
-impl<'a> ChatCompletionRequestBuilder<'a> {
+impl ChatCompletionRequestBuilder<'_> {
     #[deprecated(note = "Use `tools` with real Tool instances instead")]
     pub fn tools_spec(&mut self, tools_spec: HashSet<ToolSpec>) -> &mut Self {
         self.tools_spec = Some(tools_spec);

@@ -82,16 +82,12 @@ impl DynStructuredPrompt for AwsBedrock {
             return Err(LanguageModelError::permanent("No text in response"));
         };
 
-        parse_json_response(response_text.trim())
+        serde_json::from_str(response_text.trim()).map_err(|error| {
+            LanguageModelError::permanent(anyhow::anyhow!(
+                "Failed to parse model response as JSON: {error}"
+            ))
+        })
     }
-}
-
-fn parse_json_response(text: &str) -> Result<serde_json::Value, LanguageModelError> {
-    serde_json::from_str(text.trim()).map_err(|error| {
-        LanguageModelError::permanent(anyhow::anyhow!(
-            "Failed to parse model response as JSON: {error}"
-        ))
-    })
 }
 
 #[cfg(test)]
@@ -187,12 +183,6 @@ mod tests {
                 answer: "42".to_string()
             }
         );
-    }
-
-    #[test]
-    fn test_parse_json_response_accepts_json() {
-        let parsed = parse_json_response("{\"answer\":\"ok\"}").unwrap();
-        assert_eq!(parsed, serde_json::json!({"answer":"ok"}));
     }
 
     #[test_log::test(tokio::test)]

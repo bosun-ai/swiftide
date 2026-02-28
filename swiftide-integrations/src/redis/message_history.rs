@@ -15,14 +15,13 @@ impl<T: Chunk> MessageHistory for Redis<T> {
                 .query_async(&mut cm)
                 .await
                 .context("Error fetching message history")?;
-            let chat_messages: Result<Vec<ChatMessage<'static>>> = messages
+            messages
                 .into_iter()
                 .map(|msg| {
                     serde_json::from_str::<ChatMessage<'static>>(&msg)
                         .context("Error deserializing message")
                 })
-                .collect();
-            chat_messages
+                .collect()
         } else {
             anyhow::bail!("Failed to connect to Redis")
         }
@@ -50,12 +49,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
 
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
-                .arg(
-                    items
-                        .iter()
-                        .map(serde_json::to_string)
-                        .collect::<Result<Vec<_>, _>>()?,
-                )
+                .arg(serialize_messages(items)?)
                 .query_async::<()>(&mut cm)
                 .await
                 .context("Error pushing to message history")?;
@@ -80,12 +74,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
 
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
-                .arg(
-                    items
-                        .iter()
-                        .map(serde_json::to_string)
-                        .collect::<Result<Vec<_>, _>>()?,
-                )
+                .arg(serialize_messages(items)?)
                 .query_async::<()>(&mut cm)
                 .await
                 .context("Error pushing to message history")?;
@@ -94,6 +83,13 @@ impl<T: Chunk> MessageHistory for Redis<T> {
             anyhow::bail!("Failed to connect to Redis")
         }
     }
+}
+
+fn serialize_messages(items: Vec<ChatMessage<'static>>) -> Result<Vec<String>> {
+    items
+        .into_iter()
+        .map(|item| serde_json::to_string(&item).context("Error serializing message"))
+        .collect()
 }
 
 #[cfg(test)]

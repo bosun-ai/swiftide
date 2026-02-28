@@ -564,79 +564,64 @@ fn resolve_format<T>(
 }
 
 fn infer_image_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
-    match source {
-        ChatMessageContentSource::Bytes { media_type, .. } => media_type
-            .as_deref()
-            .and_then(map_image_media_type_to_format),
-        ChatMessageContentSource::Url { url } => {
-            if let Some((media_type, _)) = parse_data_url(url) {
-                map_image_media_type_to_format(media_type)
-            } else {
-                extension_from_url(url).and_then(map_image_extension_to_format)
-            }
-        }
-        ChatMessageContentSource::S3 { uri, .. } => {
-            extension_from_url(uri).and_then(map_image_extension_to_format)
-        }
-        ChatMessageContentSource::FileId { .. } => None,
-    }
+    infer_format_from_source(
+        source,
+        IMAGE_MEDIA_TYPE_FORMATS,
+        IMAGE_EXTENSION_FORMATS,
+        None,
+    )
 }
 
 fn infer_document_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
-    match source {
-        ChatMessageContentSource::Bytes { media_type, .. } => media_type
-            .as_deref()
-            .and_then(map_document_media_type_to_format)
-            .or(Some("txt")),
-        ChatMessageContentSource::Url { url } => if let Some((media_type, _)) = parse_data_url(url)
-        {
-            map_document_media_type_to_format(media_type)
-        } else {
-            extension_from_url(url).and_then(map_document_extension_to_format)
-        }
-        .or(Some("txt")),
-        ChatMessageContentSource::S3 { uri, .. } => extension_from_url(uri)
-            .and_then(map_document_extension_to_format)
-            .or(Some("txt")),
-        ChatMessageContentSource::FileId { .. } => Some("txt"),
-    }
+    infer_format_from_source(
+        source,
+        DOCUMENT_MEDIA_TYPE_FORMATS,
+        DOCUMENT_EXTENSION_FORMATS,
+        Some("txt"),
+    )
 }
 
 fn infer_audio_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
-    match source {
-        ChatMessageContentSource::Bytes { media_type, .. } => media_type
-            .as_deref()
-            .and_then(map_audio_media_type_to_format),
-        ChatMessageContentSource::Url { url } => {
-            if let Some((media_type, _)) = parse_data_url(url) {
-                map_audio_media_type_to_format(media_type)
-            } else {
-                extension_from_url(url).and_then(map_audio_extension_to_format)
-            }
-        }
-        ChatMessageContentSource::S3 { uri, .. } => {
-            extension_from_url(uri).and_then(map_audio_extension_to_format)
-        }
-        ChatMessageContentSource::FileId { .. } => None,
-    }
+    infer_format_from_source(
+        source,
+        AUDIO_MEDIA_TYPE_FORMATS,
+        AUDIO_EXTENSION_FORMATS,
+        None,
+    )
 }
 
 fn infer_video_format_from_source(source: &ChatMessageContentSource) -> Option<&'static str> {
+    infer_format_from_source(
+        source,
+        VIDEO_MEDIA_TYPE_FORMATS,
+        VIDEO_EXTENSION_FORMATS,
+        None,
+    )
+}
+
+fn infer_format_from_source(
+    source: &ChatMessageContentSource,
+    media_type_mappings: &[(&'static str, &'static str)],
+    extension_mappings: &[(&'static str, &'static str)],
+    fallback: Option<&'static str>,
+) -> Option<&'static str> {
     match source {
         ChatMessageContentSource::Bytes { media_type, .. } => media_type
             .as_deref()
-            .and_then(map_video_media_type_to_format),
-        ChatMessageContentSource::Url { url } => {
-            if let Some((media_type, _)) = parse_data_url(url) {
-                map_video_media_type_to_format(media_type)
-            } else {
-                extension_from_url(url).and_then(map_video_extension_to_format)
-            }
+            .and_then(|media_type| mapped_format(media_type, media_type_mappings))
+            .or(fallback),
+        ChatMessageContentSource::Url { url } => if let Some((media_type, _)) = parse_data_url(url)
+        {
+            mapped_format(media_type, media_type_mappings)
+        } else {
+            extension_from_url(url)
+                .and_then(|extension| mapped_format(extension, extension_mappings))
         }
-        ChatMessageContentSource::S3 { uri, .. } => {
-            extension_from_url(uri).and_then(map_video_extension_to_format)
-        }
-        ChatMessageContentSource::FileId { .. } => None,
+        .or(fallback),
+        ChatMessageContentSource::S3 { uri, .. } => extension_from_url(uri)
+            .and_then(|extension| mapped_format(extension, extension_mappings))
+            .or(fallback),
+        ChatMessageContentSource::FileId { .. } => fallback,
     }
 }
 
@@ -673,122 +658,10 @@ fn extension_from_url(url: &str) -> Option<&str> {
     Some(extension)
 }
 
-fn map_image_media_type_to_format(media_type: &str) -> Option<&'static str> {
-    match media_type {
-        "image/gif" => Some("gif"),
-        "image/jpeg" | "image/jpg" => Some("jpeg"),
-        "image/png" => Some("png"),
-        "image/webp" => Some("webp"),
-        _ => None,
-    }
-}
-
-fn map_image_extension_to_format(extension: &str) -> Option<&'static str> {
-    match extension {
-        "gif" => Some("gif"),
-        "jpeg" | "jpg" => Some("jpeg"),
-        "png" => Some("png"),
-        "webp" => Some("webp"),
-        _ => None,
-    }
-}
-
-fn map_document_media_type_to_format(media_type: &str) -> Option<&'static str> {
-    match media_type {
-        "text/csv" => Some("csv"),
-        "application/msword" => Some("doc"),
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => Some("docx"),
-        "text/html" => Some("html"),
-        "text/markdown" | "text/x-markdown" => Some("md"),
-        "application/pdf" => Some("pdf"),
-        "text/plain" => Some("txt"),
-        "application/vnd.ms-excel" => Some("xls"),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => Some("xlsx"),
-        _ => None,
-    }
-}
-
-fn map_document_extension_to_format(extension: &str) -> Option<&'static str> {
-    match extension {
-        "csv" => Some("csv"),
-        "doc" => Some("doc"),
-        "docx" => Some("docx"),
-        "html" | "htm" => Some("html"),
-        "md" | "markdown" => Some("md"),
-        "pdf" => Some("pdf"),
-        "txt" => Some("txt"),
-        "xls" => Some("xls"),
-        "xlsx" => Some("xlsx"),
-        _ => None,
-    }
-}
-
-fn map_audio_media_type_to_format(media_type: &str) -> Option<&'static str> {
-    match media_type {
-        "audio/aac" => Some("aac"),
-        "audio/flac" => Some("flac"),
-        "audio/m4a" => Some("m4a"),
-        "audio/mka" => Some("mka"),
-        "audio/x-matroska" => Some("mkv"),
-        "audio/mpeg" | "audio/mp3" => Some("mp3"),
-        "audio/mp4" => Some("mp4"),
-        "audio/ogg" => Some("ogg"),
-        "audio/opus" => Some("opus"),
-        "audio/wav" | "audio/x-wav" | "audio/wave" => Some("wav"),
-        "audio/webm" => Some("webm"),
-        "audio/x-aac" => Some("x-aac"),
-        _ => None,
-    }
-}
-
-fn map_audio_extension_to_format(extension: &str) -> Option<&'static str> {
-    match extension {
-        "aac" => Some("aac"),
-        "flac" => Some("flac"),
-        "m4a" => Some("m4a"),
-        "mka" => Some("mka"),
-        "mkv" => Some("mkv"),
-        "mp3" => Some("mp3"),
-        "mp4" => Some("mp4"),
-        "mpeg" => Some("mpeg"),
-        "mpga" => Some("mpga"),
-        "ogg" => Some("ogg"),
-        "opus" => Some("opus"),
-        "pcm" => Some("pcm"),
-        "wav" => Some("wav"),
-        "webm" => Some("webm"),
-        "x-aac" => Some("x-aac"),
-        _ => None,
-    }
-}
-
-fn map_video_media_type_to_format(media_type: &str) -> Option<&'static str> {
-    match media_type {
-        "video/x-flv" => Some("flv"),
-        "video/x-matroska" => Some("mkv"),
-        "video/quicktime" => Some("mov"),
-        "video/mp4" => Some("mp4"),
-        "video/mpeg" => Some("mpeg"),
-        "video/3gpp" => Some("three_gp"),
-        "video/webm" => Some("webm"),
-        "video/x-ms-wmv" => Some("wmv"),
-        _ => None,
-    }
-}
-
-fn map_video_extension_to_format(extension: &str) -> Option<&'static str> {
-    match extension {
-        "flv" => Some("flv"),
-        "mkv" => Some("mkv"),
-        "mov" => Some("mov"),
-        "mp4" => Some("mp4"),
-        "mpeg" => Some("mpeg"),
-        "mpg" => Some("mpg"),
-        "3gp" => Some("three_gp"),
-        "webm" => Some("webm"),
-        "wmv" => Some("wmv"),
-        _ => None,
-    }
+fn mapped_format(value: &str, mappings: &[(&'static str, &'static str)]) -> Option<&'static str> {
+    mappings
+        .iter()
+        .find_map(|(input, output)| input.eq_ignore_ascii_case(value).then_some(*output))
 }
 
 fn message_from_blocks(
@@ -820,7 +693,7 @@ fn tool_output_to_content_block(
 
 fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageModelError> {
     match args.map(str::trim) {
-        Some(args) if !args.is_empty() => parse_document_json(args)
+        Some(args) if !args.is_empty() => parse_document_json_bytes(args.as_bytes())
             .with_context(|| format!("Failed to parse tool args as JSON: {args}"))
             .map_err(LanguageModelError::permanent),
         _ => Ok(Document::Object(HashMap::new())),
@@ -1101,10 +974,6 @@ fn json_value_to_document(value: &serde_json::Value) -> Result<Document, Languag
     parse_document_json_bytes(&bytes).map_err(LanguageModelError::permanent)
 }
 
-fn parse_document_json(input: &str) -> anyhow::Result<Document> {
-    parse_document_json_bytes(input.as_bytes())
-}
-
 fn parse_document_json_bytes(input: &[u8]) -> anyhow::Result<Document> {
     let mut tokens = json_token_iter(input).peekable();
     let document = expect_document(&mut tokens)?;
@@ -1115,6 +984,114 @@ fn parse_document_json_bytes(input: &[u8]) -> anyhow::Result<Document> {
 
     Ok(document)
 }
+
+const IMAGE_MEDIA_TYPE_FORMATS: &[(&str, &str)] = &[
+    ("image/gif", "gif"),
+    ("image/jpeg", "jpeg"),
+    ("image/jpg", "jpeg"),
+    ("image/png", "png"),
+    ("image/webp", "webp"),
+];
+
+const IMAGE_EXTENSION_FORMATS: &[(&str, &str)] = &[
+    ("gif", "gif"),
+    ("jpeg", "jpeg"),
+    ("jpg", "jpeg"),
+    ("png", "png"),
+    ("webp", "webp"),
+];
+
+const DOCUMENT_MEDIA_TYPE_FORMATS: &[(&str, &str)] = &[
+    ("text/csv", "csv"),
+    ("application/msword", "doc"),
+    (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "docx",
+    ),
+    ("text/html", "html"),
+    ("text/markdown", "md"),
+    ("text/x-markdown", "md"),
+    ("application/pdf", "pdf"),
+    ("text/plain", "txt"),
+    ("application/vnd.ms-excel", "xls"),
+    (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "xlsx",
+    ),
+];
+
+const DOCUMENT_EXTENSION_FORMATS: &[(&str, &str)] = &[
+    ("csv", "csv"),
+    ("doc", "doc"),
+    ("docx", "docx"),
+    ("html", "html"),
+    ("htm", "html"),
+    ("md", "md"),
+    ("markdown", "md"),
+    ("pdf", "pdf"),
+    ("txt", "txt"),
+    ("xls", "xls"),
+    ("xlsx", "xlsx"),
+];
+
+const AUDIO_MEDIA_TYPE_FORMATS: &[(&str, &str)] = &[
+    ("audio/aac", "aac"),
+    ("audio/flac", "flac"),
+    ("audio/m4a", "m4a"),
+    ("audio/mka", "mka"),
+    ("audio/x-matroska", "mkv"),
+    ("audio/mpeg", "mp3"),
+    ("audio/mp3", "mp3"),
+    ("audio/mp4", "mp4"),
+    ("audio/ogg", "ogg"),
+    ("audio/opus", "opus"),
+    ("audio/wav", "wav"),
+    ("audio/x-wav", "wav"),
+    ("audio/wave", "wav"),
+    ("audio/webm", "webm"),
+    ("audio/x-aac", "x-aac"),
+];
+
+const AUDIO_EXTENSION_FORMATS: &[(&str, &str)] = &[
+    ("aac", "aac"),
+    ("flac", "flac"),
+    ("m4a", "m4a"),
+    ("mka", "mka"),
+    ("mkv", "mkv"),
+    ("mp3", "mp3"),
+    ("mp4", "mp4"),
+    ("mpeg", "mpeg"),
+    ("mpga", "mpga"),
+    ("ogg", "ogg"),
+    ("opus", "opus"),
+    ("pcm", "pcm"),
+    ("wav", "wav"),
+    ("webm", "webm"),
+    ("x-aac", "x-aac"),
+];
+
+const VIDEO_MEDIA_TYPE_FORMATS: &[(&str, &str)] = &[
+    ("video/x-flv", "flv"),
+    ("video/x-matroska", "mkv"),
+    ("video/quicktime", "mov"),
+    ("video/mp4", "mp4"),
+    ("video/mpeg", "mpeg"),
+    ("video/3gpp", "three_gp"),
+    ("video/webm", "webm"),
+    ("video/x-ms-wmv", "wmv"),
+];
+
+const VIDEO_EXTENSION_FORMATS: &[(&str, &str)] = &[
+    ("flv", "flv"),
+    ("mkv", "mkv"),
+    ("mov", "mov"),
+    ("mp4", "mp4"),
+    ("mpeg", "mpeg"),
+    ("mpg", "mpg"),
+    ("3gp", "three_gp"),
+    ("webm", "webm"),
+    ("wmv", "wmv"),
+];
 
 #[cfg(test)]
 mod tests {
