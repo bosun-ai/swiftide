@@ -5,12 +5,12 @@ use std::task::{Context, Poll};
 use anyhow::{Context as _, Result};
 use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
-    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, IncludeEnum, InputContent,
-    InputFileArgs, InputImageContent, InputItem, InputParam, InputTextContent, MessageType,
-    OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, ReasoningArgs,
-    ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent,
-    ResponseTextParam, Role, Status, TextResponseFormatConfiguration, Tool, ToolChoiceOptions,
-    ToolChoiceParam,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, ImageDetail, IncludeEnum,
+    InputContent, InputFileArgs, InputImageContent, InputItem, InputParam, InputTextContent,
+    MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
+    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
+    ResponseStreamEvent, ResponseTextParam, Role, Status, TextResponseFormatConfiguration, Tool,
+    ToolChoiceOptions, ToolChoiceParam,
 };
 use base64::Engine as _;
 use futures_util::Stream;
@@ -305,12 +305,12 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> LmResult<InputContent
         ChatMessageContentPart::Image { source, .. } => {
             let image = match source {
                 ChatMessageContentSource::Url { url } => InputImageContent {
-                    detail: Default::default(),
+                    detail: ImageDetail::default(),
                     file_id: None,
                     image_url: Some(url.as_ref().to_owned()),
                 },
                 ChatMessageContentSource::FileId { file_id } => InputImageContent {
-                    detail: Default::default(),
+                    detail: ImageDetail::default(),
                     file_id: Some(file_id.as_ref().to_owned()),
                     image_url: None,
                 },
@@ -318,7 +318,7 @@ fn part_to_input_content(part: &ChatMessageContentPart) -> LmResult<InputContent
                     let media_type = media_type.as_deref().unwrap_or("application/octet-stream");
                     let encoded = base64::engine::general_purpose::STANDARD.encode(data);
                     InputImageContent {
-                        detail: Default::default(),
+                        detail: ImageDetail::default(),
                         file_id: None,
                         image_url: Some(format!("data:{media_type};base64,{encoded}")),
                     }

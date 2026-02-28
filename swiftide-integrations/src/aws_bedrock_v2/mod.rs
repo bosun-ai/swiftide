@@ -292,6 +292,7 @@ impl AwsBedrockBuilder {
 
 #[cfg_attr(test, automock)]
 #[async_trait]
+#[allow(clippy::too_many_arguments)]
 trait BedrockConverse: std::fmt::Debug + Send + Sync {
     async fn converse(
         &self,
@@ -318,6 +319,7 @@ trait BedrockConverse: std::fmt::Debug + Send + Sync {
 }
 
 #[async_trait]
+#[allow(clippy::too_many_arguments)]
 impl BedrockConverse for Client {
     async fn converse(
         &self,
@@ -447,7 +449,6 @@ where
             true
         }
         SdkError::ServiceError(service_error) => is_transient_service_error(service_error.err()),
-        SdkError::ConstructionFailure(_) => false,
         _ => false,
     };
 

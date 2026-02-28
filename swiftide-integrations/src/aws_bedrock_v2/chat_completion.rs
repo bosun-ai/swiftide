@@ -36,6 +36,15 @@ use swiftide_core::metrics::emit_usage;
 
 use super::{AwsBedrock, Options};
 
+type ConverseInputParts = (
+    Vec<Message>,
+    Option<Vec<SystemContentBlock>>,
+    Option<InferenceConfiguration>,
+    Option<ToolConfiguration>,
+);
+
+type ExtractedMessage = (Option<String>, Option<Vec<ToolCall>>, Vec<ReasoningItem>);
+
 #[async_trait]
 impl ChatCompletion for AwsBedrock {
     #[tracing::instrument(skip_all, err)]
@@ -172,16 +181,17 @@ impl ChatCompletion for AwsBedrock {
                                 ));
                             }
 
-                            if let Some(usage) = response.usage.as_ref() {
-                                if let Some(callback) = on_usage.as_ref()
-                                    && let Err(error) = callback(usage).await
-                                {
-                                    return Some((
-                                        Err(LanguageModelError::permanent(error)),
-                                        (event_stream, response, stop_reason, true, model),
-                                    ));
-                                }
+                            if let Some(usage) = response.usage.as_ref()
+                                && let Some(callback) = on_usage.as_ref()
+                                && let Err(error) = callback(usage).await
+                            {
+                                return Some((
+                                    Err(LanguageModelError::permanent(error)),
+                                    (event_stream, response, stop_reason, true, model),
+                                ));
+                            }
 
+                            if let Some(usage) = response.usage.as_ref() {
                                 #[cfg(feature = "metrics")]
                                 emit_usage(
                                     &model,
@@ -215,15 +225,7 @@ impl ChatCompletion for AwsBedrock {
 fn build_converse_input(
     request: &ChatCompletionRequest<'_>,
     options: &Options,
-) -> Result<
-    (
-        Vec<Message>,
-        Option<Vec<SystemContentBlock>>,
-        Option<InferenceConfiguration>,
-        Option<ToolConfiguration>,
-    ),
-    LanguageModelError,
-> {
+) -> Result<ConverseInputParts, LanguageModelError> {
     let source_messages = request.messages();
     let mut messages = Vec::with_capacity(source_messages.len());
     let mut system = Vec::new();
@@ -233,10 +235,7 @@ fn build_converse_input(
             ChatMessage::System(text) => {
                 system.push(SystemContentBlock::Text(text.as_ref().to_owned()));
             }
-            ChatMessage::Summary(text) => {
-                messages.push(user_message_from_text(text.as_ref().to_owned())?);
-            }
-            ChatMessage::User(text) => {
+            ChatMessage::Summary(text) | ChatMessage::User(text) => {
                 messages.push(user_message_from_text(text.as_ref().to_owned())?);
             }
             ChatMessage::UserWithParts(parts) => messages.push(user_message_from_parts(parts)?),
@@ -748,13 +747,12 @@ fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageM
 pub(super) fn response_to_chat_completion(
     response: &ConverseOutput,
 ) -> Result<ChatCompletionResponse, LanguageModelError> {
-    let (message, tool_calls, reasoning) = match response.output() {
-        Some(output) => match output {
-            ConverseResult::Message(message) => extract_message_and_tool_calls(message)?,
-            _ => (None, None, Vec::new()),
-        },
-        None => (None, None, Vec::new()),
-    };
+    let (message, tool_calls, reasoning) =
+        if let Some(ConverseResult::Message(message)) = response.output() {
+            extract_message_and_tool_calls(message)?
+        } else {
+            (None, None, Vec::new())
+        };
 
     let mut builder = ChatCompletionResponse::builder()
         .maybe_message(message)
@@ -774,7 +772,7 @@ pub(super) fn response_to_chat_completion(
 
 fn extract_message_and_tool_calls(
     message: &Message,
-) -> Result<(Option<String>, Option<Vec<ToolCall>>, Vec<ReasoningItem>), LanguageModelError> {
+) -> Result<ExtractedMessage, LanguageModelError> {
     let mut text = String::new();
     let mut has_text = false;
     let mut tool_calls = Vec::with_capacity(message.content().len());
@@ -787,7 +785,7 @@ fn extract_message_and_tool_calls(
                 has_text = true;
             }
             ContentBlock::ToolUse(tool_use) => {
-                let args = document_to_json_string(tool_use.input())?;
+                let args = document_to_json_string(tool_use.input());
                 let tool_call = ToolCall::builder()
                     .id(tool_use.tool_use_id())
                     .name(tool_use.name())
@@ -815,10 +813,10 @@ fn extract_message_and_tool_calls(
     Ok((message, tool_calls, reasoning))
 }
 
-fn document_to_json_string(document: &Document) -> Result<String, LanguageModelError> {
+fn document_to_json_string(document: &Document) -> String {
     let mut output = String::new();
     JsonValueWriter::new(&mut output).document(document);
-    Ok(output)
+    output
 }
 
 fn apply_stream_event(
@@ -1336,9 +1334,8 @@ mod tests {
             .expect("tool config");
         assert_eq!(tool_config.tools().len(), 1);
 
-        let spec = match &tool_config.tools()[0] {
-            Tool::ToolSpec(spec) => spec,
-            _ => panic!("expected tool spec"),
+        let Tool::ToolSpec(spec) = &tool_config.tools()[0] else {
+            panic!("expected tool spec");
         };
 
         assert_eq!(spec.name(), "get_weather");
@@ -1362,9 +1359,8 @@ mod tests {
             .unwrap()
             .expect("tool config");
 
-        let spec = match &tool_config.tools()[0] {
-            Tool::ToolSpec(spec) => spec,
-            _ => panic!("expected tool spec"),
+        let Tool::ToolSpec(spec) = &tool_config.tools()[0] else {
+            panic!("expected tool spec");
         };
 
         assert_eq!(spec.strict(), Some(false));
@@ -1548,6 +1544,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
     fn test_apply_stream_event_accumulates_deltas() {
         let mut response = ChatCompletionResponse::default();
         let mut stop_reason = None;
