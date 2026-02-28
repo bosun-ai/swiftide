@@ -231,13 +231,13 @@ fn build_converse_input(
     for message in source_messages {
         match message {
             ChatMessage::System(text) => {
-                system.push(SystemContentBlock::Text(text.as_ref().to_owned()))
+                system.push(SystemContentBlock::Text(text.as_ref().to_owned()));
             }
             ChatMessage::Summary(text) => {
-                messages.push(user_message_from_text(text.as_ref().to_owned())?)
+                messages.push(user_message_from_text(text.as_ref().to_owned())?);
             }
             ChatMessage::User(text) => {
-                messages.push(user_message_from_text(text.as_ref().to_owned())?)
+                messages.push(user_message_from_text(text.as_ref().to_owned())?);
             }
             ChatMessage::UserWithParts(parts) => messages.push(user_message_from_parts(parts)?),
             ChatMessage::Assistant(content, maybe_tool_calls) => {
@@ -1457,7 +1457,11 @@ mod tests {
             .and_then(|content| content.as_image().ok())
             .expect("image block");
         assert!(matches!(image.format(), ImageFormat::Png));
-        assert!(image.source().is_some_and(|source| source.is_bytes()));
+        assert!(
+            image
+                .source()
+                .is_some_and(aws_sdk_bedrockruntime::types::ImageSource::is_bytes)
+        );
     }
 
     #[test]
@@ -1481,7 +1485,11 @@ mod tests {
             .and_then(|content| content.as_audio().ok())
             .expect("audio block");
         assert!(matches!(audio.format(), AudioFormat::Mp3));
-        assert!(audio.source().is_some_and(|source| source.is_bytes()));
+        assert!(
+            audio
+                .source()
+                .is_some_and(aws_sdk_bedrockruntime::types::AudioSource::is_bytes)
+        );
     }
 
     #[test]
@@ -1502,7 +1510,11 @@ mod tests {
             .and_then(|content| content.as_video().ok())
             .expect("video block");
         assert!(matches!(video.format(), VideoFormat::Mp4));
-        assert!(video.source().is_some_and(|source| source.is_s3_location()));
+        assert!(
+            video
+                .source()
+                .is_some_and(aws_sdk_bedrockruntime::types::VideoSource::is_s3_location)
+        );
     }
 
     #[test]

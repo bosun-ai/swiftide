@@ -255,7 +255,7 @@ impl AgentContext for DefaultContext {
     }
 }
 
-fn filter_messages_since_summary<'a>(messages: Vec<ChatMessage<'a>>) -> Vec<ChatMessage<'a>> {
+fn filter_messages_since_summary(messages: Vec<ChatMessage<'_>>) -> Vec<ChatMessage<'_>> {
     let mut summary_found = false;
     let mut messages = messages
         .into_iter()
