@@ -451,12 +451,23 @@ where
         SdkError::ServiceError(service_error) => is_transient_service_error(service_error.err()),
         _ => false,
     };
+    let detailed_error = match error {
+        SdkError::ServiceError(service_error) => anyhow::Error::new(service_error.into_err()),
+        error => anyhow::Error::msg(error_chain_message(&error)),
+    };
 
     if is_transient {
-        LanguageModelError::transient(error)
+        LanguageModelError::transient(detailed_error)
     } else {
-        LanguageModelError::permanent(error)
+        LanguageModelError::permanent(detailed_error)
     }
+}
+
+fn error_chain_message(error: &(dyn std::error::Error + 'static)) -> String {
+    std::iter::successors(Some(error), |err| err.source())
+        .map(std::string::ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(": ")
 }
 
 fn inference_config_from_options(options: &Options) -> Option<InferenceConfiguration> {

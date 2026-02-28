@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let bedrock = AwsBedrock::builder()
-        .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+        .default_prompt_model("anthropic.claude-sonnet-4-6")
         .build()?;
 
     let mut agent = agents::Agent::builder()
