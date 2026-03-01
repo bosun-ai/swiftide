@@ -17,6 +17,7 @@ use aws_sdk_bedrockruntime::{
 };
 use aws_smithy_types::Document;
 use derive_builder::Builder;
+use serde::Serialize;
 use swiftide_core::chat_completion::{
     InputTokenDetails, Usage, UsageDetails, errors::LanguageModelError,
 };
@@ -192,6 +193,33 @@ impl AwsBedrock {
                 self.metric_metadata.as_ref(),
             );
         }
+
+        Ok(())
+    }
+
+    #[allow(unused_variables)]
+    async fn track_completion<R, S>(
+        &self,
+        model: &str,
+        usage: Option<&Usage>,
+        request: Option<&R>,
+        response: Option<&S>,
+    ) -> Result<(), LanguageModelError>
+    where
+        R: Serialize + ?Sized,
+        S: Serialize + ?Sized,
+    {
+        if let Some(usage) = usage {
+            self.report_usage(model, usage).await?;
+        }
+
+        #[cfg(feature = "langfuse")]
+        tracing::debug!(
+            langfuse.model = model,
+            langfuse.input = request.and_then(langfuse_json_redacted).unwrap_or_default(),
+            langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.usage = usage.and_then(langfuse_json).unwrap_or_default(),
+        );
 
         Ok(())
     }
@@ -533,4 +561,63 @@ fn context_length_exceeded_if_empty(
 
 fn i32_to_u32(value: i32) -> Option<u32> {
     u32::try_from(value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+fn langfuse_json<T: Serialize + ?Sized>(value: &T) -> Option<String> {
+    serde_json::to_string_pretty(value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+fn langfuse_json_redacted<T: Serialize + ?Sized>(value: &T) -> Option<String> {
+    let mut value = serde_json::to_value(value).ok()?;
+    redact_sensitive_payloads(&mut value);
+    serde_json::to_string_pretty(&value).ok()
+}
+
+#[cfg(feature = "langfuse")]
+fn redact_sensitive_payloads(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(map) => {
+            for field in map.values_mut() {
+                redact_sensitive_payloads(field);
+            }
+        }
+        serde_json::Value::Array(items) => {
+            if items.iter().all(|item| item.as_u64().is_some()) && items.len() > 64 {
+                *value = serde_json::Value::String(format!("[{} bytes redacted]", items.len()));
+            } else {
+                for item in items {
+                    redact_sensitive_payloads(item);
+                }
+            }
+        }
+        serde_json::Value::String(text) => {
+            if let Some(truncated) = truncate_data_url(text) {
+                *text = truncated;
+            }
+        }
+        _ => {}
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn truncate_data_url(url: &str) -> Option<String> {
+    const MAX_DATA_PREVIEW: usize = 32;
+
+    if !url.starts_with("data:") {
+        return None;
+    }
+
+    let (prefix, data) = url.split_once(',')?;
+    if data.len() <= MAX_DATA_PREVIEW {
+        return None;
+    }
+
+    let preview = &data[..MAX_DATA_PREVIEW];
+    let truncated = data.len() - MAX_DATA_PREVIEW;
+
+    Some(format!(
+        "{prefix},{preview}...[truncated {truncated} chars]"
+    ))
 }

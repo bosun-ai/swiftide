@@ -22,6 +22,8 @@ use aws_smithy_json::{
 use aws_smithy_types::{Blob, Document};
 use base64::Engine as _;
 use futures_util::stream;
+#[cfg(feature = "langfuse")]
+use serde_json::json;
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
@@ -30,9 +32,7 @@ use swiftide_core::{
         errors::LanguageModelError,
     },
 };
-
-#[cfg(feature = "metrics")]
-use swiftide_core::metrics::emit_usage;
+use tracing_futures::Instrument;
 
 use super::{AwsBedrock, Options};
 
@@ -47,12 +47,25 @@ type ExtractedMessage = (Option<String>, Option<Vec<ToolCall>>, Vec<ReasoningIte
 
 #[async_trait]
 impl ChatCompletion for AwsBedrock {
-    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
+    )]
     async fn complete(
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self.prompt_model()?;
+        #[cfg(feature = "langfuse")]
+        let tracking_request = Some(json!({
+            "model": model,
+            "messages": request.messages(),
+            "tools_spec": request.tools_spec(),
+        }));
+        #[cfg(not(feature = "langfuse"))]
+        let tracking_request: Option<serde_json::Value> = None;
+
         let (messages, system, inference_config, tool_config) =
             build_converse_input(request, &self.default_options)?;
 
@@ -95,19 +108,35 @@ impl ChatCompletion for AwsBedrock {
             return Err(error);
         }
 
-        if let Some(usage) = completion.usage.as_ref() {
-            self.report_usage(model, usage).await?;
-        }
+        self.track_completion(
+            model,
+            completion.usage.as_ref(),
+            tracking_request.as_ref(),
+            Some(&completion),
+        )
+        .await?;
 
         Ok(completion)
     }
 
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all))]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, fields(langfuse.type = "GENERATION"))
+    )]
     async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let model = match self.prompt_model() {
             Ok(model) => model.to_string(),
             Err(error) => return error.into(),
         };
+        #[cfg(feature = "langfuse")]
+        let tracking_request = Some(json!({
+            "model": model,
+            "messages": request.messages(),
+            "tools_spec": request.tools_spec(),
+        }));
+        #[cfg(not(feature = "langfuse"))]
+        let tracking_request: Option<serde_json::Value> = None;
 
         let (messages, system, inference_config, tool_config) =
             match build_converse_input(request, &self.default_options) {
@@ -134,9 +163,7 @@ impl ChatCompletion for AwsBedrock {
             Err(error) => return error.into(),
         };
 
-        let on_usage = self.on_usage.clone();
-        #[cfg(feature = "metrics")]
-        let metric_metadata = std::sync::Arc::new(self.metric_metadata.clone());
+        let self_for_stream = self.clone();
 
         let event_stream = stream_output.stream;
         let stream = stream::unfold(
@@ -146,12 +173,17 @@ impl ChatCompletion for AwsBedrock {
                 None::<StopReason>,
                 false,
                 model,
+                tracking_request,
             ),
-            move |(mut event_stream, mut response, mut stop_reason, finished, model)| {
-                let on_usage = on_usage.clone();
-                #[cfg(feature = "metrics")]
-                let metric_metadata = metric_metadata.clone();
-
+            move |(
+                mut event_stream,
+                mut response,
+                mut stop_reason,
+                finished,
+                model,
+                tracking_request,
+            )| {
+                let self_for_stream = self_for_stream.clone();
                 async move {
                     if finished {
                         return None;
@@ -162,7 +194,14 @@ impl ChatCompletion for AwsBedrock {
                             apply_stream_event(&event, &mut response, &mut stop_reason);
                             Some((
                                 Ok(response.clone()),
-                                (event_stream, response, stop_reason, false, model),
+                                (
+                                    event_stream,
+                                    response,
+                                    stop_reason,
+                                    false,
+                                    model,
+                                    tracking_request,
+                                ),
                             ))
                         }
                         Ok(None) => {
@@ -177,48 +216,76 @@ impl ChatCompletion for AwsBedrock {
                             ) {
                                 return Some((
                                     Err(error),
-                                    (event_stream, response, stop_reason, true, model),
+                                    (
+                                        event_stream,
+                                        response,
+                                        stop_reason,
+                                        true,
+                                        model,
+                                        tracking_request,
+                                    ),
                                 ));
                             }
 
-                            if let Some(usage) = response.usage.as_ref()
-                                && let Some(callback) = on_usage.as_ref()
-                                && let Err(error) = callback(usage).await
+                            if let Err(error) = self_for_stream
+                                .track_completion(
+                                    &model,
+                                    response.usage.as_ref(),
+                                    tracking_request.as_ref(),
+                                    Some(&response),
+                                )
+                                .await
                             {
                                 return Some((
-                                    Err(LanguageModelError::permanent(error)),
-                                    (event_stream, response, stop_reason, true, model),
+                                    Err(error),
+                                    (
+                                        event_stream,
+                                        response,
+                                        stop_reason,
+                                        true,
+                                        model,
+                                        tracking_request,
+                                    ),
                                 ));
-                            }
-
-                            if let Some(usage) = response.usage.as_ref() {
-                                #[cfg(feature = "metrics")]
-                                emit_usage(
-                                    &model,
-                                    usage.prompt_tokens.into(),
-                                    usage.completion_tokens.into(),
-                                    usage.total_tokens.into(),
-                                    metric_metadata.as_ref().as_ref(),
-                                );
                             }
 
                             Some((
                                 Ok(response.clone()),
-                                (event_stream, response, stop_reason, true, model),
+                                (
+                                    event_stream,
+                                    response,
+                                    stop_reason,
+                                    true,
+                                    model,
+                                    tracking_request,
+                                ),
                             ))
                         }
                         Err(error) => Some((
                             Err(super::converse_stream_output_error_to_language_model_error(
                                 error,
                             )),
-                            (event_stream, response, stop_reason, true, model),
+                            (
+                                event_stream,
+                                response,
+                                stop_reason,
+                                true,
+                                model,
+                                tracking_request,
+                            ),
                         )),
                     }
                 }
             },
         );
 
-        Box::pin(stream)
+        let span = if cfg!(feature = "langfuse") {
+            tracing::info_span!("stream", langfuse.type = "GENERATION")
+        } else {
+            tracing::info_span!("stream")
+        };
+
+        Box::pin(Instrument::instrument(stream, span))
     }
 }
 

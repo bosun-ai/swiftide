@@ -4,6 +4,8 @@ use aws_sdk_bedrockruntime::types::{
     OutputFormatStructure, OutputFormatType,
 };
 use schemars::Schema;
+#[cfg(feature = "langfuse")]
+use serde_json::json;
 use swiftide_core::{
     DynStructuredPrompt, chat_completion::errors::LanguageModelError, prompt::Prompt,
 };
@@ -12,7 +14,11 @@ use super::AwsBedrock;
 
 #[async_trait]
 impl DynStructuredPrompt for AwsBedrock {
-    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
+    #[cfg_attr(
+        feature = "langfuse",
+        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
+    )]
     async fn structured_prompt_dyn(
         &self,
         prompt: Prompt,
@@ -21,6 +27,14 @@ impl DynStructuredPrompt for AwsBedrock {
         let prompt_text = prompt.render()?;
         let model = self.prompt_model()?;
         let schema_json = serde_json::to_string(&schema).map_err(LanguageModelError::permanent)?;
+        #[cfg(feature = "langfuse")]
+        let tracking_request = Some(json!({
+            "model": model,
+            "prompt": prompt_text.as_str(),
+            "schema": schema,
+        }));
+        #[cfg(not(feature = "langfuse"))]
+        let tracking_request: Option<serde_json::Value> = None;
 
         let message = Message::builder()
             .role(ConversationRole::User)
@@ -62,9 +76,13 @@ impl DynStructuredPrompt for AwsBedrock {
 
         let completion = super::chat_completion::response_to_chat_completion(&response)?;
 
-        if let Some(usage) = completion.usage.as_ref() {
-            self.report_usage(model, usage).await?;
-        }
+        self.track_completion(
+            model,
+            completion.usage.as_ref(),
+            tracking_request.as_ref(),
+            Some(&completion),
+        )
+        .await?;
 
         let Some(response_text) = completion.message else {
             if let Some(error) = super::context_length_exceeded_if_empty(
