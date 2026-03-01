@@ -9,7 +9,7 @@ use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 #[derive(Builder, Clone, PartialEq, Debug)]
 #[builder(setter(into, strip_option))]
 pub struct ChatCompletionRequest<'a> {
-    pub messages: Cow<'a, [ChatMessage<'a>]>,
+    pub messages: Cow<'a, [ChatMessage]>,
     #[builder(default, setter(custom))]
     pub tools_spec: HashSet<ToolSpec>,
 }
@@ -20,7 +20,7 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 
     /// Returns the chat messages included in the request.
-    pub fn messages(&self) -> &[ChatMessage<'a>] {
+    pub fn messages(&self) -> &[ChatMessage] {
         self.messages.as_ref()
     }
 
@@ -38,8 +38,8 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 }
 
-impl<'a> From<Vec<ChatMessage<'a>>> for ChatCompletionRequest<'a> {
-    fn from(messages: Vec<ChatMessage<'a>>) -> Self {
+impl From<Vec<ChatMessage>> for ChatCompletionRequest<'_> {
+    fn from(messages: Vec<ChatMessage>) -> Self {
         ChatCompletionRequest {
             messages: Cow::Owned(messages),
             tools_spec: HashSet::new(),
@@ -47,8 +47,8 @@ impl<'a> From<Vec<ChatMessage<'a>>> for ChatCompletionRequest<'a> {
     }
 }
 
-impl<'a> From<&'a [ChatMessage<'a>]> for ChatCompletionRequest<'a> {
-    fn from(messages: &'a [ChatMessage<'a>]) -> Self {
+impl<'a> From<&'a [ChatMessage]> for ChatCompletionRequest<'a> {
+    fn from(messages: &'a [ChatMessage]) -> Self {
         ChatCompletionRequest {
             messages: Cow::Borrowed(messages),
             tools_spec: HashSet::new(),

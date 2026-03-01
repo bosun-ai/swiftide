@@ -6,7 +6,7 @@ use super::Redis;
 
 #[async_trait]
 impl<T: Chunk> MessageHistory for Redis<T> {
-    async fn history(&self) -> Result<Vec<ChatMessage<'static>>> {
+    async fn history(&self) -> Result<Vec<ChatMessage>> {
         if let Some(mut cm) = self.lazy_connect().await {
             let messages: Vec<String> = redis::cmd("LRANGE")
                 .arg(&self.message_history_key)
@@ -18,8 +18,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
             messages
                 .into_iter()
                 .map(|msg| {
-                    serde_json::from_str::<ChatMessage<'static>>(&msg)
-                        .context("Error deserializing message")
+                    serde_json::from_str::<ChatMessage>(&msg).context("Error deserializing message")
                 })
                 .collect()
         } else {
@@ -27,7 +26,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
         }
     }
 
-    async fn push_owned(&self, item: ChatMessage<'static>) -> Result<()> {
+    async fn push_owned(&self, item: ChatMessage) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
@@ -41,7 +40,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
         }
     }
 
-    async fn extend_owned(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
+    async fn extend_owned(&self, items: Vec<ChatMessage>) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
             if items.is_empty() {
                 return Ok(());
@@ -59,7 +58,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
         }
     }
 
-    async fn overwrite(&self, items: Vec<ChatMessage<'static>>) -> Result<()> {
+    async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()> {
         if let Some(mut cm) = self.lazy_connect().await {
             // If it does not exist yet, we can just push the items
             let _ = redis::cmd("DEL")
@@ -85,7 +84,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
     }
 }
 
-fn serialize_messages(items: Vec<ChatMessage<'static>>) -> Result<Vec<String>> {
+fn serialize_messages(items: Vec<ChatMessage>) -> Result<Vec<String>> {
     items
         .into_iter()
         .map(|item| serde_json::to_string(&item).context("Error serializing message"))

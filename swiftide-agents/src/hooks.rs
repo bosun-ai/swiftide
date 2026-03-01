@@ -128,10 +128,7 @@ dyn_clone::clone_trait_object!(BeforeToolFn);
 
 /// Hooks that are called when a new message is added to the `AgentContext`
 pub trait MessageHookFn:
-    for<'a> Fn(
-        &'a Agent,
-        &mut ChatMessage<'static>,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
+    for<'a> Fn(&'a Agent, &mut ChatMessage) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
     + DynClone
@@ -266,7 +263,7 @@ impl<F> AfterToolFn for F where
 impl<F> MessageHookFn for F where
     F: for<'a> Fn(
             &'a Agent,
-            &mut ChatMessage<'static>,
+            &mut ChatMessage,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync

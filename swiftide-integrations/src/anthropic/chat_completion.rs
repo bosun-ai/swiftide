@@ -287,8 +287,8 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
                 .content(tool_output.content().unwrap_or("Success"))
                 .build()?,
         ),
-        ChatMessage::Summary(msg) | ChatMessage::System(msg) => builder.content(msg.as_ref()),
-        ChatMessage::User(content) => builder.content(content.as_ref()),
+        ChatMessage::Summary(msg) | ChatMessage::System(msg) => builder.content(msg.as_str()),
+        ChatMessage::User(content) => builder.content(content.as_str()),
         ChatMessage::UserWithParts(parts) => {
             if parts.iter().any(|part| {
                 !matches!(
@@ -318,7 +318,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
             let mut content_list: Vec<MessageContent> = Vec::new();
 
             if let Some(content) = content.as_ref() {
-                content_list.push(content.as_ref().into());
+                content_list.push(content.clone().into());
             }
 
             if let Some(tool_calls) = tool_calls.as_ref() {

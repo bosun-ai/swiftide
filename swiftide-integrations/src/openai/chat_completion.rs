@@ -707,7 +707,7 @@ fn part_to_openai_user_content_part(
 
 fn source_to_openai_url(source: &ChatMessageContentSource) -> Result<String> {
     match source {
-        ChatMessageContentSource::Url { url } => Ok(url.as_ref().to_owned()),
+        ChatMessageContentSource::Url { url } => Ok(url.clone()),
         ChatMessageContentSource::FileId { .. } => {
             anyhow::bail!("OpenAI chat image_url does not accept file_id sources")
         }

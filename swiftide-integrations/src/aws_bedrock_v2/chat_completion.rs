@@ -300,10 +300,10 @@ fn build_converse_input(
     for message in source_messages {
         match message {
             ChatMessage::System(text) => {
-                system.push(SystemContentBlock::Text(text.as_ref().to_owned()));
+                system.push(SystemContentBlock::Text(text.clone()));
             }
             ChatMessage::Summary(text) | ChatMessage::User(text) => {
-                messages.push(user_message_from_text(text.as_ref().to_owned())?);
+                messages.push(user_message_from_text(text.clone())?);
             }
             ChatMessage::UserWithParts(parts) => messages.push(user_message_from_parts(parts)?),
             ChatMessage::Assistant(content, maybe_tool_calls) => {
@@ -315,7 +315,7 @@ fn build_converse_input(
                 if let Some(content) = content.as_ref()
                     && !content.is_empty()
                 {
-                    blocks.push(ContentBlock::Text(content.as_ref().to_owned()));
+                    blocks.push(ContentBlock::Text(content.clone()));
                 }
 
                 if let Some(tool_calls) = maybe_tool_calls.as_ref() {
@@ -393,7 +393,7 @@ fn user_message_from_parts(
         match part {
             ChatMessageContentPart::Text { text } => {
                 if !text.is_empty() {
-                    blocks.push(ContentBlock::Text(text.as_ref().to_owned()));
+                    blocks.push(ContentBlock::Text(text.clone()));
                     has_text = true;
                 }
             }
@@ -540,7 +540,7 @@ fn source_from_content_source<T>(
     from_s3: impl Fn(S3Location) -> T,
 ) -> Result<T, LanguageModelError> {
     match source {
-        ChatMessageContentSource::Bytes { data, .. } => Ok(from_bytes(Blob::new(data.to_vec()))),
+        ChatMessageContentSource::Bytes { data, .. } => Ok(from_bytes(Blob::new(data.clone()))),
         ChatMessageContentSource::S3 { uri, bucket_owner } => {
             Ok(from_s3(s3_location(uri, bucket_owner.as_deref())?))
         }
