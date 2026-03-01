@@ -110,22 +110,33 @@ impl DynStructuredPrompt for AwsBedrock {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
     };
 
+    use aws_sdk_bedrockruntime::Client;
     use aws_sdk_bedrockruntime::{
         operation::converse::ConverseOutput,
         types::{
             ContentBlock, ConversationRole, ConverseOutput as ConverseResult, Message, StopReason,
-            TokenUsage,
+            TokenUsage, ToolUseBlock,
         },
     };
+    use aws_smithy_types::Document;
     use schemars::{JsonSchema, schema_for};
+    use serde_json::{Value, json};
+    use wiremock::{
+        Mock, MockServer, Request, Respond, ResponseTemplate,
+        matchers::{method, path},
+    };
 
     use super::*;
-    use crate::aws_bedrock_v2::{AwsBedrock, MockBedrockConverse};
+    use crate::aws_bedrock_v2::{
+        AwsBedrock, MockBedrockConverse,
+        test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server},
+    };
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema, PartialEq, Eq)]
     struct StructuredOutput {
@@ -254,5 +265,159 @@ mod tests {
             .unwrap();
 
         assert_eq!(observed_total.load(Ordering::Relaxed), 14);
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_green_path_with_wiremock() {
+        struct ValidateStructuredConverseRequest;
+
+        impl Respond for ValidateStructuredConverseRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let payload: Value = serde_json::from_slice(&request.body).expect("request json");
+
+                assert_eq!(payload["messages"][0]["role"], "user");
+                assert_eq!(
+                    payload["messages"][0]["content"][0]["text"],
+                    "What is two times twenty one?"
+                );
+                assert_eq!(payload["outputConfig"]["textFormat"]["type"], "json_schema");
+                assert_eq!(
+                    payload["outputConfig"]["textFormat"]["structure"]["jsonSchema"]["name"],
+                    "structured_prompt"
+                );
+                let schema =
+                    payload["outputConfig"]["textFormat"]["structure"]["jsonSchema"]["schema"]
+                        .as_str()
+                        .expect("schema string");
+                assert!(schema.contains("\"answer\""));
+
+                ResponseTemplate::new(200).set_body_json(json!({
+                    "output": {
+                        "message": {
+                            "role": "assistant",
+                            "content": [
+                                {"text": "{\"answer\":\"42\"}"}
+                            ]
+                        }
+                    },
+                    "stopReason": "end_turn",
+                    "usage": {
+                        "inputTokens": 2,
+                        "outputTokens": 3,
+                        "totalTokens": 5
+                    }
+                }))
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path(format!("/model/{TEST_MODEL_ID}/converse")))
+            .respond_with(ValidateStructuredConverseRequest)
+            .mount(&mock_server)
+            .await;
+
+        let client: Client = bedrock_client_for_mock_server(&mock_server.uri());
+        let bedrock = AwsBedrock::builder()
+            .client(client)
+            .default_prompt_model(TEST_MODEL_ID)
+            .build()
+            .unwrap();
+
+        let value = bedrock
+            .structured_prompt_dyn(
+                "What is two times twenty one?".into(),
+                schema_for!(StructuredOutput),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            serde_json::from_value::<StructuredOutput>(value).unwrap(),
+            StructuredOutput {
+                answer: "42".to_string()
+            }
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_returns_error_when_response_has_no_text() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .returning(|_, _, _, _, _, _, _, _| {
+                Ok(ConverseOutput::builder()
+                    .output(ConverseResult::Message(
+                        Message::builder()
+                            .role(ConversationRole::Assistant)
+                            .content(ContentBlock::ToolUse(
+                                ToolUseBlock::builder()
+                                    .tool_use_id("call_1")
+                                    .name("structured_prompt")
+                                    .input(Document::Object(HashMap::new()))
+                                    .build()
+                                    .unwrap(),
+                            ))
+                            .build()
+                            .unwrap(),
+                    ))
+                    .stop_reason(StopReason::ToolUse)
+                    .build()
+                    .unwrap())
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let error = bedrock
+            .structured_prompt_dyn("Prompt".into(), schema_for!(StructuredOutput))
+            .await
+            .unwrap_err();
+        assert!(matches!(error, LanguageModelError::PermanentError(_)));
+        assert!(error.to_string().contains("No text in response"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_returns_error_on_invalid_json_payload() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .returning(|_, _, _, _, _, _, _, _| {
+                Ok(ConverseOutput::builder()
+                    .output(ConverseResult::Message(
+                        Message::builder()
+                            .role(ConversationRole::Assistant)
+                            .content(ContentBlock::Text("not-json".to_string()))
+                            .build()
+                            .unwrap(),
+                    ))
+                    .stop_reason(StopReason::EndTurn)
+                    .build()
+                    .unwrap())
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let error = bedrock
+            .structured_prompt_dyn("Prompt".into(), schema_for!(StructuredOutput))
+            .await
+            .unwrap_err();
+        assert!(matches!(error, LanguageModelError::PermanentError(_)));
+        assert!(
+            error
+                .to_string()
+                .contains("Failed to parse model response as JSON")
+        );
     }
 }

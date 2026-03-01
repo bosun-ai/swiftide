@@ -148,6 +148,7 @@ insta = { workspace = true }
 wiremock = { workspace = true }
 tokio-stream = { workspace = true }
 eventsource-stream.workspace = true
+aws-smithy-eventstream = "0.60.19"
 
 
 [features]

@@ -34,21 +34,32 @@ impl SimplePrompt for AwsBedrock {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::sync::{
         Arc,
         atomic::{AtomicU32, Ordering},
     };
 
+    use aws_sdk_bedrockruntime::Client;
     use aws_sdk_bedrockruntime::{
         operation::converse::ConverseOutput,
         types::{
             ContentBlock, ConversationRole, ConverseOutput as ConverseResult, Message, StopReason,
-            TokenUsage,
+            TokenUsage, ToolUseBlock,
         },
+    };
+    use aws_smithy_types::Document;
+    use serde_json::{Value, json};
+    use wiremock::{
+        Mock, MockServer, Request, Respond, ResponseTemplate,
+        matchers::{method, path},
     };
 
     use super::*;
-    use crate::aws_bedrock_v2::{AwsBedrock, MockBedrockConverse};
+    use crate::aws_bedrock_v2::{
+        AwsBedrock, MockBedrockConverse,
+        test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server},
+    };
 
     fn response_with_text(text: &str) -> ConverseOutput {
         ConverseOutput::builder()
@@ -218,5 +229,94 @@ mod tests {
 
         assert_eq!(response, "ok");
         assert_eq!(observed_total.load(Ordering::Relaxed), 18);
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_prompt_green_path_with_wiremock() {
+        struct ValidateConverseRequest;
+
+        impl Respond for ValidateConverseRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let payload: Value = serde_json::from_slice(&request.body).expect("request json");
+                assert_eq!(payload["messages"][0]["role"], "user");
+                assert_eq!(
+                    payload["messages"][0]["content"][0]["text"],
+                    "hello from prompt"
+                );
+
+                ResponseTemplate::new(200).set_body_json(json!({
+                    "output": {
+                        "message": {
+                            "role": "assistant",
+                            "content": [
+                                {"text": "prompt result"}
+                            ]
+                        }
+                    },
+                    "stopReason": "end_turn",
+                    "usage": {
+                        "inputTokens": 1,
+                        "outputTokens": 2,
+                        "totalTokens": 3
+                    }
+                }))
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path(format!("/model/{TEST_MODEL_ID}/converse")))
+            .respond_with(ValidateConverseRequest)
+            .mount(&mock_server)
+            .await;
+
+        let client: Client = bedrock_client_for_mock_server(&mock_server.uri());
+        let bedrock = AwsBedrock::builder()
+            .client(client)
+            .default_prompt_model(TEST_MODEL_ID)
+            .build()
+            .unwrap();
+
+        let response = bedrock.prompt("hello from prompt".into()).await.unwrap();
+        assert_eq!(response, "prompt result");
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_prompt_returns_error_when_completion_has_no_text() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .returning(|_, _, _, _, _, _, _, _| {
+                Ok(ConverseOutput::builder()
+                    .output(ConverseResult::Message(
+                        Message::builder()
+                            .role(ConversationRole::Assistant)
+                            .content(ContentBlock::ToolUse(
+                                ToolUseBlock::builder()
+                                    .tool_use_id("call_1")
+                                    .name("get_weather")
+                                    .input(Document::Object(HashMap::new()))
+                                    .build()
+                                    .unwrap(),
+                            ))
+                            .build()
+                            .unwrap(),
+                    ))
+                    .stop_reason(StopReason::ToolUse)
+                    .build()
+                    .unwrap())
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let error = bedrock.prompt("Hello".into()).await.unwrap_err();
+        assert!(matches!(error, LanguageModelError::PermanentError(_)));
+        assert!(error.to_string().contains("No text in response"));
     }
 }

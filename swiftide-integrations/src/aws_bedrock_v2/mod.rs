@@ -29,6 +29,8 @@ use mockall::automock;
 mod chat_completion;
 mod simple_prompt;
 mod structured_prompt;
+#[cfg(test)]
+mod test_utils;
 
 /// Converse-based integration with AWS Bedrock.
 ///
@@ -620,4 +622,397 @@ fn truncate_data_url(url: &str) -> Option<String> {
     Some(format!(
         "{prefix},{preview}...[truncated {truncated} chars]"
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    };
+
+    use aws_sdk_bedrockruntime::{
+        error::{ConnectorError, SdkError},
+        operation::{converse::ConverseError, converse_stream::ConverseStreamError},
+        types::{
+            StopReason, TokenUsage,
+            error::{
+                ConverseStreamOutputError, InternalServerException, ModelNotReadyException,
+                ModelStreamErrorException, ServiceUnavailableException, ThrottlingException,
+                ValidationException,
+            },
+        },
+    };
+    use swiftide_core::chat_completion::errors::LanguageModelError;
+
+    use super::*;
+
+    fn usage(total_tokens: u32) -> Usage {
+        Usage {
+            prompt_tokens: total_tokens / 2,
+            completion_tokens: total_tokens - (total_tokens / 2),
+            total_tokens,
+            details: None,
+        }
+    }
+
+    #[test]
+    fn test_options_builder_and_merge_only_overrides_present_fields() {
+        let mut base = Options::builder()
+            .prompt_model("model-a")
+            .max_tokens(128)
+            .temperature(0.1)
+            .top_p(0.8)
+            .stop_sequences(vec!["STOP_A".to_string()])
+            .tool_strict(false)
+            .build()
+            .unwrap();
+
+        let mut request_fields = std::collections::HashMap::new();
+        request_fields.insert("thinking".to_string(), Document::Bool(true));
+
+        let other = Options {
+            prompt_model: Some("model-b".to_string()),
+            max_tokens: None,
+            temperature: Some(0.6),
+            top_p: None,
+            stop_sequences: Some(vec!["STOP_B".to_string()]),
+            tool_strict: Some(true),
+            additional_model_request_fields: Some(Document::Object(request_fields)),
+            additional_model_response_field_paths: Some(vec!["/thinking".to_string()]),
+        };
+
+        base.merge(other);
+
+        assert_eq!(base.prompt_model.as_deref(), Some("model-b"));
+        assert_eq!(base.max_tokens, Some(128));
+        assert_eq!(base.temperature, Some(0.6));
+        assert_eq!(base.top_p, Some(0.8));
+        assert_eq!(
+            base.stop_sequences.as_deref(),
+            Some(&["STOP_B".to_string()][..])
+        );
+        assert_eq!(base.tool_strict, Some(true));
+        assert!(base.additional_model_request_fields.is_some());
+        assert_eq!(
+            base.additional_model_response_field_paths.as_deref(),
+            Some(&["/thinking".to_string()][..])
+        );
+    }
+
+    #[test]
+    fn test_tool_strict_enabled_defaults_to_true() {
+        assert!(Options::default().tool_strict_enabled());
+        assert!(
+            !Options {
+                tool_strict: Some(false),
+                ..Default::default()
+            }
+            .tool_strict_enabled()
+        );
+    }
+
+    #[test]
+    fn test_builder_default_options_and_prompt_model_merge_branches() {
+        let mut builder = AwsBedrock::builder();
+        builder.test_client(MockBedrockConverse::new());
+
+        builder.default_prompt_model("model-initial");
+        builder.default_prompt_model("model-final");
+
+        builder.default_options(Options {
+            max_tokens: Some(64),
+            ..Default::default()
+        });
+        builder.default_options(Options {
+            temperature: Some(0.7),
+            ..Default::default()
+        });
+
+        let mut client = builder.build().unwrap();
+        assert_eq!(
+            client.options().prompt_model.as_deref(),
+            Some("model-final")
+        );
+        assert_eq!(client.options().max_tokens, Some(64));
+        assert_eq!(client.options().temperature, Some(0.7));
+
+        client.options_mut().top_p = Some(0.9);
+        assert_eq!(client.options().top_p, Some(0.9));
+        assert!(format!("{client:?}").contains("AwsBedrock"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_track_completion_invokes_sync_usage_callback() {
+        let observed = Arc::new(AtomicU32::new(0));
+        let observed_for_callback = observed.clone();
+
+        let mut builder = AwsBedrock::builder();
+        builder
+            .test_client(MockBedrockConverse::new())
+            .default_prompt_model("model-a")
+            .on_usage(move |usage| {
+                observed_for_callback.store(usage.total_tokens, Ordering::Relaxed);
+                Ok(())
+            });
+
+        let bedrock = builder.build().unwrap();
+        let req = serde_json::json!({"request": "value"});
+        let resp = serde_json::json!({"response": "value"});
+        let usage = usage(42);
+
+        bedrock
+            .track_completion("model-a", Some(&usage), Some(&req), Some(&resp))
+            .await
+            .unwrap();
+
+        assert_eq!(observed.load(Ordering::Relaxed), 42);
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_track_completion_invokes_async_usage_callback() {
+        let observed = Arc::new(AtomicU32::new(0));
+        let observed_for_callback = observed.clone();
+
+        let mut builder = AwsBedrock::builder();
+        builder
+            .test_client(MockBedrockConverse::new())
+            .default_prompt_model("model-a")
+            .on_usage_async(move |usage| {
+                let observed_for_callback = observed_for_callback.clone();
+                Box::pin(async move {
+                    observed_for_callback.store(usage.total_tokens, Ordering::Relaxed);
+                    Ok(())
+                })
+            });
+
+        let bedrock = builder.build().unwrap();
+        let usage = usage(99);
+
+        bedrock
+            .track_completion(
+                "model-a",
+                Some(&usage),
+                None::<&serde_json::Value>,
+                None::<&serde_json::Value>,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(observed.load(Ordering::Relaxed), 99);
+    }
+
+    #[test]
+    fn test_inference_config_from_options_builds_only_when_values_are_set() {
+        assert!(inference_config_from_options(&Options::default()).is_none());
+
+        let options = Options {
+            max_tokens: Some(256),
+            temperature: Some(0.2),
+            top_p: Some(0.9),
+            stop_sequences: Some(vec!["DONE".to_string()]),
+            ..Default::default()
+        };
+
+        let config = inference_config_from_options(&options).expect("inference config");
+        assert_eq!(config.max_tokens(), Some(256));
+        assert_eq!(config.temperature(), Some(0.2));
+        assert_eq!(config.top_p(), Some(0.9));
+        assert_eq!(config.stop_sequences(), ["DONE"]);
+    }
+
+    #[test]
+    fn test_usage_from_bedrock_prefers_cache_read_and_falls_back_to_cache_write() {
+        let read_usage = TokenUsage::builder()
+            .input_tokens(10)
+            .output_tokens(5)
+            .total_tokens(15)
+            .cache_read_input_tokens(3)
+            .cache_write_input_tokens(9)
+            .build()
+            .unwrap();
+        let mapped_read = usage_from_bedrock(&read_usage);
+        assert_eq!(
+            mapped_read
+                .details
+                .as_ref()
+                .and_then(|details| details.input_tokens_details.as_ref())
+                .and_then(|details| details.cached_tokens),
+            Some(3)
+        );
+
+        let write_usage = TokenUsage::builder()
+            .input_tokens(10)
+            .output_tokens(5)
+            .total_tokens(15)
+            .cache_write_input_tokens(7)
+            .build()
+            .unwrap();
+        let mapped_write = usage_from_bedrock(&write_usage);
+        assert_eq!(
+            mapped_write
+                .details
+                .as_ref()
+                .and_then(|details| details.input_tokens_details.as_ref())
+                .and_then(|details| details.cached_tokens),
+            Some(7)
+        );
+    }
+
+    #[test]
+    fn test_usage_from_bedrock_defaults_negative_counts_to_zero() {
+        let usage = TokenUsage::builder()
+            .input_tokens(-1)
+            .output_tokens(-2)
+            .total_tokens(-3)
+            .build()
+            .unwrap();
+        let mapped = usage_from_bedrock(&usage);
+
+        assert_eq!(mapped.prompt_tokens, 0);
+        assert_eq!(mapped.completion_tokens, 0);
+        assert_eq!(mapped.total_tokens, 0);
+        assert_eq!(i32_to_u32(-1), None);
+        assert_eq!(i32_to_u32(12), Some(12));
+    }
+
+    #[test]
+    fn test_context_length_exceeded_only_when_empty_and_context_limit_hit() {
+        assert!(
+            context_length_exceeded_if_empty(
+                false,
+                false,
+                false,
+                Some(&StopReason::ModelContextWindowExceeded)
+            )
+            .is_some()
+        );
+        assert!(context_length_exceeded_if_empty(true, false, false, None).is_none());
+        assert!(context_length_exceeded_if_empty(false, true, false, None).is_none());
+        assert!(context_length_exceeded_if_empty(false, false, true, None).is_none());
+        assert!(
+            context_length_exceeded_if_empty(false, false, false, Some(&StopReason::EndTurn))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn test_sdk_error_mapping_classifies_transient_transport_failures() {
+        let timeout = sdk_error_to_language_model_error::<ConverseError, ()>(
+            SdkError::timeout_error("timeout"),
+            |_| false,
+        );
+        assert!(matches!(timeout, LanguageModelError::TransientError(_)));
+
+        let dispatch = sdk_error_to_language_model_error::<ConverseError, ()>(
+            SdkError::dispatch_failure(ConnectorError::other("dispatch".into(), None)),
+            |_| false,
+        );
+        assert!(matches!(dispatch, LanguageModelError::TransientError(_)));
+
+        let response = sdk_error_to_language_model_error::<ConverseError, ()>(
+            SdkError::response_error("response", ()),
+            |_| false,
+        );
+        assert!(matches!(response, LanguageModelError::TransientError(_)));
+
+        let construction = sdk_error_to_language_model_error::<ConverseError, ()>(
+            SdkError::construction_failure("construction"),
+            |_| false,
+        );
+        assert!(matches!(
+            construction,
+            LanguageModelError::PermanentError(_)
+        ));
+    }
+
+    #[test]
+    fn test_converse_error_mapping_distinguishes_transient_and_permanent_service_errors() {
+        let throttled = converse_error_to_language_model_error::<()>(SdkError::service_error(
+            ConverseError::ThrottlingException(ThrottlingException::builder().build()),
+            (),
+        ));
+        assert!(matches!(throttled, LanguageModelError::TransientError(_)));
+
+        let validation = converse_error_to_language_model_error::<()>(SdkError::service_error(
+            ConverseError::ValidationException(ValidationException::builder().build()),
+            (),
+        ));
+        assert!(matches!(validation, LanguageModelError::PermanentError(_)));
+    }
+
+    #[test]
+    fn test_converse_stream_error_mapping_distinguishes_transient_and_permanent_service_errors() {
+        let unavailable =
+            converse_stream_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseStreamError::ServiceUnavailableException(
+                    ServiceUnavailableException::builder().build(),
+                ),
+                (),
+            ));
+        assert!(matches!(unavailable, LanguageModelError::TransientError(_)));
+
+        let validation =
+            converse_stream_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseStreamError::ValidationException(ValidationException::builder().build()),
+                (),
+            ));
+        assert!(matches!(validation, LanguageModelError::PermanentError(_)));
+    }
+
+    #[test]
+    fn test_converse_stream_output_error_mapping_distinguishes_transient_and_permanent_service_errors()
+     {
+        let transient =
+            converse_stream_output_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseStreamOutputError::ModelStreamErrorException(
+                    ModelStreamErrorException::builder().build(),
+                ),
+                (),
+            ));
+        assert!(matches!(transient, LanguageModelError::TransientError(_)));
+
+        let permanent =
+            converse_stream_output_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseStreamOutputError::ValidationException(
+                    ValidationException::builder().build(),
+                ),
+                (),
+            ));
+        assert!(matches!(permanent, LanguageModelError::PermanentError(_)));
+    }
+
+    #[test]
+    fn test_error_chain_message_collects_nested_sources() {
+        let source = std::io::Error::other("inner");
+        let outer = std::io::Error::other(source);
+        let chain = error_chain_message(&outer);
+
+        assert!(chain.contains("inner"));
+    }
+
+    #[test]
+    fn test_converse_error_mapping_model_not_ready_and_stream_internal_server_are_transient() {
+        let model_not_ready =
+            converse_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseError::ModelNotReadyException(ModelNotReadyException::builder().build()),
+                (),
+            ));
+        assert!(matches!(
+            model_not_ready,
+            LanguageModelError::TransientError(_)
+        ));
+
+        let stream_internal =
+            converse_stream_output_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseStreamOutputError::InternalServerException(
+                    InternalServerException::builder().build(),
+                ),
+                (),
+            ));
+        assert!(matches!(
+            stream_internal,
+            LanguageModelError::TransientError(_)
+        ));
+    }
 }

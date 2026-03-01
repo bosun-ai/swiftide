@@ -816,13 +816,10 @@ fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageM
 }
 
 fn normalize_tool_input_schema(schema: Document) -> Result<Document, LanguageModelError> {
-    let mut schema = match schema {
-        Document::Object(schema) => schema,
-        _ => {
-            return Err(LanguageModelError::permanent(
-                "Bedrock tool schema must be a JSON object schema",
-            ));
-        }
+    let Document::Object(mut schema) = schema else {
+        return Err(LanguageModelError::permanent(
+            "Bedrock tool schema must be a JSON object schema",
+        ));
     };
 
     if let Some(schema_type) = schema.get("type") {
@@ -1193,6 +1190,7 @@ const VIDEO_EXTENSION_FORMATS: &[(&str, &str)] = &[
 
 #[cfg(test)]
 mod tests {
+    use aws_sdk_bedrockruntime::Client;
     use aws_sdk_bedrockruntime::{
         operation::converse::ConverseOutput,
         types::{
@@ -1202,13 +1200,22 @@ mod tests {
             ToolUseBlockDelta, ToolUseBlockStart,
         },
     };
+    use futures_util::StreamExt as _;
     use schemars::{JsonSchema, schema_for};
+    use serde_json::{Value, json};
     use swiftide_core::chat_completion::{
         ChatMessage, ChatMessageContentPart, ChatMessageContentSource, ReasoningItem, ToolSpec,
     };
+    use wiremock::{
+        Mock, MockServer, Request, Respond, ResponseTemplate,
+        matchers::{method, path},
+    };
 
     use super::*;
-    use crate::aws_bedrock_v2::{AwsBedrock, MockBedrockConverse};
+    use crate::aws_bedrock_v2::{
+        AwsBedrock, MockBedrockConverse,
+        test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server, converse_stream_event},
+    };
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
     struct WeatherArgs {
@@ -1418,6 +1425,235 @@ mod tests {
             .unwrap();
 
         let _ = bedrock.complete(&request).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_requires_model() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+        bedrock_mock.expect_converse_stream().never();
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user("Hello")])
+            .build()
+            .unwrap();
+
+        let mut stream = bedrock.complete_stream(&request).await;
+        let first = stream.next().await.expect("stream should yield one item");
+        assert!(matches!(first, Err(LanguageModelError::PermanentError(_))));
+        assert!(stream.next().await.is_none());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_rejects_system_only_messages() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+        bedrock_mock.expect_converse_stream().never();
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_system("You are a helper")])
+            .build()
+            .unwrap();
+
+        let mut stream = bedrock.complete_stream(&request).await;
+        let first = stream.next().await.expect("stream should yield one item");
+        assert!(matches!(first, Err(LanguageModelError::PermanentError(_))));
+        assert!(stream.next().await.is_none());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_returns_upstream_stream_error() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse_stream()
+            .once()
+            .withf(
+                |model_id,
+                 messages,
+                 system,
+                 inference_config,
+                 tool_config,
+                 _additional_model_request_fields,
+                 _additional_model_response_field_paths| {
+                    model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+                        && messages.len() == 1
+                        && matches!(messages[0].role(), ConversationRole::User)
+                        && matches!(messages[0].content().first(), Some(ContentBlock::Text(text)) if text == "Hello")
+                        && system.is_none()
+                        && inference_config.is_none()
+                        && tool_config.is_none()
+                },
+            )
+            .returning(|_, _, _, _, _, _, _| {
+                Err(LanguageModelError::transient(anyhow::anyhow!(
+                    "stream init failed"
+                )))
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user("Hello")])
+            .build()
+            .unwrap();
+
+        let mut stream = bedrock.complete_stream(&request).await;
+        let first = stream.next().await.expect("stream should yield one item");
+        assert!(matches!(first, Err(LanguageModelError::TransientError(_))));
+        assert!(stream.next().await.is_none());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_green_path_with_wiremock() {
+        struct ValidateConverseRequest;
+
+        impl Respond for ValidateConverseRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let payload: Value = serde_json::from_slice(&request.body).expect("request json");
+
+                assert_eq!(payload["messages"][0]["role"], "user");
+                assert_eq!(payload["messages"][0]["content"][0]["text"], "Hello");
+
+                ResponseTemplate::new(200).set_body_json(json!({
+                    "output": {
+                        "message": {
+                            "role": "assistant",
+                            "content": [
+                                {"text": "Hello from bedrock"}
+                            ]
+                        }
+                    },
+                    "stopReason": "end_turn",
+                    "usage": {
+                        "inputTokens": 2,
+                        "outputTokens": 5,
+                        "totalTokens": 7
+                    }
+                }))
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path(format!("/model/{TEST_MODEL_ID}/converse")))
+            .respond_with(ValidateConverseRequest)
+            .mount(&mock_server)
+            .await;
+
+        let client: Client = bedrock_client_for_mock_server(&mock_server.uri());
+        let bedrock = AwsBedrock::builder()
+            .client(client)
+            .default_prompt_model(TEST_MODEL_ID)
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user("Hello")])
+            .build()
+            .unwrap();
+
+        let response = bedrock.complete(&request).await.unwrap();
+
+        assert_eq!(response.message(), Some("Hello from bedrock"));
+        assert_eq!(
+            response.usage.as_ref().map(|usage| usage.total_tokens),
+            Some(7)
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_green_path_with_wiremock() {
+        struct ValidateConverseStreamRequest {
+            stream_body: Vec<u8>,
+        }
+
+        impl Respond for ValidateConverseStreamRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let payload: Value = serde_json::from_slice(&request.body).expect("request json");
+
+                assert_eq!(payload["messages"][0]["role"], "user");
+                assert_eq!(payload["messages"][0]["content"][0]["text"], "Hello");
+
+                ResponseTemplate::new(200).set_body_raw(
+                    self.stream_body.clone(),
+                    "application/vnd.amazon.eventstream",
+                )
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+        let stream_body = [
+            converse_stream_event(
+                "contentBlockDelta",
+                &json!({
+                    "contentBlockIndex": 0,
+                    "delta": {"text": "Hello stream"}
+                }),
+            ),
+            converse_stream_event(
+                "metadata",
+                &json!({
+                    "usage": {
+                        "inputTokens": 4,
+                        "outputTokens": 5,
+                        "totalTokens": 9
+                    }
+                }),
+            ),
+            converse_stream_event(
+                "messageStop",
+                &json!({
+                    "stopReason": "end_turn"
+                }),
+            ),
+        ]
+        .concat();
+
+        Mock::given(method("POST"))
+            .and(path(format!("/model/{TEST_MODEL_ID}/converse-stream")))
+            .respond_with(ValidateConverseStreamRequest { stream_body })
+            .mount(&mock_server)
+            .await;
+
+        let client: Client = bedrock_client_for_mock_server(&mock_server.uri());
+        let bedrock = AwsBedrock::builder()
+            .client(client)
+            .default_prompt_model(TEST_MODEL_ID)
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user("Hello")])
+            .build()
+            .unwrap();
+
+        let responses = bedrock
+            .complete_stream(&request)
+            .await
+            .collect::<Vec<_>>()
+            .await;
+        let last = responses
+            .last()
+            .expect("stream should yield")
+            .as_ref()
+            .expect("last response ok");
+
+        assert_eq!(last.message(), Some("Hello stream"));
+        assert_eq!(last.usage.as_ref().map(|usage| usage.total_tokens), Some(9));
     }
 
     #[test]
