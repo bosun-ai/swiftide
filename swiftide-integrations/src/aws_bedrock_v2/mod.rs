@@ -200,13 +200,7 @@ impl AwsBedrock {
 impl AwsBedrockBuilder {
     #[allow(clippy::unused_self)]
     fn default_config(&self) -> aws_config::SdkConfig {
-        tokio::task::block_in_place(|| {
-            Handle::current().block_on(async {
-                aws_config::defaults(aws_config::BehaviorVersion::latest())
-                    .load()
-                    .await
-            })
-        })
+        tokio::task::block_in_place(|| Handle::current().block_on(aws_config::load_from_env()))
     }
 
     fn default_client(&self) -> Arc<Client> {

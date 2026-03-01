@@ -726,9 +726,13 @@ fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageM
         Some(schema) => {
             let schema_value =
                 serde_json::to_value(schema).map_err(LanguageModelError::permanent)?;
-            ToolInputSchema::Json(json_value_to_document(&schema_value)?)
+            ToolInputSchema::Json(normalize_tool_input_schema(json_value_to_document(
+                &schema_value,
+            )?)?)
         }
-        None => ToolInputSchema::Json(Document::Object(HashMap::new())),
+        None => ToolInputSchema::Json(normalize_tool_input_schema(Document::Object(
+            HashMap::new(),
+        ))?),
     };
 
     let mut builder = ToolSpecification::builder()
@@ -742,6 +746,35 @@ fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageM
 
     let tool_spec = builder.build().map_err(LanguageModelError::permanent)?;
     Ok(Tool::ToolSpec(tool_spec))
+}
+
+fn normalize_tool_input_schema(schema: Document) -> Result<Document, LanguageModelError> {
+    let mut schema = match schema {
+        Document::Object(schema) => schema,
+        _ => {
+            return Err(LanguageModelError::permanent(
+                "Bedrock tool schema must be a JSON object schema",
+            ));
+        }
+    };
+
+    if let Some(schema_type) = schema.get("type") {
+        if !matches!(schema_type, Document::String(value) if value == "object") {
+            return Err(LanguageModelError::permanent(
+                "Bedrock tool schema type must be \"object\"",
+            ));
+        }
+    } else {
+        schema.insert("type".to_string(), Document::String("object".to_string()));
+    }
+
+    if !schema.contains_key("properties") {
+        schema.insert("properties".to_string(), Document::Object(HashMap::new()));
+    }
+
+    schema.insert("additionalProperties".to_string(), Document::Bool(false));
+
+    Ok(Document::Object(schema))
 }
 
 pub(super) fn response_to_chat_completion(
@@ -1343,7 +1376,9 @@ mod tests {
         assert_eq!(spec.strict(), Some(true));
         assert!(matches!(
             spec.input_schema(),
-            Some(ToolInputSchema::Json(Document::Object(_)))
+            Some(ToolInputSchema::Json(Document::Object(schema)))
+                if schema.get("type") == Some(&Document::String("object".to_string()))
+                    && schema.get("additionalProperties") == Some(&Document::Bool(false))
         ));
     }
 
@@ -1364,6 +1399,12 @@ mod tests {
         };
 
         assert_eq!(spec.strict(), Some(false));
+        assert!(matches!(
+            spec.input_schema(),
+            Some(ToolInputSchema::Json(Document::Object(schema)))
+                if schema.get("type") == Some(&Document::String("object".to_string()))
+                    && schema.get("additionalProperties") == Some(&Document::Bool(false))
+        ));
     }
 
     #[test]
