@@ -10,12 +10,22 @@
 //! [Swiftide]: https://github.com/bosun-ai/swiftide
 
 use anyhow::Result;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use swiftide::{
     agents,
     chat_completion::{ToolOutput, errors::ToolError},
     integrations::aws_bedrock_v2::AwsBedrock,
     traits::{AgentContext, Command},
 };
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+struct FormatTimestampRequest {
+    /// Prefix to prepend to the timestamp.
+    prefix: String,
+    /// Timestamp to format.
+    timestamp: String,
+}
 
 #[swiftide::tool(description = "Get the current UTC date and time in RFC3339 format")]
 async fn current_utc_time(context: &dyn AgentContext) -> Result<ToolOutput, ToolError> {
@@ -25,6 +35,20 @@ async fn current_utc_time(context: &dyn AgentContext) -> Result<ToolOutput, Tool
         .await?;
 
     Ok(command_output.into())
+}
+
+#[swiftide::tool(
+    description = "Format a timestamp with a caller-provided prefix",
+    param(name = "request", description = "Timestamp formatting input")
+)]
+async fn format_timestamp(
+    _context: &dyn AgentContext,
+    request: FormatTimestampRequest,
+) -> Result<ToolOutput, ToolError> {
+    Ok(ToolOutput::text(format!(
+        "{}{}",
+        request.prefix, request.timestamp
+    )))
 }
 
 #[tokio::main]
@@ -37,7 +61,7 @@ async fn main() -> Result<()> {
 
     let mut agent = agents::Agent::builder()
         .llm(&bedrock)
-        .tools(vec![current_utc_time()])
+        .tools(vec![current_utc_time(), format_timestamp()])
         .on_new_message(|_, msg| {
             let rendered = msg.to_string();
             Box::pin(async move {
@@ -49,7 +73,10 @@ async fn main() -> Result<()> {
         .build()?;
 
     agent
-        .query("Call current_utc_time once, then tell me the timestamp and stop.")
+        .query(
+            "Call current_utc_time once. Then call format_timestamp with prefix \"UTC now: \" and \
+             that timestamp. After that, report the formatted result and stop.",
+        )
         .await?;
 
     Ok(())
