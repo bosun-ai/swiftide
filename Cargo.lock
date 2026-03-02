@@ -3398,7 +3398,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3628,7 +3628,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5050,7 +5050,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.2",
+ "socket2 0.5.10",
  "system-configuration 0.7.0",
  "tokio",
  "tower-service",
@@ -5485,7 +5485,7 @@ dependencies = [
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -6833,7 +6833,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -7944,7 +7944,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls 0.23.37",
- "socket2 0.6.2",
+ "socket2 0.5.10",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -7981,9 +7981,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.2",
+ "socket2 0.5.10",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8724,7 +8724,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -9415,9 +9415,9 @@ dependencies = [
 
 [[package]]
 name = "spider"
-version = "2.45.27"
+version = "2.45.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb79ff0fb6a5dfcc89b767f61cdb47d6bd0f77451f677f8905e28d6021a3b2bf"
+checksum = "e00ff642949e9d1adb727b3f77b3e1b382e6fbcf8cfbce836c3a2fd91f725d74"
 dependencies = [
  "ahash 0.8.12",
  "aho-corasick",
@@ -9459,9 +9459,9 @@ dependencies = [
 
 [[package]]
 name = "spider_agent_types"
-version = "2.45.27"
+version = "2.45.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a64aab403aa85abf96a6b001bb8a79df7879aa15297f29c23ff1d601bf022126"
+checksum = "cf4190cf944663c821567ecf81214608cab8156bbb800a9367ea53efde584a4b"
 dependencies = [
  "aho-corasick",
  "llm_models_spider",
@@ -10543,7 +10543,7 @@ dependencies = [
  "getrandom 0.4.1",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -11004,21 +11004,6 @@ dependencies = [
  "serde_spanned 0.6.9",
  "toml_datetime 0.6.11",
  "toml_edit 0.22.27",
-]
-
-[[package]]
-name = "toml"
-version = "0.9.12+spec-1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf92845e79fc2e2def6a5d828f0801e29a2f8acc037becc5ab08595c7d5e9863"
-dependencies = [
- "indexmap 2.13.0",
- "serde_core",
- "serde_spanned 1.0.4",
- "toml_datetime 0.7.5+spec-1.1.0",
- "toml_parser",
- "toml_writer",
- "winnow",
 ]
 
 [[package]]
@@ -11567,7 +11552,7 @@ dependencies = [
  "fastrand",
  "serde",
  "serde_json",
- "toml 0.9.12+spec-1.1.0",
+ "toml 0.8.23",
  "ureq 2.12.1",
 ]
 
@@ -12044,7 +12029,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
