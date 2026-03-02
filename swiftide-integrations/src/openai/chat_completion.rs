@@ -1,14 +1,16 @@
 use anyhow::{Context as _, Result};
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessageContentPartImage,
-    ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageArgs,
-    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
-    ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
-    ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools, FunctionCall,
-    FunctionObject, ImageDetail as OpenAIImageDetail, ImageUrl, ToolChoiceOptions,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessageContentPartAudio,
+    ChatCompletionRequestMessageContentPartImage, ChatCompletionRequestMessageContentPartText,
+    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
+    ChatCompletionRequestUserMessageArgs, ChatCompletionRequestUserMessageContent,
+    ChatCompletionRequestUserMessageContentPart, ChatCompletionStreamOptions,
+    ChatCompletionToolChoiceOption, ChatCompletionTools, FunctionCall, FunctionObject, ImageUrl,
+    InputAudio, InputAudioFormat, ToolChoiceOptions,
 };
 use async_trait::async_trait;
+use base64::Engine as _;
 use futures_util::StreamExt as _;
 use futures_util::stream;
 use itertools::Itertools;
@@ -18,7 +20,7 @@ use swiftide_core::ChatCompletionStream;
 use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
-    ChatMessageContentPart, ImageDetail as CoreImageDetail, ToolCall, ToolSpec,
+    ChatMessageContentPart, ChatMessageContentSource, ToolCall, ToolSpec,
     errors::LanguageModelError,
 };
 #[cfg(feature = "metrics")]
@@ -52,7 +54,7 @@ impl<
     )]
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         if self.is_responses_api_enabled() {
             return self.complete_via_responses_api(request).await;
@@ -159,7 +161,7 @@ impl<
     }
 
     #[tracing::instrument(skip_all)]
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         if self.is_responses_api_enabled() {
             return self.complete_stream_via_responses_api(request).await;
         }
@@ -351,7 +353,7 @@ impl<
 {
     async fn complete_via_responses_api(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self
             .default_options
@@ -384,7 +386,7 @@ impl<
     #[allow(clippy::too_many_lines)]
     async fn complete_stream_via_responses_api(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> ChatCompletionStream {
         #[allow(unused_variables)]
         let Some(model_name) = self.default_options.prompt_model.clone() else {
@@ -578,19 +580,19 @@ fn message_to_openai(
 ) -> Result<Option<async_openai::types::chat::ChatCompletionRequestMessage>> {
     let openai_message = match message {
         ChatMessage::User(msg) => ChatCompletionRequestUserMessageArgs::default()
-            .content(msg.as_str())
+            .content(msg.as_ref())
             .build()?
             .into(),
         ChatMessage::UserWithParts(parts) => ChatCompletionRequestUserMessageArgs::default()
-            .content(user_parts_to_openai(parts))
+            .content(user_parts_to_openai(parts)?)
             .build()?
             .into(),
         ChatMessage::System(msg) => ChatCompletionRequestSystemMessageArgs::default()
-            .content(msg.as_str())
+            .content(msg.as_ref())
             .build()?
             .into(),
         ChatMessage::Summary(msg) => ChatCompletionRequestAssistantMessageArgs::default()
-            .content(msg.as_str())
+            .content(msg.as_ref())
             .build()?
             .into(),
         ChatMessage::ToolOutput(tool_call, tool_output) => {
@@ -649,35 +651,74 @@ fn message_to_openai(
 
 fn user_parts_to_openai(
     parts: &[ChatMessageContentPart],
-) -> ChatCompletionRequestUserMessageContent {
+) -> Result<ChatCompletionRequestUserMessageContent> {
     let mapped = parts
         .iter()
-        .map(|part| match part {
-            ChatMessageContentPart::Text { text } => {
-                ChatCompletionRequestUserMessageContentPart::from(
-                    ChatCompletionRequestMessageContentPartText::from(text.as_str()),
-                )
-            }
-            ChatMessageContentPart::ImageUrl { url, detail } => {
-                let image_url = ImageUrl {
-                    url: url.clone(),
-                    detail: detail.as_ref().map(|detail| map_image_detail(*detail)),
-                };
-                ChatCompletionRequestUserMessageContentPart::from(
-                    ChatCompletionRequestMessageContentPartImage { image_url },
-                )
-            }
-        })
-        .collect::<Vec<_>>();
+        .map(part_to_openai_user_content_part)
+        .collect::<Result<Vec<_>>>()?;
 
-    ChatCompletionRequestUserMessageContent::Array(mapped)
+    Ok(ChatCompletionRequestUserMessageContent::Array(mapped))
 }
 
-fn map_image_detail(detail: CoreImageDetail) -> OpenAIImageDetail {
-    match detail {
-        CoreImageDetail::Auto => OpenAIImageDetail::Auto,
-        CoreImageDetail::Low => OpenAIImageDetail::Low,
-        CoreImageDetail::High => OpenAIImageDetail::High,
+fn part_to_openai_user_content_part(
+    part: &ChatMessageContentPart,
+) -> Result<ChatCompletionRequestUserMessageContentPart> {
+    Ok(match part {
+        ChatMessageContentPart::Text { text } => ChatCompletionRequestUserMessageContentPart::from(
+            ChatCompletionRequestMessageContentPartText::from(text.as_ref()),
+        ),
+        ChatMessageContentPart::Image { source, .. } => {
+            let image_url = ImageUrl {
+                url: source_to_openai_url(source)?,
+                detail: None,
+            };
+            ChatCompletionRequestUserMessageContentPart::from(
+                ChatCompletionRequestMessageContentPartImage { image_url },
+            )
+        }
+        ChatMessageContentPart::Audio { source, format } => {
+            let ChatMessageContentSource::Bytes { data, .. } = source else {
+                anyhow::bail!("OpenAI chat input_audio only supports bytes sources");
+            };
+
+            let format = match format.as_deref() {
+                Some("wav") => InputAudioFormat::Wav,
+                Some("mp3") | None => InputAudioFormat::Mp3,
+                Some(other) => anyhow::bail!("Unsupported OpenAI chat input_audio format: {other}"),
+            };
+
+            let input_audio = InputAudio {
+                data: base64::engine::general_purpose::STANDARD.encode(data),
+                format,
+            };
+
+            ChatCompletionRequestUserMessageContentPart::from(
+                ChatCompletionRequestMessageContentPartAudio { input_audio },
+            )
+        }
+        ChatMessageContentPart::Document { .. } => {
+            anyhow::bail!("OpenAI chat file parts are not supported by async-openai yet")
+        }
+        ChatMessageContentPart::Video { .. } => {
+            anyhow::bail!("OpenAI chat completion does not support video parts")
+        }
+    })
+}
+
+fn source_to_openai_url(source: &ChatMessageContentSource) -> Result<String> {
+    match source {
+        ChatMessageContentSource::Url { url } => Ok(url.clone()),
+        ChatMessageContentSource::FileId { .. } => {
+            anyhow::bail!("OpenAI chat image_url does not accept file_id sources")
+        }
+        ChatMessageContentSource::S3 { .. } => {
+            anyhow::bail!("OpenAI chat image_url does not accept s3 sources")
+        }
+        ChatMessageContentSource::Bytes { data, media_type } => {
+            let media_type = media_type.as_deref().unwrap_or("application/octet-stream");
+            let encoded = base64::engine::general_purpose::STANDARD.encode(data);
+            Ok(format!("data:{media_type};base64,{encoded}"))
+        }
     }
 }
 
@@ -733,10 +774,7 @@ mod tests {
     fn test_message_to_openai_with_image_parts() {
         let message = ChatMessage::new_user_with_parts(vec![
             ChatMessageContentPart::text("Describe this image."),
-            ChatMessageContentPart::image_url(
-                "https://example.com/image.png",
-                Some(CoreImageDetail::High),
-            ),
+            ChatMessageContentPart::image("https://example.com/image.png"),
         ]);
 
         let openai_message = message_to_openai(&message)
@@ -756,7 +794,36 @@ mod tests {
             content[1]["image_url"]["url"],
             "https://example.com/image.png"
         );
-        assert_eq!(content[1]["image_url"]["detail"], "high");
+        assert!(content[1]["image_url"]["detail"].is_null());
+    }
+
+    #[test]
+    fn test_message_to_openai_with_image_bytes_source() {
+        let message = ChatMessage::new_user_with_parts(vec![
+            ChatMessageContentPart::text("Describe this image."),
+            ChatMessageContentPart::Image {
+                source: ChatMessageContentSource::bytes(
+                    vec![0_u8, 1_u8, 2_u8],
+                    Some("image/png".to_string()),
+                ),
+                format: None,
+            },
+        ]);
+
+        let openai_message = message_to_openai(&message)
+            .expect("message conversion succeeds")
+            .expect("message present");
+
+        let value = serde_json::to_value(openai_message).expect("serialize message");
+        let content = value
+            .get("content")
+            .and_then(serde_json::Value::as_array)
+            .expect("content array");
+
+        let image_url = content[1]["image_url"]["url"]
+            .as_str()
+            .expect("image_url must be string");
+        assert!(image_url.starts_with("data:image/png;base64,"));
     }
 
     #[test_log::test(tokio::test)]

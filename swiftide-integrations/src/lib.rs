@@ -9,7 +9,7 @@
 #[cfg(feature = "anthropic")]
 pub mod anthropic;
 #[cfg(feature = "aws-bedrock")]
-pub mod aws_bedrock;
+pub mod aws_bedrock_v2;
 #[cfg(feature = "dashscope")]
 pub mod dashscope;
 #[cfg(feature = "duckdb")]

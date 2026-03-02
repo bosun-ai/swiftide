@@ -19,12 +19,12 @@ pub type ChatCompletionStream =
 pub trait ChatCompletion: Send + Sync + DynClone {
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError>;
 
     /// Stream the completion response. If it's not supported, it will return a single
     /// response
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         Box::pin(tokio_stream::iter(vec![self.complete(request).await]))
     }
 }
@@ -33,12 +33,12 @@ pub trait ChatCompletion: Send + Sync + DynClone {
 impl ChatCompletion for Box<dyn ChatCompletion> {
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
 
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         (**self).complete_stream(request).await
     }
 }
@@ -47,12 +47,12 @@ impl ChatCompletion for Box<dyn ChatCompletion> {
 impl ChatCompletion for &dyn ChatCompletion {
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
 
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         (**self).complete_stream(request).await
     }
 }
@@ -64,12 +64,12 @@ where
 {
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         (**self).complete(request).await
     }
 
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         (**self).complete_stream(request).await
     }
 }

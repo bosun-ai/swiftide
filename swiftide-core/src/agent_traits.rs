@@ -690,7 +690,9 @@ impl AgentContext for () {
     }
 }
 
-/// A backend for the agent context. A default is provided for Arc<Mutex<Vec<ChatMessage>>>
+/// A backend for the agent context.
+///
+/// A default is provided for `Arc<Mutex<Vec<ChatMessage>>>`.
 ///
 /// If you want to use for instance a database, implement this trait and pass it to the agent
 /// context when creating it.
@@ -705,14 +707,15 @@ pub trait MessageHistory: Send + Sync + std::fmt::Debug {
     /// Overwrite the history with the given items
     async fn overwrite(&self, items: Vec<ChatMessage>) -> Result<()>;
 
-    /// Add a message to the history
+    /// Add a message to the history.
     async fn push(&self, item: &ChatMessage) -> Result<()> {
-        self.push_owned(item.clone()).await
+        self.push_owned(item.to_owned()).await
     }
 
-    /// Extend the history with the given items
+    /// Extend the history with the given items.
     async fn extend(&self, items: &[ChatMessage]) -> Result<()> {
-        self.extend_owned(items.to_vec()).await
+        self.extend_owned(items.iter().map(ChatMessage::to_owned).collect())
+            .await
     }
 
     /// Extend the history with the given items, taking ownership of them

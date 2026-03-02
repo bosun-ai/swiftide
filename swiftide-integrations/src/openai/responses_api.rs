@@ -5,18 +5,19 @@ use std::task::{Context, Poll};
 use anyhow::{Context as _, Result};
 use async_openai::types::responses::{
     CreateResponse, CreateResponseArgs, EasyInputContent, EasyInputMessageArgs, FunctionCallOutput,
-    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall,
-    ImageDetail as ResponsesImageDetail, IncludeEnum, InputContent, InputImageContent, InputItem,
-    InputParam, InputTextContent, MessageType, OutputContent, OutputItem, OutputMessage,
-    OutputMessageContent, OutputStatus, ReasoningArgs, ReasoningSummary, Response,
-    ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam, Role, Status,
-    TextResponseFormatConfiguration, Tool, ToolChoiceOptions, ToolChoiceParam,
+    FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, ImageDetail, IncludeEnum,
+    InputContent, InputFileArgs, InputImageContent, InputItem, InputParam, InputTextContent,
+    MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
+    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
+    ResponseStreamEvent, ResponseTextParam, Role, Status, TextResponseFormatConfiguration, Tool,
+    ToolChoiceOptions, ToolChoiceParam,
 };
+use base64::Engine as _;
 use futures_util::Stream;
 use serde_json::json;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
-    ImageDetail, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
+    ChatMessageContentSource, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
 };
 
 use super::{
@@ -29,7 +30,7 @@ type LmResult<T> = Result<T, LanguageModelError>;
 
 pub(super) fn build_responses_request_from_chat<C>(
     client: &GenericOpenAI<C>,
-    request: &ChatCompletionRequest,
+    request: &ChatCompletionRequest<'_>,
 ) -> LmResult<CreateResponse>
 where
     C: async_openai::config::Config + Clone + Default,
@@ -186,7 +187,7 @@ fn chat_messages_to_input_items(
                 items.push(message_item(Role::User, content.clone())?);
             }
             ChatMessage::UserWithParts(parts) => {
-                let content = user_parts_to_easy_input_content(parts);
+                let content = user_parts_to_easy_input_content(parts)?;
                 items.push(message_item_with_content(Role::User, content)?);
             }
             ChatMessage::Assistant(content, tool_calls) => {
@@ -286,36 +287,93 @@ fn message_item_with_content(role: Role, content: EasyInputContent) -> LmResult<
     ))
 }
 
-fn user_parts_to_easy_input_content(parts: &[ChatMessageContentPart]) -> EasyInputContent {
-    let mapped = parts.iter().map(part_to_input_content).collect();
-    EasyInputContent::ContentList(mapped)
+fn user_parts_to_easy_input_content(
+    parts: &[ChatMessageContentPart],
+) -> LmResult<EasyInputContent> {
+    let mapped = parts
+        .iter()
+        .map(part_to_input_content)
+        .collect::<LmResult<Vec<_>>>()?;
+    Ok(EasyInputContent::ContentList(mapped))
 }
 
-fn part_to_input_content(part: &ChatMessageContentPart) -> InputContent {
-    match part {
+fn part_to_input_content(part: &ChatMessageContentPart) -> LmResult<InputContent> {
+    Ok(match part {
         ChatMessageContentPart::Text { text } => {
             InputContent::from(InputTextContent::from(text.as_str()))
         }
-        ChatMessageContentPart::ImageUrl { url, detail } => {
-            let image = InputImageContent {
-                detail: detail
-                    .as_ref()
-                    .map(|detail| map_image_detail(*detail))
-                    .unwrap_or_default(),
-                file_id: None,
-                image_url: Some(url.clone()),
+        ChatMessageContentPart::Image { source, .. } => {
+            let image = match source {
+                ChatMessageContentSource::Url { url } => InputImageContent {
+                    detail: ImageDetail::default(),
+                    file_id: None,
+                    image_url: Some(url.clone()),
+                },
+                ChatMessageContentSource::FileId { file_id } => InputImageContent {
+                    detail: ImageDetail::default(),
+                    file_id: Some(file_id.clone()),
+                    image_url: None,
+                },
+                ChatMessageContentSource::Bytes { data, media_type } => {
+                    let media_type = media_type.as_deref().unwrap_or("application/octet-stream");
+                    let encoded = base64::engine::general_purpose::STANDARD.encode(data);
+                    InputImageContent {
+                        detail: ImageDetail::default(),
+                        file_id: None,
+                        image_url: Some(format!("data:{media_type};base64,{encoded}")),
+                    }
+                }
+                ChatMessageContentSource::S3 { .. } => {
+                    return Err(LanguageModelError::permanent(
+                        "OpenAI responses input_image does not support s3 sources",
+                    ));
+                }
             };
             InputContent::from(image)
         }
-    }
-}
+        ChatMessageContentPart::Document {
+            source,
+            format,
+            name,
+        } => {
+            let mut builder = InputFileArgs::default();
+            let filename = name
+                .as_deref()
+                .map(str::to_owned)
+                .or_else(|| format.as_ref().map(|ext| format!("document.{ext}")))
+                .unwrap_or_else(|| "document".to_string());
 
-fn map_image_detail(detail: ImageDetail) -> ResponsesImageDetail {
-    match detail {
-        ImageDetail::Auto => ResponsesImageDetail::Auto,
-        ImageDetail::Low => ResponsesImageDetail::Low,
-        ImageDetail::High => ResponsesImageDetail::High,
-    }
+            match source {
+                ChatMessageContentSource::Url { url } => {
+                    builder.file_url(url.as_str());
+                }
+                ChatMessageContentSource::FileId { file_id } => {
+                    builder.file_id(file_id.as_str());
+                }
+                ChatMessageContentSource::Bytes { data, .. } => {
+                    let encoded = base64::engine::general_purpose::STANDARD.encode(data);
+                    builder.file_data(encoded).filename(filename);
+                }
+                ChatMessageContentSource::S3 { .. } => {
+                    return Err(LanguageModelError::permanent(
+                        "OpenAI responses input_file does not support s3 sources",
+                    ));
+                }
+            }
+
+            InputContent::from(builder.build().map_err(LanguageModelError::permanent)?)
+        }
+        ChatMessageContentPart::Audio { .. } => {
+            return Err(LanguageModelError::permanent(
+                "OpenAI responses API does not support audio parts in chat conversion",
+            ));
+        }
+        ChatMessageContentPart::Video { .. } => {
+            return Err(LanguageModelError::permanent(
+                "OpenAI responses API does not support video parts in chat conversion",
+            ));
+        }
+    })
 }
 
 fn normalize_responses_function_call_id(id: &str) -> String {
@@ -850,7 +908,7 @@ mod tests {
     use std::collections::HashSet;
     use swiftide_core::chat_completion::{
         ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
-        ImageDetail as CoreImageDetail, ReasoningItem, ToolCall, ToolSpec, Usage,
+        ReasoningItem, ToolCall, ToolSpec, Usage,
     };
 
     use crate::openai::{OpenAI, Options};
@@ -908,13 +966,10 @@ mod tests {
     fn test_user_parts_to_easy_input_content_with_image() {
         let parts = vec![
             ChatMessageContentPart::text("Describe this image."),
-            ChatMessageContentPart::image_url(
-                "https://example.com/image.png",
-                Some(CoreImageDetail::Low),
-            ),
+            ChatMessageContentPart::image("https://example.com/image.png"),
         ];
 
-        let easy = user_parts_to_easy_input_content(&parts);
+        let easy = user_parts_to_easy_input_content(&parts).expect("map user parts");
         let value = to_value(easy).expect("serialize easy content");
         let parts = value.as_array().expect("expected content list array");
 
@@ -922,7 +977,7 @@ mod tests {
         assert_eq!(parts[0]["text"], "Describe this image.");
         assert_eq!(parts[1]["type"], "input_image");
         assert_eq!(parts[1]["image_url"], "https://example.com/image.png");
-        assert_eq!(parts[1]["detail"], "low");
+        assert_eq!(parts[1]["detail"], "auto");
     }
 
     fn output_message(id: &str, parts: &[&str]) -> OutputMessage {

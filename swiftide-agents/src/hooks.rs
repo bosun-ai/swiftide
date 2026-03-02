@@ -77,7 +77,7 @@ dyn_clone::clone_trait_object!(AfterEachFn);
 pub trait BeforeCompletionFn:
     for<'a> Fn(
         &'a Agent,
-        &mut ChatCompletionRequest,
+        &mut ChatCompletionRequest<'_>,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
     + Send
     + Sync
@@ -222,7 +222,7 @@ impl<F> AfterEachFn for F where
 impl<F> BeforeCompletionFn for F where
     F: for<'a> Fn(
             &'a Agent,
-            &mut ChatCompletionRequest,
+            &mut ChatCompletionRequest<'_>,
         ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>>
         + Send
         + Sync

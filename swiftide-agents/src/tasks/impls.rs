@@ -86,7 +86,7 @@ impl TaskNode for Arc<dyn SimplePrompt> {
 
 #[async_trait]
 impl TaskNode for Box<dyn ChatCompletion> {
-    type Input = ChatCompletionRequest;
+    type Input = ChatCompletionRequest<'static>;
 
     type Output = ChatCompletionResponse;
 
@@ -105,7 +105,7 @@ impl TaskNode for Box<dyn ChatCompletion> {
 
 #[async_trait]
 impl TaskNode for Arc<dyn ChatCompletion> {
-    type Input = ChatCompletionRequest;
+    type Input = ChatCompletionRequest<'static>;
 
     type Output = ChatCompletionResponse;
 

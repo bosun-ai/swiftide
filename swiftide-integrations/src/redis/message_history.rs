@@ -15,11 +15,12 @@ impl<T: Chunk> MessageHistory for Redis<T> {
                 .query_async(&mut cm)
                 .await
                 .context("Error fetching message history")?;
-            let chat_messages: Result<Vec<ChatMessage>> = messages
+            messages
                 .into_iter()
-                .map(|msg| serde_json::from_str(&msg).context("Error deserializing message"))
-                .collect();
-            chat_messages
+                .map(|msg| {
+                    serde_json::from_str::<ChatMessage>(&msg).context("Error deserializing message")
+                })
+                .collect()
         } else {
             anyhow::bail!("Failed to connect to Redis")
         }
@@ -47,12 +48,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
 
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
-                .arg(
-                    items
-                        .iter()
-                        .map(serde_json::to_string)
-                        .collect::<Result<Vec<_>, _>>()?,
-                )
+                .arg(serialize_messages(items)?)
                 .query_async::<()>(&mut cm)
                 .await
                 .context("Error pushing to message history")?;
@@ -77,12 +73,7 @@ impl<T: Chunk> MessageHistory for Redis<T> {
 
             redis::cmd("RPUSH")
                 .arg(&self.message_history_key)
-                .arg(
-                    items
-                        .iter()
-                        .map(serde_json::to_string)
-                        .collect::<Result<Vec<_>, _>>()?,
-                )
+                .arg(serialize_messages(items)?)
                 .query_async::<()>(&mut cm)
                 .await
                 .context("Error pushing to message history")?;
@@ -91,6 +82,13 @@ impl<T: Chunk> MessageHistory for Redis<T> {
             anyhow::bail!("Failed to connect to Redis")
         }
     }
+}
+
+fn serialize_messages(items: Vec<ChatMessage>) -> Result<Vec<String>> {
+    items
+        .into_iter()
+        .map(|item| serde_json::to_string(&item).context("Error serializing message"))
+        .collect()
 }
 
 #[cfg(test)]
@@ -134,7 +132,7 @@ mod tests {
         let (url, _container) = start_redis().await;
         let redis = Redis::try_from_url(url, "tests").unwrap();
 
-        let m1 = ChatMessage::System("System test".to_string());
+        let m1 = ChatMessage::new_system("System test");
         let m2 = ChatMessage::User("User test".into());
 
         redis.push_owned(m1.clone()).await.unwrap();
@@ -163,7 +161,7 @@ mod tests {
         // Check that overwrite on empty also works
         redis.overwrite(vec![]).await.unwrap();
 
-        let m1 = ChatMessage::System("First".to_string());
+        let m1 = ChatMessage::new_system("First");
         let m2 = ChatMessage::User("Second".into());
         redis.push_owned(m1.clone()).await.unwrap();
         redis.push_owned(m2.clone()).await.unwrap();
@@ -184,7 +182,7 @@ mod tests {
         let (url, _container) = start_redis().await;
         let redis = Redis::try_from_url(url, "tests").unwrap();
 
-        let m1 = ChatMessage::System("First".to_string());
+        let m1 = ChatMessage::new_system("First");
         let m2 = ChatMessage::User("Second".into());
         redis.push_owned(m1.clone()).await.unwrap();
 

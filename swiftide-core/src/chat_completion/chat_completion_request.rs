@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 use derive_builder::Builder;
 
@@ -8,38 +8,55 @@ use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 /// be send to any LLM.
 #[derive(Builder, Clone, PartialEq, Debug)]
 #[builder(setter(into, strip_option))]
-pub struct ChatCompletionRequest {
-    pub messages: Vec<ChatMessage>,
+pub struct ChatCompletionRequest<'a> {
+    pub messages: Cow<'a, [ChatMessage]>,
     #[builder(default, setter(custom))]
     pub tools_spec: HashSet<ToolSpec>,
 }
 
-impl ChatCompletionRequest {
-    pub fn builder() -> ChatCompletionRequestBuilder {
+impl<'a> ChatCompletionRequest<'a> {
+    pub fn builder() -> ChatCompletionRequestBuilder<'a> {
         ChatCompletionRequestBuilder::default()
     }
 
     /// Returns the chat messages included in the request.
     pub fn messages(&self) -> &[ChatMessage] {
-        self.messages.as_slice()
+        self.messages.as_ref()
     }
 
     /// Returns the tool specifications currently attached to the request.
     pub fn tools_spec(&self) -> &HashSet<ToolSpec> {
         &self.tools_spec
     }
+
+    /// Returns an owned request with `'static` data.
+    pub fn to_owned(&self) -> ChatCompletionRequest<'static> {
+        ChatCompletionRequest {
+            messages: Cow::Owned(self.messages.iter().map(ChatMessage::to_owned).collect()),
+            tools_spec: self.tools_spec.clone(),
+        }
+    }
 }
 
-impl From<Vec<ChatMessage>> for ChatCompletionRequest {
+impl From<Vec<ChatMessage>> for ChatCompletionRequest<'_> {
     fn from(messages: Vec<ChatMessage>) -> Self {
         ChatCompletionRequest {
-            messages,
+            messages: Cow::Owned(messages),
             tools_spec: HashSet::new(),
         }
     }
 }
 
-impl ChatCompletionRequestBuilder {
+impl<'a> From<&'a [ChatMessage]> for ChatCompletionRequest<'a> {
+    fn from(messages: &'a [ChatMessage]) -> Self {
+        ChatCompletionRequest {
+            messages: Cow::Borrowed(messages),
+            tools_spec: HashSet::new(),
+        }
+    }
+}
+
+impl ChatCompletionRequestBuilder<'_> {
     #[deprecated(note = "Use `tools` with real Tool instances instead")]
     pub fn tools_spec(&mut self, tools_spec: HashSet<ToolSpec>) -> &mut Self {
         self.tools_spec = Some(tools_spec);
@@ -78,11 +95,16 @@ impl ChatCompletionRequestBuilder {
         self
     }
 
-    /// Appends a single chat message to the request.
+    /// Adds a single chat message to the request
     pub fn message(&mut self, message: impl Into<ChatMessage>) -> &mut Self {
-        self.messages
-            .get_or_insert_with(Vec::new)
-            .push(message.into());
+        let mut messages = self
+            .messages
+            .take()
+            .map(Cow::into_owned)
+            .unwrap_or_default();
+        messages.push(message.into());
+
+        self.messages = Some(Cow::Owned(messages));
         self
     }
 
@@ -91,8 +113,13 @@ impl ChatCompletionRequestBuilder {
     where
         I: IntoIterator<Item = ChatMessage>,
     {
-        let entry = self.messages.get_or_insert_with(Vec::new);
-        entry.extend(messages);
+        let mut new_messages = self
+            .messages
+            .take()
+            .map(Cow::into_owned)
+            .unwrap_or_default();
+        new_messages.extend(messages);
+        self.messages = Some(Cow::Owned(new_messages));
         self
     }
 }

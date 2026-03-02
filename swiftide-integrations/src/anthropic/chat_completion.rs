@@ -26,7 +26,7 @@ impl ChatCompletion for Anthropic {
     #[tracing::instrument(skip_all, err)]
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = &self.default_options.prompt_model;
         let request = self
@@ -112,7 +112,7 @@ impl ChatCompletion for Anthropic {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let model = &self.default_options.prompt_model;
         let request = match self
             .build_request(request)
@@ -236,7 +236,7 @@ fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletio
 impl Anthropic {
     fn build_request(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<async_anthropic::types::CreateMessagesRequestBuilder, LanguageModelError> {
         let model = &self.default_options.prompt_model;
         let mut messages = request.messages().to_vec();
@@ -280,44 +280,45 @@ impl Anthropic {
 fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
-    use ChatMessage::{Assistant, Reasoning, Summary, System, ToolOutput, User, UserWithParts};
-
     match message {
-        ToolOutput(tool_call, tool_output) => builder.content(
+        ChatMessage::ToolOutput(tool_call, tool_output) => builder.content(
             ToolResultBuilder::default()
                 .tool_use_id(tool_call.id())
                 .content(tool_output.content().unwrap_or("Success"))
                 .build()?,
         ),
-        Summary(msg) | System(msg) => builder.content(msg),
-        User(content) => builder.content(content),
-        UserWithParts(parts) => {
+        ChatMessage::Summary(msg) | ChatMessage::System(msg) => builder.content(msg.as_str()),
+        ChatMessage::User(content) => builder.content(content.as_str()),
+        ChatMessage::UserWithParts(parts) => {
             if parts.iter().any(|part| {
-                matches!(
+                !matches!(
                     part,
-                    swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. }
+                    swiftide_core::chat_completion::ChatMessageContentPart::Text { .. }
                 )
             }) {
-                anyhow::bail!("Anthropic chat completions do not support image inputs");
+                anyhow::bail!("Anthropic chat completions only support text message parts");
             }
             let text_parts = parts
                 .iter()
                 .filter_map(|part| match part {
                     swiftide_core::chat_completion::ChatMessageContentPart::Text { text } => {
-                        Some(text.as_str())
+                        Some(text.as_ref())
                     }
-                    swiftide_core::chat_completion::ChatMessageContentPart::ImageUrl { .. } => None,
+                    swiftide_core::chat_completion::ChatMessageContentPart::Image { .. }
+                    | swiftide_core::chat_completion::ChatMessageContentPart::Document { .. }
+                    | swiftide_core::chat_completion::ChatMessageContentPart::Audio { .. }
+                    | swiftide_core::chat_completion::ChatMessageContentPart::Video { .. } => None,
                 })
                 .collect::<Vec<_>>();
             builder.content(text_parts.join(" "))
         }
-        Assistant(content, tool_calls) => {
+        ChatMessage::Assistant(content, tool_calls) => {
             builder.role(MessageRole::Assistant);
 
             let mut content_list: Vec<MessageContent> = Vec::new();
 
             if let Some(content) = content.as_ref() {
-                content_list.push(content.as_str().into());
+                content_list.push(content.clone().into());
             }
 
             if let Some(tool_calls) = tool_calls.as_ref() {
@@ -340,7 +341,7 @@ fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
 
             builder.content(content_list)
         }
-        Reasoning(_) => return Ok(None),
+        ChatMessage::Reasoning(_) => return Ok(None),
     };
 
     builder.build().context("Failed to build message").map(Some)

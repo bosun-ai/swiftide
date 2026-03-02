@@ -88,6 +88,10 @@ name = "aws-bedrock"
 path = "aws_bedrock.rs"
 
 [[example]]
+name = "aws-bedrock-agent"
+path = "aws_bedrock_agent.rs"
+
+[[example]]
 doc-scrape-examples = true
 name = "store-multiple-vectors"
 path = "store_multiple_vectors.rs"

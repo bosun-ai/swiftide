@@ -55,14 +55,14 @@ macro_rules! user {
 #[macro_export]
 macro_rules! system {
     ($message:expr) => {
-        swiftide_core::chat_completion::ChatMessage::System($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::new_system($message)
     };
 }
 
 #[macro_export]
 macro_rules! summary {
     ($message:expr) => {
-        swiftide_core::chat_completion::ChatMessage::Summary($message.to_string())
+        swiftide_core::chat_completion::ChatMessage::new_summary($message)
     };
 }
 

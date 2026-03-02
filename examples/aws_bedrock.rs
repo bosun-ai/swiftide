@@ -1,6 +1,6 @@
 //! # [Swiftide] Aws Bedrock example
 //!
-//! This example demonstrates how to use the `AwsBedrock` integration to interact with the Bedrock
+//! This example demonstrates how to use the `AwsBedrock` v2 integration to interact with Bedrock
 //! service.
 //!
 //! To use bedrock you will need the following:
@@ -22,10 +22,9 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let aws_bedrock = integrations::aws_bedrock::AwsBedrock::build_anthropic_family(
-        "anthropic.claude-3-sonnet-20240229-v1:0",
-    )
-    .build()?;
+    let aws_bedrock = integrations::aws_bedrock_v2::AwsBedrock::builder()
+        .default_prompt_model("global.anthropic.claude-haiku-4-5-20251001-v1:0")
+        .build()?;
 
     let memory_storage = MemoryStorage::default();
 

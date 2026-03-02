@@ -38,7 +38,14 @@ macro_rules! assert_default_prompt_snapshot {
     };
 }
 
-type Expectations = Arc<Mutex<Vec<(ChatCompletionRequest, Result<ChatCompletionResponse>)>>>;
+type Expectations = Arc<
+    Mutex<
+        Vec<(
+            ChatCompletionRequest<'static>,
+            Result<ChatCompletionResponse>,
+        )>,
+    >,
+>;
 
 #[derive(Clone)]
 pub struct MockChatCompletion {
@@ -62,7 +69,7 @@ impl MockChatCompletion {
 
     pub fn expect_complete(
         &self,
-        request: ChatCompletionRequest,
+        request: ChatCompletionRequest<'static>,
         response: Result<ChatCompletionResponse>,
     ) {
         let mut mutex = self.expectations.lock().unwrap();
@@ -75,21 +82,22 @@ impl MockChatCompletion {
 impl ChatCompletion for MockChatCompletion {
     async fn complete(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        let request = request.to_owned();
         let (expected_request, response) =
             self.expectations.lock().unwrap().pop().unwrap_or_else(|| {
                 panic!(
                     "Received completion request, but no expectations are set\n {}",
-                    pretty_request(request)
+                    pretty_request(&request)
                 )
             });
 
         assert_eq!(
             &expected_request,
-            request,
+            &request,
             "Unexpected request\n: {}\nRemaining expectations:\n{}",
-            pretty_request(request),
+            pretty_request(&request),
             pretty_expectation(&(expected_request.clone(), response))
                 + "---\n"
                 + &self
@@ -110,7 +118,7 @@ impl ChatCompletion for MockChatCompletion {
 
             tracing::debug!(
                 "[MockChatCompletion] Received request:\n{}\nResponse:\n{}",
-                pretty_request(request),
+                pretty_request(&request),
                 pretty_response(&response)
             );
             Ok(response)
@@ -127,7 +135,7 @@ impl ChatCompletion for MockChatCompletion {
 
     /// Fakes a stream, first it checks the expectations, then it streams the response
     /// instantly in small chunks
-    async fn complete_stream(&self, request: &ChatCompletionRequest) -> ChatCompletionStream {
+    async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let response = match self.complete(request).await {
             Ok(response) => response,
             Err(err) => return err.into(),
@@ -193,7 +201,10 @@ impl Drop for MockChatCompletion {
 }
 
 fn pretty_expectation(
-    expectation: &(ChatCompletionRequest, Result<ChatCompletionResponse>),
+    expectation: &(
+        ChatCompletionRequest<'static>,
+        Result<ChatCompletionResponse>,
+    ),
 ) -> String {
     let mut output = String::new();
 
@@ -212,7 +223,7 @@ fn pretty_expectation(
     output
 }
 
-fn pretty_request(request: &ChatCompletionRequest) -> String {
+fn pretty_request(request: &ChatCompletionRequest<'_>) -> String {
     let mut output = String::new();
     for message in request.messages() {
         writeln!(output, " {message}").unwrap();

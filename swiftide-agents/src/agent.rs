@@ -563,7 +563,7 @@ impl Agent {
         );
 
         let mut chat_completion_request = ChatCompletionRequest::builder()
-            .messages(messages.to_vec())
+            .messages(messages)
             .tool_specs(self.tools.iter().map(swiftide_core::Tool::tool_spec))
             .build()
             .map_err(AgentError::FailedToBuildRequest)?;
@@ -1540,7 +1540,12 @@ mod tests {
         let serialized = serde_json::to_string(&history).unwrap();
 
         // Retrieve it
-        let history: Vec<ChatMessage> = serde_json::from_str(&serialized).unwrap();
+        let history: Vec<ChatMessage> =
+            serde_json::from_str::<Vec<swiftide_core::chat_completion::ChatMessage>>(&serialized)
+                .unwrap()
+                .into_iter()
+                .map(|message| message.to_owned())
+                .collect();
 
         // Build a context from the history
         let context = DefaultContext::default()

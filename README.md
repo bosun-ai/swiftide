@@ -224,7 +224,7 @@ Our goal is to create a fast, extendable platform for building LLM applications 
 
 | **Feature**                                  | **Details**                                                                                                                                                          |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Supported Large Language Model providers** | OpenAI (and Azure) <br> Anthropic <br> Gemini <br> OpenRouter <br> AWS Bedrock - Anthropic and Titan <br> Groq - All models <br> Ollama - All models                 |
+| **Supported Large Language Model providers** | OpenAI (and Azure) <br> Anthropic <br> Gemini <br> OpenRouter <br> AWS Bedrock (Converse API) <br> Groq - All models <br> Ollama - All models                 |
 | **Agents**                           | All the boiler plate for autonomous agents so you don't have to                                                                                     |
 | **Tasks** | Build graph like workflows with tasks, combining all the above to build complex applications                                                                                     |
 | **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Kafka <br> Other pipelines and streams                                                                                        |
