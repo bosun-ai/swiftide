@@ -131,10 +131,10 @@ reqwest-eventsource = { version = "0.6", default-features = false }
 
 # Testing
 test-log = { version = "0.2" }
-testcontainers = { version = "0.26", features = ["http_wait"] }
-testcontainers-modules = { version = "0.14" }
+testcontainers = { version = "0.27", features = ["http_wait"] }
+testcontainers-modules = { version = "0.15" }
 mockall = { version = "0.14" }
-temp-dir = { version = "0.1" }
+temp-dir = { version = "0.2" }
 wiremock = { version = "0.6" }
 test-case = { version = "3.3" }
 pretty_assertions = { version = "1.4" }
