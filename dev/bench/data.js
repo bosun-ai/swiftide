@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770898987875,
+  "lastUpdate": 1772464385501,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30431,6 +30431,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 224473,
             "range": "± 1259",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "67998f94c6edfe1fa8e49b2804bdef35f66075e6",
+          "message": "feat(integrations)!: Support AWS' new converse api (#1026)\n\nSupport for new Bedrock converse api. Implements simple prompt,\ncomplete, structured, streaming.\n\nAlso implements reasoning, langfuse support, and other content parts\n(images, video, audio).\n\nBREAKING CHANGE: There is now a new AWS Bedrock integration. Because\nConverse is fundamentally different, it's named as `aws_bedrock_v2`.\nInner content parts for chat messages now have a more generic structure\nso they are also usable for AWS Bedrock. Additionally, a lifetime is\nintroduced for `ChatCompletionRequest` to get some quick wins.",
+          "timestamp": "2026-03-02T16:04:12+01:00",
+          "tree_id": "74fa6869efaf461a9a974a070da161b0b558afab",
+          "url": "https://github.com/bosun-ai/swiftide/commit/67998f94c6edfe1fa8e49b2804bdef35f66075e6"
+        },
+        "date": 1772464382643,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 819161,
+            "range": "± 25179",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251657,
+            "range": "± 1129",
             "unit": "ns/iter"
           }
         ]
