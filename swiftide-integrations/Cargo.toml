@@ -155,7 +155,7 @@ default = ["rustls"]
 
 metrics = ["dep:metrics", "swiftide-core/metrics"]
 # Ensures rustls is used
-rustls = ["reqwest?/rustls-tls-native-roots", "fastembed?/hf-hub-native-tls"]
+rustls = ["reqwest?/rustls", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
 qdrant = ["dep:qdrant-client", "swiftide-core/qdrant", "chrono/now"]
 # PgVector for storage
