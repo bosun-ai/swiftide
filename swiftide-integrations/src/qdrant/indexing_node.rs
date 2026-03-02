@@ -10,7 +10,7 @@ use std::{
 };
 
 use qdrant_client::{
-    client::Payload,
+    Payload,
     qdrant::{self, Value},
 };
 use swiftide_core::{Embedding, SparseEmbedding, indexing::EmbeddedField};
