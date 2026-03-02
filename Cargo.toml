@@ -61,7 +61,7 @@ convert_case = { version = "0.11", default-features = false }
 base64 = { version = "0.22", default-features = false, features = ["std"] }
 
 # Mcp
-rmcp = { version = "0.12", default-features = false, features = [
+rmcp = { version = "0.17", default-features = false, features = [
   "base64",
   "macros",
   "server",
