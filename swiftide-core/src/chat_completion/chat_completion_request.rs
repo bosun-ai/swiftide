@@ -94,4 +94,32 @@ impl ChatCompletionRequestBuilder<'_> {
         entry.extend(specs);
         self
     }
+
+    /// Adds a single chat message to the request
+    pub fn message(&mut self, message: impl Into<ChatMessage>) -> &mut Self {
+        let mut messages = self
+            .messages
+            .take()
+            .map(Cow::into_owned)
+            .unwrap_or_default();
+        messages.push(message.into());
+
+        self.messages = Some(Cow::Owned(messages));
+        self
+    }
+
+    /// Extends the request with multiple chat messages.
+    pub fn messages_iter<I>(&mut self, messages: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ChatMessage>,
+    {
+        let mut new_messages = self
+            .messages
+            .take()
+            .map(Cow::into_owned)
+            .unwrap_or_default();
+        new_messages.extend(messages);
+        self.messages = Some(Cow::Owned(new_messages));
+        self
+    }
 }
