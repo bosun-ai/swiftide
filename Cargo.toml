@@ -76,7 +76,7 @@ qdrant-client = { version = "1.15", default-features = false, features = [
 ] }
 fluvio = { version = "0.50.1", default-features = false }
 rdkafka = { version = "0.38.0", features = ["cmake-build"] }
-lancedb = { version = "0.23", default-features = false, features = ["remote"] }
+lancedb = { version = "0.26", default-features = false, features = ["remote"] }
 # Needs to stay in sync with whatever lancdb uses, nice
 arrow-array = { version = "57.1", default-features = false }
 parquet = { version = "57.1", default-features = false, features = ["async"] }

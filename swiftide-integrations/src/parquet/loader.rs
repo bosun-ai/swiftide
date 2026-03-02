@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result};
-use arrow_array_57::{LargeStringArray, StringArray, StringViewArray};
+use arrow_array::{LargeStringArray, StringArray, StringViewArray};
 use fs_err::tokio::File;
 use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
