@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
             name: "swiftide-example".into(),
             version: env!("CARGO_PKG_VERSION").into(),
             title: None,
+            description: None,
             icons: None,
             website_url: None,
         },
