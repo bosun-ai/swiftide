@@ -1,2 +1,2 @@
-FORCE INSTALL vss;
-FORCE INSTALL fts;
+INSTALL vss;
+INSTALL fts;
