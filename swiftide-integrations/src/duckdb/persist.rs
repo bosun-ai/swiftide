@@ -18,8 +18,7 @@ use uuid::Uuid;
 
 use super::Duckdb;
 
-static DUCKDB_EXTENSION_INSTALL_LOCK: LazyLock<StdMutex<()>> =
-    LazyLock::new(|| StdMutex::new(()));
+static DUCKDB_EXTENSION_INSTALL_LOCK: LazyLock<StdMutex<()>> = LazyLock::new(|| StdMutex::new(()));
 
 #[allow(dead_code)]
 enum TextNodeValues<'a> {
@@ -59,6 +58,7 @@ impl ToSql for TextNodeValues<'_> {
 }
 
 impl<T: Chunk + AsRef<str>> Duckdb<T> {
+    #[allow(clippy::unused_self)]
     fn install_extensions(&self, conn: &duckdb::Connection) -> Result<()> {
         // DuckDB extension install writes to a shared on-disk extension directory.
         // Serializing installs avoids flaky concurrent install/load behavior in tests/CI.
