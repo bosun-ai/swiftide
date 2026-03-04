@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772464385501,
+  "lastUpdate": 1772624550761,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30485,6 +30485,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 251657,
             "range": "± 1129",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3c8d0697fcf97e292d0f754ed5b86c5b50d5c25b",
+          "message": "chore(deps): Update all crates (#1031)\n\n- **chore(deps): Update base crates**\n- **chore: Update lancedb and parquet**\n- **chore: Update spider**\n- **Update mcp**\n- **Update rdkafka**\n- **Update qdrant**\n- **Update text splitter and reeqwest**\n- **Update testcontainers**\n- **Cargo up**",
+          "timestamp": "2026-03-04T12:33:32+01:00",
+          "tree_id": "5a4157d674b5745313e138d3032571f85d2b8c66",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3c8d0697fcf97e292d0f754ed5b86c5b50d5c25b"
+        },
+        "date": 1772624548132,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 804360,
+            "range": "± 17041",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251222,
+            "range": "± 1109",
             "unit": "ns/iter"
           }
         ]
