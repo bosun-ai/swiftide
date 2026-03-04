@@ -1,4 +1,8 @@
-use std::{borrow::Cow, path::Path};
+use std::{
+    borrow::Cow,
+    path::Path,
+    sync::{LazyLock, Mutex as StdMutex},
+};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
@@ -13,6 +17,8 @@ use swiftide_core::{
 use uuid::Uuid;
 
 use super::Duckdb;
+
+static DUCKDB_EXTENSION_INSTALL_LOCK: LazyLock<StdMutex<()>> = LazyLock::new(|| StdMutex::new(()));
 
 #[allow(dead_code)]
 enum TextNodeValues<'a> {
@@ -52,6 +58,16 @@ impl ToSql for TextNodeValues<'_> {
 }
 
 impl<T: Chunk + AsRef<str>> Duckdb<T> {
+    #[allow(clippy::unused_self)]
+    fn install_extensions(&self, conn: &duckdb::Connection) -> Result<()> {
+        // DuckDB extension install writes to a shared on-disk extension directory.
+        // Serializing installs avoids flaky concurrent install/load behavior in tests/CI.
+        let _lock = DUCKDB_EXTENSION_INSTALL_LOCK.lock().unwrap();
+        conn.execute_batch(include_str!("extensions.sql"))
+            .context("Failed to install duckdb extensions (vss, fts)")?;
+        Ok(())
+    }
+
     fn store_node_on_stmt(&self, stmt: &mut Statement<'_>, node: &Node<T>) -> Result<()> {
         let mut values = vec![
             TextNodeValues::Uuid(node.id()),
@@ -102,9 +118,8 @@ impl<T: Chunk + AsRef<str>> Persist for Duckdb<T> {
                 return Ok(());
             }
 
-            // Install the extensions separately from the schema to avoid duckdb issues with random
-            // 'extension exists' errors
-            let _ = conn.execute_batch(include_str!("extensions.sql"));
+            // Install extensions before schema loading so LOAD vss/fts in the schema succeeds.
+            self.install_extensions(&conn)?;
 
             conn.execute_batch(&self.schema)
                 .context("Failed to create indexing table")?;

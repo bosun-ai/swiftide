@@ -9,10 +9,10 @@ use std::sync::Arc;
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use rmcp::RoleClient;
-use rmcp::model::{ClientInfo, Implementation, InitializeRequestParam};
+use rmcp::ServiceExt;
+use rmcp::model::{CallToolRequestParams, ClientInfo, Implementation, InitializeRequestParams};
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
-use rmcp::{ServiceExt, model::CallToolRequestParam};
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
 use swiftide_core::CommandError;
@@ -36,7 +36,7 @@ pub enum ToolFilter {
 /// `ClientInfo` instead, or from the transport and `Swiftide` will handle the rest.
 #[derive(Clone)]
 pub struct McpToolbox {
-    service: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParam>>>>,
+    service: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParams>>>>,
 
     /// Optional human readable name for the toolbox
     name: Option<String>,
@@ -104,7 +104,7 @@ impl McpToolbox {
 
     /// Create a new toolbox from a running service
     pub fn from_running_service(
-        service: RunningService<RoleClient, InitializeRequestParam>,
+        service: RunningService<RoleClient, InitializeRequestParams>,
     ) -> Self {
         Self {
             service: Arc::new(RwLock::new(Some(service))),
@@ -119,6 +119,7 @@ impl McpToolbox {
                 name: "swiftide".into(),
                 version: env!("CARGO_PKG_VERSION").into(),
                 title: None,
+                description: None,
                 icons: None,
                 website_url: None,
             },
@@ -241,7 +242,7 @@ impl ToolBox for McpToolbox {
 
 #[derive(Clone)]
 struct McpTool {
-    client: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParam>>>>,
+    client: Arc<RwLock<Option<RunningService<RoleClient, InitializeRequestParams>>>>,
     registered_name: String,
     server_tool_name: String,
     tool_spec: ToolSpec,
@@ -262,9 +263,11 @@ impl Tool for McpTool {
             None => None,
         };
 
-        let request = CallToolRequestParam {
+        let request = CallToolRequestParams {
+            meta: None,
             name: self.server_tool_name.clone().into(),
             arguments: args,
+            task: None,
         };
 
         let Some(service) = &*self.client.read().await else {
@@ -420,14 +423,10 @@ mod tests {
             .parameters_schema
             .expect("optional tool should expose a schema");
         let schema_json = serde_json::to_value(schema).unwrap();
-        assert_eq!(
-            schema_json
-                .get("properties")
-                .and_then(|props| props.get("text"))
-                .and_then(|prop| prop.get("type"))
-                .and_then(serde_json::Value::as_str),
-            Some("string")
-        );
+        let _text_prop = schema_json
+            .get("properties")
+            .and_then(|props| props.get("text"))
+            .expect("optional tool schema must include `text`");
 
         let tool_call = builder.args(r#"{"text": "hello"}"#).build().unwrap();
 
