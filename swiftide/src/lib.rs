@@ -61,6 +61,12 @@ pub mod indexing {
 
         pub use swiftide_indexing::transformers::*;
     }
+
+    /// Pipeline statistics collection for monitoring and observability
+    pub mod statistics {
+        #[doc(inline)]
+        pub use swiftide_core::statistics::*;
+    }
 }
 
 #[cfg(feature = "macros")]
