@@ -1,0 +1,197 @@
+[package]
+name = "swiftide-examples"
+publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+tokio = { workspace = true, features = ["full"] }
+swiftide = { path = "../swiftide/", features = [
+  "all",
+  "scraping",
+  "aws-bedrock",
+  "groq",
+  "ollama",
+  "fluvio",
+  "kafka",
+  "lancedb",
+  "pgvector",
+  "swiftide-agents",
+  "dashscope",
+  "mcp",
+  "anthropic",
+  "gemini",
+  "metrics",
+  "langfuse",
+] }
+swiftide-macros = { path = "../swiftide-macros" }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
+serde_json = { workspace = true }
+spider = { workspace = true }
+fluvio = { workspace = true }
+temp-dir = { workspace = true }
+anyhow = { workspace = true }
+futures-util = { workspace = true }
+sqlx = { workspace = true }
+swiftide-test-utils = { path = "../swiftide-test-utils" }
+tracing = { workspace = true }
+serde = { workspace = true }
+rmcp = { workspace = true, features = [
+  "transport-child-process",
+  "client",
+  "server",
+] }
+metrics = { workspace = true }
+schemars.workspace = true
+base64 = { workspace = true }
+
+
+[[example]]
+doc-scrape-examples = true
+name = "index-codebase"
+path = "index_codebase.rs"
+
+[[example]]
+name = "index-codebase-reduced-context"
+path = "index_codebase_reduced_context.rs"
+
+[[example]]
+doc-scrape-examples = true
+name = "fastembed"
+path = "fastembed.rs"
+
+[[example]]
+doc-scrape-examples = true
+name = "index-redis"
+path = "index_into_redis.rs"
+
+[[example]]
+doc-scrape-examples = true
+name = "index-markdown-metadata"
+path = "index_markdown_lots_of_metadata.rs"
+
+[[example]]
+doc-scrape-examples = true
+name = "scraping-index"
+path = "scraping_index_to_markdown.rs"
+
+[[example]]
+doc-scrape-examples = true
+name = "aws-bedrock"
+path = "aws_bedrock.rs"
+
+[[example]]
+name = "aws-bedrock-agent"
+path = "aws_bedrock_agent.rs"
+
+[[example]]
+doc-scrape-examples = true
+name = "store-multiple-vectors"
+path = "store_multiple_vectors.rs"
+
+[[example]]
+name = "index-groq"
+path = "index_groq.rs"
+
+[[example]]
+name = "index-ollama"
+path = "index_ollama.rs"
+
+[[example]]
+name = "query-pipeline"
+path = "query_pipeline.rs"
+
+[[example]]
+name = "hybrid-search"
+path = "hybrid_search.rs"
+
+[[example]]
+name = "fluvio"
+path = "fluvio.rs"
+
+[[example]]
+name = "kakfa"
+path = "kafka.rs"
+
+[[example]]
+name = "lancedb"
+path = "lancedb.rs"
+
+[[example]]
+name = "describe-image"
+path = "describe_image.rs"
+
+[[example]]
+name = "hello-agents"
+path = "hello_agents.rs"
+
+[[example]]
+name = "index-md-pgvector"
+path = "index_md_into_pgvector.rs"
+
+[[example]]
+name = "dashscope"
+path = "dashscope.rs"
+
+[[example]]
+name = "reranking"
+path = "reranking.rs"
+
+[[example]]
+name = "agents-mcp"
+path = "agents_mcp_tools.rs"
+
+[[example]]
+name = "agents-resume"
+path = "agents_resume.rs"
+
+[[example]]
+name = "streaming-agents"
+path = "streaming_agents.rs"
+
+[[example]]
+name = "agents-hitl"
+path = "agents_with_human_in_the_loop.rs"
+
+[[example]]
+name = "usage-metrics"
+path = "usage_metrics.rs"
+
+[[example]]
+name = "tasks"
+path = "tasks.rs"
+
+[[example]]
+name = "agent-can-fail-custom-schema"
+path = "agent_can_fail_custom_schema.rs"
+
+[[example]]
+name = "stop-with-args-custom-schema"
+path = "stop_with_args_custom_schema.rs"
+
+[[example]]
+name = "responses-api"
+path = "responses_api.rs"
+
+[[example]]
+name = "responses-api-reasoning"
+path = "responses_api_reasoning.rs"
+
+[[example]]
+name = "structured-prompt"
+path = "structured_prompt.rs"
+
+[[example]]
+name = "langfuse"
+path = "langfuse.rs"
+
+[[example]]
+name = "tool-custom-schema"
+path = "tool_custom_schema.rs"

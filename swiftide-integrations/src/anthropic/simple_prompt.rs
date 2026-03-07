@@ -1,0 +1,135 @@
+use anyhow::Context as _;
+use async_anthropic::{errors::AnthropicError, types::CreateMessagesRequestBuilder};
+use async_trait::async_trait;
+use swiftide_core::{
+    chat_completion::{Usage, errors::LanguageModelError},
+    indexing::SimplePrompt,
+};
+
+#[cfg(feature = "metrics")]
+use swiftide_core::metrics::emit_usage;
+
+use super::Anthropic;
+
+#[async_trait]
+impl SimplePrompt for Anthropic {
+    #[tracing::instrument(skip_all, err)]
+    async fn prompt(
+        &self,
+        prompt: swiftide_core::prompt::Prompt,
+    ) -> Result<String, LanguageModelError> {
+        let model = &self.default_options.prompt_model;
+
+        let request = CreateMessagesRequestBuilder::default()
+            .model(model)
+            .messages(vec![prompt.render()?.into()])
+            .build()
+            .map_err(LanguageModelError::permanent)?;
+
+        tracing::debug!(
+            model = &model,
+            messages =
+                serde_json::to_string_pretty(&request).map_err(LanguageModelError::permanent)?,
+            "[SimplePrompt] Request to anthropic"
+        );
+
+        let response = self.client.messages().create(request).await.map_err(|e| {
+            match &e {
+                AnthropicError::NetworkError(_) => LanguageModelError::TransientError(e.into()),
+                // TODO: The Rust Anthropic client is not documented well, we should figure out
+                // which of these errors are client errors and which are server errors.
+                // And which would be the ContextLengthExceeded error
+                // For now, we'll just map all of them to client errors so we get feedback.
+                _ => LanguageModelError::PermanentError(e.into()),
+            }
+        })?;
+
+        tracing::debug!(
+            response =
+                serde_json::to_string_pretty(&response).map_err(LanguageModelError::permanent)?,
+            "[SimplePrompt] Response from anthropic"
+        );
+
+        if let Some(usage) = response.usage.as_ref() {
+            if let Some(callback) = &self.on_usage {
+                let usage = Usage {
+                    prompt_tokens: usage.input_tokens.unwrap_or_default(),
+                    completion_tokens: usage.output_tokens.unwrap_or_default(),
+                    total_tokens: (usage.input_tokens.unwrap_or_default()
+                        + usage.output_tokens.unwrap_or_default()),
+                    details: None,
+                };
+                callback(&usage).await?;
+            }
+
+            #[cfg(feature = "metrics")]
+            {
+                emit_usage(
+                    model,
+                    usage.input_tokens.unwrap_or_default().into(),
+                    usage.output_tokens.unwrap_or_default().into(),
+                    (usage.input_tokens.unwrap_or_default()
+                        + usage.output_tokens.unwrap_or_default())
+                    .into(),
+                    self.metric_metadata.as_ref(),
+                );
+            }
+        }
+
+        let message = response
+            .messages()
+            .into_iter()
+            .next()
+            .context("No messages in response")
+            .map_err(LanguageModelError::permanent)?;
+
+        message
+            .text()
+            .context("No text in response")
+            .map_err(LanguageModelError::permanent)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wiremock::{
+        Mock, MockServer, ResponseTemplate,
+        matchers::{method, path},
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_simple_prompt_with_mock() {
+        // Start a WireMock server
+        let mock_server = MockServer::start().await;
+
+        // Create a mock response
+        let mock_response = ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "content": [{"type": "text", "text": "mocked response"}]
+        }));
+
+        // Mock the expected endpoint
+        Mock::given(method("POST"))
+            .and(path("/v1/messages")) // Adjust path to match expected endpoint
+            .respond_with(mock_response)
+            .mount(&mock_server)
+            .await;
+
+        let client = async_anthropic::Client::builder()
+            .base_url(mock_server.uri())
+            .build()
+            .unwrap();
+
+        // Build an Anthropic client with the mock server's URL
+        let mut client_builder = Anthropic::builder();
+        client_builder.client(client);
+        let client = client_builder.build().unwrap();
+
+        // Call the prompt method
+        let result = client.prompt("hello".into()).await.unwrap();
+
+        // Assert the result
+        assert_eq!(result, "mocked response");
+    }
+}

@@ -1,0 +1,5 @@
+---
+source: swiftide-langfuse/tests/full_flow.rs
+expression: body.lock().unwrap().as_ref().unwrap()
+---
+{"batch":[{"body":{"id":"<UUID>","timestamp":"<TIMESTAMP>","name":"<UNIX_TIMESTAMP>","public":false},"id":"<UUID>","timestamp":"<TIMESTAMP>","type":"trace-create"},{"body":{"id":"<UUID>","traceId":"<UUID>","type":"SPAN","name":"OTEL.OVERWRITE","startTime":"<TIMESTAMP>","model":"LANGFUSE MODEL","modelParameters":null,"input":"LANGFUSE INPUT","version":null,"metadata":{"foo":42,"otel.name":"OTEL.OVERWRITE"},"output":"LANGFUSE OUTPUT","level":"DEFAULT","statusMessage":null,"parentObservationId":null,"environment":null},"id":"<UUID>","timestamp":"<TIMESTAMP>","type":"observation-create"},{"body":{"id":"<UUID>","traceId":"<UUID>","type":"SPAN","model":null,"modelParameters":null,"input":null,"version":null,"metadata":{"bar":"baz","message":"Hello from integration test"},"output":null,"statusMessage":null,"environment":null},"id":"<UUID>","timestamp":"<TIMESTAMP>","type":"observation-update"},{"body":{"id":"<UUID>","traceId":"<UUID>","type":"SPAN","endTime":"<TIMESTAMP>"},"id":"<UUID>","timestamp":"<TIMESTAMP>","type":"observation-update"}]}

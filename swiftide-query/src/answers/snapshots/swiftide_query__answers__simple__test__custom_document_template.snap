@@ -1,0 +1,21 @@
+---
+source: swiftide-query/src/answers/simple.rs
+expression: rendered
+---
+Answer the following question based on the context provided:
+original
+
+## Constraints
+* Do not include any information that is not in the provided context.
+* If the question cannot be answered by the provided context, state that it cannot be answered.
+* Answer the question completely and format it as markdown.
+
+## Context
+
+---
+some: metadata
+First document
+---
+other: metadata
+Second document
+---

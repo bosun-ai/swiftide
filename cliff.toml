@@ -1,0 +1,100 @@
+[remote.github]
+owner = "bosun-ai"
+repo = "swiftide"
+
+[git]
+commit_parsers = [
+  { message = "(r|R)elease", skip = true },
+  { message = "^(feat|fix|perf|chore)\\(ci\\)", group = "<!-- 3 -->Miscellaneous" },
+  { message = "^feat*", group = "<!-- 0 -->New features" },
+  { message = "^fix*", group = "<!-- 1 -->Bug fixes" },
+  { message = "^perf*", group = "<!-- 2 -->Performance" },
+  { message = "^chore*", group = "<!-- 3 -->Miscellaneous" },
+]
+
+[changelog]
+# changelog header
+header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.
+"""
+body = """
+{%- if not version %}
+## [unreleased]
+{% else -%}
+## [{{ version }}](https://github.com/bosun-ai/swiftide/releases/tag/{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+{% endif -%}
+
+{% macro commit(commit) -%}
+- [{{ commit.id | truncate(length=7, end="") }}]({{ "https://github.com/bosun-ai/swiftide/commit/" ~ commit.id }}) \
+{% if commit.scope %}*({{commit.scope | default(value = "uncategorized") | lower }})* {% endif %}\
+{%- if commit.breaking %} [**breaking**]{% endif %} \
+{{ commit.message | upper_first | trim }}\
+{% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif -%}\
+{%- if commit.links %} \
+   in {% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%}\
+{% endif %}
+{%- if commit.body and commit.remote.username and commit.remote.username is not containing("[bot]") %}
+
+````text {#- 4 backticks escape any backticks in body #}
+{{commit.body | indent(prefix="  ") }}
+````
+{%- endif %}
+{%- if commit.breaking_description %}
+
+**BREAKING CHANGE**: {{ commit.breaking_description }}
+
+{%- endif %}
+{% endmacro -%}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits | filter(attribute="scope") | sort(attribute="scope") %}
+{{ self::commit(commit=commit) }}
+{%- endfor -%}
+{% for commit in commits %}
+{%- if not commit.scope %}
+{{ self::commit(commit=commit) }}
+{%- endif -%}
+{%- endfor -%}
+{%- endfor %}
+
+{%- if github.contributors -%}
+{% if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
+### New Contributors
+{%- endif %}\
+{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
+* @{{ contributor.username }} made their first contribution
+{%- if contributor.pr_number %} in \
+[#{{ contributor.pr_number }}]({{ self::remote_url() }}/pull/{{ contributor.pr_number }}) \
+{%- endif %}
+{%- endfor -%}
+{% endif -%}
+
+{% if version %}
+{% if previous.version %}
+**Full Changelog**: {{ self::remote_url() }}/compare/{{ previous.version }}...{{ version }}
+{% endif %}
+{% else -%}
+  {% raw %}\n{% endraw %}
+{% endif %}
+
+{%- macro remote_url() -%}
+{%- if remote.github -%}
+https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
+{% else -%}
+https://github.com/bosun-ai/swiftide
+{%- endif -%}
+{% endmacro %}
+""" # template for the changelog body
+# https://keats.github.io/tera/docs/#introduction
+# note that the - before / after the % controls whether whitespace is rendered between each line.
+# Getting this right so that the markdown renders with the correct number of lines between headings
+# code fences and list items is pretty finicky. Note also that the 4 backticks in the commit macro
+# is intentional as this escapes any backticks in the commit body.
+
+
+# remove the leading and trailing whitespace from the template
+trim = false
+# changelog footer

@@ -1,0 +1,140 @@
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
+
+use anyhow::Result;
+use async_trait::async_trait;
+use derive_builder::Builder;
+use tokio::sync::RwLock;
+
+use swiftide_core::{
+    Persist,
+    indexing::{Chunk, IndexingStream, Node},
+};
+
+#[derive(Debug, Default, Builder, Clone)]
+#[builder(pattern = "owned")]
+/// A simple in-memory storage implementation.
+///
+/// Great for experimentation and testing.
+///
+/// The storage will use a zero indexed, incremental counter as the key for each node if the node id
+/// is not set.
+pub struct MemoryStorage<T: Chunk = String> {
+    data: Arc<RwLock<HashMap<String, Node<T>>>>,
+    #[builder(default)]
+    batch_size: Option<usize>,
+    #[builder(default = Arc::new(AtomicUsize::new(0)))]
+    node_count: Arc<AtomicUsize>,
+}
+
+impl<T: Chunk> MemoryStorage<T> {
+    fn key(&self) -> String {
+        self.node_count.fetch_add(1, Ordering::Relaxed).to_string()
+    }
+
+    /// Retrieve a node by its key
+    pub async fn get(&self, key: impl AsRef<str>) -> Option<Node<T>> {
+        self.data.read().await.get(key.as_ref()).cloned()
+    }
+
+    /// Retrieve all nodes in the storage
+    pub async fn get_all_values(&self) -> Vec<Node<T>> {
+        self.data.read().await.values().cloned().collect()
+    }
+
+    /// Retrieve all nodes in the storage with their keys
+    pub async fn get_all(&self) -> Vec<(String, Node<T>)> {
+        self.data
+            .read()
+            .await
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+}
+
+#[async_trait]
+impl<T: Chunk> Persist for MemoryStorage<T> {
+    type Input = T;
+    type Output = T;
+    async fn setup(&self) -> Result<()> {
+        Ok(())
+    }
+
+    /// Store a node by its id
+    ///
+    /// If the node does not have an id, a simple counter is used as the key.
+    async fn store(&self, node: Node<T>) -> Result<Node<T>> {
+        self.data.write().await.insert(self.key(), node.clone());
+
+        Ok(node)
+    }
+
+    /// Store multiple nodes at once
+    ///
+    /// If a node does not have an id, a simple counter is used as the key.
+    async fn batch_store(&self, nodes: Vec<Node<T>>) -> IndexingStream<T> {
+        let mut lock = self.data.write().await;
+
+        for node in &nodes {
+            lock.insert(self.key(), node.clone());
+        }
+
+        IndexingStream::iter(nodes.into_iter().map(Ok))
+    }
+
+    fn batch_size(&self) -> Option<usize> {
+        self.batch_size
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use futures_util::TryStreamExt;
+    use swiftide_core::indexing::TextNode;
+
+    #[tokio::test]
+    async fn test_memory_storage() {
+        let storage = MemoryStorage::default();
+        let node = TextNode::default();
+        let node = storage.store(node.clone()).await.unwrap();
+        assert_eq!(storage.get("0").await, Some(node));
+    }
+
+    #[tokio::test]
+    async fn test_inserting_multiple_nodes() {
+        let storage = MemoryStorage::default();
+        let node1 = TextNode::default();
+        let node2 = TextNode::default();
+
+        storage.store(node1.clone()).await.unwrap();
+        storage.store(node2.clone()).await.unwrap();
+
+        dbg!(storage.get_all().await);
+        assert_eq!(storage.get("0").await, Some(node1));
+        assert_eq!(storage.get("1").await, Some(node2));
+    }
+
+    #[tokio::test]
+    async fn test_batch_store() {
+        let storage = MemoryStorage::default();
+        let node1 = TextNode::default();
+        let node2 = TextNode::default();
+
+        let stream = storage
+            .batch_store(vec![node1.clone(), node2.clone()])
+            .await;
+
+        let result: Vec<TextNode> = stream.try_collect().await.unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], node1);
+        assert_eq!(result[1], node2);
+    }
+}

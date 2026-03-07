@@ -1,0 +1,8 @@
+# configuration for https://github.com/DavidAnson/markdownlint
+
+first-line-heading: false
+no-inline-html: false
+line-length: false
+
+# to support repeated headers in the changelog
+no-duplicate-heading: false

@@ -1,0 +1,10 @@
+error: The following parameters are missing from the spec: ["other"]
+ --> tests/tool/tool_missing_arg_fail.rs:5:1
+  |
+5 | / #[swiftide_macros::tool(
+6 | |     description = "My first tool",
+7 | |     param(name = "msg", description = "A message for testing")
+8 | | )]
+  | |__^
+  |
+  = note: this error originates in the attribute macro `swiftide_macros::tool` (in Nightly builds, run with -Z macro-backtrace for more info)

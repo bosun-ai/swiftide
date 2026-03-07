@@ -1,0 +1,21 @@
+error: The following parameters are missing from the function signature: ["Message"]
+ --> tests/tool/tool_missing_parameter_fail.rs:1:1
+  |
+1 | / #[swiftide_macros::tool(
+2 | |     description = "My first tool",
+3 | |     param(name = "Message", description = "A message for testing")
+4 | | )]
+  | |__^
+  |
+  = note: this error originates in the attribute macro `swiftide_macros::tool` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: The following parameters are missing from the spec: ["msg"]
+ --> tests/tool/tool_missing_parameter_fail.rs:1:1
+  |
+1 | / #[swiftide_macros::tool(
+2 | |     description = "My first tool",
+3 | |     param(name = "Message", description = "A message for testing")
+4 | | )]
+  | |__^
+  |
+  = note: this error originates in the attribute macro `swiftide_macros::tool` (in Nightly builds, run with -Z macro-backtrace for more info)

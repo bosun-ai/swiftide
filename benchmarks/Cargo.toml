@@ -1,0 +1,38 @@
+[package]
+name = "benchmarks"
+publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+swiftide = { path = "../swiftide", features = ["all", "redb"] }
+serde_json = { workspace = true }
+criterion = { workspace = true, features = ["html_reports", "async_tokio"] }
+anyhow = { workspace = true }
+futures-util = { workspace = true }
+testcontainers = { workspace = true, features = ["blocking"] }
+temp-dir = { workspace = true }
+
+[[bench]]
+name = "fileloader"
+path = "fileloader.rs"
+harness = false
+
+[[bench]]
+name = "index-readme-local"
+path = "local_pipeline.rs"
+harness = false
+
+
+[[bench]]
+name = "node-cache"
+path = "node_cache_comparison.rs"
+harness = false

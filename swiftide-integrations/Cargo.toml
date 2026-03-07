@@ -1,0 +1,240 @@
+[package]
+name = "swiftide-integrations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-macros = { path = "../swiftide-macros", version = "0.32" }
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+derive_builder = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+itertools = { workspace = true }
+chrono = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+regex = { workspace = true }
+futures-util = { workspace = true }
+tera = { workspace = true }
+uuid = { workspace = true }
+metrics = { workspace = true, optional = true }
+tracing-futures = { version = "0.2.5", features = ["futures-03"] }
+schemars.workspace = true
+
+# Integrations
+async-openai = { workspace = true, optional = true, features = [
+  "rustls",
+  "chat-completion",
+  "embedding",
+  "responses",
+] }
+async-anthropic = { workspace = true, optional = true }
+qdrant-client = { workspace = true, optional = true, default-features = false, features = [
+  "serde",
+] }
+sqlx = { workspace = true, optional = true, features = [
+  "any",
+  "json",
+  "macros",
+  "postgres",
+  "runtime-tokio",
+  "chrono",
+  "uuid",
+] }
+pgvector = { workspace = true, optional = true, features = ["sqlx"] }
+redis = { workspace = true, features = [
+  "aio",
+  "tokio-comp",
+  "connection-manager",
+  "tokio-rustls-comp",
+], optional = true }
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-ruby = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
+tree-sitter-javascript = { workspace = true, optional = true }
+tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-solidity = { workspace = true, optional = true }
+tree-sitter-c = { workspace = true, optional = true }
+tree-sitter-cpp = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
+tree-sitter-elixir = { workspace = true, optional = true }
+tree-sitter-html = { workspace = true, optional = true }
+tree-sitter-php = { workspace = true, optional = true }
+
+fastembed = { workspace = true, optional = true }
+spider = { workspace = true, optional = true, default-features = true }
+htmd = { workspace = true, optional = true }
+aws-config = { workspace = true, features = [
+  "behavior-version-latest",
+  "credentials-login",
+  "default-https-client",
+  "rt-tokio",
+], optional = true }
+aws-credential-types = { workspace = true, features = [
+  "hardcoded-credentials",
+], optional = true }
+aws-sdk-bedrockruntime = { workspace = true, features = [
+  "behavior-version-latest",
+  "default-https-client",
+  "rt-tokio",
+], optional = true }
+aws-smithy-types = { workspace = true, optional = true }
+aws-smithy-json = { version = "0.62.4", optional = true }
+secrecy = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+reqwest-eventsource = { workspace = true, optional = true }
+deadpool = { workspace = true, features = [
+  "managed",
+  "rt_tokio_1",
+], optional = true }
+fluvio = { workspace = true, optional = true }
+rdkafka = { workspace = true, optional = true }
+arrow-array = { version = "57.3", default-features = false, optional = true }
+lancedb = { workspace = true, optional = true }
+parquet = { workspace = true, optional = true, features = [
+  "async",
+  "arrow",
+  "snap",
+] }
+redb = { workspace = true, optional = true }
+duckdb = { workspace = true, optional = true }
+libduckdb-sys = { workspace = true, optional = true }
+fs-err = { workspace = true, features = ["tokio"] }
+tiktoken-rs = { workspace = true, optional = true }
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-test-utils = { path = "../swiftide-test-utils", features = [
+  "test-utils",
+] }
+swiftide-macros = { path = "../swiftide-macros" }
+temp-dir = { workspace = true }
+pretty_assertions = { workspace = true }
+# arrow = { workspace = true, features = ["test_utils"] }
+duckdb = { workspace = true, features = ["bundled"] }
+libduckdb-sys = { workspace = true, features = [
+  "bundled",
+  "vcpkg",
+  "pkg-config",
+] }
+
+# Used for hacking fluv to play nice
+flv-util = { workspace = true }
+
+mockall = { workspace = true }
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+testcontainers-modules = { workspace = true, features = ["kafka"] }
+test-case = { workspace = true }
+indoc = { workspace = true }
+insta = { workspace = true }
+wiremock = { workspace = true }
+tokio-stream = { workspace = true }
+eventsource-stream.workspace = true
+aws-smithy-eventstream = "0.60.19"
+
+
+[features]
+default = ["rustls"]
+
+metrics = ["dep:metrics", "swiftide-core/metrics"]
+# Ensures rustls is used
+rustls = ["reqwest?/rustls", "fastembed?/hf-hub-native-tls"]
+# Qdrant for storage
+qdrant = ["dep:qdrant-client", "swiftide-core/qdrant", "chrono/now"]
+# PgVector for storage
+pgvector = ["dep:sqlx", "dep:pgvector"]
+# Redis for caching and storage
+redis = ["dep:redis"]
+# Tree-sitter for code operations and chunking
+tree-sitter = [
+  "dep:tree-sitter",
+  "dep:tree-sitter-rust",
+  "dep:tree-sitter-python",
+  "dep:tree-sitter-ruby",
+  "dep:tree-sitter-typescript",
+  "dep:tree-sitter-javascript",
+  "dep:tree-sitter-java",
+  "dep:tree-sitter-go",
+  "dep:tree-sitter-solidity",
+  "dep:tree-sitter-c",
+  "dep:tree-sitter-cpp",
+  "dep:tree-sitter-c-sharp",
+  "dep:tree-sitter-elixir",
+  "dep:tree-sitter-html",
+  "dep:tree-sitter-php",
+]
+# OpenAI for embedding and prompting
+openai = [
+  "dep:async-openai",
+  "tiktoken-rs?/async-openai",
+  "dep:reqwest-eventsource",
+  "dep:reqwest",
+  "swiftide-core/openai",
+]
+# Groq 
+groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Goolge Gemini
+gemini = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Ollama prompting, embedding, chatcompletion
+ollama = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Openrouter prompting, embedding, chatcompletion
+open-router = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# FastEmbed (by qdrant) for fast, local embeddings
+fastembed = [
+  "dep:fastembed",
+  "fastembed/ort-download-binaries",
+  "fastembed/hf-hub",
+]
+# Dashscope prompting
+dashscope = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Scraping via spider as loader and a html to markdown transformer
+scraping = ["dep:spider", "dep:htmd"]
+# AWS Bedrock for prompting
+aws-bedrock = [
+  "dep:aws-config",
+  "dep:aws-credential-types",
+  "dep:aws-sdk-bedrockruntime",
+  "dep:aws-smithy-types",
+  "dep:aws-smithy-json",
+]
+lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
+# Fluvio loader
+fluvio = ["dep:fluvio"]
+# Kafka loader
+kafka = ["dep:rdkafka"]
+# Paruqet loader
+parquet = ["dep:arrow-array", "dep:parquet"]
+# Anthropic for prompting and completions
+anthropic = ["dep:async-anthropic"]
+# Duckdb for indexing and retrieval
+duckdb = ["dep:duckdb", "dep:libduckdb-sys"]
+tiktoken = ["dep:tiktoken-rs"]
+
+# Langfuse compatibility
+langfuse = []
+
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

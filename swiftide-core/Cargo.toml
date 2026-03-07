@@ -1,0 +1,66 @@
+[package]
+name = "swiftide-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+futures-util = { workspace = true }
+tokio-stream = { workspace = true }
+itertools = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+mockall = { workspace = true, optional = true }
+lazy_static = { workspace = true }
+derive_builder = { workspace = true }
+dyn-clone = { workspace = true }
+pin-project = { workspace = true }
+thiserror = { workspace = true }
+metrics = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"] }
+async-openai = { workspace = true, optional = true, features = ["chat-completion-types", "embedding-types", "response-types"] }
+
+tera = { workspace = true }
+uuid = { workspace = true, features = ["v4", "v3"] }
+
+pretty_assertions = { workspace = true, optional = true }
+
+# Integrations
+qdrant-client = { workspace = true, optional = true }
+backoff = { version = "0.4.0", features = ["futures", "tokio"] }
+
+[dev-dependencies]
+test-case = { workspace = true }
+test-log = { workspace = true }
+tokio = { workspace = true, features = ["time", "test-util"] }
+tokio-stream = { workspace = true }
+
+[features]
+defaults = ["truncate-debug"]
+test-utils = ["dep:mockall", "dep:pretty_assertions"]
+qdrant = ["dep:qdrant-client"]
+# Truncates large debug outputs on pipeline nodes
+truncate-debug = []
+metrics = ["dep:metrics"]
+json-schema = []
+openai = ["dep:async-openai"]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

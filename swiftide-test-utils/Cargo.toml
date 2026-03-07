@@ -1,0 +1,32 @@
+[package]
+name = "swiftide-test-utils"
+publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+swiftide-integrations = { path = "../swiftide-integrations", features = [
+  "openai",
+] }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-openai = { workspace = true }
+testcontainers = { workspace = true }
+wiremock = { workspace = true }
+
+[features]
+default = ["test-utils"]
+test-utils = []
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

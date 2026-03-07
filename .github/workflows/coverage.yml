@@ -1,0 +1,51 @@
+name: Coverage
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-coverage
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: "-Dwarnings -Clink-arg=-fuse-ld=lld"
+
+jobs:
+  test:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub
+        if: github.repository_owner == 'bosun-ai'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lld libcurl4-openssl-dev
+      - name: Generate code coverage
+        run: |
+          cargo llvm-cov --tests -j 2 --all-features --lcov --output-path lcov.info
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2

@@ -1,0 +1,1009 @@
+use anyhow::Result;
+use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
+use swiftide_core::{
+    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
+    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
+    indexing::{Chunk, IndexingDefaults, StatsCollector},
+};
+use tokio::{
+    sync::{Mutex, mpsc},
+    task,
+};
+use tracing::Instrument;
+
+use std::{pin::Pin, sync::Arc, time::Duration};
+
+use swiftide_core::indexing::{EmbedMode, IndexingStream, Node, PipelineStats};
+
+macro_rules! trace_span {
+    ($op:literal, $step:expr) => {
+        tracing::trace_span!($op, "otel.name" = format!("{}.{}", $op, $step.name()),)
+    };
+
+    ($op:literal) => {
+        tracing::trace_span!($op, "otel.name" = format!("{}", $op),)
+    };
+}
+
+macro_rules! node_trace_log {
+    ($step:expr, $node:expr, $msg:literal) => {
+        tracing::trace!(
+            node = ?$node,
+            node_id = ?$node.id(),
+            step = $step.name(),
+            $msg
+        )
+    };
+}
+
+macro_rules! batch_node_trace_log {
+    ($step:expr, $nodes:expr, $msg:literal) => {
+        tracing::trace!(batch_size = $nodes.len(), nodes = ?$nodes, step = $step.name(), $msg)
+    };
+}
+
+macro_rules! pipeline_with_new_stream {
+    ($pipeline:expr, $stream:expr) => {
+        Pipeline {
+            stream: $stream.into(),
+            storage_setup_fns: $pipeline.storage_setup_fns.clone(),
+            concurrency: $pipeline.concurrency,
+            indexing_defaults: $pipeline.indexing_defaults.clone(),
+            batch_size: $pipeline.batch_size,
+            stats: $pipeline.stats.clone(),
+        }
+    };
+}
+
+/// The default batch size for batch processing.
+const DEFAULT_BATCH_SIZE: usize = 256;
+
+/// A pipeline for indexing files, adding metadata, chunking, transforming, embedding, and then
+/// storing them.
+///
+/// The `Pipeline` struct orchestrates the entire file indexing process. It is designed to be
+/// flexible and performant, allowing for various stages of data transformation and storage to be
+/// configured and executed asynchronously.
+///
+/// # Fields
+///
+/// * `stream` - The stream of `Node` items to be processed.
+/// * `storage` - Optional storage backend where the processed nodes will be stored.
+/// * `concurrency` - The level of concurrency for processing nodes.
+/// * `stats` - Pipeline statistics collector for monitoring and observability.
+pub struct Pipeline<T: Chunk> {
+    stream: IndexingStream<T>,
+    // storage: Vec<Arc<dyn Persist<Input = T, Output = T>>>,
+    storage_setup_fns: Vec<DynStorageSetupFn>,
+    concurrency: usize,
+    indexing_defaults: IndexingDefaults,
+    batch_size: usize,
+    stats: StatsCollector,
+}
+
+type DynStorageSetupFn =
+    Arc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<()>> + Send>> + Send + Sync>;
+
+impl<T: Chunk> Default for Pipeline<T> {
+    /// Creates a default `Pipeline` with an empty stream, no storage, and a concurrency level equal
+    /// to the number of CPUs.
+    fn default() -> Self {
+        Self {
+            stream: IndexingStream::<T>::empty(),
+            storage_setup_fns: Vec::new(),
+            concurrency: num_cpus::get(),
+            indexing_defaults: IndexingDefaults::default(),
+            batch_size: DEFAULT_BATCH_SIZE,
+            stats: StatsCollector::new(),
+        }
+    }
+}
+
+impl<T: Chunk> Pipeline<T> {
+    /// Creates a `Pipeline` from a given loader.
+    ///
+    /// # Arguments
+    ///
+    /// * `loader` - A loader that implements the `Loader` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` initialized with the provided loader.
+    pub fn from_loader(loader: impl Loader<Output = T> + 'static) -> Self {
+        let stream = loader.into_stream();
+        Self {
+            stream,
+            ..Default::default()
+        }
+    }
+
+    /// Sets the default LLM client to be used for LLM prompts for all transformers in the
+    /// pipeline.
+    #[must_use]
+    pub fn with_default_llm_client(mut self, client: impl SimplePrompt + 'static) -> Self {
+        self.indexing_defaults = IndexingDefaults::from_simple_prompt(Box::new(client));
+        self
+    }
+
+    /// Creates a `Pipeline` from a given stream.
+    ///
+    /// # Arguments
+    ///
+    /// * `stream` - An `IndexingStream` containing the nodes to be processed.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` initialized with the provided stream.
+    pub fn from_stream(stream: impl Into<IndexingStream<T>>) -> Self {
+        Self {
+            stream: stream.into(),
+            ..Default::default()
+        }
+    }
+
+    /// Sets the concurrency level for the pipeline. By default the concurrency is set to the
+    /// number of cpus.
+    ///
+    /// # Arguments
+    ///
+    /// * `concurrency` - The desired level of concurrency.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated concurrency level.
+    #[must_use]
+    pub fn with_concurrency(mut self, concurrency: usize) -> Self {
+        self.concurrency = concurrency;
+        self
+    }
+
+    /// Sets the embed mode for the pipeline. The embed mode controls what (combination) fields of a
+    /// [`Node`] be embedded with a vector when transforming with [`crate::transformers::Embed`]
+    ///
+    /// See also [`swiftide_core::indexing::EmbedMode`].
+    ///
+    /// # Arguments
+    ///
+    /// * `embed_mode` - The desired embed mode.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated embed mode.
+    #[must_use]
+    pub fn with_embed_mode(mut self, embed_mode: EmbedMode) -> Self {
+        self.stream = self
+            .stream
+            .map_ok(move |mut node| {
+                node.embed_mode = embed_mode;
+                node
+            })
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Filters out cached nodes using the provided cache.
+    ///
+    /// # Arguments
+    ///
+    /// * `cache` - A cache that implements the `NodeCache` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated stream that filters out cached nodes.
+    #[must_use]
+    pub fn filter_cached(mut self, cache: impl NodeCache<Input = T> + 'static) -> Self {
+        let cache = Arc::new(cache);
+        self.stream = self
+            .stream
+            .try_filter_map(move |node| {
+                let cache = Arc::clone(&cache);
+                let span = trace_span!("filter_cached", cache);
+
+                async move {
+                    if cache.get(&node).await {
+                        node_trace_log!(cache, node, "node in cache, skipping");
+                        Ok(None)
+                    } else {
+                        node_trace_log!(cache, node, "node not in cache, processing");
+                        cache.set(&node).await;
+                        Ok(Some(node))
+                    }
+                }
+                .instrument(span.or_current())
+            })
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Adds a transformer to the pipeline.
+    ///
+    /// Closures can also be provided as transformers.
+    ///
+    /// # Arguments
+    ///
+    /// * `transformer` - A transformer that implements the `Transformer` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated stream that applies the transformer to each node.
+    #[must_use]
+    pub fn then<Output: Chunk>(
+        self,
+        mut transformer: impl Transformer<Input = T, Output = Output> + WithIndexingDefaults + 'static,
+    ) -> Pipeline<Output> {
+        let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
+
+        transformer.with_indexing_defaults(self.indexing_defaults.clone());
+
+        let transformer = Arc::new(transformer);
+        let stream = self
+            .stream
+            .map_ok(move |node| {
+                let transformer = transformer.clone();
+                let span = trace_span!("then", transformer);
+
+                task::spawn(
+                    async move {
+                        node_trace_log!(transformer, node, "Transforming node");
+                        transformer.transform_node(node).await
+                    }
+                    .instrument(span.or_current()),
+                )
+                .err_into::<anyhow::Error>()
+            })
+            .try_buffer_unordered(concurrency)
+            .map(|x| x.and_then(|x| x));
+
+        pipeline_with_new_stream!(self, stream.boxed())
+    }
+
+    /// Adds a batch transformer to the pipeline.
+    ///
+    /// If the transformer has a batch size set, the batch size from the transformer is used,
+    /// otherwise the pipeline default batch size ([`DEFAULT_BATCH_SIZE`]).
+    ///
+    /// # Arguments
+    ///
+    /// * `transformer` - A transformer that implements the `BatchableTransformer` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated stream that applies the batch transformer to each
+    /// batch of nodes.
+    #[must_use]
+    pub fn then_in_batch<Output: Chunk>(
+        self,
+        mut transformer: impl BatchableTransformer<Input = T, Output = Output>
+        + WithBatchIndexingDefaults
+        + 'static,
+    ) -> Pipeline<Output> {
+        let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
+
+        transformer.with_indexing_defaults(self.indexing_defaults.clone());
+
+        let transformer = Arc::new(transformer);
+        let stream = self
+            .stream
+            .try_chunks(transformer.batch_size().unwrap_or(self.batch_size))
+            .map_ok(move |nodes| {
+                let transformer = Arc::clone(&transformer);
+                let span = trace_span!("then_in_batch", transformer);
+
+                tokio::spawn(
+                    async move {
+                        batch_node_trace_log!(transformer, nodes, "batch transforming nodes");
+                        transformer.batch_transform(nodes).await
+                    }
+                    .instrument(span.or_current()),
+                )
+                .map_err(anyhow::Error::from)
+            })
+            .err_into::<anyhow::Error>()
+            .try_buffer_unordered(concurrency) // First get the streams from each future
+            .try_flatten_unordered(None) // Then flatten the streams into a single stream
+            .boxed();
+
+        pipeline_with_new_stream!(self, stream)
+    }
+
+    /// Adds a chunker transformer to the pipeline.
+    ///
+    /// # Arguments
+    ///
+    /// * `chunker` - A transformer that implements the `ChunkerTransformer` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to
+    /// each node.
+    #[must_use]
+    pub fn then_chunk<Output: Chunk>(
+        self,
+        chunker: impl ChunkerTransformer<Input = T, Output = Output> + 'static,
+    ) -> Pipeline<Output> {
+        let chunker = Arc::new(chunker);
+        let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
+        let stream = self
+            .stream
+            .map_ok(move |node| {
+                let chunker = Arc::clone(&chunker);
+                let span = trace_span!("then_chunk", chunker);
+
+                tokio::spawn(
+                    async move {
+                        node_trace_log!(chunker, node, "Chunking node");
+                        chunker.transform_node(node).await
+                    }
+                    .instrument(span.or_current()),
+                )
+                .map_err(anyhow::Error::from)
+            })
+            .err_into::<anyhow::Error>()
+            .try_buffer_unordered(concurrency)
+            .try_flatten_unordered(None);
+
+        pipeline_with_new_stream!(self, stream.boxed())
+    }
+
+    /// Persists indexing nodes using the provided storage backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `storage` - A storage backend that implements the `Storage` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the configured storage backend.
+    ///
+    /// # Panics
+    ///
+    /// Panics if batch size turns out to be not set and batch storage is still invoked.
+    /// Pipeline only invokes batch storing if the batch size is set, so should be alright.
+    #[must_use]
+    pub fn then_store_with<Output: Chunk>(
+        mut self,
+        storage: impl Persist<Input = T, Output = Output> + 'static,
+    ) -> Pipeline<Output> {
+        let storage = Arc::new(storage);
+
+        let storage_closure = storage.clone();
+
+        // Ensure we run the setup function only once.
+        let completed = Arc::new(Mutex::new(false));
+        let setup_fn: DynStorageSetupFn = Arc::new(move || {
+            let completed = Arc::clone(&completed);
+            let storage_closure = Arc::clone(&storage_closure);
+            Box::pin(async move {
+                let mut lock = completed.lock().await;
+
+                tracing::trace!(?storage_closure, "Setting up storage");
+                storage_closure.setup().await?;
+                *lock = true;
+                Ok(())
+            })
+        });
+        self.storage_setup_fns.push(setup_fn);
+
+        // add storage to the stream instead of doing it at the end
+        let stream = if storage.batch_size().is_some() {
+            self.stream
+                .try_chunks(storage.batch_size().unwrap())
+                .map_ok(move |nodes| {
+                    let storage = Arc::clone(&storage);
+                    let span = trace_span!("then_store_with_batched", storage);
+
+                    tokio::spawn(
+                        async move {
+                            batch_node_trace_log!(storage, nodes, "batch storing nodes");
+                            storage.batch_store(nodes).await
+                        }
+                        .instrument(span.or_current()),
+                    )
+                    .map_err(anyhow::Error::from)
+                })
+                .err_into::<anyhow::Error>()
+                .try_buffer_unordered(self.concurrency)
+                .try_flatten_unordered(None)
+                .boxed()
+        } else {
+            self.stream
+                .map_ok(move |node| {
+                    let storage = Arc::clone(&storage);
+                    let span = trace_span!("then_store_with", storage);
+
+                    tokio::spawn(
+                        async move {
+                            node_trace_log!(storage, node, "Storing node");
+
+                            storage.store(node).await
+                        }
+                        .instrument(span.or_current()),
+                    )
+                    .err_into::<anyhow::Error>()
+                })
+                .try_buffer_unordered(self.concurrency)
+                .map(|x| x.and_then(|x| x))
+                .boxed()
+        };
+
+        pipeline_with_new_stream!(self, stream)
+    }
+
+    /// Splits the stream into two streams based on a predicate.
+    ///
+    /// Note that this is not lazy. It will start consuming the stream immediately
+    /// and send each item to the left or right stream based on the predicate.
+    ///
+    /// The other streams have a buffer, but should be started as soon as possible.
+    /// The channels of the resulting streams are bounded and the parent stream will panic
+    /// if sending fails.
+    ///
+    /// They can either be run concurrently, alternated between or merged back together.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the receiving pipelines buffers are full or unavailable.
+    #[must_use]
+    pub fn split_by<P>(self, predicate: P) -> (Self, Self)
+    where
+        P: Fn(&Result<Node<T>>) -> bool + Send + Sync + 'static,
+    {
+        let predicate = Arc::new(predicate);
+
+        let (left_tx, left_rx) = mpsc::channel(1000);
+        let (right_tx, right_rx) = mpsc::channel(1000);
+
+        let stream = self.stream;
+        let span = trace_span!("split_by");
+        tokio::spawn(
+            async move {
+                stream
+                    .for_each_concurrent(self.concurrency, move |item| {
+                        let predicate = Arc::clone(&predicate);
+                        let left_tx = left_tx.clone();
+                        let right_tx = right_tx.clone();
+                        async move {
+                            if predicate(&item) {
+                                tracing::trace!(?item, "Sending to left stream");
+                                left_tx
+                                    .send(item)
+                                    .await
+                                    .expect("Failed to send to left stream");
+                            } else {
+                                tracing::trace!(?item, "Sending to right stream");
+                                right_tx
+                                    .send(item)
+                                    .await
+                                    .expect("Failed to send to right stream");
+                            }
+                        }
+                    })
+                    .await;
+            }
+            .instrument(span.or_current()),
+        );
+
+        let left_pipeline = pipeline_with_new_stream!(self, left_rx);
+
+        let right_pipeline = pipeline_with_new_stream!(self, right_rx);
+
+        (left_pipeline, right_pipeline)
+    }
+
+    /// Merges two streams into one
+    ///
+    /// This is useful for merging two streams that have been split using the `split_by` method.
+    ///
+    /// The full stream can then be processed using the `run` method.
+    #[must_use]
+    pub fn merge(self, other: Self) -> Self {
+        let stream = tokio_stream::StreamExt::merge(self.stream, other.stream);
+
+        Self {
+            stream: stream.boxed().into(),
+            ..self
+        }
+    }
+
+    /// Throttles the stream of nodes, limiting the rate to 1 per duration.
+    ///
+    /// Useful for rate limiting the indexing pipeline. Uses `tokio_stream::StreamExt::throttle`
+    /// internally which has a granularity of 1ms.
+    #[must_use]
+    pub fn throttle(mut self, duration: impl Into<Duration>) -> Self {
+        self.stream = tokio_stream::StreamExt::throttle(self.stream, duration.into())
+            .boxed()
+            .into();
+        self
+    }
+
+    // Silently filters out errors encountered by the pipeline.
+    //
+    // This method filters out errors encountered by the pipeline, preventing them from bubbling up
+    // and terminating the stream. Note that errors are not logged.
+    #[must_use]
+    pub fn filter_errors(mut self) -> Self {
+        self.stream = self
+            .stream
+            .filter_map(|result| async {
+                match result {
+                    Ok(node) => Some(Ok(node)),
+                    Err(_e) => None,
+                }
+            })
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Provide a closure to selectively filter nodes or errors
+    ///
+    /// This allows you to skip specific errors or nodes, or do ad hoc inspection.
+    ///
+    /// If the closure returns true, the result is kept, otherwise it is skipped.
+    #[must_use]
+    pub fn filter<F>(mut self, filter: F) -> Self
+    where
+        F: Fn(&Result<Node<T>>) -> bool + Send + Sync + 'static,
+    {
+        self.stream = self
+            .stream
+            .filter(move |result| {
+                let will_retain = filter(result);
+
+                async move { will_retain }
+            })
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Logs all results processed by the pipeline.
+    ///
+    /// This method logs all results processed by the pipeline at the `DEBUG` level.
+    #[must_use]
+    pub fn log_all(self) -> Self {
+        self.log_errors().log_nodes()
+    }
+
+    /// Logs all errors encountered by the pipeline.
+    ///
+    /// This method logs all errors encountered by the pipeline at the `ERROR` level.
+    #[must_use]
+    pub fn log_errors(mut self) -> Self {
+        self.stream = self
+            .stream
+            .inspect_err(|e| tracing::error!(?e, "Error processing node"))
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Logs all nodes processed by the pipeline.
+    ///
+    /// This method logs all nodes processed by the pipeline at the `DEBUG` level.
+    #[must_use]
+    pub fn log_nodes(mut self) -> Self {
+        self.stream = self
+            .stream
+            .inspect_ok(|node| tracing::debug!(?node, "Processed node: {:?}", node))
+            .boxed()
+            .into();
+        self
+    }
+
+    /// Runs the indexing pipeline.
+    ///
+    /// This method processes the stream of nodes, applying all configured transformations and
+    /// storing the results.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating the success or failure of the pipeline execution.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no storage backend is configured or if any stage of the pipeline fails.
+    #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
+    pub async fn run(mut self) -> Result<()> {
+        tracing::info!(
+            "Starting indexing pipeline with {} concurrency",
+            self.concurrency
+        );
+
+        // Start statistics collection
+        self.stats.start();
+
+        // Ensure all storage backends are set up before processing nodes
+        let setup_futures = self
+            .storage_setup_fns
+            .into_iter()
+            .map(|func| async move { func().await })
+            .collect::<Vec<_>>();
+        futures_util::future::try_join_all(setup_futures).await?;
+
+        let mut total_nodes = 0;
+        let mut failed_nodes = 0;
+
+        while let Some(result) = self.stream.next().await {
+            match result {
+                Ok(_) => {
+                    total_nodes += 1;
+                    self.stats.increment_nodes_processed(1);
+                }
+                Err(_) => {
+                    failed_nodes += 1;
+                    self.stats.increment_nodes_failed(1);
+                }
+            }
+        }
+
+        // Mark pipeline as complete
+        self.stats.complete();
+
+        let elapsed = self.stats.elapsed().unwrap_or_default();
+        let elapsed_in_seconds = elapsed.as_secs();
+
+        tracing::info!(
+            elapsed_in_seconds,
+            total_nodes,
+            failed_nodes,
+            "Processed {} nodes ({} failed) in {} seconds",
+            total_nodes,
+            failed_nodes,
+            elapsed_in_seconds
+        );
+        tracing::Span::current().record("total_nodes", total_nodes);
+
+        Ok(())
+    }
+
+    /// Get the current pipeline statistics
+    ///
+    /// This method returns a snapshot of the current statistics, including
+    /// the number of nodes processed, failed, and timing information.
+    ///
+    /// # Returns
+    ///
+    /// A `PipelineStats` struct containing the current statistics.
+    pub fn stats(&self) -> PipelineStats {
+        self.stats.get_stats()
+    }
+
+    /// Get a reference to the statistics collector
+    ///
+    /// This can be used to access real-time statistics during pipeline execution.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the `StatsCollector`.
+    pub fn stats_collector(&self) -> &StatsCollector {
+        &self.stats
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::persist::MemoryStorage;
+    use mockall::Sequence;
+    use swiftide_core::indexing::*;
+
+    /// Tests a simple run of the indexing pipeline.
+    #[test_log::test(tokio::test)]
+    async fn test_simple_run() {
+        let mut loader = MockLoader::new();
+        let mut transformer = MockTransformer::new();
+        let mut batch_transformer = MockBatchableTransformer::new();
+        let mut chunker = MockChunkerTransformer::new();
+        let mut storage = MockPersist::new();
+
+        let mut seq = Sequence::new();
+
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| vec![Ok(Node::default())].into());
+
+        transformer.expect_transform_node().returning(|mut node| {
+            node.chunk = "transformed".to_string();
+            Ok(node)
+        });
+        transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "transformer");
+
+        batch_transformer
+            .expect_batch_transform()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|nodes| IndexingStream::iter(nodes.into_iter().map(Ok)));
+        batch_transformer.expect_concurrency().returning(|| None);
+        batch_transformer.expect_name().returning(|| "transformer");
+        batch_transformer.expect_batch_size().returning(|| None);
+
+        chunker
+            .expect_transform_node()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|node| {
+                let mut nodes = vec![];
+                for i in 0..3 {
+                    let mut node = node.clone();
+                    node.chunk = format!("transformed_chunk_{i}");
+                    nodes.push(Ok(node));
+                }
+                nodes.into()
+            });
+        chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "chunker");
+
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+        storage
+            .expect_store()
+            .times(3)
+            .in_sequence(&mut seq)
+            .withf(|node| node.chunk.starts_with("transformed_chunk_"))
+            .returning(Ok);
+        storage.expect_name().returning(|| "storage");
+
+        let pipeline = Pipeline::from_loader(loader)
+            .then(transformer)
+            .then_in_batch(batch_transformer)
+            .then_chunk(chunker)
+            .then_store_with(storage);
+
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_skipping_errors() {
+        let mut loader = MockLoader::new();
+        let mut transformer = MockTransformer::new();
+        let mut storage = MockPersist::new();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| vec![Ok(Node::default())].into());
+        transformer
+            .expect_transform_node()
+            .returning(|_node| Err(anyhow::anyhow!("Error transforming node")));
+        transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "mock");
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+        storage.expect_store().times(0).returning(Ok);
+        let pipeline = Pipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage)
+            .filter_errors();
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_calls_with_simple_transformer() {
+        let mut loader = MockLoader::new();
+        let mut transformer = MockTransformer::new();
+        let mut storage = MockPersist::new();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| {
+                vec![
+                    Ok(Node::default()),
+                    Ok(Node::default()),
+                    Ok(Node::default()),
+                ]
+                .into()
+            });
+        transformer
+            .expect_transform_node()
+            .times(3)
+            .in_sequence(&mut seq)
+            .returning(|mut node| {
+                node.chunk = "transformed".to_string();
+                Ok(node)
+            });
+        transformer.expect_concurrency().returning(|| Some(3));
+        transformer.expect_name().returning(|| "transformer");
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_batch_size().returning(|| None);
+        storage.expect_store().times(3).returning(Ok);
+        storage.expect_name().returning(|| "storage");
+
+        let pipeline = Pipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage);
+        pipeline.run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_arbitrary_closures_as_transformer() {
+        let mut loader = MockLoader::new();
+        let transformer = |node: TextNode| {
+            let mut node = node;
+            node.chunk = "transformed".to_string();
+            Ok(node)
+        };
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| vec![Ok(TextNode::default())].into());
+
+        let pipeline = Pipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage.clone());
+        pipeline.run().await.unwrap();
+
+        dbg!(storage.clone());
+        let processed_node = storage.get("0").await.unwrap();
+        assert_eq!(processed_node.chunk, "transformed");
+    }
+
+    #[tokio::test]
+    async fn test_arbitrary_closures_as_batch_transformer() {
+        let mut loader = MockLoader::new();
+        let batch_transformer = |nodes: Vec<TextNode>| {
+            IndexingStream::iter(nodes.into_iter().map(|mut node| {
+                node.chunk = "transformed".to_string();
+                Ok(node)
+            }))
+        };
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| vec![Ok(TextNode::default())].into());
+
+        let pipeline = Pipeline::from_loader(loader)
+            .then_in_batch(batch_transformer)
+            .then_store_with(storage.clone());
+        pipeline.run().await.unwrap();
+
+        dbg!(storage.clone());
+        let processed_node = storage.get("0").await.unwrap();
+        assert_eq!(processed_node.chunk, "transformed");
+    }
+
+    #[tokio::test]
+    async fn test_filter_closure() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| {
+                vec![
+                    Ok(TextNode::default()),
+                    Ok(TextNode::new("skip")),
+                    Ok(TextNode::default()),
+                ]
+                .into()
+            });
+        let pipeline = Pipeline::from_loader(loader)
+            .filter(|result| {
+                let node = result.as_ref().unwrap();
+                node.chunk != "skip"
+            })
+            .then_store_with(storage.clone());
+        pipeline.run().await.unwrap();
+        let nodes = storage.get_all().await;
+        assert_eq!(nodes.len(), 2);
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_split_and_merge() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut seq = Sequence::new();
+        loader
+            .expect_into_stream()
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|| {
+                vec![
+                    Ok(TextNode::default()),
+                    Ok(TextNode::new("will go left")),
+                    Ok(TextNode::default()),
+                ]
+                .into()
+            });
+
+        let pipeline = Pipeline::from_loader(loader);
+        let (mut left, mut right) = pipeline.split_by(|node| {
+            if let Ok(node) = node {
+                node.chunk.starts_with("will go left")
+            } else {
+                false
+            }
+        });
+
+        // change the chunk to 'left'
+        left = left
+            .then(move |mut node: TextNode| {
+                node.chunk = "left".to_string();
+
+                Ok(node)
+            })
+            .log_all();
+
+        right = right.then(move |mut node: TextNode| {
+            node.chunk = "right".to_string();
+            Ok(node)
+        });
+
+        left.merge(right)
+            .then_store_with(storage.clone())
+            .run()
+            .await
+            .unwrap();
+        dbg!(storage.clone());
+
+        let all_nodes = storage.get_all_values().await;
+        assert_eq!(
+            all_nodes.iter().filter(|node| node.chunk == "left").count(),
+            1
+        );
+        assert_eq!(
+            all_nodes
+                .iter()
+                .filter(|node| node.chunk == "right")
+                .count(),
+            2
+        );
+    }
+
+    #[tokio::test]
+    async fn test_all_steps_should_work_as_dyn_box() {
+        let mut loader = MockLoader::new();
+        loader
+            .expect_into_stream_boxed()
+            .returning(|| vec![Ok(TextNode::default())].into());
+
+        let mut transformer = MockTransformer::new();
+        transformer.expect_transform_node().returning(Ok);
+        transformer.expect_concurrency().returning(|| None);
+        transformer.expect_name().returning(|| "mock");
+
+        let mut batch_transformer = MockBatchableTransformer::new();
+        batch_transformer
+            .expect_batch_transform()
+            .returning(std::convert::Into::into);
+        batch_transformer.expect_concurrency().returning(|| None);
+        batch_transformer.expect_name().returning(|| "mock");
+        let mut chunker = MockChunkerTransformer::new();
+        chunker
+            .expect_transform_node()
+            .returning(|node| vec![node].into());
+        chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "mock");
+
+        let mut storage = MockPersist::new();
+        storage.expect_setup().returning(|| Ok(()));
+        storage.expect_store().returning(Ok);
+        storage.expect_batch_size().returning(|| None);
+        storage.expect_name().returning(|| "mock");
+
+        let pipeline = Pipeline::from_loader(Box::new(loader) as Box<dyn Loader<Output = String>>)
+            .then(Box::new(transformer) as Box<dyn Transformer<Input = String, Output = String>>)
+            .then_in_batch(Box::new(batch_transformer) as Box<dyn BatchableTransformer<Input = String, Output = String>>)
+            .then_chunk(Box::new(chunker) as Box<dyn ChunkerTransformer<Input = String, Output = String>>)
+            .then_store_with(Box::new(storage) as Box<dyn Persist<Input = String, Output = String>>);
+        pipeline.run().await.unwrap();
+    }
+}

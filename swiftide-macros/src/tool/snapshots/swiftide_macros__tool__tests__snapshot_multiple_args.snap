@@ -1,0 +1,69 @@
+---
+source: swiftide-macros/src/tool/mod.rs
+expression: "crate::test_utils::pretty_macro_output(&output)"
+---
+#[derive(
+    ::swiftide::reexports::serde::Serialize,
+    ::swiftide::reexports::serde::Deserialize,
+    ::swiftide::reexports::schemars::JsonSchema,
+    Debug
+)]
+#[schemars(crate = "::swiftide::reexports::schemars", deny_unknown_fields)]
+pub struct SearchCodeArgs {
+    pub code_query: String,
+    pub other: String,
+}
+#[derive(Clone, Default)]
+pub struct SearchCode {}
+pub fn search_code() -> Box<dyn ::swiftide::chat_completion::Tool> {
+    Box::new(SearchCode {}) as Box<dyn ::swiftide::chat_completion::Tool>
+}
+impl SearchCode {
+    pub async fn search_code(
+        &self,
+        context: &dyn AgentContext,
+        code_query: &str,
+        other: &str,
+    ) -> Result<ToolOutput> {
+        return Ok("hello".into());
+    }
+}
+#[::swiftide::reexports::async_trait::async_trait]
+impl ::swiftide::chat_completion::Tool for SearchCode {
+    async fn invoke(
+        &self,
+        agent_context: &dyn ::swiftide::traits::AgentContext,
+        tool_call: &swiftide::chat_completion::ToolCall,
+    ) -> ::std::result::Result<
+        ::swiftide::chat_completion::ToolOutput,
+        ::swiftide::chat_completion::errors::ToolError,
+    > {
+        let Some(args) = tool_call.args() else {
+            return Err(
+                ::swiftide::chat_completion::errors::ToolError::MissingArguments(
+                    format!("No arguments provided for {}", "search_code").into(),
+                ),
+            )
+        };
+        let args: SearchCodeArgs = ::swiftide::reexports::serde_json::from_str(&args)?;
+        return self.search_code(agent_context, &args.code_query, &args.other).await;
+    }
+    fn name<'TOOL>(&'TOOL self) -> std::borrow::Cow<'TOOL, str> {
+        "search_code".into()
+    }
+    fn tool_spec(&self) -> ::swiftide::chat_completion::ToolSpec {
+        swiftide::chat_completion::ToolSpec::builder()
+            .name("search_code")
+            .description("Hello world tool")
+            .parameters_schema(
+                ::swiftide::reexports::schemars::schema_for!(SearchCodeArgs),
+            )
+            .build()
+            .unwrap()
+    }
+}
+impl From<SearchCode> for Box<dyn ::swiftide::chat_completion::Tool> {
+    fn from(val: SearchCode) -> Self {
+        Box::new(val) as Box<dyn ::swiftide::chat_completion::Tool>
+    }
+}

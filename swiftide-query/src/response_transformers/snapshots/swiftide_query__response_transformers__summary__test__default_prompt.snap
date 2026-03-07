@@ -1,0 +1,21 @@
+---
+source: swiftide-query/src/response_transformers/summary.rs
+expression: prompt.render().await.unwrap()
+---
+Your job is to help a query tool find the right context.
+
+Summarize the following documents.
+
+## Constraints
+* Do not add any information that is not available in the documents.
+* Summarize comprehensively and ensure no data that might be important is left out.
+* Summarize as a single markdown document
+
+## Documents
+
+---
+First document
+---
+---
+Second Document
+---

@@ -1,0 +1,183 @@
+[package]
+name = "swiftide"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+description.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+include = [
+  "build.rs",
+  "../README.md",
+  "../images/",
+  "src/",
+  "../examples",
+  "tests/",
+]
+
+[badges]
+
+[dependencies]
+document-features = { workspace = true }
+
+# Local dependencies
+swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.32" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.32" }
+swiftide-query = { path = "../swiftide-query", version = "0.32" }
+swiftide-agents = { path = "../swiftide-agents", version = "0.32", optional = true }
+swiftide-macros = { path = "../swiftide-macros", version = "0.32", optional = true }
+swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.32", optional = true }
+
+# Re-exports for macros and ease of use
+anyhow.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars = { workspace = true, features = ["derive"] }
+
+[features]
+## By default only macros are enabled
+default = ["macros"]
+
+macros = ["dep:swiftide-macros"]
+
+
+all = [
+  "qdrant",
+  "redis",
+  "tree-sitter",
+  "openai",
+  "fastembed",
+  "scraping",
+  "aws-bedrock",
+  "groq",
+  "ollama",
+  "pgvector",
+]
+
+#! ### Integrations
+
+## Enables Qdrant for storage and retrieval
+qdrant = ["swiftide-integrations/qdrant", "swiftide-core/qdrant"]
+
+## Enables PgVector for storage and retrieval
+pgvector = ["swiftide-integrations/pgvector"]
+
+## Enables Redis as an indexing cache and storage
+redis = ["swiftide-integrations/redis"]
+
+## Tree-sitter for various code transformers
+tree-sitter = [
+  "swiftide-integrations/tree-sitter",
+  "swiftide-indexing/tree-sitter",
+]
+
+## OpenAI
+openai = ["swiftide-integrations/openai"]
+
+## Groq 
+groq = ["swiftide-integrations/groq"]
+
+## Google Gemini 
+gemini = ["swiftide-integrations/gemini"]
+
+## Dashscope prompting
+dashscope = ["swiftide-integrations/dashscope"]
+
+## OpenRouter prompting
+open-router = ["swiftide-integrations/open-router"]
+
+## Ollama prompting
+ollama = ["swiftide-integrations/ollama"]
+
+# Anthropic
+anthropic = ["swiftide-integrations/anthropic"]
+
+## FastEmbed (by qdrant) for fast, local, sparse and dense embeddings
+fastembed = ["swiftide-integrations/fastembed"]
+
+## Scraping via spider as loader and a html to markdown transformer
+scraping = ["swiftide-integrations/scraping"]
+
+## AWS Bedrock for prompting
+aws-bedrock = ["swiftide-integrations/aws-bedrock"]
+
+## Lancdb for persistance and querying
+lancedb = ["swiftide-integrations/lancedb"]
+
+## Fluvio loader
+fluvio = ["swiftide-integrations/fluvio"]
+
+## Kafka loader
+kafka = ["swiftide-integrations/kafka"]
+
+## Parquet loader
+parquet = ["swiftide-integrations/parquet"]
+
+## Redb embeddable nodecache
+redb = ["swiftide-integrations/redb"]
+
+## Duckdb; sqlite fork, support Persist, Retrieve and NodeCache
+duckdb = ["swiftide-integrations/duckdb"]
+
+#! ### Other 
+
+## MCP tool support for agents (tools only)
+mcp = ["swiftide-agents", "swiftide-agents/mcp"]
+
+## Metrics for usage, pipeline and agent performance
+metrics = ["swiftide-integrations/metrics", "swiftide-core/metrics"]
+
+## Various mocking and testing utilities
+test-utils = ["swiftide-core/test-utils"]
+
+## Json schema for various types
+json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
+
+## Estimate token counts using tiktoken
+tiktoken = ["swiftide-integrations/tiktoken"]
+
+#! ### Experimental
+## GenAI agents and tools
+swiftide-agents = ["dep:swiftide-agents"]
+## Langfuse tracing and observability
+langfuse = [
+  "swiftide-integrations/langfuse",
+  "swiftide-agents/langfuse",
+  "dep:swiftide-langfuse",
+]
+
+
+[dev-dependencies]
+swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-test-utils = { path = "../swiftide-test-utils" }
+
+async-openai = { workspace = true }
+qdrant-client = { workspace = true, default-features = false, features = [
+  "serde",
+] }
+
+anyhow = { workspace = true }
+test-log = { workspace = true }
+testcontainers = { workspace = true }
+mockall = { workspace = true }
+temp-dir = { workspace = true }
+wiremock = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+arrow-array = { workspace = true }
+sqlx = { workspace = true }
+lancedb = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = ["--cfg", "docsrs"]

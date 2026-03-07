@@ -1,0 +1,17 @@
+---
+source: swiftide-query/src/answers/simple.rs
+expression: prompt.render().await.unwrap()
+---
+Answer the following question based on the context provided:
+What is love?
+
+## Constraints
+* Do not include any information that is not in the provided context.
+* If the question cannot be answered by the provided context, state that it cannot be answered.
+* Answer the question completely and format it as markdown.
+
+## Context
+
+---
+My context
+---

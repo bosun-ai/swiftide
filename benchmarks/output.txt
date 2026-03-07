@@ -1,0 +1,6 @@
+test load_1 ... bench:           6 ns/iter (+/- 0)
+
+test load_10 ... bench:           6 ns/iter (+/- 0)
+
+test run_local_pipeline ... bench:         846 ns/iter (+/- 7)
+
