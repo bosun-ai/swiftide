@@ -100,6 +100,7 @@ impl PipelineStats {
     ///
     /// Returns `None` if the pipeline hasn't started or if no nodes have been processed.
     #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     pub fn nodes_per_second(&self) -> Option<f64> {
         let duration = self.duration()?;
         if duration.as_secs_f64() == 0.0 || self.nodes_processed == 0 {
@@ -170,12 +171,24 @@ impl StatsCollector {
     }
 
     /// Marks the pipeline as started
+    ///
+    /// # Panics
+    ///
+    /// Panics if the mutex is poisoned.
+    /// # Panics
+    /// This function may panic if the internal mutex is poisoned.
     pub fn start(&self) {
         let mut started = self.started_at.lock().unwrap();
         *started = Some(Instant::now());
     }
 
     /// Marks the pipeline as completed
+    ///
+    /// # Panics
+    ///
+    /// Panics if the mutex is poisoned.
+    /// # Panics
+    /// This function may panic if the internal mutex is poisoned.
     pub fn complete(&self) {
         let mut completed = self.completed_at.lock().unwrap();
         *completed = Some(Instant::now());
@@ -214,7 +227,7 @@ impl StatsCollector {
         let mut usage = self.token_usage.lock().unwrap();
         let model_usage = usage
             .entry(model.as_ref().to_string())
-            .or_insert_with(ModelUsage::new);
+            .or_default();
         model_usage.record(prompt_tokens, completion_tokens);
     }
 
