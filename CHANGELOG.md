@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### New features
+
+- *(indexing)* Add pipeline statistics collection for monitoring and observability. 
+  New `PipelineStats`, `StatsCollector`, and `ModelUsage` types provide comprehensive 
+  tracking of node counts, token usage, and timing information. Access via `pipeline.stats()` 
+  or `pipeline.stats_collector()`. Compatible with OpenTelemetry LLM specification. ([#156](https://github.com/bosun-ai/swiftide/issues/156))
+
 ## [0.32.1](https://github.com/bosun-ai/swiftide/compare/v0.32.0...v0.32.1) - 2025-11-08
 
 ### New features
