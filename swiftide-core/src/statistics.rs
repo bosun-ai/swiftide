@@ -175,6 +175,10 @@ impl StatsCollector {
     /// # Panics
     ///
     /// Panics if the mutex is poisoned.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the mutex is poisoned.
     /// # Panics
     /// This function may panic if the internal mutex is poisoned.
     pub fn start(&self) {
@@ -183,6 +187,10 @@ impl StatsCollector {
     }
 
     /// Marks the pipeline as completed
+    ///
+    /// # Panics
+    ///
+    /// Panics if the mutex is poisoned.
     ///
     /// # Panics
     ///
