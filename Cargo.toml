@@ -25,7 +25,7 @@ async-trait = { version = "0.1", default-features = false }
 derive_builder = { version = "0.20", default-features = true }
 fs-err = { version = "3.1", default-features = false }
 futures-util = { version = "0.3", default-features = true }
-tokio = { version = "1.46", features = [
+tokio = { version = "1.50", features = [
   "rt-multi-thread",
   "time",
 ], default-features = false }
@@ -51,7 +51,7 @@ lazy_static = { version = "1.5", default-features = false }
 chrono = { version = "0.4", default-features = false }
 indoc = { version = "2.0", default-features = false }
 regex = { version = "1.11", default-features = false }
-uuid = { version = "1.18", features = [
+uuid = { version = "1.22", features = [
   "v3",
   "v4",
   "serde",
@@ -69,7 +69,7 @@ rmcp = { version = "0.17", default-features = false, features = [
 schemars = { version = "1.0", default-features = false }
 
 # Integrations
-spider = { version = "2.45", default-features = false }
+spider = { version = "2.46", default-features = false }
 async-openai = { version = ">=0.33.0", default-features = false }
 qdrant-client = { version = "1.17", default-features = false, features = [
   "serde",
@@ -88,13 +88,13 @@ sqlx = { version = "0.8", features = [
 aws-config = { version = "1.8", default-features = true }
 pgvector = { version = "0.4", features = ["sqlx"], default-features = false }
 aws-credential-types = { version = "1.2", default-features = false }
-aws-sdk-bedrockruntime = { version = "1.126", default-features = false }
+aws-sdk-bedrockruntime = { version = "1.127", default-features = false }
 aws-smithy-types = { version = "1.3", default-features = false }
 criterion = { version = "0.8", default-features = false }
 darling = { version = "0.23", default-features = false }
 deadpool = { version = "0.13", default-features = false }
 document-features = { version = "0.2" }
-fastembed = { version = "5.5", default-features = false }
+fastembed = { version = "5.12", default-features = false }
 flv-util = { version = "0.5", default-features = false }
 htmd = { version = "0.5", default-features = false }
 ignore = { version = "0.4", default-features = false }
