@@ -639,7 +639,7 @@ impl<T: Chunk> Pipeline<T> {
     #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
         self.stats.start();
-        
+
         tracing::info!(
             "Starting indexing pipeline with {} concurrency",
             self.concurrency
@@ -655,7 +655,7 @@ impl<T: Chunk> Pipeline<T> {
 
         let mut total_nodes = 0u64;
         let mut error_count = 0u64;
-        
+
         while let Some(result) = self.stream.try_next().await? {
             total_nodes += 1;
             // Count successful nodes as stored (nodes that reach the end of the stream)
@@ -664,10 +664,10 @@ impl<T: Chunk> Pipeline<T> {
 
         self.stats.increment_nodes_processed(total_nodes);
         self.stats.complete();
-        
+
         let stats = self.stats.get_stats();
         let elapsed = stats.duration();
-        
+
         if let Some(duration) = elapsed {
             let elapsed_secs = duration.as_secs_f64();
             let nodes_per_sec = if elapsed_secs > 0.0 {
@@ -675,7 +675,7 @@ impl<T: Chunk> Pipeline<T> {
             } else {
                 0.0
             };
-            
+
             tracing::info!(
                 nodes_processed = total_nodes,
                 nodes_stored = stats.nodes_stored,
@@ -686,7 +686,7 @@ impl<T: Chunk> Pipeline<T> {
                 "Pipeline completed"
             );
         }
-        
+
         tracing::Span::current().record("total_nodes", total_nodes);
 
         Ok(())
@@ -1037,14 +1037,10 @@ mod tests {
 
         storage.expect_setup().returning(|| Ok(()));
         storage.expect_batch_size().returning(|| None);
-        storage
-            .expect_store()
-            .times(3)
-            .returning(Ok);
+        storage.expect_store().times(3).returning(Ok);
         storage.expect_name().returning(|| "storage");
 
-        let pipeline = Pipeline::from_loader(loader)
-            .then_store_with(storage);
+        let pipeline = Pipeline::from_loader(loader).then_store_with(storage);
 
         // Test that we can access stats before running
         let initial_stats = pipeline.stats();
@@ -1061,23 +1057,16 @@ mod tests {
     async fn test_stats_collector_access() {
         let mut loader = MockLoader::new();
         let storage = MemoryStorage::default();
-        
+
         loader
             .expect_into_stream()
-            .returning(|| {
-                vec![
-                    Ok(TextNode::default()),
-                    Ok(TextNode::default()),
-                ]
-                .into()
-            });
+            .returning(|| vec![Ok(TextNode::default()), Ok(TextNode::default())].into());
 
-        let pipeline = Pipeline::from_loader(loader)
-            .then_store_with(storage.clone());
+        let pipeline = Pipeline::from_loader(loader).then_store_with(storage.clone());
 
         // Access the stats collector
         let collector = pipeline.stats_collector();
-        
+
         // Record some token usage manually (simulating what transformers would do)
         collector.record_token_usage("gpt-4", 100, 50);
         collector.record_token_usage("gpt-3.5", 50, 25);
@@ -1085,10 +1074,10 @@ mod tests {
         let stats = collector.get_stats();
         assert_eq!(stats.total_requests(), 2);
         assert_eq!(stats.total_tokens(), 225);
-        
+
         // Run the pipeline
         pipeline.run().await.unwrap();
-        
+
         // Verify storage has the nodes
         let nodes = storage.get_all().await;
         assert_eq!(nodes.len(), 2);

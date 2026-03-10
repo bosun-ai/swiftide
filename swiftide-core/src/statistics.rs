@@ -219,7 +219,8 @@ impl StatsCollector {
 
     /// Increments the count of applied transformations
     pub fn increment_transformations(&self, count: u64) {
-        self.transformations_applied.fetch_add(count, Ordering::Relaxed);
+        self.transformations_applied
+            .fetch_add(count, Ordering::Relaxed);
     }
 
     /// Records token usage for a specific model
@@ -231,11 +232,14 @@ impl StatsCollector {
     /// * `model` - The name/identifier of the model
     /// * `prompt_tokens` - Number of tokens in the prompt
     /// * `completion_tokens` - Number of tokens in the completion
-    pub fn record_token_usage(&self, model: impl AsRef<str>, prompt_tokens: u64, completion_tokens: u64) {
+    pub fn record_token_usage(
+        &self,
+        model: impl AsRef<str>,
+        prompt_tokens: u64,
+        completion_tokens: u64,
+    ) {
         let mut usage = self.token_usage.lock().unwrap();
-        let model_usage = usage
-            .entry(model.as_ref().to_string())
-            .or_default();
+        let model_usage = usage.entry(model.as_ref().to_string()).or_default();
         model_usage.record(prompt_tokens, completion_tokens);
     }
 
@@ -277,18 +281,18 @@ mod tests {
     #[test]
     fn test_stats_collector() {
         let collector = StatsCollector::new();
-        
+
         collector.start();
-        
+
         collector.increment_nodes_processed(10);
         collector.increment_nodes_failed(2);
         collector.increment_nodes_stored(8);
         collector.increment_transformations(15);
-        
+
         collector.complete();
-        
+
         let stats = collector.get_stats();
-        
+
         assert_eq!(stats.nodes_processed, 10);
         assert_eq!(stats.nodes_failed, 2);
         assert_eq!(stats.nodes_stored, 8);
@@ -300,10 +304,10 @@ mod tests {
     #[test]
     fn test_model_usage() {
         let mut usage = ModelUsage::new();
-        
+
         usage.record(100, 50);
         usage.record(200, 100);
-        
+
         assert_eq!(usage.prompt_tokens, 300);
         assert_eq!(usage.completion_tokens, 150);
         assert_eq!(usage.total_tokens, 450);
@@ -313,20 +317,20 @@ mod tests {
     #[test]
     fn test_record_token_usage() {
         let collector = StatsCollector::new();
-        
+
         collector.record_token_usage("gpt-4", 100, 50);
         collector.record_token_usage("gpt-4", 200, 100);
         collector.record_token_usage("gpt-3.5", 50, 25);
-        
+
         let stats = collector.get_stats();
-        
+
         assert_eq!(stats.token_usage.len(), 2);
-        
+
         let gpt4_usage = stats.token_usage.get("gpt-4").unwrap();
         assert_eq!(gpt4_usage.prompt_tokens, 300);
         assert_eq!(gpt4_usage.completion_tokens, 150);
         assert_eq!(gpt4_usage.request_count, 2);
-        
+
         assert_eq!(stats.total_tokens(), 525);
         assert_eq!(stats.total_requests(), 3);
     }
@@ -334,7 +338,7 @@ mod tests {
     #[test]
     fn test_empty_stats() {
         let stats = PipelineStats::new();
-        
+
         assert_eq!(stats.nodes_processed, 0);
         assert_eq!(stats.nodes_failed, 0);
         assert_eq!(stats.total_tokens(), 0);
@@ -347,16 +351,16 @@ mod tests {
         let collector = StatsCollector::new();
         collector.increment_nodes_processed(5);
         collector.record_token_usage("model-1", 10, 5);
-        
+
         let cloned = collector.clone();
-        
+
         // Modify original
         collector.increment_nodes_processed(3);
-        
+
         // Cloned should have original value
         let cloned_stats = cloned.get_stats();
         assert_eq!(cloned_stats.nodes_processed, 5);
-        
+
         // Original should have updated value
         let original_stats = collector.get_stats();
         assert_eq!(original_stats.nodes_processed, 8);
@@ -366,9 +370,9 @@ mod tests {
     fn test_pipeline_stats_duration_while_running() {
         let collector = StatsCollector::new();
         collector.start();
-        
+
         let stats = collector.get_stats();
-        
+
         // Should return Some while running
         assert!(stats.duration().is_some());
         assert_eq!(stats.completed_at, None);
