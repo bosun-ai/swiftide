@@ -5,7 +5,7 @@ use dyn_clone::DynClone;
 
 use super::{
     errors::NodeError,
-    transition::{MarkedTransitionPayload, TransitionPayload},
+    transition::{MarkedTransitionPayload, NextNode, TransitionPayload},
 };
 
 pub trait NodeArg: Send + Sync + DynClone + 'static {}
@@ -126,6 +126,11 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     /// You can also get the closure version with `as_transition`
     pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
         MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
+    }
+
+    /// Returns a transition target that can be used in fan-out transitions.
+    pub fn target_with(&self, context: T::Input) -> NextNode {
+        NextNode::new(*self, context)
     }
 }
 
