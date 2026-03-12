@@ -169,6 +169,10 @@ name = "tasks"
 path = "tasks.rs"
 
 [[example]]
+name = "tasks-fanout"
+path = "tasks_fanout.rs"
+
+[[example]]
 name = "agent-can-fail-custom-schema"
 path = "agent_can_fail_custom_schema.rs"
 
