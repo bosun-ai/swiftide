@@ -2,9 +2,7 @@
 
 use anyhow::Result;
 use swiftide::agents::tasks::{
-    closures::SyncFn,
-    task::Task,
-    transition::{JoinInput, JoinPolicy, TransitionDirective},
+    JoinInput, JoinLeftoverBehavior, JoinPolicy, SyncFn, Task, TransitionDirective,
 };
 
 #[tokio::main]
@@ -15,19 +13,29 @@ async fn main() -> Result<()> {
     let increment = task.register_node(SyncFn::new(|input: &i32| Ok(*input + 1)));
     let double = task.register_node(SyncFn::new(|input: &i32| Ok(*input * 2)));
     let join = task.register_node(SyncFn::new(|input: &JoinInput| {
-        Ok(input.ready_values::<i32>().into_iter().copied().sum())
+        Ok(input
+            .ready_values::<i32>()
+            .into_iter()
+            .copied()
+            .sum::<i32>())
     }));
 
     task.starts_with(start);
 
-    task.register_transition_directive(start, move |input| {
-        TransitionDirective::fan_out([increment.target_with(input), double.target_with(input)])
-            .with_join(join, JoinPolicy::All)
+    task.register_transition(start, move |input| {
+        TransitionDirective::fan_out_join(
+            [increment.target_with(input), double.target_with(input)],
+            join,
+            JoinPolicy::AtLeast {
+                count: 2,
+                leftovers: JoinLeftoverBehavior::CancelRemaining,
+            },
+        )
     })?;
 
-    task.register_transition_directive(increment, move |output| TransitionDirective::join(output))?;
-    task.register_transition_directive(double, move |output| TransitionDirective::join(output))?;
-    task.register_transition(join, task.transitions_to_done())?;
+    task.register_transition(increment, move |output| TransitionDirective::join(output))?;
+    task.register_transition(double, move |output| TransitionDirective::join(output))?;
+    task.register_transition(join, TransitionDirective::finish)?;
 
     let result = task.run(5).await?;
 

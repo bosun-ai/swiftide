@@ -3,45 +3,11 @@ use std::any::Any;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
-use super::{
-    errors::NodeError,
-    transition::{MarkedTransitionPayload, NextNode, TransitionPayload},
-};
+use super::transition::{MarkedTransitionPayload, NextNode, TransitionPayload};
 
 pub trait NodeArg: Send + Sync + DynClone + 'static {}
 
 impl<T: Send + Sync + std::fmt::Debug + 'static + Clone> NodeArg for T {}
-
-#[derive(Debug, Clone)]
-pub struct NoopNode<Context: NodeArg> {
-    _marker: std::marker::PhantomData<(Context, Box<dyn std::error::Error + Send + Sync>)>,
-}
-
-impl<Context> Default for NoopNode<Context>
-where
-    Context: NodeArg,
-{
-    fn default() -> Self {
-        NoopNode {
-            _marker: std::marker::PhantomData,
-        }
-    }
-}
-
-#[async_trait]
-impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
-    type Output = ();
-    type Input = Context;
-    type Error = NodeError;
-
-    async fn evaluate(
-        &self,
-        _node_id: &DynNodeId<Self>,
-        _context: &Context,
-    ) -> Result<Self::Output, Self::Error> {
-        Ok(())
-    }
-}
 
 #[async_trait]
 pub trait TaskNode: Send + Sync + DynClone + Any {
@@ -114,16 +80,7 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
         self.id
     }
 
-    /// Returns a closure that can be used as a transition function
-    pub fn as_transition(&self) -> impl Fn(T::Input) -> MarkedTransitionPayload<T> + 'static {
-        let node_id = *self;
-
-        Box::new(move |context| node_id.transitions_with(context))
-    }
-
     /// Returns a transition payload suitable for inside a task transition
-    ///
-    /// You can also get the closure version with `as_transition`
     pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
         MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
     }

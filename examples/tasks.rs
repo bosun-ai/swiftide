@@ -17,7 +17,7 @@ use anyhow::Result;
 use swiftide::{
     agents::{
         self,
-        tasks::{closures::SyncFn, impls::TaskAgent, task::Task},
+        tasks::{SyncFn, Task, TaskAgent, TransitionDirective},
     },
     prompt::Prompt,
 };
@@ -46,10 +46,10 @@ async fn main() -> Result<()> {
     task.starts_with(agent_id);
 
     // Async is also supported
-    task.register_transition_async(agent_id, move |context| {
-        Box::pin(async move { hello_id.transitions_with(context) })
+    task.register_transition_async(agent_id, move |context| async move {
+        hello_id.transitions_with(context)
     })?;
-    task.register_transition(hello_id, task.transitions_to_done())?;
+    task.register_transition(hello_id, TransitionDirective::finish)?;
 
     task.run("Hello there!").await?;
 
