@@ -17,7 +17,7 @@ use anyhow::Result;
 use swiftide::{
     agents::{
         self,
-        tasks::{SyncFn, Task, TaskAgent},
+        tasks::{SyncFn, Task, TaskAgent, TaskRunState},
     },
     prompt::Prompt,
 };
@@ -51,7 +51,8 @@ async fn main() -> Result<()> {
     })?;
     task.register_transition(hello_id, task.transitions_to_finish())?;
 
-    task.run("Hello there!").await?;
+    let result = task.run("Hello there!").await?;
+    assert!(matches!(result, TaskRunState::Completed(())));
 
     Ok(())
 }

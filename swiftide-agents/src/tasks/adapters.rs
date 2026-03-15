@@ -142,6 +142,9 @@ where
 /// An example of wrapping an Agent as a `TaskNode`
 ///
 /// For more control you can always roll your own
+///
+/// `TaskAgent` keeps the wrapped agent behind a mutex and therefore serializes access when the
+/// same adapter instance is shared across multiple task branches.
 #[derive(Clone, Debug)]
 pub struct TaskAgent(Arc<Mutex<Agent>>);
 

@@ -1,0 +1,10 @@
+error[E0624]: associated function `finish` is private
+ --> tests/ui/finish_is_not_public.rs:4:34
+  |
+4 |     let _ = TransitionDirective::finish("wrong output");
+  |                                  ^^^^^^ private associated function
+  |
+ ::: src/tasks/transition.rs
+  |
+  |     pub(crate) fn finish<T: NodeArg>(output: T) -> Self {
+  |     --------------------------------------------------- private associated function defined here

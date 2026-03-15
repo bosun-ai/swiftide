@@ -12,48 +12,26 @@ use std::{
     any::Any,
     collections::{HashMap, VecDeque},
     future::Future,
-    pin::Pin,
+    num::NonZeroUsize,
     sync::Arc,
 };
 
-use anyhow::anyhow;
-use async_trait::async_trait;
-use dyn_clone::DynClone;
-use futures_util::{StreamExt as _, stream::FuturesUnordered};
-use tracing::Instrument as _;
-
 use super::{
-    errors::{NodeError, TaskError},
+    errors::TaskError,
     node::{NodeArg, NodeId, TaskNode},
+    runtime::{
+        AnyNodeExecutor, BranchGroupId, ExecutionBranch, JoinGroupState, NodeExecutor, TaskOptions,
+        TransitionHandler,
+    },
     transition::{
-        ActiveBranch, BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel,
-        EffectiveTransitionSettings, ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy,
-        PauseBehavior, TransitionAction, TransitionDirective,
+        ActiveBranch, BranchId, ConcurrencyModel, ErrorBehavior, PauseBehavior, TransitionDirective,
     },
 };
 
-type BoxedTransitionFuture = Pin<Box<dyn Future<Output = TransitionDirective> + Send>>;
-type TransitionHandler<Output> =
-    Arc<dyn Fn(Output) -> BoxedTransitionFuture + Send + Sync + 'static>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct BranchGroupId(usize);
-
-#[derive(Debug, Clone)]
-struct TaskOptions {
-    concurrency_model: ConcurrencyModel,
-    pause_behavior: PauseBehavior,
-    error_behavior: ErrorBehavior,
-}
-
-impl Default for TaskOptions {
-    fn default() -> Self {
-        Self {
-            concurrency_model: ConcurrencyModel::Sequential,
-            pause_behavior: PauseBehavior::DrainRunnable,
-            error_behavior: ErrorBehavior::Local,
-        }
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TaskRunState<Output> {
+    Completed(Output),
+    Paused,
 }
 
 #[derive(Debug)]
@@ -85,113 +63,27 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output>
         self
     }
 
+    pub fn max_parallelism(mut self, max_parallelism: NonZeroUsize) -> Self {
+        self.options.max_parallelism = max_parallelism.get();
+        self
+    }
+
     pub fn build(self) -> Task<Input, Output> {
         Task::with_options(self.options)
     }
 }
 
-#[derive(Debug, Clone)]
-struct ExecutionBranch {
-    id: BranchId,
-    current_node: usize,
-    context: Arc<dyn Any + Send + Sync>,
-    settings: EffectiveTransitionSettings,
-    join_group: Option<BranchGroupId>,
-}
-
-#[derive(Debug, Clone)]
-enum JoinMemberState {
-    Pending {
-        node_id: usize,
-    },
-    Paused {
-        node_id: usize,
-    },
-    Ready {
-        node_id: usize,
-        payload: Arc<dyn Any + Send + Sync>,
-    },
-    Failed {
-        node_id: usize,
-        message: String,
-    },
-    Cancelled {
-        node_id: usize,
-    },
-    LateArrival {
-        node_id: usize,
-    },
-}
-
-impl JoinMemberState {
-    fn node_id(&self) -> usize {
-        match self {
-            JoinMemberState::Pending { node_id }
-            | JoinMemberState::Paused { node_id }
-            | JoinMemberState::Ready { node_id, .. }
-            | JoinMemberState::Failed { node_id, .. }
-            | JoinMemberState::Cancelled { node_id }
-            | JoinMemberState::LateArrival { node_id } => *node_id,
-        }
-    }
-
-    fn is_terminal(&self) -> bool {
-        matches!(
-            self,
-            JoinMemberState::Ready { .. }
-                | JoinMemberState::Failed { .. }
-                | JoinMemberState::Cancelled { .. }
-                | JoinMemberState::LateArrival { .. }
-        )
-    }
-
-    fn outcome(&self) -> BranchOutcome {
-        match self {
-            JoinMemberState::Pending { .. } => BranchOutcome::Pending,
-            JoinMemberState::Paused { .. } => BranchOutcome::Paused,
-            JoinMemberState::Ready { payload, .. } => BranchOutcome::Ready(payload.clone()),
-            JoinMemberState::Failed { message, .. } => BranchOutcome::Failed(message.clone()),
-            JoinMemberState::Cancelled { .. } => BranchOutcome::Cancelled,
-            JoinMemberState::LateArrival { .. } => BranchOutcome::LateArrival,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct JoinGroupState {
-    join_node_id: usize,
-    policy: JoinPolicy,
-    members: HashMap<BranchId, JoinMemberState>,
-    member_order: Vec<BranchId>,
-    ready_count: usize,
-    fired: bool,
-}
-
-#[derive(Debug)]
-struct EvaluatedBranch {
-    branch: ExecutionBranch,
-    directive: TransitionDirective,
-}
-
-#[derive(Debug)]
-enum LoopControl<Output> {
-    Continue,
-    Pause,
-    Complete(Output),
-}
-
 #[derive(Debug)]
 pub struct Task<Input: NodeArg, Output: NodeArg> {
-    nodes: Vec<Box<dyn AnyNodeExecutor>>,
-    start_node: Option<usize>,
-    sequential_branches: VecDeque<ExecutionBranch>,
-    parallel_branches: VecDeque<ExecutionBranch>,
-    paused_branches: HashMap<BranchId, ExecutionBranch>,
-    join_groups: HashMap<BranchGroupId, JoinGroupState>,
-    next_branch_id: usize,
-    next_group_id: usize,
-    last_start_context: Option<Arc<dyn Any + Send + Sync>>,
-    options: TaskOptions,
+    pub(crate) nodes: Vec<Box<dyn AnyNodeExecutor>>,
+    pub(crate) start_node: Option<usize>,
+    pub(crate) runnable_branches: VecDeque<ExecutionBranch>,
+    pub(crate) paused_branches: HashMap<BranchId, ExecutionBranch>,
+    pub(crate) join_groups: HashMap<BranchGroupId, JoinGroupState>,
+    pub(crate) next_branch_id: usize,
+    pub(crate) next_group_id: usize,
+    pub(crate) last_start_context: Option<Arc<dyn Any + Send + Sync>>,
+    pub(crate) options: TaskOptions,
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
@@ -200,8 +92,7 @@ impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
         Self {
             nodes: self.nodes.clone(),
             start_node: self.start_node,
-            sequential_branches: VecDeque::new(),
-            parallel_branches: VecDeque::new(),
+            runnable_branches: VecDeque::new(),
             paused_branches: HashMap::new(),
             join_groups: HashMap::new(),
             next_branch_id: 1,
@@ -232,8 +123,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Self {
             nodes: Vec::new(),
             start_node: None,
-            sequential_branches: VecDeque::new(),
-            parallel_branches: VecDeque::new(),
+            runnable_branches: VecDeque::new(),
             paused_branches: HashMap::new(),
             join_groups: HashMap::new(),
             next_branch_id: 1,
@@ -259,9 +149,15 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     #[tracing::instrument(skip(self, input), name = "task.run", err)]
-    pub async fn run(&mut self, input: impl Into<Input>) -> Result<Option<Output>, TaskError> {
-        let start_node = self.validate_transitions()?;
+    pub async fn run(
+        &mut self,
+        input: impl Into<Input>,
+    ) -> Result<TaskRunState<Output>, TaskError> {
+        if self.has_live_state() {
+            return Err(TaskError::TaskActive);
+        }
 
+        let start_node = self.validate_transitions()?;
         let context = Arc::new(input.into()) as Arc<dyn Any + Send + Sync>;
         self.last_start_context = Some(context.clone());
         self.reset_runtime();
@@ -301,15 +197,20 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     #[tracing::instrument(skip(self), name = "task.resume", err)]
-    pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
+    pub async fn resume(&mut self) -> Result<TaskRunState<Output>, TaskError> {
         self.validate_transitions()?;
+
+        if self.runnable_branches.is_empty() && self.paused_branches.is_empty() {
+            return Err(TaskError::NotResumable);
+        }
+
+        self.restore_paused_branches();
         self.start_task().await
     }
 
     pub fn active_branches(&self) -> Vec<ActiveBranch> {
-        self.sequential_branches
+        self.runnable_branches
             .iter()
-            .chain(self.parallel_branches.iter())
             .map(|branch| ActiveBranch {
                 branch_id: branch.id,
                 node_id: branch.current_node,
@@ -318,13 +219,16 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     pub fn paused_branches(&self) -> Vec<ActiveBranch> {
-        self.paused_branches
+        let mut branches = self
+            .paused_branches
             .values()
             .map(|branch| ActiveBranch {
                 branch_id: branch.id,
                 node_id: branch.current_node,
             })
-            .collect()
+            .collect::<Vec<_>>();
+        branches.sort_by_key(|branch| branch.branch_id.0);
+        branches
     }
 
     pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
@@ -333,16 +237,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     {
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
-        let executor = Box::new(NodeExecutor::<T::Input, T::Output, T::Error> {
-            node: Box::new(node),
-            node_id: Box::new(node_id.as_dyn()),
-            transition_fn: Arc::new(move |_output| {
-                Box::pin(async move { unreachable!("No transition registered for node {id}.") })
-            }),
-            transition_is_set: false,
-        });
-
-        self.nodes.push(executor);
+        self.nodes.push(Box::new(NodeExecutor::new(node, node_id)));
         node_id
     }
 
@@ -400,497 +295,41 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .get_mut(from.id())
             .ok_or_else(|| TaskError::missing_node(from.id()))?;
 
-        let Some(executor) = (&mut **node_executor as &mut dyn Any).downcast_mut::<NodeExecutor<
+        let executor = (&mut **node_executor as &mut dyn Any).downcast_mut::<NodeExecutor<
             From::Input,
             From::Output,
             From::Error,
-        >>() else {
-            unreachable!("Transition registration type mismatch");
+        >>();
+
+        let Some(executor) = executor else {
+            return Err(TaskError::invalid_state(format!(
+                "Transition registration type mismatch for node {}",
+                from.id()
+            )));
         };
 
         executor.transition_fn = transition;
         executor.transition_is_set = true;
         Ok(())
     }
-
-    fn validate_transitions(&self) -> Result<usize, TaskError> {
-        let start_node = self.start_node.ok_or(TaskError::NoSteps)?;
-
-        for (index, node_executor) in self.nodes.iter().enumerate() {
-            if !node_executor.transition_is_set() {
-                return Err(TaskError::missing_transition(index));
-            }
-        }
-
-        Ok(start_node)
-    }
-
-    async fn start_task(&mut self) -> Result<Option<Output>, TaskError> {
-        loop {
-            if !self.parallel_branches.is_empty() {
-                let branches = self.parallel_branches.drain(..).collect::<Vec<_>>();
-                let results = {
-                    let mut futures = FuturesUnordered::new();
-                    for branch in branches {
-                        futures.push(self.evaluate_branch(branch));
-                    }
-
-                    let mut results = Vec::new();
-                    while let Some(result) = futures.next().await {
-                        results.push(result);
-                    }
-                    results
-                };
-
-                for result in results {
-                    match self.apply_branch_result(result?).await? {
-                        LoopControl::Continue => {}
-                        LoopControl::Pause => return Ok(None),
-                        LoopControl::Complete(output) => return Ok(Some(output)),
-                    }
-                }
-                continue;
-            }
-
-            let Some(branch) = self.sequential_branches.pop_front() else {
-                break;
-            };
-
-            match self
-                .apply_branch_result(self.evaluate_branch(branch).await?)
-                .await?
-            {
-                LoopControl::Continue => {}
-                LoopControl::Pause => return Ok(None),
-                LoopControl::Complete(output) => return Ok(Some(output)),
-            }
-        }
-
-        if !self.paused_branches.is_empty() {
-            return Ok(None);
-        }
-
-        Ok(None)
-    }
-
-    async fn evaluate_branch(&self, branch: ExecutionBranch) -> Result<EvaluatedBranch, TaskError> {
-        let mut span = tracing::info_span!(
-            "task.step",
-            node = branch.current_node,
-            branch = branch.id.0
-        );
-
-        let node_executor = self
-            .nodes
-            .get(branch.current_node)
-            .ok_or_else(|| TaskError::missing_node(branch.current_node))?;
-
-        let directive = node_executor
-            .evaluate_next(branch.context.clone())
-            .instrument(span.clone())
-            .await?;
-
-        span = tracing::info_span!(
-            "task.step.done",
-            node = branch.current_node,
-            branch = branch.id.0
-        )
-        .or_current();
-        span.follows_from(span.id().clone());
-
-        Ok(EvaluatedBranch { branch, directive })
-    }
-
-    async fn apply_branch_result(
-        &mut self,
-        evaluated: EvaluatedBranch,
-    ) -> Result<LoopControl<Output>, TaskError> {
-        let EvaluatedBranch {
-            mut branch,
-            directive,
-        } = evaluated;
-        let settings = branch.settings.with_overrides(directive.settings);
-
-        match directive.action {
-            TransitionAction::Next(next_node) => {
-                branch.current_node = next_node.node_id;
-                branch.context = next_node.context;
-                branch.settings = settings;
-                self.set_join_member_state(
-                    branch.join_group,
-                    branch.id,
-                    JoinMemberState::Pending {
-                        node_id: branch.current_node,
-                    },
-                );
-                self.enqueue_branch(branch);
-            }
-            TransitionAction::FanOut { targets, join } => {
-                let join_group = join.map(|(join_node_id, policy)| {
-                    let group_id = self.next_group();
-                    self.join_groups.insert(
-                        group_id,
-                        JoinGroupState {
-                            join_node_id,
-                            policy,
-                            members: HashMap::new(),
-                            member_order: Vec::new(),
-                            ready_count: 0,
-                            fired: false,
-                        },
-                    );
-                    group_id
-                });
-
-                for target in targets {
-                    let child_id = self.next_branch();
-                    let child = ExecutionBranch {
-                        id: child_id,
-                        current_node: target.node_id,
-                        context: target.context,
-                        settings: settings.clone(),
-                        join_group,
-                    };
-
-                    if let Some(group_id) = join_group {
-                        let group = self.join_groups.get_mut(&group_id).unwrap();
-                        group.member_order.push(child_id);
-                        group.members.insert(
-                            child_id,
-                            JoinMemberState::Pending {
-                                node_id: child.current_node,
-                            },
-                        );
-                    }
-
-                    self.enqueue_branch(child);
-                }
-            }
-            TransitionAction::Join(payload) => {
-                let Some(group_id) = branch.join_group else {
-                    return Err(TaskError::NodeError(NodeError::new(
-                        anyhow!("Join directive used without an attached join group"),
-                        branch.current_node,
-                        None,
-                    )));
-                };
-
-                let group = self
-                    .join_groups
-                    .get_mut(&group_id)
-                    .ok_or_else(|| TaskError::missing_node(branch.current_node))?;
-
-                if group.fired {
-                    group.members.insert(
-                        branch.id,
-                        JoinMemberState::LateArrival {
-                            node_id: branch.current_node,
-                        },
-                    );
-                    return Ok(LoopControl::Continue);
-                }
-
-                group.members.insert(
-                    branch.id,
-                    JoinMemberState::Ready {
-                        node_id: branch.current_node,
-                        payload,
-                    },
-                );
-                group.ready_count += 1;
-
-                if let Some(join_branch) = self.try_fire_join(group_id)? {
-                    self.enqueue_branch(join_branch);
-                }
-            }
-            TransitionAction::Pause => {
-                self.set_join_member_state(
-                    branch.join_group,
-                    branch.id,
-                    JoinMemberState::Paused {
-                        node_id: branch.current_node,
-                    },
-                );
-                self.paused_branches.insert(branch.id, branch);
-
-                if settings.pause_behavior == PauseBehavior::PauseTask {
-                    return Ok(LoopControl::Pause);
-                }
-            }
-            TransitionAction::Error(error) => {
-                if branch.join_group.is_none() || settings.error_behavior == ErrorBehavior::FailTask
-                {
-                    return Err(TaskError::NodeError(NodeError::new(
-                        error,
-                        branch.current_node,
-                        None,
-                    )));
-                }
-
-                self.set_join_member_state(
-                    branch.join_group,
-                    branch.id,
-                    JoinMemberState::Failed {
-                        node_id: branch.current_node,
-                        message: error.to_string(),
-                    },
-                );
-
-                if let Some(group_id) = branch.join_group {
-                    if let Some(join_branch) = self.try_fire_join(group_id)? {
-                        self.enqueue_branch(join_branch);
-                    }
-                }
-            }
-            TransitionAction::Finish(output) => {
-                self.clear_runtime_state();
-                let output = output
-                    .downcast::<Output>()
-                    .map_err(|error| TaskError::type_error(&error))?
-                    .as_ref()
-                    .clone();
-                return Ok(LoopControl::Complete(output));
-            }
-        }
-
-        Ok(LoopControl::Continue)
-    }
-
-    fn try_fire_join(
-        &mut self,
-        group_id: BranchGroupId,
-    ) -> Result<Option<ExecutionBranch>, TaskError> {
-        let ready = {
-            let Some(group) = self.join_groups.get(&group_id) else {
-                return Ok(None);
-            };
-
-            if group.fired {
-                return Ok(None);
-            }
-
-            match group.policy {
-                JoinPolicy::All => group.members.values().all(JoinMemberState::is_terminal),
-                JoinPolicy::AtLeast { count, .. } => group.ready_count >= count,
-            }
-        };
-
-        if !ready {
-            return Ok(None);
-        }
-
-        let (join_node_id, leftover_behavior) = {
-            let group = self.join_groups.get_mut(&group_id).unwrap();
-            group.fired = true;
-            (group.join_node_id, group.policy.leftover_behavior())
-        };
-
-        if let Some(leftover_behavior) = leftover_behavior {
-            self.apply_leftover_behavior(group_id, leftover_behavior);
-        }
-
-        let join_input = self.build_join_input(group_id)?;
-
-        Ok(Some(ExecutionBranch {
-            id: self.next_branch(),
-            current_node: join_node_id,
-            context: Arc::new(join_input) as Arc<dyn Any + Send + Sync>,
-            settings: self.default_settings(),
-            join_group: None,
-        }))
-    }
-
-    fn build_join_input(&self, group_id: BranchGroupId) -> Result<JoinInput, TaskError> {
-        let group = self
-            .join_groups
-            .get(&group_id)
-            .ok_or_else(|| TaskError::missing_node(group_id.0))?;
-
-        let branches = group
-            .member_order
-            .iter()
-            .filter_map(|branch_id| {
-                group.members.get(branch_id).map(|state| BranchEnvelope {
-                    branch_id: *branch_id,
-                    node_id: state.node_id(),
-                    outcome: state.outcome(),
-                })
-            })
-            .collect();
-
-        Ok(JoinInput::new(branches))
-    }
-
-    fn apply_leftover_behavior(
-        &mut self,
-        group_id: BranchGroupId,
-        leftover_behavior: JoinLeftoverBehavior,
-    ) {
-        if leftover_behavior != JoinLeftoverBehavior::CancelRemaining {
-            return;
-        }
-
-        let branch_ids = self
-            .join_groups
-            .get(&group_id)
-            .map(|group| {
-                group
-                    .members
-                    .iter()
-                    .filter_map(|(branch_id, state)| (!state.is_terminal()).then_some(*branch_id))
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-
-        self.sequential_branches
-            .retain(|branch| !branch_ids.contains(&branch.id));
-        self.parallel_branches
-            .retain(|branch| !branch_ids.contains(&branch.id));
-
-        for branch_id in branch_ids {
-            self.paused_branches.remove(&branch_id);
-            let node_id = self
-                .join_groups
-                .get(&group_id)
-                .and_then(|group| group.members.get(&branch_id))
-                .map(JoinMemberState::node_id)
-                .unwrap_or(0);
-            self.set_join_member_state(
-                Some(group_id),
-                branch_id,
-                JoinMemberState::Cancelled { node_id },
-            );
-        }
-    }
-
-    fn set_join_member_state(
-        &mut self,
-        group_id: Option<BranchGroupId>,
-        branch_id: BranchId,
-        state: JoinMemberState,
-    ) {
-        if let Some(group_id) = group_id {
-            if let Some(group) = self.join_groups.get_mut(&group_id) {
-                group.members.insert(branch_id, state);
-            }
-        }
-    }
-
-    fn enqueue_branch(&mut self, branch: ExecutionBranch) {
-        match branch.settings.concurrency_model {
-            ConcurrencyModel::Sequential => self.sequential_branches.push_back(branch),
-            ConcurrencyModel::Parallel => self.parallel_branches.push_back(branch),
-        }
-    }
-
-    fn default_settings(&self) -> EffectiveTransitionSettings {
-        EffectiveTransitionSettings {
-            concurrency_model: self.options.concurrency_model,
-            pause_behavior: self.options.pause_behavior,
-            error_behavior: self.options.error_behavior,
-        }
-    }
-
-    fn next_branch(&mut self) -> BranchId {
-        let id = BranchId(self.next_branch_id);
-        self.next_branch_id += 1;
-        id
-    }
-
-    fn next_group(&mut self) -> BranchGroupId {
-        let id = BranchGroupId(self.next_group_id);
-        self.next_group_id += 1;
-        id
-    }
-
-    fn clear_runtime_state(&mut self) {
-        self.sequential_branches.clear();
-        self.parallel_branches.clear();
-        self.paused_branches.clear();
-        self.join_groups.clear();
-    }
-
-    fn reset_runtime(&mut self) {
-        self.clear_runtime_state();
-    }
-}
-
-#[async_trait]
-trait AnyNodeExecutor: Any + Send + Sync + std::fmt::Debug + DynClone {
-    fn transition_is_set(&self) -> bool;
-
-    async fn evaluate_next(
-        &self,
-        context: Arc<dyn Any + Send + Sync>,
-    ) -> Result<TransitionDirective, NodeError>;
-}
-
-dyn_clone::clone_trait_object!(AnyNodeExecutor);
-
-struct NodeExecutor<
-    Input: NodeArg,
-    Output: NodeArg,
-    Error: std::error::Error + Send + Sync + 'static,
-> {
-    node: Box<dyn TaskNode<Input = Input, Output = Output, Error = Error> + Send + Sync>,
-    node_id: Box<NodeId<dyn TaskNode<Input = Input, Output = Output, Error = Error>>>,
-    transition_fn: TransitionHandler<Output>,
-    transition_is_set: bool,
-}
-
-impl<Input, Output, Error> Clone for NodeExecutor<Input, Output, Error>
-where
-    Input: NodeArg,
-    Output: NodeArg,
-    Error: std::error::Error + Send + Sync + 'static,
-{
-    fn clone(&self) -> Self {
-        Self {
-            node: self.node.clone(),
-            node_id: self.node_id.clone(),
-            transition_fn: self.transition_fn.clone(),
-            transition_is_set: self.transition_is_set,
-        }
-    }
-}
-
-impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static>
-    std::fmt::Debug for NodeExecutor<Input, Output, Error>
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("NodeExecutor")
-            .field("node_id", &self.node_id.id())
-            .field("transition_is_set", &self.transition_is_set)
-            .finish()
-    }
-}
-
-#[async_trait]
-impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static>
-    AnyNodeExecutor for NodeExecutor<Input, Output, Error>
-{
-    fn transition_is_set(&self) -> bool {
-        self.transition_is_set
-    }
-
-    async fn evaluate_next(
-        &self,
-        context: Arc<dyn Any + Send + Sync>,
-    ) -> Result<TransitionDirective, NodeError> {
-        let context = context.downcast::<Input>().unwrap();
-
-        match self.node.evaluate(&self.node_id.as_dyn(), &context).await {
-            Ok(output) => Ok((self.transition_fn)(output).await),
-            Err(error) => Err(NodeError::new(error, self.node_id.id(), None)),
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        num::NonZeroUsize,
+        sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        },
+        time::Duration,
+    };
+
     use async_trait::async_trait;
+    use tokio::time::sleep;
 
     use super::*;
+    use crate::tasks::{JoinInput, JoinLeftoverBehavior, JoinPolicy};
 
     #[derive(thiserror::Error, Debug)]
     struct Error(String);
@@ -1021,6 +460,47 @@ mod tests {
         }
     }
 
+    #[derive(Clone, Debug)]
+    struct TrackingNode {
+        current: Arc<AtomicUsize>,
+        max: Arc<AtomicUsize>,
+        delay: Duration,
+    }
+
+    #[async_trait]
+    impl TaskNode for TrackingNode {
+        type Input = i32;
+        type Output = i32;
+        type Error = Error;
+
+        async fn evaluate(
+            &self,
+            _node_id: &NodeId<
+                dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+            >,
+            input: &Self::Input,
+        ) -> Result<Self::Output, Self::Error> {
+            let running = self.current.fetch_add(1, Ordering::SeqCst) + 1;
+            let mut observed = self.max.load(Ordering::SeqCst);
+
+            while running > observed {
+                match self.max.compare_exchange(
+                    observed,
+                    running,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                ) {
+                    Ok(_) => break,
+                    Err(actual) => observed = actual,
+                }
+            }
+
+            sleep(self.delay).await;
+            self.current.fetch_sub(1, Ordering::SeqCst);
+            Ok(*input)
+        }
+    }
+
     #[test_log::test(tokio::test)]
     async fn sequential_3_node_task_reset_works() {
         let mut task: Task<i32, i32> = Task::new();
@@ -1039,12 +519,12 @@ mod tests {
             .unwrap();
 
         let res = task.run(1).await.unwrap();
-        assert_eq!(res, Some(4));
+        assert_eq!(res, TaskRunState::Completed(4));
 
         task.reset();
 
         let rerun = task.resume().await.unwrap();
-        assert_eq!(rerun, Some(4));
+        assert_eq!(rerun, TaskRunState::Completed(4));
     }
 
     #[test_log::test(tokio::test)]
@@ -1075,7 +555,7 @@ mod tests {
             .unwrap();
 
         let result = task.run(1).await.unwrap();
-        assert_eq!(result, Some(6));
+        assert_eq!(result, TaskRunState::Completed(6));
     }
 
     #[test_log::test(tokio::test)]
@@ -1100,6 +580,7 @@ mod tests {
                     leftovers: JoinLeftoverBehavior::Continue,
                 },
             )
+            .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
         task.register_transition(active, TransitionDirective::join)
@@ -1110,7 +591,7 @@ mod tests {
             .unwrap();
 
         let result = task.run(1).await.unwrap();
-        assert_eq!(result, Some(3));
+        assert_eq!(result, TaskRunState::Completed(3));
     }
 
     #[test_log::test(tokio::test)]
@@ -1126,7 +607,58 @@ mod tests {
             .unwrap();
 
         let result = task.run(1).await.unwrap();
-        assert_eq!(result, None);
+        assert_eq!(result, TaskRunState::Paused);
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn run_rejects_overwriting_active_state() {
+        let mut task: Task<i32, i32> = Task::builder()
+            .pause_behavior(PauseBehavior::PauseTask)
+            .build();
+
+        let start = task.register_node(PauseOnceNode);
+        task.starts_with(start);
+        task.register_transition(start, move |_output| TransitionDirective::pause())
+            .unwrap();
+
+        assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+        assert!(matches!(
+            task.run(2).await.unwrap_err(),
+            TaskError::TaskActive
+        ));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn resume_requires_resumable_state() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        task.starts_with(start);
+        task.register_transition(start, task.transitions_to_finish())
+            .unwrap();
+
+        assert_eq!(task.run(1).await.unwrap(), TaskRunState::Completed(2));
+        assert!(matches!(
+            task.resume().await.unwrap_err(),
+            TaskError::NotResumable
+        ));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn task_without_finish_is_incomplete() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        task.starts_with(start);
+        task.register_transition(start, move |_output| {
+            TransitionDirective::fan_out(Vec::new())
+        })
+        .unwrap();
+
+        assert!(matches!(
+            task.run(1).await.unwrap_err(),
+            TaskError::Incomplete
+        ));
     }
 
     #[test_log::test(tokio::test)]
@@ -1162,6 +694,7 @@ mod tests {
                 join,
                 JoinPolicy::All,
             )
+            .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
         task.register_transition(first, TransitionDirective::join)
@@ -1172,7 +705,7 @@ mod tests {
             .unwrap();
 
         let result = task.run(1).await.unwrap();
-        assert_eq!(result, Some(vec![2, 11]));
+        assert_eq!(result, TaskRunState::Completed(vec![2, 11]));
     }
 
     #[test_log::test(tokio::test)]
@@ -1193,6 +726,54 @@ mod tests {
             .unwrap();
 
         let result = task.run(1).await.unwrap();
-        assert_eq!(result, Some(3));
+        assert_eq!(result, TaskRunState::Completed(3));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn max_parallelism_is_enforced() {
+        let current = Arc::new(AtomicUsize::new(0));
+        let max = Arc::new(AtomicUsize::new(0));
+        let tracking = TrackingNode {
+            current: current.clone(),
+            max: max.clone(),
+            delay: Duration::from_millis(25),
+        };
+
+        let mut task: Task<i32, i32> = Task::builder()
+            .max_parallelism(NonZeroUsize::new(2).unwrap())
+            .build();
+
+        let start = task.register_node(OffsetNode(0));
+        let first = task.register_node(tracking.clone());
+        let second = task.register_node(tracking.clone());
+        let third = task.register_node(tracking);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+        task.register_transition(start, move |input| {
+            TransitionDirective::fan_out_join(
+                [
+                    first.target_with(input),
+                    second.target_with(input),
+                    third.target_with(input),
+                ],
+                join,
+                JoinPolicy::All,
+            )
+            .concurrency_model(ConcurrencyModel::Parallel)
+        })
+        .unwrap();
+        task.register_transition(first, TransitionDirective::join)
+            .unwrap();
+        task.register_transition(second, TransitionDirective::join)
+            .unwrap();
+        task.register_transition(third, TransitionDirective::join)
+            .unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let result = task.run(2).await.unwrap();
+        assert_eq!(result, TaskRunState::Completed(6));
+        assert!(max.load(Ordering::SeqCst) <= 2);
     }
 }

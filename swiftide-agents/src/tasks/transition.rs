@@ -193,11 +193,14 @@ impl TransitionDirective {
         }
     }
 
-    pub fn fan_out_join<T: TaskNode + ?Sized>(
+    pub fn fan_out_join<T>(
         targets: impl IntoIterator<Item = NextNode>,
         join_node_id: NodeId<T>,
         policy: JoinPolicy,
-    ) -> Self {
+    ) -> Self
+    where
+        T: TaskNode<Input = JoinInput> + ?Sized,
+    {
         Self {
             action: TransitionAction::FanOut {
                 targets: targets.into_iter().collect(),

@@ -16,6 +16,18 @@ pub enum TaskError {
     #[error("Task failed with wrong output")]
     TypeError(String),
 
+    #[error("Task already has active or paused work")]
+    TaskActive,
+
+    #[error("Task has no paused or queued work to resume")]
+    NotResumable,
+
+    #[error("Task ended without completing or pausing")]
+    Incomplete,
+
+    #[error("Task entered an invalid internal state: {0}")]
+    InvalidState(String),
+
     #[error("MissingInput: {0}")]
     MissingInput(String),
 
@@ -50,6 +62,10 @@ impl TaskError {
             output.type_id()
         );
         TaskError::TypeError(message)
+    }
+
+    pub fn invalid_state(message: impl Into<String>) -> Self {
+        TaskError::InvalidState(message.into())
     }
 }
 
