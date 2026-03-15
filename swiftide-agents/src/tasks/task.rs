@@ -26,9 +26,9 @@ use super::{
     errors::{NodeError, TaskError},
     node::{NodeArg, NodeId, TaskNode},
     transition::{
-        BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, EffectiveTransitionSettings,
-        ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior,
-        TransitionAction, TransitionDirective,
+        ActiveBranch, BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel,
+        EffectiveTransitionSettings, ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy,
+        PauseBehavior, TransitionAction, TransitionDirective,
     },
 };
 
@@ -101,33 +101,58 @@ struct ExecutionBranch {
 
 #[derive(Debug, Clone)]
 enum JoinMemberState {
-    Pending,
-    Paused,
-    Ready(Arc<dyn Any + Send + Sync>),
-    Failed(String),
-    Cancelled,
-    LateArrival,
+    Pending {
+        node_id: usize,
+    },
+    Paused {
+        node_id: usize,
+    },
+    Ready {
+        node_id: usize,
+        payload: Arc<dyn Any + Send + Sync>,
+    },
+    Failed {
+        node_id: usize,
+        message: String,
+    },
+    Cancelled {
+        node_id: usize,
+    },
+    LateArrival {
+        node_id: usize,
+    },
 }
 
 impl JoinMemberState {
+    fn node_id(&self) -> usize {
+        match self {
+            JoinMemberState::Pending { node_id }
+            | JoinMemberState::Paused { node_id }
+            | JoinMemberState::Ready { node_id, .. }
+            | JoinMemberState::Failed { node_id, .. }
+            | JoinMemberState::Cancelled { node_id }
+            | JoinMemberState::LateArrival { node_id } => *node_id,
+        }
+    }
+
     fn is_terminal(&self) -> bool {
         matches!(
             self,
-            JoinMemberState::Ready(_)
-                | JoinMemberState::Failed(_)
-                | JoinMemberState::Cancelled
-                | JoinMemberState::LateArrival
+            JoinMemberState::Ready { .. }
+                | JoinMemberState::Failed { .. }
+                | JoinMemberState::Cancelled { .. }
+                | JoinMemberState::LateArrival { .. }
         )
     }
 
     fn outcome(&self) -> BranchOutcome {
         match self {
-            JoinMemberState::Pending => BranchOutcome::Pending,
-            JoinMemberState::Paused => BranchOutcome::Paused,
-            JoinMemberState::Ready(payload) => BranchOutcome::Ready(payload.clone()),
-            JoinMemberState::Failed(message) => BranchOutcome::Failed(message.clone()),
-            JoinMemberState::Cancelled => BranchOutcome::Cancelled,
-            JoinMemberState::LateArrival => BranchOutcome::LateArrival,
+            JoinMemberState::Pending { .. } => BranchOutcome::Pending,
+            JoinMemberState::Paused { .. } => BranchOutcome::Paused,
+            JoinMemberState::Ready { payload, .. } => BranchOutcome::Ready(payload.clone()),
+            JoinMemberState::Failed { message, .. } => BranchOutcome::Failed(message.clone()),
+            JoinMemberState::Cancelled { .. } => BranchOutcome::Cancelled,
+            JoinMemberState::LateArrival { .. } => BranchOutcome::LateArrival,
         }
     }
 }
@@ -227,6 +252,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.reset_runtime();
     }
 
+    pub fn transitions_to_finish(
+        &self,
+    ) -> impl Fn(Output) -> TransitionDirective + Send + Sync + 'static {
+        |output| TransitionDirective::finish(output)
+    }
+
     #[tracing::instrument(skip(self, input), name = "task.run", err)]
     pub async fn run(&mut self, input: impl Into<Input>) -> Result<Option<Output>, TaskError> {
         let start_node = self.validate_transitions()?;
@@ -273,6 +304,27 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     pub async fn resume(&mut self) -> Result<Option<Output>, TaskError> {
         self.validate_transitions()?;
         self.start_task().await
+    }
+
+    pub fn active_branches(&self) -> Vec<ActiveBranch> {
+        self.sequential_branches
+            .iter()
+            .chain(self.parallel_branches.iter())
+            .map(|branch| ActiveBranch {
+                branch_id: branch.id,
+                node_id: branch.current_node,
+            })
+            .collect()
+    }
+
+    pub fn paused_branches(&self) -> Vec<ActiveBranch> {
+        self.paused_branches
+            .values()
+            .map(|branch| ActiveBranch {
+                branch_id: branch.id,
+                node_id: branch.current_node,
+            })
+            .collect()
     }
 
     pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
@@ -464,7 +516,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 branch.current_node = next_node.node_id;
                 branch.context = next_node.context;
                 branch.settings = settings;
-                self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Pending);
+                self.set_join_member_state(
+                    branch.join_group,
+                    branch.id,
+                    JoinMemberState::Pending {
+                        node_id: branch.current_node,
+                    },
+                );
                 self.enqueue_branch(branch);
             }
             TransitionAction::FanOut { targets, join } => {
@@ -497,7 +555,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     if let Some(group_id) = join_group {
                         let group = self.join_groups.get_mut(&group_id).unwrap();
                         group.member_order.push(child_id);
-                        group.members.insert(child_id, JoinMemberState::Pending);
+                        group.members.insert(
+                            child_id,
+                            JoinMemberState::Pending {
+                                node_id: child.current_node,
+                            },
+                        );
                     }
 
                     self.enqueue_branch(child);
@@ -518,15 +581,22 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     .ok_or_else(|| TaskError::missing_node(branch.current_node))?;
 
                 if group.fired {
-                    group
-                        .members
-                        .insert(branch.id, JoinMemberState::LateArrival);
+                    group.members.insert(
+                        branch.id,
+                        JoinMemberState::LateArrival {
+                            node_id: branch.current_node,
+                        },
+                    );
                     return Ok(LoopControl::Continue);
                 }
 
-                group
-                    .members
-                    .insert(branch.id, JoinMemberState::Ready(payload));
+                group.members.insert(
+                    branch.id,
+                    JoinMemberState::Ready {
+                        node_id: branch.current_node,
+                        payload,
+                    },
+                );
                 group.ready_count += 1;
 
                 if let Some(join_branch) = self.try_fire_join(group_id)? {
@@ -534,7 +604,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 }
             }
             TransitionAction::Pause => {
-                self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Paused);
+                self.set_join_member_state(
+                    branch.join_group,
+                    branch.id,
+                    JoinMemberState::Paused {
+                        node_id: branch.current_node,
+                    },
+                );
                 self.paused_branches.insert(branch.id, branch);
 
                 if settings.pause_behavior == PauseBehavior::PauseTask {
@@ -554,7 +630,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 self.set_join_member_state(
                     branch.join_group,
                     branch.id,
-                    JoinMemberState::Failed(error.to_string()),
+                    JoinMemberState::Failed {
+                        node_id: branch.current_node,
+                        message: error.to_string(),
+                    },
                 );
 
                 if let Some(group_id) = branch.join_group {
@@ -633,6 +712,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .filter_map(|branch_id| {
                 group.members.get(branch_id).map(|state| BranchEnvelope {
                     branch_id: *branch_id,
+                    node_id: state.node_id(),
                     outcome: state.outcome(),
                 })
             })
@@ -669,7 +749,17 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
         for branch_id in branch_ids {
             self.paused_branches.remove(&branch_id);
-            self.set_join_member_state(Some(group_id), branch_id, JoinMemberState::Cancelled);
+            let node_id = self
+                .join_groups
+                .get(&group_id)
+                .and_then(|group| group.members.get(&branch_id))
+                .map(JoinMemberState::node_id)
+                .unwrap_or(0);
+            self.set_join_member_state(
+                Some(group_id),
+                branch_id,
+                JoinMemberState::Cancelled { node_id },
+            );
         }
     }
 
@@ -945,7 +1035,7 @@ mod tests {
             .unwrap();
         task.register_transition(node2, move |input| node3.transitions_with(input))
             .unwrap();
-        task.register_transition(node3, TransitionDirective::finish)
+        task.register_transition(node3, task.transitions_to_finish())
             .unwrap();
 
         let res = task.run(1).await.unwrap();
@@ -981,7 +1071,7 @@ mod tests {
             .unwrap();
         task.register_transition(branch_b, TransitionDirective::join)
             .unwrap();
-        task.register_transition(join, TransitionDirective::finish)
+        task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
         let result = task.run(1).await.unwrap();
@@ -1016,7 +1106,7 @@ mod tests {
             .unwrap();
         task.register_transition(paused, move |_output| TransitionDirective::pause())
             .unwrap();
-        task.register_transition(join, TransitionDirective::finish)
+        task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
         let result = task.run(1).await.unwrap();
@@ -1048,7 +1138,7 @@ mod tests {
         let start = task.register_node(FailingNode);
         task.starts_with(start);
 
-        task.register_transition(start, TransitionDirective::finish)
+        task.register_transition(start, task.transitions_to_finish())
             .unwrap();
 
         let error = task.run(1).await.unwrap_err();
@@ -1078,7 +1168,7 @@ mod tests {
             .unwrap();
         task.register_transition(second, TransitionDirective::join)
             .unwrap();
-        task.register_transition(join, TransitionDirective::finish)
+        task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
         let result = task.run(1).await.unwrap();
@@ -1099,7 +1189,7 @@ mod tests {
             move |input| async move { next.transitions_with(input) },
         )
         .unwrap();
-        task.register_transition(next, TransitionDirective::finish)
+        task.register_transition(next, task.transitions_to_finish())
             .unwrap();
 
         let result = task.run(1).await.unwrap();

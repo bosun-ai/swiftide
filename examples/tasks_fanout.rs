@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
 
     task.register_transition(increment, move |output| TransitionDirective::join(output))?;
     task.register_transition(double, move |output| TransitionDirective::join(output))?;
-    task.register_transition(join, TransitionDirective::finish)?;
+    task.register_transition(join, task.transitions_to_finish())?;
 
     let result = task.run(5).await?;
 

@@ -5,6 +5,12 @@ use super::node::{NodeArg, NodeId, TaskNode};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BranchId(pub usize);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActiveBranch {
+    pub branch_id: BranchId,
+    pub node_id: usize,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ConcurrencyModel {
     #[default]
@@ -222,7 +228,7 @@ impl TransitionDirective {
         }
     }
 
-    pub fn finish<T: NodeArg>(output: T) -> Self {
+    pub(crate) fn finish<T: NodeArg>(output: T) -> Self {
         Self {
             action: TransitionAction::Finish(Arc::new(output) as Arc<dyn Any + Send + Sync>),
             settings: TransitionSettings::default(),
@@ -279,6 +285,7 @@ impl JoinInput {
 #[derive(Debug, Clone)]
 pub struct BranchEnvelope {
     pub branch_id: BranchId,
+    pub node_id: usize,
     pub outcome: BranchOutcome,
 }
 
