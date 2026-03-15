@@ -18,12 +18,12 @@ use super::{
     task::{Task, TaskRunState},
     transition::{
         BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, EffectiveTransitionSettings,
-        ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior,
-        TransitionAction, TransitionDirective,
+        ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior, Transition,
+        TransitionAction,
     },
 };
 
-pub(crate) type BoxedTransitionFuture = Pin<Box<dyn Future<Output = TransitionDirective> + Send>>;
+pub(crate) type BoxedTransitionFuture = Pin<Box<dyn Future<Output = Transition> + Send>>;
 pub(crate) type TransitionHandler<Output> =
     Arc<dyn Fn(Output) -> BoxedTransitionFuture + Send + Sync + 'static>;
 type RunningBranchFuture = Pin<Box<dyn Future<Output = Result<EvaluatedBranch, TaskError>> + Send>>;
@@ -132,7 +132,7 @@ pub(crate) struct JoinGroupState {
 #[derive(Debug)]
 struct EvaluatedBranch {
     branch: ExecutionBranch,
-    directive: TransitionDirective,
+    transition: Transition,
 }
 
 #[derive(Debug)]
@@ -149,7 +149,7 @@ pub(crate) trait AnyNodeExecutor: Any + Send + Sync + std::fmt::Debug + DynClone
     async fn evaluate_next(
         &self,
         context: Arc<dyn Any + Send + Sync>,
-    ) -> Result<TransitionDirective, TaskError>;
+    ) -> Result<Transition, TaskError>;
 }
 
 dyn_clone::clone_trait_object!(AnyNodeExecutor);
@@ -225,7 +225,7 @@ impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + '
     async fn evaluate_next(
         &self,
         context: Arc<dyn Any + Send + Sync>,
-    ) -> Result<TransitionDirective, TaskError> {
+    ) -> Result<Transition, TaskError> {
         let context = context.downcast::<Input>().map_err(|_| {
             TaskError::invalid_state(format!(
                 "Node {} expected input type {}",
@@ -394,7 +394,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 branch = branch.id.0
             );
 
-            let directive = node_executor
+            let transition = node_executor
                 .evaluate_next(branch.context.clone())
                 .instrument(span)
                 .await?;
@@ -405,7 +405,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 "task.step.done"
             );
 
-            Ok(EvaluatedBranch { branch, directive })
+            Ok(EvaluatedBranch { branch, transition })
         }))
     }
 
@@ -415,11 +415,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     ) -> Result<LoopControl<Output>, TaskError> {
         let EvaluatedBranch {
             mut branch,
-            directive,
+            transition,
         } = evaluated;
-        let settings = branch.settings.with_overrides(directive.settings);
+        let settings = branch.settings.with_overrides(transition.settings);
 
-        match directive.action {
+        match transition.action {
             TransitionAction::Next(next_node) => {
                 branch.current_node = next_node.node_id;
                 branch.context = next_node.context;

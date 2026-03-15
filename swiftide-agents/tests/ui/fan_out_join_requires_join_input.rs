@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use swiftide_agents::tasks::{NodeId, Task, TaskNode, TransitionDirective};
+use swiftide_agents::tasks::{NodeId, Task, TaskNode, Transition};
 
 #[derive(Debug, thiserror::Error)]
 #[error("error")]
@@ -50,5 +50,5 @@ fn main() {
     let start = task.register_node(StartNode);
     let join = task.register_node(WrongJoinNode);
 
-    let _ = TransitionDirective::fan_out_join([start.target_with(1)], join, swiftide_agents::tasks::JoinPolicy::All);
+    let _ = Transition::fan_out_join([start.target_with(1)], join, swiftide_agents::tasks::JoinPolicy::All);
 }

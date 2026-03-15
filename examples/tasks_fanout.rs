@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use swiftide::agents::tasks::{
-    JoinInput, JoinLeftoverBehavior, JoinPolicy, SyncFn, Task, TaskRunState, TransitionDirective,
+    JoinInput, JoinLeftoverBehavior, JoinPolicy, SyncFn, Task, TaskRunState, Transition,
 };
 
 #[tokio::main]
@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     task.starts_with(start);
 
     task.register_transition(start, move |input| {
-        TransitionDirective::fan_out_join(
+        Transition::fan_out_join(
             [increment.target_with(input), double.target_with(input)],
             join,
             JoinPolicy::AtLeast {
@@ -33,8 +33,8 @@ async fn main() -> Result<()> {
         )
     })?;
 
-    task.register_transition(increment, move |output| TransitionDirective::join(output))?;
-    task.register_transition(double, move |output| TransitionDirective::join(output))?;
+    task.register_transition(increment, move |output| Transition::join(output))?;
+    task.register_transition(double, move |output| Transition::join(output))?;
     task.register_transition(join, task.transitions_to_finish())?;
 
     match task.run(5).await? {

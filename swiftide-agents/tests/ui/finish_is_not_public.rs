@@ -1,5 +1,5 @@
-use swiftide_agents::tasks::TransitionDirective;
+use swiftide_agents::tasks::Transition;
 
 fn main() {
-    let _ = TransitionDirective::finish("wrong output");
+    let _ = Transition::finish("wrong output");
 }

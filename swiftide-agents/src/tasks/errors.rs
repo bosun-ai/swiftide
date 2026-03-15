@@ -1,6 +1,6 @@
 use std::{any::Any, sync::Arc};
 
-use super::transition::TransitionPayload;
+use super::transition::Transition;
 
 #[derive(thiserror::Error, Debug)]
 pub enum TaskError {
@@ -72,7 +72,7 @@ impl TaskError {
 #[derive(Debug, thiserror::Error)]
 pub struct NodeError {
     pub node_error: Box<dyn std::error::Error + Send + Sync>,
-    pub transition_payload: Option<Arc<TransitionPayload>>,
+    pub transition: Option<Arc<Transition>>,
     pub node_id: usize,
 }
 
@@ -90,11 +90,11 @@ impl NodeError {
     pub fn new(
         node_error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
         node_id: usize,
-        transition_payload: Option<TransitionPayload>,
+        transition: Option<Transition>,
     ) -> Self {
         Self {
             node_error: node_error.into(),
-            transition_payload: transition_payload.map(Arc::new),
+            transition: transition.map(Arc::new),
             node_id,
         }
     }

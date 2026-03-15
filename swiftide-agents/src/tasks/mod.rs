@@ -11,6 +11,6 @@ pub use node::{NodeArg, NodeId, TaskNode};
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use transition::{
     ActiveBranch, BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, ErrorBehavior,
-    JoinInput, JoinLeftoverBehavior, JoinPolicy, MarkedTransitionPayload, NextNode, PauseBehavior,
-    TransitionDirective, TransitionPayload,
+    JoinInput, JoinLeftoverBehavior, JoinPolicy, MarkedTransition, NextNode, PauseBehavior,
+    Transition,
 };

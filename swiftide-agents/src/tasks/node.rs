@@ -3,7 +3,7 @@ use std::any::Any;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
-use super::transition::{MarkedTransitionPayload, NextNode, TransitionPayload};
+use super::transition::{MarkedTransition, NextNode, Transition};
 
 pub trait NodeArg: Send + Sync + DynClone + 'static {}
 
@@ -81,8 +81,8 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     }
 
     /// Returns a transition payload suitable for inside a task transition
-    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
-        MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
+    pub fn transitions_with(&self, context: T::Input) -> MarkedTransition<T> {
+        MarkedTransition::new(Transition::next_node(self, context))
     }
 
     /// Returns a transition target that can be used in fan-out transitions.

@@ -24,7 +24,7 @@ use super::{
         TransitionHandler,
     },
     transition::{
-        ActiveBranch, BranchId, ConcurrencyModel, ErrorBehavior, PauseBehavior, TransitionDirective,
+        ActiveBranch, BranchId, ConcurrencyModel, ErrorBehavior, PauseBehavior, Transition,
     },
 };
 
@@ -142,10 +142,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.reset_runtime();
     }
 
-    pub fn transitions_to_finish(
-        &self,
-    ) -> impl Fn(Output) -> TransitionDirective + Send + Sync + 'static {
-        |output| TransitionDirective::finish(output)
+    pub fn transitions_to_finish(&self) -> impl Fn(Output) -> Transition + Send + Sync + 'static {
+        |output| Transition::finish(output)
     }
 
     #[tracing::instrument(skip(self, input), name = "task.run", err)]
@@ -249,7 +247,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     where
         From: TaskNode + 'static + ?Sized,
         F: Fn(From::Output) -> R + Send + Sync + 'static,
-        R: Into<TransitionDirective> + 'static,
+        R: Into<Transition> + 'static,
     {
         let transition = Arc::new(transition);
         self.set_transition_handler(
@@ -270,7 +268,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         From: TaskNode + 'static + ?Sized,
         F: Fn(From::Output) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
-        R: Into<TransitionDirective> + 'static,
+        R: Into<Transition> + 'static,
     {
         let transition = Arc::new(transition);
         self.set_transition_handler(
@@ -539,7 +537,7 @@ mod tests {
         task.starts_with(start);
 
         task.register_transition(start, move |input| {
-            TransitionDirective::fan_out_join(
+            Transition::fan_out_join(
                 [branch_a.target_with(input), branch_b.target_with(input)],
                 join,
                 JoinPolicy::All,
@@ -547,9 +545,9 @@ mod tests {
         })
         .unwrap();
 
-        task.register_transition(branch_a, TransitionDirective::join)
+        task.register_transition(branch_a, Transition::join)
             .unwrap();
-        task.register_transition(branch_b, TransitionDirective::join)
+        task.register_transition(branch_b, Transition::join)
             .unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
@@ -572,7 +570,7 @@ mod tests {
         task.starts_with(start);
 
         task.register_transition(start, move |input| {
-            TransitionDirective::fan_out_join(
+            Transition::fan_out_join(
                 [active.target_with(input), paused.target_with(input)],
                 join,
                 JoinPolicy::AtLeast {
@@ -583,9 +581,8 @@ mod tests {
             .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
-        task.register_transition(active, TransitionDirective::join)
-            .unwrap();
-        task.register_transition(paused, move |_output| TransitionDirective::pause())
+        task.register_transition(active, Transition::join).unwrap();
+        task.register_transition(paused, move |_output| Transition::pause())
             .unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
@@ -603,7 +600,7 @@ mod tests {
         let start = task.register_node(PauseOnceNode);
         task.starts_with(start);
 
-        task.register_transition(start, move |_output| TransitionDirective::pause())
+        task.register_transition(start, move |_output| Transition::pause())
             .unwrap();
 
         let result = task.run(1).await.unwrap();
@@ -618,7 +615,7 @@ mod tests {
 
         let start = task.register_node(PauseOnceNode);
         task.starts_with(start);
-        task.register_transition(start, move |_output| TransitionDirective::pause())
+        task.register_transition(start, move |_output| Transition::pause())
             .unwrap();
 
         assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
@@ -650,10 +647,8 @@ mod tests {
 
         let start = task.register_node(IntNode);
         task.starts_with(start);
-        task.register_transition(start, move |_output| {
-            TransitionDirective::fan_out(Vec::new())
-        })
-        .unwrap();
+        task.register_transition(start, move |_output| Transition::fan_out(Vec::new()))
+            .unwrap();
 
         assert!(matches!(
             task.run(1).await.unwrap_err(),
@@ -689,7 +684,7 @@ mod tests {
         task.starts_with(start);
 
         task.register_transition(start, move |input| {
-            TransitionDirective::fan_out_join(
+            Transition::fan_out_join(
                 [first.target_with(input), second.target_with(input)],
                 join,
                 JoinPolicy::All,
@@ -697,10 +692,8 @@ mod tests {
             .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
-        task.register_transition(first, TransitionDirective::join)
-            .unwrap();
-        task.register_transition(second, TransitionDirective::join)
-            .unwrap();
+        task.register_transition(first, Transition::join).unwrap();
+        task.register_transition(second, Transition::join).unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
@@ -751,7 +744,7 @@ mod tests {
 
         task.starts_with(start);
         task.register_transition(start, move |input| {
-            TransitionDirective::fan_out_join(
+            Transition::fan_out_join(
                 [
                     first.target_with(input),
                     second.target_with(input),
@@ -763,12 +756,9 @@ mod tests {
             .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
-        task.register_transition(first, TransitionDirective::join)
-            .unwrap();
-        task.register_transition(second, TransitionDirective::join)
-            .unwrap();
-        task.register_transition(third, TransitionDirective::join)
-            .unwrap();
+        task.register_transition(first, Transition::join).unwrap();
+        task.register_transition(second, Transition::join).unwrap();
+        task.register_transition(third, Transition::join).unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 

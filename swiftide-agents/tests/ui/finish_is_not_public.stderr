@@ -1,8 +1,8 @@
 error[E0624]: associated function `finish` is private
- --> tests/ui/finish_is_not_public.rs:4:34
+ --> tests/ui/finish_is_not_public.rs:4:25
   |
-4 |     let _ = TransitionDirective::finish("wrong output");
-  |                                  ^^^^^^ private associated function
+4 |     let _ = Transition::finish("wrong output");
+  |                         ^^^^^^ private associated function
   |
  ::: src/tasks/transition.rs
   |

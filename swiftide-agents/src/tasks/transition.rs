@@ -100,56 +100,38 @@ impl NextNode {
     }
 }
 
-impl From<NextNode> for TransitionPayload {
+impl From<NextNode> for Transition {
     fn from(next_node: NextNode) -> Self {
-        TransitionPayload::NextNode(next_node)
+        Transition::next(next_node)
     }
 }
 
 #[derive(Debug)]
-pub enum TransitionPayload {
-    NextNode(NextNode),
-    Pause,
-    Error(Box<dyn std::error::Error + Send + Sync>),
+pub struct Transition {
+    pub(crate) action: TransitionAction,
+    pub(crate) settings: TransitionSettings,
 }
 
-impl TransitionPayload {
-    pub fn next_node<T: TaskNode + ?Sized>(node_id: &NodeId<T>, context: T::Input) -> Self {
-        NextNode::new(*node_id, context).into()
+pub struct MarkedTransition<To: TaskNode + ?Sized>(Transition, std::marker::PhantomData<To>);
+
+impl<To: TaskNode + ?Sized> MarkedTransition<To> {
+    pub fn new(transition: Transition) -> Self {
+        Self(transition, std::marker::PhantomData)
     }
 
-    pub fn pause() -> Self {
-        Self::Pause
-    }
-
-    pub fn error(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
-        Self::Error(error.into())
-    }
-}
-
-pub struct MarkedTransitionPayload<To: TaskNode + ?Sized>(
-    TransitionPayload,
-    std::marker::PhantomData<To>,
-);
-
-impl<To: TaskNode + ?Sized> MarkedTransitionPayload<To> {
-    pub fn new(payload: TransitionPayload) -> Self {
-        Self(payload, std::marker::PhantomData)
-    }
-
-    pub fn into_inner(self) -> TransitionPayload {
+    pub fn into_inner(self) -> Transition {
         self.0
     }
 }
 
-impl<T: TaskNode + ?Sized> From<MarkedTransitionPayload<T>> for TransitionDirective {
-    fn from(value: MarkedTransitionPayload<T>) -> Self {
-        value.into_inner().into()
+impl<T: TaskNode + ?Sized> From<MarkedTransition<T>> for Transition {
+    fn from(value: MarkedTransition<T>) -> Self {
+        value.into_inner()
     }
 }
 
-impl<T: TaskNode> std::ops::Deref for MarkedTransitionPayload<T> {
-    type Target = TransitionPayload;
+impl<T: TaskNode> std::ops::Deref for MarkedTransition<T> {
+    type Target = Transition;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -169,18 +151,16 @@ pub(crate) enum TransitionAction {
     Finish(Arc<dyn Any + Send + Sync>),
 }
 
-#[derive(Debug)]
-pub struct TransitionDirective {
-    pub(crate) action: TransitionAction,
-    pub(crate) settings: TransitionSettings,
-}
-
-impl TransitionDirective {
+impl Transition {
     pub fn next(next_node: NextNode) -> Self {
         Self {
             action: TransitionAction::Next(next_node),
             settings: TransitionSettings::default(),
         }
+    }
+
+    pub fn next_node<T: TaskNode + ?Sized>(node_id: &NodeId<T>, context: T::Input) -> Self {
+        NextNode::new(*node_id, context).into()
     }
 
     pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> Self {
@@ -251,16 +231,6 @@ impl TransitionDirective {
     pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
         self.settings.error_behavior = Some(error_behavior);
         self
-    }
-}
-
-impl From<TransitionPayload> for TransitionDirective {
-    fn from(value: TransitionPayload) -> Self {
-        match value {
-            TransitionPayload::NextNode(next_node) => TransitionDirective::next(next_node),
-            TransitionPayload::Pause => TransitionDirective::pause(),
-            TransitionPayload::Error(error) => TransitionDirective::error(error),
-        }
     }
 }
 
