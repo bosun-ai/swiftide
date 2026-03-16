@@ -10,7 +10,7 @@ pub use errors::{NodeError, TaskError};
 pub use node::{NodeArg, NodeId, TaskNode};
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use transition::{
-    ActiveBranch, BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, ErrorBehavior,
-    JoinInput, JoinLeftoverBehavior, JoinPolicy, MarkedTransition, NextNode, PauseBehavior,
-    Transition,
+    ActiveBranch, AsyncMappedJoinTarget, AtLeastJoin, BranchEnvelope, BranchId, BranchOutcome,
+    ConcurrencyModel, ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, JoinScope,
+    JoinTarget, MappedJoinTarget, MarkedTransition, NextNode, PauseBehavior, Transition,
 };

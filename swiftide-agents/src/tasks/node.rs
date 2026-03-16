@@ -3,7 +3,9 @@ use std::any::Any;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
-use super::transition::{MarkedTransition, NextNode, Transition};
+use super::transition::{
+    AtLeastJoin, JoinInput, JoinPolicy, JoinTarget, MarkedTransition, NextNode, Transition,
+};
 
 pub trait NodeArg: Send + Sync + DynClone + 'static {}
 
@@ -88,6 +90,23 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     /// Returns a transition target that can be used in fan-out transitions.
     pub fn target_with(&self, context: T::Input) -> NextNode {
         NextNode::new(*self, context)
+    }
+}
+
+impl<T> NodeId<T>
+where
+    T: TaskNode<Input = JoinInput> + ?Sized,
+{
+    pub fn join(&self) -> JoinTarget<T> {
+        self.join_with(JoinPolicy::All)
+    }
+
+    pub fn join_at_least(&self, count: usize) -> AtLeastJoin<T> {
+        AtLeastJoin::new(*self, count)
+    }
+
+    pub fn join_with(&self, policy: JoinPolicy) -> JoinTarget<T> {
+        JoinTarget::new(*self, policy)
     }
 }
 

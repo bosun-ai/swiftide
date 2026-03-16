@@ -1,4 +1,4 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, marker::PhantomData, sync::Arc};
 
 use super::node::{NodeArg, NodeId, TaskNode};
 
@@ -11,28 +11,28 @@ pub struct ActiveBranch {
     pub node_id: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum ConcurrencyModel {
     #[default]
     Sequential,
     Parallel,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum PauseBehavior {
     #[default]
     DrainRunnable,
     PauseTask,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum ErrorBehavior {
     #[default]
     Local,
     FailTask,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JoinPolicy {
     All,
     AtLeast {
@@ -50,13 +50,20 @@ impl JoinPolicy {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JoinLeftoverBehavior {
     CancelRemaining,
     Continue,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum JoinScope {
+    #[default]
+    ExplicitBranches,
+    AllFanOutBranches,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub(crate) struct TransitionSettings {
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
     pub(crate) pause_behavior: Option<PauseBehavior>,
@@ -106,6 +113,162 @@ impl From<NextNode> for Transition {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct JoinDefinition {
+    pub(crate) join_node_id: usize,
+    pub(crate) policy: JoinPolicy,
+    pub(crate) scope: JoinScope,
+    pub(crate) settings: TransitionSettings,
+}
+
+pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
+    pub(crate) definition: JoinDefinition,
+    _marker: PhantomData<T>,
+}
+
+pub struct AtLeastJoin<T: TaskNode<Input = JoinInput> + ?Sized> {
+    node_id: NodeId<T>,
+    count: usize,
+}
+
+pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
+    pub(crate) join_target: JoinTarget<T>,
+    pub(crate) map: F,
+}
+
+pub struct AsyncMappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
+    pub(crate) join_target: JoinTarget<T>,
+    pub(crate) map: F,
+}
+
+impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
+    pub(crate) fn new(node_id: NodeId<T>, policy: JoinPolicy) -> Self {
+        Self {
+            definition: JoinDefinition {
+                join_node_id: node_id.id(),
+                policy,
+                scope: JoinScope::ExplicitBranches,
+                settings: TransitionSettings::default(),
+            },
+            _marker: PhantomData,
+        }
+    }
+
+    pub(crate) fn into_definition(self) -> JoinDefinition {
+        self.definition
+    }
+
+    pub fn all_fanout_branches(mut self) -> Self {
+        self.definition.scope = JoinScope::AllFanOutBranches;
+        self
+    }
+
+    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
+        self.definition.settings.concurrency_model = Some(concurrency_model);
+        self
+    }
+
+    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
+        self.definition.settings.pause_behavior = Some(pause_behavior);
+        self
+    }
+
+    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
+        self.definition.settings.error_behavior = Some(error_behavior);
+        self
+    }
+
+    pub fn map<F>(self, map: F) -> MappedJoinTarget<T, F>
+    where
+        F: Send + Sync + 'static,
+    {
+        MappedJoinTarget {
+            join_target: self,
+            map,
+        }
+    }
+
+    pub fn map_async<F>(self, map: F) -> AsyncMappedJoinTarget<T, F>
+    where
+        F: Send + Sync + 'static,
+    {
+        AsyncMappedJoinTarget {
+            join_target: self,
+            map,
+        }
+    }
+}
+
+impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
+    pub(crate) fn new(node_id: NodeId<T>, count: usize) -> Self {
+        Self { node_id, count }
+    }
+
+    pub fn cancel_remaining(self) -> JoinTarget<T> {
+        JoinTarget::new(
+            self.node_id,
+            JoinPolicy::AtLeast {
+                count: self.count,
+                leftovers: JoinLeftoverBehavior::CancelRemaining,
+            },
+        )
+    }
+
+    pub fn continue_remaining(self) -> JoinTarget<T> {
+        JoinTarget::new(
+            self.node_id,
+            JoinPolicy::AtLeast {
+                count: self.count,
+                leftovers: JoinLeftoverBehavior::Continue,
+            },
+        )
+    }
+}
+
+impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
+    pub fn all_fanout_branches(mut self) -> Self {
+        self.join_target = self.join_target.all_fanout_branches();
+        self
+    }
+
+    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
+        self.join_target = self.join_target.concurrency_model(concurrency_model);
+        self
+    }
+
+    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
+        self.join_target = self.join_target.pause_behavior(pause_behavior);
+        self
+    }
+
+    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
+        self.join_target = self.join_target.error_behavior(error_behavior);
+        self
+    }
+}
+
+impl<T: TaskNode<Input = JoinInput> + ?Sized, F> AsyncMappedJoinTarget<T, F> {
+    pub fn all_fanout_branches(mut self) -> Self {
+        self.join_target = self.join_target.all_fanout_branches();
+        self
+    }
+
+    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
+        self.join_target = self.join_target.concurrency_model(concurrency_model);
+        self
+    }
+
+    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
+        self.join_target = self.join_target.pause_behavior(pause_behavior);
+        self
+    }
+
+    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
+        self.join_target = self.join_target.error_behavior(error_behavior);
+        self
+    }
+}
+
 #[derive(Debug)]
 pub struct Transition {
     pub(crate) action: TransitionAction,
@@ -141,11 +304,7 @@ impl<T: TaskNode> std::ops::Deref for MarkedTransition<T> {
 #[derive(Debug)]
 pub(crate) enum TransitionAction {
     Next(NextNode),
-    FanOut {
-        targets: Vec<NextNode>,
-        join: Option<(usize, JoinPolicy)>,
-    },
-    Join(Arc<dyn Any + Send + Sync>),
+    FanOut { targets: Vec<NextNode> },
     Pause,
     Error(Box<dyn std::error::Error + Send + Sync>),
     Finish(Arc<dyn Any + Send + Sync>),
@@ -167,32 +326,7 @@ impl Transition {
         Self {
             action: TransitionAction::FanOut {
                 targets: targets.into_iter().collect(),
-                join: None,
             },
-            settings: TransitionSettings::default(),
-        }
-    }
-
-    pub fn fan_out_join<T>(
-        targets: impl IntoIterator<Item = NextNode>,
-        join_node_id: NodeId<T>,
-        policy: JoinPolicy,
-    ) -> Self
-    where
-        T: TaskNode<Input = JoinInput> + ?Sized,
-    {
-        Self {
-            action: TransitionAction::FanOut {
-                targets: targets.into_iter().collect(),
-                join: Some((join_node_id.id(), policy)),
-            },
-            settings: TransitionSettings::default(),
-        }
-    }
-
-    pub fn join<T: NodeArg>(context: T) -> Self {
-        Self {
-            action: TransitionAction::Join(Arc::new(context) as Arc<dyn Any + Send + Sync>),
             settings: TransitionSettings::default(),
         }
     }

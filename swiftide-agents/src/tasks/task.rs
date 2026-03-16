@@ -20,11 +20,12 @@ use super::{
     errors::TaskError,
     node::{NodeArg, NodeId, TaskNode},
     runtime::{
-        AnyNodeExecutor, BranchGroupId, ExecutionBranch, JoinGroupState, NodeExecutor, TaskOptions,
-        TransitionHandler,
+        AnyNodeExecutor, BranchGroupId, ExecutionBranch, JoinGroupState, JoinHandler, NodeExecutor,
+        TaskOptions, TransitionHandler,
     },
     transition::{
-        ActiveBranch, BranchId, ConcurrencyModel, ErrorBehavior, PauseBehavior, Transition,
+        ActiveBranch, AsyncMappedJoinTarget, BranchId, ConcurrencyModel, ErrorBehavior,
+        JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget, PauseBehavior, Transition,
     },
 };
 
@@ -85,6 +86,141 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     pub(crate) last_start_context: Option<Arc<dyn Any + Send + Sync>>,
     pub(crate) options: TaskOptions,
     _marker: std::marker::PhantomData<(Input, Output)>,
+}
+
+#[doc(hidden)]
+pub trait RegisterTransition<From: TaskNode + ?Sized>: 'static {
+    fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError>;
+}
+
+#[doc(hidden)]
+pub trait RegisterTransitionAsync<From: TaskNode + ?Sized>: 'static {
+    fn register_async<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError>;
+}
+
+impl<From, F, R> RegisterTransition<From> for F
+where
+    From: TaskNode + 'static + ?Sized,
+    F: Fn(From::Output) -> R + Send + Sync + 'static,
+    R: Into<Transition> + 'static,
+{
+    fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError> {
+        let transition = Arc::new(self);
+        task.set_transition_handler(
+            from,
+            Arc::new(move |output: From::Output| {
+                let transition = transition.clone();
+                Box::pin(async move { transition(output).into() })
+            }),
+        )
+    }
+}
+
+impl<From, F, Fut, R> RegisterTransitionAsync<From> for F
+where
+    From: TaskNode + 'static + ?Sized,
+    F: Fn(From::Output) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = R> + Send + 'static,
+    R: Into<Transition> + 'static,
+{
+    fn register_async<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError> {
+        let transition = Arc::new(self);
+        task.set_transition_handler(
+            from,
+            Arc::new(move |output: From::Output| {
+                let transition = transition.clone();
+                Box::pin(async move { transition(output).await.into() })
+            }),
+        )
+    }
+}
+
+impl<From, To> RegisterTransition<From> for JoinTarget<To>
+where
+    From: TaskNode + 'static + ?Sized,
+    From::Output: NodeArg,
+    To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+{
+    fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError> {
+        task.set_join_handler(
+            from,
+            self.into_definition(),
+            Arc::new(move |output: From::Output| {
+                Box::pin(async move { Arc::new(output) as Arc<dyn Any + Send + Sync> })
+            }),
+        )
+    }
+}
+
+impl<From, To, F, Payload> RegisterTransition<From> for MappedJoinTarget<To, F>
+where
+    From: TaskNode + 'static + ?Sized,
+    To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+    F: Fn(From::Output) -> Payload + Send + Sync + 'static,
+    Payload: NodeArg,
+{
+    fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError> {
+        let MappedJoinTarget { join_target, map } = self;
+        let map = Arc::new(map);
+        task.set_join_handler(
+            from,
+            join_target.into_definition(),
+            Arc::new(move |output: From::Output| {
+                let map = map.clone();
+                Box::pin(async move { Arc::new(map(output)) as Arc<dyn Any + Send + Sync> })
+            }),
+        )
+    }
+}
+
+impl<From, To, F, Fut, Payload> RegisterTransitionAsync<From> for AsyncMappedJoinTarget<To, F>
+where
+    From: TaskNode + 'static + ?Sized,
+    To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+    F: Fn(From::Output) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = Payload> + Send + 'static,
+    Payload: NodeArg,
+{
+    fn register_async<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError> {
+        let AsyncMappedJoinTarget { join_target, map } = self;
+        let map = Arc::new(map);
+        task.set_join_handler(
+            from,
+            join_target.into_definition(),
+            Arc::new(move |output: From::Output| {
+                let map = map.clone();
+                Box::pin(async move { Arc::new(map(output).await) as Arc<dyn Any + Send + Sync> })
+            }),
+        )
+    }
 }
 
 impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
@@ -239,45 +375,28 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id
     }
 
-    pub fn register_transition<From, F, R>(
+    pub fn register_transition<From, R>(
         &mut self,
         from: NodeId<From>,
-        transition: F,
+        transition: R,
     ) -> Result<(), TaskError>
     where
         From: TaskNode + 'static + ?Sized,
-        F: Fn(From::Output) -> R + Send + Sync + 'static,
-        R: Into<Transition> + 'static,
+        R: RegisterTransition<From>,
     {
-        let transition = Arc::new(transition);
-        self.set_transition_handler(
-            from,
-            Arc::new(move |output: From::Output| {
-                let transition = transition.clone();
-                Box::pin(async move { transition(output).into() })
-            }),
-        )
+        transition.register(self, from)
     }
 
-    pub fn register_transition_async<From, F, Fut, R>(
+    pub fn register_transition_async<From, R>(
         &mut self,
         from: NodeId<From>,
-        transition: F,
+        transition: R,
     ) -> Result<(), TaskError>
     where
         From: TaskNode + 'static + ?Sized,
-        F: Fn(From::Output) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = R> + Send + 'static,
-        R: Into<Transition> + 'static,
+        R: RegisterTransitionAsync<From>,
     {
-        let transition = Arc::new(transition);
-        self.set_transition_handler(
-            from,
-            Arc::new(move |output: From::Output| {
-                let transition = transition.clone();
-                Box::pin(async move { transition(output).await.into() })
-            }),
-        )
+        transition.register_async(self, from)
     }
 
     fn set_transition_handler<From>(
@@ -306,9 +425,37 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             )));
         };
 
-        executor.transition_fn = transition;
-        executor.transition_is_set = true;
-        Ok(())
+        executor.set_transition_handler(transition)
+    }
+
+    fn set_join_handler<From>(
+        &mut self,
+        from: NodeId<From>,
+        definition: JoinDefinition,
+        transition: JoinHandler<From::Output>,
+    ) -> Result<(), TaskError>
+    where
+        From: TaskNode + 'static + ?Sized,
+    {
+        let node_executor = self
+            .nodes
+            .get_mut(from.id())
+            .ok_or_else(|| TaskError::missing_node(from.id()))?;
+
+        let executor = (&mut **node_executor as &mut dyn Any).downcast_mut::<NodeExecutor<
+            From::Input,
+            From::Output,
+            From::Error,
+        >>();
+
+        let Some(executor) = executor else {
+            return Err(TaskError::invalid_state(format!(
+                "Transition registration type mismatch for node {}",
+                from.id()
+            )));
+        };
+
+        executor.set_join_handler(definition, transition)
     }
 }
 
@@ -327,7 +474,7 @@ mod tests {
     use tokio::time::sleep;
 
     use super::*;
-    use crate::tasks::{JoinInput, JoinLeftoverBehavior, JoinPolicy};
+    use crate::tasks::JoinInput;
 
     #[derive(thiserror::Error, Debug)]
     struct Error(String);
@@ -537,18 +684,11 @@ mod tests {
         task.starts_with(start);
 
         task.register_transition(start, move |input| {
-            Transition::fan_out_join(
-                [branch_a.target_with(input), branch_b.target_with(input)],
-                join,
-                JoinPolicy::All,
-            )
+            Transition::fan_out([branch_a.target_with(input), branch_b.target_with(input)])
         })
         .unwrap();
-
-        task.register_transition(branch_a, Transition::join)
-            .unwrap();
-        task.register_transition(branch_b, Transition::join)
-            .unwrap();
+        task.register_transition(branch_a, join.join()).unwrap();
+        task.register_transition(branch_b, join.join()).unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
@@ -570,18 +710,41 @@ mod tests {
         task.starts_with(start);
 
         task.register_transition(start, move |input| {
-            Transition::fan_out_join(
-                [active.target_with(input), paused.target_with(input)],
-                join,
-                JoinPolicy::AtLeast {
-                    count: 1,
-                    leftovers: JoinLeftoverBehavior::Continue,
-                },
-            )
-            .concurrency_model(ConcurrencyModel::Parallel)
+            Transition::fan_out([active.target_with(input), paused.target_with(input)])
+                .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
-        task.register_transition(active, Transition::join).unwrap();
+        task.register_transition(active, join.join_at_least(1).continue_remaining())
+            .unwrap();
+        task.register_transition(paused, move |_output| Transition::pause())
+            .unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let result = task.run(1).await.unwrap();
+        assert_eq!(result, TaskRunState::Completed(3));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn explicit_joiners_can_share_a_fan_out_with_normal_branches() {
+        let mut task: Task<i32, i32> = Task::builder()
+            .pause_behavior(PauseBehavior::DrainRunnable)
+            .build();
+
+        let start = task.register_node(IntNode);
+        let joining = task.register_node(IntNode);
+        let paused = task.register_node(PauseOnceNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+
+        task.register_transition(start, move |input| {
+            Transition::fan_out([joining.target_with(input), paused.target_with(input)])
+                .concurrency_model(ConcurrencyModel::Parallel)
+        })
+        .unwrap();
+        task.register_transition(joining, join.join_at_least(1).continue_remaining())
+            .unwrap();
         task.register_transition(paused, move |_output| Transition::pause())
             .unwrap();
         task.register_transition(join, task.transitions_to_finish())
@@ -684,21 +847,69 @@ mod tests {
         task.starts_with(start);
 
         task.register_transition(start, move |input| {
-            Transition::fan_out_join(
-                [first.target_with(input), second.target_with(input)],
-                join,
-                JoinPolicy::All,
-            )
-            .concurrency_model(ConcurrencyModel::Parallel)
+            Transition::fan_out([first.target_with(input), second.target_with(input)])
+                .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
-        task.register_transition(first, Transition::join).unwrap();
-        task.register_transition(second, Transition::join).unwrap();
+        task.register_transition(first, join.join()).unwrap();
+        task.register_transition(second, join.join()).unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
         let result = task.run(1).await.unwrap();
         assert_eq!(result, TaskRunState::Completed(vec![2, 11]));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn all_fanout_branches_scope_preserves_full_fanout_join() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        let first = task.register_node(IntNode);
+        let second = task.register_node(IntNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+
+        task.register_transition(start, move |input| {
+            Transition::fan_out([first.target_with(input), second.target_with(input)])
+        })
+        .unwrap();
+        task.register_transition(first, join.join().all_fanout_branches())
+            .unwrap();
+        task.register_transition(second, join.join().all_fanout_branches())
+            .unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let result = task.run(1).await.unwrap();
+        assert_eq!(result, TaskRunState::Completed(6));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn all_fanout_branches_scope_rejects_mixed_fan_outs() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        let joining = task.register_node(IntNode);
+        let normal = task.register_node(IntNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+
+        task.register_transition(start, move |input| {
+            Transition::fan_out([joining.target_with(input), normal.target_with(input)])
+        })
+        .unwrap();
+        task.register_transition(joining, join.join().all_fanout_branches())
+            .unwrap();
+        task.register_transition(normal, task.transitions_to_finish())
+            .unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let error = task.run(1).await.unwrap_err();
+        assert!(matches!(error, TaskError::InvalidState(_)));
     }
 
     #[test_log::test(tokio::test)]
@@ -723,6 +934,57 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn register_transition_maps_join_payload() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        let branch = task.register_node(IntNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+
+        task.register_transition(start, move |input| {
+            Transition::fan_out([branch.target_with(input)])
+        })
+        .unwrap();
+        task.register_transition(branch, join.join().map(|output| output * 2))
+            .unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let result = task.run(1).await.unwrap();
+        assert_eq!(result, TaskRunState::Completed(6));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn register_transition_async_maps_join_payload() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        let branch = task.register_node(IntNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+
+        task.register_transition(start, move |input| {
+            Transition::fan_out([branch.target_with(input)])
+        })
+        .unwrap();
+        task.register_transition_async(
+            branch,
+            join.join_at_least(1)
+                .continue_remaining()
+                .map_async(|output| async move { output * 2 }),
+        )
+        .unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let result = task.run(1).await.unwrap();
+        assert_eq!(result, TaskRunState::Completed(6));
+    }
+
+    #[test_log::test(tokio::test)]
     async fn max_parallelism_is_enforced() {
         let current = Arc::new(AtomicUsize::new(0));
         let max = Arc::new(AtomicUsize::new(0));
@@ -744,26 +1006,38 @@ mod tests {
 
         task.starts_with(start);
         task.register_transition(start, move |input| {
-            Transition::fan_out_join(
-                [
-                    first.target_with(input),
-                    second.target_with(input),
-                    third.target_with(input),
-                ],
-                join,
-                JoinPolicy::All,
-            )
+            Transition::fan_out([
+                first.target_with(input),
+                second.target_with(input),
+                third.target_with(input),
+            ])
             .concurrency_model(ConcurrencyModel::Parallel)
         })
         .unwrap();
-        task.register_transition(first, Transition::join).unwrap();
-        task.register_transition(second, Transition::join).unwrap();
-        task.register_transition(third, Transition::join).unwrap();
+        task.register_transition(first, join.join()).unwrap();
+        task.register_transition(second, join.join()).unwrap();
+        task.register_transition(third, join.join()).unwrap();
         task.register_transition(join, task.transitions_to_finish())
             .unwrap();
 
         let result = task.run(2).await.unwrap();
         assert_eq!(result, TaskRunState::Completed(6));
         assert!(max.load(Ordering::SeqCst) <= 2);
+    }
+
+    #[test]
+    fn conflicting_transition_registrations_are_rejected() {
+        let mut task: Task<i32, i32> = Task::new();
+
+        let start = task.register_node(IntNode);
+        let next = task.register_node(IntNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.register_transition(start, move |input| next.transitions_with(input))
+            .unwrap();
+
+        let error = task.register_transition(start, join.join()).unwrap_err();
+
+        assert!(matches!(error, TaskError::InvalidState(_)));
     }
 }

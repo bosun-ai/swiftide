@@ -1,0 +1,35 @@
+error[E0599]: the method `join` exists for struct `NodeId<WrongJoinNode>`, but its trait bounds were not satisfied
+  --> tests/ui/join_with_requires_join_input.rs:32:18
+   |
+ 9 | struct WrongJoinNode;
+   | -------------------- doesn't satisfy `<WrongJoinNode as TaskNode>::Input = JoinInput`
+...
+32 |     let _ = join.join();
+   |                  ^^^^ method cannot be called on `NodeId<WrongJoinNode>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `<WrongJoinNode as TaskNode>::Input = JoinInput`
+
+error[E0599]: the method `join_with` exists for struct `NodeId<WrongJoinNode>`, but its trait bounds were not satisfied
+  --> tests/ui/join_with_requires_join_input.rs:33:18
+   |
+ 9 | struct WrongJoinNode;
+   | -------------------- doesn't satisfy `<WrongJoinNode as TaskNode>::Input = JoinInput`
+...
+33 |     let _ = join.join_with(swiftide_agents::tasks::JoinPolicy::All);
+   |                  ^^^^^^^^^ method cannot be called on `NodeId<WrongJoinNode>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `<WrongJoinNode as TaskNode>::Input = JoinInput`
+
+error[E0599]: the method `join_at_least` exists for struct `NodeId<WrongJoinNode>`, but its trait bounds were not satisfied
+  --> tests/ui/join_with_requires_join_input.rs:34:18
+   |
+ 9 | struct WrongJoinNode;
+   | -------------------- doesn't satisfy `<WrongJoinNode as TaskNode>::Input = JoinInput`
+...
+34 |     let _ = join.join_at_least(2);
+   |                  ^^^^^^^^^^^^^ method cannot be called on `NodeId<WrongJoinNode>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `<WrongJoinNode as TaskNode>::Input = JoinInput`

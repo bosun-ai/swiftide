@@ -1,9 +1,7 @@
 //! This example illustrates how to fan out a task into multiple branches and join them again.
 
 use anyhow::Result;
-use swiftide::agents::tasks::{
-    JoinInput, JoinLeftoverBehavior, JoinPolicy, SyncFn, Task, TaskRunState, Transition,
-};
+use swiftide::agents::tasks::{JoinInput, SyncFn, Task, TaskRunState, Transition};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -23,18 +21,11 @@ async fn main() -> Result<()> {
     task.starts_with(start);
 
     task.register_transition(start, move |input| {
-        Transition::fan_out_join(
-            [increment.target_with(input), double.target_with(input)],
-            join,
-            JoinPolicy::AtLeast {
-                count: 2,
-                leftovers: JoinLeftoverBehavior::CancelRemaining,
-            },
-        )
+        Transition::fan_out([increment.target_with(input), double.target_with(input)])
     })?;
 
-    task.register_transition(increment, move |output| Transition::join(output))?;
-    task.register_transition(double, move |output| Transition::join(output))?;
+    task.register_transition(increment, join.join_at_least(2).cancel_remaining())?;
+    task.register_transition(double, join.join_at_least(2).cancel_remaining())?;
     task.register_transition(join, task.transitions_to_finish())?;
 
     match task.run(5).await? {
