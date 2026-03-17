@@ -867,6 +867,60 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn pause_task_preserves_in_flight_work_that_continues_after_pause_request() {
+        let mut task: Task<i32, i32> = Task::builder()
+            .pause_behavior(PauseBehavior::PauseTask)
+            .max_parallelism(NonZeroUsize::new(3).unwrap())
+            .build();
+
+        let start = task.register_node(IntNode);
+        let pausing = task.register_node(TrackingNode {
+            current: Arc::new(AtomicUsize::new(0)),
+            max: Arc::new(AtomicUsize::new(0)),
+            delay: Duration::from_millis(5),
+        });
+        let advancing = task.register_node(TrackingNode {
+            current: Arc::new(AtomicUsize::new(0)),
+            max: Arc::new(AtomicUsize::new(0)),
+            delay: Duration::from_millis(25),
+        });
+        let slow = task.register_node(TrackingNode {
+            current: Arc::new(AtomicUsize::new(0)),
+            max: Arc::new(AtomicUsize::new(0)),
+            delay: Duration::from_millis(200),
+        });
+        let paused_after_continue = task.register_node(IntNode);
+
+        task.starts_with(start);
+        task.register_transition(start, move |input| {
+            Transition::fan_out([
+                pausing.target_with(input),
+                advancing.target_with(input),
+                slow.target_with(input),
+            ])
+            .concurrency_model(ConcurrencyModel::Parallel)
+        })
+        .unwrap();
+        task.register_transition(pausing, move |_output| Transition::pause())
+            .unwrap();
+        task.register_transition(advancing, move |output| {
+            paused_after_continue.transitions_with(output)
+        })
+        .unwrap();
+        task.register_transition(paused_after_continue, move |_output| Transition::pause())
+            .unwrap();
+        task.register_transition(slow, move |_output| Transition::pause())
+            .unwrap();
+
+        let result = task.run(1).await.unwrap();
+        assert_eq!(result, TaskRunState::Paused);
+        assert_eq!(
+            task.paused_branches().len() + task.active_branches().len(),
+            3
+        );
+    }
+
+    #[test_log::test(tokio::test)]
     async fn run_rejects_overwriting_active_state() {
         let mut task: Task<i32, i32> = Task::builder()
             .pause_behavior(PauseBehavior::PauseTask)
@@ -929,6 +983,33 @@ mod tests {
 
         let error = task.run(1).await.unwrap_err();
         assert!(matches!(error, TaskError::NodeError(_)));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn local_node_failures_inside_join_groups_do_not_fail_the_task() {
+        let mut task: Task<i32, i32> = Task::builder()
+            .error_behavior(ErrorBehavior::Local)
+            .max_parallelism(NonZeroUsize::new(2).unwrap())
+            .build();
+
+        let start = task.register_node(IntNode);
+        let good = task.register_node(IntNode);
+        let failing = task.register_node(FailingNode);
+        let join = task.register_node(SumJoinNode);
+
+        task.starts_with(start);
+        task.register_transition(start, move |input| {
+            Transition::fan_out([good.target_with(input), failing.target_with(input)])
+                .concurrency_model(ConcurrencyModel::Parallel)
+        })
+        .unwrap();
+        task.register_transition(good, join.join()).unwrap();
+        task.register_transition(failing, join.join()).unwrap();
+        task.register_transition(join, task.transitions_to_finish())
+            .unwrap();
+
+        let result = task.run(1).await.unwrap();
+        assert_eq!(result, TaskRunState::Completed(3));
     }
 
     #[test_log::test(tokio::test)]

@@ -29,7 +29,8 @@ pub(crate) type TransitionHandler<Output> =
 pub(crate) type BoxedJoinFuture = Pin<Box<dyn Future<Output = Arc<dyn Any + Send + Sync>> + Send>>;
 pub(crate) type JoinHandler<Output> =
     Arc<dyn Fn(Output) -> BoxedJoinFuture + Send + Sync + 'static>;
-type RunningBranchFuture = Pin<Box<dyn Future<Output = Result<EvaluatedBranch, TaskError>> + Send>>;
+type RunningBranchFuture =
+    Pin<Box<dyn Future<Output = Result<BranchExecutionResult, TaskError>> + Send>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct BranchGroupId(pub(crate) usize);
@@ -178,6 +179,18 @@ struct EvaluatedBranch {
 }
 
 #[derive(Debug)]
+struct FailedBranch {
+    branch: ExecutionBranch,
+    error: NodeError,
+}
+
+#[derive(Debug)]
+enum BranchExecutionResult {
+    Evaluated(EvaluatedBranch),
+    Failed(FailedBranch),
+}
+
+#[derive(Debug)]
 pub(crate) enum EvaluatedTransition {
     Flow(Transition),
     Join(Arc<dyn Any + Send + Sync>),
@@ -266,6 +279,20 @@ where
     }
 }
 
+impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static>
+    std::fmt::Debug for NodeExecutor<Input, Output, Error>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NodeExecutor")
+            .field("node_id", &self.node_id.id())
+            .field(
+                "transition_is_set",
+                &!matches!(self.registration, RegisteredTransition::Missing),
+            )
+            .finish()
+    }
+}
+
 impl<Input, Output, Error> Clone for NodeExecutor<Input, Output, Error>
 where
     Input: NodeArg,
@@ -278,20 +305,6 @@ where
             node_id: self.node_id.clone(),
             registration: self.registration.clone(),
         }
-    }
-}
-
-impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static>
-    std::fmt::Debug for NodeExecutor<Input, Output, Error>
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("NodeExecutor")
-            .field("node_id", &self.node_id.id())
-            .field(
-                "transition_is_set",
-                &!matches!(self.registration, RegisteredTransition::Missing),
-            )
-            .finish()
     }
 }
 
@@ -418,6 +431,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     pub(crate) async fn start_task(&mut self) -> Result<TaskRunState<Output>, TaskError> {
+        let execution_nodes = self.execution_nodes();
         let mut in_flight = FuturesUnordered::<RunningBranchFuture>::new();
         let mut pause_requested = false;
 
@@ -426,9 +440,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 while let Some(branch) = self.runnable_branches.pop_front() {
                     match branch.settings.concurrency_model {
                         ConcurrencyModel::Sequential => {
-                            let evaluated = self.branch_future(branch)?.await?;
+                            let execution_result =
+                                self.branch_future(&execution_nodes, branch)?.await?;
 
-                            match self.apply_branch_result(evaluated).await? {
+                            match self.apply_execution_result(execution_result).await? {
                                 LoopControl::Continue => {}
                                 LoopControl::PauseRequested => {
                                     pause_requested = true;
@@ -445,14 +460,14 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                                 break;
                             }
 
-                            in_flight.push(self.branch_future(branch)?);
+                            in_flight.push(self.branch_future(&execution_nodes, branch)?);
                         }
                     }
                 }
             }
 
             if let Some(result) = in_flight.next().await {
-                match self.apply_branch_result(result?).await? {
+                match self.apply_execution_result(result?).await? {
                     LoopControl::Continue => continue,
                     LoopControl::PauseRequested => {
                         pause_requested = true;
@@ -479,9 +494,21 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Err(TaskError::Incomplete)
     }
 
-    fn branch_future(&self, branch: ExecutionBranch) -> Result<RunningBranchFuture, TaskError> {
-        let node_executor = self
-            .nodes
+    fn execution_nodes(&self) -> Vec<Arc<dyn AnyNodeExecutor>> {
+        self.nodes
+            .iter()
+            .map(|node_executor| {
+                Arc::<dyn AnyNodeExecutor>::from(dyn_clone::clone_box(&**node_executor))
+            })
+            .collect()
+    }
+
+    fn branch_future(
+        &self,
+        execution_nodes: &[Arc<dyn AnyNodeExecutor>],
+        branch: ExecutionBranch,
+    ) -> Result<RunningBranchFuture, TaskError> {
+        let node_executor = execution_nodes
             .get(branch.current_node)
             .ok_or_else(|| TaskError::missing_node(branch.current_node))?
             .clone();
@@ -496,7 +523,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             let next_step = node_executor
                 .evaluate_next(branch.context.clone())
                 .instrument(span)
-                .await?;
+                .await;
 
             tracing::info!(
                 node = branch.current_node,
@@ -504,8 +531,32 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 "task.step.done"
             );
 
-            Ok(EvaluatedBranch { branch, next_step })
+            match next_step {
+                Ok(next_step) => Ok(BranchExecutionResult::Evaluated(EvaluatedBranch {
+                    branch,
+                    next_step,
+                })),
+                Err(TaskError::NodeError(error)) => {
+                    Ok(BranchExecutionResult::Failed(FailedBranch {
+                        branch,
+                        error,
+                    }))
+                }
+                Err(error) => Err(error),
+            }
         }))
+    }
+
+    async fn apply_execution_result(
+        &mut self,
+        execution_result: BranchExecutionResult,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        match execution_result {
+            BranchExecutionResult::Evaluated(evaluated) => {
+                self.apply_branch_result(evaluated).await
+            }
+            BranchExecutionResult::Failed(failed) => self.apply_branch_failure(failed),
+        }
     }
 
     async fn apply_branch_result(
@@ -651,6 +702,36 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 if let Some(join_branch) = self.try_fire_join(group_id)? {
                     self.enqueue_branch(join_branch);
                 }
+            }
+        }
+
+        Ok(LoopControl::Continue)
+    }
+
+    fn apply_branch_failure(
+        &mut self,
+        failed: FailedBranch,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        let FailedBranch { branch, error } = failed;
+
+        if branch.join_group.is_none() || branch.settings.error_behavior == ErrorBehavior::FailTask
+        {
+            self.clear_runtime_state();
+            return Err(TaskError::NodeError(error));
+        }
+
+        self.set_join_member_state(
+            branch.join_group,
+            branch.id,
+            JoinMemberState::Failed {
+                node_id: branch.current_node,
+                message: error.to_string(),
+            },
+        );
+
+        if let Some(group_id) = branch.join_group {
+            if let Some(join_branch) = self.try_fire_join(group_id)? {
+                self.enqueue_branch(join_branch);
             }
         }
 
