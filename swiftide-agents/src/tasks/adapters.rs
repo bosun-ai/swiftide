@@ -15,34 +15,70 @@ use super::{
     node::{NodeArg, NodeId, TaskNode},
 };
 
-#[derive(Clone)]
-pub struct SyncFn<F, I, O>
+/// Wraps a synchronous closure and exposes it as a [`TaskNode`].
+///
+/// This is the most compact way to define small task nodes in tests, examples, and simple flows.
+pub struct SyncFn<F, I, O, E = NodeError>
 where
-    F: Fn(&I) -> Result<O, NodeError> + Send + Sync + Clone + 'static,
+    F: Fn(&I) -> Result<O, E> + Send + Sync + Clone + 'static,
+    E: std::error::Error + Send + Sync + 'static,
 {
     pub f: F,
-    _phantom: std::marker::PhantomData<(I, O)>,
+    _phantom: std::marker::PhantomData<(I, O, E)>,
 }
 
-#[derive(Clone)]
-pub struct AsyncFn<F, I, O>
+/// Wraps an asynchronous closure and exposes it as a [`TaskNode`].
+pub struct AsyncFn<F, I, O, E = NodeError>
 where
-    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, NodeError>> + Send + 'a>>
+    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, E>> + Send + 'a>>
         + Send
         + Sync
         + Clone
         + 'static,
+    E: std::error::Error + Send + Sync + 'static,
 {
     pub f: F,
-    _phantom: std::marker::PhantomData<(I, O)>,
+    _phantom: std::marker::PhantomData<(I, O, E)>,
 }
 
-impl<F, I, O> SyncFn<F, I, O>
+impl<F, I, O, E> Clone for SyncFn<F, I, O, E>
 where
-    F: Fn(&I) -> Result<O, NodeError> + Send + Sync + Clone + 'static,
+    F: Fn(&I) -> Result<O, E> + Send + Sync + Clone + 'static,
+    E: std::error::Error + Send + Sync + 'static,
+{
+    fn clone(&self) -> Self {
+        Self {
+            f: self.f.clone(),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<F, I, O, E> Clone for AsyncFn<F, I, O, E>
+where
+    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, E>> + Send + 'a>>
+        + Send
+        + Sync
+        + Clone
+        + 'static,
+    E: std::error::Error + Send + Sync + 'static,
+{
+    fn clone(&self) -> Self {
+        Self {
+            f: self.f.clone(),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<F, I, O, E> SyncFn<F, I, O, E>
+where
+    F: Fn(&I) -> Result<O, E> + Send + Sync + Clone + 'static,
     I: NodeArg + Clone,
     O: NodeArg + Clone,
+    E: std::error::Error + Send + Sync + 'static,
 {
+    /// Creates a new synchronous task-node adapter from `f`.
     pub fn new(f: F) -> Self {
         Self {
             f,
@@ -51,16 +87,18 @@ where
     }
 }
 
-impl<F, I, O> AsyncFn<F, I, O>
+impl<F, I, O, E> AsyncFn<F, I, O, E>
 where
-    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, NodeError>> + Send + 'a>>
+    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, E>> + Send + 'a>>
         + Send
         + Sync
         + Clone
         + 'static,
     I: NodeArg + Clone,
     O: NodeArg + Clone,
+    E: std::error::Error + Send + Sync + 'static,
 {
+    /// Creates a new asynchronous task-node adapter from `f`.
     pub fn new(f: F) -> Self {
         Self {
             f,
@@ -92,15 +130,16 @@ where
 }
 
 #[async_trait]
-impl<F, I, O> TaskNode for SyncFn<F, I, O>
+impl<F, I, O, E> TaskNode for SyncFn<F, I, O, E>
 where
-    F: Fn(&I) -> Result<O, NodeError> + Clone + Send + Sync + 'static,
+    F: Fn(&I) -> Result<O, E> + Clone + Send + Sync + 'static,
     I: NodeArg + Clone,
     O: NodeArg + Clone,
+    E: std::error::Error + Send + Sync + 'static,
 {
     type Input = I;
     type Output = O;
-    type Error = NodeError;
+    type Error = E;
 
     async fn evaluate(
         &self,
@@ -114,19 +153,20 @@ where
 }
 
 #[async_trait]
-impl<F, I, O> TaskNode for AsyncFn<F, I, O>
+impl<F, I, O, E> TaskNode for AsyncFn<F, I, O, E>
 where
-    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, NodeError>> + Send + 'a>>
+    F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, E>> + Send + 'a>>
         + Clone
         + Send
         + Sync
         + 'static,
     I: NodeArg + Clone,
     O: NodeArg + Clone,
+    E: std::error::Error + Send + Sync + 'static,
 {
     type Input = I;
     type Output = O;
-    type Error = NodeError;
+    type Error = E;
 
     async fn evaluate(
         &self,
@@ -139,9 +179,9 @@ where
     }
 }
 
-/// An example of wrapping an Agent as a `TaskNode`
+/// Wraps an [`Agent`](crate::Agent) so it can participate in a task graph.
 ///
-/// For more control you can always roll your own
+/// For more control you can always implement [`TaskNode`] directly.
 ///
 /// `TaskAgent` keeps the wrapped agent behind a mutex and therefore serializes access when the
 /// same adapter instance is shared across multiple task branches.
@@ -246,23 +286,3 @@ impl_task_node_for_prompt_like!(
     CommandError,
     |this, input| this.exec_cmd(input).await
 );
-
-// Note: This only works for function pointers, not closures.
-#[async_trait]
-impl<I: NodeArg, O: NodeArg, E: std::error::Error + Send + Sync + 'static> TaskNode
-    for fn(&I) -> Result<O, E>
-{
-    type Input = I;
-    type Output = O;
-    type Error = E;
-
-    async fn evaluate(
-        &self,
-        _node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error> {
-        (self)(input)
-    }
-}

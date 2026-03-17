@@ -1,22 +1,25 @@
 //! This example illustrates how to fan out a task into multiple branches and join them again.
 
 use anyhow::Result;
-use swiftide::agents::tasks::{JoinInput, SyncFn, Task, TaskRunState, Transition};
+use swiftide::agents::tasks::{JoinInput, NodeError, Task, TaskRunState, Transition};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut task: Task<i32, i32> = Task::new();
 
-    let start = task.register_node(SyncFn::new(|input: &i32| Ok(*input)));
-    let increment = task.register_node(SyncFn::new(|input: &i32| Ok(*input + 1)));
-    let double = task.register_node(SyncFn::new(|input: &i32| Ok(*input * 2)));
-    let join = task.register_node(SyncFn::new(|input: &JoinInput| {
+    let start =
+        task.register_node_fn(|input: &i32| -> std::result::Result<i32, NodeError> { Ok(*input) });
+    let increment = task
+        .register_node_fn(|input: &i32| -> std::result::Result<i32, NodeError> { Ok(*input + 1) });
+    let double = task
+        .register_node_fn(|input: &i32| -> std::result::Result<i32, NodeError> { Ok(*input * 2) });
+    let join = task.register_node_fn(|input: &JoinInput| -> std::result::Result<i32, NodeError> {
         Ok(input
             .ready_values::<i32>()
             .into_iter()
             .copied()
             .sum::<i32>())
-    }));
+    });
 
     task.starts_with(start);
 

@@ -13,10 +13,12 @@ use std::{
     collections::{HashMap, VecDeque},
     future::Future,
     num::NonZeroUsize,
+    pin::Pin,
     sync::Arc,
 };
 
 use super::{
+    adapters::{AsyncFn, SyncFn},
     errors::TaskError,
     node::{NodeArg, NodeId, TaskNode},
     runtime::{
@@ -29,12 +31,16 @@ use super::{
     },
 };
 
+/// The observable outcome of calling [`Task::run`] or [`Task::resume`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TaskRunState<Output> {
+    /// The task reached its finish transition and produced an output.
     Completed(Output),
+    /// The task paused and can be continued with [`Task::resume`].
     Paused,
 }
 
+/// Configures default runtime behavior for a [`Task`].
 #[derive(Debug)]
 pub struct TaskBuilder<Input: NodeArg, Output: NodeArg> {
     options: TaskOptions,
@@ -49,31 +55,67 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output>
         }
     }
 
+    /// Sets the default concurrency model for transitions that do not override it explicitly.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.options.concurrency_model = concurrency_model;
         self
     }
 
+    /// Sets the default pause behavior for transitions that do not override it explicitly.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.options.pause_behavior = pause_behavior;
         self
     }
 
+    /// Sets the default error behavior for transitions that do not override it explicitly.
     pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
         self.options.error_behavior = error_behavior;
         self
     }
 
+    /// Caps how many parallel branches may execute at the same time.
     pub fn max_parallelism(mut self, max_parallelism: NonZeroUsize) -> Self {
         self.options.max_parallelism = max_parallelism.get();
         self
     }
 
+    /// Builds a new task with the configured defaults.
     pub fn build(self) -> Task<Input, Output> {
         Task::with_options(self.options)
     }
 }
 
+/// A typed task graph that can run sequential, branching, and joining workflows.
+///
+/// Register nodes with [`Task::register_node`] or [`Task::register_node_fn`], choose a start node
+/// with [`Task::starts_with`], connect nodes with [`Task::register_transition`], and then execute
+/// the task with [`Task::run`].
+///
+/// The task value stores runtime state as well as the graph definition, so reuse the same task
+/// when you need pause and resume behavior. Clone a task when you want a fresh runtime with the
+/// same graph definition.
+///
+/// # Examples
+///
+/// ```no_run
+/// use swiftide_agents::tasks::{NodeError, Task, TaskRunState};
+///
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut task = Task::<i32, i32>::new();
+///
+/// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+/// let finish =
+///     task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 3) });
+///
+/// task.starts_with(start);
+/// task.register_transition(start, move |value| finish.transitions_with(value))?;
+/// task.register_transition(finish, task.transitions_to_finish())?;
+///
+/// assert_eq!(task.run(2).await?, TaskRunState::Completed(9));
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct Task<Input: NodeArg, Output: NodeArg> {
     pub(crate) nodes: Vec<Box<dyn AnyNodeExecutor>>,
@@ -247,10 +289,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Default for Task<Input, Ou
 }
 
 impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
+    /// Creates a builder for configuring task-wide defaults before constructing a [`Task`].
     pub fn builder() -> TaskBuilder<Input, Output> {
         TaskBuilder::new()
     }
 
+    /// Creates a new task with the default runtime behavior.
     pub fn new() -> Self {
         Self::with_options(TaskOptions::default())
     }
@@ -270,6 +314,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         }
     }
 
+    /// Marks the node where execution should start.
     pub fn starts_with<T: TaskNode<Input = Input> + Clone + 'static>(
         &mut self,
         node_id: NodeId<T>,
@@ -278,10 +323,15 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.reset_runtime();
     }
 
+    /// Returns a typed transition closure that finishes the task with the final output.
     pub fn transitions_to_finish(&self) -> impl Fn(Output) -> Transition + Send + Sync + 'static {
         |output| Transition::finish(output)
     }
 
+    /// Starts the task from its configured start node.
+    ///
+    /// Returns [`TaskRunState::Completed`] when the task reaches its finish transition, or
+    /// [`TaskRunState::Paused`] when execution was intentionally paused.
     #[tracing::instrument(skip(self, input), name = "task.run", err)]
     pub async fn run(
         &mut self,
@@ -308,6 +358,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.start_task().await
     }
 
+    /// Resets runtime state while keeping the graph definition and last start input.
+    ///
+    /// After calling `reset`, use [`Task::resume`] to rerun the task from the start node with the
+    /// most recent input passed to [`Task::run`].
     pub fn reset(&mut self) {
         let Some(start_node) = self.start_node else {
             self.reset_runtime();
@@ -330,6 +384,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         }
     }
 
+    /// Continues a paused or reset task.
     #[tracing::instrument(skip(self), name = "task.resume", err)]
     pub async fn resume(&mut self) -> Result<TaskRunState<Output>, TaskError> {
         self.validate_transitions()?;
@@ -342,6 +397,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.start_task().await
     }
 
+    /// Returns the currently queued branches that have not started running yet.
     pub fn active_branches(&self) -> Vec<ActiveBranch> {
         self.runnable_branches
             .iter()
@@ -352,6 +408,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .collect()
     }
 
+    /// Returns the branches that paused and can be resumed.
     pub fn paused_branches(&self) -> Vec<ActiveBranch> {
         let mut branches = self
             .paused_branches
@@ -365,6 +422,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         branches
     }
 
+    /// Registers a node in the task graph and returns its typed identifier.
     pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
     where
         T: TaskNode + 'static + Clone,
@@ -375,6 +433,43 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id
     }
 
+    /// Registers a synchronous closure as a task node.
+    ///
+    /// This is the convenience entry point for examples, tests, and small bits of task glue.
+    /// For reusable domain logic, prefer implementing [`TaskNode`] directly and calling
+    /// [`Task::register_node`].
+    pub fn register_node_fn<F, I, O, E>(&mut self, f: F) -> NodeId<SyncFn<F, I, O, E>>
+    where
+        F: Fn(&I) -> Result<O, E> + Send + Sync + Clone + 'static,
+        I: NodeArg + Clone,
+        O: NodeArg + Clone,
+        E: std::error::Error + Send + Sync + 'static,
+    {
+        self.register_node(SyncFn::new(f))
+    }
+
+    /// Registers an asynchronous closure as a task node.
+    pub fn register_node_async_fn<F, I, O, E>(&mut self, f: F) -> NodeId<AsyncFn<F, I, O, E>>
+    where
+        F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, E>> + Send + 'a>>
+            + Send
+            + Sync
+            + Clone
+            + 'static,
+        I: NodeArg + Clone,
+        O: NodeArg + Clone,
+        E: std::error::Error + Send + Sync + 'static,
+    {
+        self.register_node(AsyncFn::new(f))
+    }
+
+    /// Registers how execution should continue after `from` completes.
+    ///
+    /// The transition may be:
+    /// - a closure returning a [`Transition`] or
+    ///   [`MarkedTransition`](crate::tasks::MarkedTransition)
+    /// - a [`JoinTarget`](crate::tasks::JoinTarget) built from a join node
+    /// - a mapped join target produced by [`JoinTarget::map`](crate::tasks::JoinTarget::map)
     pub fn register_transition<From, R>(
         &mut self,
         from: NodeId<From>,
@@ -387,6 +482,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         transition.register(self, from)
     }
 
+    /// Registers an asynchronous transition or async join payload mapping for `from`.
     pub fn register_transition_async<From, R>(
         &mut self,
         from: NodeId<From>,

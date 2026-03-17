@@ -2,41 +2,59 @@ use std::{any::Any, marker::PhantomData, sync::Arc};
 
 use super::node::{NodeArg, NodeId, TaskNode};
 
+/// Identifies a concrete runtime branch within a task run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BranchId(pub usize);
 
+/// Describes a branch that is still queued or paused inside the task runtime.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ActiveBranch {
+    /// The runtime branch identifier.
     pub branch_id: BranchId,
+    /// The numeric identifier of the node the branch will resume at.
     pub node_id: usize,
 }
 
+/// Controls whether newly scheduled work should run one branch at a time or concurrently.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum ConcurrencyModel {
+    /// Run one branch to completion before starting the next runnable branch.
     #[default]
     Sequential,
+    /// Allow multiple runnable branches to execute at the same time.
     Parallel,
 }
 
+/// Controls what should happen when a branch requests a pause.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum PauseBehavior {
+    /// Let already-runnable work continue before returning a paused task.
     #[default]
     DrainRunnable,
+    /// Stop scheduling new work as soon as a branch pauses the task.
     PauseTask,
 }
 
+/// Controls whether a branch error stays local to that branch or fails the whole task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum ErrorBehavior {
+    /// Treat the failing branch as failed while allowing the rest of the task to continue.
     #[default]
     Local,
+    /// Stop the task as soon as a branch fails.
     FailTask,
 }
 
+/// Determines when a join node becomes ready to run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JoinPolicy {
+    /// Wait for all registered join branches.
     All,
+    /// Run the join once at least `count` branches are ready.
     AtLeast {
+        /// The minimum number of ready branches required before the join fires.
         count: usize,
+        /// What should happen to the remaining branches once the join has fired.
         leftovers: JoinLeftoverBehavior,
     },
 }
@@ -50,16 +68,22 @@ impl JoinPolicy {
     }
 }
 
+/// Controls what happens to unfinished branches after an `AtLeast` join fires.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JoinLeftoverBehavior {
+    /// Cancel unfinished branches that belong to the join.
     CancelRemaining,
+    /// Keep unfinished branches running after the join has already fired.
     Continue,
 }
 
+/// Selects which branches belong to a join group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum JoinScope {
+    /// Only branches that explicitly transition into the join are part of the join group.
     #[default]
     ExplicitBranches,
+    /// Every branch spawned by the same fan-out is expected to join.
     AllFanOutBranches,
 }
 
@@ -89,6 +113,7 @@ impl EffectiveTransitionSettings {
     }
 }
 
+/// A concrete next-step target used by [`Transition::next`] and [`Transition::fan_out`].
 #[derive(Debug, Clone)]
 pub struct NextNode {
     pub(crate) node_id: usize,
@@ -96,6 +121,7 @@ pub struct NextNode {
 }
 
 impl NextNode {
+    /// Creates a next-step target for the given node and input value.
     pub fn new<T: TaskNode + ?Sized>(node_id: NodeId<T>, context: T::Input) -> Self
     where
         <T as TaskNode>::Input: 'static,
@@ -121,21 +147,30 @@ pub(crate) struct JoinDefinition {
     pub(crate) settings: TransitionSettings,
 }
 
+/// A configured join destination for branches that should converge into a join node.
+///
+/// Build a `JoinTarget` from a join node with [`NodeId::join`](crate::tasks::NodeId::join),
+/// [`NodeId::join_at_least`](crate::tasks::NodeId::join_at_least), or
+/// [`NodeId::join_with`](crate::tasks::NodeId::join_with), and then register it through
+/// [`Task::register_transition`](crate::tasks::Task::register_transition).
 pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
     pub(crate) definition: JoinDefinition,
     _marker: PhantomData<T>,
 }
 
+/// Builder for `JoinPolicy::AtLeast`.
 pub struct AtLeastJoin<T: TaskNode<Input = JoinInput> + ?Sized> {
     node_id: NodeId<T>,
     count: usize,
 }
 
+/// A join target with a synchronous payload mapping step.
 pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
     pub(crate) join_target: JoinTarget<T>,
     pub(crate) map: F,
 }
 
+/// A join target with an asynchronous payload mapping step.
 pub struct AsyncMappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
     pub(crate) join_target: JoinTarget<T>,
     pub(crate) map: F,
@@ -158,26 +193,31 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
         self.definition
     }
 
+    /// Includes every branch from the originating fan-out in this join.
     pub fn all_fanout_branches(mut self) -> Self {
         self.definition.scope = JoinScope::AllFanOutBranches;
         self
     }
 
+    /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.definition.settings.concurrency_model = Some(concurrency_model);
         self
     }
 
+    /// Overrides pause behavior for the join branch that will be scheduled.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.definition.settings.pause_behavior = Some(pause_behavior);
         self
     }
 
+    /// Overrides error behavior for the join branch that will be scheduled.
     pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
         self.definition.settings.error_behavior = Some(error_behavior);
         self
     }
 
+    /// Maps each joining branch output into the payload stored for the join node.
     pub fn map<F>(self, map: F) -> MappedJoinTarget<T, F>
     where
         F: Send + Sync + 'static,
@@ -188,6 +228,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
         }
     }
 
+    /// Maps each joining branch output asynchronously before storing it for the join node.
     pub fn map_async<F>(self, map: F) -> AsyncMappedJoinTarget<T, F>
     where
         F: Send + Sync + 'static,
@@ -204,6 +245,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
         Self { node_id, count }
     }
 
+    /// Builds an `at least N` join that cancels the remaining branches once the join fires.
     pub fn cancel_remaining(self) -> JoinTarget<T> {
         JoinTarget::new(
             self.node_id,
@@ -214,6 +256,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
         )
     }
 
+    /// Builds an `at least N` join that lets the remaining branches continue running.
     pub fn continue_remaining(self) -> JoinTarget<T> {
         JoinTarget::new(
             self.node_id,
@@ -226,21 +269,25 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
 }
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
+    /// Includes every branch from the originating fan-out in this join.
     pub fn all_fanout_branches(mut self) -> Self {
         self.join_target = self.join_target.all_fanout_branches();
         self
     }
 
+    /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.join_target = self.join_target.concurrency_model(concurrency_model);
         self
     }
 
+    /// Overrides pause behavior for the join branch that will be scheduled.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.join_target = self.join_target.pause_behavior(pause_behavior);
         self
     }
 
+    /// Overrides error behavior for the join branch that will be scheduled.
     pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
         self.join_target = self.join_target.error_behavior(error_behavior);
         self
@@ -248,40 +295,84 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 }
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized, F> AsyncMappedJoinTarget<T, F> {
+    /// Includes every branch from the originating fan-out in this join.
     pub fn all_fanout_branches(mut self) -> Self {
         self.join_target = self.join_target.all_fanout_branches();
         self
     }
 
+    /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.join_target = self.join_target.concurrency_model(concurrency_model);
         self
     }
 
+    /// Overrides pause behavior for the join branch that will be scheduled.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.join_target = self.join_target.pause_behavior(pause_behavior);
         self
     }
 
+    /// Overrides error behavior for the join branch that will be scheduled.
     pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
         self.join_target = self.join_target.error_behavior(error_behavior);
         self
     }
 }
 
+/// Describes how task execution should continue after a node completes.
+///
+/// Most transitions are created either through [`NodeId::transitions_with`] for the linear case or
+/// [`Transition::fan_out`] for branching. Use [`Transition::pause`] and [`Transition::error`] when
+/// a transition closure needs to control task execution directly.
+///
+/// # Examples
+///
+/// ```no_run
+/// use swiftide_agents::tasks::{NodeError, Task, TaskRunState, Transition};
+///
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut task = Task::<i32, i32>::new();
+///
+/// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+/// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+/// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+/// let join = task.register_node_fn(
+///     |input: &swiftide_agents::tasks::JoinInput| -> Result<i32, NodeError> {
+///         Ok(input.ready_values::<i32>().into_iter().copied().sum())
+///     },
+/// );
+///
+/// task.starts_with(start);
+/// task.register_transition(start, move |value| {
+///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+///         .concurrency_model(swiftide_agents::tasks::ConcurrencyModel::Parallel)
+/// })?;
+/// task.register_transition(left, join.join())?;
+/// task.register_transition(right, join.join())?;
+/// task.register_transition(join, task.transitions_to_finish())?;
+///
+/// assert_eq!(task.run(1).await?, TaskRunState::Completed(5));
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
 pub struct Transition {
     pub(crate) action: TransitionAction,
     pub(crate) settings: TransitionSettings,
 }
 
+/// A [`Transition`] that remembers the destination node type.
 pub struct MarkedTransition<To: TaskNode + ?Sized>(Transition, std::marker::PhantomData<To>);
 
 impl<To: TaskNode + ?Sized> MarkedTransition<To> {
+    /// Wraps a transition while preserving the destination node type.
     pub fn new(transition: Transition) -> Self {
         Self(transition, std::marker::PhantomData)
     }
 
+    /// Returns the underlying untyped transition.
     pub fn into_inner(self) -> Transition {
         self.0
     }
@@ -311,6 +402,7 @@ pub(crate) enum TransitionAction {
 }
 
 impl Transition {
+    /// Continues execution at the provided next-step target.
     pub fn next(next_node: NextNode) -> Self {
         Self {
             action: TransitionAction::Next(next_node),
@@ -318,10 +410,12 @@ impl Transition {
         }
     }
 
+    /// Continues execution at `node_id` with the provided input.
     pub fn next_node<T: TaskNode + ?Sized>(node_id: &NodeId<T>, context: T::Input) -> Self {
         NextNode::new(*node_id, context).into()
     }
 
+    /// Schedules multiple branches from the current node output.
     pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> Self {
         Self {
             action: TransitionAction::FanOut {
@@ -331,6 +425,7 @@ impl Transition {
         }
     }
 
+    /// Pauses the current branch.
     pub fn pause() -> Self {
         Self {
             action: TransitionAction::Pause,
@@ -338,6 +433,7 @@ impl Transition {
         }
     }
 
+    /// Fails the current branch with the provided error.
     pub fn error(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
         Self {
             action: TransitionAction::Error(error.into()),
@@ -352,22 +448,26 @@ impl Transition {
         }
     }
 
+    /// Overrides the concurrency model for work scheduled by this transition.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.settings.concurrency_model = Some(concurrency_model);
         self
     }
 
+    /// Overrides pause behavior for work scheduled by this transition.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.settings.pause_behavior = Some(pause_behavior);
         self
     }
 
+    /// Overrides error behavior for work scheduled by this transition.
     pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
         self.settings.error_behavior = Some(error_behavior);
         self
     }
 }
 
+/// The aggregated view of branches that have reached a join node.
 #[derive(Debug, Clone)]
 pub struct JoinInput {
     branches: Vec<BranchEnvelope>,
@@ -378,10 +478,12 @@ impl JoinInput {
         Self { branches }
     }
 
+    /// Iterates over every branch tracked by this join input in a stable order.
     pub fn iter(&self) -> std::slice::Iter<'_, BranchEnvelope> {
         self.branches.iter()
     }
 
+    /// Returns the ready values that can be downcast to `T`.
     pub fn ready_values<T: NodeArg>(&self) -> Vec<&T> {
         self.iter()
             .filter_map(BranchEnvelope::ready_value::<T>)
@@ -389,30 +491,43 @@ impl JoinInput {
     }
 }
 
+/// Describes one branch that belongs to a [`JoinInput`].
 #[derive(Debug, Clone)]
 pub struct BranchEnvelope {
+    /// The runtime branch identifier.
     pub branch_id: BranchId,
+    /// The numeric identifier of the node that produced this branch result.
     pub node_id: usize,
+    /// The branch's current state from the join's point of view.
     pub outcome: BranchOutcome,
 }
 
 impl BranchEnvelope {
+    /// Returns the ready value when the branch completed with a payload of type `T`.
     pub fn ready_value<T: NodeArg>(&self) -> Option<&T> {
         self.outcome.ready_value()
     }
 }
 
+/// The state of a branch as observed by a join node.
 #[derive(Debug, Clone)]
 pub enum BranchOutcome {
+    /// The branch completed and produced a payload.
     Ready(Arc<dyn Any + Send + Sync>),
+    /// The branch has not completed yet.
     Pending,
+    /// The branch paused before completing.
     Paused,
+    /// The branch failed with an error message.
     Failed(String),
+    /// The branch was cancelled before completing.
     Cancelled,
+    /// The branch completed after the join had already fired.
     LateArrival,
 }
 
 impl BranchOutcome {
+    /// Returns the ready value when the outcome is [`BranchOutcome::Ready`] and the payload is `T`.
     pub fn ready_value<T: NodeArg>(&self) -> Option<&T> {
         match self {
             BranchOutcome::Ready(value) => value.downcast_ref::<T>(),
