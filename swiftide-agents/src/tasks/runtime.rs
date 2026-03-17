@@ -650,10 +650,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                             },
                         );
 
-                        if let Some(group_id) = branch.join_group {
-                            if let Some(join_branch) = self.try_fire_join(group_id)? {
-                                self.enqueue_branch(join_branch);
-                            }
+                        if let Some(group_id) = branch.join_group
+                            && let Some(join_branch) = self.try_fire_join(group_id)?
+                        {
+                            self.enqueue_branch(join_branch);
                         }
                     }
                     TransitionAction::Finish(output) => {
@@ -729,10 +729,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             },
         );
 
-        if let Some(group_id) = branch.join_group {
-            if let Some(join_branch) = self.try_fire_join(group_id)? {
-                self.enqueue_branch(join_branch);
-            }
+        if let Some(group_id) = branch.join_group
+            && let Some(join_branch) = self.try_fire_join(group_id)?
+        {
+            self.enqueue_branch(join_branch);
         }
 
         Ok(LoopControl::Continue)
@@ -935,8 +935,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 let node_id = group
                     .members
                     .get(&branch_id)
-                    .map(JoinMemberState::node_id)
-                    .unwrap_or(0);
+                    .map_or(0, JoinMemberState::node_id);
                 group
                     .members
                     .insert(branch_id, JoinMemberState::Cancelled { node_id });
@@ -958,12 +957,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         branch_id: BranchId,
         state: JoinMemberState,
     ) {
-        if let Some(group_id) = group_id {
-            if let Some(group) = self.join_groups.get_mut(&group_id) {
-                if !group.fired {
-                    group.members.insert(branch_id, state);
-                }
-            }
+        if let Some(group_id) = group_id
+            && let Some(group) = self.join_groups.get_mut(&group_id)
+            && !group.fired
+        {
+            group.members.insert(branch_id, state);
         }
     }
 }
