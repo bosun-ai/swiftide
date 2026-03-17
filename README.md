@@ -16,6 +16,7 @@
 - [Usage and concepts](#usage-and-concepts)
   - [Indexing](#indexing)
   - [Querying](#querying)
+  - [Tasks](#tasks)
 - [Contributing](#contributing)
 - [Core Team Members](#core-team-members)
 - [License](#license)
@@ -193,6 +194,13 @@ agents::Agent::builder()
 
 Agents loop over LLM calls, tool calls, and lifecycle hooks until a final answer is reached.
 
+Tasks are for graph-shaped workflows where typed steps hand work to one another, fan out into
+branches, and optionally join again. They fit well when you want to combine prompt steps, agents,
+and your own domain-specific nodes in one orchestrated flow.
+
+- Linear task example: [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs)
+- Fan-out and join example: [`examples/tasks_fanout.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks_fanout.rs)
+
 _You can find more detailed examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -305,6 +313,26 @@ That sounds like a lot but, tl&dr; the query pipeline is _fully and strongly typ
 Additionally, query pipelines can also be evaluated. I.e. by [Ragas](https://ragas.io).
 
 Similar to the indexing pipeline each step is governed by simple Traits and closures implement these traits as well.
+
+### Tasks
+
+Tasks are Swiftide's typed workflow graphs. Use them when your application is not just a single
+prompt or a single agent loop, but a sequence of coordinated steps with explicit hand-offs between
+them.
+
+Typical uses for tasks:
+
+- preprocess input with a prompt step and hand the result to an agent
+- branch work into multiple paths and join the results again
+- mix built-in Swiftide primitives with your own `TaskNode` implementations
+
+Tasks are a good fit for orchestration. Pipelines are optimized around indexing and querying;
+tasks are optimized around graph-like control flow.
+
+Start with the examples:
+
+- Linear prompt + custom agent workflow: [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs)
+- Fan-out and join workflow: [`examples/tasks_fanout.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks_fanout.rs)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
