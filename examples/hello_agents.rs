@@ -22,7 +22,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use swiftide::{
     agents,
-    chat_completion::{ToolOutput, errors::ToolError},
+    chat_completion::{errors::ToolError, ToolOutput},
     traits::{AgentContext, Command},
 };
 

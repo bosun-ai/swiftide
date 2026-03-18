@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use swiftide_core::{
-    SparseEmbeddingModel,
     prelude::*,
-    querying::{Query, TransformQuery, states},
+    querying::{states, Query, TransformQuery},
+    SparseEmbeddingModel,
 };
 
 /// Embed a query with a sparse embedding.

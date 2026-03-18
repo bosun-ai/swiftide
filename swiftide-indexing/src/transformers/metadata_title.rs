@@ -5,7 +5,7 @@
 //! these questions and answers based on the text chunk in an `TextNode`.
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{Transformer, indexing::TextNode};
+use swiftide_core::{indexing::TextNode, Transformer};
 
 /// `MetadataTitle` is responsible for generating a title
 /// for a given text chunk. It uses a templated prompt to interact with a client

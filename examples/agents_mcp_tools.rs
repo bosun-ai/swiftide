@@ -3,9 +3,9 @@
 //! The agent in this example prints all messages using a channel.
 use anyhow::Result;
 use rmcp::{
-    ServiceExt as _,
     model::{ClientInfo, Implementation},
     transport::{ConfigureCommandExt as _, TokioChildProcess},
+    ServiceExt as _,
 };
 use swiftide::agents::{self, tools::mcp::McpToolbox};
 

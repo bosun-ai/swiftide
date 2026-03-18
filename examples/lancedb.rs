@@ -1,11 +1,12 @@
 /// This example demonstrates how to use the LanceDB integration with Swiftide
 use swiftide::{
     indexing::{
-        self, EmbeddedField,
+        self,
         loaders::FileLoader,
         transformers::{
-            ChunkMarkdown, Embed, MetadataQAText, metadata_qa_text::NAME as METADATA_QA_TEXT_NAME,
+            metadata_qa_text::NAME as METADATA_QA_TEXT_NAME, ChunkMarkdown, Embed, MetadataQAText,
         },
+        EmbeddedField,
     },
     integrations::{self, lancedb::LanceDB},
     query::{self, answers, query_transformers, response_transformers},

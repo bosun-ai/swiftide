@@ -6,7 +6,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use swiftide_core::{Transformer, indexing::TextNode};
+use swiftide_core::{indexing::TextNode, Transformer};
 
 /// `MetadataQAText` is responsible for generating questions and answers
 /// from a given text chunk. It uses a templated prompt to interact with a client

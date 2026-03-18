@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use anyhow::Result;
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 use futures_util::stream::{StreamExt, TryStreamExt};
 use swiftide::traits::Loader;
 

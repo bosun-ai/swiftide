@@ -8,10 +8,10 @@ use std::sync::Arc;
 use std::{env, fmt};
 use tokio::sync::Mutex;
 use tracing::field::{Field, Visit};
-use tracing::{Event, Id, Level, Metadata, Subscriber, span};
-use tracing_subscriber::Layer;
+use tracing::{span, Event, Id, Level, Metadata, Subscriber};
 use tracing_subscriber::layer::Context;
 use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::Layer;
 use uuid::Uuid;
 
 use crate::langfuse_batch_manager::{BatchManagerTrait, LangfuseBatchManager};
@@ -448,7 +448,7 @@ impl Visit for JsonVisitor {
 mod tests {
     use super::*;
     use tokio::sync::Mutex;
-    use tracing::{Level, subscriber::set_global_default};
+    use tracing::{subscriber::set_global_default, Level};
     use tracing_subscriber::prelude::*;
 
     #[derive(Clone)]

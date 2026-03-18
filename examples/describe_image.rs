@@ -3,7 +3,7 @@
 //! Set the `OPENAI_API_KEY` environment variable before running.
 
 use anyhow::{Context as _, Result};
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use swiftide::chat_completion::{ChatCompletionRequest, ChatMessage, ChatMessageContentPart};
 use swiftide::traits::ChatCompletion;
 

@@ -115,15 +115,13 @@ async fn test_sparse_indexing_pipeline() {
     let search_response = qdrant_client.search_points(search_request).await.unwrap();
     let first = search_response.result.first().unwrap();
 
-    assert!(
-        first
-            .payload
-            .get("path")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .ends_with("main.rs")
-    );
+    assert!(first
+        .payload
+        .get("path")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .ends_with("main.rs"));
     assert_eq!(
         first.payload.get("content").unwrap().as_str().unwrap(),
         "fn main() { println!(\"Hello, World!\"); }"
@@ -148,15 +146,13 @@ async fn test_sparse_indexing_pipeline() {
     let search_response = qdrant_client.search_points(search_request).await.unwrap();
     let first = search_response.result.first().unwrap();
 
-    assert!(
-        first
-            .payload
-            .get("path")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .ends_with("main.rs")
-    );
+    assert!(first
+        .payload
+        .get("path")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .ends_with("main.rs"));
     assert_eq!(
         first.payload.get("content").unwrap().as_str().unwrap(),
         "fn main() { println!(\"Hello, World!\"); }"
@@ -189,15 +185,13 @@ async fn test_sparse_indexing_pipeline() {
 
     let first = search_response.result.first().unwrap();
 
-    assert!(
-        first
-            .payload
-            .get("path")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .ends_with("main.rs")
-    );
+    assert!(first
+        .payload
+        .get("path")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .ends_with("main.rs"));
     assert_eq!(
         first.payload.get("content").unwrap().as_str().unwrap(),
         "fn main() { println!(\"Hello, World!\"); }"

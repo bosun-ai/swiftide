@@ -6,8 +6,8 @@ use std::{
 
 use anyhow::Context as _;
 use ignore::{DirEntry, Walk};
-use swiftide_core::{Loader, indexing::IndexingStream, indexing::TextNode};
-use tracing::{Span, debug_span, instrument};
+use swiftide_core::{indexing::IndexingStream, indexing::TextNode, Loader};
+use tracing::{debug_span, instrument, Span};
 
 /// The `FileLoader` struct is responsible for loading files from a specified directory, filtering
 /// them based on their extensions, and creating a stream of these files for further processing.

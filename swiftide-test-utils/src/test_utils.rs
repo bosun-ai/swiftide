@@ -3,9 +3,9 @@
 
 use serde_json::json;
 use testcontainers::{
-    ContainerAsync, GenericImage, ImageExt,
-    core::{IntoContainerPort, WaitFor, wait::HttpWaitStrategy},
+    core::{wait::HttpWaitStrategy, IntoContainerPort, WaitFor},
     runners::AsyncRunner,
+    ContainerAsync, GenericImage, ImageExt,
 };
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
