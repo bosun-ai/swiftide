@@ -6,7 +6,7 @@ use swiftide_core::{
     indexing::SimplePrompt,
     prelude::*,
     prompt::Prompt,
-    querying::{states, Query, TransformQuery},
+    querying::{Query, TransformQuery, states},
 };
 
 #[derive(Debug, Clone, Builder)]

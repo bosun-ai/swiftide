@@ -5,7 +5,7 @@
 //! to use the `task_failed` tool with the schema defined below whenever it cannot complete the
 //! task.
 use anyhow::Result;
-use schemars::{schema_for, JsonSchema, Schema};
+use schemars::{JsonSchema, Schema, schema_for};
 use serde::{Deserialize, Serialize};
 use serde_json::{self, to_string_pretty};
 use swiftide::agents::tools::control::AgentCanFail;

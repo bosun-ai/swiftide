@@ -1,13 +1,13 @@
 use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
-    indexing::{Chunk, IndexingDefaults},
-    statistics::StatsCollector,
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
     Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
+    indexing::{Chunk, IndexingDefaults},
+    statistics::StatsCollector,
 };
 use tokio::{
-    sync::{mpsc, Mutex},
+    sync::{Mutex, mpsc},
     task,
 };
 use tracing::Instrument;
@@ -277,8 +277,8 @@ impl<T: Chunk> Pipeline<T> {
     pub fn then_in_batch<Output: Chunk>(
         self,
         mut transformer: impl BatchableTransformer<Input = T, Output = Output>
-            + WithBatchIndexingDefaults
-            + 'static,
+        + WithBatchIndexingDefaults
+        + 'static,
     ) -> Pipeline<Output> {
         let concurrency = transformer.concurrency().unwrap_or(self.concurrency);
 

@@ -1,10 +1,10 @@
 use anyhow::Result;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use swiftide::{
+    indexing::Pipeline,
     indexing::loaders::FileLoader,
     indexing::persist::MemoryStorage,
     indexing::transformers::{ChunkMarkdown, Embed},
-    indexing::Pipeline,
     integrations::fastembed::FastEmbed,
 };
 

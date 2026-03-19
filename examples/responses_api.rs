@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::io::Write as _;
 use swiftide::{
-    chat_completion::{errors::ToolError, ChatCompletionRequest, ChatMessage, ToolOutput},
+    chat_completion::{ChatCompletionRequest, ChatMessage, ToolOutput, errors::ToolError},
     integrations::openai::{OpenAI, Options},
     traits::{AgentContext, ChatCompletion, SimplePrompt, StructuredPrompt},
 };

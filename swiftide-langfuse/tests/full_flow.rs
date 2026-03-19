@@ -3,11 +3,11 @@ use std::sync::{Arc, Mutex};
 use reqwest::Client;
 use swiftide_langfuse::{Configuration, LangfuseBatchManager, LangfuseLayer};
 use tokio::task::yield_now;
-use tracing::{info, span, Level};
-use tracing_subscriber::{layer::SubscriberExt, Registry};
+use tracing::{Level, info, span};
+use tracing_subscriber::{Registry, layer::SubscriberExt};
 use wiremock::{
-    matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
+    matchers::{method, path},
 };
 
 #[test_log::test(tokio::test)]

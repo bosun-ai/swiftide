@@ -3,7 +3,7 @@ use std::sync::Arc;
 use swiftide_core::{
     indexing::EmbeddingModel,
     prelude::*,
-    querying::{states, Query, TransformQuery},
+    querying::{Query, TransformQuery, states},
 };
 
 #[derive(Debug, Clone)]

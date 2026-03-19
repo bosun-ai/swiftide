@@ -1,12 +1,12 @@
 //! Generate an answer based on the current query
 use std::sync::Arc;
 use swiftide_core::{
+    Answer,
     document::Document,
     indexing::SimplePrompt,
     prelude::*,
     prompt::Prompt,
-    querying::{states, Query},
-    Answer,
+    querying::{Query, states},
 };
 
 /// Generate an answer based on the current query
@@ -134,7 +134,7 @@ mod test {
     use std::sync::Mutex;
 
     use insta::assert_snapshot;
-    use swiftide_core::{indexing::Metadata, querying::TransformationEvent, MockSimplePrompt};
+    use swiftide_core::{MockSimplePrompt, indexing::Metadata, querying::TransformationEvent};
 
     use super::*;
 

@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
 use anyhow::Result;
-use schemars::{schema_for, JsonSchema, Schema};
+use schemars::{JsonSchema, Schema, schema_for};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use swiftide::chat_completion::{errors::ToolError, Tool, ToolCall, ToolOutput, ToolSpec};
+use swiftide::chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError};
 use swiftide::traits::AgentContext;
 
 #[derive(Clone)]

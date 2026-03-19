@@ -2,12 +2,11 @@
 use std::path::PathBuf;
 use swiftide::{
     indexing::{
-        self,
+        self, EmbeddedField,
         loaders::FileLoader,
         transformers::{
-            metadata_qa_text::NAME as METADATA_QA_TEXT_NAME, ChunkMarkdown, Embed, MetadataQAText,
+            ChunkMarkdown, Embed, MetadataQAText, metadata_qa_text::NAME as METADATA_QA_TEXT_NAME,
         },
-        EmbeddedField,
     },
     integrations::{self, fastembed::FastEmbed, pgvector::PgVector},
     query::{self, answers, query_transformers, response_transformers},

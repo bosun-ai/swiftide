@@ -17,7 +17,7 @@ use anyhow::Result;
 use swiftide::traits::SimplePrompt;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
-    layer::SubscriberExt as _, util::SubscriberInitExt as _, EnvFilter, Layer as _,
+    EnvFilter, Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _,
 };
 
 #[tokio::main]

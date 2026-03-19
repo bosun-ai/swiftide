@@ -21,9 +21,9 @@
 
 use swiftide::{
     indexing,
+    indexing::LanguageModelWithBackOff,
     indexing::loaders::FileLoader,
     indexing::transformers::{ChunkCode, Embed, MetadataQACode},
-    indexing::LanguageModelWithBackOff,
     integrations::{self, qdrant::Qdrant, redis::Redis},
 };
 

@@ -7,10 +7,9 @@
 
 use swiftide::{
     indexing::{
-        self,
+        self, EmbeddedField,
         loaders::FileLoader,
         transformers::{self, ChunkCode, MetadataQACode},
-        EmbeddedField,
     },
     integrations::{fastembed::FastEmbed, openai, qdrant::Qdrant},
     query::{self, answers, query_transformers, search_strategies::HybridSearch},

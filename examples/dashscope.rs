@@ -1,9 +1,8 @@
 use swiftide::{
     indexing::{
-        self,
+        self, EmbeddedField,
         loaders::FileLoader,
-        transformers::{metadata_qa_text, ChunkMarkdown, Embed, MetadataQAText},
-        EmbeddedField,
+        transformers::{ChunkMarkdown, Embed, MetadataQAText, metadata_qa_text},
     },
     integrations::{dashscope::DashscopeBuilder, lancedb::LanceDB},
     query::{

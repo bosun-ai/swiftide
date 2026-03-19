@@ -16,8 +16,8 @@
 
 use anyhow::Result;
 use swiftide::{
-    agents::{self, tools::control::ApprovalRequired, StopReason},
-    chat_completion::{errors::ToolError, ToolOutput},
+    agents::{self, StopReason, tools::control::ApprovalRequired},
+    chat_completion::{ToolOutput, errors::ToolError},
     traits::{AgentContext, ToolFeedback},
 };
 use tracing_subscriber::EnvFilter;
