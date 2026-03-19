@@ -2,8 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
 ## [0.32.1](https://github.com/bosun-ai/swiftide/compare/v0.32.0...v0.32.1) - 2025-11-08
 
 ### New features
