@@ -654,9 +654,8 @@ impl<T: Chunk> Pipeline<T> {
         futures_util::future::try_join_all(setup_futures).await?;
 
         let mut total_nodes = 0u64;
-        let mut error_count = 0u64;
 
-        while let Some(result) = self.stream.try_next().await? {
+        while let Some(_result) = self.stream.try_next().await? {
             total_nodes += 1;
             // Count successful nodes as stored (nodes that reach the end of the stream)
             self.stats.increment_nodes_stored(1);
