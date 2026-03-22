@@ -569,7 +569,10 @@ async fn faster_pause_preserves_slower_finish_work_for_resume() {
 
     let result = task.run(1).await.unwrap();
     assert_eq!(result, TaskRunState::Paused);
-    assert_eq!(task.paused_branches().len() + task.active_branches().len(), 2);
+    assert_eq!(
+        task.paused_branches().len() + task.active_branches().len(),
+        2
+    );
 }
 
 #[test_log::test(tokio::test)]
