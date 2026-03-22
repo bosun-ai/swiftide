@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772628262555,
+  "lastUpdate": 1774187304714,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30593,6 +30593,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 158292,
             "range": "± 1365",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "06addc40e0fd1e6aea9c58cb99a606a86258fb03",
+          "message": "fix(ci): Remove explicit docker credentials from workflows (#1051)",
+          "timestamp": "2026-03-22T14:39:21+01:00",
+          "tree_id": "614e10913a45886cd5317e22403a4625d5c790b8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/06addc40e0fd1e6aea9c58cb99a606a86258fb03"
+        },
+        "date": 1774187302629,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 849157,
+            "range": "± 18620",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257308,
+            "range": "± 1959",
             "unit": "ns/iter"
           }
         ]
