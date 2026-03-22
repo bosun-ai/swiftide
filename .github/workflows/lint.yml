@@ -25,8 +25,6 @@ jobs:
       - uses: r7kamura/rust-problem-matchers@v1
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -66,8 +64,6 @@ jobs:
       - uses: r7kamura/rust-problem-matchers@v1
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install system dependencies
         run: |
           sudo apt-get update

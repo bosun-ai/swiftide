@@ -22,7 +22,7 @@ jobs:
         uses: amannn/action-semantic-pull-request@v6
         id: check_pr_title
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
       # Add comment indicating we require pull request titles to follow conventional commits specification
       - uses: marocchino/sticky-pull-request-comment@v2
         if: always() && (steps.check_pr_title.outputs.error_message != null)
@@ -57,15 +57,15 @@ jobs:
           pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(\w+\))?!:'
           # Check if pattern matches
           if echo "${PR_TITLE}" | grep -qE "$pattern"; then
-            echo "breaking_change=true" >> $GITHUB_OUTPUT
+            echo "breaking_change=true" >> "$GITHUB_OUTPUT"
           else
-            echo "breaking_change=false" >> $GITHUB_OUTPUT
+            echo "breaking_change=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Add label
         if: steps.check_breaking_change.outputs.breaking_change == 'true'
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           script: |
             github.rest.issues.addLabels({
               issue_number: context.issue.number,
