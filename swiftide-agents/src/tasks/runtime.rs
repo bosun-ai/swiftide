@@ -441,9 +441,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     match branch.settings.concurrency_model {
                         ConcurrencyModel::Sequential => {
                             let execution_result =
-                                self.branch_future(&execution_nodes, branch)?.await?;
+                                Self::branch_future(&execution_nodes, branch)?.await?;
 
-                            match self.apply_execution_result(execution_result).await? {
+                            match self.apply_execution_result(execution_result)? {
                                 LoopControl::Continue => {}
                                 LoopControl::PauseRequested => {
                                     pause_requested = true;
@@ -460,14 +460,14 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                                 break;
                             }
 
-                            in_flight.push(self.branch_future(&execution_nodes, branch)?);
+                            in_flight.push(Self::branch_future(&execution_nodes, branch)?);
                         }
                     }
                 }
             }
 
             if let Some(result) = in_flight.next().await {
-                match self.apply_execution_result(result?).await? {
+                match self.apply_execution_result(result?)? {
                     LoopControl::Continue => continue,
                     LoopControl::PauseRequested => {
                         pause_requested = true;
@@ -504,7 +504,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     fn branch_future(
-        &self,
         execution_nodes: &[Arc<dyn AnyNodeExecutor>],
         branch: ExecutionBranch,
     ) -> Result<RunningBranchFuture, TaskError> {
@@ -547,164 +546,197 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         }))
     }
 
-    async fn apply_execution_result(
+    fn apply_execution_result(
         &mut self,
         execution_result: BranchExecutionResult,
     ) -> Result<LoopControl<Output>, TaskError> {
         match execution_result {
-            BranchExecutionResult::Evaluated(evaluated) => {
-                self.apply_branch_result(evaluated).await
-            }
+            BranchExecutionResult::Evaluated(evaluated) => self.apply_branch_result(evaluated),
             BranchExecutionResult::Failed(failed) => self.apply_branch_failure(failed),
         }
     }
 
-    async fn apply_branch_result(
+    fn apply_branch_result(
         &mut self,
         evaluated: EvaluatedBranch,
     ) -> Result<LoopControl<Output>, TaskError> {
-        let EvaluatedBranch {
-            mut branch,
-            next_step,
-        } = evaluated;
+        let EvaluatedBranch { branch, next_step } = evaluated;
         match next_step {
-            EvaluatedTransition::Flow(transition) => {
-                let settings = branch.settings.with_overrides(transition.settings);
+            EvaluatedTransition::Flow(transition) => self.apply_flow_transition(branch, transition),
+            EvaluatedTransition::Join(payload) => self.apply_join_payload(&branch, payload),
+        }
+    }
 
-                match transition.action {
-                    TransitionAction::Next(next_node) => {
-                        branch.current_node = next_node.node_id;
-                        branch.context = next_node.context;
-                        branch.settings = settings;
-                        self.set_join_member_state(
-                            branch.join_group,
-                            branch.id,
-                            JoinMemberState::Pending {
-                                node_id: branch.current_node,
-                            },
-                        );
-                        self.enqueue_branch(branch);
-                    }
-                    TransitionAction::FanOut { targets } => {
-                        let join_groups = self.prepare_join_groups(&targets)?;
+    fn apply_flow_transition(
+        &mut self,
+        mut branch: ExecutionBranch,
+        transition: Transition,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        let settings = branch.settings.with_overrides(transition.settings);
 
-                        for (target, join_group) in targets.into_iter().zip(join_groups) {
-                            let child_id = self.next_branch();
-                            let child = ExecutionBranch {
-                                id: child_id,
-                                current_node: target.node_id,
-                                context: target.context,
-                                settings: settings.clone(),
-                                join_group,
-                            };
-
-                            if let Some(group_id) = join_group {
-                                let group =
-                                    self.join_groups.get_mut(&group_id).ok_or_else(|| {
-                                        TaskError::invalid_state("Missing join group")
-                                    })?;
-                                group.member_order.push(child_id);
-                                group.members.insert(
-                                    child_id,
-                                    JoinMemberState::Pending {
-                                        node_id: child.current_node,
-                                    },
-                                );
-                            }
-
-                            self.enqueue_branch(child);
-                        }
-                    }
-                    TransitionAction::Pause => {
-                        self.set_join_member_state(
-                            branch.join_group,
-                            branch.id,
-                            JoinMemberState::Paused {
-                                node_id: branch.current_node,
-                            },
-                        );
-                        self.paused_branches.insert(branch.id, branch);
-
-                        if settings.pause_behavior == PauseBehavior::PauseTask {
-                            return Ok(LoopControl::PauseRequested);
-                        }
-                    }
-                    TransitionAction::Error(error) => {
-                        if branch.join_group.is_none()
-                            || settings.error_behavior == ErrorBehavior::FailTask
-                        {
-                            self.clear_runtime_state();
-                            return Err(TaskError::NodeError(NodeError::new(
-                                error,
-                                branch.current_node,
-                                None,
-                            )));
-                        }
-
-                        self.set_join_member_state(
-                            branch.join_group,
-                            branch.id,
-                            JoinMemberState::Failed {
-                                node_id: branch.current_node,
-                                message: error.to_string(),
-                            },
-                        );
-
-                        if let Some(group_id) = branch.join_group
-                            && let Some(join_branch) = self.try_fire_join(group_id)?
-                        {
-                            self.enqueue_branch(join_branch);
-                        }
-                    }
-                    TransitionAction::Finish(output) => {
-                        self.clear_runtime_state();
-                        let output = output
-                            .downcast::<Output>()
-                            .map_err(|error| TaskError::type_error(&error))?
-                            .as_ref()
-                            .clone();
-                        return Ok(LoopControl::Complete(output));
-                    }
-                }
+        match transition.action {
+            TransitionAction::Next(next_node) => {
+                branch.current_node = next_node.node_id;
+                branch.context = next_node.context;
+                branch.settings = settings;
+                self.set_join_member_state(
+                    branch.join_group,
+                    branch.id,
+                    JoinMemberState::Pending {
+                        node_id: branch.current_node,
+                    },
+                );
+                self.enqueue_branch(branch);
+                Ok(LoopControl::Continue)
             }
-            EvaluatedTransition::Join(payload) => {
-                let Some(group_id) = branch.join_group else {
-                    return Err(TaskError::invalid_state(format!(
-                        "Node {} used join without an attached join group",
-                        branch.current_node
-                    )));
-                };
+            TransitionAction::FanOut { targets } => {
+                self.enqueue_fan_out_branches(targets, settings)?;
+                Ok(LoopControl::Continue)
+            }
+            TransitionAction::Pause => Ok(self.pause_branch(branch, settings)),
+            TransitionAction::Error(error) => self.apply_transition_error(&branch, settings, error),
+            TransitionAction::Finish(output) => self.finish_with_output(output),
+        }
+    }
 
+    fn enqueue_fan_out_branches(
+        &mut self,
+        targets: Vec<super::transition::NextNode>,
+        settings: EffectiveTransitionSettings,
+    ) -> Result<(), TaskError> {
+        let join_groups = self.prepare_join_groups(&targets)?;
+
+        for (target, join_group) in targets.into_iter().zip(join_groups) {
+            let child_id = self.next_branch();
+            let child = ExecutionBranch {
+                id: child_id,
+                current_node: target.node_id,
+                context: target.context,
+                settings,
+                join_group,
+            };
+
+            if let Some(group_id) = join_group {
                 let group = self
                     .join_groups
                     .get_mut(&group_id)
                     .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-
-                if group.fired {
-                    group.members.insert(
-                        branch.id,
-                        JoinMemberState::LateArrival {
-                            node_id: branch.current_node,
-                        },
-                    );
-                    return Ok(LoopControl::Continue);
-                }
-
+                group.member_order.push(child_id);
                 group.members.insert(
-                    branch.id,
-                    JoinMemberState::Ready {
-                        node_id: branch.current_node,
-                        payload,
+                    child_id,
+                    JoinMemberState::Pending {
+                        node_id: child.current_node,
                     },
                 );
-                group.ready_count += 1;
-
-                if let Some(join_branch) = self.try_fire_join(group_id)? {
-                    self.enqueue_branch(join_branch);
-                }
             }
+
+            self.enqueue_branch(child);
         }
 
+        Ok(())
+    }
+
+    fn pause_branch(
+        &mut self,
+        branch: ExecutionBranch,
+        settings: EffectiveTransitionSettings,
+    ) -> LoopControl<Output> {
+        self.set_join_member_state(
+            branch.join_group,
+            branch.id,
+            JoinMemberState::Paused {
+                node_id: branch.current_node,
+            },
+        );
+        self.paused_branches.insert(branch.id, branch);
+
+        if settings.pause_behavior == PauseBehavior::PauseTask {
+            LoopControl::PauseRequested
+        } else {
+            LoopControl::Continue
+        }
+    }
+
+    fn apply_transition_error(
+        &mut self,
+        branch: &ExecutionBranch,
+        settings: EffectiveTransitionSettings,
+        error: Box<dyn std::error::Error + Send + Sync>,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        if branch.join_group.is_none() || settings.error_behavior == ErrorBehavior::FailTask {
+            self.clear_runtime_state();
+            return Err(TaskError::NodeError(NodeError::new(
+                error,
+                branch.current_node,
+                None,
+            )));
+        }
+
+        self.set_join_member_state(
+            branch.join_group,
+            branch.id,
+            JoinMemberState::Failed {
+                node_id: branch.current_node,
+                message: error.to_string(),
+            },
+        );
+        self.enqueue_join_if_ready(branch.join_group)?;
+
+        Ok(LoopControl::Continue)
+    }
+
+    fn finish_with_output(
+        &mut self,
+        output: Arc<dyn Any + Send + Sync>,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        self.clear_runtime_state();
+        let output = output
+            .downcast::<Output>()
+            .map_err(|error| TaskError::type_error(&error))?
+            .as_ref()
+            .clone();
+        Ok(LoopControl::Complete(output))
+    }
+
+    fn apply_join_payload(
+        &mut self,
+        branch: &ExecutionBranch,
+        payload: Arc<dyn Any + Send + Sync>,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        let Some(group_id) = branch.join_group else {
+            return Err(TaskError::invalid_state(format!(
+                "Node {} used join without an attached join group",
+                branch.current_node
+            )));
+        };
+
+        {
+            let group = self
+                .join_groups
+                .get_mut(&group_id)
+                .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
+
+            if group.fired {
+                group.members.insert(
+                    branch.id,
+                    JoinMemberState::LateArrival {
+                        node_id: branch.current_node,
+                    },
+                );
+                return Ok(LoopControl::Continue);
+            }
+
+            group.members.insert(
+                branch.id,
+                JoinMemberState::Ready {
+                    node_id: branch.current_node,
+                    payload,
+                },
+            );
+            group.ready_count += 1;
+        }
+
+        self.enqueue_join_if_ready(Some(group_id))?;
         Ok(LoopControl::Continue)
     }
 
@@ -728,12 +760,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 message: error.to_string(),
             },
         );
-
-        if let Some(group_id) = branch.join_group
-            && let Some(join_branch) = self.try_fire_join(group_id)?
-        {
-            self.enqueue_branch(join_branch);
-        }
+        self.enqueue_join_if_ready(branch.join_group)?;
 
         Ok(LoopControl::Continue)
     }
@@ -757,7 +784,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .flatten()
             .any(|definition| definition.scope == JoinScope::AllFanOutBranches)
         {
-            return self.prepare_all_fan_out_join_group(definitions);
+            return self.prepare_all_fan_out_join_group(&definitions);
         }
 
         let mut groups = HashMap::<JoinDefinition, BranchGroupId>::new();
@@ -794,7 +821,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
     fn prepare_all_fan_out_join_group(
         &mut self,
-        definitions: Vec<Option<JoinDefinition>>,
+        definitions: &[Option<JoinDefinition>],
     ) -> Result<Vec<Option<BranchGroupId>>, TaskError> {
         let expected = definitions
             .iter()
@@ -829,6 +856,16 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Ok(vec![Some(group_id); definitions.len()])
     }
 
+    fn enqueue_join_if_ready(&mut self, group_id: Option<BranchGroupId>) -> Result<(), TaskError> {
+        if let Some(group_id) = group_id
+            && let Some(join_branch) = self.try_fire_join(group_id)?
+        {
+            self.enqueue_branch(join_branch);
+        }
+
+        Ok(())
+    }
+
     fn try_fire_join(
         &mut self,
         group_id: BranchGroupId,
@@ -860,7 +897,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             group.fired = true;
             (
                 group.join_node_id,
-                group.settings.clone(),
+                group.settings,
                 group.policy.leftover_behavior(),
             )
         };

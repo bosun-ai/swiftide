@@ -178,7 +178,7 @@ impl TaskNode for SnapshotJoinNode {
         let mut pending = 0;
         let mut late_arrivals = 0;
 
-        for branch in input.iter() {
+        for branch in input {
             match &branch.outcome {
                 BranchOutcome::Ready(value) => {
                     if let Some(value) = value.downcast_ref::<i32>() {

@@ -94,7 +94,7 @@ pub(crate) struct TransitionSettings {
     pub(crate) error_behavior: Option<ErrorBehavior>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct EffectiveTransitionSettings {
     pub(crate) concurrency_model: ConcurrencyModel,
     pub(crate) pause_behavior: PauseBehavior,
@@ -102,7 +102,7 @@ pub(crate) struct EffectiveTransitionSettings {
 }
 
 impl EffectiveTransitionSettings {
-    pub(crate) fn with_overrides(&self, overrides: TransitionSettings) -> Self {
+    pub(crate) fn with_overrides(self, overrides: TransitionSettings) -> Self {
         Self {
             concurrency_model: overrides
                 .concurrency_model
@@ -153,6 +153,7 @@ pub(crate) struct JoinDefinition {
 /// [`NodeId::join_at_least`](crate::tasks::NodeId::join_at_least), or
 /// [`NodeId::join_with`](crate::tasks::NodeId::join_with), and then register it through
 /// [`Task::register_transition`](crate::tasks::Task::register_transition).
+#[must_use]
 pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
     pub(crate) definition: JoinDefinition,
     _marker: PhantomData<T>,
@@ -165,12 +166,14 @@ pub struct AtLeastJoin<T: TaskNode<Input = JoinInput> + ?Sized> {
 }
 
 /// A join target with a synchronous payload mapping step.
+#[must_use]
 pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
     pub(crate) join_target: JoinTarget<T>,
     pub(crate) map: F,
 }
 
 /// A join target with an asynchronous payload mapping step.
+#[must_use]
 pub struct AsyncMappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
     pub(crate) join_target: JoinTarget<T>,
     pub(crate) map: F,
@@ -358,6 +361,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> AsyncMappedJoinTarget<T, F> {
 /// # }
 /// ```
 #[derive(Debug)]
+#[must_use]
 pub struct Transition {
     pub(crate) action: TransitionAction,
     pub(crate) settings: TransitionSettings,
@@ -488,6 +492,15 @@ impl JoinInput {
         self.iter()
             .filter_map(BranchEnvelope::ready_value::<T>)
             .collect()
+    }
+}
+
+impl<'a> IntoIterator for &'a JoinInput {
+    type Item = &'a BranchEnvelope;
+    type IntoIter = std::slice::Iter<'a, BranchEnvelope>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 

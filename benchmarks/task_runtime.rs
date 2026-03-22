@@ -1,7 +1,7 @@
-use std::{collections::BTreeSet, num::NonZeroUsize, pin::Pin, time::Duration};
+use std::{collections::BTreeSet, num::NonZeroUsize, time::Duration};
 
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use swiftide::agents::tasks::{AsyncFn, NodeError, SyncFn, Task, TaskRunState, Transition};
+use swiftide::agents::tasks::{NodeError, SyncFn, Task, TaskRunState, Transition};
 use tokio::runtime::{Builder, Runtime};
 use tokio::time::sleep;
 
@@ -22,31 +22,6 @@ fn runtime() -> Runtime {
 
 fn increment_node() -> SyncFn<impl Fn(&i32) -> Result<i32, NodeError> + Clone, i32, i32> {
     SyncFn::new(|input: &i32| Ok::<_, NodeError>(*input + 1))
-}
-
-fn delayed_node(
-    delay: Duration,
-) -> AsyncFn<
-    impl for<'a> Fn(&'a i32) -> Pin<Box<dyn Future<Output = Result<i32, NodeError>> + Send + 'a>>
-    + Clone,
-    i32,
-    i32,
-> {
-    AsyncFn::new(move |input: &i32| {
-        Box::pin(async move {
-            sleep(delay).await;
-            Ok::<_, NodeError>(*input + 1)
-        })
-    })
-}
-
-fn immediate_node() -> AsyncFn<
-    impl for<'a> Fn(&'a i32) -> Pin<Box<dyn Future<Output = Result<i32, NodeError>> + Send + 'a>>
-    + Clone,
-    i32,
-    i32,
-> {
-    AsyncFn::new(|input: &i32| Box::pin(async move { Ok::<_, NodeError>(*input + 1) }))
 }
 
 fn join_sum_node() -> SyncFn<
@@ -108,7 +83,14 @@ fn build_fanout_join_task(
     let start = task.register_node(increment_node());
     let join = task.register_node(join_sum_node());
     let branch_nodes = (0..branches)
-        .map(|_| task.register_node(delayed_node(child_delay)))
+        .map(|_| {
+            task.register_node_async_fn(move |input: &i32| {
+                Box::pin(async move {
+                    sleep(child_delay).await;
+                    Ok::<_, NodeError>(*input + 1)
+                })
+            })
+        })
         .collect::<Vec<_>>();
     let fan_out_nodes = branch_nodes.clone();
 
@@ -147,9 +129,18 @@ fn build_short_circuit_task(
 
     let start = task.register_node(increment_node());
     let join = task.register_node(join_sum_node());
-    let fast_branch = task.register_node(immediate_node());
+    let fast_branch = task.register_node_async_fn(|input: &i32| {
+        Box::pin(async move { Ok::<_, NodeError>(*input + 1) })
+    });
     let slow_branches = (1..branches)
-        .map(|_| task.register_node(delayed_node(Duration::from_millis(1))))
+        .map(|_| {
+            task.register_node_async_fn(|input: &i32| {
+                Box::pin(async move {
+                    sleep(Duration::from_millis(1)).await;
+                    Ok::<_, NodeError>(*input + 1)
+                })
+            })
+        })
         .collect::<Vec<_>>();
     let fan_out_slow_branches = slow_branches.clone();
 

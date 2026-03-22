@@ -42,6 +42,7 @@ pub enum TaskRunState<Output> {
 
 /// Configures default runtime behavior for a [`Task`].
 #[derive(Debug)]
+#[must_use]
 pub struct TaskBuilder<Input: NodeArg, Output: NodeArg> {
     options: TaskOptions,
     _marker: std::marker::PhantomData<(Input, Output)>,
@@ -332,6 +333,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     ///
     /// Returns [`TaskRunState::Completed`] when the task reaches its finish transition, or
     /// [`TaskRunState::Paused`] when execution was intentionally paused.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the task is already active, when the graph definition is incomplete,
+    /// or when a node evaluation or transition fails while running the task.
     #[tracing::instrument(skip(self, input), name = "task.run", err)]
     pub async fn run(
         &mut self,
@@ -385,6 +391,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Continues a paused or reset task.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the task graph is invalid, when there is no paused or reset state to
+    /// resume, or when a node evaluation or transition fails while continuing execution.
     #[tracing::instrument(skip(self), name = "task.resume", err)]
     pub async fn resume(&mut self) -> Result<TaskRunState<Output>, TaskError> {
         self.validate_transitions()?;
@@ -470,6 +481,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     ///   [`MarkedTransition`](crate::tasks::MarkedTransition)
     /// - a [`JoinTarget`](crate::tasks::JoinTarget) built from a join node
     /// - a mapped join target produced by [`JoinTarget::map`](crate::tasks::JoinTarget::map)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `from` is unknown, when the node already has a registered
+    /// transition, or when the transition type does not match the registered node type.
     pub fn register_transition<From, R>(
         &mut self,
         from: NodeId<From>,
@@ -483,6 +499,11 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Registers an asynchronous transition or async join payload mapping for `from`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `from` is unknown, when the node already has a registered
+    /// transition, or when the transition type does not match the registered node type.
     pub fn register_transition_async<From, R>(
         &mut self,
         from: NodeId<From>,
