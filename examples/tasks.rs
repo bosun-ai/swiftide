@@ -17,7 +17,7 @@ use swiftide::{
     agents::{
         self, Agent, StopReason,
         errors::AgentError,
-        tasks::{NodeId, Task, TaskNode, TaskRunState},
+        tasks::{NodeId, Task, TaskNode, TaskRunState, Transition},
         tools::control::StopWithArgs,
     },
     prompt::Prompt,
@@ -171,7 +171,8 @@ async fn main() -> Result<()> {
 
     // Step 2: use the structured stop payload to drive a final LLM rendering step.
     task.register_transition(agent_id, move |decision: BriefingDecision| {
-        handoff_prompt_id.transitions_with(
+        Transition::next_node(
+            &handoff_prompt_id,
             Prompt::from(
                 "Write a teammate-facing hand-off note.\n\
                  Audience: {{audience}}\n\

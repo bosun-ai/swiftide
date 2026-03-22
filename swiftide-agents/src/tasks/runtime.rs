@@ -248,21 +248,23 @@ where
         &mut self,
         transition: TransitionHandler<Output>,
     ) -> Result<(), TaskError> {
-        if !matches!(self.registration, RegisteredTransition::Missing) {
-            return Err(TaskError::invalid_state(format!(
-                "Node {} already has a registered transition",
-                self.node_id.id()
-            )));
-        }
-
-        self.registration = RegisteredTransition::Flow(transition);
-        Ok(())
+        self.set_registration(RegisteredTransition::Flow(transition))
     }
 
     pub(crate) fn set_join_handler(
         &mut self,
         definition: JoinDefinition,
         transition: JoinHandler<Output>,
+    ) -> Result<(), TaskError> {
+        self.set_registration(RegisteredTransition::Join {
+            definition,
+            handler: transition,
+        })
+    }
+
+    fn set_registration(
+        &mut self,
+        registration: RegisteredTransition<Output>,
     ) -> Result<(), TaskError> {
         if !matches!(self.registration, RegisteredTransition::Missing) {
             return Err(TaskError::invalid_state(format!(
@@ -271,10 +273,7 @@ where
             )));
         }
 
-        self.registration = RegisteredTransition::Join {
-            definition,
-            handler: transition,
-        };
+        self.registration = registration;
         Ok(())
     }
 }
@@ -392,10 +391,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.runnable_branches.clear();
         self.paused_branches.clear();
         self.join_groups.clear();
-    }
-
-    pub(crate) fn reset_runtime(&mut self) {
-        self.clear_runtime_state();
     }
 
     pub(crate) fn restore_paused_branches(&mut self) {
@@ -663,26 +658,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         settings: EffectiveTransitionSettings,
         error: Box<dyn std::error::Error + Send + Sync>,
     ) -> Result<LoopControl<Output>, TaskError> {
-        if branch.join_group.is_none() || settings.error_behavior == ErrorBehavior::FailTask {
-            self.clear_runtime_state();
-            return Err(TaskError::NodeError(NodeError::new(
-                error,
-                branch.current_node,
-                None,
-            )));
-        }
-
-        self.set_join_member_state(
-            branch.join_group,
-            branch.id,
-            JoinMemberState::Failed {
-                node_id: branch.current_node,
-                message: error.to_string(),
-            },
-        );
-        self.enqueue_join_if_ready(branch.join_group)?;
-
-        Ok(LoopControl::Continue)
+        let message = error.to_string();
+        self.apply_branch_error(
+            branch,
+            settings.error_behavior,
+            message,
+            TaskError::NodeError(NodeError::new(error, branch.current_node, None)),
+        )
     }
 
     fn finish_with_output(
@@ -745,24 +727,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         failed: FailedBranch,
     ) -> Result<LoopControl<Output>, TaskError> {
         let FailedBranch { branch, error } = failed;
-
-        if branch.join_group.is_none() || branch.settings.error_behavior == ErrorBehavior::FailTask
-        {
-            self.clear_runtime_state();
-            return Err(TaskError::NodeError(error));
-        }
-
-        self.set_join_member_state(
-            branch.join_group,
-            branch.id,
-            JoinMemberState::Failed {
-                node_id: branch.current_node,
-                message: error.to_string(),
-            },
-        );
-        self.enqueue_join_if_ready(branch.join_group)?;
-
-        Ok(LoopControl::Continue)
+        let message = error.to_string();
+        self.apply_branch_error(
+            &branch,
+            branch.settings.error_behavior,
+            message,
+            TaskError::NodeError(error),
+        )
     }
 
     fn prepare_join_groups(
@@ -796,22 +767,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 continue;
             };
 
-            let group_id = *groups.entry(definition).or_insert_with(|| {
-                let group_id = self.next_group();
-                self.join_groups.insert(
-                    group_id,
-                    JoinGroupState {
-                        join_node_id: definition.join_node_id,
-                        policy: definition.policy,
-                        settings: self.default_settings().with_overrides(definition.settings),
-                        members: HashMap::new(),
-                        member_order: Vec::new(),
-                        ready_count: 0,
-                        fired: false,
-                    },
-                );
-                group_id
-            });
+            let group_id = *groups
+                .entry(definition)
+                .or_insert_with(|| self.insert_join_group(definition));
 
             assignments.push(Some(group_id));
         }
@@ -839,21 +797,26 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             ));
         }
 
+        let group_id = self.insert_join_group(expected);
+
+        Ok(vec![Some(group_id); definitions.len()])
+    }
+
+    fn insert_join_group(&mut self, definition: JoinDefinition) -> BranchGroupId {
         let group_id = self.next_group();
         self.join_groups.insert(
             group_id,
             JoinGroupState {
-                join_node_id: expected.join_node_id,
-                policy: expected.policy,
-                settings: self.default_settings().with_overrides(expected.settings),
+                join_node_id: definition.join_node_id,
+                policy: definition.policy,
+                settings: self.default_settings().with_overrides(definition.settings),
                 members: HashMap::new(),
                 member_order: Vec::new(),
                 ready_count: 0,
                 fired: false,
             },
         );
-
-        Ok(vec![Some(group_id); definitions.len()])
+        group_id
     }
 
     fn enqueue_join_if_ready(&mut self, group_id: Option<BranchGroupId>) -> Result<(), TaskError> {
@@ -937,6 +900,31 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .collect();
 
         Ok(JoinInput::new(branches))
+    }
+
+    fn apply_branch_error(
+        &mut self,
+        branch: &ExecutionBranch,
+        error_behavior: ErrorBehavior,
+        message: String,
+        error: TaskError,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        if branch.join_group.is_none() || error_behavior == ErrorBehavior::FailTask {
+            self.clear_runtime_state();
+            return Err(error);
+        }
+
+        self.set_join_member_state(
+            branch.join_group,
+            branch.id,
+            JoinMemberState::Failed {
+                node_id: branch.current_node,
+                message,
+            },
+        );
+        self.enqueue_join_if_ready(branch.join_group)?;
+
+        Ok(LoopControl::Continue)
     }
 
     fn apply_leftover_behavior(

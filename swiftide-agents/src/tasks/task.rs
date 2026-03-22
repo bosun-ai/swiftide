@@ -26,8 +26,8 @@ use super::{
         TaskOptions, TransitionHandler,
     },
     transition::{
-        ActiveBranch, AsyncMappedJoinTarget, BranchId, ConcurrencyModel, ErrorBehavior,
-        JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget, PauseBehavior, Transition,
+        ActiveBranch, BranchId, ConcurrencyModel, ErrorBehavior, JoinDefinition, JoinInput,
+        JoinTarget, MappedJoinTarget, MarkedTransition, PauseBehavior, Transition,
     },
 };
 
@@ -149,11 +149,34 @@ pub trait RegisterTransitionAsync<From: TaskNode + ?Sized>: 'static {
     ) -> Result<(), TaskError>;
 }
 
+trait TransitionResult<From: TaskNode + ?Sized> {
+    fn into_transition(self) -> Transition;
+}
+
+impl<From, To> TransitionResult<From> for MarkedTransition<To>
+where
+    From: TaskNode + 'static + ?Sized,
+    To: TaskNode<Input = From::Output> + ?Sized,
+{
+    fn into_transition(self) -> Transition {
+        self.into_inner()
+    }
+}
+
+impl<From> TransitionResult<From> for Transition
+where
+    From: TaskNode + 'static + ?Sized,
+{
+    fn into_transition(self) -> Transition {
+        self
+    }
+}
+
 impl<From, F, R> RegisterTransition<From> for F
 where
     From: TaskNode + 'static + ?Sized,
     F: Fn(From::Output) -> R + Send + Sync + 'static,
-    R: Into<Transition> + 'static,
+    R: TransitionResult<From> + 'static,
 {
     fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
         self,
@@ -165,7 +188,7 @@ where
             from,
             Arc::new(move |output: From::Output| {
                 let transition = transition.clone();
-                Box::pin(async move { transition(output).into() })
+                Box::pin(async move { transition(output).into_transition() })
             }),
         )
     }
@@ -176,7 +199,7 @@ where
     From: TaskNode + 'static + ?Sized,
     F: Fn(From::Output) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = R> + Send + 'static,
-    R: Into<Transition> + 'static,
+    R: TransitionResult<From> + 'static,
 {
     fn register_async<Input: NodeArg + Clone, Output: NodeArg + Clone>(
         self,
@@ -188,7 +211,7 @@ where
             from,
             Arc::new(move |output: From::Output| {
                 let transition = transition.clone();
-                Box::pin(async move { transition(output).await.into() })
+                Box::pin(async move { transition(output).await.into_transition() })
             }),
         )
     }
@@ -240,7 +263,7 @@ where
     }
 }
 
-impl<From, To, F, Fut, Payload> RegisterTransitionAsync<From> for AsyncMappedJoinTarget<To, F>
+impl<From, To, F, Fut, Payload> RegisterTransitionAsync<From> for MappedJoinTarget<To, F>
 where
     From: TaskNode + 'static + ?Sized,
     To: TaskNode<Input = JoinInput> + 'static + ?Sized,
@@ -253,7 +276,7 @@ where
         task: &mut Task<Input, Output>,
         from: NodeId<From>,
     ) -> Result<(), TaskError> {
-        let AsyncMappedJoinTarget { join_target, map } = self;
+        let MappedJoinTarget { join_target, map } = self;
         let map = Arc::new(map);
         task.set_join_handler(
             from,
@@ -321,7 +344,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id: NodeId<T>,
     ) {
         self.start_node = Some(node_id.id());
-        self.reset_runtime();
+        self.clear_runtime_state();
     }
 
     /// Returns a typed transition closure that finishes the task with the final output.
@@ -350,16 +373,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         let start_node = self.validate_transitions()?;
         let context = Arc::new(input.into()) as Arc<dyn Any + Send + Sync>;
         self.last_start_context = Some(context.clone());
-        self.reset_runtime();
-        let branch_id = self.next_branch();
-        let settings = self.default_settings();
-        self.enqueue_branch(ExecutionBranch {
-            id: branch_id,
-            current_node: start_node,
-            context,
-            settings,
-            join_group: None,
-        });
+        self.clear_runtime_state();
+        self.enqueue_start_branch(start_node, context);
 
         self.start_task().await
     }
@@ -370,23 +385,15 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// most recent input passed to [`Task::run`].
     pub fn reset(&mut self) {
         let Some(start_node) = self.start_node else {
-            self.reset_runtime();
+            self.clear_runtime_state();
             return;
         };
 
         let context = self.last_start_context.clone();
-        self.reset_runtime();
+        self.clear_runtime_state();
 
         if let Some(context) = context {
-            let branch_id = self.next_branch();
-            let settings = self.default_settings();
-            self.enqueue_branch(ExecutionBranch {
-                id: branch_id,
-                current_node: start_node,
-                context,
-                settings,
-                join_group: None,
-            });
+            self.enqueue_start_branch(start_node, context);
         }
     }
 
@@ -477,8 +484,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// Registers how execution should continue after `from` completes.
     ///
     /// The transition may be:
-    /// - a closure returning a [`Transition`] or
-    ///   [`MarkedTransition`](crate::tasks::MarkedTransition)
+    /// - a closure returning a typed [`MarkedTransition`](crate::tasks::MarkedTransition)
+    /// - a closure returning a raw [`Transition`] for advanced control flow
     /// - a [`JoinTarget`](crate::tasks::JoinTarget) built from a join node
     /// - a mapped join target produced by [`JoinTarget::map`](crate::tasks::JoinTarget::map)
     ///
@@ -514,6 +521,18 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         R: RegisterTransitionAsync<From>,
     {
         transition.register_async(self, from)
+    }
+
+    fn enqueue_start_branch(&mut self, start_node: usize, context: Arc<dyn Any + Send + Sync>) {
+        let branch_id = self.next_branch();
+        let settings = self.default_settings();
+        self.enqueue_branch(ExecutionBranch {
+            id: branch_id,
+            current_node: start_node,
+            context,
+            settings,
+            join_group: None,
+        });
     }
 
     fn set_transition_handler<From>(

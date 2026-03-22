@@ -173,11 +173,7 @@ pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
 }
 
 /// A join target with an asynchronous payload mapping step.
-#[must_use]
-pub struct AsyncMappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
-    pub(crate) join_target: JoinTarget<T>,
-    pub(crate) map: F,
-}
+pub type AsyncMappedJoinTarget<T, F> = MappedJoinTarget<T, F>;
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     pub(crate) fn new(node_id: NodeId<T>, policy: JoinPolicy) -> Self {
@@ -236,7 +232,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     where
         F: Send + Sync + 'static,
     {
-        AsyncMappedJoinTarget {
+        MappedJoinTarget {
             join_target: self,
             map,
         }
@@ -272,32 +268,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
 }
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
-    /// Includes every branch from the originating fan-out in this join.
-    pub fn all_fanout_branches(mut self) -> Self {
-        self.join_target = self.join_target.all_fanout_branches();
-        self
-    }
-
-    /// Overrides the concurrency model for the join branch that will be scheduled.
-    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.join_target = self.join_target.concurrency_model(concurrency_model);
-        self
-    }
-
-    /// Overrides pause behavior for the join branch that will be scheduled.
-    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
-        self.join_target = self.join_target.pause_behavior(pause_behavior);
-        self
-    }
-
-    /// Overrides error behavior for the join branch that will be scheduled.
-    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
-        self.join_target = self.join_target.error_behavior(error_behavior);
-        self
-    }
-}
-
-impl<T: TaskNode<Input = JoinInput> + ?Sized, F> AsyncMappedJoinTarget<T, F> {
     /// Includes every branch from the originating fan-out in this join.
     pub fn all_fanout_branches(mut self) -> Self {
         self.join_target = self.join_target.all_fanout_branches();
@@ -367,32 +337,40 @@ pub struct Transition {
     pub(crate) settings: TransitionSettings,
 }
 
-/// A [`Transition`] that remembers the destination node type.
-pub struct MarkedTransition<To: TaskNode + ?Sized>(Transition, std::marker::PhantomData<To>);
+/// A linear transition that preserves the destination node type.
+#[must_use]
+pub struct MarkedTransition<To: TaskNode + ?Sized>(Transition, PhantomData<To>);
 
 impl<To: TaskNode + ?Sized> MarkedTransition<To> {
     /// Wraps a transition while preserving the destination node type.
     pub fn new(transition: Transition) -> Self {
-        Self(transition, std::marker::PhantomData)
+        Self(transition, PhantomData)
     }
 
     /// Returns the underlying untyped transition.
     pub fn into_inner(self) -> Transition {
         self.0
     }
-}
 
-impl<T: TaskNode + ?Sized> From<MarkedTransition<T>> for Transition {
-    fn from(value: MarkedTransition<T>) -> Self {
-        value.into_inner()
+    /// Overrides the concurrency model for work scheduled by this transition.
+    pub fn concurrency_model(self, concurrency_model: ConcurrencyModel) -> Self {
+        Self::new(self.0.concurrency_model(concurrency_model))
+    }
+
+    /// Overrides pause behavior for work scheduled by this transition.
+    pub fn pause_behavior(self, pause_behavior: PauseBehavior) -> Self {
+        Self::new(self.0.pause_behavior(pause_behavior))
+    }
+
+    /// Overrides error behavior for work scheduled by this transition.
+    pub fn error_behavior(self, error_behavior: ErrorBehavior) -> Self {
+        Self::new(self.0.error_behavior(error_behavior))
     }
 }
 
-impl<T: TaskNode> std::ops::Deref for MarkedTransition<T> {
-    type Target = Transition;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
+    fn from(marked_transition: MarkedTransition<To>) -> Self {
+        marked_transition.into_inner()
     }
 }
 

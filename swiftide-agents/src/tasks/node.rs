@@ -95,8 +95,6 @@ impl<T: TaskNode + ?Sized> std::fmt::Debug for NodeId<T> {
     }
 }
 
-pub type AnyNodeId = usize;
-
 impl<T: TaskNode + ?Sized> NodeId<T> {
     /// Returns the stable numeric identifier assigned when the node was registered.
     pub fn id(&self) -> usize {
@@ -144,12 +142,6 @@ impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
             _marker: std::marker::PhantomData,
         }
     }
-
-    /// Returns the internal id of the node without the type information.
-    pub fn as_any(&self) -> AnyNodeId {
-        self.id
-    }
-
     /// Erases the concrete node type while keeping the node's typed input and output contracts.
     pub fn as_dyn(
         self,
