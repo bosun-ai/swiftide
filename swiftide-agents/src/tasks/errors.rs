@@ -1,3 +1,19 @@
+//! Error types used while defining and running task graphs.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use swiftide_agents::tasks::{Task, TaskError};
+//!
+//! # #[tokio::main(flavor = "current_thread")]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut task = Task::<i32, i32>::new();
+//!
+//! let result = task.run(1).await;
+//! assert!(matches!(result, Err(TaskError::NoSteps)));
+//! # Ok(())
+//! # }
+//! ```
 use std::{any::Any, sync::Arc};
 
 use super::transition::Transition;

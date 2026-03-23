@@ -6,6 +6,28 @@
 //! Most swiftide primitives implement `TaskNode`, and it's easy to implement your own. Since how
 //! agents interact is subject to taste, we recommend implementing your own.
 //!
+//! # Examples
+//!
+//! ```no_run
+//! use swiftide_agents::tasks::{NodeError, Task, TaskRunState};
+//!
+//! # #[tokio::main(flavor = "current_thread")]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut task = Task::<i32, i32>::builder().build();
+//!
+//! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+//! let finish =
+//!     task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
+//!
+//! task.starts_with(start);
+//! task.register_transition(start, move |value| finish.transitions_with(value))?;
+//! task.register_transition(finish, task.transitions_to_finish())?;
+//!
+//! assert_eq!(task.run(2).await?, TaskRunState::Completed(6));
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! WARN: Here be dragons! This api is not stable yet. We are using it in production, and it is
 //! subject to rapid change. However, do not hesitate to open an issue if you find anything.
 use std::{
@@ -314,6 +336,21 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Default for Task<Input, Ou
 
 impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// Creates a builder for configuring task-wide defaults before constructing a [`Task`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::num::NonZeroUsize;
+    ///
+    /// use swiftide_agents::tasks::{ConcurrencyModel, Task};
+    ///
+    /// let task = Task::<i32, i32>::builder()
+    ///     .concurrency_model(ConcurrencyModel::Parallel)
+    ///     .max_parallelism(NonZeroUsize::new(4).expect("non-zero"))
+    ///     .build();
+    ///
+    /// let _ = task;
+    /// ```
     pub fn builder() -> TaskBuilder<Input, Output> {
         TaskBuilder::new()
     }
@@ -339,6 +376,17 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Marks the node where execution should start.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    ///
+    /// task.starts_with(start);
+    /// ```
     pub fn starts_with<T: TaskNode<Input = Input> + Clone + 'static>(
         &mut self,
         node_id: NodeId<T>,
@@ -348,6 +396,24 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Returns a typed transition closure that finishes the task with the final output.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task, TaskRunState};
+    ///
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, task.transitions_to_finish())?;
+    ///
+    /// assert_eq!(task.run(2).await?, TaskRunState::Completed(3));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn transitions_to_finish(&self) -> impl Fn(Output) -> Transition + Send + Sync + 'static {
         |output| Transition::finish(output)
     }
@@ -441,6 +507,19 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Registers a node in the task graph and returns its typed identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, SyncFn, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node(SyncFn::new(|input: &i32| -> Result<i32, NodeError> {
+    ///     Ok(*input + 1)
+    /// }));
+    ///
+    /// let _ = start;
+    /// ```
     pub fn register_node<T>(&mut self, node: T) -> NodeId<T>
     where
         T: TaskNode + 'static + Clone,
@@ -456,6 +535,19 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// This is the convenience entry point for examples, tests, and small bits of task glue.
     /// For reusable domain logic, prefer implementing [`TaskNode`] directly and calling
     /// [`Task::register_node`].
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let double = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> {
+    ///     Ok(*input * 2)
+    /// });
+    ///
+    /// let _ = double;
+    /// ```
     pub fn register_node_fn<F, I, O, E>(&mut self, f: F) -> NodeId<SyncFn<F, I, O, E>>
     where
         F: Fn(&I) -> Result<O, E> + Send + Sync + Clone + 'static,
@@ -467,6 +559,19 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Registers an asynchronous closure as a task node.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let double = task.register_node_async_fn(|input: &i32| {
+    ///     Box::pin(async move { Ok::<i32, NodeError>(*input * 2) })
+    /// });
+    ///
+    /// let _ = double;
+    /// ```
     pub fn register_node_async_fn<F, I, O, E>(&mut self, f: F) -> NodeId<AsyncFn<F, I, O, E>>
     where
         F: for<'a> Fn(&'a I) -> Pin<Box<dyn Future<Output = Result<O, E>> + Send + 'a>>
@@ -489,6 +594,20 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// - a [`JoinTarget`](crate::tasks::JoinTarget) built from a join node
     /// - a mapped join target produced by [`JoinTarget::map`](crate::tasks::JoinTarget::map)
     ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let finish = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| finish.transitions_with(value))?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    ///
     /// # Errors
     ///
     /// Returns an error when `from` is unknown, when the node already has a registered
@@ -506,6 +625,20 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     }
 
     /// Registers an asynchronous transition or async join payload mapping for `from`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let finish = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition_async(start, move |value| async move { finish.transitions_with(value) })?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     ///
     /// # Errors
     ///

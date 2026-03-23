@@ -1,3 +1,29 @@
+//! Transition values describe how task execution should continue after a node finishes.
+//!
+//! This module contains the public building blocks for linear transitions, fan-out, join
+//! configuration, and join payload inspection.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+//!
+//! let mut task = Task::<i32, i32>::new();
+//! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+//! let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+//! let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+//! let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+//!     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+//! });
+//!
+//! task.starts_with(start);
+//! task.register_transition(start, move |value| {
+//!     Transition::fan_out([left.target_with(value), right.target_with(value)])
+//! })?;
+//! task.register_transition(left, join.join())?;
+//! task.register_transition(right, join.join())?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
 use super::node::{NodeArg, NodeId, TaskNode};
@@ -217,6 +243,26 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     }
 
     /// Maps each joining branch output into the payload stored for the join node.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    /// });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([branch.target_with(value)])
+    /// })?;
+    /// task.register_transition(branch, join.join().map(|value| value * 2))?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn map<F>(self, map: F) -> MappedJoinTarget<T, F>
     where
         F: Send + Sync + 'static,
@@ -228,6 +274,26 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     }
 
     /// Maps each joining branch output asynchronously before storing it for the join node.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    /// });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([branch.target_with(value)])
+    /// })?;
+    /// task.register_transition_async(branch, join.join().map_async(|value| async move { value * 2 }))?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn map_async<F>(self, map: F) -> AsyncMappedJoinTarget<T, F>
     where
         F: Send + Sync + 'static,
@@ -245,6 +311,28 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
     }
 
     /// Builds an `at least N` join that cancels the remaining branches once the join fires.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    /// });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    /// })?;
+    /// task.register_transition(left, join.join_at_least(1).cancel_remaining())?;
+    /// task.register_transition(right, join.join_at_least(1).cancel_remaining())?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn cancel_remaining(self) -> JoinTarget<T> {
         JoinTarget::new(
             self.node_id,
@@ -256,6 +344,28 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
     }
 
     /// Builds an `at least N` join that lets the remaining branches continue running.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    /// });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    /// })?;
+    /// task.register_transition(left, join.join_at_least(1).continue_remaining())?;
+    /// task.register_transition(right, join.join_at_least(1).continue_remaining())?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn continue_remaining(self) -> JoinTarget<T> {
         JoinTarget::new(
             self.node_id,
@@ -385,6 +495,8 @@ pub(crate) enum TransitionAction {
 
 impl Transition {
     /// Continues execution at the provided next-step target.
+    ///
+    /// This is the low-level entry point behind [`NodeId::transitions_with`].
     pub fn next(next_node: NextNode) -> Self {
         Self {
             action: TransitionAction::Next(next_node),
@@ -393,11 +505,42 @@ impl Transition {
     }
 
     /// Continues execution at `node_id` with the provided input.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let finish = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| Transition::next_node(&finish, value))?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn next_node<T: TaskNode + ?Sized>(node_id: &NodeId<T>, context: T::Input) -> Self {
         NextNode::new(*node_id, context).into()
     }
 
     /// Schedules multiple branches from the current node output.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    /// })?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> Self {
         Self {
             action: TransitionAction::FanOut {
@@ -408,6 +551,24 @@ impl Transition {
     }
 
     /// Pauses the current branch.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task, TaskRunState, Transition};
+    ///
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut task = Task::<i32, ()>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, |_value| Transition::pause())?;
+    ///
+    /// assert_eq!(task.run(1).await?, TaskRunState::Paused);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn pause() -> Self {
         Self {
             action: TransitionAction::Pause,
@@ -416,6 +577,26 @@ impl Transition {
     }
 
     /// Fails the current branch with the provided error.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::io::Error;
+    ///
+    /// use swiftide_agents::tasks::{NodeError, Task, Transition};
+    ///
+    /// # #[tokio::main(flavor = "current_thread")]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, |_value| Transition::error(Error::other("boom")))?;
+    ///
+    /// assert!(task.run(1).await.is_err());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn error(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
         Self {
             action: TransitionAction::Error(error.into()),
@@ -466,6 +647,29 @@ impl JoinInput {
     }
 
     /// Returns the ready values that can be downcast to `T`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    ///     let values = input.ready_values::<i32>();
+    ///     Ok(values.into_iter().copied().sum())
+    /// });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    /// })?;
+    /// task.register_transition(left, join.join())?;
+    /// task.register_transition(right, join.join())?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
     pub fn ready_values<T: NodeArg>(&self) -> Vec<&T> {
         self.iter()
             .filter_map(BranchEnvelope::ready_value::<T>)
