@@ -17,6 +17,7 @@ use swiftide_core::{
 };
 
 use super::Anthropic;
+use super::tool_schema::AnthropicToolSchema;
 
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
@@ -358,13 +359,9 @@ fn tools_to_anthropic(
     .context("Failed to build tool")?
     .to_owned();
 
-    let schema = match &spec.parameters_schema {
-        Some(schema) => serde_json::to_value(schema)?,
-        None => json!({
-            "type": "object",
-            "properties": {},
-        }),
-    };
+    let schema = AnthropicToolSchema::try_from(spec)
+        .context("tool schema must be Anthropic compatible")?
+        .into_value();
 
     map.insert("input_schema".to_string(), schema);
 
@@ -391,6 +388,27 @@ mod tests {
     #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
     struct LocationArgs {
         location: String,
+    }
+
+    #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentArgs {
+        request: NestedCommentRequest,
+    }
+
+    #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentRequest {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        body: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        block_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        discussion_id: Option<String>,
     }
 
     #[async_trait]
@@ -614,5 +632,39 @@ mod tests {
         });
 
         assert_eq!(serde_json::Value::Object(result), expected);
+    }
+
+    #[test]
+    fn test_tools_to_anthropic_preserves_optional_nested_fields() {
+        let tool_spec = ToolSpec::builder()
+            .description("Creates a comment")
+            .name("create_comment")
+            .parameters_schema(schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let result = tools_to_anthropic(&tool_spec).unwrap();
+        let input_schema = result
+            .get("input_schema")
+            .and_then(Value::as_object)
+            .expect("anthropic tool should contain input_schema");
+
+        assert_eq!(
+            input_schema.get("type"),
+            Some(&Value::String("object".into()))
+        );
+        assert_eq!(
+            input_schema.get("required"),
+            Some(&Value::Array(vec![Value::String("request".into())]))
+        );
+
+        let nested_ref = input_schema["properties"]["request"]["$ref"]
+            .as_str()
+            .expect("nested request should be referenced");
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+        assert!(input_schema["$defs"][nested_name].get("required").is_none());
     }
 }

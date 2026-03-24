@@ -14,16 +14,13 @@ use async_openai::types::responses::{
 };
 use base64::Engine as _;
 use futures_util::Stream;
-use serde_json::json;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
     ChatMessageContentSource, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
 };
 
-use super::{
-    GenericOpenAI, ensure_tool_schema_additional_properties_false,
-    ensure_tool_schema_required_matches_properties, openai_error_to_language_model_error,
-};
+use super::tool_schema::OpenAiToolSchema;
+use super::{GenericOpenAI, openai_error_to_language_model_error};
 use crate::openai::LanguageModelError;
 
 type LmResult<T> = Result<T, LanguageModelError>;
@@ -145,22 +142,9 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
 }
 
 fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
-    let mut parameters = match &spec.parameters_schema {
-        Some(schema) => {
-            serde_json::to_value(schema).context("failed to serialize tool parameters schema")?
-        }
-        None => json!({
-            "type": "object",
-            "properties": {},
-            "required": [],
-            "additionalProperties": false,
-        }),
-    };
-
-    ensure_tool_schema_additional_properties_false(&mut parameters)
-        .context("tool schema must allow no additional properties")?;
-    ensure_tool_schema_required_matches_properties(&mut parameters)
-        .context("tool schema must list required properties")?;
+    let parameters = OpenAiToolSchema::try_from(spec)
+        .context("tool schema must be OpenAI compatible")?
+        .into_value();
 
     let function = FunctionTool {
         name: spec.name.clone(),
@@ -953,6 +937,29 @@ mod tests {
         _city: String,
     }
 
+    #[allow(dead_code)]
+    #[derive(schemars::JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentArgs {
+        request: NestedCommentRequest,
+    }
+
+    #[allow(dead_code)]
+    #[derive(schemars::JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentRequest {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        body: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        block_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        discussion_id: Option<String>,
+    }
+
     fn sample_tool_spec() -> ToolSpec {
         ToolSpec::builder()
             .name("get_weather")
@@ -1131,6 +1138,72 @@ mod tests {
             function.parameters,
             Some(serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap())
         );
+    }
+
+    #[test]
+    fn test_build_responses_request_sets_nested_required_for_typed_request_objects() {
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4.1")
+            .build()
+            .unwrap();
+
+        let mut tools = HashSet::new();
+        tools.insert(
+            ToolSpec::builder()
+                .name("notion_create_comment")
+                .description("Create a comment")
+                .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+                .build()
+                .unwrap(),
+        );
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs(tools)
+            .build()
+            .unwrap();
+
+        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+        let tools = create.tools.expect("tools present");
+        let Tool::Function(function) = &tools[0] else {
+            panic!("expected function tool");
+        };
+
+        let nested_required = function.parameters.as_ref().and_then(|schema| {
+            let request_schema = schema
+                .get("properties")
+                .and_then(|value| value.get("request"))
+                .and_then(serde_json::Value::as_object)?;
+            let referenced_required = request_schema
+                .get("$ref")
+                .and_then(serde_json::Value::as_str)
+                .and_then(|reference| reference.strip_prefix("#/$defs/"))
+                .and_then(|definition_name| {
+                    schema
+                        .get("$defs")
+                        .and_then(|value| value.get(definition_name))
+                })
+                .and_then(|value| value.get("required"))
+                .and_then(serde_json::Value::as_array);
+
+            referenced_required.or_else(|| {
+                request_schema
+                    .get("required")
+                    .and_then(serde_json::Value::as_array)
+            })
+        });
+
+        let nested_required = nested_required.expect("nested request should have required");
+        let names: std::collections::HashSet<_> = nested_required
+            .iter()
+            .filter_map(serde_json::Value::as_str)
+            .collect();
+
+        assert!(names.contains("body"));
+        assert!(names.contains("text"));
+        assert!(names.contains("page_id"));
+        assert!(names.contains("block_id"));
+        assert!(names.contains("discussion_id"));
     }
 
     #[test]

@@ -3,14 +3,12 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
-use anyhow::Context as _;
 use async_openai::error::{OpenAIError, StreamError};
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
-use serde_json::Value;
 use std::pin::Pin;
 use std::sync::Arc;
 use swiftide_core::chat_completion::Usage;
@@ -21,6 +19,7 @@ mod embed;
 mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
+mod tool_schema;
 
 // expose type aliases to simplify downstream use of the open ai builder invocations
 pub use async_openai::config::AzureConfig;
@@ -294,56 +293,6 @@ impl From<&mut OptionsBuilder> for Options {
     }
 }
 
-pub(crate) fn ensure_tool_schema_additional_properties_false(
-    parameters: &mut Value,
-) -> anyhow::Result<()> {
-    let object = parameters
-        .as_object_mut()
-        .context("tool schema must be a JSON object")?;
-
-    object.insert("additionalProperties".to_string(), Value::Bool(false));
-
-    Ok(())
-}
-
-pub(crate) fn ensure_tool_schema_required_matches_properties(
-    parameters: &mut Value,
-) -> anyhow::Result<()> {
-    let object = parameters
-        .as_object_mut()
-        .context("tool schema must be a JSON object")?;
-
-    let property_names: Vec<String> = if let Some(Value::Object(map)) = object.get("properties") {
-        map.keys().cloned().collect()
-    } else {
-        object
-            .entry("required".to_string())
-            .or_insert_with(|| Value::Array(Vec::new()));
-        return Ok(());
-    };
-
-    let required_entry = object
-        .entry("required".to_string())
-        .or_insert_with(|| Value::Array(Vec::new()));
-
-    let required_array = required_entry
-        .as_array_mut()
-        .context("tool schema 'required' must be an array")?;
-
-    for name in property_names {
-        let name_ref = name.as_str();
-        let already_present = required_array
-            .iter()
-            .any(|value| value.as_str().is_some_and(|s| s == name_ref));
-
-        if !already_present {
-            required_array.push(Value::String(name));
-        }
-    }
-
-    Ok(())
-}
-
 impl OpenAI {
     /// Creates a new `OpenAIBuilder` for constructing `OpenAI` instances.
     pub fn builder() -> OpenAIBuilder {
@@ -550,10 +499,6 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
 
         if let Some(temperature) = options.temperature {
             args.temperature(temperature);
-        }
-
-        if let Some(reasoning_effort) = options.reasoning_effort.clone() {
-            args.reasoning_effort(reasoning_effort);
         }
 
         if let Some(seed) = options.seed {
@@ -782,35 +727,6 @@ mod test {
     }
 
     #[test]
-    fn test_ensure_tool_schema_required_matches_properties_populates_required() {
-        let mut value = serde_json::json!({
-            "type": "object",
-            "properties": {
-                "a": { "type": "string" },
-                "b": { "type": "number" }
-            },
-            "required": []
-        });
-
-        ensure_tool_schema_required_matches_properties(&mut value).unwrap();
-        let required = value["required"].as_array().unwrap();
-        let names: std::collections::HashSet<_> =
-            required.iter().map(|v| v.as_str().unwrap()).collect();
-        assert!(names.contains("a") && names.contains("b"));
-    }
-
-    #[test]
-    fn test_ensure_tool_schema_additional_properties_false_errors_on_non_object() {
-        let mut value = serde_json::json!(["not", "an", "object"]);
-        let err = ensure_tool_schema_additional_properties_false(&mut value).unwrap_err();
-        assert!(
-            err.to_string()
-                .contains("tool schema must be a JSON object"),
-            "unexpected error: {err}"
-        );
-    }
-
-    #[test]
     fn test_options_merge_overrides_set_fields() {
         let mut base = Options::builder()
             .prompt_model("a")
@@ -833,7 +749,7 @@ mod test {
 
     #[test]
     #[allow(deprecated)]
-    fn test_chat_completion_request_defaults_sets_all_options() {
+    fn test_chat_completion_request_defaults_omits_reasoning_effort() {
         let openai: OpenAI = OpenAI::builder()
             .default_options(
                 Options::builder()
@@ -859,7 +775,7 @@ mod test {
         assert_eq!(built.parallel_tool_calls, Some(true));
         assert_eq!(built.max_completion_tokens, Some(42));
         assert_eq!(built.temperature, Some(0.3));
-        assert_eq!(built.reasoning_effort, Some(ReasoningEffort::Low));
+        assert_eq!(built.reasoning_effort, None);
         assert_eq!(built.seed, Some(7));
         assert_eq!(built.presence_penalty, Some(1.1));
         assert_eq!(

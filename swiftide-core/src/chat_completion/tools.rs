@@ -1,6 +1,11 @@
 use derive_builder::Builder;
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+pub use super::tool_schema::StrictToolParametersSchema;
+
+use super::tool_schema::ToolSchemaError;
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
@@ -198,7 +203,7 @@ impl ToolCallBuilder {
 ///
 /// i.e. the json spec `OpenAI` uses to define their tools
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Builder, Default)]
-#[builder(setter(into), derive(Debug, Serialize, Deserialize))]
+#[builder(setter(into), derive(Debug, Serialize, Deserialize), build_fn(skip))]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct ToolSpec {
@@ -213,9 +218,78 @@ pub struct ToolSpec {
     pub parameters_schema: Option<Schema>,
 }
 
+#[derive(Debug, Error)]
+pub enum ToolSpecError {
+    #[error("{0}")]
+    InvalidParametersSchema(String),
+}
+
+#[derive(Debug, Error)]
+pub enum ToolSpecBuildError {
+    #[error("missing required field `{field}`")]
+    MissingField { field: &'static str },
+    #[error("{0}")]
+    InvalidParametersSchema(String),
+}
+
+impl From<ToolSchemaError> for ToolSpecError {
+    fn from(value: ToolSchemaError) -> Self {
+        Self::InvalidParametersSchema(value.to_string())
+    }
+}
+
+impl From<ToolSchemaError> for ToolSpecBuildError {
+    fn from(value: ToolSchemaError) -> Self {
+        Self::InvalidParametersSchema(value.to_string())
+    }
+}
+
 impl ToolSpec {
     pub fn builder() -> ToolSpecBuilder {
         ToolSpecBuilder::default()
+    }
+
+    /// Returns the provider-neutral strict parameters schema for this tool.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the configured parameters schema is not compatible
+    /// with Swiftide's strict tool-schema contract.
+    pub fn strict_parameters_schema(&self) -> Result<StrictToolParametersSchema, ToolSpecError> {
+        Ok(StrictToolParametersSchema::try_from_raw(
+            self.parameters_schema.as_ref(),
+        )?)
+    }
+}
+
+impl ToolSpecBuilder {
+    /// Builds a tool specification and validates its parameters schema.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a required field is missing or when the provided
+    /// parameters schema is not compatible with Swiftide's strict tool-schema
+    /// contract.
+    pub fn build(&self) -> Result<ToolSpec, ToolSpecBuildError> {
+        let name = self
+            .name
+            .clone()
+            .ok_or(ToolSpecBuildError::MissingField { field: "name" })?;
+        let description = self
+            .description
+            .clone()
+            .ok_or(ToolSpecBuildError::MissingField {
+                field: "description",
+            })?;
+        let parameters_schema = self.parameters_schema.clone().unwrap_or(None);
+
+        StrictToolParametersSchema::try_from_raw(parameters_schema.as_ref())?;
+
+        Ok(ToolSpec {
+            name,
+            description,
+            parameters_schema,
+        })
     }
 }
 
@@ -236,11 +310,62 @@ impl std::hash::Hash for ToolSpec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::{Value, json};
     use std::collections::HashSet;
 
     #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
     struct ExampleArgs {
         value: String,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    struct NestedCommentArgs {
+        request: NestedCommentRequest,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentRequest {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        body: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        block_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        discussion_id: Option<String>,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    #[serde(transparent)]
+    struct FreeformObject(serde_json::Map<String, Value>);
+
+    impl schemars::JsonSchema for FreeformObject {
+        fn schema_name() -> std::borrow::Cow<'static, str> {
+            "FreeformObject".into()
+        }
+
+        fn json_schema(_generator: &mut schemars::SchemaGenerator) -> Schema {
+            serde_json::from_value(json!({
+                "type": "object",
+                "additionalProperties": true
+            }))
+            .expect("freeform object schema should serialize")
+        }
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct CreateViewArgs {
+        request: CreateViewRequest,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct CreateViewRequest {
+        body: FreeformObject,
     }
 
     #[test]
@@ -273,5 +398,107 @@ mod tests {
         set.insert(spec.clone());
 
         assert!(set.contains(&spec));
+    }
+
+    #[test]
+    fn strict_parameters_schema_returns_canonical_nested_schema() {
+        let spec = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let normalized = spec.strict_parameters_schema().unwrap().into_json();
+
+        assert_eq!(normalized["type"], Value::String("object".into()));
+        assert_eq!(normalized["additionalProperties"], Value::Bool(false));
+        assert_eq!(
+            normalized["required"],
+            Value::Array(vec![Value::String("request".into())])
+        );
+
+        let nested_ref = normalized["properties"]["request"]["$ref"]
+            .as_str()
+            .expect("nested request should be referenced");
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+        assert!(
+            normalized["$defs"][nested_name].get("required").is_none(),
+            "strict schema parsing should preserve optional nested fields before provider shaping"
+        );
+    }
+
+    #[test]
+    fn strict_parameters_schema_sets_additional_properties_false_on_nested_typed_objects() {
+        let spec = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let normalized = spec.strict_parameters_schema().unwrap().into_json();
+
+        let nested_ref = normalized["properties"]["request"]["$ref"]
+            .as_str()
+            .expect("nested request should be referenced");
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+
+        assert_eq!(
+            normalized["$defs"][nested_name]["additionalProperties"],
+            Value::Bool(false)
+        );
+    }
+
+    #[test]
+    fn tool_spec_builder_rejects_nested_freeform_objects_in_strict_mode() {
+        let error = ToolSpec::builder()
+            .name("create_view")
+            .description("Create a view")
+            .parameters_schema(schemars::schema_for!(CreateViewArgs))
+            .build()
+            .expect_err("freeform object should be rejected in strict mode");
+
+        let message = error.to_string();
+        assert!(message.contains("strict tool schemas do not support open object schemas"));
+        assert!(message.contains("FreeformObject"));
+    }
+
+    #[test]
+    fn strict_parameters_schema_preserves_optional_nested_fields() {
+        let spec = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let normalized = spec.strict_parameters_schema().unwrap().into_json();
+
+        assert_eq!(normalized["type"], Value::String("object".into()));
+        assert_eq!(normalized["additionalProperties"], Value::Bool(false));
+        assert_eq!(
+            normalized["required"],
+            Value::Array(vec![Value::String("request".into())])
+        );
+
+        let nested_ref = normalized["properties"]["request"]["$ref"]
+            .as_str()
+            .expect("nested request should be referenced");
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+        assert_eq!(
+            normalized["$defs"][nested_name]["additionalProperties"],
+            Value::Bool(false)
+        );
+        assert!(normalized["$defs"][nested_name].get("required").is_none());
     }
 }

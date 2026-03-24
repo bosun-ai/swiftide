@@ -34,6 +34,7 @@ use swiftide_core::{
 };
 use tracing_futures::Instrument;
 
+use super::tool_schema::AwsBedrockToolSchema;
 use super::{AwsBedrock, Options};
 
 type ConverseInputParts = (
@@ -789,18 +790,10 @@ fn tool_config_from_specs(
 }
 
 fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageModelError> {
-    let input_schema = match spec.parameters_schema.as_ref() {
-        Some(schema) => {
-            let schema_value =
-                serde_json::to_value(schema).map_err(LanguageModelError::permanent)?;
-            ToolInputSchema::Json(normalize_tool_input_schema(json_value_to_document(
-                &schema_value,
-            )?)?)
-        }
-        None => ToolInputSchema::Json(normalize_tool_input_schema(Document::Object(
-            HashMap::new(),
-        ))?),
-    };
+    let schema_value = AwsBedrockToolSchema::try_from(spec)
+        .map(AwsBedrockToolSchema::into_value)
+        .map_err(LanguageModelError::permanent)?;
+    let input_schema = ToolInputSchema::Json(json_value_to_document(&schema_value)?);
 
     let mut builder = ToolSpecification::builder()
         .name(spec.name.clone())
@@ -813,32 +806,6 @@ fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageM
 
     let tool_spec = builder.build().map_err(LanguageModelError::permanent)?;
     Ok(Tool::ToolSpec(tool_spec))
-}
-
-fn normalize_tool_input_schema(schema: Document) -> Result<Document, LanguageModelError> {
-    let Document::Object(mut schema) = schema else {
-        return Err(LanguageModelError::permanent(
-            "Bedrock tool schema must be a JSON object schema",
-        ));
-    };
-
-    if let Some(schema_type) = schema.get("type") {
-        if !matches!(schema_type, Document::String(value) if value == "object") {
-            return Err(LanguageModelError::permanent(
-                "Bedrock tool schema type must be \"object\"",
-            ));
-        }
-    } else {
-        schema.insert("type".to_string(), Document::String("object".to_string()));
-    }
-
-    if !schema.contains_key("properties") {
-        schema.insert("properties".to_string(), Document::Object(HashMap::new()));
-    }
-
-    schema.insert("additionalProperties".to_string(), Document::Bool(false));
-
-    Ok(Document::Object(schema))
 }
 
 pub(super) fn response_to_chat_completion(
@@ -1220,6 +1187,27 @@ mod tests {
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
     struct WeatherArgs {
         location: String,
+    }
+
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentArgs {
+        request: NestedCommentRequest,
+    }
+
+    #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentRequest {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        body: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        block_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        discussion_id: Option<String>,
     }
 
     fn response_with_text_and_tool_call() -> ConverseOutput {
@@ -1708,6 +1696,65 @@ mod tests {
                 if schema.get("type") == Some(&Document::String("object".to_string()))
                     && schema.get("additionalProperties") == Some(&Document::Bool(false))
         ));
+    }
+
+    #[test]
+    fn test_tool_config_from_specs_does_not_apply_openai_required_workaround() {
+        let tool_spec = ToolSpec::builder()
+            .name("create_comment")
+            .description("Create a comment")
+            .parameters_schema(schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]), true)
+            .unwrap()
+            .expect("tool config");
+
+        let Tool::ToolSpec(spec) = &tool_config.tools()[0] else {
+            panic!("expected tool spec");
+        };
+
+        let Some(ToolInputSchema::Json(Document::Object(schema))) = spec.input_schema() else {
+            panic!("expected JSON object schema");
+        };
+
+        assert_eq!(
+            schema.get("type"),
+            Some(&Document::String("object".to_string()))
+        );
+        assert_eq!(
+            schema.get("additionalProperties"),
+            Some(&Document::Bool(false))
+        );
+        assert_eq!(
+            schema.get("required"),
+            Some(&Document::Array(vec![Document::String(
+                "request".to_string()
+            )]))
+        );
+
+        let Some(Document::Object(properties)) = schema.get("properties") else {
+            panic!("expected properties map");
+        };
+        let Some(Document::String(nested_ref)) = properties
+            .get("request")
+            .and_then(Document::as_object)
+            .and_then(|request| request.get("$ref"))
+        else {
+            panic!("expected nested request $ref");
+        };
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+        let Some(Document::Object(defs)) = schema.get("$defs") else {
+            panic!("expected defs map");
+        };
+        let Some(Document::Object(nested_schema)) = defs.get(nested_name) else {
+            panic!("expected nested request schema");
+        };
+        assert!(!nested_schema.contains_key("required"));
     }
 
     #[test]

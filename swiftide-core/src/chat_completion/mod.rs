@@ -10,6 +10,7 @@ mod chat_completion_request;
 mod chat_completion_response;
 mod chat_message;
 pub mod errors;
+mod tool_schema;
 mod tools;
 
 // Re-exported in the root per convention

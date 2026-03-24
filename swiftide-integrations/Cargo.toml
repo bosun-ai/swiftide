@@ -26,6 +26,7 @@ itertools = { workspace = true }
 chrono = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
+thiserror = { workspace = true }
 regex = { workspace = true }
 futures-util = { workspace = true }
 tera = { workspace = true }
