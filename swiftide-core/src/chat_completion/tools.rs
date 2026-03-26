@@ -3,9 +3,7 @@ use schemars::Schema;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use super::tool_schema::StrictToolParametersSchema;
-
-use super::tool_schema::ToolSchemaError;
+pub use super::tool_schema::{StrictToolParametersSchema, ToolSchemaError};
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
@@ -220,28 +218,16 @@ pub struct ToolSpec {
 
 #[derive(Debug, Error)]
 pub enum ToolSpecError {
-    #[error("{0}")]
-    InvalidParametersSchema(String),
+    #[error(transparent)]
+    InvalidParametersSchema(#[from] ToolSchemaError),
 }
 
 #[derive(Debug, Error)]
 pub enum ToolSpecBuildError {
     #[error("missing required field `{field}`")]
     MissingField { field: &'static str },
-    #[error("{0}")]
-    InvalidParametersSchema(String),
-}
-
-impl From<ToolSchemaError> for ToolSpecError {
-    fn from(value: ToolSchemaError) -> Self {
-        Self::InvalidParametersSchema(value.to_string())
-    }
-}
-
-impl From<ToolSchemaError> for ToolSpecBuildError {
-    fn from(value: ToolSchemaError) -> Self {
-        Self::InvalidParametersSchema(value.to_string())
-    }
+    #[error(transparent)]
+    InvalidParametersSchema(#[from] ToolSchemaError),
 }
 
 impl ToolSpec {

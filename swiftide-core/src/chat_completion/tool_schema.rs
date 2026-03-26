@@ -8,7 +8,7 @@ pub struct StrictToolParametersSchema {
 }
 
 #[derive(Debug, Error)]
-pub(super) enum ToolSchemaError {
+pub enum ToolSchemaError {
     #[error("failed to serialize tool schema")]
     SerializeSchema(#[from] serde_json::Error),
     #[error("tool schema must be a JSON object")]
