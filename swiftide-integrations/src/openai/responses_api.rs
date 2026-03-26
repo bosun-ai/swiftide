@@ -1127,6 +1127,18 @@ mod tests {
             _city: String,
         }
 
+        let expected_parameters = serde_json::json!({
+            "type": "object",
+            "title": "WeatherArgs",
+            "properties": {
+                "_city": {
+                    "type": "string"
+                }
+            },
+            "required": ["_city"],
+            "additionalProperties": false
+        });
+
         assert_eq!(
             additional_properties,
             Some(serde_json::Value::Bool(false)),
@@ -1134,10 +1146,7 @@ mod tests {
             serde_json::to_string_pretty(&function.parameters).unwrap()
         );
 
-        assert_eq!(
-            function.parameters,
-            Some(serde_json::to_value(schemars::schema_for!(WeatherArgsCorrect)).unwrap())
-        );
+        assert_eq!(function.parameters, Some(expected_parameters));
     }
 
     #[test]

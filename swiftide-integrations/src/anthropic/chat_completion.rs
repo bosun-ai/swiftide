@@ -624,7 +624,7 @@ mod tests {
             .unwrap();
 
         let result = tools_to_anthropic(&tool_spec).unwrap();
-        let expected_schema = serde_json::to_value(schema_for!(LocationArgs)).unwrap();
+        let expected_schema = tool_spec.strict_parameters_schema().unwrap().into_json();
         let expected = json!({
             "name": "get_weather",
             "description": "Gets the weather",

@@ -1371,58 +1371,28 @@ data: [DONE]\n\n";
     async fn test_complete_stream_invalid_tool_schema_errors() {
         let invalid_schema = schemars::Schema::from(true);
 
-        let tool_spec = ToolSpec::builder()
+        let err = ToolSpec::builder()
             .name("bad")
             .description("bad schema")
             .parameters_schema(invalid_schema)
             .build()
-            .unwrap();
+            .expect_err("invalid tool schemas should be rejected at build time");
 
-        let openai = OpenAI::builder()
-            .default_prompt_model("gpt-4o-mini")
-            .build()
-            .unwrap();
-
-        let req = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("hi".into())])
-            .tool_specs([tool_spec])
-            .build()
-            .unwrap();
-
-        let mut stream = openai.complete_stream(&req).await;
-        let first = stream.next().await.expect("stream yields");
-        assert!(
-            first
-                .err()
-                .is_some_and(|e| matches!(e, LanguageModelError::PermanentError(_)))
-        );
-        assert!(stream.next().await.is_none());
+        assert!(err.to_string().contains("tool schema must be a JSON object"));
     }
 
     #[test_log::test(tokio::test)]
     async fn test_complete_invalid_tool_schema_errors() {
         let invalid_schema = schemars::Schema::from(true);
 
-        let tool_spec = ToolSpec::builder()
+        let err = ToolSpec::builder()
             .name("bad")
             .description("bad schema")
             .parameters_schema(invalid_schema)
             .build()
-            .unwrap();
+            .expect_err("invalid tool schemas should be rejected at build time");
 
-        let openai = OpenAI::builder()
-            .default_prompt_model("gpt-4o")
-            .build()
-            .unwrap();
-
-        let req = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("hi".into())])
-            .tool_specs([tool_spec])
-            .build()
-            .unwrap();
-
-        let err = openai.complete(&req).await.unwrap_err();
-        assert!(matches!(err, LanguageModelError::PermanentError(_)));
+        assert!(err.to_string().contains("tool schema must be a JSON object"));
     }
 
     #[test_log::test(tokio::test)]
