@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774187304714,
+  "lastUpdate": 1774534677609,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30647,6 +30647,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 257308,
             "range": "± 1959",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c3a51ffcd496b106705fe94082ade2c186787933",
+          "message": "feat: Provider tool schema policies and autofix (#1054)",
+          "timestamp": "2026-03-26T15:08:54+01:00",
+          "tree_id": "102fd54319a2badac18b85bd5ceb00f575e86364",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c3a51ffcd496b106705fe94082ade2c186787933"
+        },
+        "date": 1774534674829,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 799788,
+            "range": "± 13901",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 228159,
+            "range": "± 1689",
             "unit": "ns/iter"
           }
         ]
