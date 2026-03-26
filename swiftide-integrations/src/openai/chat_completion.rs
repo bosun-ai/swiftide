@@ -1378,7 +1378,10 @@ data: [DONE]\n\n";
             .build()
             .expect_err("invalid tool schemas should be rejected at build time");
 
-        assert!(err.to_string().contains("tool schema must be a JSON object"));
+        assert!(
+            err.to_string()
+                .contains("tool schema must be a JSON object")
+        );
     }
 
     #[test_log::test(tokio::test)]
@@ -1392,7 +1395,10 @@ data: [DONE]\n\n";
             .build()
             .expect_err("invalid tool schemas should be rejected at build time");
 
-        assert!(err.to_string().contains("tool schema must be a JSON object"));
+        assert!(
+            err.to_string()
+                .contains("tool schema must be a JSON object")
+        );
     }
 
     #[test_log::test(tokio::test)]
