@@ -4,7 +4,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use swiftide_core::chat_completion::ToolCall;
 
-#[derive(Clone, Debug, Default, strum_macros::EnumDiscriminants, strum_macros::EnumIs)]
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    strum_macros::EnumDiscriminants,
+    strum_macros::EnumIs,
+)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum State {
     #[default]
     Pending,
@@ -26,6 +36,7 @@ impl State {
 /// `StopReason::Other` has some convenience methods to convert from any `AsRef<str>`
 #[non_exhaustive]
 #[derive(Clone, Debug, strum_macros::EnumIs, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum StopReason {
     /// A tool called stop
     RequestedByTool(ToolCall, Option<Value>),

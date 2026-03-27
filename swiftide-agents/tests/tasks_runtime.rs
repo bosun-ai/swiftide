@@ -9,8 +9,10 @@ use std::{
 
 use async_trait::async_trait;
 use swiftide_agents::tasks::{
-    BranchOutcome, ConcurrencyModel, ErrorBehavior, JoinInput, NodeId, PauseBehavior, Task,
-    TaskError, TaskNode, TaskRunState, Transition,
+    BranchId, BranchOutcome, ConcurrencyModel, ErrorBehavior, JoinInput, JoinPolicy, NodeId,
+    PauseBehavior, RestoredBranch, RestoredJoinGroup, RestoredJoinMember,
+    RestoredJoinMemberOutcome, RuntimeBranchSettings, Task, TaskError, TaskNode, TaskRunState,
+    TaskRuntimeState, Transition,
 };
 use tokio::{
     sync::Barrier,
@@ -304,6 +306,26 @@ impl TaskNode for BarrierNode {
         self.barrier.wait().await;
         Ok(*input + 1)
     }
+}
+
+fn move_paused_branch_to_runnable(
+    seed: &mut TaskRuntimeState<i32>,
+    node_id: usize,
+) -> Result<(), TaskError> {
+    let Some(position) = seed
+        .paused_branches
+        .iter()
+        .position(|branch| branch.node_id == node_id)
+    else {
+        return Err(TaskError::InvalidState(format!(
+            "paused branch for node `{node_id}` was not found"
+        )));
+    };
+
+    let branch = seed.paused_branches.remove(position);
+    seed.resume_paused_branches = false;
+    seed.runnable_branches.push(branch);
+    Ok(())
 }
 
 #[test_log::test(tokio::test)]
@@ -799,6 +821,220 @@ async fn all_fanout_branches_scope_preserves_full_fanout_join() {
 
     let result = task.run(1).await.unwrap();
     assert_eq!(result, TaskRunState::Completed(6));
+}
+
+#[test_log::test(tokio::test)]
+async fn restore_runtime_state_rehydrates_ready_join_groups() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+    task.starts_with(start);
+    task.register_transition(start, task.transitions_to_finish())
+        .unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    task.restore_runtime_state(TaskRuntimeState {
+        join_groups: vec![RestoredJoinGroup {
+            group_id: 1,
+            join_node_id: join.id(),
+            policy: JoinPolicy::All,
+            settings: RuntimeBranchSettings::default(),
+            members: vec![
+                RestoredJoinMember {
+                    branch_id: BranchId(1),
+                    node_id: 11,
+                    outcome: RestoredJoinMemberOutcome::Ready(2),
+                },
+                RestoredJoinMember {
+                    branch_id: BranchId(2),
+                    node_id: 12,
+                    outcome: RestoredJoinMemberOutcome::Ready(3),
+                },
+            ],
+        }],
+        next_branch_id: 3,
+        next_group_id: 2,
+        ..TaskRuntimeState::default()
+    })
+    .unwrap();
+
+    assert_eq!(task.active_branches().len(), 1);
+    assert!(task.paused_branches().is_empty());
+    assert_eq!(task.resume().await.unwrap(), TaskRunState::Completed(5));
+}
+
+#[test_log::test(tokio::test)]
+async fn restore_runtime_state_keeps_unready_join_groups_waiting_for_paused_members() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let join = task.register_node(SumJoinNode);
+    let leaf = task.register_node(IntNode);
+    task.starts_with(leaf);
+    task.register_transition(leaf, join.join()).unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    task.restore_runtime_state(TaskRuntimeState {
+        paused_branches: vec![RestoredBranch {
+            branch_id: BranchId(2),
+            node_id: leaf.id(),
+            context: 2,
+            settings: RuntimeBranchSettings::default(),
+            join_group_id: Some(1),
+        }],
+        join_groups: vec![RestoredJoinGroup {
+            group_id: 1,
+            join_node_id: join.id(),
+            policy: JoinPolicy::All,
+            settings: RuntimeBranchSettings::default(),
+            members: vec![
+                RestoredJoinMember {
+                    branch_id: BranchId(1),
+                    node_id: 11,
+                    outcome: RestoredJoinMemberOutcome::Ready(3),
+                },
+                RestoredJoinMember {
+                    branch_id: BranchId(2),
+                    node_id: leaf.id(),
+                    outcome: RestoredJoinMemberOutcome::Paused,
+                },
+            ],
+        }],
+        next_branch_id: 3,
+        next_group_id: 2,
+        ..TaskRuntimeState::default()
+    })
+    .unwrap();
+
+    assert!(task.active_branches().is_empty());
+    assert_eq!(task.paused_branches().len(), 1);
+}
+
+#[test_log::test(tokio::test)]
+async fn runtime_state_can_resume_only_the_unlocked_branch() {
+    let mut task: Task<i32, i32> = Task::builder()
+        .pause_behavior(PauseBehavior::DrainRunnable)
+        .build();
+
+    let left = task.register_node(IntNode);
+    let right = task.register_node(IntNode);
+    let left_after = task.register_node(IntNode);
+
+    task.starts_with(left);
+    task.register_transition(left, move |output| left_after.transitions_with(output))
+        .unwrap();
+    task.register_transition(right, move |_output| Transition::pause())
+        .unwrap();
+    task.register_transition(left_after, move |_output| Transition::pause())
+        .unwrap();
+
+    task.restore_runtime_state(TaskRuntimeState {
+        paused_branches: vec![
+            RestoredBranch {
+                branch_id: BranchId(1),
+                node_id: left.id(),
+                context: 2,
+                settings: RuntimeBranchSettings::default(),
+                join_group_id: None,
+            },
+            RestoredBranch {
+                branch_id: BranchId(2),
+                node_id: right.id(),
+                context: 3,
+                settings: RuntimeBranchSettings::default(),
+                join_group_id: None,
+            },
+        ],
+        next_branch_id: 3,
+        ..TaskRuntimeState::default()
+    })
+    .unwrap();
+
+    let mut seed = task.runtime_state().unwrap();
+    move_paused_branch_to_runnable(&mut seed, left.id()).unwrap();
+
+    let mut resumed = task.clone();
+    resumed.restore_runtime_state(seed).unwrap();
+
+    assert_eq!(resumed.resume().await.unwrap(), TaskRunState::Paused);
+
+    let paused_nodes = resumed
+        .paused_branches()
+        .into_iter()
+        .map(|branch| branch.node_id)
+        .collect::<Vec<_>>();
+    assert_eq!(paused_nodes.len(), 2);
+    assert!(paused_nodes.contains(&left_after.id()));
+    assert!(paused_nodes.contains(&right.id()));
+}
+
+#[test_log::test(tokio::test)]
+async fn runtime_state_can_unlock_all_paused_join_branches_without_auto_resuming_others() {
+    let mut task: Task<i32, i32> = Task::builder()
+        .pause_behavior(PauseBehavior::DrainRunnable)
+        .build();
+
+    let left = task.register_node(IntNode);
+    let right = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(left);
+    task.register_transition(left, join.join()).unwrap();
+    task.register_transition(right, join.join()).unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    task.restore_runtime_state(TaskRuntimeState {
+        paused_branches: vec![
+            RestoredBranch {
+                branch_id: BranchId(1),
+                node_id: left.id(),
+                context: 2,
+                settings: RuntimeBranchSettings::default(),
+                join_group_id: Some(1),
+            },
+            RestoredBranch {
+                branch_id: BranchId(2),
+                node_id: right.id(),
+                context: 3,
+                settings: RuntimeBranchSettings::default(),
+                join_group_id: Some(1),
+            },
+        ],
+        join_groups: vec![RestoredJoinGroup {
+            group_id: 1,
+            join_node_id: join.id(),
+            policy: JoinPolicy::All,
+            settings: RuntimeBranchSettings::default(),
+            members: vec![
+                RestoredJoinMember {
+                    branch_id: BranchId(1),
+                    node_id: left.id(),
+                    outcome: RestoredJoinMemberOutcome::Paused,
+                },
+                RestoredJoinMember {
+                    branch_id: BranchId(2),
+                    node_id: right.id(),
+                    outcome: RestoredJoinMemberOutcome::Paused,
+                },
+            ],
+        }],
+        next_branch_id: 3,
+        next_group_id: 2,
+        ..TaskRuntimeState::default()
+    })
+    .unwrap();
+
+    let mut seed = task.runtime_state().unwrap();
+    move_paused_branch_to_runnable(&mut seed, left.id()).unwrap();
+    move_paused_branch_to_runnable(&mut seed, right.id()).unwrap();
+
+    let mut resumed = task.clone();
+    resumed.restore_runtime_state(seed).unwrap();
+
+    assert_eq!(resumed.resume().await.unwrap(), TaskRunState::Completed(7));
 }
 
 #[test_log::test(tokio::test)]

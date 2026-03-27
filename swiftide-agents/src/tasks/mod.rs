@@ -8,6 +8,8 @@
 //! - [`Task`] to define and run a graph
 //! - [`TaskBuilder`] to configure execution defaults such as concurrency and pause behavior
 //! - [`Transition`] to describe how execution should continue after a node finishes
+//! - [`Task::runtime_state`] and [`Task::restore_runtime_state`] to export and restore a paused
+//!   runtime frontier
 //! - [`Task::register_node_fn`] for lightweight synchronous closure nodes
 //! - [`NodeId`] helpers such as [`NodeId::transitions_with`] and [`NodeId::join`] for the common
 //!   next-step and join cases
@@ -78,7 +80,11 @@ mod transition;
 pub use adapters::{AsyncFn, SyncFn, TaskAgent};
 pub use errors::{NodeError, TaskError};
 pub use node::{NodeArg, NodeId, TaskNode};
-pub use task::{Task, TaskBuilder, TaskRunState};
+#[allow(deprecated)]
+pub use task::{
+    RestoredBranch, RestoredJoinGroup, RestoredJoinMember, RestoredJoinMemberOutcome,
+    RuntimeBranchSettings, Task, TaskBuilder, TaskRunState, TaskRuntimeSeed, TaskRuntimeState,
+};
 pub use transition::{
     ActiveBranch, AsyncMappedJoinTarget, AtLeastJoin, BranchEnvelope, BranchId, BranchOutcome,
     ConcurrencyModel, ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, JoinScope,

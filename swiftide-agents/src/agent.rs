@@ -20,13 +20,26 @@ use std::{
 use derive_builder::Builder;
 use futures_util::stream::StreamExt;
 use swiftide_core::{
-    AgentContext, ToolBox,
+    AgentContext, AgentContextCheckpoint, ToolBox,
     chat_completion::{
         ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
     },
     prompt::Prompt,
 };
 use tracing::{Instrument, debug};
+
+/// Serializable snapshot of an [`Agent`] waiting to continue work.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct AgentCheckpoint {
+    /// Agent lifecycle state, including any stop reason.
+    pub state: state::State,
+    /// User messages that were queued behind unresolved tool work.
+    pub pending_user_messages: VecDeque<String>,
+    /// Retry counters tracked per tool-call hash.
+    pub tool_retries_counter: HashMap<u64, usize>,
+    /// Serialized context state required to continue the conversation.
+    pub context: AgentContextCheckpoint,
+}
 
 /// Agents are the main interface for building agentic systems.
 ///
@@ -877,6 +890,40 @@ impl Agent {
 
     pub fn stop_reason(&self) -> Option<&StopReason> {
         self.state.stop_reason()
+    }
+
+    /// Captures the state required to continue a paused agent without replaying earlier prompts.
+    pub async fn checkpoint(&self) -> Result<AgentCheckpoint, AgentError> {
+        let context = self
+            .context
+            .checkpoint()
+            .await
+            .map_err(AgentError::MessageHistoryError)?
+            .ok_or(AgentError::MessageHistoryError(anyhow::anyhow!(
+                "agent context does not support checkpointing"
+            )))?;
+
+        Ok(AgentCheckpoint {
+            state: self.state.clone(),
+            pending_user_messages: self.pending_user_messages.clone(),
+            tool_retries_counter: self.tool_retries_counter.clone(),
+            context,
+        })
+    }
+
+    /// Restores a previously captured agent checkpoint onto the existing agent instance.
+    pub async fn restore_checkpoint(
+        &mut self,
+        checkpoint: &AgentCheckpoint,
+    ) -> Result<(), AgentError> {
+        self.context
+            .restore_checkpoint(&checkpoint.context)
+            .await
+            .map_err(AgentError::MessageHistoryError)?;
+        self.state = checkpoint.state.clone();
+        self.pending_user_messages = checkpoint.pending_user_messages.clone();
+        self.tool_retries_counter = checkpoint.tool_retries_counter.clone();
+        Ok(())
     }
 
     async fn has_unfulfilled_tool_calls(&self) -> Result<bool, AgentError> {

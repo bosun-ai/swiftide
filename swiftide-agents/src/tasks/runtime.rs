@@ -128,7 +128,7 @@ pub(crate) enum JoinMemberState {
 }
 
 impl JoinMemberState {
-    fn node_id(&self) -> usize {
+    pub(crate) fn node_id(&self) -> usize {
         match self {
             JoinMemberState::Pending { node_id }
             | JoinMemberState::Paused { node_id }
@@ -829,7 +829,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Ok(())
     }
 
-    fn try_fire_join(
+    pub(crate) fn try_fire_join(
         &mut self,
         group_id: BranchGroupId,
     ) -> Result<Option<ExecutionBranch>, TaskError> {
