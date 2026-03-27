@@ -11,8 +11,8 @@ use serde_json::{Value, json};
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
-        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolSpec, Usage,
-        UsageBuilder, errors::LanguageModelError,
+        ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolCall, ToolOutput, ToolSpec,
+        Usage, UsageBuilder, errors::LanguageModelError,
     },
 };
 
@@ -247,10 +247,7 @@ impl Anthropic {
             .position(ChatMessage::is_system)
             .map(|idx| messages.remove(idx));
 
-        let messages = messages
-            .iter()
-            .filter_map(|message| message_to_antropic(message).transpose())
-            .collect::<Result<Vec<_>>>()?;
+        let messages = messages_to_antropic(&messages)?;
 
         let mut anthropic_request = CreateMessagesRequestBuilder::default()
             .model(model)
@@ -277,17 +274,58 @@ impl Anthropic {
     }
 }
 
+fn messages_to_antropic(messages: &[ChatMessage]) -> Result<Vec<Message>> {
+    let mut anthropic_messages = Vec::with_capacity(messages.len());
+    let mut messages = messages.iter().peekable();
+
+    while let Some(message) = messages.next() {
+        match message {
+            ChatMessage::ToolOutput(tool_call, tool_output) => {
+                let mut content = vec![tool_result_to_anthropic(tool_call, tool_output)?];
+
+                while let Some(ChatMessage::ToolOutput(tool_call, tool_output)) = messages.peek() {
+                    content.push(tool_result_to_anthropic(tool_call, tool_output)?);
+                    messages.next();
+                }
+
+                anthropic_messages.push(
+                    MessageBuilder::default()
+                        .role(MessageRole::User)
+                        .content(MessageContentList(content))
+                        .build()
+                        .context("Failed to build message")?,
+                );
+            }
+            _ => {
+                if let Some(message) = message_to_antropic(message)? {
+                    anthropic_messages.push(message);
+                }
+            }
+        }
+    }
+
+    Ok(anthropic_messages)
+}
+
+fn tool_result_to_anthropic(
+    tool_call: &ToolCall,
+    tool_output: &ToolOutput,
+) -> Result<MessageContent> {
+    Ok(ToolResultBuilder::default()
+        .tool_use_id(tool_call.id())
+        .content(tool_output.content().unwrap_or("Success"))
+        .build()?
+        .into())
+}
+
 #[allow(clippy::items_after_statements)]
 fn message_to_antropic(message: &ChatMessage) -> Result<Option<Message>> {
     let mut builder = MessageBuilder::default().role(MessageRole::User).to_owned();
 
     match message {
-        ChatMessage::ToolOutput(tool_call, tool_output) => builder.content(
-            ToolResultBuilder::default()
-                .tool_use_id(tool_call.id())
-                .content(tool_output.content().unwrap_or("Success"))
-                .build()?,
-        ),
+        ChatMessage::ToolOutput(tool_call, tool_output) => builder.content(MessageContentList(
+            vec![tool_result_to_anthropic(tool_call, tool_output)?],
+        )),
         ChatMessage::Summary(msg) | ChatMessage::System(msg) => builder.content(msg.as_str()),
         ChatMessage::User(content) => builder.content(content.as_str()),
         ChatMessage::UserWithParts(parts) => {
@@ -666,5 +704,42 @@ mod tests {
             .next()
             .expect("nested request ref name");
         assert!(input_schema["$defs"][nested_name].get("required").is_none());
+    }
+
+    #[test]
+    fn test_build_request_groups_adjacent_tool_outputs() {
+        let first_tool = ToolCall::builder()
+            .id("tool_1")
+            .name("shell_command")
+            .args("{\"cmd\":\"pwd\"}")
+            .build()
+            .unwrap();
+        let second_tool = ToolCall::builder()
+            .id("tool_2")
+            .name("git")
+            .args("{\"command\":\"status\"}")
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![
+                ChatMessage::Assistant(None, Some(vec![first_tool.clone(), second_tool.clone()])),
+                ChatMessage::new_tool_output(
+                    first_tool,
+                    ToolOutput::Text("pwd output".to_string()),
+                ),
+                ChatMessage::new_tool_output(
+                    second_tool,
+                    ToolOutput::Text("git output".to_string()),
+                ),
+            ])
+            .build()
+            .unwrap();
+
+        let client = Anthropic::builder().build().unwrap();
+        let built = client.build_request(&request).unwrap().build().unwrap();
+
+        assert_eq!(built.messages.len(), 2);
+        assert_eq!(built.messages[1].content.len(), 2);
     }
 }
