@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774534677609,
+  "lastUpdate": 1774820172052,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30701,6 +30701,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 228159,
             "range": "± 1689",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6b4d920ba9a882f928ed15814a6a830799d15c16",
+          "message": "fix(integrations): group adjacent tool results for Anthropic providers (#1057)\n\n## Summary\n- group adjacent `ToolOutput` messages into a single user turn for\nBedrock converse requests\n- mirror the same grouping in the Anthropic serializer so the provider\nbehavior stays aligned\n- add regression tests for both serializers\n\n## Why\nIn company-info production, Quak hit Bedrock with multiple tool calls in\na single assistant turn and then sent the tool results back as separate\nuser messages. Bedrock rejected that request with:\n\n```text\nValidationException: Expected toolResult blocks at messages.2.content for the following Ids: ...\n```\n\nThe underlying issue is that Anthropic-style tool use expects the tool\nresults for one assistant `tool_use` turn to come back in the next\nsingle user message, with multiple `tool_result` blocks when necessary.\nSwiftide was serializing each `ToolOutput` as its own user turn.\n\n## Fix\nThis change groups contiguous `ChatMessage::ToolOutput(...)` entries\ninto one user message:\n- Bedrock: one `ConversationRole::User` message with multiple\n`ContentBlock::ToolResult(...)`\n- Anthropic: one `MessageRole::User` message with a `MessageContentList`\ncontaining multiple tool results\n\nThat keeps the wire format compatible with Anthropic/Bedrock when an\nassistant emits more than one tool call before the next model turn.\n\n## Validation\n- `cargo test -p swiftide-integrations --features \"aws-bedrock\"\ntest_build_converse_input_groups_adjacent_tool_outputs -- --nocapture`\n- `cargo test -p swiftide-integrations --features \"anthropic\"\ntest_build_request_groups_adjacent_tool_outputs -- --nocapture`",
+          "timestamp": "2026-03-29T23:27:06+02:00",
+          "tree_id": "9ce613d081c840031df8c204ec1f872dae34aa4f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/6b4d920ba9a882f928ed15814a6a830799d15c16"
+        },
+        "date": 1774820169846,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 577748,
+            "range": "± 13210",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 158778,
+            "range": "± 2084",
             "unit": "ns/iter"
           }
         ]
