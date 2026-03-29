@@ -297,8 +297,9 @@ fn build_converse_input(
     let source_messages = request.messages();
     let mut messages = Vec::with_capacity(source_messages.len());
     let mut system = Vec::new();
+    let mut source_messages = source_messages.iter().peekable();
 
-    for message in source_messages {
+    while let Some(message) = source_messages.next() {
         match message {
             ChatMessage::System(text) => {
                 system.push(SystemContentBlock::Text(text.clone()));
@@ -340,22 +341,15 @@ fn build_converse_input(
                 }
             }
             ChatMessage::ToolOutput(tool_call, output) => {
-                let status = match output {
-                    ToolOutput::Fail(_) => Some(ToolResultStatus::Error),
-                    _ => Some(ToolResultStatus::Success),
-                };
+                let mut blocks = vec![tool_output_to_result_block(tool_call, output)?];
 
-                let tool_result = ToolResultBlock::builder()
-                    .tool_use_id(tool_call.id())
-                    .content(tool_output_to_content_block(output)?)
-                    .set_status(status)
-                    .build()
-                    .map_err(LanguageModelError::permanent)?;
+                while let Some(ChatMessage::ToolOutput(tool_call, output)) = source_messages.peek()
+                {
+                    blocks.push(tool_output_to_result_block(tool_call, output)?);
+                    source_messages.next();
+                }
 
-                messages.push(message_from_blocks(
-                    ConversationRole::User,
-                    vec![ContentBlock::ToolResult(tool_result)],
-                )?);
+                messages.push(message_from_blocks(ConversationRole::User, blocks)?);
             }
             ChatMessage::Reasoning(item) => {
                 if let Some(reasoning_message) = assistant_reasoning_message_from_item(item)? {
@@ -740,6 +734,25 @@ fn message_from_blocks(
         .set_content(Some(blocks))
         .build()
         .map_err(LanguageModelError::permanent)
+}
+
+fn tool_output_to_result_block(
+    tool_call: &ToolCall,
+    output: &ToolOutput,
+) -> Result<ContentBlock, LanguageModelError> {
+    let status = match output {
+        ToolOutput::Fail(_) => Some(ToolResultStatus::Error),
+        _ => Some(ToolResultStatus::Success),
+    };
+
+    let tool_result = ToolResultBlock::builder()
+        .tool_use_id(tool_call.id())
+        .content(tool_output_to_content_block(output)?)
+        .set_status(status)
+        .build()
+        .map_err(LanguageModelError::permanent)?;
+
+    Ok(ContentBlock::ToolResult(tool_result))
 }
 
 fn tool_output_to_content_block(
@@ -1821,6 +1834,59 @@ mod tests {
             .expect("reasoning content");
         assert_eq!(reasoning.text(), "I should call a weather tool");
         assert_eq!(reasoning.signature(), Some("sig_123"));
+    }
+
+    #[test]
+    fn test_build_converse_input_groups_adjacent_tool_outputs() {
+        let first_tool = ToolCall::builder()
+            .id("tool_1")
+            .name("shell_command")
+            .args("{\"cmd\":\"pwd\"}")
+            .build()
+            .unwrap();
+        let second_tool = ToolCall::builder()
+            .id("tool_2")
+            .name("git")
+            .args("{\"command\":\"status\"}")
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![
+                ChatMessage::Assistant(None, Some(vec![first_tool.clone(), second_tool.clone()])),
+                ChatMessage::new_tool_output(
+                    first_tool,
+                    ToolOutput::Text("pwd output".to_string()),
+                ),
+                ChatMessage::new_tool_output(
+                    second_tool,
+                    ToolOutput::Text("git output".to_string()),
+                ),
+            ])
+            .build()
+            .unwrap();
+
+        let (messages, _system, _inference, _tool_config) =
+            build_converse_input(&request, &Options::default()).unwrap();
+
+        assert_eq!(messages.len(), 2);
+        assert!(matches!(messages[0].role(), ConversationRole::Assistant));
+        assert!(matches!(messages[1].role(), ConversationRole::User));
+        assert_eq!(messages[1].content().len(), 2);
+
+        let first_result = messages[1]
+            .content()
+            .first()
+            .and_then(|block| block.as_tool_result().ok())
+            .expect("first tool result");
+        let second_result = messages[1]
+            .content()
+            .get(1)
+            .and_then(|block| block.as_tool_result().ok())
+            .expect("second tool result");
+
+        assert_eq!(first_result.tool_use_id(), "tool_1");
+        assert_eq!(second_result.tool_use_id(), "tool_2");
     }
 
     #[test]
