@@ -1,6 +1,7 @@
 use derive_builder::Builder;
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 
 pub use super::tool_schema::{StrictToolParametersSchema, ToolSchemaError};
@@ -246,6 +247,13 @@ impl ToolSpec {
             self.parameters_schema.as_ref(),
         )?)
     }
+
+    /// Returns the provider-neutral strict parameters schema with deterministic JSON key ordering.
+    pub fn canonical_parameters_schema_json(&self) -> Result<JsonValue, ToolSpecError> {
+        Ok(canonicalize_json(
+            self.strict_parameters_schema()?.into_json(),
+        ))
+    }
 }
 
 impl ToolSpecBuilder {
@@ -285,11 +293,33 @@ impl std::hash::Hash for ToolSpec {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.description.hash(state);
-        if let Some(schema) = &self.parameters_schema
-            && let Ok(serialized) = serde_json::to_vec(schema)
+        if let Ok(schema) = self.canonical_parameters_schema_json()
+            && let Ok(serialized) = serde_json::to_vec(&schema)
         {
             serialized.hash(state);
         }
+    }
+}
+
+pub fn canonicalize_json(value: JsonValue) -> JsonValue {
+    match value {
+        JsonValue::Object(object) => {
+            let mut keys = object.keys().cloned().collect::<Vec<_>>();
+            keys.sort();
+
+            let mut sorted = JsonMap::with_capacity(object.len());
+            for key in keys {
+                if let Some(child) = object.get(&key) {
+                    sorted.insert(key, canonicalize_json(child.clone()));
+                }
+            }
+
+            JsonValue::Object(sorted)
+        }
+        JsonValue::Array(values) => {
+            JsonValue::Array(values.into_iter().map(canonicalize_json).collect())
+        }
+        scalar => scalar,
     }
 }
 
@@ -298,6 +328,7 @@ mod tests {
     use super::*;
     use serde_json::{Value, json};
     use std::collections::HashSet;
+    use std::hash::{DefaultHasher, Hash, Hasher};
 
     #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
     struct ExampleArgs {
@@ -384,6 +415,49 @@ mod tests {
         set.insert(spec.clone());
 
         assert!(set.contains(&spec));
+    }
+
+    #[test]
+    fn tool_spec_hash_is_stable_across_schema_key_order() {
+        let first = ToolSpec::builder()
+            .name("create_view")
+            .description("Create a view")
+            .parameters_schema(
+                serde_json::from_value::<Schema>(json!({
+                    "type": "object",
+                    "properties": {
+                        "body": { "type": "string" },
+                        "name": { "type": "string" }
+                    }
+                }))
+                .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let second = ToolSpec::builder()
+            .name("create_view")
+            .description("Create a view")
+            .parameters_schema(
+                serde_json::from_value::<Schema>(json!({
+                    "properties": {
+                        "name": { "type": "string" },
+                        "body": { "type": "string" }
+                    },
+                    "type": "object"
+                }))
+                .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let mut first_hasher = DefaultHasher::new();
+        first.hash(&mut first_hasher);
+
+        let mut second_hasher = DefaultHasher::new();
+        second.hash(&mut second_hasher);
+
+        assert_eq!(first_hasher.finish(), second_hasher.finish());
     }
 
     #[test]

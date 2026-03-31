@@ -1,5 +1,5 @@
 use serde_json::{Map, Value};
-use swiftide_core::chat_completion::{StrictToolParametersSchema, ToolSpec, ToolSpecError};
+use swiftide_core::chat_completion::{ToolSpec, ToolSpecError};
 use thiserror::Error;
 
 type SchemaNormalizer = fn(&mut Value) -> Result<(), OpenAiToolSchemaError>;
@@ -18,8 +18,7 @@ impl TryFrom<&ToolSpec> for OpenAiToolSchema {
     type Error = OpenAiToolSchemaError;
 
     fn try_from(spec: &ToolSpec) -> Result<Self, Self::Error> {
-        let strict_schema = spec.strict_parameters_schema()?;
-        let value = OpenAiSchemaPipeline::apply(strict_schema)?;
+        let value = OpenAiSchemaPipeline::apply(spec.canonical_parameters_schema_json()?)?;
         Ok(Self(value))
     }
 }
@@ -43,9 +42,7 @@ impl From<ToolSpecError> for OpenAiToolSchemaError {
 struct OpenAiSchemaPipeline;
 
 impl OpenAiSchemaPipeline {
-    fn apply(strict_schema: StrictToolParametersSchema) -> Result<Value, OpenAiToolSchemaError> {
-        let mut schema = strict_schema.into_json();
-
+    fn apply(mut schema: Value) -> Result<Value, OpenAiToolSchemaError> {
         for normalizer in [
             strip_schema_metadata as SchemaNormalizer,
             strip_rust_numeric_formats,

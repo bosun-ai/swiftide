@@ -29,6 +29,13 @@ impl<'a> ChatCompletionRequest<'a> {
         &self.tools_spec
     }
 
+    /// Returns tool specifications in a deterministic order suitable for provider requests.
+    pub fn ordered_tool_specs(&self) -> Vec<&ToolSpec> {
+        let mut specs = self.tools_spec.iter().collect::<Vec<_>>();
+        specs.sort_by(|left, right| tool_spec_sort_key(left).cmp(&tool_spec_sort_key(right)));
+        specs
+    }
+
     /// Returns an owned request with `'static` data.
     pub fn to_owned(&self) -> ChatCompletionRequest<'static> {
         ChatCompletionRequest {
@@ -36,6 +43,17 @@ impl<'a> ChatCompletionRequest<'a> {
             tools_spec: self.tools_spec.clone(),
         }
     }
+}
+
+fn tool_spec_sort_key(spec: &ToolSpec) -> (String, String, String) {
+    (
+        spec.name.clone(),
+        spec.description.clone(),
+        spec.canonical_parameters_schema_json()
+            .ok()
+            .and_then(|schema| serde_json::to_string(&schema).ok())
+            .unwrap_or_default(),
+    )
 }
 
 impl From<Vec<ChatMessage>> for ChatCompletionRequest<'_> {
@@ -121,5 +139,60 @@ impl ChatCompletionRequestBuilder<'_> {
         new_messages.extend(messages);
         self.messages = Some(Cow::Owned(new_messages));
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ChatCompletionRequest;
+    use crate::chat_completion::{ChatMessage, ToolSpec};
+    use schemars::Schema;
+    use serde_json::json;
+
+    #[test]
+    fn ordered_tool_specs_returns_deterministic_order() {
+        let zebra = ToolSpec::builder()
+            .name("zebra")
+            .description("later alphabetically")
+            .parameters_schema(schema_from_json(json!({
+                "type": "object",
+                "properties": {
+                    "b": { "type": "string" },
+                    "a": { "type": "string" }
+                }
+            })))
+            .build()
+            .unwrap();
+
+        let alpha = ToolSpec::builder()
+            .name("alpha")
+            .description("earlier alphabetically")
+            .parameters_schema(schema_from_json(json!({
+                "properties": {
+                    "z": { "type": "string" },
+                    "m": { "type": "string" }
+                },
+                "type": "object"
+            })))
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([zebra, alpha])
+            .build()
+            .unwrap();
+
+        let names = request
+            .ordered_tool_specs()
+            .into_iter()
+            .map(|spec| spec.name.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(names, vec!["alpha", "zebra"]);
+    }
+
+    fn schema_from_json(value: serde_json::Value) -> Schema {
+        serde_json::from_value(value).expect("valid schema")
     }
 }

@@ -47,8 +47,8 @@ where
 
     if !request.tools_spec().is_empty() {
         let tools = request
-            .tools_spec()
-            .iter()
+            .ordered_tool_specs()
+            .into_iter()
             .map(tool_spec_to_responses_tool)
             .collect::<Result<Vec<_>>>()
             .map_err(LanguageModelError::permanent)?;
@@ -969,6 +969,15 @@ mod tests {
             .unwrap()
     }
 
+    fn sample_tool_spec_named(name: &str) -> ToolSpec {
+        ToolSpec::builder()
+            .name(name)
+            .description(format!("{name} description"))
+            .parameters_schema(schemars::schema_for!(WeatherArgs))
+            .build()
+            .unwrap()
+    }
+
     #[test]
     fn test_user_parts_to_easy_input_content_with_image() {
         let parts = vec![
@@ -1052,9 +1061,9 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_spec = sample_tool_spec();
         let mut tools = HashSet::new();
-        tools.insert(tool_spec);
+        tools.insert(sample_tool_spec_named("z_tool"));
+        tools.insert(sample_tool_spec_named("a_tool"));
 
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hi".into())])
@@ -1082,7 +1091,15 @@ mod tests {
         assert_eq!(items.len(), 1);
 
         let tools = create.tools.expect("tools present");
-        assert_eq!(tools.len(), 1);
+        assert_eq!(tools.len(), 2);
+        let tool_names = tools
+            .iter()
+            .map(|tool| match tool {
+                Tool::Function(function) => function.name.as_str(),
+                _ => panic!("expected function tool"),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(tool_names, vec!["a_tool", "z_tool"]);
         assert_eq!(
             create.tool_choice,
             Some(ToolChoiceParam::Mode(ToolChoiceOptions::Auto))

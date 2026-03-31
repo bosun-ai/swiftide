@@ -1,4 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+#[cfg(test)]
+use std::collections::HashSet;
 
 use anyhow::Context as _;
 use async_trait::async_trait;
@@ -369,7 +371,7 @@ fn build_converse_input(
         messages,
         (!system.is_empty()).then_some(system),
         super::inference_config_from_options(options),
-        tool_config_from_specs(request.tools_spec(), options.tool_strict_enabled())?,
+        tool_config_from_specs(request.ordered_tool_specs(), options.tool_strict_enabled())?,
     ))
 }
 
@@ -781,7 +783,7 @@ fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageMo
 }
 
 fn tool_config_from_specs(
-    tool_specs: &HashSet<ToolSpec>,
+    tool_specs: Vec<&ToolSpec>,
     strict: bool,
 ) -> Result<Option<ToolConfiguration>, LanguageModelError> {
     if tool_specs.is_empty() {
@@ -789,7 +791,7 @@ fn tool_config_from_specs(
     }
 
     let tools = tool_specs
-        .iter()
+        .into_iter()
         .map(|spec| tool_spec_to_bedrock(spec, strict))
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -1666,7 +1668,13 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]), true)
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([tool_spec])
+            .build()
+            .unwrap();
+
+        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), true)
             .unwrap()
             .expect("tool config");
         assert_eq!(tool_config.tools().len(), 1);
@@ -1694,7 +1702,13 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]), false)
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([tool_spec])
+            .build()
+            .unwrap();
+
+        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), false)
             .unwrap()
             .expect("tool config");
 
@@ -1720,7 +1734,13 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(&HashSet::from([tool_spec]), true)
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([tool_spec])
+            .build()
+            .unwrap();
+
+        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), true)
             .unwrap()
             .expect("tool config");
 
@@ -1768,6 +1788,41 @@ mod tests {
             panic!("expected nested request schema");
         };
         assert!(!nested_schema.contains_key("required"));
+    }
+
+    #[test]
+    fn test_tool_config_from_specs_orders_tools_deterministically() {
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([
+                ToolSpec::builder()
+                    .name("z_tool")
+                    .description("later")
+                    .build()
+                    .unwrap(),
+                ToolSpec::builder()
+                    .name("a_tool")
+                    .description("earlier")
+                    .build()
+                    .unwrap(),
+            ])
+            .build()
+            .unwrap();
+
+        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), true)
+            .unwrap()
+            .expect("tool config");
+
+        let tool_names = tool_config
+            .tools()
+            .iter()
+            .map(|tool| match tool {
+                Tool::ToolSpec(spec) => spec.name(),
+                _ => panic!("expected tool spec"),
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(tool_names, vec!["a_tool", "z_tool"]);
     }
 
     #[test]

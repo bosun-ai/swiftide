@@ -262,8 +262,8 @@ impl Anthropic {
             anthropic_request
                 .tools(
                     request
-                        .tools_spec()
-                        .iter()
+                        .ordered_tool_specs()
+                        .into_iter()
                         .map(tools_to_anthropic)
                         .collect::<Result<Vec<_>>>()?,
                 )
@@ -423,6 +423,9 @@ mod tests {
     #[derive(Clone)]
     struct FakeTool();
 
+    #[derive(Clone)]
+    struct AlphaTool();
+
     #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
     struct LocationArgs {
         location: String,
@@ -471,6 +474,33 @@ mod tests {
                 .description("Gets the weather")
                 .name("get_weather")
                 .parameters_schema(schema_for!(LocationArgs))
+                .build()
+                .unwrap()
+        }
+    }
+
+    #[async_trait]
+    impl Tool for AlphaTool {
+        async fn invoke(
+            &self,
+            _agent_context: &dyn AgentContext,
+            _tool_call: &ToolCall,
+        ) -> std::result::Result<
+            swiftide_core::chat_completion::ToolOutput,
+            swiftide_core::chat_completion::errors::ToolError,
+        > {
+            todo!()
+        }
+
+        fn name(&self) -> std::borrow::Cow<'_, str> {
+            "alpha_tool".into()
+        }
+
+        fn tool_spec(&self) -> ToolSpec {
+            ToolSpec::builder()
+                .name("alpha_tool")
+                .description("Alpha tool")
+                .parameters_schema(schemars::schema_for!(LocationArgs))
                 .build()
                 .unwrap()
         }
@@ -594,6 +624,32 @@ mod tests {
                     .as_str()
             )
         );
+    }
+
+    #[test]
+    fn test_build_request_orders_tools_deterministically() {
+        let client = Anthropic::builder().build().unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hello".into())])
+            .tool_specs([FakeTool().tool_spec(), AlphaTool().tool_spec()])
+            .build()
+            .unwrap();
+
+        let built = client.build_request(&request).unwrap().build().unwrap();
+        let tool_names = built
+            .tools
+            .expect("tools present")
+            .into_iter()
+            .map(|tool| {
+                tool.get("name")
+                    .and_then(serde_json::Value::as_str)
+                    .expect("tool name")
+                    .to_owned()
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(tool_names, vec!["alpha_tool", "get_weather"]);
     }
 
     #[test_log::test(tokio::test)]
