@@ -972,9 +972,12 @@ fn assistant_reasoning_message_from_item(
         .build()
         .map_err(LanguageModelError::permanent)?;
 
-    message_from_blocks(ConversationRole::Assistant, vec![
-        ContentBlock::ReasoningContent(ReasoningContentBlock::ReasoningText(reasoning_text_block)),
-    ])
+    message_from_blocks(
+        ConversationRole::Assistant,
+        vec![ContentBlock::ReasoningContent(
+            ReasoningContentBlock::ReasoningText(reasoning_text_block),
+        )],
+    )
     .map(Some)
 }
 

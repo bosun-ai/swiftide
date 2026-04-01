@@ -365,10 +365,13 @@ mod tests {
         vectors.insert(EmbeddedField::Chunk, Embedding::default());
 
         let mut sparse_vectors = HashMap::new();
-        sparse_vectors.insert(EmbeddedField::Chunk, SparseEmbedding {
-            indices: vec![],
-            values: vec![],
-        });
+        sparse_vectors.insert(
+            EmbeddedField::Chunk,
+            SparseEmbedding {
+                indices: vec![],
+                values: vec![],
+            },
+        );
 
         let original_node = Node::from("test_chunk")
             .with_metadata(Metadata::default())

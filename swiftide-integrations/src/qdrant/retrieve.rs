@@ -188,10 +188,13 @@ mod tests {
         .into_iter()
         .map(|node| {
             node.with_vectors([(EmbeddedField::Combined, vec![1.0; 384])]);
-            node.with_sparse_vectors([(EmbeddedField::Combined, swiftide_core::SparseEmbedding {
-                indices: vec![0, 1],
-                values: vec![1.0, 1.0],
-            })]);
+            node.with_sparse_vectors([(
+                EmbeddedField::Combined,
+                swiftide_core::SparseEmbedding {
+                    indices: vec![0, 1],
+                    values: vec![1.0, 1.0],
+                },
+            )]);
             node.to_owned()
         })
         .collect();

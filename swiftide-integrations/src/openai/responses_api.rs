@@ -1545,10 +1545,10 @@ mod tests {
 
         assert_eq!(reasoning.len(), 1);
         assert_eq!(reasoning[0].id, "reasoning_1");
-        assert_eq!(reasoning[0].summary, vec![
-            "First".to_string(),
-            "Second".to_string()
-        ]);
+        assert_eq!(
+            reasoning[0].summary,
+            vec!["First".to_string(), "Second".to_string()]
+        );
         assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("encrypted"));
     }
 
