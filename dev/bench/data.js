@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774820172052,
+  "lastUpdate": 1775046445219,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30755,6 +30755,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 158778,
             "range": "± 2084",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5ddd8ec85b1c6e7b329ce4e8bc4871b4415d0a5c",
+          "message": "fix: stabilize tool ordering in chat completion requests (#1058)\n\n## Summary\nThis fixes nondeterministic tool serialization in chat completion\nrequests.\n\nWe traced a severe latency regression in company-info where some Bedrock\ncompletions took 70-80s, while the same logical request often completed\nin ~5s. The critical observation was that the request could become fast\nor slow depending on the order of the serialized tool specs.\n\nThe root issue was that `ChatCompletionRequest` stores tools in a\n`HashSet<ToolSpec>`, and provider integrations were iterating that set\ndirectly when building tool payloads. That makes request bodies\nnondeterministic. We also had one more unstable path in\n`ToolSpec::Hash`, which used raw JSON serialization of schemas and\ntherefore depended on map insertion order.\n\n## What this changes\n- add `ChatCompletionRequest::ordered_tool_specs()` in `swiftide-core`\n- canonicalize tool schemas before using them for ordering and hashing\n- make `ToolSpec::Hash` stable across equivalent schema key orders\n- use the deterministic ordered tool list in:\n  - AWS Bedrock chat completions\n  - Anthropic chat completions\n  - OpenAI chat completions\n  - OpenAI Responses API\n\nBecause Groq, Gemini, Ollama, OpenRouter, and Dashscope reuse the OpenAI\nintegration path, they inherit the same fix.\n\n## Why this matters\nThe practical lesson here is broader than Bedrock: we should not use\nunsorted hash-backed collections for anything that ends up in a\ncompletion request, system prompt, or tool schema payload. Even when\nproviders accept both request variants, nondeterministic serialization\ncan cause performance pathologies and makes debugging much harder.\n\n## Validation\n- `cargo test -p swiftide-core\nordered_tool_specs_returns_deterministic_order -- --nocapture`\n- `cargo test -p swiftide-core\ntool_spec_hash_is_stable_across_schema_key_order -- --nocapture`\n- `cargo check -p swiftide-integrations --features \"openai anthropic\naws-bedrock\"`\n- `cargo test -p swiftide-integrations\ntest_build_responses_request_includes_tools_and_options -- --nocapture`\n- `cargo test -p swiftide-integrations\ntest_complete_with_tools_sets_auto_choice_and_parallel_calls --\n--nocapture`\n- `cargo test -p swiftide-integrations --features \"anthropic\naws-bedrock\" test_build_request_orders_tools_deterministically --\n--nocapture`\n- `cargo test -p swiftide-integrations --features \"anthropic\naws-bedrock\" test_tool_config_from_specs_orders_tools_deterministically\n-- --nocapture`",
+          "timestamp": "2026-04-01T14:18:03+02:00",
+          "tree_id": "44ac9e354deaf68445294b67680ebb5909b0c920",
+          "url": "https://github.com/bosun-ai/swiftide/commit/5ddd8ec85b1c6e7b329ce4e8bc4871b4415d0a5c"
+        },
+        "date": 1775046442717,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 849713,
+            "range": "± 19235",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 231439,
+            "range": "± 3057",
             "unit": "ns/iter"
           }
         ]
