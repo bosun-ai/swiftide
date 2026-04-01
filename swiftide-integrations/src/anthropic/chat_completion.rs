@@ -260,12 +260,12 @@ impl Anthropic {
             anthropic_request.system(system);
         }
 
-        if !request.tools_spec.is_empty() {
+        if !request.tools_spec().is_empty() {
             anthropic_request
                 .tools(
                     request
-                        .ordered_tool_specs()
-                        .into_iter()
+                        .tools_spec()
+                        .iter()
                         .map(tools_to_anthropic)
                         .collect::<Result<Vec<_>>>()?,
                 )

@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-#[cfg(test)]
-use std::collections::HashSet;
 
 use anyhow::Context as _;
 use async_trait::async_trait;
@@ -371,7 +369,7 @@ fn build_converse_input(
         messages,
         (!system.is_empty()).then_some(system),
         super::inference_config_from_options(options),
-        tool_config_from_specs(request.ordered_tool_specs(), options.tool_strict_enabled())?,
+        tool_config_from_specs(request.tools_spec().iter(), options.tool_strict_enabled())?,
     ))
 }
 
@@ -782,18 +780,18 @@ fn tool_call_args_to_document(args: Option<&str>) -> Result<Document, LanguageMo
     }
 }
 
-fn tool_config_from_specs(
-    tool_specs: Vec<&ToolSpec>,
+fn tool_config_from_specs<'a>(
+    tool_specs: impl IntoIterator<Item = &'a ToolSpec>,
     strict: bool,
 ) -> Result<Option<ToolConfiguration>, LanguageModelError> {
-    if tool_specs.is_empty() {
-        return Ok(None);
-    }
-
     let tools = tool_specs
         .into_iter()
         .map(|spec| tool_spec_to_bedrock(spec, strict))
         .collect::<Result<Vec<_>, _>>()?;
+
+    if tools.is_empty() {
+        return Ok(None);
+    }
 
     let tool_config = ToolConfiguration::builder()
         .set_tools(Some(tools))
@@ -974,12 +972,9 @@ fn assistant_reasoning_message_from_item(
         .build()
         .map_err(LanguageModelError::permanent)?;
 
-    message_from_blocks(
-        ConversationRole::Assistant,
-        vec![ContentBlock::ReasoningContent(
-            ReasoningContentBlock::ReasoningText(reasoning_text_block),
-        )],
-    )
+    message_from_blocks(ConversationRole::Assistant, vec![
+        ContentBlock::ReasoningContent(ReasoningContentBlock::ReasoningText(reasoning_text_block)),
+    ])
     .map(Some)
 }
 
@@ -1423,7 +1418,7 @@ mod tests {
             .unwrap();
         let request = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("Check weather".into())])
-            .tools_spec(HashSet::from([tool_spec]))
+            .tools_spec([tool_spec])
             .build()
             .unwrap();
 
@@ -1674,7 +1669,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), true)
+        let tool_config = tool_config_from_specs(request.tools_spec().iter(), true)
             .unwrap()
             .expect("tool config");
         assert_eq!(tool_config.tools().len(), 1);
@@ -1708,7 +1703,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), false)
+        let tool_config = tool_config_from_specs(request.tools_spec().iter(), false)
             .unwrap()
             .expect("tool config");
 
@@ -1740,7 +1735,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), true)
+        let tool_config = tool_config_from_specs(request.tools_spec().iter(), true)
             .unwrap()
             .expect("tool config");
 
@@ -1809,7 +1804,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool_config = tool_config_from_specs(request.ordered_tool_specs(), true)
+        let tool_config = tool_config_from_specs(request.tools_spec().iter(), true)
             .unwrap()
             .expect("tool config");
 

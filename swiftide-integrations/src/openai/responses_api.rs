@@ -47,8 +47,8 @@ where
 
     if !request.tools_spec().is_empty() {
         let tools = request
-            .ordered_tool_specs()
-            .into_iter()
+            .tools_spec()
+            .iter()
             .map(tool_spec_to_responses_tool)
             .collect::<Result<Vec<_>>>()
             .map_err(LanguageModelError::permanent)?;
@@ -1545,10 +1545,10 @@ mod tests {
 
         assert_eq!(reasoning.len(), 1);
         assert_eq!(reasoning[0].id, "reasoning_1");
-        assert_eq!(
-            reasoning[0].summary,
-            vec!["First".to_string(), "Second".to_string()]
-        );
+        assert_eq!(reasoning[0].summary, vec![
+            "First".to_string(),
+            "Second".to_string()
+        ]);
         assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("encrypted"));
     }
 

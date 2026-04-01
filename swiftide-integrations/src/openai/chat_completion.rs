@@ -76,12 +76,12 @@ impl<
             .messages(messages)
             .to_owned();
 
-        if !request.tools_spec.is_empty() {
+        if !request.tools_spec().is_empty() {
             openai_request
                 .tools(
                     request
-                        .ordered_tool_specs()
-                        .into_iter()
+                        .tools_spec()
+                        .iter()
                         .map(tools_to_openai)
                         .collect::<Result<Vec<_>>>()?,
                 )
@@ -192,12 +192,12 @@ impl<
             })
             .to_owned();
 
-        if !request.tools_spec.is_empty() {
+        if !request.tools_spec().is_empty() {
             openai_request
                 .tools(
                     match request
-                        .ordered_tool_specs()
-                        .into_iter()
+                        .tools_spec()
+                        .iter()
                         .map(tools_to_openai)
                         .collect::<Result<Vec<_>>>()
                     {

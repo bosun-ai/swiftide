@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashSet};
+use std::{borrow::Cow, collections::BTreeSet};
 
 use derive_builder::Builder;
 
@@ -11,7 +11,7 @@ use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 pub struct ChatCompletionRequest<'a> {
     pub messages: Cow<'a, [ChatMessage]>,
     #[builder(default, setter(custom))]
-    pub tools_spec: HashSet<ToolSpec>,
+    pub tools_spec: BTreeSet<ToolSpec>,
 }
 
 impl<'a> ChatCompletionRequest<'a> {
@@ -25,15 +25,8 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 
     /// Returns the tool specifications currently attached to the request.
-    pub fn tools_spec(&self) -> &HashSet<ToolSpec> {
+    pub fn tools_spec(&self) -> &BTreeSet<ToolSpec> {
         &self.tools_spec
-    }
-
-    /// Returns tool specifications in a deterministic order suitable for provider requests.
-    pub fn ordered_tool_specs(&self) -> Vec<&ToolSpec> {
-        let mut specs = self.tools_spec.iter().collect::<Vec<_>>();
-        specs.sort_by_key(|left| tool_spec_sort_key(left));
-        specs
     }
 
     /// Returns an owned request with `'static` data.
@@ -45,22 +38,11 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 }
 
-fn tool_spec_sort_key(spec: &ToolSpec) -> (String, String, String) {
-    (
-        spec.name.clone(),
-        spec.description.clone(),
-        spec.canonical_parameters_schema_json()
-            .ok()
-            .and_then(|schema| serde_json::to_string(&schema).ok())
-            .unwrap_or_default(),
-    )
-}
-
 impl From<Vec<ChatMessage>> for ChatCompletionRequest<'_> {
     fn from(messages: Vec<ChatMessage>) -> Self {
         ChatCompletionRequest {
             messages: Cow::Owned(messages),
-            tools_spec: HashSet::new(),
+            tools_spec: BTreeSet::new(),
         }
     }
 }
@@ -69,15 +51,18 @@ impl<'a> From<&'a [ChatMessage]> for ChatCompletionRequest<'a> {
     fn from(messages: &'a [ChatMessage]) -> Self {
         ChatCompletionRequest {
             messages: Cow::Borrowed(messages),
-            tools_spec: HashSet::new(),
+            tools_spec: BTreeSet::new(),
         }
     }
 }
 
 impl ChatCompletionRequestBuilder<'_> {
     #[deprecated(note = "Use `tools` with real Tool instances instead")]
-    pub fn tools_spec(&mut self, tools_spec: HashSet<ToolSpec>) -> &mut Self {
-        self.tools_spec = Some(tools_spec);
+    pub fn tools_spec<I>(&mut self, tools_spec: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ToolSpec>,
+    {
+        self.tools_spec = Some(tools_spec.into_iter().collect());
         self
     }
 
@@ -108,7 +93,7 @@ impl ChatCompletionRequestBuilder<'_> {
     where
         I: IntoIterator<Item = ToolSpec>,
     {
-        let entry = self.tools_spec.get_or_insert_with(HashSet::new);
+        let entry = self.tools_spec.get_or_insert_with(BTreeSet::new);
         entry.extend(specs);
         self
     }
@@ -150,7 +135,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn ordered_tool_specs_returns_deterministic_order() {
+    fn tool_specs_are_stored_in_deterministic_order() {
         let zebra = ToolSpec::builder()
             .name("zebra")
             .description("later alphabetically")
@@ -184,8 +169,8 @@ mod tests {
             .unwrap();
 
         let names = request
-            .ordered_tool_specs()
-            .into_iter()
+            .tools_spec()
+            .iter()
             .map(|spec| spec.name.as_str())
             .collect::<Vec<_>>();
 

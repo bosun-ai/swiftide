@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use derive_builder::Builder;
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
@@ -201,7 +203,7 @@ impl ToolCallBuilder {
 /// A typed tool specification intended to be usable for multiple LLMs
 ///
 /// i.e. the json spec `OpenAI` uses to define their tools
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Builder, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Builder, Default)]
 #[builder(setter(into), derive(Debug, Serialize, Deserialize), build_fn(skip))]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -292,18 +294,50 @@ impl ToolSpecBuilder {
     }
 }
 
+impl PartialEq for ToolSpec {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+            && self.description == other.description
+            && tool_spec_schema_key(self) == tool_spec_schema_key(other)
+    }
+}
+
 impl Eq for ToolSpec {}
+
+impl PartialOrd for ToolSpec {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ToolSpec {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name
+            .cmp(&other.name)
+            .then_with(|| self.description.cmp(&other.description))
+            .then_with(|| tool_spec_schema_key(self).cmp(&tool_spec_schema_key(other)))
+    }
+}
 
 impl std::hash::Hash for ToolSpec {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.description.hash(state);
-        if let Ok(schema) = self.canonical_parameters_schema_json()
-            && let Ok(serialized) = serde_json::to_vec(&schema)
-        {
-            serialized.hash(state);
-        }
+        tool_spec_schema_key(self).hash(state);
     }
+}
+
+fn tool_spec_schema_key(spec: &ToolSpec) -> String {
+    spec.canonical_parameters_schema_json()
+        .ok()
+        .or_else(|| {
+            spec.parameters_schema
+                .as_ref()
+                .and_then(|schema| serde_json::to_value(schema).ok())
+                .map(canonicalize_json)
+        })
+        .and_then(|schema| serde_json::to_string(&schema).ok())
+        .unwrap_or_default()
 }
 
 pub fn canonicalize_json(value: JsonValue) -> JsonValue {
@@ -332,7 +366,7 @@ pub fn canonicalize_json(value: JsonValue) -> JsonValue {
 mod tests {
     use super::*;
     use serde_json::{Value, json};
-    use std::collections::HashSet;
+    use std::collections::{BTreeSet, HashSet};
     use std::hash::{DefaultHasher, Hash, Hasher};
 
     #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -463,6 +497,45 @@ mod tests {
         second.hash(&mut second_hasher);
 
         assert_eq!(first_hasher.finish(), second_hasher.finish());
+    }
+
+    #[test]
+    fn tool_spec_order_is_stable_across_schema_key_order() {
+        let first = ToolSpec::builder()
+            .name("create_view")
+            .description("Create a view")
+            .parameters_schema(
+                serde_json::from_value::<Schema>(json!({
+                    "type": "object",
+                    "properties": {
+                        "body": { "type": "string" },
+                        "name": { "type": "string" }
+                    }
+                }))
+                .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let second = ToolSpec::builder()
+            .name("create_view")
+            .description("Create a view")
+            .parameters_schema(
+                serde_json::from_value::<Schema>(json!({
+                    "properties": {
+                        "name": { "type": "string" },
+                        "body": { "type": "string" }
+                    },
+                    "type": "object"
+                }))
+                .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let set = BTreeSet::from([first, second]);
+
+        assert_eq!(set.len(), 1);
     }
 
     #[test]
