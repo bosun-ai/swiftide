@@ -32,7 +32,7 @@ impl<'a> ChatCompletionRequest<'a> {
     /// Returns tool specifications in a deterministic order suitable for provider requests.
     pub fn ordered_tool_specs(&self) -> Vec<&ToolSpec> {
         let mut specs = self.tools_spec.iter().collect::<Vec<_>>();
-        specs.sort_by(|left, right| tool_spec_sort_key(left).cmp(&tool_spec_sort_key(right)));
+        specs.sort_by_key(|left| tool_spec_sort_key(left));
         specs
     }
 

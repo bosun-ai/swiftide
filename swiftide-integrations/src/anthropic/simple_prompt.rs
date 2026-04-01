@@ -50,8 +50,8 @@ impl SimplePrompt for Anthropic {
             "[SimplePrompt] Response from anthropic"
         );
 
-        if let Some(usage) = response.usage.as_ref() {
-            if let Some(callback) = &self.on_usage {
+        if let Some(usage) = response.usage.as_ref()
+            && let Some(callback) = &self.on_usage {
                 let usage = Usage {
                     prompt_tokens: usage.input_tokens.unwrap_or_default(),
                     completion_tokens: usage.output_tokens.unwrap_or_default(),
@@ -74,7 +74,6 @@ impl SimplePrompt for Anthropic {
                     self.metric_metadata.as_ref(),
                 );
             }
-        }
 
         let message = response
             .messages()

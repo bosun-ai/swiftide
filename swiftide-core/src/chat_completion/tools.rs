@@ -249,6 +249,11 @@ impl ToolSpec {
     }
 
     /// Returns the provider-neutral strict parameters schema with deterministic JSON key ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the configured parameters schema is not compatible
+    /// with Swiftide's strict tool-schema contract.
     pub fn canonical_parameters_schema_json(&self) -> Result<JsonValue, ToolSpecError> {
         Ok(canonicalize_json(
             self.strict_parameters_schema()?.into_json(),
