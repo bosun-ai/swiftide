@@ -154,8 +154,10 @@ impl ChatCompletion for Anthropic {
             .map_err(LanguageModelError::permanent)
             .chain(
                 stream::iter(vec![final_response]).map(move |final_response| {
-                    if let Some(usage) = final_response.lock().unwrap().usage.as_ref()
-                        && let Some(callback) = maybe_usage_callback.as_ref() {
+                    if let Some(usage) = final_response.lock().unwrap().usage.as_ref() {
+                        let usage = usage.clone();
+
+                        if let Some(callback) = maybe_usage_callback.as_ref() {
                             let usage = usage.clone();
                             let callback = callback.clone();
 
@@ -174,6 +176,7 @@ impl ChatCompletion for Anthropic {
                             usage.total_tokens.into(),
                             metric_metadata.as_ref(),
                         );
+                    }
 
                     Ok(final_response.lock().unwrap().clone())
                 }),
