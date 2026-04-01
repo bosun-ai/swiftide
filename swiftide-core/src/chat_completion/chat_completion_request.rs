@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashSet};
+use std::{borrow::Cow, collections::BTreeSet};
 
 use derive_builder::Builder;
 
@@ -11,7 +11,7 @@ use super::{chat_message::ChatMessage, tools::ToolSpec, traits::Tool};
 pub struct ChatCompletionRequest<'a> {
     pub messages: Cow<'a, [ChatMessage]>,
     #[builder(default, setter(custom))]
-    pub tools_spec: HashSet<ToolSpec>,
+    pub tools_spec: BTreeSet<ToolSpec>,
 }
 
 impl<'a> ChatCompletionRequest<'a> {
@@ -25,7 +25,7 @@ impl<'a> ChatCompletionRequest<'a> {
     }
 
     /// Returns the tool specifications currently attached to the request.
-    pub fn tools_spec(&self) -> &HashSet<ToolSpec> {
+    pub fn tools_spec(&self) -> &BTreeSet<ToolSpec> {
         &self.tools_spec
     }
 
@@ -42,7 +42,7 @@ impl From<Vec<ChatMessage>> for ChatCompletionRequest<'_> {
     fn from(messages: Vec<ChatMessage>) -> Self {
         ChatCompletionRequest {
             messages: Cow::Owned(messages),
-            tools_spec: HashSet::new(),
+            tools_spec: BTreeSet::new(),
         }
     }
 }
@@ -51,15 +51,18 @@ impl<'a> From<&'a [ChatMessage]> for ChatCompletionRequest<'a> {
     fn from(messages: &'a [ChatMessage]) -> Self {
         ChatCompletionRequest {
             messages: Cow::Borrowed(messages),
-            tools_spec: HashSet::new(),
+            tools_spec: BTreeSet::new(),
         }
     }
 }
 
 impl ChatCompletionRequestBuilder<'_> {
     #[deprecated(note = "Use `tools` with real Tool instances instead")]
-    pub fn tools_spec(&mut self, tools_spec: HashSet<ToolSpec>) -> &mut Self {
-        self.tools_spec = Some(tools_spec);
+    pub fn tools_spec<I>(&mut self, tools_spec: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ToolSpec>,
+    {
+        self.tools_spec = Some(tools_spec.into_iter().collect());
         self
     }
 
@@ -90,7 +93,7 @@ impl ChatCompletionRequestBuilder<'_> {
     where
         I: IntoIterator<Item = ToolSpec>,
     {
-        let entry = self.tools_spec.get_or_insert_with(HashSet::new);
+        let entry = self.tools_spec.get_or_insert_with(BTreeSet::new);
         entry.extend(specs);
         self
     }
@@ -121,5 +124,60 @@ impl ChatCompletionRequestBuilder<'_> {
         new_messages.extend(messages);
         self.messages = Some(Cow::Owned(new_messages));
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ChatCompletionRequest;
+    use crate::chat_completion::{ChatMessage, ToolSpec};
+    use schemars::Schema;
+    use serde_json::json;
+
+    #[test]
+    fn tool_specs_are_stored_in_deterministic_order() {
+        let zebra = ToolSpec::builder()
+            .name("zebra")
+            .description("later alphabetically")
+            .parameters_schema(schema_from_json(json!({
+                "type": "object",
+                "properties": {
+                    "b": { "type": "string" },
+                    "a": { "type": "string" }
+                }
+            })))
+            .build()
+            .unwrap();
+
+        let alpha = ToolSpec::builder()
+            .name("alpha")
+            .description("earlier alphabetically")
+            .parameters_schema(schema_from_json(json!({
+                "properties": {
+                    "z": { "type": "string" },
+                    "m": { "type": "string" }
+                },
+                "type": "object"
+            })))
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([zebra, alpha])
+            .build()
+            .unwrap();
+
+        let names = request
+            .tools_spec()
+            .iter()
+            .map(|spec| spec.name.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(names, vec!["alpha", "zebra"]);
+    }
+
+    fn schema_from_json(value: serde_json::Value) -> Schema {
+        serde_json::from_value(value).expect("valid schema")
     }
 }

@@ -51,14 +51,15 @@ impl SimplePrompt for Anthropic {
         );
 
         if let Some(usage) = response.usage.as_ref() {
+            let usage = Usage {
+                prompt_tokens: usage.input_tokens.unwrap_or_default(),
+                completion_tokens: usage.output_tokens.unwrap_or_default(),
+                total_tokens: (usage.input_tokens.unwrap_or_default()
+                    + usage.output_tokens.unwrap_or_default()),
+                details: None,
+            };
+
             if let Some(callback) = &self.on_usage {
-                let usage = Usage {
-                    prompt_tokens: usage.input_tokens.unwrap_or_default(),
-                    completion_tokens: usage.output_tokens.unwrap_or_default(),
-                    total_tokens: (usage.input_tokens.unwrap_or_default()
-                        + usage.output_tokens.unwrap_or_default()),
-                    details: None,
-                };
                 callback(&usage).await?;
             }
 
@@ -66,11 +67,9 @@ impl SimplePrompt for Anthropic {
             {
                 emit_usage(
                     model,
-                    usage.input_tokens.unwrap_or_default().into(),
-                    usage.output_tokens.unwrap_or_default().into(),
-                    (usage.input_tokens.unwrap_or_default()
-                        + usage.output_tokens.unwrap_or_default())
-                    .into(),
+                    usage.prompt_tokens.into(),
+                    usage.completion_tokens.into(),
+                    usage.total_tokens.into(),
                     self.metric_metadata.as_ref(),
                 );
             }

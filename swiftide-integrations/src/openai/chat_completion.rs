@@ -76,7 +76,7 @@ impl<
             .messages(messages)
             .to_owned();
 
-        if !request.tools_spec.is_empty() {
+        if !request.tools_spec().is_empty() {
             openai_request
                 .tools(
                     request
@@ -192,7 +192,7 @@ impl<
             })
             .to_owned();
 
-        if !request.tools_spec.is_empty() {
+        if !request.tools_spec().is_empty() {
             openai_request
                 .tools(
                     match request
@@ -1203,9 +1203,16 @@ mod tests {
             _city: String,
         }
 
-        let tool_spec = ToolSpec::builder()
+        let weather_tool = ToolSpec::builder()
             .name("get_weather")
             .description("weather")
+            .parameters_schema(schemars::schema_for!(WeatherArgs))
+            .build()
+            .unwrap();
+
+        let alpha_tool = ToolSpec::builder()
+            .name("alpha_tool")
+            .description("alpha")
             .parameters_schema(schemars::schema_for!(WeatherArgs))
             .build()
             .unwrap();
@@ -1246,8 +1253,12 @@ mod tests {
                 assert_eq!(v["parallel_tool_calls"], true);
                 assert_eq!(v["tool_choice"], "auto");
                 let tools = v["tools"].as_array().unwrap();
-                assert_eq!(tools.len(), 1);
-                assert_eq!(tools[0]["function"]["name"], "get_weather");
+                assert_eq!(tools.len(), 2);
+                let tool_names = tools
+                    .iter()
+                    .map(|tool| tool["function"]["name"].as_str().unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(tool_names, vec!["alpha_tool", "get_weather"]);
                 ResponseTemplate::new(200)
                     .insert_header("content-type", "application/json")
                     .set_body_json(self.0.clone())
@@ -1272,7 +1283,7 @@ mod tests {
 
         let req = ChatCompletionRequest::builder()
             .messages(vec![ChatMessage::User("hi".into())])
-            .tool_specs([tool_spec])
+            .tool_specs([weather_tool, alpha_tool])
             .build()
             .unwrap();
 

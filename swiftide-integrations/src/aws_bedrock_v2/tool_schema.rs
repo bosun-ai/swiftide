@@ -13,6 +13,6 @@ impl TryFrom<&ToolSpec> for AwsBedrockToolSchema {
     type Error = ToolSpecError;
 
     fn try_from(spec: &ToolSpec) -> Result<Self, Self::Error> {
-        Ok(Self(spec.strict_parameters_schema()?.into_json()))
+        Ok(Self(spec.canonical_parameters_schema_json()?))
     }
 }
