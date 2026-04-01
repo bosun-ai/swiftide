@@ -183,10 +183,12 @@ mod tests {
 
         let tree = parser.parse(code).unwrap();
         let result = tree.references_and_definitions().unwrap();
-        assert_eq!(
-            result.references,
-            ["ActuallyAlsoInheritance", "Inheritance", "include", "puts",]
-        );
+        assert_eq!(result.references, [
+            "ActuallyAlsoInheritance",
+            "Inheritance",
+            "include",
+            "puts",
+        ]);
 
         assert_eq!(result.definitions, ["A", "a"]);
     }

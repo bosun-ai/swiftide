@@ -282,13 +282,10 @@ mod test {
                 .all(|pair| pair.iter().map(String::len).sum::<usize>() >= 50)
         );
 
-        assert_eq!(
-            chunks,
-            vec![
-                "fn main() {\n    println!(\"Hello, World!\");",
-                "\n    println!(\"Goodbye, World!\");\n}",
-            ]
-        );
+        assert_eq!(chunks, vec![
+            "fn main() {\n    println!(\"Hello, World!\");",
+            "\n    println!(\"Goodbye, World!\");\n}",
+        ]);
     }
 
     #[test]
@@ -323,13 +320,10 @@ mod test {
             }
         "#};
         let chunks = splitter.split(text).unwrap();
-        assert_eq!(
-            chunks,
-            vec![
-                "fn main() {\n    println!(\"Hello, World!\");",
-                "\n    println!(\"Goodbye, World!\");\n}",
-            ]
-        );
+        assert_eq!(chunks, vec![
+            "fn main() {\n    println!(\"Hello, World!\");",
+            "\n    println!(\"Goodbye, World!\");\n}",
+        ]);
     }
 
     #[test]
@@ -356,13 +350,10 @@ mod test {
         );
         assert!(chunks.iter().all(|chunk| chunk.len() >= 20));
 
-        assert_eq!(
-            chunks,
-            vec![
-                "fn main() {\n    println!(\"Hello, World!\");",
-                "\n    println!(\"Goodbye, World!\");\n}"
-            ]
-        );
+        assert_eq!(chunks, vec![
+            "fn main() {\n    println!(\"Hello, World!\");",
+            "\n    println!(\"Goodbye, World!\");\n}"
+        ]);
     }
 
     #[test]

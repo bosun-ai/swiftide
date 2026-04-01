@@ -171,13 +171,10 @@ impl From<Vec<String>> for EvaluationDataSet {
         EvaluationDataSet(
             val.into_iter()
                 .map(|question| {
-                    (
-                        question.clone(),
-                        EvaluationData {
-                            question,
-                            ..EvaluationData::default()
-                        },
-                    )
+                    (question.clone(), EvaluationData {
+                        question,
+                        ..EvaluationData::default()
+                    })
                 })
                 .collect(),
         )
@@ -189,13 +186,10 @@ impl From<&[String]> for EvaluationDataSet {
         EvaluationDataSet(
             val.iter()
                 .map(|question| {
-                    (
-                        question.clone(),
-                        EvaluationData {
-                            question: question.clone(),
-                            ..EvaluationData::default()
-                        },
-                    )
+                    (question.clone(), EvaluationData {
+                        question: question.clone(),
+                        ..EvaluationData::default()
+                    })
                 })
                 .collect(),
         )
@@ -208,14 +202,11 @@ impl From<Vec<(String, String)>> for EvaluationDataSet {
         EvaluationDataSet(
             val.into_iter()
                 .map(|(question, ground_truth)| {
-                    (
-                        question.clone(),
-                        EvaluationData {
-                            question,
-                            ground_truth,
-                            ..EvaluationData::default()
-                        },
-                    )
+                    (question.clone(), EvaluationData {
+                        question,
+                        ground_truth,
+                        ..EvaluationData::default()
+                    })
                 })
                 .collect(),
         )

@@ -365,14 +365,11 @@ mod tests {
 
         let mut names = t.iter().map(|t| t.name().into_owned()).collect::<Vec<_>>();
         names.sort();
-        assert_eq!(
-            names,
-            [
-                format!("{EXPECTED_PREFIX}:optional"),
-                format!("{EXPECTED_PREFIX}:sub"),
-                format!("{EXPECTED_PREFIX}:sum")
-            ]
-        );
+        assert_eq!(names, [
+            format!("{EXPECTED_PREFIX}:optional"),
+            format!("{EXPECTED_PREFIX}:sub"),
+            format!("{EXPECTED_PREFIX}:sum")
+        ]);
 
         let sum_name = format!("{EXPECTED_PREFIX}:sum");
         let sum_tool = t.iter().find(|t| t.name().as_ref() == sum_name).unwrap();

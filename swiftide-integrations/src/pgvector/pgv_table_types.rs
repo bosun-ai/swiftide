@@ -341,15 +341,12 @@ impl PgVector {
             let name = field.field_name();
             columns.push(name.to_string());
 
-            unnest_params.push(format!(
-                "${param_counter}::{}",
-                match field {
-                    FieldConfig::ID => "UUID[]",
-                    FieldConfig::Chunk => "TEXT[]",
-                    FieldConfig::Metadata(_) => "JSONB[]",
-                    FieldConfig::Vector(_) => "VECTOR[]",
-                }
-            ));
+            unnest_params.push(format!("${param_counter}::{}", match field {
+                FieldConfig::ID => "UUID[]",
+                FieldConfig::Chunk => "TEXT[]",
+                FieldConfig::Metadata(_) => "JSONB[]",
+                FieldConfig::Vector(_) => "VECTOR[]",
+            }));
 
             param_counter += 1;
         }

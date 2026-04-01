@@ -281,13 +281,10 @@ mod tests {
                         .iter()
                         .cloned()
                         .map(|d| {
-                            (
-                                d.0,
-                                SparseEmbedding {
-                                    indices: vec![0],
-                                    values: d.1,
-                                },
-                            )
+                            (d.0, SparseEmbedding {
+                                indices: vec![0],
+                                values: d.1,
+                            })
                         })
                         .collect(),
                 );

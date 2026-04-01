@@ -460,14 +460,11 @@ impl ChatCompletionResponse {
         } else {
             self.delta = Some(ChatCompletionResponseDelta {
                 message_chunk: None,
-                tool_calls_chunk: Some(HashMap::from([(
-                    index,
-                    ToolCallAccum {
-                        id: id.map(Into::into),
-                        name: name.map(Into::into),
-                        arguments: arguments.map(Into::into),
-                    },
-                )])),
+                tool_calls_chunk: Some(HashMap::from([(index, ToolCallAccum {
+                    id: id.map(Into::into),
+                    name: name.map(Into::into),
+                    arguments: arguments.map(Into::into),
+                })])),
             });
         }
 
