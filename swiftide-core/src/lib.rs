@@ -67,3 +67,6 @@ pub mod util;
 
 #[cfg(feature = "metrics")]
 pub mod metrics;
+
+/// Pipeline statistics collection for monitoring and observability
+pub mod statistics;
