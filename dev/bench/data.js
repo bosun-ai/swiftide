@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775046445219,
+  "lastUpdate": 1775209024361,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30809,6 +30809,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 231439,
             "range": "± 3057",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "goingforstudying@gmail.com",
+            "name": "goingforstudying-ctrl",
+            "username": "goingforstudying-ctrl"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3bb3a69379674d9fdfa90547e6c1562e742941fc",
+          "message": "feat: Add pipeline statistics collection for monitoring and observability (#1038)\n\nThis PR implements pipeline statistics collection as requested in #156.\nIt provides comprehensive monitoring and observability for pipelines,\nincluding node counts, token usage, and timing information.\n\n## Changes\n\n### New Module: swiftide_core::statistics\n\n- `PipelineStats` - Immutable statistics snapshot with:\n  - `nodes_processed`: Total nodes processed\n  - `nodes_failed`: Total nodes that resulted in error\n  - `nodes_stored`: Total nodes persisted to storage\n  - `transformations_applied`: Number of transformations\n  - `token_usage`: HashMap<String, ModelUsage> - Per-model token usage\n  - Timing information (started_at, completed_at)\n\n- `StatsCollector` - Thread-safe collector using:\n  - AtomicU64 for counters (lock-free)\n  - Mutex for token usage\n- Methods: `start()`, `complete()`, `increment_*()`,\n`record_token_usage()`, `get_stats()`\n\n- `ModelUsage` - Per-model tracking:\n  - `prompt_tokens`, `completion_tokens`, `total_tokens`\n  - `request_count`\n\n### Pipeline Integration\n\n- Added `stats: StatsCollector` field to `Pipeline`\n- Modified `Pipeline::run()` to collect statistics during execution\n- Added `Pipeline::stats()` method to retrieve current statistics\n- Added `Pipeline::stats_collector()` for real-time access\n\n### Features\n\n- ✅ Real-time statistics during pipeline execution\n- ✅ Thread-safe collection (no performance impact)\n- ✅ Token usage per model (compatible with OpenTelemetry LLM spec)\n- ✅ Processing rate calculation (nodes per second)\n- ✅ Duration tracking\n- ✅ Comprehensive unit tests\n\n## Usage Example\n\n```rust\nuse swiftide::indexing::Pipeline;\n\nlet pipeline = Pipeline::from_loader(loader)\n    .then(transformer)\n    .store(storage);\n\n// Run pipeline\npipeline.run().await?;\n\n// Get statistics\nlet stats = pipeline.stats();\nprintln!(\"Processed {} nodes in {:?}\", stats.nodes_processed, stats.duration());\nprintln!(\"Total tokens: {}\", stats.total_tokens());\nprintln!(\"Nodes per second: {:.2}\", stats.nodes_per_second().unwrap_or(0.0));\n```\n\n## Testing\n\nUnit tests included in statistics.rs:\n- `test_stats_collector()` - Full lifecycle test\n- `test_model_usage()` - Token accumulation test\n\nAdditional tests in pipeline.rs:\n- `test_pipeline_statistics()` - Pipeline integration test\n- `test_stats_collector_access()` - Stats collector access test\n\n## Related Issues\n\nCloses #156\n\n**Note**: This is a re-submission of the pipeline statistics feature.\nPrevious attempt was in PR #1036.\n\n---------\n\nCo-authored-by: GitHub Actions Bot <actions@github.com>\nCo-authored-by: goingforstudying-ctrl <goingforstudying-ctrl@users.noreply.github.com>\nCo-authored-by: Ray Claw <ray@openclaw.io>",
+          "timestamp": "2026-04-03T11:27:58+02:00",
+          "tree_id": "8e6ba4f21b885b4b09af1c1142c3dd850bfaae04",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3bb3a69379674d9fdfa90547e6c1562e742941fc"
+        },
+        "date": 1775209022260,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 806721,
+            "range": "± 12790",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 226780,
+            "range": "± 2219",
             "unit": "ns/iter"
           }
         ]
