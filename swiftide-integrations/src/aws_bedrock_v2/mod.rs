@@ -226,6 +226,25 @@ impl AwsBedrock {
 
         Ok(())
     }
+
+    #[allow(unused_variables)]
+    fn track_failure<R, S>(
+        model: &str,
+        request: Option<&R>,
+        response: Option<&S>,
+        error: &LanguageModelError,
+    ) where
+        R: Serialize + ?Sized,
+        S: Serialize + ?Sized,
+    {
+        #[cfg(feature = "langfuse")]
+        tracing::debug!(
+            langfuse.model = model,
+            langfuse.input = request.and_then(langfuse_json_redacted).unwrap_or_default(),
+            langfuse.output = response.and_then(langfuse_json).unwrap_or_default(),
+            langfuse.status_message = error.to_string(),
+        );
+    }
 }
 
 impl AwsBedrockBuilder {

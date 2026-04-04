@@ -669,11 +669,7 @@ impl<T: Chunk> Pipeline<T> {
 
         if let Some(duration) = elapsed {
             let elapsed_secs = duration.as_secs_f64();
-            let nodes_per_sec = if elapsed_secs > 0.0 {
-                total_nodes as f64 / elapsed_secs
-            } else {
-                0.0
-            };
+            let nodes_per_sec = stats.nodes_per_second().unwrap_or(0.0);
 
             tracing::info!(
                 nodes_processed = total_nodes,

@@ -22,9 +22,28 @@
 
 use std::{
     collections::HashMap,
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        Mutex, MutexGuard,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Duration, Instant},
 };
+
+const TWO_POW_32_F64: f64 = 4_294_967_296.0;
+
+fn lock_recover<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+fn u64_to_f64(value: u64) -> f64 {
+    let upper = u32::try_from(value >> 32).expect("upper 32 bits always fit in u32");
+    let lower =
+        u32::try_from(value & u64::from(u32::MAX)).expect("lower 32 bits always fit in u32");
+
+    f64::from(upper) * TWO_POW_32_F64 + f64::from(lower)
+}
 
 /// Statistics for a single model's usage
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -105,7 +124,7 @@ impl PipelineStats {
         if duration.as_secs_f64() == 0.0 || self.nodes_processed == 0 {
             return None;
         }
-        Some(self.nodes_processed as f64 / duration.as_secs_f64())
+        Some(u64_to_f64(self.nodes_processed) / duration.as_secs_f64())
     }
 
     /// Returns the total number of tokens used across all models
@@ -143,9 +162,9 @@ pub struct StatsCollector {
     nodes_failed: AtomicU64,
     nodes_stored: AtomicU64,
     transformations_applied: AtomicU64,
-    token_usage: std::sync::Mutex<HashMap<String, ModelUsage>>,
-    started_at: std::sync::Mutex<Option<Instant>>,
-    completed_at: std::sync::Mutex<Option<Instant>>,
+    token_usage: Mutex<HashMap<String, ModelUsage>>,
+    started_at: Mutex<Option<Instant>>,
+    completed_at: Mutex<Option<Instant>>,
 }
 
 impl Default for StatsCollector {
@@ -163,21 +182,21 @@ impl StatsCollector {
             nodes_failed: AtomicU64::new(0),
             nodes_stored: AtomicU64::new(0),
             transformations_applied: AtomicU64::new(0),
-            token_usage: std::sync::Mutex::new(HashMap::new()),
-            started_at: std::sync::Mutex::new(None),
-            completed_at: std::sync::Mutex::new(None),
+            token_usage: Mutex::new(HashMap::new()),
+            started_at: Mutex::new(None),
+            completed_at: Mutex::new(None),
         }
     }
 
     /// Marks the pipeline as started
     pub fn start(&self) {
-        let mut started = self.started_at.lock().unwrap();
+        let mut started = lock_recover(&self.started_at);
         *started = Some(Instant::now());
     }
 
     /// Marks the pipeline as completed
     pub fn complete(&self) {
-        let mut completed = self.completed_at.lock().unwrap();
+        let mut completed = lock_recover(&self.completed_at);
         *completed = Some(Instant::now());
     }
 
@@ -217,10 +236,8 @@ impl StatsCollector {
         prompt_tokens: u64,
         completion_tokens: u64,
     ) {
-        let mut usage = self.token_usage.lock().unwrap();
-        let model_usage = usage
-            .entry(model.as_ref().to_string())
-            .or_insert_with(ModelUsage::new);
+        let mut usage = lock_recover(&self.token_usage);
+        let model_usage = usage.entry(model.as_ref().to_string()).or_default();
         model_usage.record(prompt_tokens, completion_tokens);
     }
 
@@ -232,9 +249,9 @@ impl StatsCollector {
             nodes_failed: self.nodes_failed.load(Ordering::Relaxed),
             nodes_stored: self.nodes_stored.load(Ordering::Relaxed),
             transformations_applied: self.transformations_applied.load(Ordering::Relaxed),
-            token_usage: self.token_usage.lock().unwrap().clone(),
-            started_at: *self.started_at.lock().unwrap(),
-            completed_at: *self.completed_at.lock().unwrap(),
+            token_usage: lock_recover(&self.token_usage).clone(),
+            started_at: *lock_recover(&self.started_at),
+            completed_at: *lock_recover(&self.completed_at),
         }
     }
 }
@@ -248,9 +265,9 @@ impl Clone for StatsCollector {
             transformations_applied: AtomicU64::new(
                 self.transformations_applied.load(Ordering::Relaxed),
             ),
-            token_usage: std::sync::Mutex::new(self.token_usage.lock().unwrap().clone()),
-            started_at: std::sync::Mutex::new(*self.started_at.lock().unwrap()),
-            completed_at: std::sync::Mutex::new(*self.completed_at.lock().unwrap()),
+            token_usage: Mutex::new(lock_recover(&self.token_usage).clone()),
+            started_at: Mutex::new(*lock_recover(&self.started_at)),
+            completed_at: Mutex::new(*lock_recover(&self.completed_at)),
         }
     }
 }
