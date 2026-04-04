@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775209024361,
+  "lastUpdate": 1775305117475,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30863,6 +30863,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 226780,
             "range": "± 2219",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "283b519ededf9f14b7268cb752dd113d78efdd6f",
+          "message": "fix(bedrock): trace Langfuse metadata on failures (#1061)",
+          "timestamp": "2026-04-04T14:09:34+02:00",
+          "tree_id": "1f8b222d6eb5f860fb7b3b696f72dd41f28a5a60",
+          "url": "https://github.com/bosun-ai/swiftide/commit/283b519ededf9f14b7268cb752dd113d78efdd6f"
+        },
+        "date": 1775305114433,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 834113,
+            "range": "± 41522",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 228269,
+            "range": "± 5211",
             "unit": "ns/iter"
           }
         ]
