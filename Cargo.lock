@@ -10224,6 +10224,7 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "tracing-futures",
+ "tracing-subscriber",
  "tree-sitter",
  "tree-sitter-c",
  "tree-sitter-c-sharp",

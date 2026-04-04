@@ -68,7 +68,18 @@ impl ChatCompletion for AwsBedrock {
         let tracking_request: Option<serde_json::Value> = None;
 
         let (messages, system, inference_config, tool_config) =
-            build_converse_input(request, &self.default_options)?;
+            match build_converse_input(request, &self.default_options) {
+                Ok(parts) => parts,
+                Err(error) => {
+                    Self::track_failure(
+                        model,
+                        tracking_request.as_ref(),
+                        None::<&serde_json::Value>,
+                        &error,
+                    );
+                    return Err(error);
+                }
+            };
 
         tracing::debug!(
             model = model,
@@ -77,7 +88,7 @@ impl ChatCompletion for AwsBedrock {
             "[ChatCompletion] Request to bedrock converse"
         );
 
-        let response = self
+        let response = match self
             .client
             .converse(
                 model,
@@ -91,11 +102,34 @@ impl ChatCompletion for AwsBedrock {
                     .additional_model_response_field_paths
                     .clone(),
             )
-            .await?;
+            .await
+        {
+            Ok(response) => response,
+            Err(error) => {
+                Self::track_failure(
+                    model,
+                    tracking_request.as_ref(),
+                    None::<&serde_json::Value>,
+                    &error,
+                );
+                return Err(error);
+            }
+        };
 
         tracing::debug!(response = ?response, "[ChatCompletion] Response from bedrock converse");
 
-        let completion = response_to_chat_completion(&response)?;
+        let completion = match response_to_chat_completion(&response) {
+            Ok(completion) => completion,
+            Err(error) => {
+                Self::track_failure(
+                    model,
+                    tracking_request.as_ref(),
+                    None::<&serde_json::Value>,
+                    &error,
+                );
+                return Err(error);
+            }
+        };
 
         if let Some(error) = super::context_length_exceeded_if_empty(
             completion.message.is_some(),
@@ -106,6 +140,7 @@ impl ChatCompletion for AwsBedrock {
                 .is_some_and(|reasoning| !reasoning.is_empty()),
             Some(response.stop_reason()),
         ) {
+            Self::track_failure(model, tracking_request.as_ref(), Some(&completion), &error);
             return Err(error);
         }
 
@@ -142,7 +177,15 @@ impl ChatCompletion for AwsBedrock {
         let (messages, system, inference_config, tool_config) =
             match build_converse_input(request, &self.default_options) {
                 Ok(parts) => parts,
-                Err(error) => return error.into(),
+                Err(error) => {
+                    Self::track_failure(
+                        &model,
+                        tracking_request.as_ref(),
+                        None::<&serde_json::Value>,
+                        &error,
+                    );
+                    return error.into();
+                }
             };
 
         let stream_output = match self
@@ -161,7 +204,15 @@ impl ChatCompletion for AwsBedrock {
             .await
         {
             Ok(stream_output) => stream_output,
-            Err(error) => return error.into(),
+            Err(error) => {
+                Self::track_failure(
+                    &model,
+                    tracking_request.as_ref(),
+                    None::<&serde_json::Value>,
+                    &error,
+                );
+                return error.into();
+            }
         };
 
         let self_for_stream = self.clone();
@@ -215,6 +266,12 @@ impl ChatCompletion for AwsBedrock {
                                     .is_some_and(|reasoning| !reasoning.is_empty()),
                                 stop_reason.as_ref(),
                             ) {
+                                Self::track_failure(
+                                    &model,
+                                    tracking_request.as_ref(),
+                                    Some(&response),
+                                    &error,
+                                );
                                 return Some((
                                     Err(error),
                                     (
@@ -262,19 +319,27 @@ impl ChatCompletion for AwsBedrock {
                                 ),
                             ))
                         }
-                        Err(error) => Some((
-                            Err(super::converse_stream_output_error_to_language_model_error(
-                                error,
-                            )),
-                            (
-                                event_stream,
-                                response,
-                                stop_reason,
-                                true,
-                                model,
-                                tracking_request,
-                            ),
-                        )),
+                        Err(error) => {
+                            let error =
+                                super::converse_stream_output_error_to_language_model_error(error);
+                            Self::track_failure(
+                                &model,
+                                tracking_request.as_ref(),
+                                Some(&response),
+                                &error,
+                            );
+                            Some((
+                                Err(error),
+                                (
+                                    event_stream,
+                                    response,
+                                    stop_reason,
+                                    true,
+                                    model,
+                                    tracking_request,
+                                ),
+                            ))
+                        }
                     }
                 }
             },
@@ -1192,6 +1257,8 @@ mod tests {
     };
 
     use super::*;
+    #[cfg(feature = "langfuse")]
+    use crate::aws_bedrock_v2::test_utils::run_with_langfuse_event_capture;
     use crate::aws_bedrock_v2::{
         AwsBedrock, MockBedrockConverse,
         test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server, converse_stream_event},
@@ -1311,6 +1378,58 @@ mod tests {
             serde_json::json!({"location":"Amsterdam"})
         );
         assert_eq!(response.usage.unwrap().total_tokens, 18);
+    }
+
+    #[cfg(feature = "langfuse")]
+    #[test]
+    fn test_complete_tracks_langfuse_failure_metadata_on_converse_error() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .returning(|_, _, _, _, _, _, _, _| {
+                Err(LanguageModelError::permanent("bedrock request failed"))
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Trace this failure".into())])
+            .build()
+            .unwrap();
+
+        let (result, events) =
+            run_with_langfuse_event_capture(|| async { bedrock.complete(&request).await });
+
+        let error = result.expect_err("request should fail");
+        assert!(error.to_string().contains("bedrock request failed"));
+
+        let failure_event = events
+            .iter()
+            .find(|event| event.contains_key("langfuse.status_message"))
+            .expect("langfuse failure event");
+
+        assert_eq!(
+            failure_event
+                .get("langfuse.model")
+                .map(std::string::String::as_str),
+            Some("anthropic.claude-3-5-sonnet-20241022-v2:0")
+        );
+        assert!(
+            failure_event
+                .get("langfuse.input")
+                .is_some_and(|input| input.contains("Trace this failure"))
+        );
+        assert!(
+            failure_event
+                .get("langfuse.status_message")
+                .is_some_and(|message| message.contains("bedrock request failed"))
+        );
     }
 
     #[test_log::test(tokio::test)]
@@ -1447,6 +1566,54 @@ mod tests {
         let first = stream.next().await.expect("stream should yield one item");
         assert!(matches!(first, Err(LanguageModelError::PermanentError(_))));
         assert!(stream.next().await.is_none());
+    }
+
+    #[cfg(feature = "langfuse")]
+    #[test]
+    fn test_complete_stream_tracks_langfuse_failure_metadata_on_stream_error() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse_stream()
+            .once()
+            .returning(|_, _, _, _, _, _, _| {
+                Err(LanguageModelError::transient("bedrock stream failed"))
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::new_user("Stream this failure")])
+            .build()
+            .unwrap();
+
+        let (first_item, events) = run_with_langfuse_event_capture(|| async {
+            let mut stream = bedrock.complete_stream(&request).await;
+            stream.next().await.expect("stream should yield an error")
+        });
+
+        let error = first_item.expect_err("stream should fail");
+        assert!(error.to_string().contains("bedrock stream failed"));
+
+        let failure_event = events
+            .iter()
+            .find(|event| event.contains_key("langfuse.status_message"))
+            .expect("langfuse failure event");
+
+        assert!(
+            failure_event
+                .get("langfuse.input")
+                .is_some_and(|input| input.contains("Stream this failure"))
+        );
+        assert!(
+            failure_event
+                .get("langfuse.status_message")
+                .is_some_and(|message| message.contains("bedrock stream failed"))
+        );
     }
 
     #[test_log::test(tokio::test)]

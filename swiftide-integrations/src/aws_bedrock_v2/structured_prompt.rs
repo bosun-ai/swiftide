@@ -58,7 +58,7 @@ impl DynStructuredPrompt for AwsBedrock {
             )
             .build();
 
-        let response = self
+        let response = match self
             .client
             .converse(
                 model,
@@ -72,9 +72,32 @@ impl DynStructuredPrompt for AwsBedrock {
                     .additional_model_response_field_paths
                     .clone(),
             )
-            .await?;
+            .await
+        {
+            Ok(response) => response,
+            Err(error) => {
+                Self::track_failure(
+                    model,
+                    tracking_request.as_ref(),
+                    None::<&serde_json::Value>,
+                    &error,
+                );
+                return Err(error);
+            }
+        };
 
-        let completion = super::chat_completion::response_to_chat_completion(&response)?;
+        let completion = match super::chat_completion::response_to_chat_completion(&response) {
+            Ok(completion) => completion,
+            Err(error) => {
+                Self::track_failure(
+                    model,
+                    tracking_request.as_ref(),
+                    None::<&serde_json::Value>,
+                    &error,
+                );
+                return Err(error);
+            }
+        };
 
         self.track_completion(
             model,
@@ -84,7 +107,7 @@ impl DynStructuredPrompt for AwsBedrock {
         )
         .await?;
 
-        let Some(response_text) = completion.message else {
+        let Some(ref response_text) = completion.message else {
             if let Some(error) = super::context_length_exceeded_if_empty(
                 false,
                 completion.tool_calls.is_some(),
@@ -94,17 +117,24 @@ impl DynStructuredPrompt for AwsBedrock {
                     .is_some_and(|reasoning| !reasoning.is_empty()),
                 Some(response.stop_reason()),
             ) {
+                Self::track_failure(model, tracking_request.as_ref(), Some(&completion), &error);
                 return Err(error);
             }
 
-            return Err(LanguageModelError::permanent("No text in response"));
+            let error = LanguageModelError::permanent("No text in response");
+            Self::track_failure(model, tracking_request.as_ref(), Some(&completion), &error);
+            return Err(error);
         };
 
-        serde_json::from_str(response_text.trim()).map_err(|error| {
-            LanguageModelError::permanent(anyhow::anyhow!(
-                "Failed to parse model response as JSON: {error}"
-            ))
-        })
+        serde_json::from_str(response_text.trim())
+            .map_err(|error| {
+                LanguageModelError::permanent(anyhow::anyhow!(
+                    "Failed to parse model response as JSON: {error}"
+                ))
+            })
+            .inspect_err(|error| {
+                Self::track_failure(model, tracking_request.as_ref(), Some(&completion), error);
+            })
     }
 }
 
@@ -133,6 +163,8 @@ mod tests {
     };
 
     use super::*;
+    #[cfg(feature = "langfuse")]
+    use crate::aws_bedrock_v2::test_utils::run_with_langfuse_event_capture;
     use crate::aws_bedrock_v2::{
         AwsBedrock, MockBedrockConverse,
         test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server},
@@ -211,6 +243,59 @@ mod tests {
             StructuredOutput {
                 answer: "42".to_string()
             }
+        );
+    }
+
+    #[cfg(feature = "langfuse")]
+    #[test]
+    fn test_structured_prompt_tracks_langfuse_failure_metadata_on_converse_error() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .returning(|_, _, _, _, _, _, _, _| {
+                Err(LanguageModelError::permanent("structured prompt failed"))
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let (result, events) = run_with_langfuse_event_capture(|| async {
+            bedrock
+                .structured_prompt_dyn(
+                    "Summarize this failure".into(),
+                    schema_for!(StructuredOutput),
+                )
+                .await
+        });
+
+        let error = result.expect_err("request should fail");
+        assert!(error.to_string().contains("structured prompt failed"));
+
+        let failure_event = events
+            .iter()
+            .find(|event| event.contains_key("langfuse.status_message"))
+            .expect("langfuse failure event");
+
+        assert_eq!(
+            failure_event
+                .get("langfuse.model")
+                .map(std::string::String::as_str),
+            Some("anthropic.claude-3-5-sonnet-20241022-v2:0")
+        );
+        assert!(
+            failure_event
+                .get("langfuse.input")
+                .is_some_and(|input| input.contains("Summarize this failure"))
+        );
+        assert!(
+            failure_event
+                .get("langfuse.status_message")
+                .is_some_and(|message| message.contains("structured prompt failed"))
         );
     }
 
