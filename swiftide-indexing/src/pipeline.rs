@@ -348,6 +348,49 @@ impl<T: Chunk> Pipeline<T> {
         pipeline_with_new_stream!(self, stream.boxed())
     }
 
+    /// Transforms and expands a single node into many nodes
+    ///
+    /// Sementacially identical to `then_chunk` and repurposes the `ChunkerTransformer` trait.
+    ///
+    /// The real difference is in communicating intent and the trace/span names.
+    ///
+    /// # Arguments
+    ///
+    /// * `transformer` - A transformer that implements the `ChunkerTransformer` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the updated stream that applies the chunker transformer to
+    /// each node.
+    #[must_use]
+    pub fn then_expand<Output: Chunk>(
+        self,
+        transformer: impl ChunkerTransformer<Input = T, Output = Output> + 'static,
+    ) -> Pipeline<Output> {
+        let chunker = Arc::new(transformer);
+        let concurrency = chunker.concurrency().unwrap_or(self.concurrency);
+        let stream = self
+            .stream
+            .map_ok(move |node| {
+                let chunker = Arc::clone(&chunker);
+                let span = trace_span!("then_expand", chunker);
+
+                tokio::spawn(
+                    async move {
+                        node_trace_log!(chunker, node, "Expanding node");
+                        chunker.transform_node(node).await
+                    }
+                    .instrument(span.or_current()),
+                )
+                .map_err(anyhow::Error::from)
+            })
+            .err_into::<anyhow::Error>()
+            .try_buffer_unordered(concurrency)
+            .try_flatten_unordered(None);
+
+        pipeline_with_new_stream!(self, stream.boxed())
+    }
+
     /// Persists indexing nodes using the provided storage backend.
     ///
     /// # Arguments
