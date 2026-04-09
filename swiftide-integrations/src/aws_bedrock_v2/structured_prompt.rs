@@ -57,6 +57,8 @@ impl DynStructuredPrompt for AwsBedrock {
                     .map_err(LanguageModelError::permanent)?,
             )
             .build();
+        let additional_model_request_fields =
+            super::additional_model_request_fields_from_options(model, &self.default_options)?;
 
         let response = match self
             .client
@@ -67,7 +69,7 @@ impl DynStructuredPrompt for AwsBedrock {
                 super::inference_config_from_options(&self.default_options),
                 None,
                 Some(output_config),
-                self.default_options.additional_model_request_fields.clone(),
+                additional_model_request_fields,
                 self.default_options
                     .additional_model_response_field_paths
                     .clone(),
@@ -166,7 +168,7 @@ mod tests {
     #[cfg(feature = "langfuse")]
     use crate::aws_bedrock_v2::test_utils::run_with_langfuse_event_capture;
     use crate::aws_bedrock_v2::{
-        AwsBedrock, MockBedrockConverse,
+        AwsBedrock, MockBedrockConverse, Options, ReasoningEffort,
         test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server},
     };
 
@@ -227,6 +229,93 @@ mod tests {
         let bedrock = AwsBedrock::builder()
             .test_client(bedrock_mock)
             .default_prompt_model("anthropic.claude-3-5-sonnet-20241022-v2:0")
+            .build()
+            .unwrap();
+
+        let value = bedrock
+            .structured_prompt_dyn(
+                "What is two times twenty one?".into(),
+                schema_for!(StructuredOutput),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            serde_json::from_value::<StructuredOutput>(value).unwrap(),
+            StructuredOutput {
+                answer: "42".to_string()
+            }
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_structured_prompt_passes_reasoning_effort_in_additional_model_request_fields() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .withf(
+                |model_id,
+                 _messages,
+                 _system,
+                 _inference_config,
+                 _tool_config,
+                 output_config,
+                 additional_model_request_fields,
+                 _additional_model_response_field_paths| {
+                    model_id == "anthropic.claude-opus-4-5-20251101-v1:0"
+                        && output_config
+                            .as_ref()
+                            .and_then(|config| config.text_format())
+                            .is_some()
+                        && additional_model_request_fields
+                            .as_ref()
+                            .is_some_and(|fields| {
+                                let Some(fields) = fields.as_object() else {
+                                    return false;
+                                };
+
+                                let effort_matches = fields
+                                    .get("output_config")
+                                    .and_then(Document::as_object)
+                                    .and_then(|output_config| output_config.get("effort"))
+                                    .and_then(Document::as_string)
+                                    == Some("low");
+                                let beta_matches = fields
+                                    .get("anthropic_beta")
+                                    .and_then(Document::as_array)
+                                    .is_some_and(|betas| {
+                                        betas.iter().any(|beta| {
+                                            beta.as_string() == Some("effort-2025-11-24")
+                                        })
+                                    });
+
+                                effort_matches && beta_matches
+                            })
+                },
+            )
+            .returning(|_, _, _, _, _, _, _, _| {
+                Ok(ConverseOutput::builder()
+                    .output(ConverseResult::Message(
+                        Message::builder()
+                            .role(ConversationRole::Assistant)
+                            .content(ContentBlock::Text("{\"answer\":\"42\"}".to_string()))
+                            .build()
+                            .unwrap(),
+                    ))
+                    .stop_reason(StopReason::EndTurn)
+                    .build()
+                    .unwrap())
+            });
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-opus-4-5-20251101-v1:0")
+            .default_options(Options {
+                reasoning_effort: Some(ReasoningEffort::Low),
+                ..Default::default()
+            })
             .build()
             .unwrap();
 

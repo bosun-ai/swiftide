@@ -80,6 +80,20 @@ impl ChatCompletion for AwsBedrock {
                     return Err(error);
                 }
             };
+        let additional_model_request_fields =
+            match super::additional_model_request_fields_from_options(model, &self.default_options)
+            {
+                Ok(fields) => fields,
+                Err(error) => {
+                    Self::track_failure(
+                        model,
+                        tracking_request.as_ref(),
+                        None::<&serde_json::Value>,
+                        &error,
+                    );
+                    return Err(error);
+                }
+            };
 
         tracing::debug!(
             model = model,
@@ -97,7 +111,7 @@ impl ChatCompletion for AwsBedrock {
                 inference_config,
                 tool_config,
                 None,
-                self.default_options.additional_model_request_fields.clone(),
+                additional_model_request_fields,
                 self.default_options
                     .additional_model_response_field_paths
                     .clone(),
@@ -187,6 +201,20 @@ impl ChatCompletion for AwsBedrock {
                     return error.into();
                 }
             };
+        let additional_model_request_fields =
+            match super::additional_model_request_fields_from_options(&model, &self.default_options)
+            {
+                Ok(fields) => fields,
+                Err(error) => {
+                    Self::track_failure(
+                        &model,
+                        tracking_request.as_ref(),
+                        None::<&serde_json::Value>,
+                        &error,
+                    );
+                    return error.into();
+                }
+            };
 
         let stream_output = match self
             .client
@@ -196,7 +224,7 @@ impl ChatCompletion for AwsBedrock {
                 system,
                 inference_config,
                 tool_config,
-                self.default_options.additional_model_request_fields.clone(),
+                additional_model_request_fields,
                 self.default_options
                     .additional_model_response_field_paths
                     .clone(),
@@ -1260,7 +1288,7 @@ mod tests {
     #[cfg(feature = "langfuse")]
     use crate::aws_bedrock_v2::test_utils::run_with_langfuse_event_capture;
     use crate::aws_bedrock_v2::{
-        AwsBedrock, MockBedrockConverse,
+        AwsBedrock, MockBedrockConverse, ReasoningEffort,
         test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server, converse_stream_event},
     };
 
@@ -1480,6 +1508,83 @@ mod tests {
             .default_options(Options {
                 additional_model_request_fields: Some(request_fields),
                 additional_model_response_field_paths: Some(vec!["/thinking".to_string()]),
+                ..Default::default()
+            })
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello".into())])
+            .build()
+            .unwrap();
+
+        let _ = bedrock.complete(&request).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_passes_reasoning_effort_for_claude_opus_4_5() {
+        let mut bedrock_mock = MockBedrockConverse::new();
+
+        let mut thinking = HashMap::new();
+        thinking.insert("type".to_string(), Document::String("enabled".to_string()));
+        thinking.insert("budget_tokens".to_string(), Document::from(512_u64));
+        let mut request_fields = HashMap::new();
+        request_fields.insert("thinking".to_string(), Document::Object(thinking));
+        let request_fields = Document::Object(request_fields);
+
+        bedrock_mock
+            .expect_converse()
+            .once()
+            .withf(
+                |model_id,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _,
+                 additional_model_request_fields,
+                 _additional_model_response_field_paths| {
+                    model_id == "anthropic.claude-opus-4-5-20251101-v1:0"
+                        && additional_model_request_fields
+                            .as_ref()
+                            .is_some_and(|fields| {
+                                let Some(fields) = fields.as_object() else {
+                                    return false;
+                                };
+
+                                let effort_matches = fields
+                                    .get("output_config")
+                                    .and_then(Document::as_object)
+                                    .and_then(|output_config| output_config.get("effort"))
+                                    .and_then(Document::as_string)
+                                    == Some("medium");
+                                let thinking_matches = fields
+                                    .get("thinking")
+                                    .and_then(Document::as_object)
+                                    .and_then(|thinking| thinking.get("type"))
+                                    .and_then(Document::as_string)
+                                    == Some("enabled");
+                                let beta_matches = fields
+                                    .get("anthropic_beta")
+                                    .and_then(Document::as_array)
+                                    .is_some_and(|betas| {
+                                        betas.iter().any(|beta| {
+                                            beta.as_string() == Some("effort-2025-11-24")
+                                        })
+                                    });
+
+                                effort_matches && thinking_matches && beta_matches
+                            })
+                },
+            )
+            .returning(|_, _, _, _, _, _, _, _| Ok(response_with_text_and_tool_call()));
+
+        let bedrock = AwsBedrock::builder()
+            .test_client(bedrock_mock)
+            .default_prompt_model("anthropic.claude-opus-4-5-20251101-v1:0")
+            .default_options(Options {
+                reasoning_effort: Some(ReasoningEffort::Medium),
+                additional_model_request_fields: Some(request_fields),
                 ..Default::default()
             })
             .build()
