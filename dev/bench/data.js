@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775549514595,
+  "lastUpdate": 1775751667310,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -30971,6 +30971,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 225868,
             "range": "± 1164",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "849ebf9a2a7e8faa1061b64d21061b70ee8d0dac",
+          "message": "feat: Add Bedrock Claude reasoning effort support (#1063)\n\n## Summary\n\nThis PR adds typed reasoning effort support for Anthropic Claude models\non AWS Bedrock in the `aws_bedrock_v2` integration.\n\nIt introduces:\n- `aws_bedrock_v2::ReasoningEffort` with `Low`, `Medium`, `High`, and\n`Max`\n- `Options::reasoning_effort` and `Options::anthropic_beta`\n- provider-specific Bedrock request field merging for Anthropic\n`output_config.effort` and `anthropic_beta`\n- coverage for normal chat completions and structured prompts\n- an ignored live smoke test for Bedrock reasoning effort invocations\n\n## Implementation details\n\nBedrock Claude effort controls are not part of Bedrock's top-level\n`outputConfig`; they have to be sent via Anthropic model-specific\nrequest fields (`additionalModelRequestFields`).\n\nThis PR:\n- maps `reasoning_effort` to\n`additional_model_request_fields.output_config.effort`\n- merges explicit `anthropic_beta` headers with existing raw\n`additional_model_request_fields`\n- auto-adds `effort-2025-11-24` when the target model ID clearly\nidentifies Claude Opus 4.5\n- preserves existing Bedrock-specific fields like `thinking`\n- reuses the same merge path for `Converse`, `ConverseStream`, and\nstructured prompt requests so behavior is consistent across request\ntypes\n\nA notable Bedrock behavior we observed during validation:\n- the direct model ID `anthropic.claude-opus-4-5-20251101-v1:0` was\nrejected for on-demand throughput in this account/region\n- the corresponding inference profile\n`eu.anthropic.claude-opus-4-5-20251101-v1:0` worked\n\n## Validation\n\nAutomated:\n- `cargo test -p swiftide-integrations --features aws-bedrock\nreasoning_effort -- --nocapture`\n- `cargo +nightly fmt --all`\n- `cargo test -p swiftide-integrations --features aws-bedrock\nsmoke_live_bedrock_reasoning_effort_prompt --no-run`\n\nLive AWS Bedrock validation:\n1. Refreshed the local AWS SSO session with `aws sso login --profile\ndefault --use-device-code`\n2. Verified account and region with `aws sts get-caller-identity` and\n`aws configure get region --profile default`\n3. Confirmed the Claude Opus models available in Bedrock with `aws\nbedrock list-foundation-models --by-provider anthropic`\n4. Confirmed the usable inference profiles with `aws bedrock\nlist-inference-profiles`\n5. Ran the real Swiftide smoke test against the EU Opus 4.5 inference\nprofile:\n\n```bash\nAWS_PROFILE=default \\\nAWS_REGION=eu-central-1 \\\nSWIFTIDE_AWS_BEDROCK_LIVE_MODEL=eu.anthropic.claude-opus-4-5-20251101-v1:0 \\\ncargo test -p swiftide-integrations --features aws-bedrock smoke_live_bedrock_reasoning_effort_prompt -- --ignored --nocapture\n```\n\nObserved live result:\n\n```text\nmodel=eu.anthropic.claude-opus-4-5-20251101-v1:0\nresponse=swiftide-bedrock-effort-ok\n```\n\nThat confirms Swiftide can send a real Bedrock request with reasoning\neffort enabled and receive a successful response from Claude Opus 4.5.",
+          "timestamp": "2026-04-09T18:11:56+02:00",
+          "tree_id": "e649eb07caf94bee503c060c28757a63576d94bc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/849ebf9a2a7e8faa1061b64d21061b70ee8d0dac"
+        },
+        "date": 1775751664183,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 836286,
+            "range": "± 24182",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 222498,
+            "range": "± 2360",
             "unit": "ns/iter"
           }
         ]
