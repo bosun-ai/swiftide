@@ -57,7 +57,7 @@ mod tests {
 
     use super::*;
     use crate::aws_bedrock_v2::{
-        AwsBedrock, MockBedrockConverse,
+        AwsBedrock, MockBedrockConverse, ReasoningEffort,
         test_utils::{TEST_MODEL_ID, bedrock_client_for_mock_server},
     };
 
@@ -318,5 +318,57 @@ mod tests {
         let error = bedrock.prompt("Hello".into()).await.unwrap_err();
         assert!(matches!(error, LanguageModelError::PermanentError(_)));
         assert!(error.to_string().contains("No text in response"));
+    }
+
+    #[ignore = "requires live AWS Bedrock access and billable model invocation"]
+    #[test_log::test(tokio::test(flavor = "multi_thread"))]
+    async fn smoke_live_bedrock_reasoning_effort_prompt() {
+        let model = std::env::var("SWIFTIDE_AWS_BEDROCK_LIVE_MODEL")
+            .unwrap_or_else(|_| "anthropic.claude-opus-4-5-20251101-v1:0".to_string());
+        let prompt = "Reply with exactly 'swiftide-bedrock-effort-ok' and nothing else.";
+
+        let bedrock = AwsBedrock::builder()
+            .default_prompt_model(model.clone())
+            .default_options(
+                Options::builder()
+                    .max_tokens(64)
+                    .reasoning_effort(ReasoningEffort::Low)
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let mut attempts = 0;
+        let response = loop {
+            attempts += 1;
+            let attempt = tokio::time::timeout(
+                std::time::Duration::from_secs(60),
+                bedrock.prompt(prompt.into()),
+            )
+            .await
+            .expect("live Bedrock prompt timed out");
+
+            match attempt {
+                Ok(response) => break response,
+                Err(LanguageModelError::TransientError(error)) => {
+                    eprintln!("transient Bedrock error during live smoke test: {error}");
+                    assert!(
+                        attempts < 3,
+                        "live Bedrock prompt failed after retries: {error}"
+                    );
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                }
+                Err(error) => panic!("live Bedrock prompt failed: {error:?}"),
+            }
+        };
+
+        println!("model={model}");
+        println!("response={response}");
+
+        assert!(
+            response.contains("swiftide-bedrock-effort-ok"),
+            "unexpected response: {response}"
+        );
     }
 }

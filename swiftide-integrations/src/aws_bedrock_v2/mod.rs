@@ -76,6 +76,31 @@ impl std::fmt::Debug for AwsBedrock {
     }
 }
 
+/// Anthropic Claude effort guidance for Bedrock model-specific request fields.
+///
+/// Bedrock currently documents the following support:
+/// - Claude Opus 4.5: `low`, `medium`, `high` via the `effort-2025-11-24` beta header.
+/// - Claude Opus 4.6 adaptive thinking: `low`, `medium`, `high`, `max` with no beta header.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReasoningEffort {
+    Low,
+    Medium,
+    High,
+    Max,
+}
+
+impl ReasoningEffort {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Max => "max",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Builder, Default)]
 #[builder(setter(strip_option))]
 pub struct Options {
@@ -104,6 +129,25 @@ pub struct Options {
     /// Defaults to `true` when not set.
     #[builder(default)]
     pub tool_strict: Option<bool>,
+
+    /// Anthropic beta headers forwarded through Bedrock model-specific request fields.
+    ///
+    /// This is useful for Anthropic features on Bedrock that require `anthropic_beta`.
+    #[builder(default, setter(into))]
+    pub anthropic_beta: Option<Vec<String>>,
+
+    /// Anthropic Claude reasoning/token spend guidance forwarded through Bedrock
+    /// `additional_model_request_fields.output_config.effort`.
+    ///
+    /// For Claude Opus 4.5, Bedrock requires the `effort-2025-11-24` beta header. Swiftide adds
+    /// that header automatically when the configured model ID clearly identifies Claude Opus 4.5.
+    /// If you route through an inference profile or ARN, also set `anthropic_beta` explicitly.
+    ///
+    /// For Claude Opus 4.6 adaptive thinking, Bedrock documents `max` in addition to the other
+    /// levels. Use `additional_model_request_fields` to set `thinking.type = "adaptive"` when
+    /// needed.
+    #[builder(default)]
+    pub reasoning_effort: Option<ReasoningEffort>,
 
     /// Provider-specific model request parameters passed to Converse.
     ///
@@ -143,6 +187,12 @@ impl Options {
         }
         if let Some(tool_strict) = other.tool_strict {
             self.tool_strict = Some(tool_strict);
+        }
+        if let Some(anthropic_beta) = other.anthropic_beta {
+            self.anthropic_beta = Some(anthropic_beta);
+        }
+        if let Some(reasoning_effort) = other.reasoning_effort {
+            self.reasoning_effort = Some(reasoning_effort);
         }
         if let Some(additional_model_request_fields) = other.additional_model_request_fields {
             self.additional_model_request_fields = Some(additional_model_request_fields);
@@ -541,6 +591,90 @@ fn inference_config_from_options(options: &Options) -> Option<InferenceConfigura
     has_any_value.then(|| builder.build())
 }
 
+fn additional_model_request_fields_from_options(
+    model: &str,
+    options: &Options,
+) -> Result<Option<Document>, LanguageModelError> {
+    if options.reasoning_effort.is_none() && options.anthropic_beta.is_none() {
+        return Ok(options.additional_model_request_fields.clone());
+    }
+
+    let mut fields = match options.additional_model_request_fields.clone() {
+        Some(Document::Object(fields)) => fields,
+        Some(_) => {
+            return Err(LanguageModelError::permanent(
+                "Bedrock additional_model_request_fields must be an object when using anthropic_beta or reasoning_effort",
+            ));
+        }
+        None => std::collections::HashMap::new(),
+    };
+
+    if let Some(reasoning_effort) = options.reasoning_effort {
+        let mut output_config = match fields.remove("output_config") {
+            Some(Document::Object(output_config)) => output_config,
+            Some(_) => {
+                return Err(LanguageModelError::permanent(
+                    "Bedrock additional_model_request_fields.output_config must be an object when using reasoning_effort",
+                ));
+            }
+            None => std::collections::HashMap::new(),
+        };
+
+        output_config.insert(
+            "effort".to_string(),
+            Document::String(reasoning_effort.as_str().to_string()),
+        );
+        fields.insert("output_config".to_string(), Document::Object(output_config));
+    }
+
+    let mut anthropic_beta = match fields.remove("anthropic_beta") {
+        Some(Document::Array(items)) => items
+            .into_iter()
+            .map(document_string)
+            .collect::<Result<Vec<_>, _>>()?,
+        Some(_) => {
+            return Err(LanguageModelError::permanent(
+                "Bedrock additional_model_request_fields.anthropic_beta must be an array of strings",
+            ));
+        }
+        None => Vec::new(),
+    };
+
+    if let Some(extra_beta_headers) = &options.anthropic_beta {
+        for beta_header in extra_beta_headers {
+            push_unique_string(&mut anthropic_beta, beta_header.clone());
+        }
+    }
+
+    if options.reasoning_effort.is_some() && model.contains("claude-opus-4-5") {
+        push_unique_string(&mut anthropic_beta, "effort-2025-11-24".to_string());
+    }
+
+    if !anthropic_beta.is_empty() {
+        fields.insert(
+            "anthropic_beta".to_string(),
+            Document::Array(anthropic_beta.into_iter().map(Document::String).collect()),
+        );
+    }
+
+    Ok(Some(Document::Object(fields)))
+}
+
+fn document_string(value: Document) -> Result<String, LanguageModelError> {
+    match value {
+        Document::String(value) => Ok(value),
+        _ => Err(LanguageModelError::permanent(
+            "Bedrock anthropic_beta entries must be strings",
+        )),
+    }
+}
+
+fn push_unique_string(values: &mut Vec<String>, value: String) {
+    if !values.iter().any(|existing| existing == &value) {
+        values.push(value);
+    }
+}
+
 fn usage_from_bedrock(usage: &TokenUsage) -> Usage {
     let cached_tokens = usage
         .cache_read_input_tokens()
@@ -698,6 +832,8 @@ mod tests {
             top_p: None,
             stop_sequences: Some(vec!["STOP_B".to_string()]),
             tool_strict: Some(true),
+            anthropic_beta: Some(vec!["context-1m-2025-08-07".to_string()]),
+            reasoning_effort: Some(ReasoningEffort::Medium),
             additional_model_request_fields: Some(Document::Object(request_fields)),
             additional_model_response_field_paths: Some(vec!["/thinking".to_string()]),
         };
@@ -713,6 +849,11 @@ mod tests {
             Some(&["STOP_B".to_string()][..])
         );
         assert_eq!(base.tool_strict, Some(true));
+        assert_eq!(
+            base.anthropic_beta.as_deref(),
+            Some(&["context-1m-2025-08-07".to_string()][..])
+        );
+        assert_eq!(base.reasoning_effort, Some(ReasoningEffort::Medium));
         assert!(base.additional_model_request_fields.is_some());
         assert_eq!(
             base.additional_model_response_field_paths.as_deref(),
@@ -839,6 +980,92 @@ mod tests {
         assert_eq!(config.temperature(), Some(0.2));
         assert_eq!(config.top_p(), Some(0.9));
         assert_eq!(config.stop_sequences(), ["DONE"]);
+    }
+
+    #[test]
+    fn test_additional_model_request_fields_merges_reasoning_effort_and_betas() {
+        let mut thinking = std::collections::HashMap::new();
+        thinking.insert("type".to_string(), Document::String("enabled".to_string()));
+        thinking.insert("budget_tokens".to_string(), Document::from(512_u64));
+
+        let raw_beta_headers = vec![Document::String("context-1m-2025-08-07".to_string())];
+
+        let mut additional_fields = std::collections::HashMap::new();
+        additional_fields.insert("thinking".to_string(), Document::Object(thinking));
+        additional_fields.insert(
+            "anthropic_beta".to_string(),
+            Document::Array(raw_beta_headers),
+        );
+
+        let options = Options {
+            anthropic_beta: Some(vec![
+                "interleaved-thinking-2025-05-14".to_string(),
+                "effort-2025-11-24".to_string(),
+            ]),
+            reasoning_effort: Some(ReasoningEffort::Medium),
+            additional_model_request_fields: Some(Document::Object(additional_fields)),
+            ..Default::default()
+        };
+
+        let merged = additional_model_request_fields_from_options(
+            "anthropic.claude-opus-4-5-20251101-v1:0",
+            &options,
+        )
+        .unwrap()
+        .expect("merged additional fields");
+
+        let fields = merged.as_object().expect("object fields");
+        let output_config = fields
+            .get("output_config")
+            .and_then(Document::as_object)
+            .expect("output_config");
+        assert_eq!(
+            output_config.get("effort").and_then(Document::as_string),
+            Some("medium")
+        );
+
+        let thinking = fields
+            .get("thinking")
+            .and_then(Document::as_object)
+            .expect("thinking");
+        assert_eq!(
+            thinking.get("type").and_then(Document::as_string),
+            Some("enabled")
+        );
+        assert!(thinking.get("budget_tokens").is_some());
+
+        let anthropic_beta = fields
+            .get("anthropic_beta")
+            .and_then(Document::as_array)
+            .expect("anthropic_beta");
+        let anthropic_beta = anthropic_beta
+            .iter()
+            .map(|value| value.as_string().expect("beta header string"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            anthropic_beta,
+            vec![
+                "context-1m-2025-08-07",
+                "interleaved-thinking-2025-05-14",
+                "effort-2025-11-24",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_additional_model_request_fields_requires_object_when_merging_typed_fields() {
+        let options = Options {
+            reasoning_effort: Some(ReasoningEffort::Low),
+            additional_model_request_fields: Some(Document::Bool(true)),
+            ..Default::default()
+        };
+
+        let error = additional_model_request_fields_from_options("model", &options).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("additional_model_request_fields must be an object")
+        );
     }
 
     #[test]

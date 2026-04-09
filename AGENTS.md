@@ -9,9 +9,13 @@ Swiftide is a Rust workspace driven by the library in `swiftide/`, with supporti
 - `cargo check --workspace --all-features` quickly verifies the entire workspace compiles with all feature flags enabled.
 - `cargo build --workspace --all-features` compiles every crate and surfaces feature-gating issues early.
 - `cargo check -p swiftide-agents` is a fast way to probe agent changes before touching the rest of the workspace.
-- `cargo +nightly fmt --all` applies the repo `rustfmt.toml` (comment wrapping requires nightly).
-- `cargo clippy --workspace --all-targets --all-features -D warnings` keeps us aligned with the pedantic lint profile baked into `Cargo.toml`.
-- `cargo test --workspace` runs unit and integration suites; use `RUST_LOG=info` if you need verbose diagnostics.
+- `cargo +nightly fmt --all` applies the repo `rustfmt.toml` (comment wrapping requires nightly); use `cargo +nightly fmt --all -- --check` to mirror CI formatting validation.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` mirrors the main lint job and keeps us aligned with the pedantic lint profile baked into `Cargo.toml`.
+- `cargo test -j 2 --tests --all-features --no-fail-fast` mirrors the main CI test job for unit and integration tests.
+- `cargo test --doc --all-features --no-fail-fast` mirrors the docs test job in CI.
+- `cargo hack check --each-feature --no-dev-deps` mirrors the Cargo Hack feature-matrix check run in CI.
+- `typos` mirrors the spelling check run in CI.
+- `cargo test --workspace` is still useful locally when you want a broader default test sweep; use `RUST_LOG=info` if you need verbose diagnostics.
 - Snapshot updates flow through `cargo insta review` after tests rewrite `.snap` files.
 
 ## Coding Style & Naming Conventions
@@ -24,7 +28,7 @@ Prefer focused crate runs such as `cargo test -p swiftide-integrations` when ite
 
 ## Commit & Pull Request Guidelines
 
-Commits follow conventional syntax (`feat(agents): …`, `fix(indexing): …`) with a lowercase imperative summary. Each PR should describe the change, link any GitHub issue, note API or schema impacts, and include before/after traces or logs when behavior changes. Update docs (README, website, or inline rustdoc) and add tests or benchmarks alongside functional work. Before requesting review, run the full lint and test suite listed above.
+Commits follow conventional syntax (`feat(agents): …`, `fix(indexing): …`) with a lowercase imperative summary. Pull request titles are also checked against the conventional commits format in CI, and titles ending in `!` receive the `breaking change` label automatically. Each PR should describe the change, link any GitHub issue, note API or schema impacts, and include before/after traces or logs when behavior changes. Update docs (README, website, or inline rustdoc) and add tests or benchmarks alongside functional work. Before requesting review, run the full lint and test suite listed above.
 
 ## Tooling & Environment Notes
 
