@@ -353,9 +353,10 @@ mod tests {
                 Ok(response) => break response,
                 Err(LanguageModelError::TransientError(error)) => {
                     eprintln!("transient Bedrock error during live smoke test: {error}");
-                    if attempts >= 3 {
-                        panic!("live Bedrock prompt failed after retries: {error}");
-                    }
+                    assert!(
+                        attempts < 3,
+                        "live Bedrock prompt failed after retries: {error}"
+                    );
                     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
                 }
                 Err(error) => panic!("live Bedrock prompt failed: {error:?}"),
