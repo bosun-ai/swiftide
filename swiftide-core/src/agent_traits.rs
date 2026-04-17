@@ -360,9 +360,8 @@ impl Command {
 
 /// Output from a `Command`
 ///
-/// String-like accessors such as [`std::fmt::Display`] and [`AsRef<str>`] prefer stdout and only
-/// fall back to stderr when stdout is empty. Use the dedicated fields or accessors when stderr is
-/// needed explicitly.
+/// String-like accessors such as [`std::fmt::Display`] and [`AsRef<str>`] expose stdout only.
+/// Use the dedicated fields or accessors when stderr is needed explicitly.
 #[derive(Debug, Clone, Default)]
 pub struct CommandOutput {
     pub stdout: String,
@@ -398,14 +397,6 @@ impl CommandOutput {
         &self.stderr
     }
 
-    pub fn preferred_output(&self) -> &str {
-        if self.stdout.is_empty() {
-            &self.stderr
-        } else {
-            &self.stdout
-        }
-    }
-
     pub fn is_empty(&self) -> bool {
         self.stdout.is_empty() && self.stderr.is_empty()
     }
@@ -413,7 +404,7 @@ impl CommandOutput {
 
 impl std::fmt::Display for CommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.preferred_output().fmt(f)
+        self.stdout.fmt(f)
     }
 }
 
@@ -425,7 +416,7 @@ impl<T: Into<String>> From<T> for CommandOutput {
 
 impl AsRef<str> for CommandOutput {
     fn as_ref(&self) -> &str {
-        self.preferred_output()
+        &self.stdout
     }
 }
 

@@ -450,7 +450,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_local_executor_falls_back_to_stderr_when_stdout_is_empty() -> anyhow::Result<()> {
+    async fn test_local_executor_keeps_display_empty_when_stdout_is_empty() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
@@ -466,7 +466,8 @@ mod tests {
             Err(CommandError::NonZeroExit(output)) => {
                 assert!(output.stdout.is_empty());
                 assert_eq!(output.stderr, "boom");
-                assert_eq!(output.to_string(), "boom");
+                assert_eq!(output.to_string(), "");
+                assert_eq!(output.as_ref(), "");
             }
             other => anyhow::bail!("expected non-zero exit, got {other:?}"),
         }
