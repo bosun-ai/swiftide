@@ -194,7 +194,7 @@ impl LocalExecutor {
 
                     let (stdout, stderr) =
                         Self::collect_process_output(stdout_task, stderr_task).await;
-                    let cmd_output = Self::merge_output(&stdout, &stderr);
+                    let cmd_output = Self::command_output(&stdout, &stderr);
 
                     return Err(CommandError::TimedOut {
                         timeout: limit,
@@ -209,7 +209,7 @@ impl LocalExecutor {
         };
 
         let (stdout, stderr) = Self::collect_process_output(stdout_task, stderr_task).await;
-        let cmd_output = Self::merge_output(&stdout, &stderr);
+        let cmd_output = Self::command_output(&stdout, &stderr);
 
         if status.success() {
             Ok(cmd_output)
@@ -309,14 +309,8 @@ impl LocalExecutor {
         (stdout, stderr)
     }
 
-    fn merge_output(stdout: &[String], stderr: &[String]) -> CommandOutput {
-        stdout
-            .iter()
-            .chain(stderr.iter())
-            .cloned()
-            .collect::<Vec<_>>()
-            .join("\n")
-            .into()
+    fn command_output(stdout: &[String], stderr: &[String]) -> CommandOutput {
+        CommandOutput::from_parts(stdout.join("\n"), stderr.join("\n"))
     }
 }
 #[async_trait]
@@ -426,6 +420,57 @@ mod tests {
 
         // Verify that the output matches the expected content
         assert_eq!(output.to_string().trim(), "hello world");
+        assert!(output.stderr.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_preserves_stdout_and_stderr() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        let output = executor
+            .exec_cmd(&Command::shell(
+                "printf 'hello stdout'; printf 'hello stderr' >&2",
+            ))
+            .await?;
+
+        assert_eq!(output.stdout, "hello stdout");
+        assert_eq!(output.stderr, "hello stderr");
+        assert_eq!(output.to_string(), "hello stdout");
+        assert!(format!("{output:?}").contains("hello stderr"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_keeps_display_empty_when_stdout_is_empty() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let temp_path = temp_dir.path();
+
+        let executor = LocalExecutor {
+            workdir: temp_path.to_path_buf(),
+            ..Default::default()
+        };
+
+        match executor
+            .exec_cmd(&Command::shell("printf 'boom' >&2; exit 1"))
+            .await
+        {
+            Err(CommandError::NonZeroExit(output)) => {
+                assert!(output.stdout.is_empty());
+                assert_eq!(output.stderr, "boom");
+                assert_eq!(output.to_string(), "");
+                assert_eq!(output.as_ref(), "");
+            }
+            other => anyhow::bail!("expected non-zero exit, got {other:?}"),
+        }
 
         Ok(())
     }
@@ -468,6 +513,7 @@ mod tests {
             Err(CommandError::TimedOut { timeout, output }) => {
                 assert_eq!(timeout, Duration::from_millis(100));
                 assert!(output.to_string().is_empty());
+                assert!(output.stderr.is_empty());
             }
             other => anyhow::bail!("expected default timeout, got {other:?}"),
         }
@@ -661,7 +707,7 @@ print(1 + 2)"#;
         let read_cmd = Command::read_file(file_path.clone());
 
         // Execute the read command
-        let output = executor.exec_cmd(&read_cmd).await?.output;
+        let output = executor.exec_cmd(&read_cmd).await?.stdout;
 
         // Verify that the content read from the file matches the expected content
         assert_eq!(output, file_content);

@@ -335,9 +335,7 @@ impl PgVector {
 
         let mut columns = Vec::new();
         let mut unnest_params = Vec::new();
-        let mut param_counter = 1;
-
-        for field in &self.fields {
+        for (param_counter, field) in (1..).zip(self.fields.iter()) {
             let name = field.field_name();
             columns.push(name.to_string());
 
@@ -350,8 +348,6 @@ impl PgVector {
                     FieldConfig::Vector(_) => "VECTOR[]",
                 }
             ));
-
-            param_counter += 1;
         }
 
         let update_columns = self

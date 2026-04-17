@@ -343,7 +343,7 @@ mod tests {
         let response = loop {
             attempts += 1;
             let attempt = tokio::time::timeout(
-                std::time::Duration::from_secs(60),
+                std::time::Duration::from_mins(1),
                 bedrock.prompt(prompt.into()),
             )
             .await
