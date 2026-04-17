@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775751667310,
+  "lastUpdate": 1776453114983,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31025,6 +31025,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 222498,
             "range": "± 2360",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1c1dfc1a1f5af56eb2f898132fe670fec191ddd3",
+          "message": "feat(core)!: split command output into stdout and stderr (#1066)\n\n## Summary\n- split `swiftide::CommandOutput` into separate `stdout` and `stderr`\nfields\n- keep the string-like trait implementations strictly focused on\n`stdout`\n- update `LocalExecutor` to preserve both streams and add coverage for\nmixed-stream and stderr-only cases\n- clean up follow-up clippy issues in integrations by replacing a manual\npgvector SQL parameter counter loop and using more readable duration\nunits in Bedrock tests\n\n## Issue\n- none\n\n## API Impact\n- `CommandOutput.output` is replaced by `CommandOutput.stdout` and\n`CommandOutput.stderr`\n- `Display` and `AsRef<str>` expose `stdout` only, even when it is empty\n- `stderr` remains available explicitly through the field, accessor, and\ndebug output\n\n## Before\n```rust\nCommandOutput {\n    output: \"stdout\\nstderr\".into(),\n}\n```\n\n## After\n```rust\nCommandOutput {\n    stdout: \"stdout\".into(),\n    stderr: \"stderr\".into(),\n}\n```",
+          "timestamp": "2026-04-17T21:02:52+02:00",
+          "tree_id": "c8d0c4ae6d6b6c4474c9846280ea963328f3c156",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1c1dfc1a1f5af56eb2f898132fe670fec191ddd3"
+        },
+        "date": 1776453112209,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 853080,
+            "range": "± 20137",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 228313,
+            "range": "± 2226",
             "unit": "ns/iter"
           }
         ]
