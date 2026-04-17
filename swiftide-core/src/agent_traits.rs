@@ -359,47 +359,73 @@ impl Command {
 }
 
 /// Output from a `Command`
-#[derive(Debug, Clone)]
+///
+/// String-like accessors such as [`std::fmt::Display`] and [`AsRef<str>`] prefer stdout and only
+/// fall back to stderr when stdout is empty. Use the dedicated fields or accessors when stderr is
+/// needed explicitly.
+#[derive(Debug, Clone, Default)]
 pub struct CommandOutput {
-    pub output: String,
+    pub stdout: String,
+    pub stderr: String,
     // status_code: i32,
     // success: bool,
 }
 
 impl CommandOutput {
     pub fn empty() -> Self {
-        CommandOutput {
-            output: String::new(),
+        Self::default()
+    }
+
+    pub fn new(stdout: impl Into<String>) -> Self {
+        Self {
+            stdout: stdout.into(),
+            stderr: String::new(),
         }
     }
 
-    pub fn new(output: impl Into<String>) -> Self {
-        CommandOutput {
-            output: output.into(),
+    pub fn from_parts(stdout: impl Into<String>, stderr: impl Into<String>) -> Self {
+        Self {
+            stdout: stdout.into(),
+            stderr: stderr.into(),
         }
     }
+
+    pub fn stdout(&self) -> &str {
+        &self.stdout
+    }
+
+    pub fn stderr(&self) -> &str {
+        &self.stderr
+    }
+
+    pub fn preferred_output(&self) -> &str {
+        if self.stdout.is_empty() {
+            &self.stderr
+        } else {
+            &self.stdout
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
-        self.output.is_empty()
+        self.stdout.is_empty() && self.stderr.is_empty()
     }
 }
 
 impl std::fmt::Display for CommandOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.output.fmt(f)
+        self.preferred_output().fmt(f)
     }
 }
 
 impl<T: Into<String>> From<T> for CommandOutput {
     fn from(value: T) -> Self {
-        CommandOutput {
-            output: value.into(),
-        }
+        Self::new(value)
     }
 }
 
 impl AsRef<str> for CommandOutput {
     fn as_ref(&self) -> &str {
-        &self.output
+        self.preferred_output()
     }
 }
 
