@@ -15,7 +15,8 @@ use aws_sdk_bedrockruntime::{
         ToolConfiguration, error::ConverseStreamOutputError,
     },
 };
-use aws_smithy_types::Document;
+use aws_smithy_types::{Document, error::metadata::ProvideErrorMetadata};
+use aws_types::request_id::RequestId;
 use derive_builder::Builder;
 use serde::Serialize;
 use swiftide_core::chat_completion::{
@@ -466,7 +467,7 @@ fn sdk_error_to_language_model_error<E, R>(
     is_transient_service_error: impl Fn(&E) -> bool,
 ) -> LanguageModelError
 where
-    E: std::error::Error + Send + Sync + 'static,
+    E: std::error::Error + Send + Sync + 'static + ProvideErrorMetadata + RequestId,
     R: std::fmt::Debug + Send + Sync + 'static,
 {
     let is_transient = match &error {
@@ -477,7 +478,10 @@ where
         _ => false,
     };
     let detailed_error = match error {
-        SdkError::ServiceError(service_error) => anyhow::Error::new(service_error.into_err()),
+        SdkError::ServiceError(service_error) => {
+            let context = format_service_error_context(service_error.err());
+            anyhow::Error::new(service_error.into_err()).context(context)
+        }
         error => anyhow::Error::msg(error_chain_message(&error)),
     };
 
@@ -485,6 +489,21 @@ where
         LanguageModelError::transient(detailed_error)
     } else {
         LanguageModelError::permanent(detailed_error)
+    }
+}
+
+fn format_service_error_context<E>(service_error: &E) -> String
+where
+    E: ProvideErrorMetadata + RequestId,
+{
+    let code = service_error.code().unwrap_or("unknown");
+    let request_id = service_error.request_id().unwrap_or("unknown");
+
+    match service_error.message() {
+        Some(message) if !message.is_empty() => format!(
+            "AWS Bedrock service error (code={code}, request_id={request_id}, message={message})"
+        ),
+        _ => format!("AWS Bedrock service error (code={code}, request_id={request_id})"),
     }
 }
 
@@ -990,6 +1009,37 @@ mod tests {
         let chain = error_chain_message(&outer);
 
         assert!(chain.contains("inner"));
+    }
+
+    #[test]
+    fn test_service_error_mapping_includes_metadata_context() {
+        let internal = InternalServerException::builder()
+            .message(
+                "The system encountered an unexpected error during processing. Try your request again.",
+            )
+            .meta(
+                aws_smithy_types::error::ErrorMetadata::builder()
+                    .code("InternalServerException")
+                    .message(
+                        "The system encountered an unexpected error during processing. Try your request again.",
+                    )
+                    .custom("aws_request_id", "bedrock-request-123")
+                    .build(),
+            )
+            .build();
+
+        let transient =
+            converse_error_to_language_model_error::<()>(SdkError::service_error(
+                ConverseError::InternalServerException(internal),
+                (),
+            ));
+
+        let message = transient.to_string();
+        assert!(message.contains("InternalServerException"));
+        assert!(message.contains("bedrock-request-123"));
+        assert!(message.contains(
+            "The system encountered an unexpected error during processing"
+        ));
     }
 
     #[test]

@@ -96,6 +96,7 @@ aws-sdk-bedrockruntime = { workspace = true, features = [
   "rt-tokio",
 ], optional = true }
 aws-smithy-types = { workspace = true, optional = true }
+aws-types = { workspace = true, optional = true }
 aws-smithy-json = { version = "0.62.4", optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
@@ -213,6 +214,7 @@ aws-bedrock = [
   "dep:aws-credential-types",
   "dep:aws-sdk-bedrockruntime",
   "dep:aws-smithy-types",
+  "dep:aws-types",
   "dep:aws-smithy-json",
 ]
 lancedb = ["dep:lancedb", "dep:deadpool", "dep:arrow-array"]
