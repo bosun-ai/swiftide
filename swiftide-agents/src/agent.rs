@@ -653,6 +653,14 @@ impl Agent {
         for tool_call in tool_calls {
             let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
                 tracing::warn!("Tool {} not found", tool_call.name());
+                self.add_message(ChatMessage::ToolOutput(
+                    tool_call.clone(),
+                    ToolOutput::fail(format!(
+                        "Tool '{}' is not available. Only use tools from the provided tool definitions.",
+                        tool_call.name()
+                    )),
+                ))
+                .await?;
                 continue;
             };
             tracing::info!("Calling tool `{}`", tool_call.name());
@@ -1799,5 +1807,53 @@ mod tests {
         assert!(agent.find_tool_by_name("stop").is_none());
         // Check that our provided tool is still present
         assert!(agent.find_tool_by_name("mock_tool").is_some());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_tool_not_found_sends_error_response() {
+        // When the LLM calls a tool that doesn't exist, the agent should send
+        // a ToolOutput error back so the LLM can recover, rather than silently
+        // skipping the tool call (which leaves tool_use without a tool_result).
+        let prompt = "Do something";
+        let mock_llm = MockChatCompletion::new();
+        let mock_tool = MockTool::new("real_tool");
+
+        // LLM calls a tool that doesn't exist
+        let chat_request = chat_request! {
+            user!(prompt);
+            tools = [mock_tool.clone()]
+        };
+        let response_with_unknown_tool = chat_response! {
+            "I'll use the nonexistent tool";
+            tool_calls = ["nonexistent_tool"]
+        };
+        mock_llm.expect_complete(chat_request, Ok(response_with_unknown_tool));
+
+        // After getting the error response, the LLM should see the failure and
+        // be able to recover (here it just stops)
+        let chat_request = chat_request! {
+            user!(prompt),
+            assistant!("I'll use the nonexistent tool", ["nonexistent_tool"]),
+            tool_failed!("nonexistent_tool", "Tool 'nonexistent_tool' is not available. Only use tools from the provided tool definitions.");
+
+            tools = [mock_tool.clone()]
+        };
+        let stop_response = chat_response! {
+            "Ok, that tool doesn't exist.";
+            tool_calls = ["stop"]
+        };
+        mock_llm.expect_complete(chat_request, Ok(stop_response));
+
+        let mut agent = Agent::builder()
+            .tools([mock_tool])
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        // The agent should complete without error — previously this would fail
+        // because the missing ToolOutput broke the tool_use/tool_result contract
+        agent.query(prompt).await.unwrap();
+        assert!(agent.is_stopped());
     }
 }
