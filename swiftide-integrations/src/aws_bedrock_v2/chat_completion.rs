@@ -23,7 +23,7 @@ use aws_smithy_types::{Blob, Document};
 use base64::Engine as _;
 use futures_util::stream;
 #[cfg(feature = "langfuse")]
-use serde_json::json;
+use serde_json::{Value, json};
 use swiftide_core::{
     ChatCompletion, ChatCompletionStream,
     chat_completion::{
@@ -59,13 +59,13 @@ impl ChatCompletion for AwsBedrock {
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self.prompt_model()?;
         #[cfg(feature = "langfuse")]
-        let tracking_request = Some(json!({
+        let fallback_tracking_request = Some(json!({
             "model": model,
             "messages": request.messages(),
             "tools_spec": request.tools_spec(),
         }));
         #[cfg(not(feature = "langfuse"))]
-        let tracking_request: Option<serde_json::Value> = None;
+        let fallback_tracking_request: Option<serde_json::Value> = None;
 
         let (messages, system, inference_config, tool_config) =
             match build_converse_input(request, &self.default_options) {
@@ -73,7 +73,7 @@ impl ChatCompletion for AwsBedrock {
                 Err(error) => {
                     Self::track_failure(
                         model,
-                        tracking_request.as_ref(),
+                        fallback_tracking_request.as_ref(),
                         None::<&serde_json::Value>,
                         &error,
                     );
@@ -85,6 +85,20 @@ impl ChatCompletion for AwsBedrock {
             {
                 Ok(fields) => fields,
                 Err(error) => {
+                    #[cfg(feature = "langfuse")]
+                    let tracking_request = Some(tracking_request_from_converse_parts(
+                        model,
+                        &messages,
+                        system.as_deref(),
+                        inference_config.as_ref(),
+                        tool_config.as_ref(),
+                        None,
+                        self.default_options
+                            .additional_model_response_field_paths
+                            .as_deref(),
+                    ));
+                    #[cfg(not(feature = "langfuse"))]
+                    let tracking_request: Option<serde_json::Value> = None;
                     Self::track_failure(
                         model,
                         tracking_request.as_ref(),
@@ -94,6 +108,20 @@ impl ChatCompletion for AwsBedrock {
                     return Err(error);
                 }
             };
+        #[cfg(feature = "langfuse")]
+        let tracking_request = Some(tracking_request_from_converse_parts(
+            model,
+            &messages,
+            system.as_deref(),
+            inference_config.as_ref(),
+            tool_config.as_ref(),
+            additional_model_request_fields.as_ref(),
+            self.default_options
+                .additional_model_response_field_paths
+                .as_deref(),
+        ));
+        #[cfg(not(feature = "langfuse"))]
+        let tracking_request: Option<serde_json::Value> = None;
 
         tracing::debug!(
             model = model,
@@ -180,13 +208,13 @@ impl ChatCompletion for AwsBedrock {
             Err(error) => return error.into(),
         };
         #[cfg(feature = "langfuse")]
-        let tracking_request = Some(json!({
+        let fallback_tracking_request = Some(json!({
             "model": model,
             "messages": request.messages(),
             "tools_spec": request.tools_spec(),
         }));
         #[cfg(not(feature = "langfuse"))]
-        let tracking_request: Option<serde_json::Value> = None;
+        let fallback_tracking_request: Option<serde_json::Value> = None;
 
         let (messages, system, inference_config, tool_config) =
             match build_converse_input(request, &self.default_options) {
@@ -194,7 +222,7 @@ impl ChatCompletion for AwsBedrock {
                 Err(error) => {
                     Self::track_failure(
                         &model,
-                        tracking_request.as_ref(),
+                        fallback_tracking_request.as_ref(),
                         None::<&serde_json::Value>,
                         &error,
                     );
@@ -206,6 +234,20 @@ impl ChatCompletion for AwsBedrock {
             {
                 Ok(fields) => fields,
                 Err(error) => {
+                    #[cfg(feature = "langfuse")]
+                    let tracking_request = Some(tracking_request_from_converse_parts(
+                        &model,
+                        &messages,
+                        system.as_deref(),
+                        inference_config.as_ref(),
+                        tool_config.as_ref(),
+                        None,
+                        self.default_options
+                            .additional_model_response_field_paths
+                            .as_deref(),
+                    ));
+                    #[cfg(not(feature = "langfuse"))]
+                    let tracking_request: Option<serde_json::Value> = None;
                     Self::track_failure(
                         &model,
                         tracking_request.as_ref(),
@@ -215,6 +257,20 @@ impl ChatCompletion for AwsBedrock {
                     return error.into();
                 }
             };
+        #[cfg(feature = "langfuse")]
+        let tracking_request = Some(tracking_request_from_converse_parts(
+            &model,
+            &messages,
+            system.as_deref(),
+            inference_config.as_ref(),
+            tool_config.as_ref(),
+            additional_model_request_fields.as_ref(),
+            self.default_options
+                .additional_model_response_field_paths
+                .as_deref(),
+        ));
+        #[cfg(not(feature = "langfuse"))]
+        let tracking_request: Option<serde_json::Value> = None;
 
         let stream_output = match self
             .client
@@ -464,6 +520,316 @@ fn build_converse_input(
         super::inference_config_from_options(options),
         tool_config_from_specs(request.tools_spec().iter(), options.tool_strict_enabled())?,
     ))
+}
+
+#[cfg(feature = "langfuse")]
+fn tracking_request_from_converse_parts(
+    model: &str,
+    messages: &[Message],
+    system: Option<&[SystemContentBlock]>,
+    inference_config: Option<&InferenceConfiguration>,
+    tool_config: Option<&ToolConfiguration>,
+    additional_model_request_fields: Option<&Document>,
+    additional_model_response_field_paths: Option<&[String]>,
+) -> Value {
+    let mut payload = serde_json::Map::new();
+    payload.insert("model".into(), Value::String(model.to_string()));
+    payload.insert(
+        "messages".into(),
+        Value::Array(messages.iter().map(message_to_json).collect()),
+    );
+
+    if let Some(system) = system {
+        payload.insert(
+            "system".into(),
+            Value::Array(system.iter().map(system_content_block_to_json).collect()),
+        );
+    }
+
+    if let Some(inference_config) = inference_config {
+        payload.insert(
+            "inferenceConfig".into(),
+            inference_config_to_json(inference_config),
+        );
+    }
+
+    if let Some(tool_config) = tool_config {
+        payload.insert("toolConfig".into(), tool_config_to_json(tool_config));
+    }
+
+    if let Some(fields) = additional_model_request_fields {
+        payload.insert(
+            "additionalModelRequestFields".into(),
+            document_to_json_value(fields),
+        );
+    }
+
+    if let Some(paths) = additional_model_response_field_paths {
+        payload.insert(
+            "additionalModelResponseFieldPaths".into(),
+            Value::Array(paths.iter().cloned().map(Value::String).collect()),
+        );
+    }
+
+    Value::Object(payload)
+}
+
+#[cfg(feature = "langfuse")]
+fn inference_config_to_json(config: &InferenceConfiguration) -> Value {
+    let mut value = serde_json::Map::new();
+
+    if let Some(max_tokens) = config.max_tokens() {
+        value.insert("maxTokens".into(), Value::from(max_tokens));
+    }
+    let stop_sequences = config.stop_sequences();
+    if !stop_sequences.is_empty() {
+        value.insert(
+            "stopSequences".into(),
+            Value::Array(stop_sequences.iter().cloned().map(Value::String).collect()),
+        );
+    }
+    if let Some(temperature) = config.temperature() {
+        value.insert("temperature".into(), Value::from(temperature));
+    }
+    if let Some(top_p) = config.top_p() {
+        value.insert("topP".into(), Value::from(top_p));
+    }
+
+    Value::Object(value)
+}
+
+#[cfg(feature = "langfuse")]
+fn tool_config_to_json(config: &ToolConfiguration) -> Value {
+    let mut value = serde_json::Map::new();
+
+    let tools = config.tools();
+    if !tools.is_empty() {
+        value.insert(
+            "tools".into(),
+            Value::Array(tools.iter().map(tool_to_json).collect()),
+        );
+    }
+
+    if let Some(choice) = config.tool_choice() {
+        value.insert("toolChoice".into(), tool_choice_to_json(choice));
+    }
+
+    Value::Object(value)
+}
+
+#[cfg(feature = "langfuse")]
+fn tool_choice_to_json(choice: &ToolChoice) -> Value {
+    match choice {
+        ToolChoice::Auto(_) => json!({ "auto": {} }),
+        ToolChoice::Any(_) => json!({ "any": {} }),
+        ToolChoice::Tool(tool) => json!({ "tool": { "name": tool.name() } }),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn tool_to_json(tool: &Tool) -> Value {
+    match tool {
+        Tool::ToolSpec(spec) => {
+            let mut value = serde_json::Map::new();
+            value.insert("name".into(), Value::String(spec.name().to_string()));
+
+            if let Some(description) = spec.description() {
+                value.insert("description".into(), Value::String(description.to_string()));
+            }
+
+            if let Some(input_schema) = spec.input_schema() {
+                value.insert(
+                    "inputSchema".into(),
+                    tool_input_schema_to_json(input_schema),
+                );
+            }
+
+            if let Some(strict) = spec.strict() {
+                value.insert("strict".into(), Value::Bool(strict));
+            }
+
+            json!({ "toolSpec": Value::Object(value) })
+        }
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn tool_input_schema_to_json(schema: &ToolInputSchema) -> Value {
+    match schema {
+        ToolInputSchema::Json(document) => json!({ "json": document_to_json_value(document) }),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn system_content_block_to_json(block: &SystemContentBlock) -> Value {
+    match block {
+        SystemContentBlock::Text(text) => json!({ "text": text }),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn message_to_json(message: &Message) -> Value {
+    json!({
+        "role": message.role().as_str(),
+        "content": message.content().iter().map(content_block_to_json).collect::<Vec<_>>(),
+    })
+}
+
+#[cfg(feature = "langfuse")]
+fn content_block_to_json(block: &ContentBlock) -> Value {
+    match block {
+        ContentBlock::Text(text) => json!({ "text": text }),
+        ContentBlock::ToolUse(tool_use) => json!({
+            "toolUse": {
+                "toolUseId": tool_use.tool_use_id(),
+                "name": tool_use.name(),
+                "input": document_to_json_value(tool_use.input()),
+            }
+        }),
+        ContentBlock::ToolResult(tool_result) => json!({
+            "toolResult": {
+                "toolUseId": tool_result.tool_use_id(),
+                "content": tool_result.content().iter().map(tool_result_content_block_to_json).collect::<Vec<_>>(),
+                "status": tool_result.status().map(|status| format!("{status:?}")),
+            }
+        }),
+        ContentBlock::ReasoningContent(reasoning) => {
+            json!({ "reasoningContent": reasoning_content_block_to_json(reasoning) })
+        }
+        ContentBlock::Image(image) => json!({
+            "image": {
+                "format": format!("{:?}", image.format()),
+                "source": image.source().map_or(Value::Null, image_source_to_json),
+            }
+        }),
+        ContentBlock::Document(document) => json!({
+            "document": {
+                "format": format!("{:?}", document.format()),
+                "name": document.name(),
+                "source": document.source().map_or(Value::Null, document_source_to_json),
+            }
+        }),
+        ContentBlock::Audio(audio) => json!({
+            "audio": {
+                "format": format!("{:?}", audio.format()),
+                "source": audio.source().map_or(Value::Null, audio_source_to_json),
+            }
+        }),
+        ContentBlock::Video(video) => json!({
+            "video": {
+                "format": format!("{:?}", video.format()),
+                "source": video.source().map_or(Value::Null, video_source_to_json),
+            }
+        }),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn tool_result_content_block_to_json(block: &ToolResultContentBlock) -> Value {
+    match block {
+        ToolResultContentBlock::Text(text) => json!({ "text": text }),
+        ToolResultContentBlock::Json(document) => {
+            json!({ "json": document_to_json_value(document) })
+        }
+        ToolResultContentBlock::Image(image) => json!({
+            "image": {
+                "format": format!("{:?}", image.format()),
+                "source": image.source().map_or(Value::Null, image_source_to_json),
+            }
+        }),
+        ToolResultContentBlock::Document(document) => json!({
+            "document": {
+                "format": format!("{:?}", document.format()),
+                "name": document.name(),
+                "source": document.source().map_or(Value::Null, document_source_to_json),
+            }
+        }),
+        ToolResultContentBlock::Video(video) => json!({
+            "video": {
+                "format": format!("{:?}", video.format()),
+                "source": video.source().map_or(Value::Null, video_source_to_json),
+            }
+        }),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn reasoning_content_block_to_json(block: &ReasoningContentBlock) -> Value {
+    match block {
+        ReasoningContentBlock::ReasoningText(text) => json!({
+            "reasoningText": {
+                "text": text.text(),
+                "signature": text.signature(),
+            }
+        }),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn image_source_to_json(source: &ImageSource) -> Value {
+    match source {
+        ImageSource::Bytes(blob) => {
+            json!({ "bytes": base64::engine::general_purpose::STANDARD.encode(blob.as_ref()) })
+        }
+        ImageSource::S3Location(location) => s3_location_to_json(location),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn document_source_to_json(source: &DocumentSource) -> Value {
+    match source {
+        DocumentSource::Bytes(blob) => {
+            json!({ "bytes": base64::engine::general_purpose::STANDARD.encode(blob.as_ref()) })
+        }
+        DocumentSource::S3Location(location) => s3_location_to_json(location),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn audio_source_to_json(source: &AudioSource) -> Value {
+    match source {
+        AudioSource::Bytes(blob) => {
+            json!({ "bytes": base64::engine::general_purpose::STANDARD.encode(blob.as_ref()) })
+        }
+        AudioSource::S3Location(location) => s3_location_to_json(location),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn video_source_to_json(source: &VideoSource) -> Value {
+    match source {
+        VideoSource::Bytes(blob) => {
+            json!({ "bytes": base64::engine::general_purpose::STANDARD.encode(blob.as_ref()) })
+        }
+        VideoSource::S3Location(location) => s3_location_to_json(location),
+        other => Value::String(format!("{other:?}")),
+    }
+}
+
+#[cfg(feature = "langfuse")]
+fn s3_location_to_json(location: &S3Location) -> Value {
+    json!({
+        "s3Location": {
+            "uri": location.uri(),
+            "bucketOwner": location.bucket_owner(),
+        }
+    })
+}
+
+#[cfg(feature = "langfuse")]
+fn document_to_json_value(document: &Document) -> Value {
+    serde_json::from_str(&document_to_json_string(document))
+        .unwrap_or_else(|error| Value::String(format!("<<failed to convert document: {error}>>")))
 }
 
 fn user_message_from_text(text: String) -> Result<Message, LanguageModelError> {
@@ -1427,7 +1793,18 @@ mod tests {
             .unwrap();
 
         let request = ChatCompletionRequest::builder()
-            .messages(vec![ChatMessage::User("Trace this failure".into())])
+            .messages(vec![
+                ChatMessage::System("You are a careful helper".into()),
+                ChatMessage::User("Trace this failure".into()),
+            ])
+            .tool_specs(vec![
+                ToolSpec::builder()
+                    .name("get_weather")
+                    .description("Look up the weather")
+                    .parameters_schema(schema_for!(WeatherArgs))
+                    .build()
+                    .unwrap(),
+            ])
             .build()
             .unwrap();
 
@@ -1448,10 +1825,24 @@ mod tests {
                 .map(std::string::String::as_str),
             Some("anthropic.claude-3-5-sonnet-20241022-v2:0")
         );
+        let input = failure_event
+            .get("langfuse.input")
+            .expect("langfuse input should be tracked");
         assert!(
-            failure_event
-                .get("langfuse.input")
-                .is_some_and(|input| input.contains("Trace this failure"))
+            input.contains("Trace this failure"),
+            "expected tracked input to include the user prompt: {input}"
+        );
+        assert!(
+            input.contains("\"system\""),
+            "expected tracked input to include built bedrock system blocks: {input}"
+        );
+        assert!(
+            input.contains("\"toolConfig\""),
+            "expected tracked input to include built bedrock tool config: {input}"
+        );
+        assert!(
+            !input.contains("tools_spec"),
+            "expected tracked input to use built bedrock request shape, not fallback tracking payload: {input}"
         );
         assert!(
             failure_event
