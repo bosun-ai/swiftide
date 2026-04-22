@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776453114983,
+  "lastUpdate": 1776898631671,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31079,6 +31079,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 228313,
             "range": "± 2226",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ab176378a8f2313a48aad3bd6c821497dc58a5c8",
+          "message": "fix: Bedrock Langfuse request capture and span-close event loss (#1072)\n\n## Summary\n\nThis fixes two production debugging gaps in the Bedrock + Langfuse path.\n\n1. Bedrock generations now attach the exact built Converse request shape\nto Langfuse instead of the earlier pre-normalization\n`{model,messages,tools_spec}` payload.\n2. `LangfuseLayer` now resolves observation ids before the async\nboundary so late failure updates cannot be lost when a span closes\nimmediately afterward.\n\nFixes #1071.\n\n## Why\n\nIn production we saw Bedrock generations time out, but the Langfuse\ngeneration row had `input = null` / `output = null`, which made the\nfailure hard to reconstruct.\n\nThere were two causes:\n\n- the Bedrock integration never tracked the actual built request\n- the Langfuse layer could drop `langfuse.input` /\n`langfuse.status_message` updates because `on_event` and `on_close`\nraced through async tasks keyed by `span_id`\n\n## What changed\n\n### Bedrock tracking\n\nThe Bedrock integration now records the built request shape, including:\n\n- `model`\n- `messages`\n- `system`\n- `inferenceConfig`\n- `toolConfig`\n- `additionalModelRequestFields`\n- `additionalModelResponseFieldPaths`\n\n### Langfuse layer ordering\n\nThe Langfuse layer now:\n\n- stores span tracking in a synchronous mutex\n- resolves `span_id -> observation_id` inside the tracing callbacks\n- enqueues observation updates using the resolved observation id\ndirectly\n- removes the span on close only after the update path already had a\nchance to capture the observation id\n\nThis removes the failure-path race where a close could erase the span\nbefore the update task ran.",
+          "timestamp": "2026-04-23T00:48:11+02:00",
+          "tree_id": "3882c659789d4462ebc2b24f682377cadb540e72",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ab176378a8f2313a48aad3bd6c821497dc58a5c8"
+        },
+        "date": 1776898628611,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 740540,
+            "range": "± 179099",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 218433,
+            "range": "± 2142",
             "unit": "ns/iter"
           }
         ]
