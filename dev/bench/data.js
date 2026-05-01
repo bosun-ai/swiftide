@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777643006986,
+  "lastUpdate": 1777643011880,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31349,6 +31349,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 229627,
             "range": "± 1250",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "409c483c9cbd9841dea43396200ab5f6030c28bf",
+          "message": "chore(deps): bump SethCohen/github-releases-to-discord from 1.19.0 to 1.20.0 (#1062)\n\nBumps\n[SethCohen/github-releases-to-discord](https://github.com/sethcohen/github-releases-to-discord)\nfrom 1.19.0 to 1.20.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/sethcohen/github-releases-to-discord/releases\">SethCohen/github-releases-to-discord's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v1.20.0</h2>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.19.0...v1.20.0\">1.20.0</a>\n(2026-04-03)</h2>\n<h3>Features</h3>\n<ul>\n<li>add manual dispatch support for GitHub Actions to test Discord\nwebhook integration with optional release inputs. resolves <a\nhref=\"https://redirect.github.com/SethCohen/github-releases-to-discord/issues/52\">#52</a>\n(<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e15eb81a91d940818d60143a1f57edb92ae0828c\">e15eb81</a>)</li>\n<li>enhance reduceHeadings function to handle indented and closed\nmarkdown headings and add tests for new functionality. resolves <a\nhref=\"https://redirect.github.com/SethCohen/github-releases-to-discord/issues/51\">#51</a>\n(<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/80aca15d7235082187d6eee6054a69ceed9c45db\">80aca15</a>)</li>\n<li><strong>tests:</strong> add test for handling release payload with\nnull body and update formatDescription to handle undefined input.\nresolves <a\nhref=\"https://redirect.github.com/SethCohen/github-releases-to-discord/issues/53\">#53</a>\n(<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/60ef92f1479987b509687244b04859040cb0f43d\">60ef92f</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/blob/master/CHANGELOG.md\">SethCohen/github-releases-to-discord's\nchangelog</a>.</em></p>\n<blockquote>\n<h2><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/compare/v1.19.0...v1.20.0\">1.20.0</a>\n(2026-04-03)</h2>\n<h3>Features</h3>\n<ul>\n<li>add manual dispatch support for GitHub Actions to test Discord\nwebhook integration with optional release inputs. resolves <a\nhref=\"https://redirect.github.com/SethCohen/github-releases-to-discord/issues/52\">#52</a>\n(<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e15eb81a91d940818d60143a1f57edb92ae0828c\">e15eb81</a>)</li>\n<li>enhance reduceHeadings function to handle indented and closed\nmarkdown headings and add tests for new functionality. resolves <a\nhref=\"https://redirect.github.com/SethCohen/github-releases-to-discord/issues/51\">#51</a>\n(<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/80aca15d7235082187d6eee6054a69ceed9c45db\">80aca15</a>)</li>\n<li><strong>tests:</strong> add test for handling release payload with\nnull body and update formatDescription to handle undefined input.\nresolves <a\nhref=\"https://redirect.github.com/SethCohen/github-releases-to-discord/issues/53\">#53</a>\n(<a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/60ef92f1479987b509687244b04859040cb0f43d\">60ef92f</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/24d166886aee4646d448c8a389ff9e1ebcab3682\"><code>24d1668</code></a>\nchore(master): release 1.20.0 (<a\nhref=\"https://redirect.github.com/sethcohen/github-releases-to-discord/issues/54\">#54</a>)</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/60ef92f1479987b509687244b04859040cb0f43d\"><code>60ef92f</code></a>\nfeat(tests): add test for handling release payload with null body and\nupdate ...</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/e15eb81a91d940818d60143a1f57edb92ae0828c\"><code>e15eb81</code></a>\nfeat: add manual dispatch support for GitHub Actions to test Discord\nwebhook ...</li>\n<li><a\nhref=\"https://github.com/SethCohen/github-releases-to-discord/commit/80aca15d7235082187d6eee6054a69ceed9c45db\"><code>80aca15</code></a>\nfeat: enhance reduceHeadings function to handle indented and closed\nmarkdown ...</li>\n<li>See full diff in <a\nhref=\"https://github.com/sethcohen/github-releases-to-discord/compare/v1.19.0...v1.20.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=SethCohen/github-releases-to-discord&package-manager=github_actions&previous-version=1.19.0&new-version=1.20.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\n\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-05-01T15:34:27+02:00",
+          "tree_id": "e4044799f9093f52619f8b544f93321e25289507",
+          "url": "https://github.com/bosun-ai/swiftide/commit/409c483c9cbd9841dea43396200ab5f6030c28bf"
+        },
+        "date": 1777643008829,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 583566,
+            "range": "± 37511",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 158727,
+            "range": "± 1308",
             "unit": "ns/iter"
           }
         ]
