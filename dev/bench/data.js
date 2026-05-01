@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777643011880,
+  "lastUpdate": 1777643031945,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31403,6 +31403,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 158727,
             "range": "± 1308",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1c403a1b4536b14723006422c3d305b0f2563d81",
+          "message": "chore(deps): bump tar from 0.4.44 to 0.4.45 (#1050)\n\nBumps [tar](https://github.com/alexcrichton/tar-rs) from 0.4.44 to\n0.4.45.\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/096e3d16d14fefac51bc4d94d616b21546ea8bcc\"><code>096e3d1</code></a>\nBump to 0.4.45 (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/443\">#443</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/17b1fd84e632071cb8eef9d3709bf347bd266446\"><code>17b1fd8</code></a>\narchive: Prevent symlink-directory collision chmod attack (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/442\">#442</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/de1a5870e603758f430073688691165f21a33946\"><code>de1a587</code></a>\narchive: Unconditionally honor PAX size (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/441\">#441</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/6071cbe74acefa8c8322809bfd43c825e5f16b60\"><code>6071cbe</code></a>\nci: Consolidate workflows (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/439\">#439</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/ad1fde9edfb9657d17666bbec2933119ce527359\"><code>ad1fde9</code></a>\nbuild-sys: Promote unused_code to an error</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/c8cb250e8bc3f28bd69406b396bb8a92b40012c1\"><code>c8cb250</code></a>\ntests: Squash a warning</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/638c495a480d2a50099d55f445ece9e5f544b49d\"><code>638c495</code></a>\nci: Add xtask infra + reverse dependency testing (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/435\">#435</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/32a9bbb26468cbdecbf73fe8eb249284d4a718ed\"><code>32a9bbb</code></a>\ntests: Add RandomReader to exercise partial-read resilience (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/436\">#436</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/9c5df0bfd70d1b063516b90fca2cf2e0dbe8b758\"><code>9c5df0b</code></a>\nFix GNU long-name extension stream corruption on validation error (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/434\">#434</a>)</li>\n<li><a\nhref=\"https://github.com/alexcrichton/tar-rs/commit/88b1e3b0da65b0c5b9750d1a75516145488f4793\"><code>88b1e3b</code></a>\nFix docs typo in header.rs (<a\nhref=\"https://redirect.github.com/alexcrichton/tar-rs/issues/431\">#431</a>)</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/alexcrichton/tar-rs/compare/0.4.44...0.4.45\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n> **Note**\n> Automatic rebases have been disabled on this pull request as it has\nbeen open for over 30 days.\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-05-01T15:35:03+02:00",
+          "tree_id": "66b0852e5115dbaa08044830599cc602080c683e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1c403a1b4536b14723006422c3d305b0f2563d81"
+        },
+        "date": 1777643029280,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 733907,
+            "range": "± 20825",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 217035,
+            "range": "± 1166",
             "unit": "ns/iter"
           }
         ]
