@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777643031945,
+  "lastUpdate": 1777643202918,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31457,6 +31457,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 217035,
             "range": "± 1166",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7e1e1810ffee745baa032c4f9508827c5b92f6d6",
+          "message": "fix(agents): Always add reasoning items to history (#1055)\n\n- **feat: Provider tool schema policies and autofix**\n- **feat(openai): Automatically disable reasoning effort if\nunsupported**\n- **fix: Always add reasoning items to history**",
+          "timestamp": "2026-05-01T15:37:34+02:00",
+          "tree_id": "ad9b7a3e1d1908ae9463d6765c191abac201072b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7e1e1810ffee745baa032c4f9508827c5b92f6d6"
+        },
+        "date": 1777643201261,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 844634,
+            "range": "± 25323",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 228001,
+            "range": "± 4230",
             "unit": "ns/iter"
           }
         ]
