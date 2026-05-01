@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777642901807,
+  "lastUpdate": 1777642977660,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31187,6 +31187,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 169620,
             "range": "± 1353",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "37c538d5f9ebc8fafbecc004808e9cbf53004556",
+          "message": "chore(deps): bump lz4_flex from 0.11.5 to 0.11.6 (#1046)\n\nBumps [lz4_flex](https://github.com/pseitz/lz4_flex) from 0.11.5 to\n0.11.6.\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/PSeitz/lz4_flex/blob/main/CHANGELOG.md\">lz4_flex's\nchangelog</a>.</em></p>\n<blockquote>\n<h1>0.11.6 (2026-03-14)</h1>\n<h3>Security Fix</h3>\n<ul>\n<li>Fix handling of invalid match offsets during decompression <a\nhref=\"https://github.com/PSeitz/lz4_flex/commit/84cdafb\">#84cdafb</a>\n(thanks <a\nhref=\"https://github.com/Marcono1234\"><code>@​Marcono1234</code></a>)</li>\n</ul>\n<pre><code>Invalid match offsets (offset == 0) during decompression were\nnot properly\nhandled, which could lead to invalid memory reads on untrusted input.\nUsers on 0.11.x should upgrade to 0.11.6.\n</code></pre>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/PSeitz/lz4_flex/commit/6460047c0ba18bf4e3331894c8db220bc724a439\"><code>6460047</code></a>\nbump version to 0.11.6</li>\n<li><a\nhref=\"https://github.com/PSeitz/lz4_flex/commit/84cdafba1fb00313b6da8fd7b3cdeaf8ad07e11a\"><code>84cdafb</code></a>\nfix handling of invalid match offsets during decompression</li>\n<li>See full diff in <a\nhref=\"https://github.com/pseitz/lz4_flex/compare/0.11.5...0.11.6\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n> **Note**\n> Automatic rebases have been disabled on this pull request as it has\nbeen open for over 30 days.\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-05-01T15:35:26+02:00",
+          "tree_id": "60d3f581a737145ee78a25d74ea177bb371396b1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/37c538d5f9ebc8fafbecc004808e9cbf53004556"
+        },
+        "date": 1777642974966,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 572343,
+            "range": "± 14226",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 168580,
+            "range": "± 1229",
             "unit": "ns/iter"
           }
         ]
