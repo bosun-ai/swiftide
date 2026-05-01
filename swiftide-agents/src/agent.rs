@@ -618,14 +618,8 @@ impl Agent {
                 .is_some_and(|calls| !calls.is_empty());
 
         if let Some(reasoning_items) = response.reasoning.take() {
-            if has_assistant_message {
-                for item in reasoning_items {
-                    self.add_message(ChatMessage::Reasoning(item)).await?;
-                }
-            } else {
-                tracing::debug!(
-                    "Skipping reasoning items because no assistant message or tool call was produced"
-                );
+            for item in reasoning_items {
+                self.add_message(ChatMessage::Reasoning(item)).await?;
             }
         }
 
@@ -971,7 +965,7 @@ mod tests {
     use serde::ser::Error;
     use swiftide_core::ToolFeedback;
     use swiftide_core::chat_completion::errors::ToolError;
-    use swiftide_core::chat_completion::{ChatCompletionResponse, ToolCall};
+    use swiftide_core::chat_completion::{ChatCompletionResponse, ReasoningItem, ToolCall};
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
@@ -1273,6 +1267,46 @@ mod tests {
         mock_llm.expect_complete(expected_chat_request, Ok(mock_tool_response));
 
         agent.query_once("Write a third poem").await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_reasoning_only_completion_is_added_to_history() {
+        let prompt = "Plan the fix";
+        let mock_llm = MockChatCompletion::new();
+
+        let expected_chat_request = chat_request! {
+            user!(prompt);
+            tools = []
+        };
+
+        let reasoning_item = ReasoningItem {
+            id: "rs_123".into(),
+            summary: vec!["Inspect the failing path".into()],
+            content: None,
+            encrypted_content: None,
+            status: None,
+        };
+
+        let reasoning_only_response = ChatCompletionResponse::builder()
+            .reasoning(vec![reasoning_item.clone()])
+            .build()
+            .unwrap();
+
+        mock_llm.expect_complete(expected_chat_request, Ok(reasoning_only_response));
+
+        let mut agent = Agent::builder()
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+
+        let history = agent.history().await.unwrap();
+
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0], user!(prompt));
+        assert_eq!(history[1], ChatMessage::Reasoning(reasoning_item));
     }
 
     #[test_log::test(tokio::test)]
