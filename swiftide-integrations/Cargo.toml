@@ -39,7 +39,6 @@ schemars.workspace = true
 
 # Integrations
 async-openai = { workspace = true, optional = true, features = [
-  "rustls",
   "chat-completion",
   "embedding",
   "responses",
@@ -101,6 +100,9 @@ aws-smithy-types = { workspace = true, optional = true }
 aws-smithy-json = { version = "0.62.4", optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+reqwest_0_12 = { package = "reqwest", version = "0.12", default-features = false, features = [
+  "rustls-tls-native-roots-no-provider",
+], optional = true }
 reqwest-eventsource = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
@@ -158,8 +160,9 @@ tracing-subscriber = { workspace = true }
 default = ["rustls"]
 
 metrics = ["dep:metrics", "swiftide-core/metrics"]
-# Ensures rustls is used
-rustls = ["reqwest?/rustls", "fastembed?/hf-hub-native-tls"]
+# Ensures rustls is used without selecting a crypto provider. Applications can install their
+# workspace provider at runtime, e.g. aws_lc_rs::default_provider().install_default().
+rustls = ["reqwest?/rustls-no-provider", "fastembed?/hf-hub-native-tls"]
 # Qdrant for storage
 qdrant = ["dep:qdrant-client", "swiftide-core/qdrant", "chrono/now"]
 # PgVector for storage
@@ -187,7 +190,7 @@ tree-sitter = [
 # OpenAI for embedding and prompting
 openai = [
   "dep:async-openai",
-  "tiktoken-rs?/async-openai",
+  "dep:reqwest_0_12",
   "dep:reqwest-eventsource",
   "dep:reqwest",
   "swiftide-core/openai",
@@ -226,7 +229,7 @@ kafka = ["dep:rdkafka"]
 # Paruqet loader
 parquet = ["dep:arrow-array", "dep:parquet"]
 # Anthropic for prompting and completions
-anthropic = ["dep:async-anthropic"]
+anthropic = ["dep:async-anthropic", "dep:reqwest_0_12"]
 # Duckdb for indexing and retrieval
 duckdb = ["dep:duckdb", "dep:libduckdb-sys"]
 tiktoken = ["dep:tiktoken-rs"]
