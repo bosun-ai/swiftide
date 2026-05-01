@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777642997199,
+  "lastUpdate": 1777643006986,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31295,6 +31295,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 227569,
             "range": "± 2127",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4609538aa2ec65972f59b142a51855efba327cfe",
+          "message": "chore(deps): bump rand from 0.8.5 to 0.8.6 (#1070)\n\nBumps [rand](https://github.com/rust-random/rand) from 0.8.5 to 0.8.6.\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/rust-random/rand/blob/0.8.6/CHANGELOG.md\">rand's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>[0.8.6] - 2026-04-14</h2>\n<p>This release back-ports a fix from v0.10. See also <a\nhref=\"https://redirect.github.com/rust-random/rand/issues/1763\">#1763</a>.</p>\n<h3>Changes</h3>\n<ul>\n<li>Deprecate feature <code>log</code> (<a\nhref=\"https://redirect.github.com/rust-random/rand/issues/1772\">#1772</a>)</li>\n</ul>\n<p><a\nhref=\"https://redirect.github.com/rust-random/rand/issues/1763\">#1763</a>:\n<a\nhref=\"https://redirect.github.com/rust-random/rand/pull/1763\">rust-random/rand#1763</a>\n<a\nhref=\"https://redirect.github.com/rust-random/rand/issues/1772\">#1772</a>:\n<a\nhref=\"https://redirect.github.com/rust-random/rand/pull/1772\">rust-random/rand#1772</a></p>\n<ul>\n<li>Drop the experimental <code>simd_support</code> feature.</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/5309f25bb5e7d21ac01c5b6f476badd06f9cdc3f\"><code>5309f25</code></a>\n0.8.6 (<a\nhref=\"https://redirect.github.com/rust-random/rand/issues/1772\">#1772</a>):\nupdate for recent nightly rustc and backport <a\nhref=\"https://redirect.github.com/rust-random/rand/issues/1764\">#1764</a></li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/1126d03a5cbd725aad239efb0d537c9130a76b26\"><code>1126d03</code></a>\nWhen testing rustc 1.36, use compatible dependencies.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/143b60280f79a5f1992445b3df0e0599841f9821\"><code>143b602</code></a>\nAdd Cargo.lock.msrv.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/9be86f2d8140139800989ac93399b9cd49108fb8\"><code>9be86f2</code></a>\nFix cross build test.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/5e0d50d7706281ae67e69ff64105baf3c94d6ef8\"><code>5e0d50d</code></a>\nDrop simd_support.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/8ff02f0568d2f8fddda74b47613a3daaa5e2a879\"><code>8ff02f0</code></a>\nUpgrade cache action.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/4ad0cc34fc847d4d59ffdcdfbf189482601aa6b9\"><code>4ad0cc3</code></a>\nDon't test for unsupported target architecture.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/258e6d04a681321e0c4b16e3785063ed9b9e744d\"><code>258e6d0</code></a>\nAddress warning.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/9f0e676362f9599941f00bccc5310135b7c19f89\"><code>9f0e676</code></a>\nMark some internal traits as potentially unused.</li>\n<li><a\nhref=\"https://github.com/rust-random/rand/commit/6f123c178eee4563876bdd50f4ac0621b21ce2b8\"><code>6f123c1</code></a>\nWorkaround never constructed and never used warning.</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/rust-random/rand/compare/0.8.5...0.8.6\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility\nscore](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=rand&package-manager=cargo&previous-version=0.8.5&new-version=0.8.6)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't\nalter it yourself. You can also trigger a rebase manually by commenting\n`@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits\nthat have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all\nof the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop\nDependabot creating any more for this major version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop\nDependabot creating any more for this minor version (unless you reopen\nthe PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop\nDependabot creating any more for this dependency (unless you reopen the\nPR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the\n[Security Alerts\npage](https://github.com/bosun-ai/swiftide/network/alerts).\n\n</details>\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-05-01T15:34:11+02:00",
+          "tree_id": "9afb9b8085ecdccac29736828cd1aeb715e6b2b4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/4609538aa2ec65972f59b142a51855efba327cfe"
+        },
+        "date": 1777643004546,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 852546,
+            "range": "± 26317",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 229627,
+            "range": "± 1250",
             "unit": "ns/iter"
           }
         ]
