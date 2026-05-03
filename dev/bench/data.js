@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777643202918,
+  "lastUpdate": 1777816324116,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31511,6 +31511,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 228001,
             "range": "± 4230",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9c9746cda928f589f2d594e29e1e5a5d79cb8a6b",
+          "message": "fix(integrations): stop selecting tls providers (#1079)",
+          "timestamp": "2026-05-03T15:43:02+02:00",
+          "tree_id": "7338738b707bc2be392054131c01c5f294066f9f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9c9746cda928f589f2d594e29e1e5a5d79cb8a6b"
+        },
+        "date": 1777816320951,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 729405,
+            "range": "± 20499",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 216800,
+            "range": "± 1572",
             "unit": "ns/iter"
           }
         ]
