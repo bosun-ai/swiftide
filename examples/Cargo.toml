@@ -27,7 +27,6 @@ swiftide = { path = "../swiftide/", features = [
   "pgvector",
   "swiftide-agents",
   "dashscope",
-  "mistral",
   "mcp",
   "anthropic",
   "gemini",
@@ -142,10 +141,6 @@ path = "index_md_into_pgvector.rs"
 [[example]]
 name = "dashscope"
 path = "dashscope.rs"
-
-[[example]]
-name = "mistral"
-path = "mistral.rs"
 
 [[example]]
 name = "reranking"

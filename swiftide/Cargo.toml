@@ -57,7 +57,6 @@ all = [
   "scraping",
   "aws-bedrock",
   "groq",
-  "mistral",
   "ollama",
   "pgvector",
 ]
@@ -84,9 +83,6 @@ openai = ["swiftide-integrations/openai"]
 
 ## Groq 
 groq = ["swiftide-integrations/groq"]
-
-## Mistral AI
-mistral = ["swiftide-integrations/mistral"]
 
 ## Google Gemini 
 gemini = ["swiftide-integrations/gemini"]
