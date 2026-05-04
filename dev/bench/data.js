@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777816324116,
+  "lastUpdate": 1777888381437,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31565,6 +31565,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 216800,
             "range": "± 1572",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d791acddb803c9f054eff5a10f4b9e52ab1df7ec",
+          "message": "feat: add Mistral AI support (#1082)",
+          "timestamp": "2026-05-04T11:43:53+02:00",
+          "tree_id": "d1277807a033701ec2807550a4cfecb423252441",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d791acddb803c9f054eff5a10f4b9e52ab1df7ec"
+        },
+        "date": 1777888378504,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 841729,
+            "range": "± 22450",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 227037,
+            "range": "± 1793",
             "unit": "ns/iter"
           }
         ]
