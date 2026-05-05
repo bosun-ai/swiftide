@@ -81,7 +81,7 @@ rdkafka = { version = "0.39.0", features = ["cmake-build"] }
 lancedb = { version = "0.26", default-features = false, features = ["remote"] }
 # Needs to stay in sync with whatever lancdb uses, nice
 arrow-array = { version = "57.1", default-features = false }
-parquet = { version = "57.1", default-features = false, features = ["async"] }
+parquet = { version = "58.2", default-features = false, features = ["async"] }
 redb = { version = "3.1", default-features = false }
 sqlx = { version = "0.8", features = [
   "postgres",
