@@ -2,6 +2,102 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.33.0](https://github.com/bosun-ai/swiftide/compare/v0.32.1...v0.33.0) - 2026-05-05
+
+### New features
+
+- [a94760d](https://github.com/bosun-ai/swiftide/commit/a94760d9cbaed552bf58bc667cc7a67141751fe6) *(indexing)*  Convenience `then_expand` alias for `then_chunk`
+
+- [7ff5a43](https://github.com/bosun-ai/swiftide/commit/7ff5a43c61b3d2298970f9ca11c3a05d876e1148) *(agents)*  Allow fully overwriting agent history via context ([#997](https://github.com/bosun-ai/swiftide/pull/997))
+
+- [1c1dfc1](https://github.com/bosun-ai/swiftide/commit/1c1dfc1a1f5af56eb2f898132fe670fec191ddd3) *(core)*  [**breaking**] Split command output into stdout and stderr ([#1066](https://github.com/bosun-ai/swiftide/pull/1066))
+
+**BREAKING CHANGE**: split command output into stdout and stderr ([#1066](https://github.com/bosun-ai/swiftide/pull/1066))
+
+- [67998f9](https://github.com/bosun-ai/swiftide/commit/67998f94c6edfe1fa8e49b2804bdef35f66075e6) *(integrations)*  [**breaking**] Support AWS' new converse api ([#1026](https://github.com/bosun-ai/swiftide/pull/1026))
+
+**BREAKING CHANGE**: There is now a new AWS Bedrock integration. Because
+Converse is fundamentally different, it's named as `aws_bedrock_v2`.
+Inner content parts for chat messages now have a more generic structure
+so they are also usable for AWS Bedrock. Additionally, a lifetime is
+introduced for `ChatCompletionRequest` to get some quick wins.
+
+- [360b3af](https://github.com/bosun-ai/swiftide/commit/360b3af86ea85784741089aa72140ab079b5d048) *(integrations/openai)*  [**breaking**] Present and re-use reasoning in responses api ([#988](https://github.com/bosun-ai/swiftide/pull/988))
+
+**BREAKING CHANGE**: Adds a `ChatMessage::Reasoning` that will include both
+the summary and compressed reasoning, so follow up turns in agents can
+use it properly, and users can display the summary in the UI if they
+want.
+
+- [65d44f2](https://github.com/bosun-ai/swiftide/commit/65d44f2c4656eb20545750798a18fb877162f043) *(query)*  Add `original` and `current` question to `answers::Simple`
+
+- [4ff6adf](https://github.com/bosun-ai/swiftide/commit/4ff6adfe423a9442283579b15f2707e2cf8b1a62) *(tokenizer)*  Add default char estimator ([#917](https://github.com/bosun-ai/swiftide/pull/917))
+
+- [d791acd](https://github.com/bosun-ai/swiftide/commit/d791acddb803c9f054eff5a10f4b9e52ab1df7ec)  Add Mistral AI support ([#1082](https://github.com/bosun-ai/swiftide/pull/1082))
+
+- [3bb3a69](https://github.com/bosun-ai/swiftide/commit/3bb3a69379674d9fdfa90547e6c1562e742941fc)  Add pipeline statistics collection for monitoring and observability ([#1038](https://github.com/bosun-ai/swiftide/pull/1038))
+
+- [c3a51ff](https://github.com/bosun-ai/swiftide/commit/c3a51ffcd496b106705fe94082ade2c186787933)  Provider tool schema policies and autofix ([#1054](https://github.com/bosun-ai/swiftide/pull/1054))
+
+- [7a4d61a](https://github.com/bosun-ai/swiftide/commit/7a4d61a14fa4ae5c0cceee14d60bd423dc2afe7b)  Add usage details with normalized view ([#1013](https://github.com/bosun-ai/swiftide/pull/1013))
+
+- [dc48868](https://github.com/bosun-ai/swiftide/commit/dc488683e78fb69735bda5ca46e625b57838fe1f)  [**breaking**] Support images in chat completion ([#1007](https://github.com/bosun-ai/swiftide/pull/1007))
+
+**BREAKING CHANGE**: Adds a new variant to chat messages that for user and image parts.
+
+- [283fbcf](https://github.com/bosun-ai/swiftide/commit/283fbcfa9b161f99e216b2627301814e279c8c49)  Add `scoped_owned` variant for owned executors with working dir
+
+- [849ebf9](https://github.com/bosun-ai/swiftide/commit/849ebf9a2a7e8faa1061b64d21061b70ee8d0dac)  Add Bedrock Claude reasoning effort support ([#1063](https://github.com/bosun-ai/swiftide/pull/1063))
+
+### Bug fixes
+
+- [7e1e181](https://github.com/bosun-ai/swiftide/commit/7e1e1810ffee745baa032c4f9508827c5b92f6d6) *(agents)*  Always add reasoning items to history ([#1055](https://github.com/bosun-ai/swiftide/pull/1055))
+
+- [0a8dcdf](https://github.com/bosun-ai/swiftide/commit/0a8dcdf89269f39b54cc534b0322545f8205fac6) *(agents)*  Resolve pending tool calls before new user message on restart
+
+- [283b519](https://github.com/bosun-ai/swiftide/commit/283b519ededf9f14b7268cb752dd113d78efdd6f) *(bedrock)*  Trace Langfuse metadata on failures ([#1061](https://github.com/bosun-ai/swiftide/pull/1061))
+
+- [9c9746c](https://github.com/bosun-ai/swiftide/commit/9c9746cda928f589f2d594e29e1e5a5d79cb8a6b) *(integrations)*  Stop selecting tls providers ([#1079](https://github.com/bosun-ai/swiftide/pull/1079))
+
+- [6b4d920](https://github.com/bosun-ai/swiftide/commit/6b4d920ba9a882f928ed15814a6a830799d15c16) *(integrations)*  Group adjacent tool results for Anthropic providers ([#1057](https://github.com/bosun-ai/swiftide/pull/1057))
+
+- [1dd4417](https://github.com/bosun-ai/swiftide/commit/1dd44173e7c8d0ad7612f6bbcd76f49b21b4d052) *(integrations/openai)*  Properly set default on reasoning features and exclude empty encrypted content ([#992](https://github.com/bosun-ai/swiftide/pull/992))
+
+- [69d1376](https://github.com/bosun-ai/swiftide/commit/69d1376b9475c30d11d3e003cf34c79a121cac28) *(integrations/openai)*  Only log model and usage for langfuse for embeddings ([#1021](https://github.com/bosun-ai/swiftide/pull/1021))
+
+- [d8f44cd](https://github.com/bosun-ai/swiftide/commit/d8f44cdb0f03930713c372e8623dccadd6959593) *(integrations/openai)*  Add reasoning items before all other items on response ([#993](https://github.com/bosun-ai/swiftide/pull/993))
+
+- [60be8ed](https://github.com/bosun-ai/swiftide/commit/60be8ed1731eb5474192df5665db0d34248a9a7b) *(integrations/redis)*  Extend owned should not overwrite history
+
+- [b28a1bb](https://github.com/bosun-ai/swiftide/commit/b28a1bb9b0b982165d9f5f641de43a4f147b90a1) *(query)*  Use current query in answers::Simple only if changed post retrieval
+
+- [5d65545](https://github.com/bosun-ai/swiftide/commit/5d65545fa8e8987dc5b7200aa211390438fa029a) *(query)*  Do not clear transformed query after retrieval
+
+- [5ddd8ec](https://github.com/bosun-ai/swiftide/commit/5ddd8ec85b1c6e7b329ce4e8bc4871b4415d0a5c)  Stabilize tool ordering in chat completion requests ([#1058](https://github.com/bosun-ai/swiftide/pull/1058))
+
+- [f81482f](https://github.com/bosun-ai/swiftide/commit/f81482fc166ebdef1795f401ebbd158599968a53)  Should accept str
+
+- [ab17637](https://github.com/bosun-ai/swiftide/commit/ab176378a8f2313a48aad3bd6c821497dc58a5c8)  Bedrock Langfuse request capture and span-close event loss ([#1072](https://github.com/bosun-ai/swiftide/pull/1072))
+
+### Miscellaneous
+
+- [3c8d069](https://github.com/bosun-ai/swiftide/commit/3c8d0697fcf97e292d0f754ed5b86c5b50d5c25b) *(deps)*  Update all crates ([#1031](https://github.com/bosun-ai/swiftide/pull/1031))
+
+- [8ffe4de](https://github.com/bosun-ai/swiftide/commit/8ffe4de799b30a707f0fb9013f3f90f61e2e2dc3) *(deps)*  Update all crates ([#984](https://github.com/bosun-ai/swiftide/pull/984))
+
+- [50510a5](https://github.com/bosun-ai/swiftide/commit/50510a530e681dd0a8eca841b1d31b9448760837) *(integrations/openai)*  Update async-openai to 0.31 ([#978](https://github.com/bosun-ai/swiftide/pull/978))
+
+- [55b5b3c](https://github.com/bosun-ai/swiftide/commit/55b5b3c3ba18a29637c4c5bf33d48a653ed474a2) *(integrations/tree-sitter)*  Log parse errors as warning instead of errors
+
+### Revert
+
+- [c6f1029](https://github.com/bosun-ai/swiftide/commit/c6f102980f91cc39b6c7b8ff82f1b7477508b6e0)  "feat: add Mistral AI support" ([#1083](https://github.com/bosun-ai/swiftide/pull/1083))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.32.1...0.33.0
+
+
+
 ## [0.32.1](https://github.com/bosun-ai/swiftide/compare/v0.32.0...v0.32.1) - 2025-11-08
 
 ### New features
