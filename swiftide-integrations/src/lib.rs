@@ -26,8 +26,6 @@ pub mod groq;
 pub mod kafka;
 #[cfg(feature = "lancedb")]
 pub mod lancedb;
-#[cfg(feature = "mistral")]
-pub mod mistral;
 #[cfg(feature = "ollama")]
 pub mod ollama;
 #[cfg(feature = "open-router")]
