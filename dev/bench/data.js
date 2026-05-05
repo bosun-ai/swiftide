@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777888381437,
+  "lastUpdate": 1777979936826,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31619,6 +31619,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 227037,
             "range": "± 1793",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c6f102980f91cc39b6c7b8ff82f1b7477508b6e0",
+          "message": "revert: \"feat: add Mistral AI support\" (#1083)\n\nReverts bosun-ai/swiftide#1082\n\nI prefer to only add provider specific clients if they require custom\nconfiguration that is not present in the generic clients.",
+          "timestamp": "2026-05-05T13:09:58+02:00",
+          "tree_id": "7338738b707bc2be392054131c01c5f294066f9f",
+          "url": "https://github.com/bosun-ai/swiftide/commit/c6f102980f91cc39b6c7b8ff82f1b7477508b6e0"
+        },
+        "date": 1777979934695,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 801781,
+            "range": "± 13236",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 224262,
+            "range": "± 1615",
             "unit": "ns/iter"
           }
         ]
