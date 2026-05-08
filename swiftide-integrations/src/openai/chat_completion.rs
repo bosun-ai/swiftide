@@ -28,7 +28,8 @@ use swiftide_core::metrics::emit_usage;
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
 use super::responses_api::{
-    build_responses_request_from_chat, response_to_chat_completion, responses_stream_adapter,
+    build_responses_request_from_chat, build_responses_request_from_chat_with_reasoning,
+    response_to_chat_completion, responses_stream_adapter,
 };
 use super::tool_schema::OpenAiToolSchema;
 use tracing_futures::Instrument;
@@ -69,9 +70,14 @@ impl<
             .filter_map(|message| message_to_openai(message).transpose())
             .collect::<Result<Vec<_>>>()?;
 
+        let include_reasoning_effort = self.should_send_reasoning_effort(
+            super::reasoning_effort::ReasoningApi::ChatCompletions,
+            model,
+        );
+
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
-            .chat_completion_request_defaults()
+            .chat_completion_request_defaults(include_reasoning_effort)
             .model(model)
             .messages(messages)
             .to_owned();
@@ -99,11 +105,8 @@ impl<
 
         tracing::trace!(model, request = ?request, "Sending request to OpenAI");
 
-        let tracking_request = openai_request.clone();
-        let response = self
-            .client
-            .chat()
-            .create(openai_request)
+        let (tracking_request, response) = self
+            .create_chat_completion_with_reasoning_fallback(model, openai_request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -180,9 +183,14 @@ impl<
             Err(e) => return LanguageModelError::from(e).into(),
         };
 
+        let include_reasoning_effort = self.should_send_reasoning_effort(
+            super::reasoning_effort::ReasoningApi::ChatCompletions,
+            &model_name,
+        );
+
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
-            .chat_completion_request_defaults()
+            .chat_completion_request_defaults(include_reasoning_effort)
             .model(&model_name)
             .messages(messages)
             .stream(true)
@@ -224,10 +232,8 @@ impl<
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let response_stream = match self
-            .client
-            .chat()
-            .create_stream(openai_request.clone())
+        let (tracking_request, response_stream) = match self
+            .create_chat_completion_stream_with_reasoning_fallback(&model_name, openai_request)
             .await
         {
             Ok(response) => response,
@@ -237,8 +243,6 @@ impl<
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
         let self_for_stream = self.clone();
-        let tracking_request = openai_request;
-
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!("stream", langfuse.type = "GENERATION")
         } else {
@@ -358,22 +362,36 @@ impl<
             .as_ref()
             .context("Model not set")?;
 
-        let create_request = build_responses_request_from_chat(self, request)?;
-        let tracking_request = create_request.clone();
-
-        let response = self
-            .client
-            .responses()
-            .create(create_request)
-            .await
-            .map_err(openai_error_to_language_model_error)?;
+        let include_reasoning_effort = self
+            .should_send_reasoning_effort(super::reasoning_effort::ReasoningApi::Responses, model);
+        let mut create_request = build_responses_request_from_chat(self, request)?;
+        let response = match self.client.responses().create(create_request.clone()).await {
+            Ok(response) => response,
+            Err(error)
+                if include_reasoning_effort
+                    && self.should_retry_without_reasoning_effort(
+                        super::reasoning_effort::ReasoningApi::Responses,
+                        model,
+                        &error,
+                    ) =>
+            {
+                create_request =
+                    build_responses_request_from_chat_with_reasoning(self, request, false)?;
+                self.client
+                    .responses()
+                    .create(create_request.clone())
+                    .await
+                    .map_err(openai_error_to_language_model_error)?
+            }
+            Err(error) => return Err(openai_error_to_language_model_error(error)),
+        };
 
         let completion = response_to_chat_completion(&response)?;
 
         self.track_completion(
             model,
             completion.usage.as_ref(),
-            Some(&tracking_request),
+            Some(&create_request),
             Some(&completion),
         );
 
@@ -390,6 +408,10 @@ impl<
             return LanguageModelError::permanent("Model not set").into();
         };
 
+        let include_reasoning_effort = self.should_send_reasoning_effort(
+            super::reasoning_effort::ReasoningApi::Responses,
+            &model_name,
+        );
         let mut create_request = match build_responses_request_from_chat(self, request) {
             Ok(req) => req,
             Err(err) => return err.into(),
@@ -404,6 +426,31 @@ impl<
             .await
         {
             Ok(stream) => stream,
+            Err(error)
+                if include_reasoning_effort
+                    && self.should_retry_without_reasoning_effort(
+                        super::reasoning_effort::ReasoningApi::Responses,
+                        &model_name,
+                        &error,
+                    ) =>
+            {
+                create_request =
+                    match build_responses_request_from_chat_with_reasoning(self, request, false) {
+                        Ok(req) => req,
+                        Err(err) => return err.into(),
+                    };
+                create_request.stream = Some(true);
+
+                match self
+                    .client
+                    .responses()
+                    .create_stream(create_request.clone())
+                    .await
+                {
+                    Ok(stream) => stream,
+                    Err(err) => return openai_error_to_language_model_error(err).into(),
+                }
+            }
             Err(err) => return openai_error_to_language_model_error(err).into(),
         };
 
@@ -716,9 +763,11 @@ mod tests {
     use futures_util::StreamExt;
     use serde_json::json;
     use std::sync::Arc;
-    use swiftide_core::chat_completion::{ToolCallBuilder, ToolOutput, UsageBuilder};
-    use wiremock::matchers::{method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use swiftide_core::chat_completion::{
+        ToolCallBuilder, ToolOutput, ToolSpecBuildError, UsageBuilder,
+    };
+    use wiremock::matchers::{body_partial_json, method, path};
+    use wiremock::{Match, Mock, MockServer, Request, ResponseTemplate};
 
     #[allow(dead_code)]
     #[derive(schemars::JsonSchema)]
@@ -1119,7 +1168,7 @@ mod tests {
                 assert_eq!(v["parallel_tool_calls"], true);
                 assert_eq!(v["max_completion_tokens"], 77);
                 assert!((v["temperature"].as_f64().unwrap() - 0.42).abs() < 1e-5);
-                assert_eq!(v["reasoning_effort"], serde_json::Value::Null);
+                assert_eq!(v["reasoning_effort"], "low");
                 assert_eq!(v["seed"], 42);
                 assert!((v["presence_penalty"].as_f64().unwrap() - 1.1).abs() < 1e-5);
 
@@ -1191,6 +1240,188 @@ mod tests {
         let response = openai.complete(&request).await.unwrap();
 
         assert_eq!(response.message(), Some("All settings validated"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_retries_without_reasoning_effort_when_openai_rejects_it() {
+        struct WithoutReasoningEffort;
+
+        impl Match for WithoutReasoningEffort {
+            fn matches(&self, request: &Request) -> bool {
+                let Ok(body) = serde_json::from_slice::<serde_json::Value>(&request.body) else {
+                    return false;
+                };
+
+                body.get("reasoning_effort").is_none()
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+        let invalid_reasoning_response = json!({
+            "error": {
+                "message": "Unrecognized request argument supplied: reasoning_effort",
+                "type": "invalid_request_error",
+                "param": "reasoning_effort",
+                "code": "invalid_request_error"
+            }
+        });
+        let success_response = json!({
+            "id": "chatcmpl-retry",
+            "object": "chat.completion",
+            "created": 123,
+            "model": "gpt-4.1",
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": "Retried without reasoning effort",
+                    "refusal": null,
+                    "annotations": []
+                },
+                "logprobs": null,
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": 19,
+                "completion_tokens": 8,
+                "total_tokens": 27,
+                "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                "completion_tokens_details": {
+                    "reasoning_tokens": 0,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0
+                }
+            },
+            "service_tier": "default"
+        });
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .and(body_partial_json(json!({ "reasoning_effort": "low" })))
+            .respond_with(ResponseTemplate::new(400).set_body_json(invalid_reasoning_response))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .and(WithoutReasoningEffort)
+            .respond_with(ResponseTemplate::new(200).set_body_json(success_response))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4.1")
+            .default_options(
+                Options::builder()
+                    .reasoning_effort(async_openai::types::responses::ReasoningEffort::Low),
+            )
+            .build()
+            .expect("Can create OpenAI client.");
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hi".into())])
+            .build()
+            .unwrap();
+
+        let response = openai.complete(&request).await.unwrap();
+
+        assert_eq!(response.message(), Some("Retried without reasoning effort"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_via_responses_api_retries_without_reasoning_effort_when_openai_rejects_it()
+     {
+        struct WithoutReasoning {
+            expected_model: &'static str,
+        }
+
+        impl Match for WithoutReasoning {
+            fn matches(&self, request: &Request) -> bool {
+                let Ok(body) = serde_json::from_slice::<serde_json::Value>(&request.body) else {
+                    return false;
+                };
+
+                body["model"] == self.expected_model && body.get("reasoning").is_none()
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+        let invalid_reasoning_response = json!({
+            "error": {
+                "message": "Unrecognized request argument supplied: reasoning.effort",
+                "type": "invalid_request_error",
+                "param": "reasoning.effort",
+                "code": "invalid_request_error"
+            }
+        });
+        let success_response = json!({
+            "created_at": 0,
+            "id": "resp-retry",
+            "model": "gpt-4.1-mini",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "message",
+                    "id": "msg",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [
+                        {"type": "output_text", "text": "Retried responses request", "annotations": []}
+                    ]
+                }
+            ]
+        });
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .and(body_partial_json(
+                json!({ "reasoning": { "effort": "low" } }),
+            ))
+            .respond_with(ResponseTemplate::new(400).set_body_json(invalid_reasoning_response))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .and(WithoutReasoning {
+                expected_model: "gpt-4.1-mini",
+            })
+            .respond_with(ResponseTemplate::new(200).set_body_json(success_response))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4.1-mini")
+            .default_options(
+                Options::builder()
+                    .reasoning_effort(async_openai::types::responses::ReasoningEffort::Low),
+            )
+            .use_responses_api(true)
+            .build()
+            .expect("Can create OpenAI client.");
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello via responses".into())])
+            .build()
+            .unwrap();
+
+        let response = openai.complete(&request).await.unwrap();
+
+        assert_eq!(response.message(), Some("Retried responses request"));
     }
 
     #[test_log::test(tokio::test)]
@@ -1387,12 +1618,12 @@ data: [DONE]\n\n";
             .description("bad schema")
             .parameters_schema(invalid_schema)
             .build()
-            .expect_err("invalid tool schemas should be rejected at build time");
+            .unwrap_err();
 
-        assert!(
-            err.to_string()
-                .contains("tool schema must be a JSON object")
-        );
+        assert!(matches!(
+            err,
+            ToolSpecBuildError::InvalidParametersSchema(_)
+        ));
     }
 
     #[test_log::test(tokio::test)]
@@ -1404,12 +1635,12 @@ data: [DONE]\n\n";
             .description("bad schema")
             .parameters_schema(invalid_schema)
             .build()
-            .expect_err("invalid tool schemas should be rejected at build time");
+            .unwrap_err();
 
-        assert!(
-            err.to_string()
-                .contains("tool schema must be a JSON object")
-        );
+        assert!(matches!(
+            err,
+            ToolSpecBuildError::InvalidParametersSchema(_)
+        ));
     }
 
     #[test_log::test(tokio::test)]

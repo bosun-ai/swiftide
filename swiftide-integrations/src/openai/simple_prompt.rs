@@ -11,7 +11,10 @@ use swiftide_core::{
     util::debug_long_utf8,
 };
 
-use super::responses_api::{build_responses_request_from_prompt, response_to_chat_completion};
+use super::responses_api::{
+    build_responses_request_from_prompt, build_responses_request_from_prompt_with_reasoning,
+    response_to_chat_completion,
+};
 use crate::openai::openai_error_to_language_model_error;
 
 use super::GenericOpenAI;
@@ -59,10 +62,14 @@ impl<
             .prompt_model
             .as_ref()
             .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+        let include_reasoning_effort = self.should_send_reasoning_effort(
+            super::reasoning_effort::ReasoningApi::ChatCompletions,
+            model,
+        );
 
         // Build the request to be sent to the OpenAI API.
         let request = self
-            .chat_completion_request_defaults()
+            .chat_completion_request_defaults(include_reasoning_effort)
             .model(model)
             .messages(vec![
                 ChatCompletionRequestUserMessageArgs::default()
@@ -86,12 +93,8 @@ impl<
         );
 
         // Send the request to the OpenAI API and await the response.
-        // Move the request; we logged key fields above if needed.
-        let tracking_request = request.clone();
-        let response = self
-            .client
-            .chat()
-            .create(request)
+        let (tracking_request, response) = self
+            .create_chat_completion_with_reasoning_fallback(model, request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -133,15 +136,31 @@ impl<
             .prompt_model
             .as_ref()
             .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+        let include_reasoning_effort = self
+            .should_send_reasoning_effort(super::reasoning_effort::ReasoningApi::Responses, model);
 
-        let create_request = build_responses_request_from_prompt(self, prompt_text.clone())?;
+        let mut create_request = build_responses_request_from_prompt(self, prompt_text.clone())?;
 
-        let response = self
-            .client
-            .responses()
-            .create(create_request.clone())
-            .await
-            .map_err(openai_error_to_language_model_error)?;
+        let response = match self.client.responses().create(create_request.clone()).await {
+            Ok(response) => response,
+            Err(error)
+                if include_reasoning_effort
+                    && self.should_retry_without_reasoning_effort(
+                        super::reasoning_effort::ReasoningApi::Responses,
+                        model,
+                        &error,
+                    ) =>
+            {
+                create_request =
+                    build_responses_request_from_prompt_with_reasoning(self, prompt_text, false)?;
+                self.client
+                    .responses()
+                    .create(create_request.clone())
+                    .await
+                    .map_err(openai_error_to_language_model_error)?
+            }
+            Err(error) => return Err(openai_error_to_language_model_error(error)),
+        };
 
         let completion = response_to_chat_completion(&response)?;
 

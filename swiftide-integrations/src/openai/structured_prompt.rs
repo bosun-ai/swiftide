@@ -19,7 +19,8 @@ use swiftide_core::{
 };
 
 use super::responses_api::{
-    build_responses_request_from_prompt_with_schema, response_to_chat_completion,
+    build_responses_request_from_prompt_with_schema,
+    build_responses_request_from_prompt_with_schema_and_reasoning, response_to_chat_completion,
 };
 use crate::openai::openai_error_to_language_model_error;
 
@@ -74,6 +75,10 @@ impl<
             .prompt_model
             .as_ref()
             .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+        let include_reasoning_effort = self.should_send_reasoning_effort(
+            super::reasoning_effort::ReasoningApi::ChatCompletions,
+            model,
+        );
 
         let schema_value =
             serde_json::to_value(&schema).context("Failed to get schema as value")?;
@@ -88,7 +93,7 @@ impl<
 
         // Build the request to be sent to the OpenAI API.
         let request = self
-            .chat_completion_request_defaults()
+            .chat_completion_request_defaults(include_reasoning_effort)
             .model(model)
             .response_format(response_format)
             .messages(vec![
@@ -113,10 +118,8 @@ impl<
         );
 
         // Send the request to the OpenAI API and await the response.
-        let response = self
-            .client
-            .chat()
-            .create(request.clone())
+        let (tracking_request, response) = self
+            .create_chat_completion_with_reasoning_fallback(model, request)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -130,7 +133,12 @@ impl<
 
         let usage = response.usage.as_ref().map(Usage::from);
 
-        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
+        self.track_completion(
+            model,
+            usage.as_ref(),
+            Some(&tracking_request),
+            Some(&response),
+        );
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))?;
@@ -161,24 +169,43 @@ impl<
             .prompt_model
             .as_ref()
             .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+        let include_reasoning_effort = self
+            .should_send_reasoning_effort(super::reasoning_effort::ReasoningApi::Responses, model);
 
         let schema_value = serde_json::to_value(&schema)
             .context("Failed to get schema as value")
             .map_err(LanguageModelError::permanent)?;
 
-        let create_request = build_responses_request_from_prompt_with_schema(
+        let mut create_request = build_responses_request_from_prompt_with_schema(
             self,
             prompt_text.clone(),
-            schema_value,
+            schema_value.clone(),
         )?;
-        let tracking_request = create_request.clone();
 
-        let response = self
-            .client
-            .responses()
-            .create(create_request)
-            .await
-            .map_err(openai_error_to_language_model_error)?;
+        let response = match self.client.responses().create(create_request.clone()).await {
+            Ok(response) => response,
+            Err(error)
+                if include_reasoning_effort
+                    && self.should_retry_without_reasoning_effort(
+                        super::reasoning_effort::ReasoningApi::Responses,
+                        model,
+                        &error,
+                    ) =>
+            {
+                create_request = build_responses_request_from_prompt_with_schema_and_reasoning(
+                    self,
+                    prompt_text,
+                    schema_value,
+                    false,
+                )?;
+                self.client
+                    .responses()
+                    .create(create_request.clone())
+                    .await
+                    .map_err(openai_error_to_language_model_error)?
+            }
+            Err(error) => return Err(openai_error_to_language_model_error(error)),
+        };
 
         let completion = response_to_chat_completion(&response)?;
 
@@ -189,7 +216,7 @@ impl<
         self.track_completion(
             model,
             completion.usage.as_ref(),
-            Some(&tracking_request),
+            Some(&create_request),
             Some(&completion),
         );
 

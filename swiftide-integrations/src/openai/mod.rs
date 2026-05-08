@@ -16,6 +16,7 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
+mod reasoning_effort;
 mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
@@ -25,6 +26,9 @@ mod tool_schema;
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
 pub use async_openai::types::responses::ReasoningEffort;
+pub use reasoning_effort::ReasoningEffortMode;
+
+use reasoning_effort::{ReasoningApi, ReasoningEffortCapabilities};
 
 #[cfg(feature = "tiktoken")]
 use crate::tiktoken::TikToken;
@@ -109,6 +113,9 @@ pub struct GenericOpenAI<
     #[builder(default)]
     pub(crate) use_responses_api: bool,
 
+    #[builder(default)]
+    reasoning_effort_capabilities: Arc<ReasoningEffortCapabilities>,
+
     /// A callback function that is called when usage information is available.
     #[builder(default, setter(custom))]
     #[allow(clippy::type_complexity)]
@@ -168,6 +175,10 @@ pub struct Options {
     /// Reasoning effor for reasoning models.
     #[builder(default, setter(into))]
     pub reasoning_effort: Option<ReasoningEffort>,
+
+    /// Controls whether Swiftide should auto-negotiate reasoning effort support.
+    #[builder(default, setter(into))]
+    pub reasoning_effort_mode: Option<ReasoningEffortMode>,
 
     /// Enable reasoning summary/encrypted content handling for the Responses API.
     ///
@@ -233,6 +244,9 @@ impl Options {
         if let Some(reasoning_effort) = &other.reasoning_effort {
             self.reasoning_effort = Some(reasoning_effort.clone());
         }
+        if let Some(reasoning_effort_mode) = other.reasoning_effort_mode {
+            self.reasoning_effort_mode = Some(reasoning_effort_mode);
+        }
         if let Some(reasoning_features) = other.reasoning_features {
             self.reasoning_features = Some(reasoning_features);
         }
@@ -252,6 +266,10 @@ impl Options {
             self.dimensions = Some(dimensions);
         }
     }
+
+    fn reasoning_effort_mode(&self) -> ReasoningEffortMode {
+        self.reasoning_effort_mode.unwrap_or_default()
+    }
 }
 
 impl From<OptionsBuilder> for Options {
@@ -263,6 +281,7 @@ impl From<OptionsBuilder> for Options {
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
+            reasoning_effort_mode: value.reasoning_effort_mode.flatten(),
             reasoning_features: value.reasoning_features.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
@@ -283,6 +302,7 @@ impl From<&mut OptionsBuilder> for Options {
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
+            reasoning_effort_mode: value.reasoning_effort_mode.flatten(),
             reasoning_features: value.reasoning_features.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
@@ -484,7 +504,10 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
         self.use_responses_api
     }
 
-    fn chat_completion_request_defaults(&self) -> CreateChatCompletionRequestArgs {
+    fn chat_completion_request_defaults(
+        &self,
+        include_reasoning_effort: bool,
+    ) -> CreateChatCompletionRequestArgs {
         let mut args = CreateChatCompletionRequestArgs::default();
 
         let options = &self.default_options;
@@ -499,6 +522,11 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
 
         if let Some(temperature) = options.temperature {
             args.temperature(temperature);
+        }
+
+        if include_reasoning_effort && let Some(reasoning_effort) = options.reasoning_effort.clone()
+        {
+            args.reasoning_effort(reasoning_effort);
         }
 
         if let Some(seed) = options.seed {
@@ -518,6 +546,91 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
         }
 
         args
+    }
+
+    fn should_send_reasoning_effort(&self, api: ReasoningApi, model: &str) -> bool {
+        self.reasoning_effort_capabilities.should_send(
+            self.default_options.reasoning_effort_mode(),
+            self.default_options.reasoning_effort.is_some(),
+            api,
+            model,
+        )
+    }
+
+    fn should_retry_without_reasoning_effort(
+        &self,
+        api: ReasoningApi,
+        model: &str,
+        error: &OpenAIError,
+    ) -> bool {
+        self.reasoning_effort_capabilities
+            .should_retry_without_reasoning_effort(
+                self.default_options.reasoning_effort_mode(),
+                api,
+                model,
+                error,
+            )
+    }
+
+    async fn create_chat_completion_with_reasoning_fallback(
+        &self,
+        model: &str,
+        mut request: async_openai::types::chat::CreateChatCompletionRequest,
+    ) -> Result<
+        (
+            async_openai::types::chat::CreateChatCompletionRequest,
+            async_openai::types::chat::CreateChatCompletionResponse,
+        ),
+        OpenAIError,
+    > {
+        let sent_reasoning_effort = request.reasoning_effort.is_some();
+        match self.client.chat().create(request.clone()).await {
+            Ok(response) => Ok((request, response)),
+            Err(error)
+                if sent_reasoning_effort
+                    && self.should_retry_without_reasoning_effort(
+                        ReasoningApi::ChatCompletions,
+                        model,
+                        &error,
+                    ) =>
+            {
+                request.reasoning_effort = None;
+                Ok((request.clone(), self.client.chat().create(request).await?))
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    async fn create_chat_completion_stream_with_reasoning_fallback(
+        &self,
+        model: &str,
+        mut request: async_openai::types::chat::CreateChatCompletionRequest,
+    ) -> Result<
+        (
+            async_openai::types::chat::CreateChatCompletionRequest,
+            async_openai::types::chat::ChatCompletionResponseStream,
+        ),
+        OpenAIError,
+    > {
+        let sent_reasoning_effort = request.reasoning_effort.is_some();
+        match self.client.chat().create_stream(request.clone()).await {
+            Ok(stream) => Ok((request, stream)),
+            Err(error)
+                if sent_reasoning_effort
+                    && self.should_retry_without_reasoning_effort(
+                        ReasoningApi::ChatCompletions,
+                        model,
+                        &error,
+                    ) =>
+            {
+                request.reasoning_effort = None;
+                Ok((
+                    request.clone(),
+                    self.client.chat().create_stream(request).await?,
+                ))
+            }
+            Err(error) => Err(error),
+        }
     }
 
     fn embed_request_defaults(&self) -> CreateEmbeddingRequestArgs {
@@ -749,7 +862,7 @@ mod test {
 
     #[test]
     #[allow(deprecated)]
-    fn test_chat_completion_request_defaults_omits_reasoning_effort() {
+    fn test_chat_completion_request_defaults_include_reasoning_effort_in_auto_mode() {
         let openai: OpenAI = OpenAI::builder()
             .default_options(
                 Options::builder()
@@ -766,7 +879,7 @@ mod test {
             .unwrap();
 
         let built = openai
-            .chat_completion_request_defaults()
+            .chat_completion_request_defaults(true)
             .messages(Vec::new())
             .model("gpt-4o")
             .build()
@@ -775,7 +888,7 @@ mod test {
         assert_eq!(built.parallel_tool_calls, Some(true));
         assert_eq!(built.max_completion_tokens, Some(42));
         assert_eq!(built.temperature, Some(0.3));
-        assert_eq!(built.reasoning_effort, None);
+        assert_eq!(built.reasoning_effort, Some(ReasoningEffort::Low));
         assert_eq!(built.seed, Some(7));
         assert_eq!(built.presence_penalty, Some(1.1));
         assert_eq!(
@@ -785,6 +898,28 @@ mod test {
             ))
         );
         assert_eq!(built.user, Some("user-1".to_string()));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn test_chat_completion_request_defaults_omit_reasoning_effort_in_never_mode() {
+        let openai: OpenAI = OpenAI::builder()
+            .default_options(
+                Options::builder()
+                    .reasoning_effort(ReasoningEffort::Low)
+                    .reasoning_effort_mode(ReasoningEffortMode::Never),
+            )
+            .build()
+            .unwrap();
+
+        let built = openai
+            .chat_completion_request_defaults(false)
+            .messages(Vec::new())
+            .model("gpt-4o")
+            .build()
+            .unwrap();
+
+        assert_eq!(built.reasoning_effort, None);
     }
 
     #[test]

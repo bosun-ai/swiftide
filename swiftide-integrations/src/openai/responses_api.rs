@@ -35,13 +35,32 @@ where
     let model = client
         .options()
         .prompt_model
+        .as_deref()
+        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+    let include_reasoning_effort = client
+        .should_send_reasoning_effort(super::reasoning_effort::ReasoningApi::Responses, model);
+
+    build_responses_request_from_chat_with_reasoning(client, request, include_reasoning_effort)
+}
+
+pub(super) fn build_responses_request_from_chat_with_reasoning<C>(
+    client: &GenericOpenAI<C>,
+    request: &ChatCompletionRequest<'_>,
+    include_reasoning_effort: bool,
+) -> LmResult<CreateResponse>
+where
+    C: async_openai::config::Config + Clone + Default,
+{
+    let model = client
+        .options()
+        .prompt_model
         .as_ref()
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-    let mut args = base_request_args(client, model)?;
+    let mut args = base_request_args(client, model, include_reasoning_effort)?;
 
     let options = client.options();
-    let include_reasoning = options.reasoning_effort.is_some();
+    let include_reasoning = include_reasoning_effort && options.reasoning_effort.is_some();
     let input_items = chat_messages_to_input_items(request.messages(), include_reasoning)?;
     args.input(InputParam::Items(input_items));
 
@@ -62,7 +81,11 @@ where
     args.build().map_err(openai_error_to_language_model_error)
 }
 
-fn base_request_args<C>(client: &GenericOpenAI<C>, model: &str) -> LmResult<CreateResponseArgs>
+fn base_request_args<C>(
+    client: &GenericOpenAI<C>,
+    model: &str,
+    include_reasoning_effort: bool,
+) -> LmResult<CreateResponseArgs>
 where
     C: async_openai::config::Config + Clone + Default,
 {
@@ -83,7 +106,7 @@ where
         args.temperature(temperature);
     }
 
-    if let Some(reasoning_effort) = options.reasoning_effort.clone() {
+    if include_reasoning_effort && let Some(reasoning_effort) = options.reasoning_effort.clone() {
         let mut reasoning = ReasoningArgs::default();
         reasoning.effort(reasoning_effort);
 
@@ -823,10 +846,33 @@ where
     let model = client
         .options()
         .prompt_model
+        .as_deref()
+        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+    let include_reasoning_effort = client
+        .should_send_reasoning_effort(super::reasoning_effort::ReasoningApi::Responses, model);
+
+    build_responses_request_from_prompt_with_reasoning(
+        client,
+        prompt_text,
+        include_reasoning_effort,
+    )
+}
+
+pub(super) fn build_responses_request_from_prompt_with_reasoning<C>(
+    client: &GenericOpenAI<C>,
+    prompt_text: String,
+    include_reasoning_effort: bool,
+) -> LmResult<CreateResponse>
+where
+    C: async_openai::config::Config + Clone + Default,
+{
+    let model = client
+        .options()
+        .prompt_model
         .as_ref()
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-    let mut args = base_request_args(client, model)?;
+    let mut args = base_request_args(client, model, include_reasoning_effort)?;
     args.input(InputParam::Items(vec![InputItem::EasyMessage(
         EasyInputMessageArgs::default()
             .r#type(MessageType::Message)
@@ -850,10 +896,35 @@ where
     let model = client
         .options()
         .prompt_model
+        .as_deref()
+        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+    let include_reasoning_effort = client
+        .should_send_reasoning_effort(super::reasoning_effort::ReasoningApi::Responses, model);
+
+    build_responses_request_from_prompt_with_schema_and_reasoning(
+        client,
+        prompt_text,
+        schema,
+        include_reasoning_effort,
+    )
+}
+
+pub(super) fn build_responses_request_from_prompt_with_schema_and_reasoning<C>(
+    client: &GenericOpenAI<C>,
+    prompt_text: String,
+    schema: serde_json::Value,
+    include_reasoning_effort: bool,
+) -> LmResult<CreateResponse>
+where
+    C: async_openai::config::Config + Clone + Default,
+{
+    let model = client
+        .options()
+        .prompt_model
         .as_ref()
         .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-    let mut args = base_request_args(client, model)?;
+    let mut args = base_request_args(client, model, include_reasoning_effort)?;
     args.input(InputParam::Items(vec![InputItem::EasyMessage(
         EasyInputMessageArgs::default()
             .r#type(MessageType::Message)
@@ -1162,6 +1233,9 @@ mod tests {
             "OpenAI requires additionalProperties to be set to false for tool parameters, got {}",
             serde_json::to_string_pretty(&function.parameters).unwrap()
         );
+        let expected_parameters = OpenAiToolSchema::try_from(&sample_tool_spec())
+            .expect("tool schema should be OpenAI compatible")
+            .into_value();
 
         assert_eq!(function.parameters, Some(expected_parameters));
     }
@@ -1920,7 +1994,7 @@ mod tests {
             .build()
             .unwrap();
 
-        assert!(base_request_args(&openai, "gpt-4.1").is_ok());
+        assert!(base_request_args(&openai, "gpt-4.1", false).is_ok());
     }
 
     #[test]
