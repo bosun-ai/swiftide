@@ -487,7 +487,10 @@ impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
 #[derive(Debug)]
 pub(crate) enum TransitionAction {
     Next(NextNode),
-    FanOut { targets: Vec<NextNode> },
+    FanOut {
+        targets: Vec<NextNode>,
+        join: Option<JoinDefinition>,
+    },
     Pause,
     Error(Box<dyn std::error::Error + Send + Sync>),
     Finish(Arc<dyn Any + Send + Sync>),
@@ -545,6 +548,30 @@ impl Transition {
         Self {
             action: TransitionAction::FanOut {
                 targets: targets.into_iter().collect(),
+                join: None,
+            },
+            settings: TransitionSettings::default(),
+        }
+    }
+
+    /// Schedules multiple branches and attaches them all to the provided join target.
+    ///
+    /// This is useful when branches join after one or more intermediate nodes instead of joining
+    /// immediately at their first fan-out target.
+    pub fn fan_out_with_join<T>(
+        targets: impl IntoIterator<Item = NextNode>,
+        join_target: JoinTarget<T>,
+    ) -> Self
+    where
+        T: TaskNode<Input = JoinInput> + ?Sized,
+    {
+        let mut definition = join_target.into_definition();
+        definition.scope = JoinScope::AllFanOutBranches;
+
+        Self {
+            action: TransitionAction::FanOut {
+                targets: targets.into_iter().collect(),
+                join: Some(definition),
             },
             settings: TransitionSettings::default(),
         }

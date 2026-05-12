@@ -193,7 +193,10 @@ enum BranchExecutionResult {
 #[derive(Debug)]
 pub(crate) enum EvaluatedTransition {
     Flow(Transition),
-    Join(Arc<dyn Any + Send + Sync>),
+    Join {
+        definition: JoinDefinition,
+        payload: Arc<dyn Any + Send + Sync>,
+    },
 }
 
 #[derive(Debug)]
@@ -349,9 +352,13 @@ impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + '
                 RegisteredTransition::Flow(transition) => {
                     Ok(EvaluatedTransition::Flow((transition)(output).await))
                 }
-                RegisteredTransition::Join { handler, .. } => {
-                    Ok(EvaluatedTransition::Join((handler)(output).await))
-                }
+                RegisteredTransition::Join {
+                    definition,
+                    handler,
+                } => Ok(EvaluatedTransition::Join {
+                    definition: *definition,
+                    payload: (handler)(output).await,
+                }),
             },
             Err(error) => Err(TaskError::NodeError(NodeError::new(
                 error,
@@ -564,7 +571,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         let EvaluatedBranch { branch, next_step } = evaluated;
         match next_step {
             EvaluatedTransition::Flow(transition) => self.apply_flow_transition(branch, transition),
-            EvaluatedTransition::Join(payload) => self.apply_join_payload(&branch, payload),
+            EvaluatedTransition::Join {
+                definition,
+                payload,
+            } => self.apply_join_payload(&branch, definition, payload),
         }
     }
 
@@ -590,8 +600,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 self.enqueue_branch(branch);
                 Ok(LoopControl::Continue)
             }
-            TransitionAction::FanOut { targets } => {
-                self.enqueue_fan_out_branches(targets, settings)?;
+            TransitionAction::FanOut { targets, join } => {
+                self.enqueue_fan_out_branches(targets, settings, join)?;
                 Ok(LoopControl::Continue)
             }
             TransitionAction::Pause => Ok(self.pause_branch(branch, settings)),
@@ -604,8 +614,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         &mut self,
         targets: Vec<super::transition::NextNode>,
         settings: EffectiveTransitionSettings,
+        explicit_join: Option<JoinDefinition>,
     ) -> Result<(), TaskError> {
-        let join_groups = self.prepare_join_groups(&targets)?;
+        let join_groups = self.prepare_join_groups(&targets, explicit_join)?;
 
         for (target, join_group) in targets.into_iter().zip(join_groups) {
             let child_id = self.next_branch();
@@ -689,6 +700,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     fn apply_join_payload(
         &mut self,
         branch: &ExecutionBranch,
+        definition: JoinDefinition,
         payload: Arc<dyn Any + Send + Sync>,
     ) -> Result<LoopControl<Output>, TaskError> {
         let Some(group_id) = branch.join_group else {
@@ -703,6 +715,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 .join_groups
                 .get_mut(&group_id)
                 .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
+
+            if group.join_node_id != definition.join_node_id || group.policy != definition.policy {
+                return Err(TaskError::invalid_state(format!(
+                    "Node {} used join for an unexpected join target",
+                    branch.current_node
+                )));
+            }
 
             if group.fired {
                 group.members.insert(
@@ -745,7 +764,17 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     fn prepare_join_groups(
         &mut self,
         targets: &[super::transition::NextNode],
+        explicit_join: Option<JoinDefinition>,
     ) -> Result<Vec<Option<BranchGroupId>>, TaskError> {
+        if let Some(definition) = explicit_join {
+            if targets.is_empty() {
+                return Ok(Vec::new());
+            }
+
+            let group_id = self.insert_join_group(definition);
+            return Ok(vec![Some(group_id); targets.len()]);
+        }
+
         let definitions = targets
             .iter()
             .map(|target| {

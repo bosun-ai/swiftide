@@ -802,6 +802,59 @@ async fn all_fanout_branches_scope_preserves_full_fanout_join() {
 }
 
 #[test_log::test(tokio::test)]
+async fn fan_out_with_join_allows_branches_to_join_after_intermediate_nodes() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let left = task.register_node(IntNode);
+    let left_tail = task.register_node(OffsetNode(10));
+    let right = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out_with_join(
+            [left.target_with(input), right.target_with(input)],
+            join.join(),
+        )
+    })
+    .unwrap();
+    task.register_transition(left, move |input| left_tail.transitions_with(input))
+        .unwrap();
+    task.register_transition(left_tail, join.join()).unwrap();
+    task.register_transition(right, join.join()).unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    let result = task.run(1).await.unwrap();
+    assert_eq!(result, TaskRunState::Completed(16));
+}
+
+#[test_log::test(tokio::test)]
+async fn fan_out_with_join_rejects_branch_joining_a_different_target() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let branch = task.register_node(IntNode);
+    let expected_join = task.register_node(SumJoinNode);
+    let wrong_join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out_with_join([branch.target_with(input)], expected_join.join())
+    })
+    .unwrap();
+    task.register_transition(branch, wrong_join.join()).unwrap();
+    task.register_transition(expected_join, task.transitions_to_finish())
+        .unwrap();
+    task.register_transition(wrong_join, task.transitions_to_finish())
+        .unwrap();
+
+    let error = task.run(1).await.unwrap_err();
+    assert!(matches!(error, TaskError::InvalidState(_)));
+}
+
+#[test_log::test(tokio::test)]
 async fn all_fanout_branches_scope_rejects_mixed_fan_outs() {
     let mut task: Task<i32, i32> = Task::new();
 
