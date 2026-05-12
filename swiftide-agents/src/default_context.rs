@@ -18,8 +18,7 @@ use std::{
 use anyhow::Result;
 use async_trait::async_trait;
 use swiftide_core::{
-    AgentContext, AgentContextCheckpoint, Command, CommandError, CommandOutput, MessageHistory,
-    ToolExecutor,
+    AgentContext, Command, CommandError, CommandOutput, MessageHistory, ToolExecutor,
 };
 use swiftide_core::{
     ToolFeedback,
@@ -27,19 +26,6 @@ use swiftide_core::{
 };
 
 use crate::tools::local_executor::LocalExecutor;
-
-const DEFAULT_CONTEXT_CHECKPOINT_KIND: &str = "default_context";
-
-/// Serializable snapshot of [`DefaultContext`] state.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
-pub struct DefaultContextCheckpoint {
-    /// Complete message history at the checkpoint boundary.
-    pub message_history: Vec<ChatMessage>,
-    /// Whether the context should stop when the latest message is from the assistant.
-    pub stop_on_assistant: bool,
-    /// Feedback already recorded for pending tool calls.
-    pub feedback_received: HashMap<ToolCall, ToolFeedback>,
-}
 
 // TODO: Remove unit as executor and implement a local executor instead
 #[derive(Clone)]
@@ -140,33 +126,6 @@ impl DefaultContext {
             .lock()
             .unwrap()
             .extend(feedback.into());
-    }
-
-    /// Captures the current durable conversation state and pending tool feedback.
-    ///
-    /// Incremental completion cursors are intentionally excluded. A restored context should replay
-    /// the preserved message history as-is, starting from the system prompt or most recent
-    /// summary, instead of resuming from an internal cursor boundary.
-    pub async fn checkpoint(&self) -> Result<DefaultContextCheckpoint> {
-        Ok(DefaultContextCheckpoint {
-            message_history: self.message_history.history().await?,
-            stop_on_assistant: self.stop_on_assistant,
-            feedback_received: self.feedback_received.lock().unwrap().clone(),
-        })
-    }
-
-    /// Restores durable conversation state and pending tool feedback from a checkpoint.
-    ///
-    /// Restoring resets completion cursors so the next completion request reuses the persisted
-    /// history from the beginning of the retained conversation window.
-    pub async fn restore_checkpoint(&self, checkpoint: &DefaultContextCheckpoint) -> Result<()> {
-        self.message_history
-            .overwrite(checkpoint.message_history.clone())
-            .await?;
-        self.completions_ptr.store(0, Ordering::SeqCst);
-        self.current_completions_ptr.store(0, Ordering::SeqCst);
-        *self.feedback_received.lock().unwrap() = checkpoint.feedback_received.clone();
-        Ok(())
     }
 }
 #[async_trait]
@@ -293,24 +252,6 @@ impl AgentContext for DefaultContext {
         self.completions_ptr.store(0, Ordering::SeqCst);
         self.current_completions_ptr.store(0, Ordering::SeqCst);
         Ok(())
-    }
-
-    async fn checkpoint(&self) -> Result<Option<AgentContextCheckpoint>> {
-        let checkpoint = DefaultContext::checkpoint(self).await?;
-        Ok(Some(AgentContextCheckpoint {
-            kind: DEFAULT_CONTEXT_CHECKPOINT_KIND.to_string(),
-            payload: serde_json::to_value(checkpoint)?,
-        }))
-    }
-
-    async fn restore_checkpoint(&self, checkpoint: &AgentContextCheckpoint) -> Result<()> {
-        if checkpoint.kind != DEFAULT_CONTEXT_CHECKPOINT_KIND {
-            anyhow::bail!("unsupported agent context checkpoint kind: {}", checkpoint.kind);
-        }
-
-        let checkpoint: DefaultContextCheckpoint =
-            serde_json::from_value(checkpoint.payload.clone())?;
-        DefaultContext::restore_checkpoint(self, &checkpoint).await
     }
 }
 
@@ -650,35 +591,5 @@ mod tests {
 
         // Next call should yield None again
         assert!(context.next_completion().await.unwrap().is_none());
-    }
-
-    #[tokio::test]
-    async fn restore_checkpoint_replays_full_retained_history() {
-        let mut original = DefaultContext::default();
-        original.with_stop_on_assistant(false);
-
-        original
-            .add_messages(vec![
-                ChatMessage::System("System".into()),
-                ChatMessage::User("First".into()),
-                ChatMessage::Assistant(Some("Reply".into()), None),
-                ChatMessage::User("Second".into()),
-            ])
-            .await
-            .unwrap();
-
-        let first_completion = original.next_completion().await.unwrap().unwrap();
-        assert_eq!(first_completion.len(), 4);
-        assert!(original.next_completion().await.unwrap().is_none());
-
-        let checkpoint = original.checkpoint().await.unwrap();
-
-        let mut restored = DefaultContext::default();
-        restored.with_stop_on_assistant(false);
-        restored.restore_checkpoint(&checkpoint).await.unwrap();
-
-        let replayed = restored.next_completion().await.unwrap().unwrap();
-        assert_eq!(replayed, first_completion);
-        assert!(restored.next_completion().await.unwrap().is_none());
     }
 }

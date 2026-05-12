@@ -27,6 +27,7 @@ use std::any::Any;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
+use super::errors::NodeError;
 use super::transition::{
     AtLeastJoin, JoinInput, JoinPolicy, JoinTarget, MarkedTransition, NextNode, Transition,
 };
@@ -38,6 +39,44 @@ use super::transition::{
 pub trait NodeArg: Send + Sync + DynClone + 'static {}
 
 impl<T: Send + Sync + std::fmt::Debug + 'static + Clone> NodeArg for T {}
+
+/// A typed placeholder node that returns its input unchanged.
+///
+/// This is useful when code needs to reconstruct a typed [`NodeId`] for an already registered
+/// node and only has its numeric identifier.
+#[derive(Debug)]
+pub struct NoopNode<T> {
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<T> Default for NoopNode<T> {
+    fn default() -> Self {
+        Self {
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> Clone for NoopNode<T> {
+    fn clone(&self) -> Self {
+        Self::default()
+    }
+}
+
+#[async_trait]
+impl<T: NodeArg + Clone> TaskNode for NoopNode<T> {
+    type Input = T;
+    type Output = T;
+    type Error = NodeError;
+
+    async fn evaluate(
+        &self,
+        _node_id: &DynNodeId<Self>,
+        input: &Self::Input,
+    ) -> Result<T, NodeError> {
+        Ok(input.clone())
+    }
+}
 
 /// A typed step in a [`Task`](crate::tasks::Task).
 ///

@@ -59,8 +59,8 @@ pub mod tasks;
 pub mod tools;
 mod util;
 
-pub use agent::{Agent, AgentBuilder, AgentBuilderError, AgentCheckpoint};
-pub use default_context::{DefaultContext, DefaultContextCheckpoint};
+pub use agent::{Agent, AgentBuilder, AgentBuilderError};
+pub use default_context::DefaultContext;
 pub use state::{State, StopReason};
 
 #[cfg(any(test, debug_assertions))]

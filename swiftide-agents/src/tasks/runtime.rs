@@ -205,6 +205,8 @@ enum LoopControl<Output> {
 
 #[async_trait]
 pub(crate) trait AnyNodeExecutor: Any + Send + Sync + std::fmt::Debug + DynClone {
+    fn node_as_any(&self) -> &dyn Any;
+
     fn transition_is_set(&self) -> bool;
 
     fn join_definition(&self) -> Option<JoinDefinition>;
@@ -311,6 +313,10 @@ where
 impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static>
     AnyNodeExecutor for NodeExecutor<Input, Output, Error>
 {
+    fn node_as_any(&self) -> &dyn Any {
+        self.node.as_ref()
+    }
+
     fn transition_is_set(&self) -> bool {
         !matches!(self.registration, RegisteredTransition::Missing)
     }

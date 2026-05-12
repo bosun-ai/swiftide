@@ -421,7 +421,7 @@ impl AsRef<str> for CommandOutput {
 }
 
 /// Feedback that can be given on a tool, i.e. with a human in the loop
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
+#[derive(Debug, Clone, Serialize, Deserialize, strum_macros::EnumIs)]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum ToolFeedback {
     Approved { payload: Option<serde_json::Value> },
@@ -456,15 +456,6 @@ impl ToolFeedback {
             },
         }
     }
-}
-
-/// Serializable checkpoint payload for restoring an [`AgentContext`].
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentContextCheckpoint {
-    /// Stable identifier for the concrete context implementation that produced this checkpoint.
-    pub kind: String,
-    /// Implementation-defined serialized state for the context.
-    pub payload: serde_json::Value,
 }
 
 /// Acts as the interface to the external world and manages messages for completion
@@ -514,20 +505,6 @@ pub trait AgentContext: Send + Sync {
     async fn has_received_feedback(&self, tool_call: &ToolCall) -> Option<ToolFeedback>;
 
     async fn feedback_received(&self, tool_call: &ToolCall, feedback: &ToolFeedback) -> Result<()>;
-
-    /// Capture restorable context state when the implementation supports it.
-    ///
-    /// Implementations that cannot be safely checkpointed should return `Ok(None)`.
-    async fn checkpoint(&self) -> Result<Option<AgentContextCheckpoint>> {
-        Ok(None)
-    }
-
-    /// Restore context state from a previously captured checkpoint.
-    ///
-    /// Implementations should validate `checkpoint.kind` before applying the payload.
-    async fn restore_checkpoint(&self, _checkpoint: &AgentContextCheckpoint) -> Result<()> {
-        Ok(())
-    }
 }
 
 #[async_trait]
@@ -575,14 +552,6 @@ impl AgentContext for Box<dyn AgentContext> {
 
     async fn feedback_received(&self, tool_call: &ToolCall, feedback: &ToolFeedback) -> Result<()> {
         (**self).feedback_received(tool_call, feedback).await
-    }
-
-    async fn checkpoint(&self) -> Result<Option<AgentContextCheckpoint>> {
-        (**self).checkpoint().await
-    }
-
-    async fn restore_checkpoint(&self, checkpoint: &AgentContextCheckpoint) -> Result<()> {
-        (**self).restore_checkpoint(checkpoint).await
     }
 }
 
@@ -632,14 +601,6 @@ impl AgentContext for Arc<dyn AgentContext> {
     async fn feedback_received(&self, tool_call: &ToolCall, feedback: &ToolFeedback) -> Result<()> {
         (**self).feedback_received(tool_call, feedback).await
     }
-
-    async fn checkpoint(&self) -> Result<Option<AgentContextCheckpoint>> {
-        (**self).checkpoint().await
-    }
-
-    async fn restore_checkpoint(&self, checkpoint: &AgentContextCheckpoint) -> Result<()> {
-        (**self).restore_checkpoint(checkpoint).await
-    }
 }
 
 #[async_trait]
@@ -687,14 +648,6 @@ impl AgentContext for &dyn AgentContext {
 
     async fn feedback_received(&self, tool_call: &ToolCall, feedback: &ToolFeedback) -> Result<()> {
         (**self).feedback_received(tool_call, feedback).await
-    }
-
-    async fn checkpoint(&self) -> Result<Option<AgentContextCheckpoint>> {
-        (**self).checkpoint().await
-    }
-
-    async fn restore_checkpoint(&self, checkpoint: &AgentContextCheckpoint) -> Result<()> {
-        (**self).restore_checkpoint(checkpoint).await
     }
 }
 
@@ -750,14 +703,6 @@ impl AgentContext for () {
         _tool_call: &ToolCall,
         _feedback: &ToolFeedback,
     ) -> Result<()> {
-        Ok(())
-    }
-
-    async fn checkpoint(&self) -> Result<Option<AgentContextCheckpoint>> {
-        Ok(None)
-    }
-
-    async fn restore_checkpoint(&self, _checkpoint: &AgentContextCheckpoint) -> Result<()> {
         Ok(())
     }
 }
