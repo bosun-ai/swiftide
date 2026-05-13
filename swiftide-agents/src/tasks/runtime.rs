@@ -595,7 +595,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             }
             TransitionAction::Pause => Ok(self.pause_branch(branch, settings)),
             TransitionAction::Error(error) => self.apply_transition_error(&branch, settings, error),
-            TransitionAction::Finish(output) => self.finish_with_output(output),
+            TransitionAction::Finish(output) => self.apply_finish_transition(&branch, output),
         }
     }
 
@@ -605,6 +605,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         settings: EffectiveTransitionSettings,
         explicit_join: Option<JoinDefinition>,
     ) -> Result<(), TaskError> {
+        if explicit_join.is_none() && targets.len() > 1 {
+            return Err(TaskError::invalid_state(
+                "Fan-out with multiple targets requires join_with",
+            ));
+        }
+
         let join_group = if targets.is_empty() {
             None
         } else {
@@ -688,6 +694,45 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .as_ref()
             .clone();
         Ok(LoopControl::Complete(output))
+    }
+
+    fn apply_finish_transition(
+        &mut self,
+        branch: &ExecutionBranch,
+        output: Arc<dyn Any + Send + Sync>,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        let Some(group_id) = branch.join_group else {
+            return self.finish_with_output(output);
+        };
+
+        {
+            let group = self
+                .join_groups
+                .get_mut(&group_id)
+                .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
+
+            if group.fired {
+                group.members.insert(
+                    branch.id,
+                    JoinMemberState::LateArrival {
+                        node_id: branch.current_node,
+                    },
+                );
+                return Ok(LoopControl::Continue);
+            }
+
+            group.members.insert(
+                branch.id,
+                JoinMemberState::Ready {
+                    node_id: branch.current_node,
+                    payload: output,
+                },
+            );
+            group.ready_count += 1;
+        }
+
+        self.enqueue_join_if_ready(Some(group_id))?;
+        Ok(LoopControl::Continue)
     }
 
     fn apply_join_payload(

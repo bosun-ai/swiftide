@@ -508,7 +508,11 @@ impl Transition {
         NextNode::new(*node_id, context).into()
     }
 
-    /// Schedules multiple branches from the current node output.
+    /// Schedules one or more branches from the current node output.
+    ///
+    /// Fan-out transitions with multiple targets must attach an explicit join through
+    /// [`Transition::join_with`]. This keeps branch completion structured and avoids ambiguous
+    /// "first branch wins" task completion.
     ///
     /// # Examples
     ///
@@ -521,8 +525,15 @@ impl Transition {
     /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
     ///
     /// task.starts_with(start);
+    /// let join = task.register_node_fn(
+    ///     |input: &swiftide_agents::tasks::JoinInput| -> Result<i32, NodeError> {
+    ///         Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    ///     },
+    /// );
+    ///
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///         .join_with(join.join())
     /// })?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
