@@ -18,6 +18,7 @@
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
 //!     Transition::fan_out([branch.target_with(value)])
+//!         .join_with(join.join())
 //! })?;
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
@@ -227,7 +228,10 @@ where
     /// });
     ///
     /// task.starts_with(start);
-    /// task.register_transition(start, move |value| Transition::fan_out([branch.target_with(value)]))?;
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([branch.target_with(value)])
+    ///         .join_with(join.join())
+    /// })?;
     /// task.register_transition(branch, join.join())?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -253,6 +257,7 @@ where
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([fast.target_with(value), slow.target_with(value)])
+    ///         .join_with(join.join_at_least(1).cancel_remaining())
     /// })?;
     /// task.register_transition(fast, join.join_at_least(1).cancel_remaining())?;
     /// task.register_transition(slow, join.join_at_least(1).cancel_remaining())?;
@@ -279,12 +284,18 @@ where
     /// });
     ///
     /// task.starts_with(start);
-    /// task.register_transition(start, move |value| Transition::fan_out([branch.target_with(value)]))?;
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out([branch.target_with(value)])
+    ///         .join_with(join.join_with(JoinPolicy::AtLeast {
+    ///             count: 1,
+    ///             leftovers: JoinLeftoverBehavior::CancelRemaining,
+    ///         }))
+    /// })?;
     /// task.register_transition(
     ///     branch,
     ///     join.join_with(JoinPolicy::AtLeast {
     ///         count: 1,
-    ///         leftovers: JoinLeftoverBehavior::Continue,
+    ///         leftovers: JoinLeftoverBehavior::CancelRemaining,
     ///     }),
     /// )?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())

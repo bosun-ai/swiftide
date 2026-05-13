@@ -58,6 +58,7 @@
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
 //!     Transition::fan_out([double.target_with(value), increment.target_with(value)])
+//!         .join_with(join.join())
 //! })?;
 //! task.register_transition(double, join.join())?;
 //! task.register_transition(increment, join.join())?;
@@ -81,6 +82,6 @@ pub use node::{DynNodeId, NodeArg, NodeId, NoopNode, TaskNode};
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use transition::{
     ActiveBranch, AsyncMappedJoinTarget, AtLeastJoin, BranchEnvelope, BranchId, BranchOutcome,
-    ConcurrencyModel, ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, JoinScope,
-    JoinTarget, MappedJoinTarget, MarkedTransition, NextNode, PauseBehavior, Transition,
+    ConcurrencyModel, ErrorBehavior, JoinInput, JoinLeftoverBehavior, JoinPolicy, JoinTarget,
+    MappedJoinTarget, MarkedTransition, NextNode, PauseBehavior, Transition,
 };

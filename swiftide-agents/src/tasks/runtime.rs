@@ -18,8 +18,8 @@ use super::{
     task::{Task, TaskRunState},
     transition::{
         BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, EffectiveTransitionSettings,
-        ErrorBehavior, JoinDefinition, JoinInput, JoinLeftoverBehavior, JoinPolicy, JoinScope,
-        PauseBehavior, Transition, TransitionAction,
+        ErrorBehavior, JoinDefinition, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior,
+        Transition, TransitionAction,
     },
 };
 
@@ -49,9 +49,7 @@ impl Default for TaskOptions {
             concurrency_model: ConcurrencyModel::Sequential,
             pause_behavior: PauseBehavior::DrainRunnable,
             error_behavior: ErrorBehavior::Local,
-            max_parallelism: std::thread::available_parallelism()
-                .map(NonZeroUsize::get)
-                .unwrap_or(4),
+            max_parallelism: std::thread::available_parallelism().map_or(4, NonZeroUsize::get),
         }
     }
 }
@@ -212,8 +210,6 @@ pub(crate) trait AnyNodeExecutor: Any + Send + Sync + std::fmt::Debug + DynClone
 
     fn transition_is_set(&self) -> bool;
 
-    fn join_definition(&self) -> Option<JoinDefinition>;
-
     async fn evaluate_next(
         &self,
         context: Arc<dyn Any + Send + Sync>,
@@ -322,13 +318,6 @@ impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + '
 
     fn transition_is_set(&self) -> bool {
         !matches!(self.registration, RegisteredTransition::Missing)
-    }
-
-    fn join_definition(&self) -> Option<JoinDefinition> {
-        match &self.registration {
-            RegisteredTransition::Join { definition, .. } => Some(*definition),
-            RegisteredTransition::Missing | RegisteredTransition::Flow(_) => None,
-        }
     }
 
     async fn evaluate_next(
@@ -616,9 +605,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         settings: EffectiveTransitionSettings,
         explicit_join: Option<JoinDefinition>,
     ) -> Result<(), TaskError> {
-        let join_groups = self.prepare_join_groups(&targets, explicit_join)?;
+        let join_group = if targets.is_empty() {
+            None
+        } else {
+            explicit_join.map(|definition| self.insert_join_group(definition))
+        };
 
-        for (target, join_group) in targets.into_iter().zip(join_groups) {
+        for target in targets {
             let child_id = self.next_branch();
             let child = ExecutionBranch {
                 id: child_id,
@@ -759,82 +752,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             message,
             TaskError::NodeError(error),
         )
-    }
-
-    fn prepare_join_groups(
-        &mut self,
-        targets: &[super::transition::NextNode],
-        explicit_join: Option<JoinDefinition>,
-    ) -> Result<Vec<Option<BranchGroupId>>, TaskError> {
-        if let Some(definition) = explicit_join {
-            if targets.is_empty() {
-                return Ok(Vec::new());
-            }
-
-            let group_id = self.insert_join_group(definition);
-            return Ok(vec![Some(group_id); targets.len()]);
-        }
-
-        let definitions = targets
-            .iter()
-            .map(|target| {
-                self.nodes
-                    .get(target.node_id)
-                    .ok_or_else(|| TaskError::missing_node(target.node_id))
-                    .map(|executor| executor.join_definition())
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        if definitions
-            .iter()
-            .flatten()
-            .any(|definition| definition.scope == JoinScope::AllFanOutBranches)
-        {
-            return self.prepare_all_fan_out_join_group(&definitions);
-        }
-
-        let mut groups = HashMap::<JoinDefinition, BranchGroupId>::new();
-        let mut assignments = Vec::with_capacity(targets.len());
-
-        for definition in definitions {
-            let Some(definition) = definition else {
-                assignments.push(None);
-                continue;
-            };
-
-            let group_id = *groups
-                .entry(definition)
-                .or_insert_with(|| self.insert_join_group(definition));
-
-            assignments.push(Some(group_id));
-        }
-
-        Ok(assignments)
-    }
-
-    fn prepare_all_fan_out_join_group(
-        &mut self,
-        definitions: &[Option<JoinDefinition>],
-    ) -> Result<Vec<Option<BranchGroupId>>, TaskError> {
-        let expected = definitions
-            .iter()
-            .flatten()
-            .find(|definition| definition.scope == JoinScope::AllFanOutBranches)
-            .copied()
-            .ok_or_else(|| TaskError::invalid_state("Missing join definition"))?;
-
-        if definitions
-            .iter()
-            .any(|definition| *definition != Some(expected))
-        {
-            return Err(TaskError::invalid_state(
-                "All fan-out branches must join the same join target",
-            ));
-        }
-
-        let group_id = self.insert_join_group(expected);
-
-        Ok(vec![Some(group_id); definitions.len()])
     }
 
     fn insert_join_group(&mut self, definition: JoinDefinition) -> BranchGroupId {

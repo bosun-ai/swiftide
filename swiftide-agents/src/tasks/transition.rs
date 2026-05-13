@@ -19,6 +19,7 @@
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
 //!     Transition::fan_out([left.target_with(value), right.target_with(value)])
+//!         .join_with(join.join())
 //! })?;
 //! task.register_transition(left, join.join())?;
 //! task.register_transition(right, join.join())?;
@@ -103,16 +104,6 @@ pub enum JoinLeftoverBehavior {
     Continue,
 }
 
-/// Selects which branches belong to a join group.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum JoinScope {
-    /// Only branches that explicitly transition into the join are part of the join group.
-    #[default]
-    ExplicitBranches,
-    /// Every branch spawned by the same fan-out is expected to join.
-    AllFanOutBranches,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub(crate) struct TransitionSettings {
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
@@ -169,7 +160,6 @@ impl From<NextNode> for Transition {
 pub(crate) struct JoinDefinition {
     pub(crate) join_node_id: usize,
     pub(crate) policy: JoinPolicy,
-    pub(crate) scope: JoinScope,
     pub(crate) settings: TransitionSettings,
 }
 
@@ -207,7 +197,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
             definition: JoinDefinition {
                 join_node_id: node_id.id(),
                 policy,
-                scope: JoinScope::ExplicitBranches,
                 settings: TransitionSettings::default(),
             },
             _marker: PhantomData,
@@ -216,12 +205,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
 
     pub(crate) fn into_definition(self) -> JoinDefinition {
         self.definition
-    }
-
-    /// Includes every branch from the originating fan-out in this join.
-    pub fn all_fanout_branches(mut self) -> Self {
-        self.definition.scope = JoinScope::AllFanOutBranches;
-        self
     }
 
     /// Overrides the concurrency model for the join branch that will be scheduled.
@@ -259,6 +242,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([branch.target_with(value)])
+    ///         .join_with(join.join())
     /// })?;
     /// task.register_transition(branch, join.join().map(|value| value * 2))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -290,6 +274,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([branch.target_with(value)])
+    ///         .join_with(join.join())
     /// })?;
     /// task.register_transition_async(branch, join.join().map_async(|value| async move { value * 2 }))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -328,6 +313,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///         .join_with(join.join_at_least(1).cancel_remaining())
     /// })?;
     /// task.register_transition(left, join.join_at_least(1).cancel_remaining())?;
     /// task.register_transition(right, join.join_at_least(1).cancel_remaining())?;
@@ -361,6 +347,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///         .join_with(join.join_at_least(1).continue_remaining())
     /// })?;
     /// task.register_transition(left, join.join_at_least(1).continue_remaining())?;
     /// task.register_transition(right, join.join_at_least(1).continue_remaining())?;
@@ -378,12 +365,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
 }
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
-    /// Includes every branch from the originating fan-out in this join.
-    pub fn all_fanout_branches(mut self) -> Self {
-        self.join_target = self.join_target.all_fanout_branches();
-        self
-    }
-
     /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.join_target = self.join_target.concurrency_model(concurrency_model);
@@ -430,6 +411,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 /// task.starts_with(start);
 /// task.register_transition(start, move |value| {
 ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+///         .join_with(join.join())
 ///         .concurrency_model(swiftide_agents::tasks::ConcurrencyModel::Parallel)
 /// })?;
 /// task.register_transition(left, join.join())?;
@@ -554,27 +536,26 @@ impl Transition {
         }
     }
 
-    /// Schedules multiple branches and attaches them all to the provided join target.
+    /// Attaches every branch from this fan-out to the provided join target.
     ///
     /// This is useful when branches join after one or more intermediate nodes instead of joining
     /// immediately at their first fan-out target.
-    pub fn fan_out_with_join<T>(
-        targets: impl IntoIterator<Item = NextNode>,
-        join_target: JoinTarget<T>,
-    ) -> Self
+    ///
+    /// # Panics
+    ///
+    /// Panics when called on a transition that was not created with [`Transition::fan_out`].
+    pub fn join_with<T>(mut self, join_target: JoinTarget<T>) -> Self
     where
         T: TaskNode<Input = JoinInput> + ?Sized,
     {
-        let mut definition = join_target.into_definition();
-        definition.scope = JoinScope::AllFanOutBranches;
-
-        Self {
-            action: TransitionAction::FanOut {
-                targets: targets.into_iter().collect(),
-                join: Some(definition),
-            },
-            settings: TransitionSettings::default(),
+        match &mut self.action {
+            TransitionAction::FanOut { join, .. } => {
+                *join = Some(join_target.into_definition());
+            }
+            _ => panic!("Transition::join_with can only be used with Transition::fan_out"),
         }
+
+        self
     }
 
     /// Pauses the current branch.
@@ -692,6 +673,7 @@ impl JoinInput {
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///         .join_with(join.join())
     /// })?;
     /// task.register_transition(left, join.join())?;
     /// task.register_transition(right, join.join())?;
