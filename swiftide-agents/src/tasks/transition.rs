@@ -387,8 +387,9 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 /// Describes how task execution should continue after a node completes.
 ///
 /// Most transitions are created either through [`NodeId::transitions_with`] for the linear case or
-/// [`Transition::fan_out`] for branching. Use [`Transition::pause`] and [`Transition::error`] when
-/// a transition closure needs to control task execution directly.
+/// [`Transition::fan_out`] plus [`FanOutTransition::join_with`] for branching. Use
+/// [`Transition::pause`] and [`Transition::error`] when a transition closure needs to control task
+/// execution directly.
 ///
 /// # Examples
 ///
@@ -466,12 +467,61 @@ impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
     }
 }
 
+/// A fan-out transition builder that must be connected to a join before it can run.
+///
+/// `Transition::fan_out` returns this builder instead of a runnable [`Transition`] so every branch
+/// set has an explicit join policy. This keeps task completion structured and avoids accidental
+/// "first branch wins" behavior when multiple branches can finish independently.
+#[derive(Debug)]
+#[must_use]
+pub struct FanOutTransition {
+    targets: Vec<NextNode>,
+    settings: TransitionSettings,
+}
+
+impl FanOutTransition {
+    /// Attaches every branch from this fan-out to the provided join target.
+    ///
+    /// This is useful when branches join after one or more intermediate nodes instead of joining
+    /// immediately at their first fan-out target.
+    pub fn join_with<T>(self, join_target: JoinTarget<T>) -> Transition
+    where
+        T: TaskNode<Input = JoinInput> + ?Sized,
+    {
+        Transition {
+            action: TransitionAction::FanOut {
+                targets: self.targets,
+                join: join_target.into_definition(),
+            },
+            settings: self.settings,
+        }
+    }
+
+    /// Overrides the concurrency model for work scheduled by this fan-out.
+    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
+        self.settings.concurrency_model = Some(concurrency_model);
+        self
+    }
+
+    /// Overrides pause behavior for work scheduled by this fan-out.
+    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
+        self.settings.pause_behavior = Some(pause_behavior);
+        self
+    }
+
+    /// Overrides error behavior for work scheduled by this fan-out.
+    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
+        self.settings.error_behavior = Some(error_behavior);
+        self
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum TransitionAction {
     Next(NextNode),
     FanOut {
         targets: Vec<NextNode>,
-        join: Option<JoinDefinition>,
+        join: JoinDefinition,
     },
     Pause,
     Error(Box<dyn std::error::Error + Send + Sync>),
@@ -508,11 +558,10 @@ impl Transition {
         NextNode::new(*node_id, context).into()
     }
 
-    /// Schedules one or more branches from the current node output.
+    /// Builds a fan-out that schedules one or more branches from the current node output.
     ///
-    /// Fan-out transitions with multiple targets must attach an explicit join through
-    /// [`Transition::join_with`]. This keeps branch completion structured and avoids ambiguous
-    /// "first branch wins" task completion.
+    /// The returned [`FanOutTransition`] must attach an explicit join with
+    /// [`FanOutTransition::join_with`] before it can be returned from a task transition.
     ///
     /// # Examples
     ///
@@ -537,36 +586,11 @@ impl Transition {
     /// })?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> Self {
-        Self {
-            action: TransitionAction::FanOut {
-                targets: targets.into_iter().collect(),
-                join: None,
-            },
+    pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> FanOutTransition {
+        FanOutTransition {
+            targets: targets.into_iter().collect(),
             settings: TransitionSettings::default(),
         }
-    }
-
-    /// Attaches every branch from this fan-out to the provided join target.
-    ///
-    /// This is useful when branches join after one or more intermediate nodes instead of joining
-    /// immediately at their first fan-out target.
-    ///
-    /// # Panics
-    ///
-    /// Panics when called on a transition that was not created with [`Transition::fan_out`].
-    pub fn join_with<T>(mut self, join_target: JoinTarget<T>) -> Self
-    where
-        T: TaskNode<Input = JoinInput> + ?Sized,
-    {
-        match &mut self.action {
-            TransitionAction::FanOut { join, .. } => {
-                *join = Some(join_target.into_definition());
-            }
-            _ => panic!("Transition::join_with can only be used with Transition::fan_out"),
-        }
-
-        self
     }
 
     /// Pauses the current branch.

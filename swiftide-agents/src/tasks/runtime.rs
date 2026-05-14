@@ -603,18 +603,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         &mut self,
         targets: Vec<super::transition::NextNode>,
         settings: EffectiveTransitionSettings,
-        explicit_join: Option<JoinDefinition>,
+        join: JoinDefinition,
     ) -> Result<(), TaskError> {
-        if explicit_join.is_none() && targets.len() > 1 {
-            return Err(TaskError::invalid_state(
-                "Fan-out with multiple targets requires join_with",
-            ));
-        }
-
         let join_group = if targets.is_empty() {
             None
         } else {
-            explicit_join.map(|definition| self.insert_join_group(definition))
+            Some(self.insert_join_group(join))
         };
 
         for target in targets {
@@ -705,34 +699,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             return self.finish_with_output(output);
         };
 
-        {
-            let group = self
-                .join_groups
-                .get_mut(&group_id)
-                .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-
-            if group.fired {
-                group.members.insert(
-                    branch.id,
-                    JoinMemberState::LateArrival {
-                        node_id: branch.current_node,
-                    },
-                );
-                return Ok(LoopControl::Continue);
-            }
-
-            group.members.insert(
-                branch.id,
-                JoinMemberState::Ready {
-                    node_id: branch.current_node,
-                    payload: output,
-                },
-            );
-            group.ready_count += 1;
-        }
-
-        self.enqueue_join_if_ready(Some(group_id))?;
-        Ok(LoopControl::Continue)
+        self.apply_join_arrival(group_id, branch, output)
     }
 
     fn apply_join_payload(
@@ -760,6 +727,22 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     branch.current_node
                 )));
             }
+        }
+
+        self.apply_join_arrival(group_id, branch, payload)
+    }
+
+    fn apply_join_arrival(
+        &mut self,
+        group_id: BranchGroupId,
+        branch: &ExecutionBranch,
+        payload: Arc<dyn Any + Send + Sync>,
+    ) -> Result<LoopControl<Output>, TaskError> {
+        {
+            let group = self
+                .join_groups
+                .get_mut(&group_id)
+                .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
 
             if group.fired {
                 group.members.insert(

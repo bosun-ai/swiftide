@@ -191,17 +191,23 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     /// # Examples
     ///
     /// ```no_run
-    /// use swiftide_agents::tasks::{NodeError, Task, Transition};
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
     ///
     /// let mut task = Task::<i32, i32>::new();
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
     /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
+    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    /// });
     ///
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///         .join_with(join.join())
     /// })?;
+    /// task.register_transition(left, join.join())?;
+    /// task.register_transition(right, join.join())?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn target_with(&self, context: T::Input) -> NextNode {

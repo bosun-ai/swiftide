@@ -385,34 +385,6 @@ async fn paused_branch_keeps_other_branches_running() {
 }
 
 #[test_log::test(tokio::test)]
-async fn fan_out_without_join_scope_rejects_later_join_arrival() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::DrainRunnable)
-        .build();
-
-    let start = task.register_node(IntNode);
-    let joining = task.register_node(IntNode);
-    let paused = task.register_node(PauseOnceNode);
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([joining.target_with(input), paused.target_with(input)])
-            .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(joining, join.join_at_least(1).continue_remaining())
-        .unwrap();
-    task.register_transition(paused, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let error = task.run(1).await.unwrap_err();
-    assert!(matches!(error, TaskError::InvalidState(_)));
-}
-
-#[test_log::test(tokio::test)]
 async fn pause_behavior_can_pause_task() {
     let mut task: Task<i32, i32> = Task::builder()
         .pause_behavior(PauseBehavior::PauseTask)
@@ -628,8 +600,13 @@ async fn task_without_finish_is_incomplete() {
     let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
     task.starts_with(start);
-    task.register_transition(start, move |_output| Transition::fan_out(Vec::new()))
+    task.register_transition(start, move |_output| {
+        Transition::fan_out(Vec::new()).join_with(join.join())
+    })
+    .unwrap();
+    task.register_transition(join, task.transitions_to_finish())
         .unwrap();
 
     assert!(matches!(
@@ -893,52 +870,6 @@ async fn fan_out_join_scope_rejects_branch_joining_a_different_target() {
     task.register_transition(expected_join, task.transitions_to_finish())
         .unwrap();
     task.register_transition(wrong_join, task.transitions_to_finish())
-        .unwrap();
-
-    let error = task.run(1).await.unwrap_err();
-    assert!(matches!(error, TaskError::InvalidState(_)));
-}
-
-#[test_log::test(tokio::test)]
-async fn fan_out_without_join_scope_rejects_multiple_branches() {
-    let mut task: Task<i32, i32> = Task::new();
-
-    let start = task.register_node(IntNode);
-    let left = task.register_node(IntNode);
-    let right = task.register_node(IntNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([left.target_with(input), right.target_with(input)])
-    })
-    .unwrap();
-    task.register_transition(left, task.transitions_to_finish())
-        .unwrap();
-    task.register_transition(right, task.transitions_to_finish())
-        .unwrap();
-
-    let error = task.run(1).await.unwrap_err();
-    assert!(matches!(error, TaskError::InvalidState(_)));
-}
-
-#[test_log::test(tokio::test)]
-async fn fan_out_without_join_scope_rejects_join_arrival() {
-    let mut task: Task<i32, i32> = Task::new();
-
-    let start = task.register_node(IntNode);
-    let joining = task.register_node(IntNode);
-    let normal = task.register_node(IntNode);
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([joining.target_with(input), normal.target_with(input)])
-    })
-    .unwrap();
-    task.register_transition(joining, join.join()).unwrap();
-    task.register_transition(normal, task.transitions_to_finish())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
         .unwrap();
 
     let error = task.run(1).await.unwrap_err();
