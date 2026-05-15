@@ -33,15 +33,6 @@ use super::node::{NodeArg, NodeId, TaskNode};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BranchId(pub usize);
 
-/// Describes a branch that is still queued or paused inside the task runtime.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ActiveBranch {
-    /// The runtime branch identifier.
-    pub branch_id: BranchId,
-    /// The numeric identifier of the node the branch will resume at.
-    pub node_id: usize,
-}
-
 /// Controls whether newly scheduled work should run one branch at a time or concurrently.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum ConcurrencyModel {
@@ -52,58 +43,14 @@ pub enum ConcurrencyModel {
     Parallel,
 }
 
-/// Controls what should happen when a branch requests a pause.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
-pub enum PauseBehavior {
-    /// Let already-runnable work continue before returning a paused task.
-    #[default]
-    DrainRunnable,
-    /// Stop scheduling new work as soon as a branch pauses the task.
-    PauseTask,
-}
-
-/// Determines when a join node becomes ready to run.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum JoinPolicy {
-    /// Wait for all registered join branches.
-    All,
-    /// Run the join once at least `count` branches are ready.
-    AtLeast {
-        /// The minimum number of ready branches required before the join fires.
-        count: usize,
-        /// What should happen to the remaining branches once the join has fired.
-        leftovers: JoinLeftoverBehavior,
-    },
-}
-
-impl JoinPolicy {
-    pub(crate) fn leftover_behavior(self) -> Option<JoinLeftoverBehavior> {
-        match self {
-            JoinPolicy::All => None,
-            JoinPolicy::AtLeast { leftovers, .. } => Some(leftovers),
-        }
-    }
-}
-
-/// Controls what happens to unfinished branches after an `AtLeast` join fires.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum JoinLeftoverBehavior {
-    /// Cancel unfinished branches that belong to the join.
-    CancelRemaining,
-    /// Keep unfinished branches running after the join has already fired.
-    Continue,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub(crate) struct TransitionSettings {
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
-    pub(crate) pause_behavior: Option<PauseBehavior>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct EffectiveTransitionSettings {
     pub(crate) concurrency_model: ConcurrencyModel,
-    pub(crate) pause_behavior: PauseBehavior,
 }
 
 impl EffectiveTransitionSettings {
@@ -112,7 +59,6 @@ impl EffectiveTransitionSettings {
             concurrency_model: overrides
                 .concurrency_model
                 .unwrap_or(self.concurrency_model),
-            pause_behavior: overrides.pause_behavior.unwrap_or(self.pause_behavior),
         }
     }
 }
@@ -146,26 +92,18 @@ impl From<NextNode> for Transition {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct JoinDefinition {
     pub(crate) join_node_id: usize,
-    pub(crate) policy: JoinPolicy,
     pub(crate) settings: TransitionSettings,
 }
 
 /// A configured join destination for branches that should converge into a join node.
 ///
 /// Build a `JoinTarget` from a join node with [`NodeId::join`](crate::tasks::NodeId::join),
-/// [`NodeId::join_at_least`](crate::tasks::NodeId::join_at_least), or
-/// [`NodeId::join_with`](crate::tasks::NodeId::join_with), and then register it through
+/// and then register it through
 /// [`Task::register_transition`](crate::tasks::Task::register_transition).
 #[must_use]
 pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
     pub(crate) definition: JoinDefinition,
     _marker: PhantomData<T>,
-}
-
-/// Builder for `JoinPolicy::AtLeast`.
-pub struct AtLeastJoin<T: TaskNode<Input = JoinInput> + ?Sized> {
-    node_id: NodeId<T>,
-    count: usize,
 }
 
 /// A join target with a synchronous payload mapping step.
@@ -179,11 +117,10 @@ pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
 pub type AsyncMappedJoinTarget<T, F> = MappedJoinTarget<T, F>;
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
-    pub(crate) fn new(node_id: NodeId<T>, policy: JoinPolicy) -> Self {
+    pub(crate) fn new(node_id: NodeId<T>) -> Self {
         Self {
             definition: JoinDefinition {
                 join_node_id: node_id.id(),
-                policy,
                 settings: TransitionSettings::default(),
             },
             _marker: PhantomData,
@@ -197,12 +134,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.definition.settings.concurrency_model = Some(concurrency_model);
-        self
-    }
-
-    /// Overrides pause behavior for the join branch that will be scheduled.
-    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
-        self.definition.settings.pause_behavior = Some(pause_behavior);
         self
     }
 
@@ -271,90 +202,10 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     }
 }
 
-impl<T: TaskNode<Input = JoinInput> + ?Sized> AtLeastJoin<T> {
-    pub(crate) fn new(node_id: NodeId<T>, count: usize) -> Self {
-        Self { node_id, count }
-    }
-
-    /// Builds an `at least N` join that cancels the remaining branches once the join fires.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
-    ///
-    /// let mut task = Task::<i32, i32>::new();
-    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
-    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
-    /// });
-    ///
-    /// task.starts_with(start);
-    /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
-    ///         .join_with(join.join_at_least(1).cancel_remaining())
-    /// })?;
-    /// task.register_transition(left, join.join_at_least(1).cancel_remaining())?;
-    /// task.register_transition(right, join.join_at_least(1).cancel_remaining())?;
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn cancel_remaining(self) -> JoinTarget<T> {
-        JoinTarget::new(
-            self.node_id,
-            JoinPolicy::AtLeast {
-                count: self.count,
-                leftovers: JoinLeftoverBehavior::CancelRemaining,
-            },
-        )
-    }
-
-    /// Builds an `at least N` join that lets the remaining branches continue running.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
-    ///
-    /// let mut task = Task::<i32, i32>::new();
-    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
-    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
-    /// });
-    ///
-    /// task.starts_with(start);
-    /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
-    ///         .join_with(join.join_at_least(1).continue_remaining())
-    /// })?;
-    /// task.register_transition(left, join.join_at_least(1).continue_remaining())?;
-    /// task.register_transition(right, join.join_at_least(1).continue_remaining())?;
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn continue_remaining(self) -> JoinTarget<T> {
-        JoinTarget::new(
-            self.node_id,
-            JoinPolicy::AtLeast {
-                count: self.count,
-                leftovers: JoinLeftoverBehavior::Continue,
-            },
-        )
-    }
-}
-
 impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
     /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.join_target = self.join_target.concurrency_model(concurrency_model);
-        self
-    }
-
-    /// Overrides pause behavior for the join branch that will be scheduled.
-    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
-        self.join_target = self.join_target.pause_behavior(pause_behavior);
         self
     }
 }
@@ -424,11 +275,6 @@ impl<To: TaskNode + ?Sized> MarkedTransition<To> {
     pub fn concurrency_model(self, concurrency_model: ConcurrencyModel) -> Self {
         Self::new(self.0.concurrency_model(concurrency_model))
     }
-
-    /// Overrides pause behavior for work scheduled by this transition.
-    pub fn pause_behavior(self, pause_behavior: PauseBehavior) -> Self {
-        Self::new(self.0.pause_behavior(pause_behavior))
-    }
 }
 
 impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
@@ -440,7 +286,7 @@ impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
 /// A fan-out transition builder that must be connected to a join before it can run.
 ///
 /// `Transition::fan_out` returns this builder instead of a runnable [`Transition`] so every branch
-/// set has an explicit join policy. This keeps task completion structured and avoids accidental
+/// set has an explicit join. This keeps task completion structured and avoids accidental
 /// "first branch wins" behavior when multiple branches can finish independently.
 #[derive(Debug)]
 #[must_use]
@@ -470,12 +316,6 @@ impl FanOutTransition {
     /// Overrides the concurrency model for work scheduled by this fan-out.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.settings.concurrency_model = Some(concurrency_model);
-        self
-    }
-
-    /// Overrides pause behavior for work scheduled by this fan-out.
-    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
-        self.settings.pause_behavior = Some(pause_behavior);
         self
     }
 }
@@ -623,27 +463,21 @@ impl Transition {
         self.settings.concurrency_model = Some(concurrency_model);
         self
     }
-
-    /// Overrides pause behavior for work scheduled by this transition.
-    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
-        self.settings.pause_behavior = Some(pause_behavior);
-        self
-    }
 }
 
 /// The aggregated view of branches that have reached a join node.
 #[derive(Debug, Clone)]
 pub struct JoinInput {
-    branches: Vec<BranchEnvelope>,
+    branches: Vec<Arc<dyn Any + Send + Sync>>,
 }
 
 impl JoinInput {
-    pub(crate) fn new(branches: Vec<BranchEnvelope>) -> Self {
+    pub(crate) fn new(branches: Vec<Arc<dyn Any + Send + Sync>>) -> Self {
         Self { branches }
     }
 
-    /// Iterates over every branch tracked by this join input in a stable order.
-    pub fn iter(&self) -> std::slice::Iter<'_, BranchEnvelope> {
+    /// Iterates over every ready branch payload in stable branch creation order.
+    pub fn iter(&self) -> std::slice::Iter<'_, Arc<dyn Any + Send + Sync>> {
         self.branches.iter()
     }
 
@@ -674,59 +508,16 @@ impl JoinInput {
     /// ```
     pub fn ready_values<T: NodeArg>(&self) -> Vec<&T> {
         self.iter()
-            .filter_map(BranchEnvelope::ready_value::<T>)
+            .filter_map(|value| value.downcast_ref::<T>())
             .collect()
     }
 }
 
 impl<'a> IntoIterator for &'a JoinInput {
-    type Item = &'a BranchEnvelope;
-    type IntoIter = std::slice::Iter<'a, BranchEnvelope>;
+    type Item = &'a Arc<dyn Any + Send + Sync>;
+    type IntoIter = std::slice::Iter<'a, Arc<dyn Any + Send + Sync>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
-    }
-}
-
-/// Describes one branch that belongs to a [`JoinInput`].
-#[derive(Debug, Clone)]
-pub struct BranchEnvelope {
-    /// The runtime branch identifier.
-    pub branch_id: BranchId,
-    /// The numeric identifier of the node that produced this branch result.
-    pub node_id: usize,
-    /// The branch's current state from the join's point of view.
-    pub outcome: BranchOutcome,
-}
-
-impl BranchEnvelope {
-    /// Returns the ready value when the branch completed with a payload of type `T`.
-    pub fn ready_value<T: NodeArg>(&self) -> Option<&T> {
-        self.outcome.ready_value()
-    }
-}
-
-/// The state of a branch as observed by a join node.
-#[derive(Debug, Clone)]
-pub enum BranchOutcome {
-    /// The branch completed and produced a payload.
-    Ready(Arc<dyn Any + Send + Sync>),
-    /// The branch has not completed yet.
-    Pending,
-    /// The branch paused before completing.
-    Paused,
-    /// The branch was cancelled before completing.
-    Cancelled,
-    /// The branch completed after the join had already fired.
-    LateArrival,
-}
-
-impl BranchOutcome {
-    /// Returns the ready value when the outcome is [`BranchOutcome::Ready`] and the payload is `T`.
-    pub fn ready_value<T: NodeArg>(&self) -> Option<&T> {
-        match self {
-            BranchOutcome::Ready(value) => value.downcast_ref::<T>(),
-            _ => None,
-        }
     }
 }

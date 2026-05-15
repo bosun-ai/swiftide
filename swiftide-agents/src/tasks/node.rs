@@ -29,9 +29,7 @@ use async_trait::async_trait;
 use dyn_clone::DynClone;
 
 use super::errors::NodeError;
-use super::transition::{
-    AtLeastJoin, JoinInput, JoinPolicy, JoinTarget, MarkedTransition, NextNode, Transition,
-};
+use super::transition::{JoinInput, JoinTarget, MarkedTransition, NextNode, Transition};
 
 /// A value that can flow into or out of a [`TaskNode`].
 ///
@@ -219,7 +217,7 @@ impl<T> NodeId<T>
 where
     T: TaskNode<Input = JoinInput> + ?Sized,
 {
-    /// Creates a join target that waits for all registered branches.
+    /// Creates a join target that waits for every branch in the fan-out group.
     ///
     /// # Examples
     ///
@@ -242,72 +240,7 @@ where
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn join(&self) -> JoinTarget<T> {
-        self.join_with(JoinPolicy::All)
-    }
-
-    /// Starts building an `at least N` join policy.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
-    ///
-    /// let mut task = Task::<i32, i32>::new();
-    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
-    /// let fast = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let slow = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
-    /// });
-    ///
-    /// task.starts_with(start);
-    /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([fast.target_with(value), slow.target_with(value)])
-    ///         .join_with(join.join_at_least(1).cancel_remaining())
-    /// })?;
-    /// task.register_transition(fast, join.join_at_least(1).cancel_remaining())?;
-    /// task.register_transition(slow, join.join_at_least(1).cancel_remaining())?;
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn join_at_least(&self, count: usize) -> AtLeastJoin<T> {
-        AtLeastJoin::new(*self, count)
-    }
-
-    /// Creates a join target with an explicit join policy.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use swiftide_agents::tasks::{
-    ///     JoinInput, JoinLeftoverBehavior, JoinPolicy, NodeError, Task, Transition,
-    /// };
-    ///
-    /// let mut task = Task::<i32, i32>::new();
-    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
-    /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
-    /// });
-    ///
-    /// task.starts_with(start);
-    /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([branch.target_with(value)])
-    ///         .join_with(join.join_with(JoinPolicy::AtLeast {
-    ///             count: 1,
-    ///             leftovers: JoinLeftoverBehavior::CancelRemaining,
-    ///         }))
-    /// })?;
-    /// task.register_transition(
-    ///     branch,
-    ///     join.join_with(JoinPolicy::AtLeast {
-    ///         count: 1,
-    ///         leftovers: JoinLeftoverBehavior::CancelRemaining,
-    ///     }),
-    /// )?;
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn join_with(&self, policy: JoinPolicy) -> JoinTarget<T> {
-        JoinTarget::new(*self, policy)
+        JoinTarget::new(*self)
     }
 }
 

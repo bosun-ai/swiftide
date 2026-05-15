@@ -27,8 +27,8 @@ async fn main() -> Result<()> {
         Transition::fan_out([increment.target_with(input), double.target_with(input)])
     })?;
 
-    task.register_transition(increment, join.join_at_least(2).cancel_remaining())?;
-    task.register_transition(double, join.join_at_least(2).cancel_remaining())?;
+    task.register_transition(increment, join.join())?;
+    task.register_transition(double, join.join())?;
     task.register_transition(join, task.transitions_to_finish())?;
 
     match task.run(5).await? {

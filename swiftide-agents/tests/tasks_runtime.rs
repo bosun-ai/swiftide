@@ -1,16 +1,14 @@
 use std::{
-    num::NonZeroUsize,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
 
 use async_trait::async_trait;
 use swiftide_agents::tasks::{
-    BranchOutcome, ConcurrencyModel, JoinInput, NodeId, PauseBehavior, Task, TaskError, TaskNode,
-    TaskRunState, Transition,
+    ConcurrencyModel, JoinInput, NodeId, Task, TaskError, TaskNode, TaskRunState, Transition,
 };
 use tokio::{
     sync::Barrier,
@@ -106,26 +104,6 @@ impl TaskNode for SumJoinNode {
 }
 
 #[derive(Clone, Default, Debug)]
-struct PauseJoinNode;
-
-#[async_trait]
-impl TaskNode for PauseJoinNode {
-    type Input = JoinInput;
-    type Output = i32;
-    type Error = Error;
-
-    async fn evaluate(
-        &self,
-        _node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error> {
-        Ok(input.ready_values::<i32>().into_iter().copied().sum())
-    }
-}
-
-#[derive(Clone, Default, Debug)]
 struct CollectJoinNode;
 
 #[async_trait]
@@ -142,61 +120,6 @@ impl TaskNode for CollectJoinNode {
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         Ok(input.ready_values::<i32>().into_iter().copied().collect())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct JoinSnapshot {
-    ready_values: Vec<i32>,
-    cancelled: usize,
-    paused: usize,
-    pending: usize,
-    late_arrivals: usize,
-}
-
-#[derive(Clone, Default, Debug)]
-struct SnapshotJoinNode;
-
-#[async_trait]
-impl TaskNode for SnapshotJoinNode {
-    type Input = JoinInput;
-    type Output = JoinSnapshot;
-    type Error = Error;
-
-    async fn evaluate(
-        &self,
-        _node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error> {
-        let mut ready_values = Vec::new();
-        let mut cancelled = 0;
-        let mut paused = 0;
-        let mut pending = 0;
-        let mut late_arrivals = 0;
-
-        for branch in input {
-            match &branch.outcome {
-                BranchOutcome::Ready(value) => {
-                    if let Some(value) = value.downcast_ref::<i32>() {
-                        ready_values.push(*value);
-                    }
-                }
-                BranchOutcome::Cancelled => cancelled += 1,
-                BranchOutcome::Paused => paused += 1,
-                BranchOutcome::Pending => pending += 1,
-                BranchOutcome::LateArrival => late_arrivals += 1,
-            }
-        }
-
-        Ok(JoinSnapshot {
-            ready_values,
-            cancelled,
-            paused,
-            pending,
-            late_arrivals,
-        })
     }
 }
 
@@ -237,45 +160,6 @@ impl TaskNode for FailingNode {
         _input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
         Err(Error("boom".into()))
-    }
-}
-
-#[derive(Clone, Debug)]
-struct TrackingNode {
-    current: Arc<AtomicUsize>,
-    max: Arc<AtomicUsize>,
-    delay: Duration,
-}
-
-#[async_trait]
-impl TaskNode for TrackingNode {
-    type Input = i32;
-    type Output = i32;
-    type Error = Error;
-
-    async fn evaluate(
-        &self,
-        _node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error> {
-        let running = self.current.fetch_add(1, Ordering::SeqCst) + 1;
-        let mut observed = self.max.load(Ordering::SeqCst);
-
-        while running > observed {
-            match self
-                .max
-                .compare_exchange(observed, running, Ordering::SeqCst, Ordering::SeqCst)
-            {
-                Ok(_) => break,
-                Err(actual) => observed = actual,
-            }
-        }
-
-        sleep(self.delay).await;
-        self.current.fetch_sub(1, Ordering::SeqCst);
-        Ok(*input)
     }
 }
 
@@ -352,39 +236,8 @@ async fn fan_out_can_join_multiple_branches() {
 }
 
 #[test_log::test(tokio::test)]
-async fn paused_branch_keeps_other_branches_running() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::DrainRunnable)
-        .build();
-
-    let start = task.register_node(IntNode);
-    let active = task.register_node(IntNode);
-    let paused = task.register_node(PauseOnceNode);
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([active.target_with(input), paused.target_with(input)])
-            .join_with(join.join_at_least(1).continue_remaining())
-            .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(active, join.join_at_least(1).continue_remaining())
-        .unwrap();
-    task.register_transition(paused, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(3));
-}
-
-#[test_log::test(tokio::test)]
-async fn pause_behavior_can_pause_task() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::PauseTask)
-        .build();
+async fn transition_pause_pauses_task() {
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(PauseOnceNode);
     task.starts_with(start);
@@ -397,9 +250,7 @@ async fn pause_behavior_can_pause_task() {
 
 #[test_log::test(tokio::test)]
 async fn pause_then_resume_completes() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::PauseTask)
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let first_run = Arc::new(AtomicBool::new(true));
     let start = task.register_node(IntNode);
@@ -425,143 +276,8 @@ async fn pause_then_resume_completes() {
 }
 
 #[test_log::test(tokio::test)]
-async fn pause_task_preserves_in_flight_work_that_continues_after_pause_request() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::PauseTask)
-        .max_parallelism(NonZeroUsize::new(3).unwrap())
-        .build();
-
-    let start = task.register_node(IntNode);
-    let pausing = task.register_node(TrackingNode {
-        current: Arc::new(AtomicUsize::new(0)),
-        max: Arc::new(AtomicUsize::new(0)),
-        delay: Duration::from_millis(5),
-    });
-    let advancing = task.register_node(TrackingNode {
-        current: Arc::new(AtomicUsize::new(0)),
-        max: Arc::new(AtomicUsize::new(0)),
-        delay: Duration::from_millis(25),
-    });
-    let slow = task.register_node(TrackingNode {
-        current: Arc::new(AtomicUsize::new(0)),
-        max: Arc::new(AtomicUsize::new(0)),
-        delay: Duration::from_millis(200),
-    });
-    let paused_after_continue = task.register_node(IntNode);
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([
-            pausing.target_with(input),
-            advancing.target_with(input),
-            slow.target_with(input),
-        ])
-        .join_with(join.join())
-        .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(pausing, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(advancing, move |output| {
-        paused_after_continue.transitions_with(output)
-    })
-    .unwrap();
-    task.register_transition(paused_after_continue, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(slow, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Paused);
-    assert_eq!(
-        task.paused_branches().len() + task.active_branches().len(),
-        3
-    );
-}
-
-#[test_log::test(tokio::test)]
-async fn faster_finish_wins_over_slower_pause_request() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::PauseTask)
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
-
-    let start = task.register_node(OffsetNode(0));
-    let fast = task.register_node(IntNode);
-    let slow = task.register_node(DelayedOffsetNode {
-        offset: 10,
-        delay: Duration::from_millis(150),
-    });
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([fast.target_with(input), slow.target_with(input)])
-            .join_with(join.join_at_least(1).cancel_remaining())
-            .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(fast, task.transitions_to_finish())
-        .unwrap();
-    task.register_transition(slow, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(2));
-    assert!(task.paused_branches().is_empty());
-    assert!(task.active_branches().is_empty());
-}
-
-#[test_log::test(tokio::test)]
-async fn faster_pause_preserves_slower_finish_work_for_resume() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::PauseTask)
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
-
-    let start = task.register_node(OffsetNode(0));
-    let pausing = task.register_node(PauseOnceNode);
-    let slow = task.register_node(DelayedOffsetNode {
-        offset: 0,
-        delay: Duration::from_millis(150),
-    });
-    let finish = task.register_node(IntNode);
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([pausing.target_with(input), slow.target_with(input)])
-            .join_with(join.join())
-            .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(pausing, move |_output| Transition::pause())
-        .unwrap();
-    task.register_transition(slow, move |output| finish.transitions_with(output))
-        .unwrap();
-    task.register_transition(finish, task.transitions_to_finish())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Paused);
-    assert_eq!(
-        task.paused_branches().len() + task.active_branches().len(),
-        2
-    );
-}
-
-#[test_log::test(tokio::test)]
 async fn run_rejects_overwriting_active_state() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::PauseTask)
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(PauseOnceNode);
     task.starts_with(start);
@@ -649,9 +365,7 @@ async fn node_error_fails_task() {
 
 #[test_log::test(tokio::test)]
 async fn node_error_inside_join_group_fails_task() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(IntNode);
     let good = task.register_node(IntNode);
@@ -672,8 +386,6 @@ async fn node_error_inside_join_group_fails_task() {
 
     let error = task.run(1).await.unwrap_err();
     assert!(matches!(error, TaskError::NodeError(_)));
-    assert!(task.active_branches().is_empty());
-    assert!(task.paused_branches().is_empty());
 }
 
 #[test_log::test(tokio::test)]
@@ -693,9 +405,7 @@ async fn transition_error_fails_non_join_branch() {
 
 #[test_log::test(tokio::test)]
 async fn transition_error_inside_join_group_fails_task() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(IntNode);
     let good = task.register_node(IntNode);
@@ -717,8 +427,6 @@ async fn transition_error_inside_join_group_fails_task() {
 
     let error = task.run(1).await.unwrap_err();
     assert!(matches!(error, TaskError::NodeError(_)));
-    assert!(task.active_branches().is_empty());
-    assert!(task.paused_branches().is_empty());
 }
 
 #[test_log::test(tokio::test)]
@@ -750,8 +458,6 @@ async fn fan_out_inside_active_join_group_is_rejected() {
     assert!(
         matches!(error, TaskError::InvalidState(message) if message.contains("cannot fan out"))
     );
-    assert!(task.active_branches().is_empty());
-    assert!(task.paused_branches().is_empty());
 }
 
 #[test_log::test(tokio::test)]
@@ -777,54 +483,6 @@ async fn join_input_keeps_branch_creation_order() {
 
     let result = task.run(1).await.unwrap();
     assert_eq!(result, TaskRunState::Completed(vec![2, 11]));
-}
-
-#[test_log::test(tokio::test)]
-async fn cancel_remaining_reports_cancelled_leftovers_in_join_input() {
-    let mut task: Task<i32, JoinSnapshot> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
-
-    let start = task.register_node(OffsetNode(0));
-    let fast = task.register_node(IntNode);
-    let slow = task.register_node(DelayedOffsetNode {
-        offset: 10,
-        delay: Duration::from_millis(200),
-    });
-    let queued = task.register_node(OffsetNode(100));
-    let join = task.register_node(SnapshotJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([
-            fast.target_with(input),
-            slow.target_with(input),
-            queued.target_with(input),
-        ])
-        .join_with(join.join_at_least(1).cancel_remaining())
-        .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(fast, join.join_at_least(1).cancel_remaining())
-        .unwrap();
-    task.register_transition(slow, join.join_at_least(1).cancel_remaining())
-        .unwrap();
-    task.register_transition(queued, join.join_at_least(1).cancel_remaining())
-        .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let snapshot = task.run(1).await.unwrap();
-    assert_eq!(
-        snapshot,
-        TaskRunState::Completed(JoinSnapshot {
-            ready_values: vec![2],
-            cancelled: 2,
-            paused: 0,
-            pending: 0,
-            late_arrivals: 0,
-        })
-    );
 }
 
 #[test_log::test(tokio::test)]
@@ -880,9 +538,7 @@ async fn fan_out_join_scope_allows_branches_to_join_after_intermediate_nodes() {
 
 #[test_log::test(tokio::test)]
 async fn fan_out_join_scope_waits_for_branch_that_finishes_before_join() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(OffsetNode(0));
     let terminal = task.register_node(IntNode);
@@ -931,37 +587,6 @@ async fn fan_out_join_scope_rejects_branch_joining_a_different_target() {
 
     let error = task.run(1).await.unwrap_err();
     assert!(matches!(error, TaskError::InvalidState(_)));
-}
-
-#[test_log::test(tokio::test)]
-async fn join_pause_behavior_override_can_pause_task() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .pause_behavior(PauseBehavior::DrainRunnable)
-        .max_parallelism(NonZeroUsize::new(3).unwrap())
-        .build();
-
-    let start = task.register_node(OffsetNode(0));
-    let left = task.register_node(IntNode);
-    let right = task.register_node(IntNode);
-    let join = task.register_node(PauseJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([left.target_with(input), right.target_with(input)])
-            .join_with(join.join())
-            .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(left, join.join().pause_behavior(PauseBehavior::PauseTask))
-        .unwrap();
-    task.register_transition(right, join.join().pause_behavior(PauseBehavior::PauseTask))
-        .unwrap();
-    task.register_transition(join, move |_output| Transition::pause())
-        .unwrap();
-
-    let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Paused);
-    assert_eq!(task.paused_branches().len(), 1);
 }
 
 #[test_log::test(tokio::test)]
@@ -1016,15 +641,12 @@ async fn register_transition_async_maps_join_payload() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([branch.target_with(input)])
-            .join_with(join.join_at_least(1).continue_remaining())
+        Transition::fan_out([branch.target_with(input)]).join_with(join.join())
     })
     .unwrap();
     task.register_transition_async(
         branch,
-        join.join_at_least(1)
-            .continue_remaining()
-            .map_async(|output| async move { output * 2 }),
+        join.join().map_async(|output| async move { output * 2 }),
     )
     .unwrap();
     task.register_transition(join, task.transitions_to_finish())
@@ -1032,48 +654,6 @@ async fn register_transition_async_maps_join_payload() {
 
     let result = task.run(1).await.unwrap();
     assert_eq!(result, TaskRunState::Completed(6));
-}
-
-#[test_log::test(tokio::test)]
-async fn max_parallelism_is_enforced() {
-    let current = Arc::new(AtomicUsize::new(0));
-    let max = Arc::new(AtomicUsize::new(0));
-    let tracking = TrackingNode {
-        current: current.clone(),
-        max: max.clone(),
-        delay: Duration::from_millis(25),
-    };
-
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
-
-    let start = task.register_node(OffsetNode(0));
-    let first = task.register_node(tracking.clone());
-    let second = task.register_node(tracking.clone());
-    let third = task.register_node(tracking);
-    let join = task.register_node(SumJoinNode);
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        Transition::fan_out([
-            first.target_with(input),
-            second.target_with(input),
-            third.target_with(input),
-        ])
-        .join_with(join.join())
-        .concurrency_model(ConcurrencyModel::Parallel)
-    })
-    .unwrap();
-    task.register_transition(first, join.join()).unwrap();
-    task.register_transition(second, join.join()).unwrap();
-    task.register_transition(third, join.join()).unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    let result = task.run(2).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(6));
-    assert!(max.load(Ordering::SeqCst) <= 2);
 }
 
 #[test]
@@ -1094,9 +674,7 @@ fn conflicting_transition_registrations_are_rejected() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn parallel_fanout_reaches_barrier() {
     let barrier = Arc::new(Barrier::new(2));
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(2).unwrap())
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(IntNode);
     let left = task.register_node(BarrierNode {

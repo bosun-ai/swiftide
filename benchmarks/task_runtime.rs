@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, num::NonZeroUsize, time::Duration};
+use std::time::Duration;
 
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use swiftide::agents::tasks::{NodeError, SyncFn, Task, TaskRunState, Transition};
@@ -74,11 +74,8 @@ fn build_fanout_join_task(
     branches: usize,
     child_delay: Duration,
     parallel: bool,
-    max_parallelism: usize,
 ) -> Task<i32, i32> {
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(max_parallelism).expect("max parallelism"))
-        .build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(increment_node());
     let join = task.register_node(join_sum_node());
@@ -118,67 +115,6 @@ fn build_fanout_join_task(
     task
 }
 
-fn build_short_circuit_task(
-    branches: usize,
-    max_parallelism: usize,
-    short_circuit: bool,
-) -> Task<i32, i32> {
-    let mut task: Task<i32, i32> = Task::builder()
-        .max_parallelism(NonZeroUsize::new(max_parallelism).expect("max parallelism"))
-        .build();
-
-    let start = task.register_node(increment_node());
-    let join = task.register_node(join_sum_node());
-    let fast_branch = task.register_node_async_fn(|input: &i32| {
-        Box::pin(async move { Ok::<_, NodeError>(*input + 1) })
-    });
-    let slow_branches = (1..branches)
-        .map(|_| {
-            task.register_node_async_fn(|input: &i32| {
-                Box::pin(async move {
-                    sleep(Duration::from_millis(1)).await;
-                    Ok::<_, NodeError>(*input + 1)
-                })
-            })
-        })
-        .collect::<Vec<_>>();
-    let fan_out_slow_branches = slow_branches.clone();
-
-    task.starts_with(start);
-    task.register_transition(start, move |input| {
-        let targets = std::iter::once(fast_branch.target_with(input)).chain(
-            fan_out_slow_branches
-                .iter()
-                .map(|node| node.target_with(input)),
-        );
-
-        Transition::fan_out(targets)
-            .concurrency_model(swiftide::agents::tasks::ConcurrencyModel::Parallel)
-    })
-    .expect("fan-out transition");
-
-    if short_circuit {
-        task.register_transition(fast_branch, join.join_at_least(1).cancel_remaining())
-            .expect("fast short-circuit join");
-        for branch in slow_branches {
-            task.register_transition(branch, join.join_at_least(1).cancel_remaining())
-                .expect("slow short-circuit join");
-        }
-    } else {
-        task.register_transition(fast_branch, join.join())
-            .expect("fast join");
-        for branch in slow_branches {
-            task.register_transition(branch, join.join())
-                .expect("slow join");
-        }
-    }
-
-    task.register_transition(join, task.transitions_to_finish())
-        .expect("finish transition");
-
-    task
-}
-
 fn benchmark_linear_run(c: &mut Criterion, runtime: &Runtime) {
     let mut group = c.benchmark_group("tasks/linear-run");
     group.sample_size(100);
@@ -209,13 +145,7 @@ fn benchmark_fanout_modes(c: &mut Criterion, runtime: &Runtime) {
         group.throughput(Throughput::Elements(branches as u64));
 
         for (label, parallel) in [("sequential", false), ("parallel", true)] {
-            let max_parallelism = branches.min(runtime_threads());
-            let blueprint = build_fanout_join_task(
-                branches,
-                Duration::from_millis(1),
-                parallel,
-                max_parallelism,
-            );
+            let blueprint = build_fanout_join_task(branches, Duration::from_millis(1), parallel);
 
             group.bench_with_input(BenchmarkId::new(label, branches), &branches, |b, _| {
                 b.to_async(runtime).iter_batched(
@@ -232,65 +162,10 @@ fn benchmark_fanout_modes(c: &mut Criterion, runtime: &Runtime) {
     group.finish();
 }
 
-fn benchmark_parallelism_cap(c: &mut Criterion, runtime: &Runtime) {
-    let mut group = c.benchmark_group("tasks/parallelism-cap");
-    group.sample_size(20);
-    group.measurement_time(Duration::from_secs(8));
-
-    let branches = 32_usize;
-    let caps = [1_usize, 2, 4, runtime_threads()]
-        .into_iter()
-        .collect::<BTreeSet<_>>();
-
-    for cap in caps {
-        group.throughput(Throughput::Elements(branches as u64));
-        let blueprint = build_fanout_join_task(branches, Duration::from_millis(1), true, cap);
-
-        group.bench_with_input(BenchmarkId::new("cap", cap), &cap, |b, _| {
-            b.to_async(runtime).iter_batched(
-                || blueprint.clone(),
-                |task| async move {
-                    let _ = complete_task(task, 0).await;
-                },
-                BatchSize::SmallInput,
-            );
-        });
-    }
-
-    group.finish();
-}
-
-fn benchmark_join_short_circuit(c: &mut Criterion, runtime: &Runtime) {
-    let mut group = c.benchmark_group("tasks/join-short-circuit");
-    group.sample_size(20);
-    group.measurement_time(Duration::from_secs(8));
-
-    let branches = 16_usize;
-    let max_parallelism = branches.min(runtime_threads());
-    group.throughput(Throughput::Elements(branches as u64));
-
-    for (label, short_circuit) in [("join_all", false), ("at_least_1_cancel_remaining", true)] {
-        let blueprint = build_short_circuit_task(branches, max_parallelism, short_circuit);
-        group.bench_with_input(BenchmarkId::new(label, branches), &branches, |b, _| {
-            b.to_async(runtime).iter_batched(
-                || blueprint.clone(),
-                |task| async move {
-                    let _ = complete_task(task, 0).await;
-                },
-                BatchSize::SmallInput,
-            );
-        });
-    }
-
-    group.finish();
-}
-
 fn criterion_benchmark(c: &mut Criterion) {
     let runtime = runtime();
     benchmark_linear_run(c, &runtime);
     benchmark_fanout_modes(c, &runtime);
-    benchmark_parallelism_cap(c, &runtime);
-    benchmark_join_short_circuit(c, &runtime);
 }
 
 criterion_group!(benches, criterion_benchmark);

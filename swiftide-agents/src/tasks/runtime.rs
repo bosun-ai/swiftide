@@ -1,11 +1,4 @@
-use std::{
-    any::Any,
-    collections::{HashMap, HashSet},
-    future::Future,
-    num::NonZeroUsize,
-    pin::Pin,
-    sync::Arc,
-};
+use std::{any::Any, collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 use async_trait::async_trait;
 use dyn_clone::DynClone;
@@ -17,9 +10,8 @@ use super::{
     node::{NodeArg, NodeId, TaskNode},
     task::{Task, TaskRunState},
     transition::{
-        BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, EffectiveTransitionSettings,
-        JoinDefinition, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior, Transition,
-        TransitionAction,
+        BranchId, ConcurrencyModel, EffectiveTransitionSettings, JoinDefinition, JoinInput,
+        Transition, TransitionAction,
     },
 };
 
@@ -37,16 +29,12 @@ pub(crate) struct BranchGroupId(pub(crate) usize);
 #[derive(Debug, Clone)]
 pub(crate) struct TaskOptions {
     pub(crate) concurrency_model: ConcurrencyModel,
-    pub(crate) pause_behavior: PauseBehavior,
-    pub(crate) max_parallelism: usize,
 }
 
 impl Default for TaskOptions {
     fn default() -> Self {
         Self {
             concurrency_model: ConcurrencyModel::Sequential,
-            pause_behavior: PauseBehavior::DrainRunnable,
-            max_parallelism: std::thread::available_parallelism().map_or(4, NonZeroUsize::get),
         }
     }
 }
@@ -100,64 +88,23 @@ impl<Output> std::fmt::Debug for RegisteredTransition<Output> {
 
 #[derive(Debug, Clone)]
 pub(crate) enum JoinMemberState {
-    Pending {
-        node_id: usize,
-    },
-    Paused {
-        node_id: usize,
-    },
-    Ready {
-        node_id: usize,
-        payload: Arc<dyn Any + Send + Sync>,
-    },
-    Cancelled {
-        node_id: usize,
-    },
-    LateArrival {
-        node_id: usize,
-    },
+    Pending,
+    Paused,
+    Ready { payload: Arc<dyn Any + Send + Sync> },
 }
 
 impl JoinMemberState {
-    pub(crate) fn node_id(&self) -> usize {
-        match self {
-            JoinMemberState::Pending { node_id }
-            | JoinMemberState::Paused { node_id }
-            | JoinMemberState::Ready { node_id, .. }
-            | JoinMemberState::Cancelled { node_id }
-            | JoinMemberState::LateArrival { node_id } => *node_id,
-        }
-    }
-
     fn is_terminal(&self) -> bool {
-        matches!(
-            self,
-            JoinMemberState::Ready { .. }
-                | JoinMemberState::Cancelled { .. }
-                | JoinMemberState::LateArrival { .. }
-        )
-    }
-
-    fn outcome(&self) -> BranchOutcome {
-        match self {
-            JoinMemberState::Pending { .. } => BranchOutcome::Pending,
-            JoinMemberState::Paused { .. } => BranchOutcome::Paused,
-            JoinMemberState::Ready { payload, .. } => BranchOutcome::Ready(payload.clone()),
-            JoinMemberState::Cancelled { .. } => BranchOutcome::Cancelled,
-            JoinMemberState::LateArrival { .. } => BranchOutcome::LateArrival,
-        }
+        matches!(self, JoinMemberState::Ready { .. })
     }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct JoinGroupState {
     pub(crate) join_node_id: usize,
-    pub(crate) policy: JoinPolicy,
     pub(crate) settings: EffectiveTransitionSettings,
     pub(crate) members: HashMap<BranchId, JoinMemberState>,
     pub(crate) member_order: Vec<BranchId>,
-    pub(crate) ready_count: usize,
-    pub(crate) fired: bool,
 }
 
 #[derive(Debug)]
@@ -346,7 +293,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     pub(crate) fn default_settings(&self) -> EffectiveTransitionSettings {
         EffectiveTransitionSettings {
             concurrency_model: self.options.concurrency_model,
-            pause_behavior: self.options.pause_behavior,
         }
     }
 
@@ -381,13 +327,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         paused.sort_by_key(|branch| branch.id.0);
 
         for branch in paused {
-            self.set_join_member_state(
-                branch.join_group,
-                branch.id,
-                JoinMemberState::Pending {
-                    node_id: branch.current_node,
-                },
-            );
+            self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Pending);
             self.enqueue_branch(branch);
         }
     }
@@ -432,11 +372,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                             }
                         }
                         ConcurrencyModel::Parallel => {
-                            if in_flight.len() >= self.options.max_parallelism {
-                                self.runnable_branches.push_front(branch);
-                                break;
-                            }
-
                             in_flight.push(Self::branch_future(&execution_nodes, branch)?);
                         }
                     }
@@ -542,13 +477,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 branch.current_node = next_node.node_id;
                 branch.context = next_node.context;
                 branch.settings = settings;
-                self.set_join_member_state(
-                    branch.join_group,
-                    branch.id,
-                    JoinMemberState::Pending {
-                        node_id: branch.current_node,
-                    },
-                );
+                self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Pending);
                 self.enqueue_branch(branch);
                 Ok(LoopControl::Continue)
             }
@@ -563,7 +492,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 self.enqueue_fan_out_branches(targets, settings, join)?;
                 Ok(LoopControl::Continue)
             }
-            TransitionAction::Pause => Ok(self.pause_branch(branch, settings)),
+            TransitionAction::Pause => Ok(self.pause_branch(branch)),
             TransitionAction::Error(error) => self.fail_task(TaskError::NodeError(NodeError::new(
                 error,
                 branch.current_node,
@@ -601,12 +530,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     .get_mut(&group_id)
                     .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
                 group.member_order.push(child_id);
-                group.members.insert(
-                    child_id,
-                    JoinMemberState::Pending {
-                        node_id: child.current_node,
-                    },
-                );
+                group.members.insert(child_id, JoinMemberState::Pending);
             }
 
             self.enqueue_branch(child);
@@ -615,25 +539,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Ok(())
     }
 
-    fn pause_branch(
-        &mut self,
-        branch: ExecutionBranch,
-        settings: EffectiveTransitionSettings,
-    ) -> LoopControl<Output> {
-        self.set_join_member_state(
-            branch.join_group,
-            branch.id,
-            JoinMemberState::Paused {
-                node_id: branch.current_node,
-            },
-        );
+    fn pause_branch(&mut self, branch: ExecutionBranch) -> LoopControl<Output> {
+        self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Paused);
         self.paused_branches.insert(branch.id, branch);
-
-        if settings.pause_behavior == PauseBehavior::PauseTask {
-            LoopControl::PauseRequested
-        } else {
-            LoopControl::Continue
-        }
+        LoopControl::PauseRequested
     }
 
     fn finish_with_output(
@@ -680,7 +589,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 .get_mut(&group_id)
                 .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
 
-            if group.join_node_id != definition.join_node_id || group.policy != definition.policy {
+            if group.join_node_id != definition.join_node_id {
                 return Err(TaskError::invalid_state(format!(
                     "Node {} used join for an unexpected join target",
                     branch.current_node
@@ -703,24 +612,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 .get_mut(&group_id)
                 .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
 
-            if group.fired {
-                group.members.insert(
-                    branch.id,
-                    JoinMemberState::LateArrival {
-                        node_id: branch.current_node,
-                    },
-                );
-                return Ok(LoopControl::Continue);
-            }
-
-            group.members.insert(
-                branch.id,
-                JoinMemberState::Ready {
-                    node_id: branch.current_node,
-                    payload,
-                },
-            );
-            group.ready_count += 1;
+            group
+                .members
+                .insert(branch.id, JoinMemberState::Ready { payload });
         }
 
         self.enqueue_join_if_ready(Some(group_id))?;
@@ -733,12 +627,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             group_id,
             JoinGroupState {
                 join_node_id: definition.join_node_id,
-                policy: definition.policy,
                 settings: self.default_settings().with_overrides(definition.settings),
                 members: HashMap::new(),
                 member_order: Vec::new(),
-                ready_count: 0,
-                fired: false,
             },
         );
         group_id
@@ -763,39 +654,22 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 return Ok(None);
             };
 
-            if group.fired {
-                return Ok(None);
-            }
-
-            match group.policy {
-                JoinPolicy::All => group.members.values().all(JoinMemberState::is_terminal),
-                JoinPolicy::AtLeast { count, .. } => group.ready_count >= count,
-            }
+            group.members.values().all(JoinMemberState::is_terminal)
         };
 
         if !ready {
             return Ok(None);
         }
 
-        let (join_node_id, settings, leftover_behavior) = {
+        let (join_node_id, settings) = {
             let group = self
                 .join_groups
-                .get_mut(&group_id)
+                .get(&group_id)
                 .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-            group.fired = true;
-            (
-                group.join_node_id,
-                group.settings,
-                group.policy.leftover_behavior(),
-            )
+            (group.join_node_id, group.settings)
         };
-
-        if let Some(leftover_behavior) = leftover_behavior {
-            self.apply_leftover_behavior(group_id, leftover_behavior);
-        }
-
         let join_input = self.build_join_input(group_id)?;
-        self.compact_fired_join_group(group_id);
+        self.join_groups.remove(&group_id);
 
         Ok(Some(ExecutionBranch {
             id: self.next_branch(),
@@ -816,10 +690,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .member_order
             .iter()
             .filter_map(|branch_id| {
-                group.members.get(branch_id).map(|state| BranchEnvelope {
-                    branch_id: *branch_id,
-                    node_id: state.node_id(),
-                    outcome: state.outcome(),
+                group.members.get(branch_id).and_then(|state| match state {
+                    JoinMemberState::Ready { payload } => Some(payload.clone()),
+                    JoinMemberState::Pending | JoinMemberState::Paused => None,
                 })
             })
             .collect();
@@ -832,55 +705,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Err(error)
     }
 
-    fn apply_leftover_behavior(
-        &mut self,
-        group_id: BranchGroupId,
-        leftover_behavior: JoinLeftoverBehavior,
-    ) {
-        if leftover_behavior != JoinLeftoverBehavior::CancelRemaining {
-            return;
-        }
-
-        let branch_ids = self
-            .join_groups
-            .get(&group_id)
-            .map(|group| {
-                group
-                    .members
-                    .iter()
-                    .filter_map(|(branch_id, state)| (!state.is_terminal()).then_some(*branch_id))
-                    .collect::<HashSet<_>>()
-            })
-            .unwrap_or_default();
-
-        self.runnable_branches
-            .retain(|branch| !branch_ids.contains(&branch.id));
-
-        for branch_id in &branch_ids {
-            self.paused_branches.remove(branch_id);
-        }
-
-        if let Some(group) = self.join_groups.get_mut(&group_id) {
-            for branch_id in branch_ids {
-                let node_id = group
-                    .members
-                    .get(&branch_id)
-                    .map_or(0, JoinMemberState::node_id);
-                group
-                    .members
-                    .insert(branch_id, JoinMemberState::Cancelled { node_id });
-            }
-        }
-    }
-
-    fn compact_fired_join_group(&mut self, group_id: BranchGroupId) {
-        if let Some(group) = self.join_groups.get_mut(&group_id) {
-            group.members.clear();
-            group.member_order.clear();
-            group.ready_count = 0;
-        }
-    }
-
     fn set_join_member_state(
         &mut self,
         group_id: Option<BranchGroupId>,
@@ -889,7 +713,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     ) {
         if let Some(group_id) = group_id
             && let Some(group) = self.join_groups.get_mut(&group_id)
-            && !group.fired
         {
             group.members.insert(branch_id, state);
         }

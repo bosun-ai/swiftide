@@ -30,6 +30,4 @@ fn main() {
     let join = task.register_node(WrongJoinNode);
 
     let _ = join.join();
-    let _ = join.join_with(swiftide_agents::tasks::JoinPolicy::All);
-    let _ = join.join_at_least(2);
 }

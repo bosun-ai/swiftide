@@ -34,7 +34,6 @@ use std::{
     any::Any,
     collections::{HashMap, VecDeque},
     future::Future,
-    num::NonZeroUsize,
     pin::Pin,
     sync::Arc,
 };
@@ -48,8 +47,8 @@ use super::{
         TaskOptions, TransitionHandler,
     },
     transition::{
-        ActiveBranch, BranchId, ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget,
-        MappedJoinTarget, MarkedTransition, PauseBehavior, Transition,
+        BranchId, ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget,
+        MarkedTransition, Transition,
     },
 };
 
@@ -81,18 +80,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output>
     /// Sets the default concurrency model for transitions that do not override it explicitly.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.options.concurrency_model = concurrency_model;
-        self
-    }
-
-    /// Sets the default pause behavior for transitions that do not override it explicitly.
-    pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
-        self.options.pause_behavior = pause_behavior;
-        self
-    }
-
-    /// Caps how many parallel branches may execute at the same time.
-    pub fn max_parallelism(mut self, max_parallelism: NonZeroUsize) -> Self {
-        self.options.max_parallelism = max_parallelism.get();
         self
     }
 
@@ -143,7 +130,6 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     pub(crate) next_branch_id: usize,
     pub(crate) next_group_id: usize,
     pub(crate) last_start_context: Option<Arc<dyn Any + Send + Sync>>,
-    pub(crate) resume_paused_branches: bool,
     pub(crate) options: TaskOptions,
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
@@ -317,7 +303,6 @@ impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
             next_branch_id: 1,
             next_group_id: 1,
             last_start_context: None,
-            resume_paused_branches: true,
             options: self.options.clone(),
             _marker: std::marker::PhantomData,
         }
@@ -336,13 +321,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Examples
     ///
     /// ```no_run
-    /// use std::num::NonZeroUsize;
-    ///
     /// use swiftide_agents::tasks::{ConcurrencyModel, Task};
     ///
     /// let task = Task::<i32, i32>::builder()
     ///     .concurrency_model(ConcurrencyModel::Parallel)
-    ///     .max_parallelism(NonZeroUsize::new(4).expect("non-zero"))
     ///     .build();
     ///
     /// let _ = task;
@@ -366,7 +348,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             next_branch_id: 1,
             next_group_id: 1,
             last_start_context: None,
-            resume_paused_branches: true,
             options,
             _marker: std::marker::PhantomData,
         }
@@ -436,7 +417,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         let start_node = self.validate_transitions()?;
         let context = Arc::new(input.into()) as Arc<dyn Any + Send + Sync>;
         self.last_start_context = Some(context.clone());
-        self.resume_paused_branches = true;
         self.clear_runtime_state();
         self.enqueue_start_branch(start_node, context);
 
@@ -454,7 +434,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         };
 
         let context = self.last_start_context.clone();
-        self.resume_paused_branches = true;
         self.clear_runtime_state();
 
         if let Some(context) = context {
@@ -476,35 +455,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             return Err(TaskError::NotResumable);
         }
 
-        if self.resume_paused_branches {
-            self.restore_paused_branches();
-        }
+        self.restore_paused_branches();
         self.start_task().await
-    }
-
-    /// Returns the currently queued branches that have not started running yet.
-    pub fn active_branches(&self) -> Vec<ActiveBranch> {
-        self.runnable_branches
-            .iter()
-            .map(|branch| ActiveBranch {
-                branch_id: branch.id,
-                node_id: branch.current_node,
-            })
-            .collect()
-    }
-
-    /// Returns the branches that paused and can be resumed.
-    pub fn paused_branches(&self) -> Vec<ActiveBranch> {
-        let mut branches = self
-            .paused_branches
-            .values()
-            .map(|branch| ActiveBranch {
-                branch_id: branch.id,
-                node_id: branch.current_node,
-            })
-            .collect::<Vec<_>>();
-        branches.sort_by_key(|branch| branch.branch_id.0);
-        branches
     }
 
     /// Returns the node for the first paused or runnable branch when it has the requested type.
