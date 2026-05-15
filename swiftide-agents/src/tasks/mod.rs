@@ -82,6 +82,6 @@ pub use node::{DynNodeId, NodeArg, NodeId, NoopNode, TaskNode};
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use transition::{
     ActiveBranch, AsyncMappedJoinTarget, AtLeastJoin, BranchEnvelope, BranchId, BranchOutcome,
-    ConcurrencyModel, ErrorBehavior, FanOutTransition, JoinInput, JoinLeftoverBehavior, JoinPolicy,
-    JoinTarget, MappedJoinTarget, MarkedTransition, NextNode, PauseBehavior, Transition,
+    ConcurrencyModel, FanOutTransition, JoinInput, JoinLeftoverBehavior, JoinPolicy, JoinTarget,
+    MappedJoinTarget, MarkedTransition, NextNode, PauseBehavior, Transition,
 };

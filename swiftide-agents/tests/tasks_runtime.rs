@@ -9,8 +9,8 @@ use std::{
 
 use async_trait::async_trait;
 use swiftide_agents::tasks::{
-    BranchOutcome, ConcurrencyModel, ErrorBehavior, JoinInput, NodeId, PauseBehavior, Task,
-    TaskError, TaskNode, TaskRunState, Transition,
+    BranchOutcome, ConcurrencyModel, JoinInput, NodeId, PauseBehavior, Task, TaskError, TaskNode,
+    TaskRunState, Transition,
 };
 use tokio::{
     sync::Barrier,
@@ -149,7 +149,6 @@ impl TaskNode for CollectJoinNode {
 struct JoinSnapshot {
     ready_values: Vec<i32>,
     cancelled: usize,
-    failed: usize,
     paused: usize,
     pending: usize,
     late_arrivals: usize,
@@ -173,7 +172,6 @@ impl TaskNode for SnapshotJoinNode {
     ) -> Result<Self::Output, Self::Error> {
         let mut ready_values = Vec::new();
         let mut cancelled = 0;
-        let mut failed = 0;
         let mut paused = 0;
         let mut pending = 0;
         let mut late_arrivals = 0;
@@ -186,7 +184,6 @@ impl TaskNode for SnapshotJoinNode {
                     }
                 }
                 BranchOutcome::Cancelled => cancelled += 1,
-                BranchOutcome::Failed(_) => failed += 1,
                 BranchOutcome::Paused => paused += 1,
                 BranchOutcome::Pending => pending += 1,
                 BranchOutcome::LateArrival => late_arrivals += 1,
@@ -196,7 +193,6 @@ impl TaskNode for SnapshotJoinNode {
         Ok(JoinSnapshot {
             ready_values,
             cancelled,
-            failed,
             paused,
             pending,
             late_arrivals,
@@ -639,10 +635,8 @@ async fn missing_transitions_are_rejected() {
 }
 
 #[test_log::test(tokio::test)]
-async fn error_behavior_can_fail_task() {
-    let mut task: Task<i32, i32> = Task::builder()
-        .error_behavior(ErrorBehavior::FailTask)
-        .build();
+async fn node_error_fails_task() {
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(FailingNode);
     task.starts_with(start);
@@ -654,9 +648,8 @@ async fn error_behavior_can_fail_task() {
 }
 
 #[test_log::test(tokio::test)]
-async fn local_node_failures_inside_join_groups_do_not_fail_the_task() {
+async fn node_error_inside_join_group_fails_task() {
     let mut task: Task<i32, i32> = Task::builder()
-        .error_behavior(ErrorBehavior::Local)
         .max_parallelism(NonZeroUsize::new(2).unwrap())
         .build();
 
@@ -677,13 +670,15 @@ async fn local_node_failures_inside_join_groups_do_not_fail_the_task() {
     task.register_transition(join, task.transitions_to_finish())
         .unwrap();
 
-    let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(3));
+    let error = task.run(1).await.unwrap_err();
+    assert!(matches!(error, TaskError::NodeError(_)));
+    assert!(task.active_branches().is_empty());
+    assert!(task.paused_branches().is_empty());
 }
 
 #[test_log::test(tokio::test)]
 async fn transition_error_fails_non_join_branch() {
-    let mut task: Task<i32, i32> = Task::builder().error_behavior(ErrorBehavior::Local).build();
+    let mut task: Task<i32, i32> = Task::new();
 
     let start = task.register_node(IntNode);
     task.starts_with(start);
@@ -694,6 +689,69 @@ async fn transition_error_fails_non_join_branch() {
 
     let error = task.run(1).await.unwrap_err();
     assert!(matches!(error, TaskError::NodeError(_)));
+}
+
+#[test_log::test(tokio::test)]
+async fn transition_error_inside_join_group_fails_task() {
+    let mut task: Task<i32, i32> = Task::builder()
+        .max_parallelism(NonZeroUsize::new(2).unwrap())
+        .build();
+
+    let start = task.register_node(IntNode);
+    let good = task.register_node(IntNode);
+    let bad = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out([good.target_with(input), bad.target_with(input)])
+            .join_with(join.join())
+            .concurrency_model(ConcurrencyModel::Parallel)
+    })
+    .unwrap();
+    task.register_transition(good, join.join()).unwrap();
+    task.register_transition(bad, move |_output| Transition::error(Error("boom".into())))
+        .unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    let error = task.run(1).await.unwrap_err();
+    assert!(matches!(error, TaskError::NodeError(_)));
+    assert!(task.active_branches().is_empty());
+    assert!(task.paused_branches().is_empty());
+}
+
+#[test_log::test(tokio::test)]
+async fn fan_out_inside_active_join_group_is_rejected() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(OffsetNode(0));
+    let branch = task.register_node(IntNode);
+    let nested = task.register_node(IntNode);
+    let inner_join = task.register_node(SumJoinNode);
+    let outer_join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out([branch.target_with(input)]).join_with(outer_join.join())
+    })
+    .unwrap();
+    task.register_transition(branch, move |input| {
+        Transition::fan_out([nested.target_with(input)]).join_with(inner_join.join())
+    })
+    .unwrap();
+    task.register_transition(nested, inner_join.join()).unwrap();
+    task.register_transition(inner_join, task.transitions_to_finish())
+        .unwrap();
+    task.register_transition(outer_join, task.transitions_to_finish())
+        .unwrap();
+
+    let error = task.run(1).await.unwrap_err();
+    assert!(
+        matches!(error, TaskError::InvalidState(message) if message.contains("cannot fan out"))
+    );
+    assert!(task.active_branches().is_empty());
+    assert!(task.paused_branches().is_empty());
 }
 
 #[test_log::test(tokio::test)]
@@ -762,7 +820,6 @@ async fn cancel_remaining_reports_cancelled_leftovers_in_join_input() {
         TaskRunState::Completed(JoinSnapshot {
             ready_values: vec![2],
             cancelled: 2,
-            failed: 0,
             paused: 0,
             pending: 0,
             late_arrivals: 0,

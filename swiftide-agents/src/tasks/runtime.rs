@@ -18,8 +18,8 @@ use super::{
     task::{Task, TaskRunState},
     transition::{
         BranchEnvelope, BranchId, BranchOutcome, ConcurrencyModel, EffectiveTransitionSettings,
-        ErrorBehavior, JoinDefinition, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior,
-        Transition, TransitionAction,
+        JoinDefinition, JoinInput, JoinLeftoverBehavior, JoinPolicy, PauseBehavior, Transition,
+        TransitionAction,
     },
 };
 
@@ -29,8 +29,7 @@ pub(crate) type TransitionHandler<Output> =
 pub(crate) type BoxedJoinFuture = Pin<Box<dyn Future<Output = Arc<dyn Any + Send + Sync>> + Send>>;
 pub(crate) type JoinHandler<Output> =
     Arc<dyn Fn(Output) -> BoxedJoinFuture + Send + Sync + 'static>;
-type RunningBranchFuture =
-    Pin<Box<dyn Future<Output = Result<BranchExecutionResult, TaskError>> + Send>>;
+type RunningBranchFuture = Pin<Box<dyn Future<Output = Result<EvaluatedBranch, TaskError>> + Send>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct BranchGroupId(pub(crate) usize);
@@ -39,7 +38,6 @@ pub(crate) struct BranchGroupId(pub(crate) usize);
 pub(crate) struct TaskOptions {
     pub(crate) concurrency_model: ConcurrencyModel,
     pub(crate) pause_behavior: PauseBehavior,
-    pub(crate) error_behavior: ErrorBehavior,
     pub(crate) max_parallelism: usize,
 }
 
@@ -48,7 +46,6 @@ impl Default for TaskOptions {
         Self {
             concurrency_model: ConcurrencyModel::Sequential,
             pause_behavior: PauseBehavior::DrainRunnable,
-            error_behavior: ErrorBehavior::Local,
             max_parallelism: std::thread::available_parallelism().map_or(4, NonZeroUsize::get),
         }
     }
@@ -113,10 +110,6 @@ pub(crate) enum JoinMemberState {
         node_id: usize,
         payload: Arc<dyn Any + Send + Sync>,
     },
-    Failed {
-        node_id: usize,
-        message: String,
-    },
     Cancelled {
         node_id: usize,
     },
@@ -131,7 +124,6 @@ impl JoinMemberState {
             JoinMemberState::Pending { node_id }
             | JoinMemberState::Paused { node_id }
             | JoinMemberState::Ready { node_id, .. }
-            | JoinMemberState::Failed { node_id, .. }
             | JoinMemberState::Cancelled { node_id }
             | JoinMemberState::LateArrival { node_id } => *node_id,
         }
@@ -141,7 +133,6 @@ impl JoinMemberState {
         matches!(
             self,
             JoinMemberState::Ready { .. }
-                | JoinMemberState::Failed { .. }
                 | JoinMemberState::Cancelled { .. }
                 | JoinMemberState::LateArrival { .. }
         )
@@ -152,7 +143,6 @@ impl JoinMemberState {
             JoinMemberState::Pending { .. } => BranchOutcome::Pending,
             JoinMemberState::Paused { .. } => BranchOutcome::Paused,
             JoinMemberState::Ready { payload, .. } => BranchOutcome::Ready(payload.clone()),
-            JoinMemberState::Failed { message, .. } => BranchOutcome::Failed(message.clone()),
             JoinMemberState::Cancelled { .. } => BranchOutcome::Cancelled,
             JoinMemberState::LateArrival { .. } => BranchOutcome::LateArrival,
         }
@@ -174,18 +164,6 @@ pub(crate) struct JoinGroupState {
 struct EvaluatedBranch {
     branch: ExecutionBranch,
     next_step: EvaluatedTransition,
-}
-
-#[derive(Debug)]
-struct FailedBranch {
-    branch: ExecutionBranch,
-    error: NodeError,
-}
-
-#[derive(Debug)]
-enum BranchExecutionResult {
-    Evaluated(EvaluatedBranch),
-    Failed(FailedBranch),
 }
 
 #[derive(Debug)]
@@ -369,7 +347,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         EffectiveTransitionSettings {
             concurrency_model: self.options.concurrency_model,
             pause_behavior: self.options.pause_behavior,
-            error_behavior: self.options.error_behavior,
         }
     }
 
@@ -438,9 +415,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                     match branch.settings.concurrency_model {
                         ConcurrencyModel::Sequential => {
                             let execution_result =
-                                Self::branch_future(&execution_nodes, branch)?.await?;
+                                match Self::branch_future(&execution_nodes, branch)?.await {
+                                    Ok(result) => result,
+                                    Err(error) => return self.fail_task(error),
+                                };
 
-                            match self.apply_execution_result(execution_result)? {
+                            match self.apply_branch_result(execution_result)? {
                                 LoopControl::Continue => {}
                                 LoopControl::PauseRequested => {
                                     pause_requested = true;
@@ -464,7 +444,12 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             }
 
             if let Some(result) = in_flight.next().await {
-                match self.apply_execution_result(result?)? {
+                let execution_result = match result {
+                    Ok(result) => result,
+                    Err(error) => return self.fail_task(error),
+                };
+
+                match self.apply_branch_result(execution_result)? {
                     LoopControl::Continue => continue,
                     LoopControl::PauseRequested => {
                         pause_requested = true;
@@ -527,30 +512,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 "task.step.done"
             );
 
-            match next_step {
-                Ok(next_step) => Ok(BranchExecutionResult::Evaluated(EvaluatedBranch {
-                    branch,
-                    next_step,
-                })),
-                Err(TaskError::NodeError(error)) => {
-                    Ok(BranchExecutionResult::Failed(FailedBranch {
-                        branch,
-                        error,
-                    }))
-                }
-                Err(error) => Err(error),
-            }
+            next_step.map(|next_step| EvaluatedBranch { branch, next_step })
         }))
-    }
-
-    fn apply_execution_result(
-        &mut self,
-        execution_result: BranchExecutionResult,
-    ) -> Result<LoopControl<Output>, TaskError> {
-        match execution_result {
-            BranchExecutionResult::Evaluated(evaluated) => self.apply_branch_result(evaluated),
-            BranchExecutionResult::Failed(failed) => self.apply_branch_failure(failed),
-        }
     }
 
     fn apply_branch_result(
@@ -590,11 +553,22 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
                 Ok(LoopControl::Continue)
             }
             TransitionAction::FanOut { targets, join } => {
+                if branch.join_group.is_some() {
+                    return self.fail_task(TaskError::invalid_state(format!(
+                        "Node {} cannot fan out while it belongs to an active join group",
+                        branch.current_node
+                    )));
+                }
+
                 self.enqueue_fan_out_branches(targets, settings, join)?;
                 Ok(LoopControl::Continue)
             }
             TransitionAction::Pause => Ok(self.pause_branch(branch, settings)),
-            TransitionAction::Error(error) => self.apply_transition_error(&branch, settings, error),
+            TransitionAction::Error(error) => self.fail_task(TaskError::NodeError(NodeError::new(
+                error,
+                branch.current_node,
+                None,
+            ))),
             TransitionAction::Finish(output) => self.apply_finish_transition(&branch, output),
         }
     }
@@ -660,21 +634,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         } else {
             LoopControl::Continue
         }
-    }
-
-    fn apply_transition_error(
-        &mut self,
-        branch: &ExecutionBranch,
-        settings: EffectiveTransitionSettings,
-        error: Box<dyn std::error::Error + Send + Sync>,
-    ) -> Result<LoopControl<Output>, TaskError> {
-        let message = error.to_string();
-        self.apply_branch_error(
-            branch,
-            settings.error_behavior,
-            message,
-            TaskError::NodeError(NodeError::new(error, branch.current_node, None)),
-        )
     }
 
     fn finish_with_output(
@@ -766,20 +725,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
         self.enqueue_join_if_ready(Some(group_id))?;
         Ok(LoopControl::Continue)
-    }
-
-    fn apply_branch_failure(
-        &mut self,
-        failed: FailedBranch,
-    ) -> Result<LoopControl<Output>, TaskError> {
-        let FailedBranch { branch, error } = failed;
-        let message = error.to_string();
-        self.apply_branch_error(
-            &branch,
-            branch.settings.error_behavior,
-            message,
-            TaskError::NodeError(error),
-        )
     }
 
     fn insert_join_group(&mut self, definition: JoinDefinition) -> BranchGroupId {
@@ -882,29 +827,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Ok(JoinInput::new(branches))
     }
 
-    fn apply_branch_error(
-        &mut self,
-        branch: &ExecutionBranch,
-        error_behavior: ErrorBehavior,
-        message: String,
-        error: TaskError,
-    ) -> Result<LoopControl<Output>, TaskError> {
-        if branch.join_group.is_none() || error_behavior == ErrorBehavior::FailTask {
-            self.clear_runtime_state();
-            return Err(error);
-        }
-
-        self.set_join_member_state(
-            branch.join_group,
-            branch.id,
-            JoinMemberState::Failed {
-                node_id: branch.current_node,
-                message,
-            },
-        );
-        self.enqueue_join_if_ready(branch.join_group)?;
-
-        Ok(LoopControl::Continue)
+    fn fail_task<T>(&mut self, error: TaskError) -> Result<T, TaskError> {
+        self.clear_runtime_state();
+        Err(error)
     }
 
     fn apply_leftover_behavior(

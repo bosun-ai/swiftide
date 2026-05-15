@@ -62,16 +62,6 @@ pub enum PauseBehavior {
     PauseTask,
 }
 
-/// Controls whether a branch error stays local to that branch or fails the whole task.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
-pub enum ErrorBehavior {
-    /// Treat the failing branch as failed while allowing the rest of the task to continue.
-    #[default]
-    Local,
-    /// Stop the task as soon as a branch fails.
-    FailTask,
-}
-
 /// Determines when a join node becomes ready to run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum JoinPolicy {
@@ -108,14 +98,12 @@ pub enum JoinLeftoverBehavior {
 pub(crate) struct TransitionSettings {
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
     pub(crate) pause_behavior: Option<PauseBehavior>,
-    pub(crate) error_behavior: Option<ErrorBehavior>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct EffectiveTransitionSettings {
     pub(crate) concurrency_model: ConcurrencyModel,
     pub(crate) pause_behavior: PauseBehavior,
-    pub(crate) error_behavior: ErrorBehavior,
 }
 
 impl EffectiveTransitionSettings {
@@ -125,7 +113,6 @@ impl EffectiveTransitionSettings {
                 .concurrency_model
                 .unwrap_or(self.concurrency_model),
             pause_behavior: overrides.pause_behavior.unwrap_or(self.pause_behavior),
-            error_behavior: overrides.error_behavior.unwrap_or(self.error_behavior),
         }
     }
 }
@@ -216,12 +203,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// Overrides pause behavior for the join branch that will be scheduled.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.definition.settings.pause_behavior = Some(pause_behavior);
-        self
-    }
-
-    /// Overrides error behavior for the join branch that will be scheduled.
-    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
-        self.definition.settings.error_behavior = Some(error_behavior);
         self
     }
 
@@ -376,12 +357,6 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
         self.join_target = self.join_target.pause_behavior(pause_behavior);
         self
     }
-
-    /// Overrides error behavior for the join branch that will be scheduled.
-    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
-        self.join_target = self.join_target.error_behavior(error_behavior);
-        self
-    }
 }
 
 /// Describes how task execution should continue after a node completes.
@@ -454,11 +429,6 @@ impl<To: TaskNode + ?Sized> MarkedTransition<To> {
     pub fn pause_behavior(self, pause_behavior: PauseBehavior) -> Self {
         Self::new(self.0.pause_behavior(pause_behavior))
     }
-
-    /// Overrides error behavior for work scheduled by this transition.
-    pub fn error_behavior(self, error_behavior: ErrorBehavior) -> Self {
-        Self::new(self.0.error_behavior(error_behavior))
-    }
 }
 
 impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
@@ -506,12 +476,6 @@ impl FanOutTransition {
     /// Overrides pause behavior for work scheduled by this fan-out.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.settings.pause_behavior = Some(pause_behavior);
-        self
-    }
-
-    /// Overrides error behavior for work scheduled by this fan-out.
-    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
-        self.settings.error_behavior = Some(error_behavior);
         self
     }
 }
@@ -665,12 +629,6 @@ impl Transition {
         self.settings.pause_behavior = Some(pause_behavior);
         self
     }
-
-    /// Overrides error behavior for work scheduled by this transition.
-    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
-        self.settings.error_behavior = Some(error_behavior);
-        self
-    }
 }
 
 /// The aggregated view of branches that have reached a join node.
@@ -757,8 +715,6 @@ pub enum BranchOutcome {
     Pending,
     /// The branch paused before completing.
     Paused,
-    /// The branch failed with an error message.
-    Failed(String),
     /// The branch was cancelled before completing.
     Cancelled,
     /// The branch completed after the join had already fired.

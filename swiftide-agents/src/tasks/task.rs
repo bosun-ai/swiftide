@@ -48,8 +48,8 @@ use super::{
         TaskOptions, TransitionHandler,
     },
     transition::{
-        ActiveBranch, BranchId, ConcurrencyModel, ErrorBehavior, JoinDefinition, JoinInput,
-        JoinTarget, MappedJoinTarget, MarkedTransition, PauseBehavior, Transition,
+        ActiveBranch, BranchId, ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget,
+        MappedJoinTarget, MarkedTransition, PauseBehavior, Transition,
     },
 };
 
@@ -87,12 +87,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output>
     /// Sets the default pause behavior for transitions that do not override it explicitly.
     pub fn pause_behavior(mut self, pause_behavior: PauseBehavior) -> Self {
         self.options.pause_behavior = pause_behavior;
-        self
-    }
-
-    /// Sets the default error behavior for transitions that do not override it explicitly.
-    pub fn error_behavior(mut self, error_behavior: ErrorBehavior) -> Self {
-        self.options.error_behavior = error_behavior;
         self
     }
 
