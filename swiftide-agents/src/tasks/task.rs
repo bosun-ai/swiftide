@@ -30,24 +30,16 @@
 //!
 //! WARN: Here be dragons! This api is not stable yet. We are using it in production, and it is
 //! subject to rapid change. However, do not hesitate to open an issue if you find anything.
-use std::{
-    any::Any,
-    collections::{HashMap, VecDeque},
-    future::Future,
-    pin::Pin,
-    sync::Arc,
-};
+use std::{any::Any, future::Future, pin::Pin, sync::Arc};
 
 use super::{
     adapters::{AsyncFn, SyncFn},
     errors::TaskError,
+    executor::{AnyNodeExecutor, JoinHandler, NodeExecutor, TransitionHandler},
     node::{NodeArg, NodeId, TaskNode},
-    runtime::{
-        AnyNodeExecutor, BranchGroupId, ExecutionBranch, JoinGroupState, JoinHandler, NodeExecutor,
-        TaskOptions, TransitionHandler,
-    },
+    runtime::{Runtime, TaskOptions},
     transition::{
-        BranchId, ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget,
+        ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget,
         MarkedTransition, Transition,
     },
 };
@@ -122,14 +114,9 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output>
 /// ```
 #[derive(Debug)]
 pub struct Task<Input: NodeArg, Output: NodeArg> {
-    pub(crate) nodes: Vec<Box<dyn AnyNodeExecutor>>,
+    pub(crate) nodes: Vec<Arc<dyn AnyNodeExecutor>>,
     pub(crate) start_node: Option<usize>,
-    pub(crate) runnable_branches: VecDeque<ExecutionBranch>,
-    pub(crate) paused_branches: HashMap<BranchId, ExecutionBranch>,
-    pub(crate) join_groups: HashMap<BranchGroupId, JoinGroupState>,
-    pub(crate) next_branch_id: usize,
-    pub(crate) next_group_id: usize,
-    pub(crate) last_start_context: Option<Arc<dyn Any + Send + Sync>>,
+    pub(crate) runtime: Runtime,
     pub(crate) options: TaskOptions,
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
@@ -295,14 +282,15 @@ where
 impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
     fn clone(&self) -> Self {
         Self {
-            nodes: self.nodes.clone(),
+            nodes: self
+                .nodes
+                .iter()
+                .map(|node_executor| {
+                    Arc::<dyn AnyNodeExecutor>::from(dyn_clone::clone_box(&**node_executor))
+                })
+                .collect(),
             start_node: self.start_node,
-            runnable_branches: VecDeque::new(),
-            paused_branches: HashMap::new(),
-            join_groups: HashMap::new(),
-            next_branch_id: 1,
-            next_group_id: 1,
-            last_start_context: None,
+            runtime: Runtime::new(),
             options: self.options.clone(),
             _marker: std::marker::PhantomData,
         }
@@ -342,12 +330,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         Self {
             nodes: Vec::new(),
             start_node: None,
-            runnable_branches: VecDeque::new(),
-            paused_branches: HashMap::new(),
-            join_groups: HashMap::new(),
-            next_branch_id: 1,
-            next_group_id: 1,
-            last_start_context: None,
+            runtime: Runtime::new(),
             options,
             _marker: std::marker::PhantomData,
         }
@@ -370,7 +353,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         node_id: NodeId<T>,
     ) {
         self.start_node = Some(node_id.id());
-        self.clear_runtime_state();
+        self.runtime.clear_state();
     }
 
     /// Returns a typed transition closure that finishes the task with the final output.
@@ -410,17 +393,19 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         &mut self,
         input: impl Into<Input>,
     ) -> Result<TaskRunState<Output>, TaskError> {
-        if self.has_live_state() {
+        if self.runtime.is_live() {
             return Err(TaskError::TaskActive);
         }
 
         let start_node = self.validate_transitions()?;
-        let context = Arc::new(input.into()) as Arc<dyn Any + Send + Sync>;
-        self.last_start_context = Some(context.clone());
-        self.clear_runtime_state();
-        self.enqueue_start_branch(start_node, context);
-
-        self.start_task().await
+        self.runtime
+            .run(
+                &self.nodes,
+                start_node,
+                self.options.concurrency_model,
+                input.into(),
+            )
+            .await
     }
 
     /// Resets runtime state while keeping the graph definition and last start input.
@@ -428,17 +413,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// After calling `reset`, use [`Task::resume`] to rerun the task from the start node with the
     /// most recent input passed to [`Task::run`].
     pub fn reset(&mut self) {
-        let Some(start_node) = self.start_node else {
-            self.clear_runtime_state();
-            return;
-        };
-
-        let context = self.last_start_context.clone();
-        self.clear_runtime_state();
-
-        if let Some(context) = context {
-            self.enqueue_start_branch(start_node, context);
-        }
+        self.runtime
+            .reset(self.start_node, self.options.concurrency_model);
     }
 
     /// Continues a paused or reset task.
@@ -451,26 +427,14 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     pub async fn resume(&mut self) -> Result<TaskRunState<Output>, TaskError> {
         self.validate_transitions()?;
 
-        if self.runnable_branches.is_empty() && self.paused_branches.is_empty() {
-            return Err(TaskError::NotResumable);
-        }
-
-        self.restore_paused_branches();
-        self.start_task().await
+        self.runtime
+            .resume(&self.nodes, self.options.concurrency_model)
+            .await
     }
 
     /// Returns the node for the first paused or runnable branch when it has the requested type.
     pub fn current_node<T: TaskNode + Clone + 'static>(&self) -> Option<&T> {
-        let node_id = self
-            .paused_branches
-            .values()
-            .next()
-            .map(|branch| branch.current_node)
-            .or_else(|| {
-                self.runnable_branches
-                    .front()
-                    .map(|branch| branch.current_node)
-            })?;
+        let node_id = self.runtime.current_node()?;
 
         self.nodes.get(node_id)?.node_as_any().downcast_ref::<T>()
     }
@@ -495,7 +459,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     {
         let id = self.nodes.len();
         let node_id = NodeId::new(id, &node);
-        self.nodes.push(Box::new(NodeExecutor::new(node, node_id)));
+        self.nodes.push(Arc::new(NodeExecutor::new(node, node_id)));
         node_id
     }
 
@@ -625,16 +589,16 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         transition.register_async(self, from)
     }
 
-    fn enqueue_start_branch(&mut self, start_node: usize, context: Arc<dyn Any + Send + Sync>) {
-        let branch_id = self.next_branch();
-        let settings = self.default_settings();
-        self.enqueue_branch(ExecutionBranch {
-            id: branch_id,
-            current_node: start_node,
-            context,
-            settings,
-            join_group: None,
-        });
+    fn validate_transitions(&self) -> Result<usize, TaskError> {
+        let start_node = self.start_node.ok_or(TaskError::NoSteps)?;
+
+        for (index, node_executor) in self.nodes.iter().enumerate() {
+            if !node_executor.transition_is_set() {
+                return Err(TaskError::missing_transition(index));
+            }
+        }
+
+        Ok(start_node)
     }
 
     fn set_transition_handler<From>(
@@ -649,12 +613,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .nodes
             .get_mut(from.id())
             .ok_or_else(|| TaskError::missing_node(from.id()))?;
+        let node_executor = Arc::get_mut(node_executor).ok_or_else(|| {
+            TaskError::invalid_state(format!("Node {} is currently in use", from.id()))
+        })?;
 
-        let executor = (&mut **node_executor as &mut dyn Any).downcast_mut::<NodeExecutor<
-            From::Input,
-            From::Output,
-            From::Error,
-        >>();
+        let executor =
+            (node_executor as &mut dyn Any)
+                .downcast_mut::<NodeExecutor<From::Input, From::Output, From::Error>>();
 
         let Some(executor) = executor else {
             return Err(TaskError::invalid_state(format!(
@@ -679,12 +644,13 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .nodes
             .get_mut(from.id())
             .ok_or_else(|| TaskError::missing_node(from.id()))?;
+        let node_executor = Arc::get_mut(node_executor).ok_or_else(|| {
+            TaskError::invalid_state(format!("Node {} is currently in use", from.id()))
+        })?;
 
-        let executor = (&mut **node_executor as &mut dyn Any).downcast_mut::<NodeExecutor<
-            From::Input,
-            From::Output,
-            From::Error,
-        >>();
+        let executor =
+            (node_executor as &mut dyn Any)
+                .downcast_mut::<NodeExecutor<From::Input, From::Output, From::Error>>();
 
         let Some(executor) = executor else {
             return Err(TaskError::invalid_state(format!(

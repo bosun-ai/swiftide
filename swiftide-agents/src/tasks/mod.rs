@@ -71,6 +71,7 @@
 //! ```
 mod adapters;
 mod errors;
+mod executor;
 mod node;
 mod runtime;
 mod task;

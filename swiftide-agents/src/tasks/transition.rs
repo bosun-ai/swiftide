@@ -43,26 +43,6 @@ pub enum ConcurrencyModel {
     Parallel,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub(crate) struct TransitionSettings {
-    pub(crate) concurrency_model: Option<ConcurrencyModel>,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct EffectiveTransitionSettings {
-    pub(crate) concurrency_model: ConcurrencyModel,
-}
-
-impl EffectiveTransitionSettings {
-    pub(crate) fn with_overrides(self, overrides: TransitionSettings) -> Self {
-        Self {
-            concurrency_model: overrides
-                .concurrency_model
-                .unwrap_or(self.concurrency_model),
-        }
-    }
-}
-
 /// A concrete next-step target used by [`Transition::next`] and [`Transition::fan_out`].
 #[derive(Debug, Clone)]
 pub struct NextNode {
@@ -92,7 +72,7 @@ impl From<NextNode> for Transition {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct JoinDefinition {
     pub(crate) join_node_id: usize,
-    pub(crate) settings: TransitionSettings,
+    pub(crate) concurrency_model: Option<ConcurrencyModel>,
 }
 
 /// A configured join destination for branches that should converge into a join node.
@@ -121,7 +101,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
         Self {
             definition: JoinDefinition {
                 join_node_id: node_id.id(),
-                settings: TransitionSettings::default(),
+                concurrency_model: None,
             },
             _marker: PhantomData,
         }
@@ -133,7 +113,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
 
     /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.definition.settings.concurrency_model = Some(concurrency_model);
+        self.definition.concurrency_model = Some(concurrency_model);
         self
     }
 
@@ -253,7 +233,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 #[must_use]
 pub struct Transition {
     pub(crate) action: TransitionAction,
-    pub(crate) settings: TransitionSettings,
+    pub(crate) concurrency_model: Option<ConcurrencyModel>,
 }
 
 /// A linear transition that preserves the destination node type.
@@ -292,7 +272,7 @@ impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
 #[must_use]
 pub struct FanOutTransition {
     targets: Vec<NextNode>,
-    settings: TransitionSettings,
+    concurrency_model: Option<ConcurrencyModel>,
 }
 
 impl FanOutTransition {
@@ -309,13 +289,13 @@ impl FanOutTransition {
                 targets: self.targets,
                 join: join_target.into_definition(),
             },
-            settings: self.settings,
+            concurrency_model: self.concurrency_model,
         }
     }
 
     /// Overrides the concurrency model for work scheduled by this fan-out.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.settings.concurrency_model = Some(concurrency_model);
+        self.concurrency_model = Some(concurrency_model);
         self
     }
 }
@@ -339,7 +319,7 @@ impl Transition {
     pub fn next(next_node: NextNode) -> Self {
         Self {
             action: TransitionAction::Next(next_node),
-            settings: TransitionSettings::default(),
+            concurrency_model: None,
         }
     }
 
@@ -393,7 +373,7 @@ impl Transition {
     pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> FanOutTransition {
         FanOutTransition {
             targets: targets.into_iter().collect(),
-            settings: TransitionSettings::default(),
+            concurrency_model: None,
         }
     }
 
@@ -419,7 +399,7 @@ impl Transition {
     pub fn pause() -> Self {
         Self {
             action: TransitionAction::Pause,
-            settings: TransitionSettings::default(),
+            concurrency_model: None,
         }
     }
 
@@ -447,20 +427,20 @@ impl Transition {
     pub fn error(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> Self {
         Self {
             action: TransitionAction::Error(error.into()),
-            settings: TransitionSettings::default(),
+            concurrency_model: None,
         }
     }
 
     pub(crate) fn finish<T: NodeArg>(output: T) -> Self {
         Self {
             action: TransitionAction::Finish(Arc::new(output) as Arc<dyn Any + Send + Sync>),
-            settings: TransitionSettings::default(),
+            concurrency_model: None,
         }
     }
 
     /// Overrides the concurrency model for work scheduled by this transition.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.settings.concurrency_model = Some(concurrency_model);
+        self.concurrency_model = Some(concurrency_model);
         self
     }
 }

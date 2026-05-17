@@ -83,6 +83,31 @@ impl TaskNode for DelayedOffsetNode {
     }
 }
 
+#[derive(Clone, Debug)]
+struct CompletingDelayNode {
+    completed: Arc<AtomicBool>,
+    delay: Duration,
+}
+
+#[async_trait]
+impl TaskNode for CompletingDelayNode {
+    type Input = i32;
+    type Output = i32;
+    type Error = Error;
+
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
+        sleep(self.delay).await;
+        self.completed.store(true, Ordering::SeqCst);
+        Ok(*input)
+    }
+}
+
 #[derive(Clone, Default, Debug)]
 struct SumJoinNode;
 
@@ -186,6 +211,37 @@ impl TaskNode for BarrierNode {
     }
 }
 
+#[derive(Debug)]
+struct CloneCountingNode {
+    clone_count: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+impl Clone for CloneCountingNode {
+    fn clone(&self) -> Self {
+        self.clone_count.fetch_add(1, Ordering::SeqCst);
+        Self {
+            clone_count: self.clone_count.clone(),
+        }
+    }
+}
+
+#[async_trait]
+impl TaskNode for CloneCountingNode {
+    type Input = i32;
+    type Output = i32;
+    type Error = Error;
+
+    async fn evaluate(
+        &self,
+        _node_id: &NodeId<
+            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
+        >,
+        input: &Self::Input,
+    ) -> Result<Self::Output, Self::Error> {
+        Ok(*input)
+    }
+}
+
 #[test_log::test(tokio::test)]
 async fn sequential_3_node_task_reset_works() {
     let mut task: Task<i32, i32> = Task::new();
@@ -209,6 +265,23 @@ async fn sequential_3_node_task_reset_works() {
 
     let rerun = task.resume().await.unwrap();
     assert_eq!(rerun, TaskRunState::Completed(4));
+}
+
+#[test_log::test(tokio::test)]
+async fn running_task_does_not_clone_registered_nodes() {
+    let clone_count = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(CloneCountingNode {
+        clone_count: clone_count.clone(),
+    });
+
+    task.starts_with(start);
+    task.register_transition(start, task.transitions_to_finish())
+        .unwrap();
+
+    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Completed(1));
+    assert_eq!(clone_count.load(Ordering::SeqCst), 0);
 }
 
 #[test_log::test(tokio::test)]
@@ -427,6 +500,39 @@ async fn transition_error_inside_join_group_fails_task() {
 
     let error = task.run(1).await.unwrap_err();
     assert!(matches!(error, TaskError::NodeError(_)));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn branch_error_drops_remaining_parallel_work() {
+    let completed = Arc::new(AtomicBool::new(false));
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let slow = task.register_node(CompletingDelayNode {
+        completed: completed.clone(),
+        delay: Duration::from_millis(250),
+    });
+    let bad = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out([slow.target_with(input), bad.target_with(input)])
+            .join_with(join.join())
+            .concurrency_model(ConcurrencyModel::Parallel)
+    })
+    .unwrap();
+    task.register_transition(slow, join.join()).unwrap();
+    task.register_transition(bad, move |_output| Transition::error(Error("boom".into())))
+        .unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    let error = task.run(1).await.unwrap_err();
+    assert!(matches!(error, TaskError::NodeError(_)));
+
+    sleep(Duration::from_millis(300)).await;
+    assert!(!completed.load(Ordering::SeqCst));
 }
 
 #[test_log::test(tokio::test)]
@@ -669,6 +775,81 @@ fn conflicting_transition_registrations_are_rejected() {
 
     let error = task.register_transition(start, join.join()).unwrap_err();
     assert!(matches!(error, TaskError::InvalidState(_)));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn task_default_parallel_runs_fanout_branches_concurrently() {
+    let barrier = Arc::new(Barrier::new(2));
+    let mut task: Task<i32, i32> = Task::builder()
+        .concurrency_model(ConcurrencyModel::Parallel)
+        .build();
+
+    let start = task.register_node(IntNode);
+    let left = task.register_node(BarrierNode {
+        barrier: barrier.clone(),
+    });
+    let right = task.register_node(BarrierNode { barrier });
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out([left.target_with(input), right.target_with(input)])
+            .join_with(join.join())
+    })
+    .unwrap();
+    task.register_transition(left, join.join()).unwrap();
+    task.register_transition(right, join.join()).unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    let result = timeout(Duration::from_secs(1), task.run(0))
+        .await
+        .expect("task default should make fan-out branches parallel")
+        .expect("task run");
+
+    assert_eq!(result, TaskRunState::Completed(4));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn join_target_concurrency_override_is_used_by_join_branch() {
+    let barrier = Arc::new(Barrier::new(2));
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let first = task.register_node(IntNode);
+    let first_join = task.register_node(SumJoinNode);
+    let left = task.register_node(BarrierNode {
+        barrier: barrier.clone(),
+    });
+    let right = task.register_node(BarrierNode { barrier });
+    let final_join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out([first.target_with(input)]).join_with(
+            first_join
+                .join()
+                .concurrency_model(ConcurrencyModel::Parallel),
+        )
+    })
+    .unwrap();
+    task.register_transition(first, first_join.join()).unwrap();
+    task.register_transition(first_join, move |input| {
+        Transition::fan_out([left.target_with(input), right.target_with(input)])
+            .join_with(final_join.join())
+    })
+    .unwrap();
+    task.register_transition(left, final_join.join()).unwrap();
+    task.register_transition(right, final_join.join()).unwrap();
+    task.register_transition(final_join, task.transitions_to_finish())
+        .unwrap();
+
+    let result = timeout(Duration::from_secs(1), task.run(0))
+        .await
+        .expect("join branch concurrency override should be inherited by later fan-out")
+        .expect("task run");
+
+    assert_eq!(result, TaskRunState::Completed(6));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
