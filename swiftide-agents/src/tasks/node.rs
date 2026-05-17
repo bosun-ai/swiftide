@@ -11,8 +11,8 @@
 //! let mut task = Task::<i32, i32>::new();
 //! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
 //! let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-//! let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-//!     Ok(input.iter::<i32>().copied().sum())
+//! let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+//!     Ok(input.iter().copied().sum())
 //! });
 //!
 //! task.starts_with(start);
@@ -25,8 +25,10 @@
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
-use super::traits::TaskNode;
-use super::transition::{JoinInput, JoinTarget, MarkedTransition, Transition};
+use super::traits::{NodeArg, TaskNode};
+use super::transition::{
+    AnyJoinInput, AnyJoinTarget, JoinInput, JoinTarget, MarkedTransition, Transition,
+};
 
 /// A typed handle to a registered node in a [`Task`](crate::tasks::Task).
 ///
@@ -76,9 +78,10 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     }
 }
 
-impl<T> NodeId<T>
+impl<T, Payload> NodeId<T>
 where
-    T: TaskNode<Input = JoinInput> + ?Sized,
+    T: TaskNode<Input = JoinInput<Payload>> + ?Sized,
+    Payload: NodeArg,
 {
     /// Creates a join target that waits for every branch in the fan-out group.
     ///
@@ -90,8 +93,8 @@ where
     /// let mut task = Task::<i32, i32>::new();
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.iter::<i32>().copied().sum())
+    /// let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+    ///     Ok(input.iter().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -102,14 +105,31 @@ where
     /// task.register_transition(branch, join.join())?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn join(&self) -> JoinTarget<T> {
+    pub fn join(&self) -> JoinTarget<T, Payload> {
         JoinTarget::new(*self)
+    }
+}
+
+impl<T> NodeId<T>
+where
+    T: TaskNode<Input = AnyJoinInput> + ?Sized,
+{
+    /// Creates a join target for branches that intentionally contribute mixed payload types.
+    ///
+    /// Prefer [`NodeId::join`] with [`JoinInput<T>`](crate::tasks::JoinInput) when all branches
+    /// contribute the same payload type.
+    pub fn join_any(&self) -> AnyJoinTarget<T> {
+        AnyJoinTarget::new(*self)
     }
 }
 
 impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
     /// Creates a typed node identifier for an already-registered node.
-    pub(crate) fn new(id: usize, _node: &T) -> Self {
+    ///
+    /// Prefer [`Task::register_node`](crate::tasks::Task::register_node) when building normal task
+    /// graphs. Constructing an id manually is only correct when `id` refers to a node managed by the
+    /// caller's own task-like runtime.
+    pub fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
             _marker: std::marker::PhantomData,

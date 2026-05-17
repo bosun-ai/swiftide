@@ -2,10 +2,10 @@ error[E0599]: the method `join` exists for struct `NodeId<WrongJoinNode>`, but i
   --> tests/ui/join_with_requires_join_input.rs:32:18
    |
  9 | struct WrongJoinNode;
-   | -------------------- doesn't satisfy `<WrongJoinNode as TaskNode>::Input = JoinInput`
+   | -------------------- doesn't satisfy `<WrongJoinNode as TaskNode>::Input = JoinInput<_>`
 ...
 32 |     let _ = join.join();
    |                  ^^^^ method cannot be called on `NodeId<WrongJoinNode>` due to unsatisfied trait bounds
    |
    = note: the following trait bounds were not satisfied:
-           `<WrongJoinNode as TaskNode>::Input = JoinInput`
+           `<WrongJoinNode as TaskNode>::Input = JoinInput<_>`

@@ -52,8 +52,8 @@
 //!     task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
 //! let increment =
 //!     task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-//! let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-//!     Ok(input.iter::<i32>().copied().sum())
+//! let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+//!     Ok(input.iter().copied().sum())
 //! });
 //!
 //! task.starts_with(start);
@@ -88,6 +88,6 @@ pub use node::NodeId;
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
-    AsyncMappedJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
-    MappedJoinTarget, MarkedTransition, Transition,
+    AnyJoinInput, AnyJoinTarget, AsyncMappedJoinTarget, ConcurrencyModel, FanOutTransition,
+    JoinInput, JoinTarget, MappedJoinTarget, MarkedTransition, Transition,
 };

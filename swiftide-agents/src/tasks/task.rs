@@ -43,7 +43,8 @@ use super::{
         TransitionResult,
     },
     transition::{
-        ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget, Transition,
+        AnyJoinInput, AnyJoinTarget, ConcurrencyModel, JoinDefinition, JoinDestination, JoinInput,
+        JoinTarget, MappedJoinTarget, Transition,
     },
 };
 
@@ -169,11 +170,33 @@ where
     }
 }
 
-impl<From, To> RegisterTransition<From> for JoinTarget<To>
+impl<From, To, Payload> RegisterTransition<From> for JoinTarget<To, Payload>
+where
+    From: TaskNode + 'static + ?Sized,
+    From::Output: Into<Payload>,
+    Payload: NodeArg,
+    To: TaskNode<Input = JoinInput<Payload>> + 'static + ?Sized,
+{
+    fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
+        self,
+        task: &mut Task<Input, Output>,
+        from: NodeId<From>,
+    ) -> Result<(), TaskError> {
+        task.set_join_handler(
+            from,
+            self.into_definition(),
+            Arc::new(move |output: From::Output| {
+                Box::pin(async move { Arc::new(output.into()) as Arc<dyn Any + Send + Sync> })
+            }),
+        )
+    }
+}
+
+impl<From, To> RegisterTransition<From> for AnyJoinTarget<To>
 where
     From: TaskNode + 'static + ?Sized,
     From::Output: NodeArg,
-    To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+    To: TaskNode<Input = AnyJoinInput> + 'static + ?Sized,
 {
     fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
         self,
@@ -190,10 +213,10 @@ where
     }
 }
 
-impl<From, To, F, Payload> RegisterTransition<From> for MappedJoinTarget<To, F>
+impl<From, To, Payload, F> RegisterTransition<From> for MappedJoinTarget<To, Payload, F>
 where
     From: TaskNode + 'static + ?Sized,
-    To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+    To: TaskNode<Input = JoinInput<Payload>> + 'static + ?Sized,
     F: Fn(From::Output) -> Payload + Send + Sync + 'static,
     Payload: NodeArg,
 {
@@ -215,10 +238,10 @@ where
     }
 }
 
-impl<From, To, F, Fut, Payload> RegisterTransitionAsync<From> for MappedJoinTarget<To, F>
+impl<From, To, Payload, F, Fut> RegisterTransitionAsync<From> for MappedJoinTarget<To, Payload, F>
 where
     From: TaskNode + 'static + ?Sized,
-    To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+    To: TaskNode<Input = JoinInput<Payload>> + 'static + ?Sized,
     F: Fn(From::Output) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = Payload> + Send + 'static,
     Payload: NodeArg,

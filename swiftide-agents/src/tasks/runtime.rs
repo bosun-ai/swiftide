@@ -15,8 +15,7 @@ use super::{
     task::TaskRunState,
     traits::{AnyNodeExecutor, NodeArg},
     transition::{
-        BranchId, ConcurrencyModel, JoinDefinition, JoinInput, NextNode, Transition,
-        TransitionAction,
+        BranchId, ConcurrencyModel, JoinDefinition, NextNode, Transition, TransitionAction,
     },
 };
 
@@ -64,7 +63,7 @@ struct RunState {
 
 #[derive(Debug)]
 struct JoinGroupState {
-    join_node_id: usize,
+    definition: JoinDefinition,
     concurrency_model: ConcurrencyModel,
     first_branch_id: usize,
     payloads: Vec<Option<Arc<dyn Any + Send + Sync>>>,
@@ -77,11 +76,12 @@ impl JoinGroupState {
         first_branch_id: BranchId,
         branch_count: usize,
     ) -> Self {
+        let concurrency_model = definition
+            .concurrency_model
+            .unwrap_or(default_concurrency_model);
         Self {
-            join_node_id: definition.join_node_id,
-            concurrency_model: definition
-                .concurrency_model
-                .unwrap_or(default_concurrency_model),
+            definition,
+            concurrency_model,
             first_branch_id: first_branch_id.0,
             payloads: vec![None; branch_count],
         }
@@ -114,8 +114,9 @@ impl JoinGroupState {
         self.payloads.iter().all(Option::is_some)
     }
 
-    fn into_join_input(self) -> JoinInput {
-        JoinInput::new(self.payloads.into_iter().flatten().collect())
+    fn into_join_input(self) -> Result<Arc<dyn Any + Send + Sync>, TaskError> {
+        self.definition
+            .into_input(self.payloads.into_iter().flatten().collect())
     }
 }
 
@@ -536,7 +537,7 @@ impl RunState {
                 .get_mut(&group_id)
                 .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
 
-            if group.join_node_id != definition.join_node_id {
+            if group.definition.join_node_id != definition.join_node_id {
                 return Err(TaskError::invalid_state(format!(
                     "Node {} used join for an unexpected join target",
                     branch.current_node
@@ -589,14 +590,14 @@ impl RunState {
             .join_groups
             .remove(&group_id)
             .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-        let join_node_id = group.join_node_id;
+        let join_node_id = group.definition.join_node_id;
         let concurrency_model = group.concurrency_model;
-        let join_input = group.into_join_input();
+        let join_input = group.into_join_input()?;
 
         Ok(Some(ExecutionBranch {
             id: self.next_branch(),
             current_node: join_node_id,
-            context: Arc::new(join_input) as Arc<dyn Any + Send + Sync>,
+            context: join_input,
             concurrency_model,
             join_group: None,
         }))

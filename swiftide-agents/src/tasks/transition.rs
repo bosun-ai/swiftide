@@ -12,8 +12,8 @@
 //! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
 //! let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
 //! let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
-//! let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-//!     Ok(input.iter::<i32>().copied().sum())
+//! let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+//!     Ok(input.iter().copied().sum())
 //! });
 //!
 //! task.starts_with(start);
@@ -31,6 +31,7 @@
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
 use super::{
+    errors::TaskError,
     node::NodeId,
     traits::{NodeArg, TaskNode},
 };
@@ -67,10 +68,66 @@ impl NextNode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct JoinDefinition {
+type ErasedPayload = Arc<dyn Any + Send + Sync>;
+type JoinInputFactory =
+    Arc<dyn Fn(Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError> + Send + Sync>;
+
+#[doc(hidden)]
+#[derive(Clone)]
+pub struct JoinDefinition {
     pub(crate) join_node_id: usize,
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
+    input_factory: JoinInputFactory,
+}
+
+impl std::fmt::Debug for JoinDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JoinDefinition")
+            .field("join_node_id", &self.join_node_id)
+            .field("concurrency_model", &self.concurrency_model)
+            .finish_non_exhaustive()
+    }
+}
+
+impl JoinDefinition {
+    fn typed<Payload: NodeArg>(join_node_id: usize) -> Self {
+        Self {
+            join_node_id,
+            concurrency_model: None,
+            input_factory: Arc::new(|payloads| {
+                let branches = payloads
+                    .into_iter()
+                    .map(|payload| {
+                        payload.downcast::<Payload>().map_err(|_| {
+                            TaskError::invalid_state(format!(
+                                "Join payload expected type {}",
+                                std::any::type_name::<Payload>()
+                            ))
+                        })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                Ok(Arc::new(JoinInput::<Payload>::new(branches)) as ErasedPayload)
+            }),
+        }
+    }
+
+    fn any(join_node_id: usize) -> Self {
+        Self {
+            join_node_id,
+            concurrency_model: None,
+            input_factory: Arc::new(|payloads| {
+                Ok(Arc::new(AnyJoinInput::new(payloads)) as ErasedPayload)
+            }),
+        }
+    }
+
+    pub(crate) fn into_input(
+        self,
+        payloads: Vec<ErasedPayload>,
+    ) -> Result<ErasedPayload, TaskError> {
+        (self.input_factory)(payloads)
+    }
 }
 
 /// A configured join destination for branches that should converge into a join node.
@@ -80,9 +137,9 @@ pub(crate) struct JoinDefinition {
 /// [`Task::register_transition`](crate::tasks::Task::register_transition).
 /// Users normally do not construct this type directly.
 #[must_use]
-pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
+pub struct JoinTarget<T: TaskNode<Input = JoinInput<Payload>> + ?Sized, Payload: NodeArg> {
     pub(crate) definition: JoinDefinition,
-    _marker: PhantomData<T>,
+    _marker: PhantomData<(*const T, Payload)>,
 }
 
 /// A join target with a synchronous payload mapping step.
@@ -90,8 +147,8 @@ pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
 /// This is returned by [`JoinTarget::map`] and registered with
 /// [`Task::register_transition`](crate::tasks::Task::register_transition).
 #[must_use]
-pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
-    pub(crate) join_target: JoinTarget<T>,
+pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput<Payload>> + ?Sized, Payload: NodeArg, F> {
+    pub(crate) join_target: JoinTarget<T, Payload>,
     pub(crate) map: F,
 }
 
@@ -99,21 +156,54 @@ pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
 ///
 /// This is returned by [`JoinTarget::map_async`] and registered with
 /// [`Task::register_transition_async`](crate::tasks::Task::register_transition_async).
-pub type AsyncMappedJoinTarget<T, F> = MappedJoinTarget<T, F>;
+pub type AsyncMappedJoinTarget<T, Payload, F> = MappedJoinTarget<T, Payload, F>;
 
-impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
+/// A configured join destination for branches with mixed payload types.
+///
+/// Build an `AnyJoinTarget` from an [`AnyJoinInput`] node with
+/// [`NodeId::join_any`](crate::tasks::NodeId::join_any).
+#[must_use]
+pub struct AnyJoinTarget<T: TaskNode<Input = AnyJoinInput> + ?Sized> {
+    pub(crate) definition: JoinDefinition,
+    _marker: PhantomData<T>,
+}
+
+/// A value accepted by [`FanOutTransition::join_with`].
+#[doc(hidden)]
+pub trait JoinDestination {
+    #[doc(hidden)]
+    fn into_definition(self) -> JoinDefinition;
+}
+
+impl<T, Payload> JoinDestination for JoinTarget<T, Payload>
+where
+    T: TaskNode<Input = JoinInput<Payload>> + ?Sized,
+    Payload: NodeArg,
+{
+    fn into_definition(self) -> JoinDefinition {
+        self.definition
+    }
+}
+
+impl<T> JoinDestination for AnyJoinTarget<T>
+where
+    T: TaskNode<Input = AnyJoinInput> + ?Sized,
+{
+    fn into_definition(self) -> JoinDefinition {
+        self.definition
+    }
+}
+
+impl<T, Payload> JoinTarget<T, Payload>
+where
+    T: TaskNode<Input = JoinInput<Payload>> + ?Sized,
+    Payload: NodeArg,
+{
     pub(crate) fn new(node_id: NodeId<T>) -> Self {
         Self {
-            definition: JoinDefinition {
-                join_node_id: node_id.id(),
-                concurrency_model: None,
-            },
+            definition: JoinDefinition::typed::<Payload>(node_id.id()),
             _marker: PhantomData,
         }
-    }
-
-    pub(crate) fn into_definition(self) -> JoinDefinition {
-        self.definition
     }
 
     /// Overrides the concurrency model for the join branch that will be scheduled.
@@ -132,8 +222,8 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// let mut task = Task::<i32, i32>::new();
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.iter::<i32>().copied().sum())
+    /// let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+    ///     Ok(input.iter().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -144,7 +234,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// task.register_transition(branch, join.join().map(|value| value * 2))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn map<F>(self, map: F) -> MappedJoinTarget<T, F>
+    pub fn map<F>(self, map: F) -> MappedJoinTarget<T, Payload, F>
     where
         F: Send + Sync + 'static,
     {
@@ -164,8 +254,8 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// let mut task = Task::<i32, i32>::new();
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.iter::<i32>().copied().sum())
+    /// let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+    ///     Ok(input.iter().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -176,7 +266,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// task.register_transition_async(branch, join.join().map_async(|value| async move { value * 2 }))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn map_async<F>(self, map: F) -> AsyncMappedJoinTarget<T, F>
+    pub fn map_async<F>(self, map: F) -> AsyncMappedJoinTarget<T, Payload, F>
     where
         F: Send + Sync + 'static,
     {
@@ -187,7 +277,26 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     }
 }
 
-impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
+impl<T: TaskNode<Input = AnyJoinInput> + ?Sized> AnyJoinTarget<T> {
+    pub(crate) fn new(node_id: NodeId<T>) -> Self {
+        Self {
+            definition: JoinDefinition::any(node_id.id()),
+            _marker: PhantomData,
+        }
+    }
+
+    /// Overrides the concurrency model for the join branch that will be scheduled.
+    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
+        self.definition.concurrency_model = Some(concurrency_model);
+        self
+    }
+}
+
+impl<T, Payload, F> MappedJoinTarget<T, Payload, F>
+where
+    T: TaskNode<Input = JoinInput<Payload>> + ?Sized,
+    Payload: NodeArg,
+{
     /// Overrides the concurrency model for the join branch that will be scheduled.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.join_target = self.join_target.concurrency_model(concurrency_model);
@@ -215,8 +324,8 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
 /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
 /// let join = task.register_node_fn(
-///     |input: &swiftide_agents::tasks::JoinInput| -> Result<i32, NodeError> {
-///         Ok(input.iter::<i32>().copied().sum())
+///     |input: &swiftide_agents::tasks::JoinInput<i32>| -> Result<i32, NodeError> {
+///         Ok(input.iter().copied().sum())
 ///     },
 /// );
 ///
@@ -300,9 +409,9 @@ impl FanOutTransition {
     /// This defines the branch group and the join node that waits for every branch in that group.
     /// Each branch still needs its own registered transition to the same join target when it is
     /// ready to contribute its output.
-    pub fn join_with<T>(self, join_target: JoinTarget<T>) -> Transition
+    pub fn join_with<J>(self, join_target: J) -> Transition
     where
-        T: TaskNode<Input = JoinInput> + ?Sized,
+        J: JoinDestination,
     {
         Transition {
             action: TransitionAction::FanOut {
@@ -379,8 +488,8 @@ impl Transition {
     ///
     /// task.starts_with(start);
     /// let join = task.register_node_fn(
-    ///     |input: &swiftide_agents::tasks::JoinInput| -> Result<i32, NodeError> {
-    ///         Ok(input.iter::<i32>().copied().sum())
+    ///     |input: &swiftide_agents::tasks::JoinInput<i32>| -> Result<i32, NodeError> {
+    ///         Ok(input.iter().copied().sum())
     ///     },
     /// );
     ///
@@ -470,36 +579,89 @@ impl Transition {
     }
 }
 
-/// The aggregated view of branches that have reached a join node.
-#[derive(Debug, Clone)]
-pub struct JoinInput {
-    branches: Vec<Arc<dyn Any + Send + Sync>>,
+/// The typed aggregated view of branches that have reached a join node.
+///
+/// `JoinInput<T>` is the normal join input. It is only available when every branch contributes a
+/// `T`, or maps its output into `T` before joining. For mixed payload types, use [`AnyJoinInput`].
+#[derive(Clone)]
+pub struct JoinInput<T: NodeArg> {
+    branches: Vec<Arc<T>>,
 }
 
-impl JoinInput {
-    pub(crate) fn new(branches: Vec<Arc<dyn Any + Send + Sync>>) -> Self {
+impl<T: NodeArg> std::fmt::Debug for JoinInput<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JoinInput")
+            .field("payload_type", &std::any::type_name::<T>())
+            .field("len", &self.branches.len())
+            .finish()
+    }
+}
+
+impl<T: NodeArg> JoinInput<T> {
+    pub(crate) fn new(branches: Vec<Arc<T>>) -> Self {
         Self { branches }
     }
 
-    pub(crate) fn iter_any(&self) -> std::slice::Iter<'_, Arc<dyn Any + Send + Sync>> {
-        self.branches.iter()
+    /// Iterates over every ready branch payload in stable branch creation order.
+    ///
+    /// This is the usual way to read join payloads.
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.branches.iter().map(Arc::as_ref)
+    }
+
+    /// Returns the number of branch payloads in this join.
+    pub fn len(&self) -> usize {
+        self.branches.len()
+    }
+
+    /// Returns `true` when this join has no branch payloads.
+    pub fn is_empty(&self) -> bool {
+        self.branches.is_empty()
+    }
+}
+
+/// The type-erased aggregated view of branches that have reached a join node.
+///
+/// Use this for joins that intentionally collect mixed branch payload types. Homogeneous joins
+/// should prefer [`JoinInput<T>`](JoinInput), which is checked when transitions are registered.
+#[derive(Clone)]
+pub struct AnyJoinInput {
+    branches: Vec<ErasedPayload>,
+}
+
+impl std::fmt::Debug for AnyJoinInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AnyJoinInput")
+            .field("len", &self.branches.len())
+            .finish()
+    }
+}
+
+impl AnyJoinInput {
+    pub(crate) fn new(branches: Vec<ErasedPayload>) -> Self {
+        Self { branches }
+    }
+
+    /// Iterates over every type-erased branch payload in stable branch creation order.
+    pub fn iter_any(&self) -> impl Iterator<Item = &(dyn Any + Send + Sync)> {
+        self.branches.iter().map(Arc::as_ref)
     }
 
     /// Iterates over every ready branch payload that can be downcast to `T`.
     ///
     /// Values are yielded in stable branch creation order. This is the usual way to read join
-    /// payloads when every branch contributes the same type.
+    /// payloads from a mixed join when you only need one payload type.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    /// use swiftide_agents::tasks::{AnyJoinInput, NodeError, Task, Transition};
     ///
     /// let mut task = Task::<i32, i32>::new();
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
     /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
+    /// let join = task.register_node_fn(|input: &AnyJoinInput| -> Result<i32, NodeError> {
     ///     Ok(input.iter::<i32>().copied().sum())
     /// });
     ///
@@ -507,14 +669,24 @@ impl JoinInput {
     /// task.register_transition(start, move |value| {
     ///     Transition::fan_out(&left, value)
     ///         .and(&right, value)
-    ///         .join_with(join.join())
+    ///         .join_with(join.join_any())
     /// })?;
-    /// task.register_transition(left, join.join())?;
-    /// task.register_transition(right, join.join())?;
+    /// task.register_transition(left, join.join_any())?;
+    /// task.register_transition(right, join.join_any())?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn iter<T: NodeArg>(&self) -> impl Iterator<Item = &T> {
         self.iter_any()
             .filter_map(|value| value.downcast_ref::<T>())
+    }
+
+    /// Returns the number of branch payloads in this join.
+    pub fn len(&self) -> usize {
+        self.branches.len()
+    }
+
+    /// Returns `true` when this join has no branch payloads.
+    pub fn is_empty(&self) -> bool {
+        self.branches.is_empty()
     }
 }

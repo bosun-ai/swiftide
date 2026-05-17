@@ -8,7 +8,8 @@ use std::{
 
 use async_trait::async_trait;
 use swiftide_agents::tasks::{
-    ConcurrencyModel, JoinInput, NodeId, Task, TaskError, TaskNode, TaskRunState, Transition,
+    AnyJoinInput, ConcurrencyModel, JoinInput, NodeId, Task, TaskError, TaskNode, TaskRunState,
+    Transition,
 };
 use tokio::{
     sync::Barrier,
@@ -113,7 +114,7 @@ struct SumJoinNode;
 
 #[async_trait]
 impl TaskNode for SumJoinNode {
-    type Input = JoinInput;
+    type Input = JoinInput<i32>;
     type Output = i32;
     type Error = Error;
 
@@ -124,7 +125,7 @@ impl TaskNode for SumJoinNode {
         >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        Ok(input.iter::<i32>().copied().sum())
+        Ok(input.iter().copied().sum())
     }
 }
 
@@ -133,7 +134,7 @@ struct CollectJoinNode;
 
 #[async_trait]
 impl TaskNode for CollectJoinNode {
-    type Input = JoinInput;
+    type Input = JoinInput<i32>;
     type Output = Vec<i32>;
     type Error = Error;
 
@@ -144,7 +145,7 @@ impl TaskNode for CollectJoinNode {
         >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        Ok(input.iter::<i32>().copied().collect())
+        Ok(input.iter().copied().collect())
     }
 }
 
@@ -307,6 +308,36 @@ async fn fan_out_can_join_multiple_branches() {
 
     let result = task.run(1).await.unwrap();
     assert_eq!(result, TaskRunState::Completed(6));
+}
+
+#[test_log::test(tokio::test)]
+async fn any_join_input_allows_mixed_branch_payloads() {
+    let mut task: Task<i32, usize> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let number = task.register_node(IntNode);
+    let text = task
+        .register_node_fn(|input: &i32| -> Result<String, Error> { Ok(format!("branch-{input}")) });
+    let join = task.register_node_fn(|input: &AnyJoinInput| -> Result<usize, Error> {
+        Ok(input.iter::<i32>().copied().sum::<i32>() as usize
+            + input.iter::<String>().map(String::len).sum::<usize>()
+            + input.iter_any().count())
+    });
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out(&number, input)
+            .and(&text, input)
+            .join_with(join.join_any())
+    })
+    .unwrap();
+    task.register_transition(number, join.join_any()).unwrap();
+    task.register_transition(text, join.join_any()).unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    let result = task.run(1).await.unwrap();
+    assert_eq!(result, TaskRunState::Completed(13));
 }
 
 #[test_log::test(tokio::test)]

@@ -17,9 +17,11 @@ async fn main() -> Result<()> {
         .register_node_fn(|input: &i32| -> std::result::Result<i32, NodeError> { Ok(*input + 1) });
     let double = task
         .register_node_fn(|input: &i32| -> std::result::Result<i32, NodeError> { Ok(*input * 2) });
-    let join = task.register_node_fn(|input: &JoinInput| -> std::result::Result<i32, NodeError> {
-        Ok(input.iter::<i32>().copied().sum::<i32>())
-    });
+    let join = task.register_node_fn(
+        |input: &JoinInput<i32>| -> std::result::Result<i32, NodeError> {
+            Ok(input.iter().copied().sum::<i32>())
+        },
+    );
 
     task.starts_with(start);
 

@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `MappedJoinTarget<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:7:38: 7:85}, JoinInput, usize>, {closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:12:54: 12:69}>: tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:6:40: 6:79}, i32, i32>>` is not satisfied
+error[E0277]: the trait bound `MappedJoinTarget<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:7:38: 7:92}, JoinInput<usize>, usize>, usize, {closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:12:54: 12:69}>: tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:6:40: 6:79}, i32, i32>>` is not satisfied
   --> tests/ui/join_map_requires_branch_output_type.rs:12:38
    |
 12 |     task.register_transition(branch, join.join().map(|value: String| value.len()))?;
@@ -6,14 +6,14 @@ error[E0277]: the trait bound `MappedJoinTarget<SyncFn<{closure@$DIR/tests/ui/jo
    |          |
    |          required by a bound introduced by this call
    |
-   = help: the trait `tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:6:40: 6:79}, i32, i32>>` is not implemented for `MappedJoinTarget<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:7:38: 7:85}, JoinInput, usize>, {closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:12:54: 12:69}>`
-help: the trait `tasks::traits::RegisterTransition<From>` is implemented for `MappedJoinTarget<To, F>`
+   = help: the trait `tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:6:40: 6:79}, i32, i32>>` is not implemented for `MappedJoinTarget<SyncFn<{closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:7:38: 7:92}, JoinInput<usize>, usize>, usize, {closure@$DIR/tests/ui/join_map_requires_branch_output_type.rs:12:54: 12:69}>`
+help: the trait `tasks::traits::RegisterTransition<From>` is implemented for `MappedJoinTarget<To, Payload, F>`
   --> src/tasks/task.rs
    |
-   | / impl<From, To, F, Payload> RegisterTransition<From> for MappedJoinTarget<To, F>
+   | / impl<From, To, Payload, F> RegisterTransition<From> for MappedJoinTarget<To, Payload, F>
    | | where
    | |     From: TaskNode + 'static + ?Sized,
-   | |     To: TaskNode<Input = JoinInput> + 'static + ?Sized,
+   | |     To: TaskNode<Input = JoinInput<Payload>> + 'static + ?Sized,
    | |     F: Fn(From::Output) -> Payload + Send + Sync + 'static,
    | |     Payload: NodeArg,
    | |_____________________^

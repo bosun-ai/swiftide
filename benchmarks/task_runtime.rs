@@ -25,12 +25,12 @@ fn increment_node() -> SyncFn<impl Fn(&i32) -> Result<i32, NodeError> + Clone, i
 }
 
 fn join_sum_node() -> SyncFn<
-    impl Fn(&swiftide::agents::tasks::JoinInput) -> Result<i32, NodeError> + Clone,
-    swiftide::agents::tasks::JoinInput,
+    impl Fn(&swiftide::agents::tasks::JoinInput<i32>) -> Result<i32, NodeError> + Clone,
+    swiftide::agents::tasks::JoinInput<i32>,
     i32,
 > {
-    SyncFn::new(|input: &swiftide::agents::tasks::JoinInput| {
-        Ok::<_, NodeError>(input.iter::<i32>().copied().sum())
+    SyncFn::new(|input: &swiftide::agents::tasks::JoinInput<i32>| {
+        Ok::<_, NodeError>(input.iter().copied().sum())
     })
 }
 
