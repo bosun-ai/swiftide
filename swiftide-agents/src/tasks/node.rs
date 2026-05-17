@@ -23,21 +23,11 @@
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
-use std::any::Any;
-
 use async_trait::async_trait;
-use dyn_clone::DynClone;
 
 use super::errors::NodeError;
+use super::traits::{DynNodeId, NodeArg, TaskNode};
 use super::transition::{JoinInput, JoinTarget, MarkedTransition, NextNode, Transition};
-
-/// A value that can flow into or out of a [`TaskNode`].
-///
-/// Task inputs, outputs, transition payloads, and join payloads all use this bound so they can be
-/// moved safely across async task execution.
-pub trait NodeArg: Send + Sync + DynClone + 'static {}
-
-impl<T: Send + Sync + std::fmt::Debug + 'static + Clone> NodeArg for T {}
 
 /// A typed placeholder node that returns its input unchanged.
 ///
@@ -77,67 +67,6 @@ impl<T: NodeArg + Clone> TaskNode for NoopNode<T> {
     }
 }
 
-/// A typed step in a [`Task`](crate::tasks::Task).
-///
-/// Implement this trait for your own domain-specific nodes when you want full control over how a
-/// task step runs. For lightweight nodes, use
-/// [`Task::register_node_fn`](crate::tasks::Task::register_node_fn). For async closures, use
-/// [`Task::register_node_async_fn`](crate::tasks::Task::register_node_async_fn) or
-/// [`AsyncFn`](crate::tasks::AsyncFn).
-#[async_trait]
-pub trait TaskNode: Send + Sync + DynClone + Any {
-    /// The input accepted by this node.
-    type Input: NodeArg;
-    /// The output produced by this node.
-    type Output: NodeArg;
-    /// The error returned when evaluation fails.
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    /// Evaluates the node with the current input.
-    async fn evaluate(
-        &self,
-        node_id: &DynNodeId<Self>,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error>;
-}
-
-pub type DynNodeId<T> = NodeId<
-    dyn TaskNode<
-            Input = <T as TaskNode>::Input,
-            Output = <T as TaskNode>::Output,
-            Error = <T as TaskNode>::Error,
-        >,
->;
-
-dyn_clone::clone_trait_object!(
-    TaskNode<
-        Input = dyn NodeArg,
-        Output = dyn NodeArg,
-        Error = dyn std::error::Error + Send + Sync,
-    >
-);
-
-#[async_trait]
-impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static> TaskNode
-    for Box<dyn TaskNode<Input = Input, Output = Output, Error = Error>>
-{
-    type Input = Input;
-    type Output = Output;
-    type Error = Error;
-
-    async fn evaluate(
-        &self,
-        node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error> {
-        self.as_ref().evaluate(node_id, input).await
-    }
-}
-
-dyn_clone::clone_trait_object!(<Input, Output, Error> TaskNode<Input = Input, Output = Output, Error = Error>);
-
 /// A typed handle to a registered node in a [`Task`](crate::tasks::Task).
 ///
 /// `NodeId` keeps the node's type information so transitions can be expressed without manual
@@ -145,7 +74,7 @@ dyn_clone::clone_trait_object!(<Input, Output, Error> TaskNode<Input = Input, Ou
 /// [`NodeId::target_with`] when building fan-out transitions, and [`NodeId::join`] for join nodes.
 #[derive(PartialEq, Eq)]
 pub struct NodeId<T: TaskNode + ?Sized> {
-    pub id: usize,
+    id: usize,
     _marker: std::marker::PhantomData<T>,
 }
 

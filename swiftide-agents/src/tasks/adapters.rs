@@ -26,7 +26,8 @@ use crate::{Agent, errors::AgentError};
 
 use super::{
     errors::NodeError,
-    node::{NodeArg, NodeId, TaskNode},
+    node::NodeId,
+    traits::{NodeArg, TaskNode},
 };
 
 /// Wraps a synchronous closure and exposes it as a [`TaskNode`].
@@ -37,7 +38,7 @@ where
     F: Fn(&I) -> Result<O, E> + Send + Sync + Clone + 'static,
     E: std::error::Error + Send + Sync + 'static,
 {
-    pub f: F,
+    f: F,
     _phantom: std::marker::PhantomData<(I, O, E)>,
 }
 
@@ -51,7 +52,7 @@ where
         + 'static,
     E: std::error::Error + Send + Sync + 'static,
 {
-    pub f: F,
+    f: F,
     _phantom: std::marker::PhantomData<(I, O, E)>,
 }
 

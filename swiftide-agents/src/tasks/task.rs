@@ -32,15 +32,18 @@
 //! subject to rapid change. However, do not hesitate to open an issue if you find anything.
 use std::{any::Any, future::Future, pin::Pin, sync::Arc};
 
+use super::node::NodeId;
 use super::{
     adapters::{AsyncFn, SyncFn},
     errors::TaskError,
-    executor::{AnyNodeExecutor, JoinHandler, NodeExecutor, TransitionHandler},
-    node::{NodeArg, NodeId, TaskNode},
+    executor::NodeExecutor,
     runtime::{Runtime, TaskOptions},
+    traits::{
+        AnyNodeExecutor, JoinHandler, NodeArg, RegisterTransition, RegisterTransitionAsync,
+        TaskNode, TransitionHandler, TransitionResult,
+    },
     transition::{
-        ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget,
-        MarkedTransition, Transition,
+        ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget, Transition,
     },
 };
 
@@ -119,47 +122,6 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     pub(crate) runtime: Runtime,
     pub(crate) options: TaskOptions,
     _marker: std::marker::PhantomData<(Input, Output)>,
-}
-
-#[doc(hidden)]
-pub trait RegisterTransition<From: TaskNode + ?Sized>: 'static {
-    fn register<Input: NodeArg + Clone, Output: NodeArg + Clone>(
-        self,
-        task: &mut Task<Input, Output>,
-        from: NodeId<From>,
-    ) -> Result<(), TaskError>;
-}
-
-#[doc(hidden)]
-pub trait RegisterTransitionAsync<From: TaskNode + ?Sized>: 'static {
-    fn register_async<Input: NodeArg + Clone, Output: NodeArg + Clone>(
-        self,
-        task: &mut Task<Input, Output>,
-        from: NodeId<From>,
-    ) -> Result<(), TaskError>;
-}
-
-trait TransitionResult<From: TaskNode + ?Sized> {
-    fn into_transition(self) -> Transition;
-}
-
-impl<From, To> TransitionResult<From> for MarkedTransition<To>
-where
-    From: TaskNode + 'static + ?Sized,
-    To: TaskNode<Input = From::Output> + ?Sized,
-{
-    fn into_transition(self) -> Transition {
-        self.into_inner()
-    }
-}
-
-impl<From> TransitionResult<From> for Transition
-where
-    From: TaskNode + 'static + ?Sized,
-{
-    fn into_transition(self) -> Transition {
-        self
-    }
 }
 
 impl<From, F, R> RegisterTransition<From> for F

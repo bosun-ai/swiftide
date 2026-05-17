@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `FanOutTransition: tasks::task::TransitionResult<SyncFn<{closure@$DIR/tests/ui/fan_out_requires_join.rs:6:39: 6:78}, i32, i32>>` is not satisfied
+error[E0277]: the trait bound `FanOutTransition: tasks::traits::TransitionResult<SyncFn<{closure@$DIR/tests/ui/fan_out_requires_join.rs:6:39: 6:78}, i32, i32>>` is not satisfied
   --> tests/ui/fan_out_requires_join.rs:11:37
    |
 11 |       task.register_transition(start, move |value| {
@@ -9,9 +9,9 @@ error[E0277]: the trait bound `FanOutTransition: tasks::task::TransitionResult<S
 13 | |     })?;
    | |_____^ unsatisfied trait bound
    |
-   = help: the trait `tasks::task::TransitionResult<SyncFn<{closure@$DIR/tests/ui/fan_out_requires_join.rs:6:39: 6:78}, i32, i32>>` is not implemented for `FanOutTransition`
-help: the following other types implement trait `tasks::task::TransitionResult<From>`
-  --> src/tasks/task.rs
+   = help: the trait `tasks::traits::TransitionResult<SyncFn<{closure@$DIR/tests/ui/fan_out_requires_join.rs:6:39: 6:78}, i32, i32>>` is not implemented for `FanOutTransition`
+help: the following other types implement trait `tasks::traits::TransitionResult<From>`
+  --> src/tasks/traits.rs
    |
    | / impl<From, To> TransitionResult<From> for MarkedTransition<To>
    | | where
@@ -23,7 +23,7 @@ help: the following other types implement trait `tasks::task::TransitionResult<F
    | | where
    | |     From: TaskNode + 'static + ?Sized,
    | |______________________________________^ `Transition`
-   = note: required for `{closure@$DIR/tests/ui/fan_out_requires_join.rs:11:37: 11:49}` to implement `tasks::task::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/fan_out_requires_join.rs:6:39: 6:78}, i32, i32>>`
+   = note: required for `{closure@$DIR/tests/ui/fan_out_requires_join.rs:11:37: 11:49}` to implement `tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/fan_out_requires_join.rs:6:39: 6:78}, i32, i32>>`
 note: required by a bound in `Task::<Input, Output>::register_transition`
   --> src/tasks/task.rs
    |

@@ -75,13 +75,15 @@ mod executor;
 mod node;
 mod runtime;
 mod task;
+mod traits;
 mod transition;
 
 pub use adapters::{AsyncFn, SyncFn, TaskAgent};
 pub use errors::{NodeError, TaskError};
-pub use node::{DynNodeId, NodeArg, NodeId, NoopNode, TaskNode};
+pub use node::{NodeId, NoopNode};
 pub use task::{Task, TaskBuilder, TaskRunState};
+pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
-    AsyncMappedJoinTarget, BranchId, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
+    AsyncMappedJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
     MappedJoinTarget, MarkedTransition, NextNode, Transition,
 };

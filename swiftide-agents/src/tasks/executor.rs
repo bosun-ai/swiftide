@@ -1,81 +1,16 @@
-use std::{any::Any, future::Future, pin::Pin, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;
-use dyn_clone::DynClone;
 
 use super::{
     errors::{NodeError, TaskError},
-    node::{NodeArg, NodeId, TaskNode},
-    transition::{JoinDefinition, Transition},
+    node::NodeId,
+    traits::{
+        AnyNodeExecutor, EvaluatedTransition, JoinHandler, NodeArg, RegisteredTransition, TaskNode,
+        TransitionHandler,
+    },
+    transition::JoinDefinition,
 };
-
-pub(crate) type BoxedTransitionFuture = Pin<Box<dyn Future<Output = Transition> + Send>>;
-pub(crate) type TransitionHandler<Output> =
-    Arc<dyn Fn(Output) -> BoxedTransitionFuture + Send + Sync + 'static>;
-pub(crate) type BoxedJoinFuture = Pin<Box<dyn Future<Output = Arc<dyn Any + Send + Sync>> + Send>>;
-pub(crate) type JoinHandler<Output> =
-    Arc<dyn Fn(Output) -> BoxedJoinFuture + Send + Sync + 'static>;
-
-pub(crate) enum RegisteredTransition<Output> {
-    Missing,
-    Flow(TransitionHandler<Output>),
-    Join {
-        definition: JoinDefinition,
-        handler: JoinHandler<Output>,
-    },
-}
-
-impl<Output> Clone for RegisteredTransition<Output> {
-    fn clone(&self) -> Self {
-        match self {
-            RegisteredTransition::Missing => Self::Missing,
-            RegisteredTransition::Flow(handler) => Self::Flow(handler.clone()),
-            RegisteredTransition::Join {
-                definition,
-                handler,
-            } => Self::Join {
-                definition: *definition,
-                handler: handler.clone(),
-            },
-        }
-    }
-}
-
-impl<Output> std::fmt::Debug for RegisteredTransition<Output> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RegisteredTransition::Missing => f.write_str("RegisteredTransition::Missing"),
-            RegisteredTransition::Flow(_) => f.write_str("RegisteredTransition::Flow(..)"),
-            RegisteredTransition::Join { definition, .. } => f
-                .debug_struct("RegisteredTransition::Join")
-                .field("definition", definition)
-                .finish_non_exhaustive(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum EvaluatedTransition {
-    Flow(Transition),
-    Join {
-        definition: JoinDefinition,
-        payload: Arc<dyn Any + Send + Sync>,
-    },
-}
-
-#[async_trait]
-pub(crate) trait AnyNodeExecutor: Any + Send + Sync + std::fmt::Debug + DynClone {
-    fn node_as_any(&self) -> &dyn Any;
-
-    fn transition_is_set(&self) -> bool;
-
-    async fn evaluate_next(
-        &self,
-        context: Arc<dyn Any + Send + Sync>,
-    ) -> Result<EvaluatedTransition, TaskError>;
-}
-
-dyn_clone::clone_trait_object!(AnyNodeExecutor);
 
 pub(crate) struct NodeExecutor<
     Input: NodeArg,

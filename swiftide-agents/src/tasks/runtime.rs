@@ -11,9 +11,8 @@ use tracing::Instrument as _;
 
 use super::{
     errors::{NodeError, TaskError},
-    executor::{AnyNodeExecutor, EvaluatedTransition},
-    node::NodeArg,
     task::TaskRunState,
+    traits::{AnyNodeExecutor, EvaluatedTransition, NodeArg},
     transition::{
         BranchId, ConcurrencyModel, JoinDefinition, JoinInput, NextNode, Transition,
         TransitionAction,

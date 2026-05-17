@@ -27,11 +27,14 @@
 //! ```
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
-use super::node::{NodeArg, NodeId, TaskNode};
+use super::{
+    node::NodeId,
+    traits::{NodeArg, TaskNode},
+};
 
 /// Identifies a concrete runtime branch within a task run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct BranchId(pub usize);
+pub(crate) struct BranchId(pub(crate) usize);
 
 /// Controls whether newly scheduled work should run one branch at a time or concurrently.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
@@ -51,8 +54,7 @@ pub struct NextNode {
 }
 
 impl NextNode {
-    /// Creates a next-step target for the given node and input value.
-    pub fn new<T: TaskNode + ?Sized>(node_id: NodeId<T>, context: T::Input) -> Self
+    pub(crate) fn new<T: TaskNode + ?Sized>(node_id: NodeId<T>, context: T::Input) -> Self
     where
         <T as TaskNode>::Input: 'static,
     {
@@ -241,8 +243,7 @@ pub struct Transition {
 pub struct MarkedTransition<To: TaskNode + ?Sized>(Transition, PhantomData<To>);
 
 impl<To: TaskNode + ?Sized> MarkedTransition<To> {
-    /// Wraps a transition while preserving the destination node type.
-    pub fn new(transition: Transition) -> Self {
+    pub(crate) fn new(transition: Transition) -> Self {
         Self(transition, PhantomData)
     }
 
