@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(input.len())
     });
     let join = task.register_node_fn(|input: &JoinInput| -> Result<usize, NodeError> {
-        Ok(input.ready_values::<usize>().into_iter().copied().sum())
+        Ok(input.iter::<usize>().copied().sum())
     });
 
     task.starts_with(start);

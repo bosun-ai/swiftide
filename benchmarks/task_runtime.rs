@@ -30,7 +30,7 @@ fn join_sum_node() -> SyncFn<
     i32,
 > {
     SyncFn::new(|input: &swiftide::agents::tasks::JoinInput| {
-        Ok::<_, NodeError>(input.ready_values::<i32>().into_iter().copied().sum())
+        Ok::<_, NodeError>(input.iter::<i32>().copied().sum())
     })
 }
 

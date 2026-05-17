@@ -12,14 +12,16 @@
 //! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
 //! let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
 //! let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-//!     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+//!     Ok(input.iter::<i32>().copied().sum())
 //! });
 //!
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
+//!     // `join_with` defines the branch group and the join node that waits for it.
 //!     Transition::fan_out(&branch, value)
 //!         .join_with(join.join())
 //! })?;
+//! // Branches still decide where their own output goes before the join can run.
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -89,7 +91,7 @@ where
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
     /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    ///     Ok(input.iter::<i32>().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -107,7 +109,7 @@ where
 
 impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
     /// Creates a typed node identifier for an already-registered node.
-    pub fn new(id: usize, _node: &T) -> Self {
+    pub(crate) fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
             _marker: std::marker::PhantomData,

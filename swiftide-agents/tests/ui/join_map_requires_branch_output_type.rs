@@ -5,7 +5,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     let join = task.register_node_fn(|input: &JoinInput| -> Result<usize, NodeError> {
-        Ok(input.ready_values::<usize>().len())
+        Ok(input.iter::<usize>().count())
     });
 
     task.starts_with(branch);

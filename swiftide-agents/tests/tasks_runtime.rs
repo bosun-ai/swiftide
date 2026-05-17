@@ -124,7 +124,7 @@ impl TaskNode for SumJoinNode {
         >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        Ok(input.ready_values::<i32>().into_iter().copied().sum())
+        Ok(input.iter::<i32>().copied().sum())
     }
 }
 
@@ -144,7 +144,7 @@ impl TaskNode for CollectJoinNode {
         >,
         input: &Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        Ok(input.ready_values::<i32>().into_iter().copied().collect())
+        Ok(input.iter::<i32>().copied().collect())
     }
 }
 

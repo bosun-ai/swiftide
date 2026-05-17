@@ -13,15 +13,17 @@
 //! let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
 //! let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
 //! let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-//!     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+//!     Ok(input.iter::<i32>().copied().sum())
 //! });
 //!
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
+//!     // `join_with` defines the branch group and the join node that waits for it.
 //!     Transition::fan_out(&left, value)
 //!         .and(&right, value)
 //!         .join_with(join.join())
 //! })?;
+//! // Branches still decide where their own output goes before the join can run.
 //! task.register_transition(left, join.join())?;
 //! task.register_transition(right, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
@@ -76,6 +78,7 @@ pub(crate) struct JoinDefinition {
 /// Build a `JoinTarget` from a join node with [`NodeId::join`](crate::tasks::NodeId::join),
 /// and then register it through
 /// [`Task::register_transition`](crate::tasks::Task::register_transition).
+/// Users normally do not construct this type directly.
 #[must_use]
 pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
     pub(crate) definition: JoinDefinition,
@@ -83,6 +86,9 @@ pub struct JoinTarget<T: TaskNode<Input = JoinInput> + ?Sized> {
 }
 
 /// A join target with a synchronous payload mapping step.
+///
+/// This is returned by [`JoinTarget::map`] and registered with
+/// [`Task::register_transition`](crate::tasks::Task::register_transition).
 #[must_use]
 pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
     pub(crate) join_target: JoinTarget<T>,
@@ -90,6 +96,9 @@ pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput> + ?Sized, F> {
 }
 
 /// A join target with an asynchronous payload mapping step.
+///
+/// This is returned by [`JoinTarget::map_async`] and registered with
+/// [`Task::register_transition_async`](crate::tasks::Task::register_transition_async).
 pub type AsyncMappedJoinTarget<T, F> = MappedJoinTarget<T, F>;
 
 impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
@@ -124,7 +133,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
     /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    ///     Ok(input.iter::<i32>().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -156,7 +165,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
     /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
     /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    ///     Ok(input.iter::<i32>().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -207,7 +216,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
 /// let join = task.register_node_fn(
 ///     |input: &swiftide_agents::tasks::JoinInput| -> Result<i32, NodeError> {
-///         Ok(input.ready_values::<i32>().into_iter().copied().sum())
+///         Ok(input.iter::<i32>().copied().sum())
 ///     },
 /// );
 ///
@@ -234,6 +243,9 @@ pub struct Transition {
 }
 
 /// A linear transition that preserves the destination node type.
+///
+/// This is returned by [`Transition::next`] and [`NodeId::transitions_with`], then accepted by
+/// [`Task::register_transition`](crate::tasks::Task::register_transition) closures.
 #[must_use]
 pub struct MarkedTransition<To: TaskNode + ?Sized>(Transition, PhantomData<To>);
 
@@ -285,8 +297,9 @@ impl FanOutTransition {
 
     /// Attaches every branch from this fan-out to the provided join target.
     ///
-    /// This is useful when branches join after one or more intermediate nodes instead of joining
-    /// immediately at their first fan-out target.
+    /// This defines the branch group and the join node that waits for every branch in that group.
+    /// Each branch still needs its own registered transition to the same join target when it is
+    /// ready to contribute its output.
     pub fn join_with<T>(self, join_target: JoinTarget<T>) -> Transition
     where
         T: TaskNode<Input = JoinInput> + ?Sized,
@@ -367,7 +380,7 @@ impl Transition {
     /// task.starts_with(start);
     /// let join = task.register_node_fn(
     ///     |input: &swiftide_agents::tasks::JoinInput| -> Result<i32, NodeError> {
-    ///         Ok(input.ready_values::<i32>().into_iter().copied().sum())
+    ///         Ok(input.iter::<i32>().copied().sum())
     ///     },
     /// );
     ///
@@ -468,12 +481,14 @@ impl JoinInput {
         Self { branches }
     }
 
-    /// Iterates over every ready branch payload in stable branch creation order.
-    pub fn iter(&self) -> std::slice::Iter<'_, Arc<dyn Any + Send + Sync>> {
+    pub(crate) fn iter_any(&self) -> std::slice::Iter<'_, Arc<dyn Any + Send + Sync>> {
         self.branches.iter()
     }
 
-    /// Returns the ready values that can be downcast to `T`.
+    /// Iterates over every ready branch payload that can be downcast to `T`.
+    ///
+    /// Values are yielded in stable branch creation order. This is the usual way to read join
+    /// payloads when every branch contributes the same type.
     ///
     /// # Examples
     ///
@@ -485,8 +500,7 @@ impl JoinInput {
     /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
     /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
     /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     let values = input.ready_values::<i32>();
-    ///     Ok(values.into_iter().copied().sum())
+    ///     Ok(input.iter::<i32>().copied().sum())
     /// });
     ///
     /// task.starts_with(start);
@@ -499,18 +513,8 @@ impl JoinInput {
     /// task.register_transition(right, join.join())?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn ready_values<T: NodeArg>(&self) -> Vec<&T> {
-        self.iter()
+    pub fn iter<T: NodeArg>(&self) -> impl Iterator<Item = &T> {
+        self.iter_any()
             .filter_map(|value| value.downcast_ref::<T>())
-            .collect()
-    }
-}
-
-impl<'a> IntoIterator for &'a JoinInput {
-    type Item = &'a Arc<dyn Any + Send + Sync>;
-    type IntoIter = std::slice::Iter<'a, Arc<dyn Any + Send + Sync>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
     }
 }
