@@ -25,19 +25,6 @@ type RunningBranchFuture = Pin<Box<dyn Future<Output = Result<EvaluatedBranch, T
 pub(crate) struct BranchGroupId(pub(crate) usize);
 
 #[derive(Debug, Clone)]
-pub(crate) struct TaskOptions {
-    pub(crate) concurrency_model: ConcurrencyModel,
-}
-
-impl Default for TaskOptions {
-    fn default() -> Self {
-        Self {
-            concurrency_model: ConcurrencyModel::Sequential,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub(crate) struct ExecutionBranch {
     pub(crate) id: BranchId,
     pub(crate) current_node: usize,

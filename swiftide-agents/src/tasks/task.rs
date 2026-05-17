@@ -37,7 +37,7 @@ use super::{
     adapters::{AsyncFn, SyncFn},
     errors::TaskError,
     executor::{JoinHandler, NodeExecutor, TransitionHandler},
-    runtime::{Runtime, TaskOptions},
+    runtime::Runtime,
     traits::{
         AnyNodeExecutor, NodeArg, RegisterTransition, RegisterTransitionAsync, TaskNode,
         TransitionResult,
@@ -61,27 +61,27 @@ pub enum TaskRunState<Output> {
 #[derive(Debug)]
 #[must_use]
 pub struct TaskBuilder<Input: NodeArg, Output: NodeArg> {
-    options: TaskOptions,
+    default_concurrency_model: ConcurrencyModel,
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
 impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output> {
     pub(crate) fn new() -> Self {
         Self {
-            options: TaskOptions::default(),
+            default_concurrency_model: ConcurrencyModel::Sequential,
             _marker: std::marker::PhantomData,
         }
     }
 
     /// Sets the default concurrency model for transitions that do not override it explicitly.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.options.concurrency_model = concurrency_model;
+        self.default_concurrency_model = concurrency_model;
         self
     }
 
     /// Builds a new task with the configured defaults.
     pub fn build(self) -> Task<Input, Output> {
-        Task::with_options(self.options)
+        Task::with_default_concurrency_model(self.default_concurrency_model)
     }
 }
 
@@ -121,7 +121,7 @@ pub struct Task<Input: NodeArg, Output: NodeArg> {
     pub(crate) nodes: Vec<Arc<dyn AnyNodeExecutor>>,
     pub(crate) start_node: Option<usize>,
     pub(crate) runtime: Runtime,
-    pub(crate) options: TaskOptions,
+    pub(crate) default_concurrency_model: ConcurrencyModel,
     _marker: std::marker::PhantomData<(Input, Output)>,
 }
 
@@ -276,7 +276,7 @@ impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {
                 .collect(),
             start_node: self.start_node,
             runtime: Runtime::new(),
-            options: self.options.clone(),
+            default_concurrency_model: self.default_concurrency_model,
             _marker: std::marker::PhantomData,
         }
     }
@@ -308,15 +308,15 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
     /// Creates a new task with the default runtime behavior.
     pub fn new() -> Self {
-        Self::with_options(TaskOptions::default())
+        Self::with_default_concurrency_model(ConcurrencyModel::Sequential)
     }
 
-    fn with_options(options: TaskOptions) -> Self {
+    fn with_default_concurrency_model(default_concurrency_model: ConcurrencyModel) -> Self {
         Self {
             nodes: Vec::new(),
             start_node: None,
             runtime: Runtime::new(),
-            options,
+            default_concurrency_model,
             _marker: std::marker::PhantomData,
         }
     }
@@ -387,7 +387,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .run(
                 &self.nodes,
                 start_node,
-                self.options.concurrency_model,
+                self.default_concurrency_model,
                 input.into(),
             )
             .await
@@ -399,7 +399,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// most recent input passed to [`Task::run`].
     pub fn reset(&mut self) {
         self.runtime
-            .reset(self.start_node, self.options.concurrency_model);
+            .reset(self.start_node, self.default_concurrency_model);
     }
 
     /// Continues a paused or reset task.
@@ -413,7 +413,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         self.validate_transitions()?;
 
         self.runtime
-            .resume(&self.nodes, self.options.concurrency_model)
+            .resume(&self.nodes, self.default_concurrency_model)
             .await
     }
 
@@ -594,26 +594,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     where
         From: TaskNode + 'static + ?Sized,
     {
-        let node_executor = self
-            .nodes
-            .get_mut(from.id())
-            .ok_or_else(|| TaskError::missing_node(from.id()))?;
-        let node_executor = Arc::get_mut(node_executor).ok_or_else(|| {
-            TaskError::invalid_state(format!("Node {} is currently in use", from.id()))
-        })?;
-
-        let executor =
-            (node_executor as &mut dyn Any)
-                .downcast_mut::<NodeExecutor<From::Input, From::Output, From::Error>>();
-
-        let Some(executor) = executor else {
-            return Err(TaskError::invalid_state(format!(
-                "Transition registration type mismatch for node {}",
-                from.id()
-            )));
-        };
-
-        executor.set_transition_handler(transition)
+        self.executor_mut(from)?.set_transition_handler(transition)
     }
 
     fn set_join_handler<From>(
@@ -622,6 +603,17 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
         definition: JoinDefinition,
         transition: JoinHandler<From::Output>,
     ) -> Result<(), TaskError>
+    where
+        From: TaskNode + 'static + ?Sized,
+    {
+        self.executor_mut(from)?
+            .set_join_handler(definition, transition)
+    }
+
+    fn executor_mut<From>(
+        &mut self,
+        from: NodeId<From>,
+    ) -> Result<&mut NodeExecutor<From::Input, From::Output, From::Error>, TaskError>
     where
         From: TaskNode + 'static + ?Sized,
     {
@@ -644,6 +636,6 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             )));
         };
 
-        executor.set_join_handler(definition, transition)
+        Ok(executor)
     }
 }

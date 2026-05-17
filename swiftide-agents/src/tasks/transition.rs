@@ -69,15 +69,13 @@ impl NextNode {
 }
 
 type ErasedPayload = Arc<dyn Any + Send + Sync>;
-type JoinInputFactory =
-    Arc<dyn Fn(Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError> + Send + Sync>;
 
 #[doc(hidden)]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct JoinDefinition {
     pub(crate) join_node_id: usize,
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
-    input_factory: JoinInputFactory,
+    input_factory: fn(Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError>,
 }
 
 impl std::fmt::Debug for JoinDefinition {
@@ -94,21 +92,7 @@ impl JoinDefinition {
         Self {
             join_node_id,
             concurrency_model: None,
-            input_factory: Arc::new(|payloads| {
-                let branches = payloads
-                    .into_iter()
-                    .map(|payload| {
-                        payload.downcast::<Payload>().map_err(|_| {
-                            TaskError::invalid_state(format!(
-                                "Join payload expected type {}",
-                                std::any::type_name::<Payload>()
-                            ))
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                Ok(Arc::new(JoinInput::<Payload>::new(branches)) as ErasedPayload)
-            }),
+            input_factory: typed_join_input::<Payload>,
         }
     }
 
@@ -116,9 +100,7 @@ impl JoinDefinition {
         Self {
             join_node_id,
             concurrency_model: None,
-            input_factory: Arc::new(|payloads| {
-                Ok(Arc::new(AnyJoinInput::new(payloads)) as ErasedPayload)
-            }),
+            input_factory: any_join_input,
         }
     }
 
@@ -128,6 +110,28 @@ impl JoinDefinition {
     ) -> Result<ErasedPayload, TaskError> {
         (self.input_factory)(payloads)
     }
+}
+
+fn typed_join_input<Payload: NodeArg>(
+    payloads: Vec<ErasedPayload>,
+) -> Result<ErasedPayload, TaskError> {
+    let branches = payloads
+        .into_iter()
+        .map(|payload| {
+            payload.downcast::<Payload>().map_err(|_| {
+                TaskError::invalid_state(format!(
+                    "Join payload expected type {}",
+                    std::any::type_name::<Payload>()
+                ))
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(Arc::new(JoinInput::<Payload>::new(branches)) as ErasedPayload)
+}
+
+fn any_join_input(payloads: Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError> {
+    Ok(Arc::new(AnyJoinInput::new(payloads)) as ErasedPayload)
 }
 
 /// A configured join destination for branches that should converge into a join node.
@@ -151,12 +155,6 @@ pub struct MappedJoinTarget<T: TaskNode<Input = JoinInput<Payload>> + ?Sized, Pa
     pub(crate) join_target: JoinTarget<T, Payload>,
     pub(crate) map: F,
 }
-
-/// A join target with an asynchronous payload mapping step.
-///
-/// This is returned by [`JoinTarget::map_async`] and registered with
-/// [`Task::register_transition_async`](crate::tasks::Task::register_transition_async).
-pub type AsyncMappedJoinTarget<T, Payload, F> = MappedJoinTarget<T, Payload, F>;
 
 /// A configured join destination for branches with mixed payload types.
 ///
@@ -266,7 +264,7 @@ where
     /// task.register_transition_async(branch, join.join().map_async(|value| async move { value * 2 }))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn map_async<F>(self, map: F) -> AsyncMappedJoinTarget<T, Payload, F>
+    pub fn map_async<F>(self, map: F) -> MappedJoinTarget<T, Payload, F>
     where
         F: Send + Sync + 'static,
     {

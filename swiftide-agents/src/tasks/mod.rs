@@ -88,6 +88,6 @@ pub use node::NodeId;
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
-    AnyJoinInput, AnyJoinTarget, AsyncMappedJoinTarget, ConcurrencyModel, FanOutTransition,
-    JoinInput, JoinTarget, MappedJoinTarget, MarkedTransition, Transition,
+    AnyJoinInput, AnyJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
+    MappedJoinTarget, MarkedTransition, Transition,
 };

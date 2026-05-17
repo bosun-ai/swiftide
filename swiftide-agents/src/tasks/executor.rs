@@ -69,7 +69,7 @@ pub(crate) struct NodeExecutor<
     Error: std::error::Error + Send + Sync + 'static,
 > {
     pub(crate) node: Box<dyn TaskNode<Input = Input, Output = Output, Error = Error> + Send + Sync>,
-    pub(crate) node_id: Box<NodeId<dyn TaskNode<Input = Input, Output = Output, Error = Error>>>,
+    pub(crate) node_id: NodeId<dyn TaskNode<Input = Input, Output = Output, Error = Error>>,
     pub(crate) registration: RegisteredTransition<Output>,
 }
 
@@ -85,7 +85,7 @@ where
     {
         Self {
             node: Box::new(node),
-            node_id: Box::new(node_id.as_dyn()),
+            node_id: node_id.as_dyn(),
             registration: RegisteredTransition::Missing,
         }
     }
@@ -147,7 +147,7 @@ where
     fn clone(&self) -> Self {
         Self {
             node: self.node.clone(),
-            node_id: self.node_id.clone(),
+            node_id: self.node_id,
             registration: self.registration.clone(),
         }
     }
@@ -177,7 +177,7 @@ impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + '
             ))
         })?;
 
-        match self.node.evaluate(&self.node_id.as_dyn(), &context).await {
+        match self.node.evaluate(&self.node_id, &context).await {
             Ok(output) => match &self.registration {
                 RegisteredTransition::Missing => Err(TaskError::invalid_state(format!(
                     "Node {} is missing a registered transition",
