@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     task.starts_with(start);
     task.register_transition(start, move |value| {
-        Transition::fan_out([left.target_with(value), right.target_with(value)])
+        Transition::fan_out(&left, value).and(&right, value)
     })?;
 
     Ok(())

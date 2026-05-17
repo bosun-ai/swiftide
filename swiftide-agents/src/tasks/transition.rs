@@ -18,7 +18,8 @@
 //!
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
-//!     Transition::fan_out([left.target_with(value), right.target_with(value)])
+//!     Transition::fan_out(&left, value)
+//!         .and(&right, value)
 //!         .join_with(join.join())
 //! })?;
 //! task.register_transition(left, join.join())?;
@@ -46,9 +47,8 @@ pub enum ConcurrencyModel {
     Parallel,
 }
 
-/// A concrete next-step target used by [`Transition::fan_out`].
 #[derive(Debug, Clone)]
-pub struct NextNode {
+pub(crate) struct NextNode {
     pub(crate) node_id: usize,
     pub(crate) context: Arc<dyn Any + Send + Sync>,
 }
@@ -129,7 +129,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     ///
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([branch.target_with(value)])
+    ///     Transition::fan_out(&branch, value)
     ///         .join_with(join.join())
     /// })?;
     /// task.register_transition(branch, join.join().map(|value| value * 2))?;
@@ -161,7 +161,7 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized> JoinTarget<T> {
     ///
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([branch.target_with(value)])
+    ///     Transition::fan_out(&branch, value)
     ///         .join_with(join.join())
     /// })?;
     /// task.register_transition_async(branch, join.join().map_async(|value| async move { value * 2 }))?;
@@ -213,7 +213,8 @@ impl<T: TaskNode<Input = JoinInput> + ?Sized, F> MappedJoinTarget<T, F> {
 ///
 /// task.starts_with(start);
 /// task.register_transition(start, move |value| {
-///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+///     Transition::fan_out(&left, value)
+///         .and(&right, value)
 ///         .join_with(join.join())
 ///         .concurrency_model(swiftide_agents::tasks::ConcurrencyModel::Parallel)
 /// })?;
@@ -257,11 +258,11 @@ impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
     }
 }
 
-/// A fan-out transition builder that must be connected to a join before it can run.
+/// A typed fan-out transition builder that must be connected to a join before it can run.
 ///
-/// `Transition::fan_out` returns this builder instead of a runnable [`Transition`] so every branch
-/// set has an explicit join. This keeps task completion structured and avoids accidental
-/// "first branch wins" behavior when multiple branches can finish independently.
+/// Build one with [`Transition::fan_out`] and add additional branch targets with
+/// [`FanOutTransition::and`]. Each branch input is type-checked before the branch target is erased
+/// for runtime scheduling.
 #[derive(Debug)]
 #[must_use]
 pub struct FanOutTransition {
@@ -270,6 +271,18 @@ pub struct FanOutTransition {
 }
 
 impl FanOutTransition {
+    /// Adds another typed branch target to this fan-out.
+    ///
+    /// The branch input must convert into the target node's input type.
+    pub fn and<T, Input>(mut self, node_id: &NodeId<T>, context: Input) -> Self
+    where
+        T: TaskNode + ?Sized,
+        Input: Into<T::Input>,
+    {
+        self.targets.push(NextNode::new(*node_id, context.into()));
+        self
+    }
+
     /// Attaches every branch from this fan-out to the provided join target.
     ///
     /// This is useful when branches join after one or more intermediate nodes instead of joining
@@ -359,14 +372,19 @@ impl Transition {
     /// );
     ///
     /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///     Transition::fan_out(&left, value)
+    ///         .and(&right, value)
     ///         .join_with(join.join())
     /// })?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn fan_out(targets: impl IntoIterator<Item = NextNode>) -> FanOutTransition {
+    pub fn fan_out<T, Input>(node_id: &NodeId<T>, context: Input) -> FanOutTransition
+    where
+        T: TaskNode + ?Sized,
+        Input: Into<T::Input>,
+    {
         FanOutTransition {
-            targets: targets.into_iter().collect(),
+            targets: vec![NextNode::new(*node_id, context.into())],
             concurrency_model: None,
         }
     }
@@ -473,7 +491,8 @@ impl JoinInput {
     ///
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
+    ///     Transition::fan_out(&left, value)
+    ///         .and(&right, value)
     ///         .join_with(join.join())
     /// })?;
     /// task.register_transition(left, join.join())?;

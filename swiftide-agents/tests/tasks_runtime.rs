@@ -295,7 +295,8 @@ async fn fan_out_can_join_multiple_branches() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([branch_a.target_with(input), branch_b.target_with(input)])
+        Transition::fan_out(&branch_a, input)
+            .and(&branch_b, input)
             .join_with(join.join())
     })
     .unwrap();
@@ -381,26 +382,6 @@ async fn resume_requires_resumable_state() {
 }
 
 #[test_log::test(tokio::test)]
-async fn task_without_finish_is_incomplete() {
-    let mut task: Task<i32, i32> = Task::new();
-
-    let start = task.register_node(IntNode);
-    let join = task.register_node(SumJoinNode);
-    task.starts_with(start);
-    task.register_transition(start, move |_output| {
-        Transition::fan_out(Vec::new()).join_with(join.join())
-    })
-    .unwrap();
-    task.register_transition(join, task.transitions_to_finish())
-        .unwrap();
-
-    assert!(matches!(
-        task.run(1).await.unwrap_err(),
-        TaskError::Incomplete
-    ));
-}
-
-#[test_log::test(tokio::test)]
 async fn no_steps_are_rejected() {
     let mut task: Task<i32, i32> = Task::new();
 
@@ -447,7 +428,8 @@ async fn node_error_inside_join_group_fails_task() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([good.target_with(input), failing.target_with(input)])
+        Transition::fan_out(&good, input)
+            .and(&failing, input)
             .join_with(join.join())
             .concurrency_model(ConcurrencyModel::Parallel)
     })
@@ -487,7 +469,8 @@ async fn transition_error_inside_join_group_fails_task() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([good.target_with(input), bad.target_with(input)])
+        Transition::fan_out(&good, input)
+            .and(&bad, input)
             .join_with(join.join())
             .concurrency_model(ConcurrencyModel::Parallel)
     })
@@ -517,7 +500,8 @@ async fn branch_error_drops_remaining_parallel_work() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([slow.target_with(input), bad.target_with(input)])
+        Transition::fan_out(&slow, input)
+            .and(&bad, input)
             .join_with(join.join())
             .concurrency_model(ConcurrencyModel::Parallel)
     })
@@ -547,11 +531,11 @@ async fn fan_out_inside_active_join_group_is_rejected() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([branch.target_with(input)]).join_with(outer_join.join())
+        Transition::fan_out(&branch, input).join_with(outer_join.join())
     })
     .unwrap();
     task.register_transition(branch, move |input| {
-        Transition::fan_out([nested.target_with(input)]).join_with(inner_join.join())
+        Transition::fan_out(&nested, input).join_with(inner_join.join())
     })
     .unwrap();
     task.register_transition(nested, inner_join.join()).unwrap();
@@ -577,7 +561,8 @@ async fn join_input_keeps_branch_creation_order() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([first.target_with(input), second.target_with(input)])
+        Transition::fan_out(&first, input)
+            .and(&second, input)
             .join_with(join.join())
             .concurrency_model(ConcurrencyModel::Parallel)
     })
@@ -602,7 +587,8 @@ async fn fan_out_join_scope_preserves_full_fanout_join() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([first.target_with(input), second.target_with(input)])
+        Transition::fan_out(&first, input)
+            .and(&second, input)
             .join_with(join.join())
     })
     .unwrap();
@@ -627,7 +613,8 @@ async fn fan_out_join_scope_allows_branches_to_join_after_intermediate_nodes() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([left.target_with(input), right.target_with(input)])
+        Transition::fan_out(&left, input)
+            .and(&right, input)
             .join_with(join.join())
     })
     .unwrap();
@@ -656,7 +643,8 @@ async fn fan_out_join_scope_waits_for_branch_that_finishes_before_join() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([terminal.target_with(input), slow.target_with(input)])
+        Transition::fan_out(&terminal, input)
+            .and(&slow, input)
             .join_with(join.join())
             .concurrency_model(ConcurrencyModel::Parallel)
     })
@@ -682,7 +670,7 @@ async fn fan_out_join_scope_rejects_branch_joining_a_different_target() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([branch.target_with(input)]).join_with(expected_join.join())
+        Transition::fan_out(&branch, input).join_with(expected_join.join())
     })
     .unwrap();
     task.register_transition(branch, wrong_join.join()).unwrap();
@@ -725,7 +713,7 @@ async fn register_transition_maps_join_payload() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([branch.target_with(input)]).join_with(join.join())
+        Transition::fan_out(&branch, input).join_with(join.join())
     })
     .unwrap();
     task.register_transition(branch, join.join().map(|output| output * 2))
@@ -747,7 +735,7 @@ async fn register_transition_async_maps_join_payload() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([branch.target_with(input)]).join_with(join.join())
+        Transition::fan_out(&branch, input).join_with(join.join())
     })
     .unwrap();
     task.register_transition_async(
@@ -793,7 +781,8 @@ async fn task_default_parallel_runs_fanout_branches_concurrently() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([left.target_with(input), right.target_with(input)])
+        Transition::fan_out(&left, input)
+            .and(&right, input)
             .join_with(join.join())
     })
     .unwrap();
@@ -826,7 +815,7 @@ async fn join_target_concurrency_override_is_used_by_join_branch() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([first.target_with(input)]).join_with(
+        Transition::fan_out(&first, input).join_with(
             first_join
                 .join()
                 .concurrency_model(ConcurrencyModel::Parallel),
@@ -835,7 +824,8 @@ async fn join_target_concurrency_override_is_used_by_join_branch() {
     .unwrap();
     task.register_transition(first, first_join.join()).unwrap();
     task.register_transition(first_join, move |input| {
-        Transition::fan_out([left.target_with(input), right.target_with(input)])
+        Transition::fan_out(&left, input)
+            .and(&right, input)
             .join_with(final_join.join())
     })
     .unwrap();
@@ -866,7 +856,8 @@ async fn parallel_fanout_reaches_barrier() {
 
     task.starts_with(start);
     task.register_transition(start, move |input| {
-        Transition::fan_out([left.target_with(input), right.target_with(input)])
+        Transition::fan_out(&left, input)
+            .and(&right, input)
             .join_with(join.join())
             .concurrency_model(ConcurrencyModel::Parallel)
     })

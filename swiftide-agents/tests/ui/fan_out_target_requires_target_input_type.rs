@@ -1,4 +1,4 @@
-use swiftide_agents::tasks::{NodeError, Task};
+use swiftide_agents::tasks::{NodeError, Task, Transition};
 
 fn main() {
     let mut task = Task::<i32, usize>::new();
@@ -7,5 +7,5 @@ fn main() {
         Ok(input.len())
     });
 
-    let _ = branch.target_with(42);
+    let _ = Transition::fan_out(&branch, 42);
 }

@@ -11,6 +11,7 @@
 //! - [`Task::register_node_fn`] for lightweight synchronous closure nodes
 //! - [`NodeId`] helpers such as [`NodeId::transitions_with`] and [`NodeId::join`] for the common
 //!   next-step and join cases
+//! - [`Transition::fan_out`] for typed static fan-out branches
 //!
 //! # Examples
 //!
@@ -57,7 +58,8 @@
 //!
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
-//!     Transition::fan_out([double.target_with(value), increment.target_with(value)])
+//!     Transition::fan_out(&double, value)
+//!         .and(&increment, value)
 //!         .join_with(join.join())
 //! })?;
 //! task.register_transition(double, join.join())?;
@@ -85,5 +87,5 @@ pub use task::{Task, TaskBuilder, TaskRunState};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
     AsyncMappedJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
-    MappedJoinTarget, MarkedTransition, NextNode, Transition,
+    MappedJoinTarget, MarkedTransition, Transition,
 };

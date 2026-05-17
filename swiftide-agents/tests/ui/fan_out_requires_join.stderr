@@ -5,7 +5,7 @@ error[E0277]: the trait bound `FanOutTransition: tasks::traits::TransitionResult
    |  __________-------------------________^
    | |          |
    | |          required by a bound introduced by this call
-12 | |         Transition::fan_out([left.target_with(value), right.target_with(value)])
+12 | |         Transition::fan_out(&left, value).and(&right, value)
 13 | |     })?;
    | |_____^ unsatisfied trait bound
    |

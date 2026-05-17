@@ -17,20 +17,21 @@
 //!
 //! task.starts_with(start);
 //! task.register_transition(start, move |value| {
-//!     Transition::fan_out([branch.target_with(value)])
+//!     Transition::fan_out(&branch, value)
 //!         .join_with(join.join())
 //! })?;
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 use super::traits::TaskNode;
-use super::transition::{JoinInput, JoinTarget, MarkedTransition, NextNode, Transition};
+use super::transition::{JoinInput, JoinTarget, MarkedTransition, Transition};
 
 /// A typed handle to a registered node in a [`Task`](crate::tasks::Task).
 ///
 /// `NodeId` keeps the node's type information so transitions can be expressed without manual
 /// downcasts. Use [`NodeId::transitions_with`] for the common linear case,
-/// [`NodeId::target_with`] when building fan-out transitions, and [`NodeId::join`] for join nodes.
+/// [`Transition::fan_out`](crate::tasks::Transition::fan_out) when building static fan-out
+/// transitions, and [`NodeId::join`] for join nodes.
 #[derive(PartialEq, Eq)]
 pub struct NodeId<T: TaskNode + ?Sized> {
     id: usize,
@@ -71,34 +72,6 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     pub fn transitions_with(&self, context: T::Input) -> MarkedTransition<T> {
         Transition::next(self, context)
     }
-
-    /// Builds a fan-out target pointing at this node with the provided input.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
-    ///
-    /// let mut task = Task::<i32, i32>::new();
-    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
-    /// let left = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
-    /// let right = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 2) });
-    /// let join = task.register_node_fn(|input: &JoinInput| -> Result<i32, NodeError> {
-    ///     Ok(input.ready_values::<i32>().into_iter().copied().sum())
-    /// });
-    ///
-    /// task.starts_with(start);
-    /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([left.target_with(value), right.target_with(value)])
-    ///         .join_with(join.join())
-    /// })?;
-    /// task.register_transition(left, join.join())?;
-    /// task.register_transition(right, join.join())?;
-    /// # Ok::<(), Box<dyn std::error::Error>>(())
-    /// ```
-    pub fn target_with(&self, context: T::Input) -> NextNode {
-        NextNode::new(*self, context)
-    }
 }
 
 impl<T> NodeId<T>
@@ -121,7 +94,7 @@ where
     ///
     /// task.starts_with(start);
     /// task.register_transition(start, move |value| {
-    ///     Transition::fan_out([branch.target_with(value)])
+    ///     Transition::fan_out(&branch, value)
     ///         .join_with(join.join())
     /// })?;
     /// task.register_transition(branch, join.join())?;

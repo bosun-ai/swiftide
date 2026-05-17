@@ -1,0 +1,25 @@
+error[E0277]: the trait bound `String: From<i32>` is not satisfied
+  --> tests/ui/fan_out_and_requires_target_input_type.rs:20:26
+   |
+20 |             .and(&right, input)
+   |              ---         ^^^^^ the trait `From<i32>` is not implemented for `String`
+   |              |
+   |              required by a bound introduced by this call
+   |
+   = help: the following other types implement trait `From<T>`:
+             `String` implements `From<&String>`
+             `String` implements `From<&mut str>`
+             `String` implements `From<&str>`
+             `String` implements `From<Box<str>>`
+             `String` implements `From<Cow<'_, str>>`
+             `String` implements `From<char>`
+             `String` implements `From<pulldown_cmark::strings::CowStr<'_>>`
+   = note: required for `i32` to implement `Into<String>`
+note: required by a bound in `FanOutTransition::and`
+  --> src/tasks/transition.rs
+   |
+   |     pub fn and<T, Input>(mut self, node_id: &NodeId<T>, context: Input) -> Self
+   |            --- required by a bound in this associated function
+...
+   |         Input: Into<T::Input>,
+   |                ^^^^^^^^^^^^^^ required by this bound in `FanOutTransition::and`

@@ -1,17 +1,25 @@
-error[E0308]: mismatched types
-  --> tests/ui/fan_out_target_requires_target_input_type.rs:10:32
+error[E0277]: the trait bound `String: From<{integer}>` is not satisfied
+  --> tests/ui/fan_out_target_requires_target_input_type.rs:10:42
    |
-10 |     let _ = branch.target_with(42);
-   |                    ----------- ^^ expected `String`, found integer
-   |                    |
-   |                    arguments to this method are incorrect
+10 |     let _ = Transition::fan_out(&branch, 42);
+   |             -------------------          ^^ the trait `From<{integer}>` is not implemented for `String`
+   |             |
+   |             required by a bound introduced by this call
    |
-note: method defined here
-  --> src/tasks/node.rs
+   = help: the following other types implement trait `From<T>`:
+             `String` implements `From<&String>`
+             `String` implements `From<&mut str>`
+             `String` implements `From<&str>`
+             `String` implements `From<Box<str>>`
+             `String` implements `From<Cow<'_, str>>`
+             `String` implements `From<char>`
+             `String` implements `From<pulldown_cmark::strings::CowStr<'_>>`
+   = note: required for `{integer}` to implement `Into<String>`
+note: required by a bound in `Transition::fan_out`
+  --> src/tasks/transition.rs
    |
-   |     pub fn target_with(&self, context: T::Input) -> NextNode {
-   |            ^^^^^^^^^^^
-help: try using a conversion method
-   |
-10 |     let _ = branch.target_with(42.to_string());
-   |                                  ++++++++++++
+   |     pub fn fan_out<T, Input>(node_id: &NodeId<T>, context: Input) -> FanOutTransition
+   |            ------- required by a bound in this associated function
+...
+   |         Input: Into<T::Input>,
+   |                ^^^^^^^^^^^^^^ required by this bound in `Transition::fan_out`
