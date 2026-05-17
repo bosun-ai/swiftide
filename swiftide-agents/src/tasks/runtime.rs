@@ -11,8 +11,9 @@ use tracing::Instrument as _;
 
 use super::{
     errors::{NodeError, TaskError},
+    executor::EvaluatedTransition,
     task::TaskRunState,
-    traits::{AnyNodeExecutor, EvaluatedTransition, NodeArg},
+    traits::{AnyNodeExecutor, NodeArg},
     transition::{
         BranchId, ConcurrencyModel, JoinDefinition, JoinInput, NextNode, Transition,
         TransitionAction,
@@ -64,7 +65,6 @@ struct RunState {
 #[derive(Debug, Clone)]
 enum JoinMemberState {
     Pending,
-    Paused,
     Ready { payload: Arc<dyn Any + Send + Sync> },
 }
 
@@ -403,7 +403,7 @@ impl RunState {
                     concurrency_model,
                     join,
                     default_concurrency_model,
-                )?;
+                );
                 Ok(LoopControl::Continue)
             }
             TransitionAction::Pause => Ok(self.pause_branch(branch)),
@@ -422,12 +422,14 @@ impl RunState {
         concurrency_model: ConcurrencyModel,
         join: JoinDefinition,
         default_concurrency_model: ConcurrencyModel,
-    ) -> Result<(), TaskError> {
-        let join_group = if targets.is_empty() {
-            None
-        } else {
-            Some(self.insert_join_group(join, default_concurrency_model))
-        };
+    ) {
+        if targets.is_empty() {
+            return;
+        }
+
+        let join_group = self.next_group();
+        let mut members = HashMap::with_capacity(targets.len());
+        let mut member_order = Vec::with_capacity(targets.len());
 
         for target in targets {
             let child_id = self.next_branch();
@@ -436,26 +438,26 @@ impl RunState {
                 current_node: target.node_id,
                 context: target.context,
                 concurrency_model,
-                join_group,
+                join_group: Some(join_group),
             };
 
-            if let Some(group_id) = join_group {
-                let group = self
-                    .join_groups
-                    .get_mut(&group_id)
-                    .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-                group.member_order.push(child_id);
-                group.members.insert(child_id, JoinMemberState::Pending);
-            }
-
+            member_order.push(child_id);
+            members.insert(child_id, JoinMemberState::Pending);
             self.enqueue_branch(child);
         }
 
-        Ok(())
+        self.join_groups.insert(
+            join_group,
+            JoinGroupState {
+                join_node_id: join.join_node_id,
+                concurrency_model: join.concurrency_model.unwrap_or(default_concurrency_model),
+                members,
+                member_order,
+            },
+        );
     }
 
     fn pause_branch<Output>(&mut self, branch: ExecutionBranch) -> LoopControl<Output> {
-        self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Paused);
         self.paused_branches.insert(branch.id, branch);
         LoopControl::PauseRequested
     }
@@ -531,34 +533,12 @@ impl RunState {
                 .insert(branch.id, JoinMemberState::Ready { payload });
         }
 
-        self.enqueue_join_if_ready(Some(group_id))?;
+        self.enqueue_join_if_ready(group_id)?;
         Ok(LoopControl::Continue)
     }
 
-    fn insert_join_group(
-        &mut self,
-        definition: JoinDefinition,
-        default_concurrency_model: ConcurrencyModel,
-    ) -> BranchGroupId {
-        let group_id = self.next_group();
-        self.join_groups.insert(
-            group_id,
-            JoinGroupState {
-                join_node_id: definition.join_node_id,
-                concurrency_model: definition
-                    .concurrency_model
-                    .unwrap_or(default_concurrency_model),
-                members: HashMap::new(),
-                member_order: Vec::new(),
-            },
-        );
-        group_id
-    }
-
-    fn enqueue_join_if_ready(&mut self, group_id: Option<BranchGroupId>) -> Result<(), TaskError> {
-        if let Some(group_id) = group_id
-            && let Some(join_branch) = self.try_fire_join(group_id)?
-        {
+    fn enqueue_join_if_ready(&mut self, group_id: BranchGroupId) -> Result<(), TaskError> {
+        if let Some(join_branch) = self.try_fire_join(group_id)? {
             self.enqueue_branch(join_branch);
         }
 
@@ -581,43 +561,32 @@ impl RunState {
             return Ok(None);
         }
 
-        let (join_node_id, concurrency_model) = {
-            let group = self
-                .join_groups
-                .get(&group_id)
-                .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-            (group.join_node_id, group.concurrency_model)
-        };
-        let join_input = self.build_join_input(group_id)?;
-        self.join_groups.remove(&group_id);
+        let mut group = self
+            .join_groups
+            .remove(&group_id)
+            .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
+        let branches = group
+            .member_order
+            .into_iter()
+            .filter_map(|branch_id| {
+                group
+                    .members
+                    .remove(&branch_id)
+                    .and_then(|state| match state {
+                        JoinMemberState::Ready { payload } => Some(payload),
+                        JoinMemberState::Pending => None,
+                    })
+            })
+            .collect();
+        let join_input = JoinInput::new(branches);
 
         Ok(Some(ExecutionBranch {
             id: self.next_branch(),
-            current_node: join_node_id,
+            current_node: group.join_node_id,
             context: Arc::new(join_input) as Arc<dyn Any + Send + Sync>,
-            concurrency_model,
+            concurrency_model: group.concurrency_model,
             join_group: None,
         }))
-    }
-
-    fn build_join_input(&self, group_id: BranchGroupId) -> Result<JoinInput, TaskError> {
-        let group = self
-            .join_groups
-            .get(&group_id)
-            .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-
-        let branches = group
-            .member_order
-            .iter()
-            .filter_map(|branch_id| {
-                group.members.get(branch_id).and_then(|state| match state {
-                    JoinMemberState::Ready { payload } => Some(payload.clone()),
-                    JoinMemberState::Pending | JoinMemberState::Paused => None,
-                })
-            })
-            .collect();
-
-        Ok(JoinInput::new(branches))
     }
 
     fn set_join_member_state(

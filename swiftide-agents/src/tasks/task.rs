@@ -36,11 +36,11 @@ use super::node::NodeId;
 use super::{
     adapters::{AsyncFn, SyncFn},
     errors::TaskError,
-    executor::NodeExecutor,
+    executor::{JoinHandler, NodeExecutor, TransitionHandler},
     runtime::{Runtime, TaskOptions},
     traits::{
-        AnyNodeExecutor, JoinHandler, NodeArg, RegisterTransition, RegisterTransitionAsync,
-        TaskNode, TransitionHandler, TransitionResult,
+        AnyNodeExecutor, NodeArg, RegisterTransition, RegisterTransitionAsync, TaskNode,
+        TransitionResult,
     },
     transition::{
         ConcurrencyModel, JoinDefinition, JoinInput, JoinTarget, MappedJoinTarget, Transition,

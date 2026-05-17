@@ -247,8 +247,7 @@ impl<To: TaskNode + ?Sized> MarkedTransition<To> {
         Self(transition, PhantomData)
     }
 
-    /// Returns the underlying untyped transition.
-    pub fn into_inner(self) -> Transition {
+    pub(crate) fn into_inner(self) -> Transition {
         self.0
     }
 
