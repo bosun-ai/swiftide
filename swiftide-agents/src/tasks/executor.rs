@@ -34,7 +34,7 @@ impl<Output> Clone for RegisteredTransition<Output> {
                 definition,
                 handler,
             } => Self::Join {
-                definition: definition.clone(),
+                definition: *definition,
                 handler: handler.clone(),
             },
         }
@@ -190,7 +190,7 @@ impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + '
                     definition,
                     handler,
                 } => Ok(EvaluatedTransition::Join {
-                    definition: definition.clone(),
+                    definition: *definition,
                     payload: (handler)(output).await,
                 }),
             },

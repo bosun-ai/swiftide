@@ -319,9 +319,11 @@ async fn any_join_input_allows_mixed_branch_payloads() {
     let text = task
         .register_node_fn(|input: &i32| -> Result<String, Error> { Ok(format!("branch-{input}")) });
     let join = task.register_node_fn(|input: &AnyJoinInput| -> Result<usize, Error> {
-        Ok(input.iter::<i32>().copied().sum::<i32>() as usize
-            + input.iter::<String>().map(String::len).sum::<usize>()
-            + input.iter_any().count())
+        Ok(
+            usize::try_from(input.iter::<i32>().copied().sum::<i32>()).unwrap_or_default()
+                + input.iter::<String>().map(String::len).sum::<usize>()
+                + input.iter_any().count(),
+        )
     });
 
     task.starts_with(start);

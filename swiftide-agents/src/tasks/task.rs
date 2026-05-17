@@ -48,6 +48,9 @@ use super::{
     },
 };
 
+type TypedNodeExecutor<T> =
+    NodeExecutor<<T as TaskNode>::Input, <T as TaskNode>::Output, <T as TaskNode>::Error>;
+
 /// The observable outcome of calling [`Task::run`] or [`Task::resume`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TaskRunState<Output> {
@@ -613,7 +616,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     fn executor_mut<From>(
         &mut self,
         from: NodeId<From>,
-    ) -> Result<&mut NodeExecutor<From::Input, From::Output, From::Error>, TaskError>
+    ) -> Result<&mut TypedNodeExecutor<From>, TaskError>
     where
         From: TaskNode + 'static + ?Sized,
     {

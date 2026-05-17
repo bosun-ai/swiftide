@@ -70,12 +70,27 @@ impl NextNode {
 
 type ErasedPayload = Arc<dyn Any + Send + Sync>;
 
+#[derive(Clone, Copy)]
+enum JoinInputFactory {
+    Fallible(fn(Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError>),
+    Infallible(fn(Vec<ErasedPayload>) -> ErasedPayload),
+}
+
+impl JoinInputFactory {
+    fn build(self, payloads: Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError> {
+        match self {
+            JoinInputFactory::Fallible(factory) => factory(payloads),
+            JoinInputFactory::Infallible(factory) => Ok(factory(payloads)),
+        }
+    }
+}
+
 #[doc(hidden)]
 #[derive(Clone, Copy)]
 pub struct JoinDefinition {
     pub(crate) join_node_id: usize,
     pub(crate) concurrency_model: Option<ConcurrencyModel>,
-    input_factory: fn(Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError>,
+    input_factory: JoinInputFactory,
 }
 
 impl std::fmt::Debug for JoinDefinition {
@@ -92,7 +107,7 @@ impl JoinDefinition {
         Self {
             join_node_id,
             concurrency_model: None,
-            input_factory: typed_join_input::<Payload>,
+            input_factory: JoinInputFactory::Fallible(typed_join_input::<Payload>),
         }
     }
 
@@ -100,7 +115,7 @@ impl JoinDefinition {
         Self {
             join_node_id,
             concurrency_model: None,
-            input_factory: any_join_input,
+            input_factory: JoinInputFactory::Infallible(any_join_input),
         }
     }
 
@@ -108,7 +123,7 @@ impl JoinDefinition {
         self,
         payloads: Vec<ErasedPayload>,
     ) -> Result<ErasedPayload, TaskError> {
-        (self.input_factory)(payloads)
+        self.input_factory.build(payloads)
     }
 }
 
@@ -130,8 +145,8 @@ fn typed_join_input<Payload: NodeArg>(
     Ok(Arc::new(JoinInput::<Payload>::new(branches)) as ErasedPayload)
 }
 
-fn any_join_input(payloads: Vec<ErasedPayload>) -> Result<ErasedPayload, TaskError> {
-    Ok(Arc::new(AnyJoinInput::new(payloads)) as ErasedPayload)
+fn any_join_input(payloads: Vec<ErasedPayload>) -> ErasedPayload {
+    Arc::new(AnyJoinInput::new(payloads)) as ErasedPayload
 }
 
 /// A configured join destination for branches that should converge into a join node.
