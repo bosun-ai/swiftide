@@ -23,49 +23,8 @@
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
-use async_trait::async_trait;
-
-use super::errors::NodeError;
-use super::traits::{DynNodeId, NodeArg, TaskNode};
+use super::traits::TaskNode;
 use super::transition::{JoinInput, JoinTarget, MarkedTransition, NextNode, Transition};
-
-/// A typed placeholder node that returns its input unchanged.
-///
-/// This is useful when code needs to reconstruct a typed [`NodeId`] for an already registered
-/// node and only has its numeric identifier.
-#[derive(Debug)]
-pub struct NoopNode<T> {
-    _marker: std::marker::PhantomData<T>,
-}
-
-impl<T> Default for NoopNode<T> {
-    fn default() -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<T> Clone for NoopNode<T> {
-    fn clone(&self) -> Self {
-        Self::default()
-    }
-}
-
-#[async_trait]
-impl<T: NodeArg + Clone> TaskNode for NoopNode<T> {
-    type Input = T;
-    type Output = T;
-    type Error = NodeError;
-
-    async fn evaluate(
-        &self,
-        _node_id: &DynNodeId<Self>,
-        input: &Self::Input,
-    ) -> Result<T, NodeError> {
-        Ok(input.clone())
-    }
-}
 
 /// A typed handle to a registered node in a [`Task`](crate::tasks::Task).
 ///
@@ -110,7 +69,7 @@ impl<T: TaskNode + ?Sized> NodeId<T> {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn transitions_with(&self, context: T::Input) -> MarkedTransition<T> {
-        MarkedTransition::new(Transition::next_node(self, context))
+        Transition::next(self, context)
     }
 
     /// Builds a fan-out target pointing at this node with the provided input.

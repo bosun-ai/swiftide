@@ -94,7 +94,8 @@ fn build_fanout_join_task(
     task.starts_with(start);
     task.register_transition(start, move |input| {
         let transition =
-            Transition::fan_out(fan_out_nodes.iter().map(|node| node.target_with(input)));
+            Transition::fan_out(fan_out_nodes.iter().map(|node| node.target_with(input)))
+                .join_with(join.join());
 
         if parallel {
             transition.concurrency_model(swiftide::agents::tasks::ConcurrencyModel::Parallel)

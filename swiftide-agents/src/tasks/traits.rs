@@ -110,7 +110,7 @@ pub(super) trait TransitionResult<From: TaskNode + ?Sized> {
 impl<From, To> TransitionResult<From> for MarkedTransition<To>
 where
     From: TaskNode + 'static + ?Sized,
-    To: TaskNode<Input = From::Output> + ?Sized,
+    To: TaskNode + ?Sized,
 {
     fn into_transition(self) -> Transition {
         self.into_inner()

@@ -80,7 +80,7 @@ mod transition;
 
 pub use adapters::{AsyncFn, SyncFn, TaskAgent};
 pub use errors::{NodeError, TaskError};
-pub use node::{NodeId, NoopNode};
+pub use node::NodeId;
 pub use task::{Task, TaskBuilder, TaskRunState};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{

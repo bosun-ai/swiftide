@@ -16,8 +16,8 @@ help: the following other types implement trait `tasks::traits::TransitionResult
    | / impl<From, To> TransitionResult<From> for MarkedTransition<To>
    | | where
    | |     From: TaskNode + 'static + ?Sized,
-   | |     To: TaskNode<Input = From::Output> + ?Sized,
-   | |________________________________________________^ `MarkedTransition<To>`
+   | |     To: TaskNode + ?Sized,
+   | |__________________________^ `MarkedTransition<To>`
 ...
    | / impl<From> TransitionResult<From> for Transition
    | | where

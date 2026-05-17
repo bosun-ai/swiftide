@@ -46,7 +46,7 @@ pub enum ConcurrencyModel {
     Parallel,
 }
 
-/// A concrete next-step target used by [`Transition::next`] and [`Transition::fan_out`].
+/// A concrete next-step target used by [`Transition::fan_out`].
 #[derive(Debug, Clone)]
 pub struct NextNode {
     pub(crate) node_id: usize,
@@ -62,12 +62,6 @@ impl NextNode {
             node_id: node_id.id(),
             context: Arc::new(context) as Arc<dyn Any + Send + Sync>,
         }
-    }
-}
-
-impl From<NextNode> for Transition {
-    fn from(next_node: NextNode) -> Self {
-        Transition::next(next_node)
     }
 }
 
@@ -313,10 +307,7 @@ pub(crate) enum TransitionAction {
 }
 
 impl Transition {
-    /// Continues execution at the provided next-step target.
-    ///
-    /// This is the low-level entry point behind [`NodeId::transitions_with`].
-    pub fn next(next_node: NextNode) -> Self {
+    pub(crate) fn from_next_node(next_node: NextNode) -> Self {
         Self {
             action: TransitionAction::Next(next_node),
             concurrency_model: None,
@@ -335,11 +326,14 @@ impl Transition {
     /// let finish = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
     ///
     /// task.starts_with(start);
-    /// task.register_transition(start, move |value| Transition::next_node(&finish, value))?;
+    /// task.register_transition(start, move |value| Transition::next(&finish, value))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn next_node<T: TaskNode + ?Sized>(node_id: &NodeId<T>, context: T::Input) -> Self {
-        NextNode::new(*node_id, context).into()
+    pub fn next<T: TaskNode + ?Sized>(
+        node_id: &NodeId<T>,
+        context: T::Input,
+    ) -> MarkedTransition<T> {
+        MarkedTransition::new(Self::from_next_node(NextNode::new(*node_id, context)))
     }
 
     /// Builds a fan-out that schedules one or more branches from the current node output.

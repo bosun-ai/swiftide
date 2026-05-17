@@ -1,0 +1,22 @@
+error[E0308]: `if` and `else` have incompatible types
+  --> tests/ui/transition_next_requires_single_target_type.rs:21:13
+   |
+ 9 |       let second = task.register_node_fn(|input: &String| -> Result<usize, NodeError> {
+   |                                          -------------------------------------------- the expected closure
+...
+12 |       let third = task.register_node_fn(|input: &String| -> Result<usize, NodeError> {
+   |                                         -------------------------------------------- the found closure
+...
+18 | /         if output.is_empty() {
+19 | |             Transition::next(&second, output)
+   | |             --------------------------------- expected because of this
+20 | |         } else {
+21 | |             Transition::next(&third, output)
+   | |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected closure, found a different closure
+22 | |         }
+   | |_________- `if` and `else` have incompatible types
+   |
+   = note: expected struct `MarkedTransition<SyncFn<{closure@$DIR/tests/ui/transition_next_requires_single_target_type.rs:9:40: 9:84}, String, usize>>`
+              found struct `MarkedTransition<SyncFn<{closure@$DIR/tests/ui/transition_next_requires_single_target_type.rs:12:39: 12:83}, String, usize>>`
+   = note: no two closures, even if identical, have the same type
+   = help: consider boxing your closure and/or using it as a trait object

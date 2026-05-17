@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
 
     task.register_transition(start, move |input| {
         Transition::fan_out([increment.target_with(input), double.target_with(input)])
+            .join_with(join.join())
     })?;
 
     task.register_transition(increment, join.join())?;

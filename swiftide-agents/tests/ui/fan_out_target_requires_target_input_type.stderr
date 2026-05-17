@@ -1,0 +1,17 @@
+error[E0308]: mismatched types
+  --> tests/ui/fan_out_target_requires_target_input_type.rs:10:32
+   |
+10 |     let _ = branch.target_with(42);
+   |                    ----------- ^^ expected `String`, found integer
+   |                    |
+   |                    arguments to this method are incorrect
+   |
+note: method defined here
+  --> src/tasks/node.rs
+   |
+   |     pub fn target_with(&self, context: T::Input) -> NextNode {
+   |            ^^^^^^^^^^^
+help: try using a conversion method
+   |
+10 |     let _ = branch.target_with(42.to_string());
+   |                                  ++++++++++++

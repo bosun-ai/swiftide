@@ -62,24 +62,61 @@ struct RunState {
     next_group_id: usize,
 }
 
-#[derive(Debug, Clone)]
-enum JoinMemberState {
-    Pending,
-    Ready { payload: Arc<dyn Any + Send + Sync> },
-}
-
-impl JoinMemberState {
-    fn is_terminal(&self) -> bool {
-        matches!(self, JoinMemberState::Ready { .. })
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct JoinGroupState {
     join_node_id: usize,
     concurrency_model: ConcurrencyModel,
-    members: HashMap<BranchId, JoinMemberState>,
-    member_order: Vec<BranchId>,
+    first_branch_id: usize,
+    payloads: Vec<Option<Arc<dyn Any + Send + Sync>>>,
+}
+
+impl JoinGroupState {
+    fn new(
+        definition: JoinDefinition,
+        default_concurrency_model: ConcurrencyModel,
+        first_branch_id: BranchId,
+        branch_count: usize,
+    ) -> Self {
+        Self {
+            join_node_id: definition.join_node_id,
+            concurrency_model: definition
+                .concurrency_model
+                .unwrap_or(default_concurrency_model),
+            first_branch_id: first_branch_id.0,
+            payloads: vec![None; branch_count],
+        }
+    }
+
+    fn set_payload(
+        &mut self,
+        branch_id: BranchId,
+        payload: Arc<dyn Any + Send + Sync>,
+    ) -> Result<(), TaskError> {
+        let index = branch_id
+            .0
+            .checked_sub(self.first_branch_id)
+            .ok_or_else(|| TaskError::invalid_state("Branch does not belong to join group"))?;
+        let slot = self
+            .payloads
+            .get_mut(index)
+            .ok_or_else(|| TaskError::invalid_state("Branch does not belong to join group"))?;
+        if slot.is_some() {
+            return Err(TaskError::invalid_state(
+                "Branch already completed this join group",
+            ));
+        }
+
+        *slot = Some(payload);
+        Ok(())
+    }
+
+    fn is_ready(&self) -> bool {
+        self.payloads.iter().all(Option::is_some)
+    }
+
+    fn into_join_input(self) -> JoinInput {
+        JoinInput::new(self.payloads.into_iter().flatten().collect())
+    }
 }
 
 #[derive(Debug)]
@@ -349,7 +386,6 @@ impl RunState {
         paused.sort_by_key(|branch| branch.id.0);
 
         for branch in paused {
-            self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Pending);
             self.enqueue_branch(branch);
         }
     }
@@ -386,7 +422,6 @@ impl RunState {
                 branch.current_node = next_node.node_id;
                 branch.context = next_node.context;
                 branch.concurrency_model = concurrency_model;
-                self.set_join_member_state(branch.join_group, branch.id, JoinMemberState::Pending);
                 self.enqueue_branch(branch);
                 Ok(LoopControl::Continue)
             }
@@ -427,9 +462,18 @@ impl RunState {
             return;
         }
 
+        let branch_count = targets.len();
         let join_group = self.next_group();
-        let mut members = HashMap::with_capacity(targets.len());
-        let mut member_order = Vec::with_capacity(targets.len());
+        let first_branch_id = BranchId(self.next_branch_id);
+        self.join_groups.insert(
+            join_group,
+            JoinGroupState::new(
+                join,
+                default_concurrency_model,
+                first_branch_id,
+                branch_count,
+            ),
+        );
 
         for target in targets {
             let child_id = self.next_branch();
@@ -441,20 +485,8 @@ impl RunState {
                 join_group: Some(join_group),
             };
 
-            member_order.push(child_id);
-            members.insert(child_id, JoinMemberState::Pending);
             self.enqueue_branch(child);
         }
-
-        self.join_groups.insert(
-            join_group,
-            JoinGroupState {
-                join_node_id: join.join_node_id,
-                concurrency_model: join.concurrency_model.unwrap_or(default_concurrency_model),
-                members,
-                member_order,
-            },
-        );
     }
 
     fn pause_branch<Output>(&mut self, branch: ExecutionBranch) -> LoopControl<Output> {
@@ -463,7 +495,6 @@ impl RunState {
     }
 
     fn finish_with_output<Output: NodeArg + Clone>(
-        &mut self,
         output: Arc<dyn Any + Send + Sync>,
     ) -> Result<LoopControl<Output>, TaskError> {
         let output = output
@@ -480,7 +511,7 @@ impl RunState {
         output: Arc<dyn Any + Send + Sync>,
     ) -> Result<LoopControl<Output>, TaskError> {
         let Some(group_id) = branch.join_group else {
-            return self.finish_with_output(output);
+            return Self::finish_with_output(output);
         };
 
         self.apply_join_arrival(group_id, branch, output)
@@ -528,21 +559,14 @@ impl RunState {
                 .get_mut(&group_id)
                 .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
 
-            group
-                .members
-                .insert(branch.id, JoinMemberState::Ready { payload });
+            group.set_payload(branch.id, payload)?;
         }
 
-        self.enqueue_join_if_ready(group_id)?;
-        Ok(LoopControl::Continue)
-    }
-
-    fn enqueue_join_if_ready(&mut self, group_id: BranchGroupId) -> Result<(), TaskError> {
         if let Some(join_branch) = self.try_fire_join(group_id)? {
             self.enqueue_branch(join_branch);
         }
 
-        Ok(())
+        Ok(LoopControl::Continue)
     }
 
     fn try_fire_join(
@@ -554,51 +578,27 @@ impl RunState {
                 return Ok(None);
             };
 
-            group.members.values().all(JoinMemberState::is_terminal)
+            group.is_ready()
         };
 
         if !ready {
             return Ok(None);
         }
 
-        let mut group = self
+        let group = self
             .join_groups
             .remove(&group_id)
             .ok_or_else(|| TaskError::invalid_state("Missing join group"))?;
-        let branches = group
-            .member_order
-            .into_iter()
-            .filter_map(|branch_id| {
-                group
-                    .members
-                    .remove(&branch_id)
-                    .and_then(|state| match state {
-                        JoinMemberState::Ready { payload } => Some(payload),
-                        JoinMemberState::Pending => None,
-                    })
-            })
-            .collect();
-        let join_input = JoinInput::new(branches);
+        let join_node_id = group.join_node_id;
+        let concurrency_model = group.concurrency_model;
+        let join_input = group.into_join_input();
 
         Ok(Some(ExecutionBranch {
             id: self.next_branch(),
-            current_node: group.join_node_id,
+            current_node: join_node_id,
             context: Arc::new(join_input) as Arc<dyn Any + Send + Sync>,
-            concurrency_model: group.concurrency_model,
+            concurrency_model,
             join_group: None,
         }))
-    }
-
-    fn set_join_member_state(
-        &mut self,
-        group_id: Option<BranchGroupId>,
-        branch_id: BranchId,
-        state: JoinMemberState,
-    ) {
-        if let Some(group_id) = group_id
-            && let Some(group) = self.join_groups.get_mut(&group_id)
-        {
-            group.members.insert(branch_id, state);
-        }
     }
 }

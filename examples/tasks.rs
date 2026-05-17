@@ -171,7 +171,7 @@ async fn main() -> Result<()> {
 
     // Step 2: use the structured stop payload to drive a final LLM rendering step.
     task.register_transition(agent_id, move |decision: BriefingDecision| {
-        Transition::next_node(
+        Transition::next(
             &handoff_prompt_id,
             Prompt::from(
                 "Write a teammate-facing hand-off note.\n\
