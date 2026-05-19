@@ -801,9 +801,7 @@ fn conflicting_transition_registrations_are_rejected() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn task_default_parallel_runs_fanout_branches_concurrently() {
     let barrier = Arc::new(Barrier::new(2));
-    let mut task: Task<i32, i32> = Task::builder()
-        .concurrency_model(ConcurrencyModel::Parallel)
-        .build();
+    let mut task = Task::new().with_default_concurrency_model(ConcurrencyModel::Parallel);
 
     let start = task.register_node(IntNode);
     let left = task.register_node(BarrierNode {

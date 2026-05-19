@@ -6,7 +6,6 @@
 //!
 //! The main entry points are:
 //! - [`Task`] to define and run a graph
-//! - [`TaskBuilder`] to configure execution defaults such as concurrency
 //! - [`Transition`] to describe how execution should continue after a node finishes
 //! - [`Task::register_node_fn`] for lightweight synchronous closure nodes
 //! - [`NodeId`] helpers such as [`NodeId::transitions_with`] and [`NodeId::join`] for the common
@@ -85,7 +84,7 @@ mod transition;
 pub use adapters::{AsyncFn, SyncFn, TaskAgent};
 pub use errors::{NodeError, TaskError};
 pub use node::NodeId;
-pub use task::{Task, TaskBuilder, TaskRunState};
+pub use task::{Task, TaskRunState};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
     AnyJoinInput, AnyJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,

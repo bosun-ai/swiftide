@@ -13,7 +13,7 @@
 //!
 //! # #[tokio::main(flavor = "current_thread")]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let mut task = Task::<i32, i32>::builder().build();
+//! let mut task = Task::<i32, i32>::new();
 //!
 //! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
 //! let finish =
@@ -58,34 +58,6 @@ pub enum TaskRunState<Output> {
     Completed(Output),
     /// The task paused and can be continued with [`Task::resume`].
     Paused,
-}
-
-/// Configures default runtime behavior for a [`Task`].
-#[derive(Debug)]
-#[must_use]
-pub struct TaskBuilder<Input: NodeArg, Output: NodeArg> {
-    default_concurrency_model: ConcurrencyModel,
-    _marker: std::marker::PhantomData<(Input, Output)>,
-}
-
-impl<Input: NodeArg + Clone, Output: NodeArg + Clone> TaskBuilder<Input, Output> {
-    pub(crate) fn new() -> Self {
-        Self {
-            default_concurrency_model: ConcurrencyModel::Sequential,
-            _marker: std::marker::PhantomData,
-        }
-    }
-
-    /// Sets the default concurrency model for transitions that do not override it explicitly.
-    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.default_concurrency_model = concurrency_model;
-        self
-    }
-
-    /// Builds a new task with the configured defaults.
-    pub fn build(self) -> Task<Input, Output> {
-        Task::with_default_concurrency_model(self.default_concurrency_model)
-    }
 }
 
 /// A typed task graph that can run sequential, branching, and joining workflows.
@@ -292,36 +264,37 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Default for Task<Input, Ou
 }
 
 impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
-    /// Creates a builder for configuring task-wide defaults before constructing a [`Task`].
+    /// Creates a new task with the default runtime behavior.
+    pub fn new() -> Self {
+        Self {
+            nodes: Vec::new(),
+            start_node: None,
+            runtime: Runtime::new(),
+            default_concurrency_model: ConcurrencyModel::Sequential,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    /// Sets the default concurrency model for transitions that do not override it explicitly.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use swiftide_agents::tasks::{ConcurrencyModel, Task};
     ///
-    /// let task = Task::<i32, i32>::builder()
-    ///     .concurrency_model(ConcurrencyModel::Parallel)
-    ///     .build();
+    /// let task = Task::<i32, i32>::new()
+    ///     .with_default_concurrency_model(ConcurrencyModel::Parallel);
     ///
     /// let _ = task;
     /// ```
-    pub fn builder() -> TaskBuilder<Input, Output> {
-        TaskBuilder::new()
-    }
-
-    /// Creates a new task with the default runtime behavior.
-    pub fn new() -> Self {
-        Self::with_default_concurrency_model(ConcurrencyModel::Sequential)
-    }
-
-    fn with_default_concurrency_model(default_concurrency_model: ConcurrencyModel) -> Self {
-        Self {
-            nodes: Vec::new(),
-            start_node: None,
-            runtime: Runtime::new(),
-            default_concurrency_model,
-            _marker: std::marker::PhantomData,
-        }
+    #[must_use]
+    pub fn with_default_concurrency_model(
+        mut self,
+        default_concurrency_model: ConcurrencyModel,
+    ) -> Self {
+        self.default_concurrency_model = default_concurrency_model;
+        self.runtime.clear_state();
+        self
     }
 
     /// Marks the node where execution should start.

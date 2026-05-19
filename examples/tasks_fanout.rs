@@ -7,9 +7,7 @@ use swiftide::agents::tasks::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut task: Task<i32, i32> = Task::builder()
-        .concurrency_model(ConcurrencyModel::Parallel)
-        .build();
+    let mut task = Task::new().with_default_concurrency_model(ConcurrencyModel::Parallel);
 
     let start =
         task.register_node_fn(|input: &i32| -> std::result::Result<i32, NodeError> { Ok(*input) });
