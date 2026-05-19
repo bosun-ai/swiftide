@@ -9775,6 +9775,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
+ "trybuild",
 ]
 
 [[package]]

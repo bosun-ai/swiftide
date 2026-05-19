@@ -1,101 +1,44 @@
-use std::any::Any;
-
-use async_trait::async_trait;
-use dyn_clone::DynClone;
-
-use super::{
-    errors::NodeError,
-    transition::{MarkedTransitionPayload, TransitionPayload},
+//! Typed node traits and handles for task graphs.
+//!
+//! This module defines the contracts for task nodes and the typed identifiers used to wire them
+//! together.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+//!
+//! let mut task = Task::<i32, i32>::new();
+//! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+//! let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+//! let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+//!     Ok(input.iter().copied().sum())
+//! });
+//!
+//! task.starts_with(start);
+//! task.register_transition(start, move |value| {
+//!     // `join_with` defines the branch group and the join node that waits for it.
+//!     Transition::fan_out(&branch, value)
+//!         .join_with(join.join())
+//! })?;
+//! // Branches still decide where their own output goes before the join can run.
+//! task.register_transition(branch, join.join())?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+use super::traits::{NodeArg, TaskNode};
+use super::transition::{
+    AnyJoinInput, AnyJoinTarget, JoinInput, JoinTarget, MarkedTransition, Transition,
 };
 
-pub trait NodeArg: Send + Sync + DynClone + 'static {}
-
-impl<T: Send + Sync + std::fmt::Debug + 'static + Clone> NodeArg for T {}
-
-#[derive(Debug, Clone)]
-pub struct NoopNode<Context: NodeArg> {
-    _marker: std::marker::PhantomData<(Context, Box<dyn std::error::Error + Send + Sync>)>,
-}
-
-impl<Context> Default for NoopNode<Context>
-where
-    Context: NodeArg,
-{
-    fn default() -> Self {
-        NoopNode {
-            _marker: std::marker::PhantomData,
-        }
-    }
-}
-
-#[async_trait]
-impl<Context: NodeArg + Clone> TaskNode for NoopNode<Context> {
-    type Output = ();
-    type Input = Context;
-    type Error = NodeError;
-
-    async fn evaluate(
-        &self,
-        _node_id: &DynNodeId<Self>,
-        _context: &Context,
-    ) -> Result<Self::Output, Self::Error> {
-        Ok(())
-    }
-}
-
-#[async_trait]
-pub trait TaskNode: Send + Sync + DynClone + Any {
-    type Input: NodeArg;
-    type Output: NodeArg;
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    async fn evaluate(
-        &self,
-        node_id: &DynNodeId<Self>,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error>;
-}
-
-pub type DynNodeId<T> = NodeId<
-    dyn TaskNode<
-            Input = <T as TaskNode>::Input,
-            Output = <T as TaskNode>::Output,
-            Error = <T as TaskNode>::Error,
-        >,
->;
-
-dyn_clone::clone_trait_object!(
-    TaskNode<
-        Input = dyn NodeArg,
-        Output = dyn NodeArg,
-        Error = dyn std::error::Error + Send + Sync,
-    >
-);
-
-#[async_trait]
-impl<Input: NodeArg, Output: NodeArg, Error: std::error::Error + Send + Sync + 'static> TaskNode
-    for Box<dyn TaskNode<Input = Input, Output = Output, Error = Error>>
-{
-    type Input = Input;
-    type Output = Output;
-    type Error = Error;
-
-    async fn evaluate(
-        &self,
-        node_id: &NodeId<
-            dyn TaskNode<Input = Self::Input, Output = Self::Output, Error = Self::Error>,
-        >,
-        input: &Self::Input,
-    ) -> Result<Self::Output, Self::Error> {
-        self.as_ref().evaluate(node_id, input).await
-    }
-}
-
-dyn_clone::clone_trait_object!(<Input, Output, Error> TaskNode<Input = Input, Output = Output, Error = Error>);
-
+/// A typed handle to a registered node in a [`Task`](crate::tasks::Task).
+///
+/// `NodeId` keeps the node's type information so transitions can be expressed without manual
+/// downcasts. Use [`NodeId::transitions_with`] for the common linear case,
+/// [`Transition::fan_out`](crate::tasks::Transition::fan_out) when building static fan-out
+/// transitions, and [`NodeId::join`] for join nodes.
 #[derive(PartialEq, Eq)]
 pub struct NodeId<T: TaskNode + ?Sized> {
-    pub id: usize,
+    id: usize,
     _marker: std::marker::PhantomData<T>,
 }
 
@@ -107,41 +50,92 @@ impl<T: TaskNode + ?Sized> std::fmt::Debug for NodeId<T> {
     }
 }
 
-pub type AnyNodeId = usize;
-
 impl<T: TaskNode + ?Sized> NodeId<T> {
+    /// Returns the stable numeric identifier assigned when the node was registered.
     pub fn id(&self) -> usize {
         self.id
     }
 
-    /// Returns a closure that can be used as a transition function
-    pub fn as_transition(&self) -> impl Fn(T::Input) -> MarkedTransitionPayload<T> + 'static {
-        let node_id = *self;
-
-        Box::new(move |context| node_id.transitions_with(context))
-    }
-
-    /// Returns a transition payload suitable for inside a task transition
+    /// Builds a typed transition to this node with the provided input.
     ///
-    /// You can also get the closure version with `as_transition`
-    pub fn transitions_with(&self, context: T::Input) -> MarkedTransitionPayload<T> {
-        MarkedTransitionPayload::new(TransitionPayload::next_node(self, context))
+    /// This is the most ergonomic way to connect one node to the next in a linear task.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{NodeError, Task};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let finish = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input * 2) });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| finish.transitions_with(value))?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn transitions_with(&self, context: T::Input) -> MarkedTransition<T> {
+        Transition::next(self, context)
+    }
+}
+
+impl<T, Payload> NodeId<T>
+where
+    T: TaskNode<Input = JoinInput<Payload>> + ?Sized,
+    Payload: NodeArg,
+{
+    /// Creates a join target that waits for every branch in the fan-out group.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::tasks::{JoinInput, NodeError, Task, Transition};
+    ///
+    /// let mut task = Task::<i32, i32>::new();
+    /// let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input) });
+    /// let branch = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> { Ok(*input + 1) });
+    /// let join = task.register_node_fn(|input: &JoinInput<i32>| -> Result<i32, NodeError> {
+    ///     Ok(input.iter().copied().sum())
+    /// });
+    ///
+    /// task.starts_with(start);
+    /// task.register_transition(start, move |value| {
+    ///     Transition::fan_out(&branch, value)
+    ///         .join_with(join.join())
+    /// })?;
+    /// task.register_transition(branch, join.join())?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn join(&self) -> JoinTarget<T, Payload> {
+        JoinTarget::new(*self)
+    }
+}
+
+impl<T> NodeId<T>
+where
+    T: TaskNode<Input = AnyJoinInput> + ?Sized,
+{
+    /// Creates a join target for branches that intentionally contribute mixed payload types.
+    ///
+    /// Prefer [`NodeId::join`] with [`JoinInput<T>`](crate::tasks::JoinInput) when all branches
+    /// contribute the same payload type.
+    pub fn join_any(&self) -> AnyJoinTarget<T> {
+        AnyJoinTarget::new(*self)
     }
 }
 
 impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
+    /// Creates a typed node identifier for an already-registered node.
+    ///
+    /// Prefer [`Task::register_node`](crate::tasks::Task::register_node) when building normal task
+    /// graphs. Constructing an id manually is only correct when `id` refers to a node managed by the
+    /// caller's own task-like runtime.
     pub fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
             _marker: std::marker::PhantomData,
         }
     }
-
-    /// Returns the internal id of the node without the type information.
-    pub fn as_any(&self) -> AnyNodeId {
-        self.id
-    }
-
+    /// Erases the concrete node type while keeping the node's typed input and output contracts.
     pub fn as_dyn(
         self,
     ) -> NodeId<dyn TaskNode<Input = T::Input, Output = T::Output, Error = T::Error>> {

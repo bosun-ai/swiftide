@@ -1,0 +1,27 @@
+error[E0277]: the trait bound `JoinTarget<SyncFn<{closure@$DIR/tests/ui/join_requires_branch_payload_type.rs:10:38: 10:92}, JoinInput<usize>, usize>, usize>: tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/join_requires_branch_payload_type.rs:7:40: 7:82}, i32, String>>` is not satisfied
+  --> tests/ui/join_requires_branch_payload_type.rs:18:38
+   |
+18 |     task.register_transition(branch, join.join())?;
+   |          -------------------         ^^^^^^^^^^^ unsatisfied trait bound
+   |          |
+   |          required by a bound introduced by this call
+   |
+   = help: the trait `tasks::traits::RegisterTransition<SyncFn<{closure@$DIR/tests/ui/join_requires_branch_payload_type.rs:7:40: 7:82}, i32, String>>` is not implemented for `JoinTarget<SyncFn<{closure@$DIR/tests/ui/join_requires_branch_payload_type.rs:10:38: 10:92}, JoinInput<usize>, usize>, usize>`
+help: the trait `tasks::traits::RegisterTransition<From>` is implemented for `JoinTarget<To, Payload>`
+  --> src/tasks/task.rs
+   |
+   | / impl<From, To, Payload> RegisterTransition<From> for JoinTarget<To, Payload>
+   | | where
+   | |     From: TaskNode + 'static + ?Sized,
+   | |     From::Output: Into<Payload>,
+   | |     Payload: NodeArg,
+   | |     To: TaskNode<Input = JoinInput<Payload>> + 'static + ?Sized,
+   | |________________________________________________________________^
+note: required by a bound in `Task::<Input, Output>::register_transition`
+  --> src/tasks/task.rs
+   |
+   |     pub fn register_transition<From, R>(
+   |            ------------------- required by a bound in this associated function
+...
+   |         R: RegisterTransition<From>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Task::<Input, Output>::register_transition`
