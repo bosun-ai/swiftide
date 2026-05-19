@@ -3,12 +3,12 @@
 //! # Examples
 //!
 //! ```no_run
-//! use swiftide_agents::tasks::{NodeError, SyncFn, Task};
+//! use swiftide_agents::tasks::{NodeError, Task};
 //!
 //! let mut task = Task::<i32, i32>::new();
-//! let start = task.register_node(SyncFn::new(|input: &i32| -> Result<i32, NodeError> {
+//! let start = task.register_node_fn(|input: &i32| -> Result<i32, NodeError> {
 //!     Ok(*input + 1)
-//! }));
+//! });
 //!
 //! task.starts_with(start);
 //! ```

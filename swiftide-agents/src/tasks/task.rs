@@ -405,12 +405,29 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Examples
     ///
     /// ```no_run
-    /// use swiftide_agents::tasks::{NodeError, SyncFn, Task};
+    /// use async_trait::async_trait;
+    /// use swiftide_agents::tasks::{DynNodeId, NodeError, Task, TaskNode};
+    ///
+    /// #[derive(Clone)]
+    /// struct Increment;
+    ///
+    /// #[async_trait]
+    /// impl TaskNode for Increment {
+    ///     type Input = i32;
+    ///     type Output = i32;
+    ///     type Error = NodeError;
+    ///
+    ///     async fn evaluate(
+    ///         &self,
+    ///         _node_id: &DynNodeId<Self>,
+    ///         input: &Self::Input,
+    ///     ) -> Result<Self::Output, Self::Error> {
+    ///         Ok(*input + 1)
+    ///     }
+    /// }
     ///
     /// let mut task = Task::<i32, i32>::new();
-    /// let start = task.register_node(SyncFn::new(|input: &i32| -> Result<i32, NodeError> {
-    ///     Ok(*input + 1)
-    /// }));
+    /// let start = task.register_node(Increment);
     ///
     /// let _ = start;
     /// ```

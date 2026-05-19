@@ -24,10 +24,9 @@ impl<T: Send + Sync + std::fmt::Debug + 'static + Clone> NodeArg for T {}
 /// A typed step in a [`Task`](crate::tasks::Task).
 ///
 /// Implement this trait for your own domain-specific nodes when you want full control over how a
-/// task step runs. For lightweight nodes, use
-/// [`Task::register_node_fn`](crate::tasks::Task::register_node_fn). For async closures, use
-/// [`Task::register_node_async_fn`](crate::tasks::Task::register_node_async_fn) or
-/// [`AsyncFn`](crate::tasks::AsyncFn).
+/// task step runs. For lightweight closure nodes, use
+/// [`Task::register_node_fn`](crate::tasks::Task::register_node_fn), or
+/// [`Task::register_node_async_fn`](crate::tasks::Task::register_node_async_fn) for async closures.
 #[async_trait]
 pub trait TaskNode: Send + Sync + DynClone + Any {
     /// The input accepted by this node.

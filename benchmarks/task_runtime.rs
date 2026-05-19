@@ -24,6 +24,7 @@ fn increment_node() -> SyncFn<impl Fn(&i32) -> Result<i32, NodeError> + Clone, i
     SyncFn::new(|input: &i32| Ok::<_, NodeError>(*input + 1))
 }
 
+#[allow(clippy::type_complexity)]
 fn join_sum_node() -> SyncFn<
     impl Fn(&swiftide::agents::tasks::JoinInput<i32>) -> Result<i32, NodeError> + Clone,
     swiftide::agents::tasks::JoinInput<i32>,
