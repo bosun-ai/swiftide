@@ -1,12 +1,23 @@
 use std::cmp::Ordering;
 
 use derive_builder::Builder;
-use schemars::Schema;
+use schemars::{JsonSchema, Schema, generate::SchemaSettings};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 
 pub use super::tool_schema::{StrictToolParametersSchema, ToolSchemaError};
+
+/// Builds a tool parameters schema using Swiftide's provider-neutral tool-schema settings.
+///
+/// Tool schemas are intentionally inlined to keep provider-side grammar compilation simple,
+/// especially for strict tool-use APIs.
+pub fn parameters_schema_for<T: ?Sized + JsonSchema>() -> Schema {
+    SchemaSettings::default()
+        .with(|settings| settings.inline_subschemas = true)
+        .into_generator()
+        .into_root_schema_for::<T>()
+}
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
@@ -380,6 +391,26 @@ mod tests {
     }
 
     #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    struct PlanArgs {
+        items: Vec<PlanItem>,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct PlanItem {
+        step: String,
+        status: PlanStatus,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+    #[serde(rename_all = "snake_case")]
+    enum PlanStatus {
+        Pending,
+        InProgress,
+        Completed,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
     #[serde(deny_unknown_fields)]
     struct NestedCommentRequest {
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -438,6 +469,20 @@ mod tests {
         let json = serde_json::to_value(&spec).unwrap();
         assert_eq!(json.get("name").and_then(|v| v.as_str()), Some("example"));
         assert!(json.get("parameters_schema").is_some());
+    }
+
+    #[test]
+    fn parameters_schema_for_inlines_nested_subschemas() {
+        let schema = serde_json::to_value(parameters_schema_for::<PlanArgs>()).unwrap();
+
+        assert_eq!(schema.get("$defs"), None);
+        assert_eq!(
+            schema.pointer("/properties/items/items/properties/status"),
+            Some(&json!({
+                "enum": ["pending", "in_progress", "completed"],
+                "type": "string"
+            }))
+        );
     }
 
     #[test]
