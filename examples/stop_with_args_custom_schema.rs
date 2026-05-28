@@ -21,11 +21,18 @@ enum TaskStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[schemars(deny_unknown_fields)]
+struct StopDetails {
+    merchants_onboarded: u32,
+    next_actions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[schemars(deny_unknown_fields)]
 struct StopPayload {
     status: TaskStatus,
     summary: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    details: Option<serde_json::Value>,
+    details: Option<StopDetails>,
 }
 
 fn stop_schema() -> Schema {
