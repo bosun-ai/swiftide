@@ -59,9 +59,288 @@ impl StrictToolParametersSchema {
         self.document
     }
 
+    pub fn into_provider_json(mut self) -> Value {
+        inline_local_references(&mut self.document);
+        strip_schema_metadata(&mut self.document);
+        strip_rust_numeric_formats(&mut self.document);
+        complete_required_arrays(&mut self.document);
+        self.document
+    }
+
     pub fn as_json(&self) -> &Value {
         &self.document
     }
+}
+
+fn inline_local_references(schema: &mut Value) {
+    let definitions = LocalDefinitions::from_schema(schema);
+    let all_references_resolved =
+        inline_local_references_in_value(schema, &definitions, &mut Vec::new());
+
+    if all_references_resolved {
+        remove_schema_definitions(schema);
+    }
+}
+
+#[derive(Debug, Default)]
+struct LocalDefinitions {
+    by_reference: Map<String, Value>,
+}
+
+impl LocalDefinitions {
+    fn from_schema(schema: &Value) -> Self {
+        let mut definitions = Self::default();
+        definitions.collect(schema, "#");
+        definitions
+    }
+
+    fn get(&self, reference: &str) -> Option<&Value> {
+        self.by_reference.get(reference)
+    }
+
+    fn collect(&mut self, value: &Value, pointer: &str) {
+        let Value::Object(object) = value else {
+            return;
+        };
+
+        for key in ["$defs", "definitions"] {
+            let Some(entries) = object.get(key).and_then(Value::as_object) else {
+                continue;
+            };
+
+            let definitions_pointer = pointer_with_key(pointer, key);
+            for (name, schema) in entries {
+                let definition_pointer = pointer_with_key(&definitions_pointer, name);
+                self.by_reference
+                    .insert(definition_pointer.clone(), schema.clone());
+                self.collect(schema, &definition_pointer);
+            }
+        }
+
+        for (key, child) in object {
+            if key == "$defs" || key == "definitions" {
+                continue;
+            }
+
+            collect_child_definitions(self, child, &pointer_with_key(pointer, key));
+        }
+    }
+}
+
+fn collect_child_definitions(definitions: &mut LocalDefinitions, value: &Value, pointer: &str) {
+    match value {
+        Value::Object(_) => definitions.collect(value, pointer),
+        Value::Array(entries) => {
+            for (index, entry) in entries.iter().enumerate() {
+                collect_child_definitions(
+                    definitions,
+                    entry,
+                    &pointer_with_key(pointer, index.to_string()),
+                );
+            }
+        }
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
+    }
+}
+
+fn inline_local_references_in_value(
+    value: &mut Value,
+    definitions: &LocalDefinitions,
+    stack: &mut Vec<String>,
+) -> bool {
+    let Some(reference) = local_reference(value) else {
+        return inline_local_references_in_children(value, definitions, stack);
+    };
+
+    let Some(target) = definitions.get(&reference.reference).cloned() else {
+        return false;
+    };
+
+    if stack.contains(&reference.reference) {
+        return false;
+    }
+
+    stack.push(reference.reference);
+    let mut inlined = target;
+    let all_references_resolved =
+        inline_local_references_in_value(&mut inlined, definitions, stack);
+    stack.pop();
+
+    if let Value::Object(inlined_object) = &mut inlined {
+        inlined_object.extend(reference.annotations);
+    }
+
+    *value = inlined;
+    all_references_resolved
+}
+
+#[derive(Debug)]
+struct LocalReference {
+    reference: String,
+    annotations: Map<String, Value>,
+}
+
+fn local_reference(value: &Value) -> Option<LocalReference> {
+    let object = value.as_object()?;
+
+    let reference = object
+        .get("$ref")
+        .and_then(Value::as_str)
+        .filter(|reference| reference.starts_with('#'))?;
+
+    let annotations = object
+        .iter()
+        .filter(|(key, _)| key.as_str() != "$ref")
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+
+    Some(LocalReference {
+        reference: reference.to_string(),
+        annotations,
+    })
+}
+
+fn inline_local_references_in_children(
+    value: &mut Value,
+    definitions: &LocalDefinitions,
+    stack: &mut Vec<String>,
+) -> bool {
+    match value {
+        Value::Object(object) => {
+            let mut all_references_resolved = true;
+            for child in object.values_mut() {
+                all_references_resolved &=
+                    inline_local_references_in_value(child, definitions, stack);
+            }
+            all_references_resolved
+        }
+        Value::Array(entries) => {
+            let mut all_references_resolved = true;
+            for child in entries {
+                all_references_resolved &=
+                    inline_local_references_in_value(child, definitions, stack);
+            }
+            all_references_resolved
+        }
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => true,
+    }
+}
+
+fn remove_schema_definitions(value: &mut Value) {
+    match value {
+        Value::Object(object) => {
+            object.remove("$defs");
+            object.remove("definitions");
+            for child in object.values_mut() {
+                remove_schema_definitions(child);
+            }
+        }
+        Value::Array(entries) => {
+            for child in entries {
+                remove_schema_definitions(child);
+            }
+        }
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
+    }
+}
+
+fn strip_schema_metadata(schema: &mut Value) {
+    walk_schema_mut(schema, &mut |node| {
+        node.remove("$schema");
+    });
+}
+
+fn strip_rust_numeric_formats(schema: &mut Value) {
+    walk_schema_mut(schema, &mut |node| {
+        let should_strip = node
+            .get("format")
+            .and_then(Value::as_str)
+            .is_some_and(is_rust_numeric_format);
+
+        if should_strip {
+            node.remove("format");
+        }
+    });
+}
+
+fn is_rust_numeric_format(format: &str) -> bool {
+    matches!(
+        format,
+        "int8"
+            | "int16"
+            | "int32"
+            | "int64"
+            | "int128"
+            | "isize"
+            | "uint"
+            | "uint8"
+            | "uint16"
+            | "uint32"
+            | "uint64"
+            | "uint128"
+            | "usize"
+    )
+}
+
+fn complete_required_arrays(schema: &mut Value) {
+    walk_schema_mut(schema, &mut |node| {
+        let Some(properties) = node.get("properties").and_then(Value::as_object) else {
+            return;
+        };
+
+        node.insert(
+            "required".to_string(),
+            Value::Array(properties.keys().cloned().map(Value::String).collect()),
+        );
+    });
+}
+
+fn walk_schema_mut(value: &mut Value, visitor: &mut impl FnMut(&mut Map<String, Value>)) {
+    let Value::Object(node) = value else {
+        return;
+    };
+
+    visitor(node);
+    walk_schema_children_mut(node, visitor);
+}
+
+fn walk_schema_children_mut(
+    node: &mut Map<String, Value>,
+    visitor: &mut impl FnMut(&mut Map<String, Value>),
+) {
+    for key in ["items", "contains", "if", "then", "else", "not"] {
+        if let Some(child) = node.get_mut(key) {
+            walk_schema_mut(child, visitor);
+        }
+    }
+
+    for key in ["anyOf", "oneOf", "allOf", "prefixItems"] {
+        let Some(entries) = node.get_mut(key).and_then(Value::as_array_mut) else {
+            continue;
+        };
+
+        for child in entries {
+            walk_schema_mut(child, visitor);
+        }
+    }
+
+    for key in ["properties", "$defs", "definitions", "dependentSchemas"] {
+        let Some(entries) = node.get_mut(key).and_then(Value::as_object_mut) else {
+            continue;
+        };
+
+        for child in entries.values_mut() {
+            walk_schema_mut(child, visitor);
+        }
+    }
+}
+
+fn pointer_with_key(pointer: &str, key: impl AsRef<str>) -> String {
+    format!("{pointer}/{}", escape_pointer_key(key.as_ref()))
+}
+
+fn escape_pointer_key(key: &str) -> String {
+    key.replace('~', "~0").replace('/', "~1")
 }
 
 fn parse_schema_value(value: &Value, path: &SchemaPath) -> Result<Value, ToolSchemaError> {
@@ -214,20 +493,14 @@ fn strip_ref_annotation_siblings(
         return Ok(());
     }
 
-    let mut unsupported = Vec::new();
-    let sibling_keys = schema
+    let unsupported = schema
         .keys()
-        .filter(|key| key.as_str() != "$ref")
+        .filter(|key| {
+            let key = key.as_str();
+            key != "$ref" && !SAFE_REF_ANNOTATIONS.contains(&key)
+        })
         .cloned()
         .collect::<Vec<_>>();
-
-    for key in sibling_keys {
-        if SAFE_REF_ANNOTATIONS.contains(&key.as_str()) {
-            schema.remove(&key);
-        } else {
-            unsupported.push(key);
-        }
-    }
 
     if unsupported.is_empty() {
         Ok(())
@@ -558,7 +831,7 @@ mod tests {
     }
 
     #[test]
-    fn strict_tool_schema_strips_ref_annotation_siblings() {
+    fn strict_tool_schema_preserves_ref_annotation_siblings() {
         let schema: Schema = serde_json::from_value(json!({
             "type": "object",
             "properties": {
@@ -586,7 +859,10 @@ mod tests {
 
         assert_eq!(
             rendered["properties"]["request"],
-            json!({ "$ref": "#/$defs/NestedCommentRequest" })
+            json!({
+                "$ref": "#/$defs/NestedCommentRequest",
+                "description": "A nested payload"
+            })
         );
     }
 

@@ -34,7 +34,6 @@ use swiftide_core::{
 };
 use tracing_futures::Instrument;
 
-use super::tool_schema::AwsBedrockToolSchema;
 use super::{AwsBedrock, Options};
 
 type ConverseInputParts = (
@@ -1262,8 +1261,8 @@ fn tool_config_from_specs<'a>(
 }
 
 fn tool_spec_to_bedrock(spec: &ToolSpec, strict: bool) -> Result<Tool, LanguageModelError> {
-    let schema_value = AwsBedrockToolSchema::try_from(spec)
-        .map(AwsBedrockToolSchema::into_value)
+    let schema_value = spec
+        .canonical_parameters_schema_json()
         .map_err(LanguageModelError::permanent)?;
     let input_schema = ToolInputSchema::Json(json_value_to_document(&schema_value)?);
 
@@ -2387,7 +2386,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tool_config_from_specs_does_not_apply_openai_required_workaround() {
+    fn test_tool_config_from_specs_uses_provider_ready_nested_schema() {
         let tool_spec = ToolSpec::builder()
             .name("create_comment")
             .description("Create a comment")
@@ -2431,24 +2430,20 @@ mod tests {
         let Some(Document::Object(properties)) = schema.get("properties") else {
             panic!("expected properties map");
         };
-        let Some(Document::String(nested_ref)) = properties
-            .get("request")
-            .and_then(Document::as_object)
-            .and_then(|request| request.get("$ref"))
-        else {
-            panic!("expected nested request $ref");
-        };
-        let nested_name = nested_ref
-            .rsplit('/')
-            .next()
-            .expect("nested request ref name");
-        let Some(Document::Object(defs)) = schema.get("$defs") else {
-            panic!("expected defs map");
-        };
-        let Some(Document::Object(nested_schema)) = defs.get(nested_name) else {
+        let Some(request_schema) = properties.get("request").and_then(Document::as_object) else {
             panic!("expected nested request schema");
         };
-        assert!(!nested_schema.contains_key("required"));
+        assert!(!schema.contains_key("$defs"));
+        assert_eq!(
+            request_schema.get("required"),
+            Some(&Document::Array(vec![
+                Document::String("block_id".to_string()),
+                Document::String("body".to_string()),
+                Document::String("discussion_id".to_string()),
+                Document::String("page_id".to_string()),
+                Document::String("text".to_string()),
+            ]))
+        );
     }
 
     #[test]

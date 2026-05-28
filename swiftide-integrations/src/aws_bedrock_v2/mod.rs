@@ -31,7 +31,6 @@ mod simple_prompt;
 mod structured_prompt;
 #[cfg(test)]
 mod test_utils;
-mod tool_schema;
 
 /// Converse-based integration with AWS Bedrock.
 ///

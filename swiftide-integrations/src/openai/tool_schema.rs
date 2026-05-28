@@ -2,7 +2,6 @@ use serde_json::{Map, Value};
 use swiftide_core::chat_completion::{ToolSpec, ToolSpecError};
 use thiserror::Error;
 
-type SchemaNormalizer = fn(&mut Value) -> Result<(), OpenAiToolSchemaError>;
 type SchemaValidator = fn(&Value) -> Result<(), OpenAiToolSchemaError>;
 
 #[derive(Debug)]
@@ -42,59 +41,11 @@ impl From<ToolSpecError> for OpenAiToolSchemaError {
 struct OpenAiSchemaPipeline;
 
 impl OpenAiSchemaPipeline {
-    fn apply(mut schema: Value) -> Result<Value, OpenAiToolSchemaError> {
-        for normalizer in [
-            strip_schema_metadata as SchemaNormalizer,
-            strip_rust_numeric_formats,
-            complete_required_arrays,
-        ] {
-            normalizer(&mut schema)?;
-        }
-
-        {
-            let validator = validate_openai_compatibility as SchemaValidator;
-            validator(&schema)?;
-        }
-
+    fn apply(schema: Value) -> Result<Value, OpenAiToolSchemaError> {
+        let validator = validate_openai_compatibility as SchemaValidator;
+        validator(&schema)?;
         Ok(schema)
     }
-}
-
-fn strip_schema_metadata(schema: &mut Value) -> Result<(), OpenAiToolSchemaError> {
-    walk_schema_mut(schema, &SchemaPath::root(), &mut |node, _| {
-        node.remove("$schema");
-        Ok(())
-    })
-}
-
-fn strip_rust_numeric_formats(schema: &mut Value) -> Result<(), OpenAiToolSchemaError> {
-    walk_schema_mut(schema, &SchemaPath::root(), &mut |node, _| {
-        let should_strip = node
-            .get("format")
-            .and_then(Value::as_str)
-            .is_some_and(is_rust_numeric_format);
-
-        if should_strip {
-            node.remove("format");
-        }
-
-        Ok(())
-    })
-}
-
-fn complete_required_arrays(schema: &mut Value) -> Result<(), OpenAiToolSchemaError> {
-    walk_schema_mut(schema, &SchemaPath::root(), &mut |node, _| {
-        let Some(properties) = node.get("properties").and_then(Value::as_object) else {
-            return Ok(());
-        };
-
-        node.insert(
-            "required".to_string(),
-            Value::Array(properties.keys().cloned().map(Value::String).collect()),
-        );
-
-        Ok(())
-    })
 }
 
 fn validate_openai_compatibility(schema: &Value) -> Result<(), OpenAiToolSchemaError> {
@@ -114,72 +65,6 @@ fn validate_openai_compatibility(schema: &Value) -> Result<(), OpenAiToolSchemaE
 
         Ok(())
     })
-}
-
-fn is_rust_numeric_format(format: &str) -> bool {
-    matches!(
-        format,
-        "int8"
-            | "int16"
-            | "int32"
-            | "int64"
-            | "int128"
-            | "isize"
-            | "uint"
-            | "uint8"
-            | "uint16"
-            | "uint32"
-            | "uint64"
-            | "uint128"
-            | "usize"
-    )
-}
-
-fn walk_schema_mut(
-    value: &mut Value,
-    path: &SchemaPath,
-    visitor: &mut impl FnMut(&mut Map<String, Value>, &SchemaPath) -> Result<(), OpenAiToolSchemaError>,
-) -> Result<(), OpenAiToolSchemaError> {
-    let Value::Object(node) = value else {
-        return Ok(());
-    };
-
-    visitor(node, path)?;
-    walk_schema_children_mut(node, path, visitor)
-}
-
-fn walk_schema_children_mut(
-    node: &mut Map<String, Value>,
-    path: &SchemaPath,
-    visitor: &mut impl FnMut(&mut Map<String, Value>, &SchemaPath) -> Result<(), OpenAiToolSchemaError>,
-) -> Result<(), OpenAiToolSchemaError> {
-    for key in ["items", "contains", "if", "then", "else", "not"] {
-        if let Some(child) = node.get_mut(key) {
-            walk_schema_mut(child, &path.with_key(key), visitor)?;
-        }
-    }
-
-    for key in ["anyOf", "oneOf", "allOf", "prefixItems"] {
-        let Some(entries) = node.get_mut(key).and_then(Value::as_array_mut) else {
-            continue;
-        };
-
-        for (index, child) in entries.iter_mut().enumerate() {
-            walk_schema_mut(child, &path.with_index(key, index), visitor)?;
-        }
-    }
-
-    for key in ["properties", "$defs", "definitions", "dependentSchemas"] {
-        let Some(entries) = node.get_mut(key).and_then(Value::as_object_mut) else {
-            continue;
-        };
-
-        for (entry_key, child) in entries.iter_mut() {
-            walk_schema_mut(child, &path.with_key(key).with_key(entry_key), visitor)?;
-        }
-    }
-
-    Ok(())
 }
 
 fn walk_schema(
@@ -321,7 +206,7 @@ mod tests {
     }
 
     #[test]
-    fn openai_tool_schema_adds_recursive_required_arrays() {
+    fn openai_tool_schema_uses_core_provider_ready_schema() {
         let spec = ToolSpec::builder()
             .name("comment")
             .description("Create a comment")
@@ -330,18 +215,12 @@ mod tests {
             .unwrap();
 
         let schema = OpenAiToolSchema::try_from(&spec).unwrap().into_value();
-        let nested_ref = schema["properties"]["request"]["$ref"]
-            .as_str()
-            .expect("nested request should be referenced");
-        let nested_name = nested_ref
-            .rsplit('/')
-            .next()
-            .expect("nested request ref name");
 
         assert_eq!(
-            schema["$defs"][nested_name]["required"],
+            schema["properties"]["request"]["required"],
             json!(["block_id", "body", "discussion_id", "page_id", "text"])
         );
+        assert!(schema.get("$defs").is_none());
     }
 
     #[test]

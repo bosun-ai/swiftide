@@ -17,7 +17,6 @@ use swiftide_core::{
 };
 
 use super::Anthropic;
-use super::tool_schema::AnthropicToolSchema;
 
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
@@ -399,9 +398,9 @@ fn tools_to_anthropic(
     .context("Failed to build tool")?
     .to_owned();
 
-    let schema = AnthropicToolSchema::try_from(spec)
-        .context("tool schema must be Anthropic compatible")?
-        .into_value();
+    let schema = spec
+        .canonical_parameters_schema_json()
+        .context("tool schema must be Anthropic compatible")?;
 
     map.insert("input_schema".to_string(), schema);
 
@@ -720,7 +719,7 @@ mod tests {
             .unwrap();
 
         let result = tools_to_anthropic(&tool_spec).unwrap();
-        let expected_schema = tool_spec.strict_parameters_schema().unwrap().into_json();
+        let expected_schema = tool_spec.canonical_parameters_schema_json().unwrap();
         let expected = json!({
             "name": "get_weather",
             "description": "Gets the weather",
@@ -731,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tools_to_anthropic_preserves_optional_nested_fields() {
+    fn test_tools_to_anthropic_uses_provider_ready_nested_schema() {
         let tool_spec = ToolSpec::builder()
             .description("Creates a comment")
             .name("create_comment")
@@ -754,14 +753,11 @@ mod tests {
             Some(&Value::Array(vec![Value::String("request".into())]))
         );
 
-        let nested_ref = input_schema["properties"]["request"]["$ref"]
-            .as_str()
-            .expect("nested request should be referenced");
-        let nested_name = nested_ref
-            .rsplit('/')
-            .next()
-            .expect("nested request ref name");
-        assert!(input_schema["$defs"][nested_name].get("required").is_none());
+        assert!(input_schema.get("$defs").is_none());
+        assert_eq!(
+            input_schema["properties"]["request"]["required"],
+            json!(["block_id", "body", "discussion_id", "page_id", "text"])
+        );
     }
 
     #[test]

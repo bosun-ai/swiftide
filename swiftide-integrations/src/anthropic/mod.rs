@@ -5,7 +5,6 @@ use swiftide_core::chat_completion::Usage;
 
 pub mod chat_completion;
 pub mod simple_prompt;
-mod tool_schema;
 
 #[derive(Builder, Clone)]
 pub struct Anthropic {

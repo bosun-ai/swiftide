@@ -1,23 +1,12 @@
 use std::cmp::Ordering;
 
 use derive_builder::Builder;
-use schemars::{JsonSchema, Schema, generate::SchemaSettings};
+use schemars::Schema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use thiserror::Error;
 
 pub use super::tool_schema::{StrictToolParametersSchema, ToolSchemaError};
-
-/// Builds a tool parameters schema using Swiftide's provider-neutral tool-schema settings.
-///
-/// Tool schemas are intentionally inlined to keep provider-side grammar compilation simple,
-/// especially for strict tool-use APIs.
-pub fn parameters_schema_for<T: ?Sized + JsonSchema>() -> Schema {
-    SchemaSettings::default()
-        .with(|settings| settings.inline_subschemas = true)
-        .into_generator()
-        .into_root_schema_for::<T>()
-}
 
 /// Output of a `ToolCall` which will be added as a message for the agent to use.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, strum_macros::EnumIs)]
@@ -261,7 +250,7 @@ impl ToolSpec {
         )?)
     }
 
-    /// Returns the provider-neutral strict parameters schema with deterministic JSON key ordering.
+    /// Returns the provider-ready strict parameters schema with deterministic JSON key ordering.
     ///
     /// # Errors
     ///
@@ -269,7 +258,7 @@ impl ToolSpec {
     /// with Swiftide's strict tool-schema contract.
     pub fn canonical_parameters_schema_json(&self) -> Result<JsonValue, ToolSpecError> {
         Ok(canonicalize_json(
-            self.strict_parameters_schema()?.into_json(),
+            self.strict_parameters_schema()?.into_provider_json(),
         ))
     }
 }
@@ -472,8 +461,15 @@ mod tests {
     }
 
     #[test]
-    fn parameters_schema_for_inlines_nested_subschemas() {
-        let schema = serde_json::to_value(parameters_schema_for::<PlanArgs>()).unwrap();
+    fn canonical_parameters_schema_json_inlines_nested_enum_refs_from_manual_schema() {
+        let schema = ToolSpec::builder()
+            .name("plan")
+            .description("Create a plan")
+            .parameters_schema(schemars::schema_for!(PlanArgs))
+            .build()
+            .unwrap()
+            .canonical_parameters_schema_json()
+            .unwrap();
 
         assert_eq!(schema.get("$defs"), None);
         assert_eq!(
@@ -482,6 +478,38 @@ mod tests {
                 "enum": ["pending", "in_progress", "completed"],
                 "type": "string"
             }))
+        );
+        assert_eq!(
+            schema.pointer("/properties/items/items/required"),
+            Some(&json!(["status", "step"]))
+        );
+    }
+
+    #[test]
+    fn canonical_parameters_schema_json_keeps_optional_fields_nullable_when_required() {
+        let schema = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap()
+            .canonical_parameters_schema_json()
+            .unwrap();
+
+        assert_eq!(schema.get("$defs"), None);
+        assert_eq!(
+            schema.pointer("/properties/request/required"),
+            Some(&json!([
+                "block_id",
+                "body",
+                "discussion_id",
+                "page_id",
+                "text"
+            ]))
+        );
+        assert_eq!(
+            schema.pointer("/properties/request/properties/body/anyOf"),
+            Some(&json!([{ "type": "string" }, { "type": "null" }]))
         );
     }
 
