@@ -39,11 +39,20 @@ async fn triage_ticket(
 
 #[test]
 fn tool_macro_schema_is_provider_ready_for_nested_enum_arguments() {
-    let schema = triage_ticket()
-        .tool_spec()
-        .canonical_parameters_schema_json()
-        .unwrap();
+    let spec = triage_ticket().tool_spec();
+    let stored_schema = serde_json::to_value(
+        spec.parameters_schema
+            .as_ref()
+            .expect("tool should have a parameters schema"),
+    )
+    .unwrap();
 
+    assert_eq!(stored_schema.get("$schema"), None);
+    assert_eq!(stored_schema.get("$defs"), None);
+
+    let schema = spec.canonical_parameters_schema_json().unwrap();
+
+    assert_eq!(schema.get("$schema"), None);
     assert_eq!(schema.get("$defs"), None);
     assert_eq!(
         schema.pointer("/properties/request/properties/priority"),

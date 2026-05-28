@@ -730,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tools_to_anthropic_uses_provider_ready_nested_schema() {
+    fn test_tools_to_anthropic_normalizes_nested_schema_refs() {
         let tool_spec = ToolSpec::builder()
             .description("Creates a comment")
             .name("create_comment")
@@ -753,9 +753,13 @@ mod tests {
             Some(&Value::Array(vec![Value::String("request".into())]))
         );
 
-        assert!(input_schema.get("$defs").is_none());
+        assert!(input_schema.get("$schema").is_none());
         assert_eq!(
-            input_schema["properties"]["request"]["required"],
+            input_schema["properties"]["request"],
+            json!({ "$ref": "#/$defs/NestedCommentRequest" })
+        );
+        assert_eq!(
+            input_schema["$defs"]["NestedCommentRequest"]["required"],
             json!(["block_id", "body", "discussion_id", "page_id", "text"])
         );
     }

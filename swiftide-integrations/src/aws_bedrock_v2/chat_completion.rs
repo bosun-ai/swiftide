@@ -2386,7 +2386,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tool_config_from_specs_uses_provider_ready_nested_schema() {
+    fn test_tool_config_from_specs_normalizes_nested_schema_refs() {
         let tool_spec = ToolSpec::builder()
             .name("create_comment")
             .description("Create a comment")
@@ -2427,15 +2427,30 @@ mod tests {
             )]))
         );
 
+        assert!(!schema.contains_key("$schema"));
+
         let Some(Document::Object(properties)) = schema.get("properties") else {
             panic!("expected properties map");
         };
-        let Some(request_schema) = properties.get("request").and_then(Document::as_object) else {
+        let Some(Document::String(nested_ref)) = properties
+            .get("request")
+            .and_then(Document::as_object)
+            .and_then(|request| request.get("$ref"))
+        else {
+            panic!("expected nested request $ref");
+        };
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+        let Some(Document::Object(defs)) = schema.get("$defs") else {
+            panic!("expected defs map");
+        };
+        let Some(Document::Object(nested_schema)) = defs.get(nested_name) else {
             panic!("expected nested request schema");
         };
-        assert!(!schema.contains_key("$defs"));
         assert_eq!(
-            request_schema.get("required"),
+            nested_schema.get("required"),
             Some(&Document::Array(vec![
                 Document::String("block_id".to_string()),
                 Document::String("body".to_string()),

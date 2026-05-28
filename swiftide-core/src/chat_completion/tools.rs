@@ -461,7 +461,7 @@ mod tests {
     }
 
     #[test]
-    fn canonical_parameters_schema_json_inlines_nested_enum_refs_from_manual_schema() {
+    fn canonical_parameters_schema_json_preserves_nested_enum_refs_from_manual_schema() {
         let schema = ToolSpec::builder()
             .name("plan")
             .description("Create a plan")
@@ -471,16 +471,24 @@ mod tests {
             .canonical_parameters_schema_json()
             .unwrap();
 
-        assert_eq!(schema.get("$defs"), None);
+        assert_eq!(schema.get("$schema"), None);
         assert_eq!(
-            schema.pointer("/properties/items/items/properties/status"),
+            schema.pointer("/properties/items/items"),
+            Some(&json!({ "$ref": "#/$defs/PlanItem" }))
+        );
+        assert_eq!(
+            schema.pointer("/$defs/PlanItem/properties/status"),
+            Some(&json!({ "$ref": "#/$defs/PlanStatus" }))
+        );
+        assert_eq!(
+            schema.pointer("/$defs/PlanStatus"),
             Some(&json!({
                 "enum": ["pending", "in_progress", "completed"],
                 "type": "string"
             }))
         );
         assert_eq!(
-            schema.pointer("/properties/items/items/required"),
+            schema.pointer("/$defs/PlanItem/required"),
             Some(&json!(["status", "step"]))
         );
     }
@@ -496,9 +504,12 @@ mod tests {
             .canonical_parameters_schema_json()
             .unwrap();
 
-        assert_eq!(schema.get("$defs"), None);
         assert_eq!(
-            schema.pointer("/properties/request/required"),
+            schema.pointer("/properties/request"),
+            Some(&json!({ "$ref": "#/$defs/NestedCommentRequest" }))
+        );
+        assert_eq!(
+            schema.pointer("/$defs/NestedCommentRequest/required"),
             Some(&json!([
                 "block_id",
                 "body",
@@ -508,7 +519,7 @@ mod tests {
             ]))
         );
         assert_eq!(
-            schema.pointer("/properties/request/properties/body/anyOf"),
+            schema.pointer("/$defs/NestedCommentRequest/properties/body/anyOf"),
             Some(&json!([{ "type": "string" }, { "type": "null" }]))
         );
     }

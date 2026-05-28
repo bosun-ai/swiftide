@@ -206,7 +206,7 @@ mod tests {
     }
 
     #[test]
-    fn openai_tool_schema_uses_core_provider_ready_schema() {
+    fn openai_tool_schema_uses_core_provider_normalized_schema() {
         let spec = ToolSpec::builder()
             .name("comment")
             .description("Create a comment")
@@ -216,11 +216,15 @@ mod tests {
 
         let schema = OpenAiToolSchema::try_from(&spec).unwrap().into_value();
 
+        assert!(schema.get("$schema").is_none());
         assert_eq!(
-            schema["properties"]["request"]["required"],
+            schema["properties"]["request"],
+            json!({ "$ref": "#/$defs/NestedCommentRequest" })
+        );
+        assert_eq!(
+            schema["$defs"]["NestedCommentRequest"]["required"],
             json!(["block_id", "body", "discussion_id", "page_id", "text"])
         );
-        assert!(schema.get("$defs").is_none());
     }
 
     #[test]

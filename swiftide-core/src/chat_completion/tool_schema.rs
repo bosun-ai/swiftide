@@ -9,8 +9,6 @@ pub struct StrictToolParametersSchema {
 
 #[derive(Debug, Error)]
 pub enum ToolSchemaError {
-    #[error("failed to serialize tool schema")]
-    SerializeSchema(#[from] serde_json::Error),
     #[error("tool schema must be a JSON object")]
     RootMustBeObject,
     #[error("tool schema node at {path} must be a JSON object")]
@@ -43,16 +41,22 @@ pub enum ToolSchemaError {
 
 impl StrictToolParametersSchema {
     pub(super) fn try_from_raw(schema: Option<&Schema>) -> Result<Self, ToolSchemaError> {
-        let raw = match schema {
-            Some(schema) => serde_json::to_value(schema)?,
-            None => json!({}),
+        let document = match schema {
+            Some(schema) => {
+                let root = schema
+                    .as_value()
+                    .as_object()
+                    .ok_or(ToolSchemaError::RootMustBeObject)?;
+
+                Value::Object(parse_schema_object(root, &SchemaPath::root(), true)?)
+            }
+            None => {
+                let empty = Map::new();
+                Value::Object(parse_schema_object(&empty, &SchemaPath::root(), true)?)
+            }
         };
 
-        let root = raw.as_object().ok_or(ToolSchemaError::RootMustBeObject)?;
-
-        Ok(Self {
-            document: Value::Object(parse_schema_object(root, &SchemaPath::root(), true)?),
-        })
+        Ok(Self { document })
     }
 
     pub fn into_json(self) -> Value {
@@ -60,7 +64,6 @@ impl StrictToolParametersSchema {
     }
 
     pub fn into_provider_json(mut self) -> Value {
-        inline_local_references(&mut self.document);
         strip_schema_metadata(&mut self.document);
         strip_rust_numeric_formats(&mut self.document);
         complete_required_arrays(&mut self.document);
@@ -69,178 +72,6 @@ impl StrictToolParametersSchema {
 
     pub fn as_json(&self) -> &Value {
         &self.document
-    }
-}
-
-fn inline_local_references(schema: &mut Value) {
-    let definitions = LocalDefinitions::from_schema(schema);
-    let all_references_resolved =
-        inline_local_references_in_value(schema, &definitions, &mut Vec::new());
-
-    if all_references_resolved {
-        remove_schema_definitions(schema);
-    }
-}
-
-#[derive(Debug, Default)]
-struct LocalDefinitions {
-    by_reference: Map<String, Value>,
-}
-
-impl LocalDefinitions {
-    fn from_schema(schema: &Value) -> Self {
-        let mut definitions = Self::default();
-        definitions.collect(schema, "#");
-        definitions
-    }
-
-    fn get(&self, reference: &str) -> Option<&Value> {
-        self.by_reference.get(reference)
-    }
-
-    fn collect(&mut self, value: &Value, pointer: &str) {
-        let Value::Object(object) = value else {
-            return;
-        };
-
-        for key in ["$defs", "definitions"] {
-            let Some(entries) = object.get(key).and_then(Value::as_object) else {
-                continue;
-            };
-
-            let definitions_pointer = pointer_with_key(pointer, key);
-            for (name, schema) in entries {
-                let definition_pointer = pointer_with_key(&definitions_pointer, name);
-                self.by_reference
-                    .insert(definition_pointer.clone(), schema.clone());
-                self.collect(schema, &definition_pointer);
-            }
-        }
-
-        for (key, child) in object {
-            if key == "$defs" || key == "definitions" {
-                continue;
-            }
-
-            collect_child_definitions(self, child, &pointer_with_key(pointer, key));
-        }
-    }
-}
-
-fn collect_child_definitions(definitions: &mut LocalDefinitions, value: &Value, pointer: &str) {
-    match value {
-        Value::Object(_) => definitions.collect(value, pointer),
-        Value::Array(entries) => {
-            for (index, entry) in entries.iter().enumerate() {
-                collect_child_definitions(
-                    definitions,
-                    entry,
-                    &pointer_with_key(pointer, index.to_string()),
-                );
-            }
-        }
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
-    }
-}
-
-fn inline_local_references_in_value(
-    value: &mut Value,
-    definitions: &LocalDefinitions,
-    stack: &mut Vec<String>,
-) -> bool {
-    let Some(reference) = local_reference(value) else {
-        return inline_local_references_in_children(value, definitions, stack);
-    };
-
-    let Some(target) = definitions.get(&reference.reference).cloned() else {
-        return false;
-    };
-
-    if stack.contains(&reference.reference) {
-        return false;
-    }
-
-    stack.push(reference.reference);
-    let mut inlined = target;
-    let all_references_resolved =
-        inline_local_references_in_value(&mut inlined, definitions, stack);
-    stack.pop();
-
-    if let Value::Object(inlined_object) = &mut inlined {
-        inlined_object.extend(reference.annotations);
-    }
-
-    *value = inlined;
-    all_references_resolved
-}
-
-#[derive(Debug)]
-struct LocalReference {
-    reference: String,
-    annotations: Map<String, Value>,
-}
-
-fn local_reference(value: &Value) -> Option<LocalReference> {
-    let object = value.as_object()?;
-
-    let reference = object
-        .get("$ref")
-        .and_then(Value::as_str)
-        .filter(|reference| reference.starts_with('#'))?;
-
-    let annotations = object
-        .iter()
-        .filter(|(key, _)| key.as_str() != "$ref")
-        .map(|(key, value)| (key.clone(), value.clone()))
-        .collect();
-
-    Some(LocalReference {
-        reference: reference.to_string(),
-        annotations,
-    })
-}
-
-fn inline_local_references_in_children(
-    value: &mut Value,
-    definitions: &LocalDefinitions,
-    stack: &mut Vec<String>,
-) -> bool {
-    match value {
-        Value::Object(object) => {
-            let mut all_references_resolved = true;
-            for child in object.values_mut() {
-                all_references_resolved &=
-                    inline_local_references_in_value(child, definitions, stack);
-            }
-            all_references_resolved
-        }
-        Value::Array(entries) => {
-            let mut all_references_resolved = true;
-            for child in entries {
-                all_references_resolved &=
-                    inline_local_references_in_value(child, definitions, stack);
-            }
-            all_references_resolved
-        }
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => true,
-    }
-}
-
-fn remove_schema_definitions(value: &mut Value) {
-    match value {
-        Value::Object(object) => {
-            object.remove("$defs");
-            object.remove("definitions");
-            for child in object.values_mut() {
-                remove_schema_definitions(child);
-            }
-        }
-        Value::Array(entries) => {
-            for child in entries {
-                remove_schema_definitions(child);
-            }
-        }
-        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {}
     }
 }
 
@@ -333,14 +164,6 @@ fn walk_schema_children_mut(
             walk_schema_mut(child, visitor);
         }
     }
-}
-
-fn pointer_with_key(pointer: &str, key: impl AsRef<str>) -> String {
-    format!("{pointer}/{}", escape_pointer_key(key.as_ref()))
-}
-
-fn escape_pointer_key(key: &str) -> String {
-    key.replace('~', "~0").replace('/', "~1")
 }
 
 fn parse_schema_value(value: &Value, path: &SchemaPath) -> Result<Value, ToolSchemaError> {

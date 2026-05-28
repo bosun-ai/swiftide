@@ -54,7 +54,13 @@ impl ::swiftide::chat_completion::Tool for SearchCode {
             .name("search_code")
             .description("Hello world tool")
             .parameters_schema(
-                ::swiftide::reexports::schemars::schema_for!(SearchCodeArgs),
+                ::swiftide::reexports::schemars::generate::SchemaSettings::default()
+                    .with(|settings| {
+                        settings.meta_schema = None;
+                        settings.inline_subschemas = true;
+                    })
+                    .into_generator()
+                    .into_root_schema_for::<SearchCodeArgs>(),
             )
             .build()
             .unwrap()
