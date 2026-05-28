@@ -215,7 +215,39 @@ pub struct ToolSpec {
 
     #[builder(default, setter(strip_option))]
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// Optional JSON schema describing the tool arguments
+    /// Optional JSON schema describing the tool arguments.
+    ///
+    /// Prefer deriving tools with `#[swiftide::tool]`; the macro configures schemars to omit the
+    /// meta schema and inline subschemas so provider payloads work across OpenAI-compatible
+    /// clients and Bedrock Converse.
+    ///
+    /// If you provide this schema manually, Swiftide validates and normalizes it for strict tool
+    /// use, but does not inline `$ref` definitions after the schema has already been generated.
+    /// Generate manual schemas with `schemars::generate::SchemaSettings` using
+    /// `meta_schema = None` and `inline_subschemas = true` when the target provider does not
+    /// accept `$schema`, `$defs`, or `$ref` in tool schemas.
+    ///
+    /// ```rust,no_run
+    /// #[derive(schemars::JsonSchema)]
+    /// struct ToolArgs {
+    ///     query: String,
+    /// }
+    ///
+    /// let parameters_schema = schemars::generate::SchemaSettings::default()
+    ///     .with(|settings| {
+    ///         settings.meta_schema = None;
+    ///         settings.inline_subschemas = true;
+    ///     })
+    ///     .into_generator()
+    ///     .into_root_schema_for::<ToolArgs>();
+    ///
+    /// let tool_spec = swiftide_core::chat_completion::ToolSpec::builder()
+    ///     .name("search")
+    ///     .description("Search for documents")
+    ///     .parameters_schema(parameters_schema)
+    ///     .build()
+    ///     .unwrap();
+    /// ```
     pub parameters_schema: Option<Schema>,
 }
 
