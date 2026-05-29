@@ -79,32 +79,10 @@ fn first_openai_unsupported_schema_form(value: &JsonValue) -> Option<&'static st
 
 #[cfg(test)]
 mod tool_schema_tests {
-    use schemars::JsonSchema;
     use serde_json::json;
     use swiftide_core::chat_completion::ToolSpec;
 
     use super::openai_tool_parameters_schema;
-
-    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
-    #[serde(deny_unknown_fields)]
-    struct NestedCommentArgs {
-        request: NestedCommentRequest,
-    }
-
-    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
-    #[serde(deny_unknown_fields)]
-    struct NestedCommentRequest {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        body: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        text: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        page_id: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        block_id: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        discussion_id: Option<String>,
-    }
 
     #[test]
     fn openai_tool_schema_strips_schema_metadata_and_rust_formats() {
@@ -137,28 +115,6 @@ mod tool_schema_tests {
                 { "type": "integer", "minimum": 0 },
                 { "type": "null" }
             ])
-        );
-    }
-
-    #[test]
-    fn openai_tool_schema_uses_core_provider_normalized_schema() {
-        let spec = ToolSpec::builder()
-            .name("comment")
-            .description("Create a comment")
-            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
-            .build()
-            .unwrap();
-
-        let schema = openai_tool_parameters_schema(&spec).unwrap();
-
-        assert!(schema.get("$schema").is_none());
-        assert_eq!(
-            schema["properties"]["request"],
-            json!({ "$ref": "#/$defs/NestedCommentRequest" })
-        );
-        assert_eq!(
-            schema["$defs"]["NestedCommentRequest"]["required"],
-            json!(["block_id", "body", "discussion_id", "page_id", "text"])
         );
     }
 

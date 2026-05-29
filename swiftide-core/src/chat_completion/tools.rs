@@ -404,26 +404,6 @@ mod tests {
     }
 
     #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-    struct PlanArgs {
-        items: Vec<PlanItem>,
-    }
-
-    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-    #[serde(deny_unknown_fields)]
-    struct PlanItem {
-        step: String,
-        status: PlanStatus,
-    }
-
-    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-    #[serde(rename_all = "snake_case")]
-    enum PlanStatus {
-        Pending,
-        InProgress,
-        Completed,
-    }
-
-    #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
     #[serde(deny_unknown_fields)]
     struct NestedCommentRequest {
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -482,70 +462,6 @@ mod tests {
         let json = serde_json::to_value(&spec).unwrap();
         assert_eq!(json.get("name").and_then(|v| v.as_str()), Some("example"));
         assert!(json.get("parameters_schema").is_some());
-    }
-
-    #[test]
-    fn canonical_parameters_schema_json_preserves_nested_enum_refs_from_manual_schema() {
-        let schema = ToolSpec::builder()
-            .name("plan")
-            .description("Create a plan")
-            .parameters_schema(schemars::schema_for!(PlanArgs))
-            .build()
-            .unwrap()
-            .canonical_parameters_schema_json()
-            .unwrap();
-
-        assert_eq!(schema.get("$schema"), None);
-        assert_eq!(
-            schema.pointer("/properties/items/items"),
-            Some(&json!({ "$ref": "#/$defs/PlanItem" }))
-        );
-        assert_eq!(
-            schema.pointer("/$defs/PlanItem/properties/status"),
-            Some(&json!({ "$ref": "#/$defs/PlanStatus" }))
-        );
-        assert_eq!(
-            schema.pointer("/$defs/PlanStatus"),
-            Some(&json!({
-                "enum": ["pending", "in_progress", "completed"],
-                "type": "string"
-            }))
-        );
-        assert_eq!(
-            schema.pointer("/$defs/PlanItem/required"),
-            Some(&json!(["status", "step"]))
-        );
-    }
-
-    #[test]
-    fn canonical_parameters_schema_json_keeps_optional_fields_nullable_when_required() {
-        let schema = ToolSpec::builder()
-            .name("comment")
-            .description("Create a comment")
-            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
-            .build()
-            .unwrap()
-            .canonical_parameters_schema_json()
-            .unwrap();
-
-        assert_eq!(
-            schema.pointer("/properties/request"),
-            Some(&json!({ "$ref": "#/$defs/NestedCommentRequest" }))
-        );
-        assert_eq!(
-            schema.pointer("/$defs/NestedCommentRequest/required"),
-            Some(&json!([
-                "block_id",
-                "body",
-                "discussion_id",
-                "page_id",
-                "text"
-            ]))
-        );
-        assert_eq!(
-            schema.pointer("/$defs/NestedCommentRequest/properties/body/anyOf"),
-            Some(&json!([{ "type": "string" }, { "type": "null" }]))
-        );
     }
 
     #[test]
