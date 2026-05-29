@@ -41,19 +41,16 @@ pub enum ToolSchemaError {
 
 impl StrictToolParametersSchema {
     pub(super) fn try_from_raw(schema: Option<&Schema>) -> Result<Self, ToolSchemaError> {
-        let document = match schema {
-            Some(schema) => {
-                let root = schema
-                    .as_value()
-                    .as_object()
-                    .ok_or(ToolSchemaError::RootMustBeObject)?;
+        let document = if let Some(schema) = schema {
+            let root = schema
+                .as_value()
+                .as_object()
+                .ok_or(ToolSchemaError::RootMustBeObject)?;
 
-                Value::Object(parse_schema_object(root, &SchemaPath::root(), true)?)
-            }
-            None => {
-                let empty = Map::new();
-                Value::Object(parse_schema_object(&empty, &SchemaPath::root(), true)?)
-            }
+            Value::Object(parse_schema_object(root, &SchemaPath::root(), true)?)
+        } else {
+            let empty = Map::new();
+            Value::Object(parse_schema_object(&empty, &SchemaPath::root(), true)?)
         };
 
         Ok(Self { document })
