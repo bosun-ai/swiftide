@@ -61,9 +61,7 @@ impl StrictToolParametersSchema {
     }
 
     pub fn into_provider_json(mut self) -> Value {
-        strip_schema_metadata(&mut self.document);
-        strip_rust_numeric_formats(&mut self.document);
-        complete_required_arrays(&mut self.document);
+        shape_provider_schema(&mut self.document);
         self.document
     }
 
@@ -72,22 +70,26 @@ impl StrictToolParametersSchema {
     }
 }
 
-fn strip_schema_metadata(schema: &mut Value) {
+fn shape_provider_schema(schema: &mut Value) {
     walk_schema_mut(schema, &mut |node| {
         node.remove("$schema");
-    });
-}
-
-fn strip_rust_numeric_formats(schema: &mut Value) {
-    walk_schema_mut(schema, &mut |node| {
-        let should_strip = node
+        let has_rust_numeric_format = node
             .get("format")
             .and_then(Value::as_str)
             .is_some_and(is_rust_numeric_format);
 
-        if should_strip {
+        if has_rust_numeric_format {
             node.remove("format");
         }
+
+        let Some(properties) = node.get("properties").and_then(Value::as_object) else {
+            return;
+        };
+
+        node.insert(
+            "required".to_string(),
+            Value::Array(properties.keys().cloned().map(Value::String).collect()),
+        );
     });
 }
 
@@ -108,19 +110,6 @@ fn is_rust_numeric_format(format: &str) -> bool {
             | "uint128"
             | "usize"
     )
-}
-
-fn complete_required_arrays(schema: &mut Value) {
-    walk_schema_mut(schema, &mut |node| {
-        let Some(properties) = node.get("properties").and_then(Value::as_object) else {
-            return;
-        };
-
-        node.insert(
-            "required".to_string(),
-            Value::Array(properties.keys().cloned().map(Value::String).collect()),
-        );
-    });
 }
 
 fn walk_schema_mut(value: &mut Value, visitor: &mut impl FnMut(&mut Map<String, Value>)) {
@@ -313,14 +302,20 @@ fn strip_ref_annotation_siblings(
         return Ok(());
     }
 
-    let unsupported = schema
+    let mut unsupported = Vec::new();
+    let sibling_keys = schema
         .keys()
-        .filter(|key| {
-            let key = key.as_str();
-            key != "$ref" && !SAFE_REF_ANNOTATIONS.contains(&key)
-        })
+        .filter(|key| key.as_str() != "$ref")
         .cloned()
         .collect::<Vec<_>>();
+
+    for key in sibling_keys {
+        if SAFE_REF_ANNOTATIONS.contains(&key.as_str()) {
+            schema.remove(&key);
+        } else {
+            unsupported.push(key);
+        }
+    }
 
     if unsupported.is_empty() {
         Ok(())
@@ -651,7 +646,7 @@ mod tests {
     }
 
     #[test]
-    fn strict_tool_schema_preserves_ref_annotation_siblings() {
+    fn strict_tool_schema_strips_ref_annotation_siblings() {
         let schema: Schema = serde_json::from_value(json!({
             "type": "object",
             "properties": {
@@ -679,10 +674,7 @@ mod tests {
 
         assert_eq!(
             rendered["properties"]["request"],
-            json!({
-                "$ref": "#/$defs/NestedCommentRequest",
-                "description": "A nested payload"
-            })
+            json!({ "$ref": "#/$defs/NestedCommentRequest" })
         );
     }
 

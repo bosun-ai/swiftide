@@ -9,22 +9,185 @@ use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
+use serde_json::Value as JsonValue;
 use std::pin::Pin;
 use std::sync::Arc;
-use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::errors::LanguageModelError;
+use swiftide_core::chat_completion::{ToolSpec, Usage};
 
 mod chat_completion;
 mod embed;
 mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
-mod tool_schema;
 
 // expose type aliases to simplify downstream use of the open ai builder invocations
 pub use async_openai::config::AzureConfig;
 pub use async_openai::config::OpenAIConfig;
 pub use async_openai::types::responses::ReasoningEffort;
+
+fn openai_tool_parameters_schema(spec: &ToolSpec) -> anyhow::Result<JsonValue> {
+    let schema = spec.canonical_parameters_schema_json()?;
+
+    if let Some(unsupported_form) = first_openai_unsupported_schema_form(&schema) {
+        anyhow::bail!("OpenAI strict tool schemas do not support {unsupported_form}");
+    }
+
+    Ok(schema)
+}
+
+fn first_openai_unsupported_schema_form(value: &JsonValue) -> Option<&'static str> {
+    let node = value.as_object()?;
+
+    if node.contains_key("oneOf") {
+        return Some("`oneOf`");
+    }
+
+    if matches!(node.get("type"), Some(JsonValue::Array(_))) {
+        return Some("array-valued `type`");
+    }
+
+    for key in ["items", "contains", "if", "then", "else", "not"] {
+        if let Some(unsupported_form) = node.get(key).and_then(first_openai_unsupported_schema_form)
+        {
+            return Some(unsupported_form);
+        }
+    }
+
+    for key in ["anyOf", "allOf", "prefixItems"] {
+        if let Some(entries) = node.get(key).and_then(JsonValue::as_array) {
+            for child in entries {
+                if let Some(unsupported_form) = first_openai_unsupported_schema_form(child) {
+                    return Some(unsupported_form);
+                }
+            }
+        }
+    }
+
+    for key in ["properties", "$defs", "definitions", "dependentSchemas"] {
+        if let Some(entries) = node.get(key).and_then(JsonValue::as_object) {
+            for child in entries.values() {
+                if let Some(unsupported_form) = first_openai_unsupported_schema_form(child) {
+                    return Some(unsupported_form);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(test)]
+mod tool_schema_tests {
+    use schemars::JsonSchema;
+    use serde_json::json;
+    use swiftide_core::chat_completion::ToolSpec;
+
+    use super::openai_tool_parameters_schema;
+
+    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentArgs {
+        request: NestedCommentRequest,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct NestedCommentRequest {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        body: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        block_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        discussion_id: Option<String>,
+    }
+
+    #[test]
+    fn openai_tool_schema_strips_schema_metadata_and_rust_formats() {
+        let spec = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(
+                serde_json::from_value::<schemars::Schema>(json!({
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "type": "object",
+                    "properties": {
+                        "page_size": {
+                            "type": ["integer", "null"],
+                            "format": "uint",
+                            "minimum": 0
+                        }
+                    }
+                }))
+                .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let schema = openai_tool_parameters_schema(&spec).unwrap();
+
+        assert!(schema.get("$schema").is_none());
+        assert_eq!(
+            schema["properties"]["page_size"]["anyOf"],
+            json!([
+                { "type": "integer", "minimum": 0 },
+                { "type": "null" }
+            ])
+        );
+    }
+
+    #[test]
+    fn openai_tool_schema_uses_core_provider_normalized_schema() {
+        let spec = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let schema = openai_tool_parameters_schema(&spec).unwrap();
+
+        assert!(schema.get("$schema").is_none());
+        assert_eq!(
+            schema["properties"]["request"],
+            json!({ "$ref": "#/$defs/NestedCommentRequest" })
+        );
+        assert_eq!(
+            schema["$defs"]["NestedCommentRequest"]["required"],
+            json!(["block_id", "body", "discussion_id", "page_id", "text"])
+        );
+    }
+
+    #[test]
+    fn openai_tool_schema_rejects_non_nullable_one_of() {
+        let spec = ToolSpec::builder()
+            .name("comment")
+            .description("Create a comment")
+            .parameters_schema(
+                serde_json::from_value::<schemars::Schema>(json!({
+                    "type": "object",
+                    "properties": {
+                        "content": {
+                            "oneOf": [
+                                { "type": "string" },
+                                { "type": "integer" }
+                            ]
+                        }
+                    }
+                }))
+                .unwrap(),
+            )
+            .build()
+            .unwrap();
+
+        let error = openai_tool_parameters_schema(&spec).expect_err("oneOf should be rejected");
+        assert!(error.to_string().contains("`oneOf`"));
+    }
+}
 
 #[cfg(feature = "tiktoken")]
 use crate::tiktoken::TikToken;

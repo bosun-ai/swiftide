@@ -27,10 +27,10 @@ use swiftide_core::metrics::emit_usage;
 
 use super::GenericOpenAI;
 use super::openai_error_to_language_model_error;
+use super::openai_tool_parameters_schema;
 use super::responses_api::{
     build_responses_request_from_chat, response_to_chat_completion, responses_stream_adapter,
 };
-use super::tool_schema::OpenAiToolSchema;
 use tracing_futures::Instrument;
 
 #[async_trait]
@@ -545,9 +545,8 @@ pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
 }
 
 fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
-    let parameters = OpenAiToolSchema::try_from(spec)
-        .context("tool schema must be OpenAI compatible")?
-        .into_value();
+    let parameters =
+        openai_tool_parameters_schema(spec).context("tool schema must be OpenAI compatible")?;
 
     let function = FunctionObject {
         name: spec.name.clone(),

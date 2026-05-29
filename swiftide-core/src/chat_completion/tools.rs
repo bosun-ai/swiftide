@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use derive_builder::Builder;
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map as JsonMap, Value as JsonValue};
+use serde_json::Value as JsonValue;
 use thiserror::Error;
 
 pub use super::tool_schema::{StrictToolParametersSchema, ToolSchemaError};
@@ -282,16 +282,14 @@ impl ToolSpec {
         )?)
     }
 
-    /// Returns the provider-ready strict parameters schema with deterministic JSON key ordering.
+    /// Returns the provider-ready strict parameters schema.
     ///
     /// # Errors
     ///
     /// Returns an error when the configured parameters schema is not compatible
     /// with Swiftide's strict tool-schema contract.
     pub fn canonical_parameters_schema_json(&self) -> Result<JsonValue, ToolSpecError> {
-        Ok(canonicalize_json(
-            self.strict_parameters_schema()?.into_provider_json(),
-        ))
+        Ok(self.strict_parameters_schema()?.into_provider_json())
     }
 }
 
@@ -330,7 +328,7 @@ impl PartialEq for ToolSpec {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
             && self.description == other.description
-            && tool_spec_schema_key(self) == tool_spec_schema_key(other)
+            && self.parameters_schema == other.parameters_schema
     }
 }
 
@@ -347,7 +345,12 @@ impl Ord for ToolSpec {
         self.name
             .cmp(&other.name)
             .then_with(|| self.description.cmp(&other.description))
-            .then_with(|| tool_spec_schema_key(self).cmp(&tool_spec_schema_key(other)))
+            .then_with(|| {
+                compare_schema_for_ord(
+                    self.parameters_schema.as_ref(),
+                    other.parameters_schema.as_ref(),
+                )
+            })
     }
 }
 
@@ -355,43 +358,32 @@ impl std::hash::Hash for ToolSpec {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.description.hash(state);
-        tool_spec_schema_key(self).hash(state);
+        self.parameters_schema
+            .as_ref()
+            .map(Schema::as_value)
+            .hash(state);
     }
 }
 
-fn tool_spec_schema_key(spec: &ToolSpec) -> String {
-    spec.canonical_parameters_schema_json()
-        .ok()
-        .or_else(|| {
-            spec.parameters_schema
-                .as_ref()
-                .and_then(|schema| serde_json::to_value(schema).ok())
-                .map(canonicalize_json)
-        })
-        .and_then(|schema| serde_json::to_string(&schema).ok())
-        .unwrap_or_default()
+fn compare_schema_for_ord(left: Option<&Schema>, right: Option<&Schema>) -> Ordering {
+    match (left, right) {
+        (None, None) => Ordering::Equal,
+        (None, Some(_)) => Ordering::Less,
+        (Some(_), None) => Ordering::Greater,
+        (Some(left), Some(right)) => schema_order_key(left).cmp(&schema_order_key(right)),
+    }
+}
+
+fn schema_order_key(schema: &Schema) -> String {
+    let mut value = schema.as_value().clone();
+    value.sort_all_objects();
+    serde_json::to_string(&value).unwrap_or_default()
 }
 
 pub fn canonicalize_json(value: JsonValue) -> JsonValue {
-    match value {
-        JsonValue::Object(object) => {
-            let mut keys = object.keys().cloned().collect::<Vec<_>>();
-            keys.sort();
-
-            let mut sorted = JsonMap::with_capacity(object.len());
-            for key in keys {
-                if let Some(child) = object.get(&key) {
-                    sorted.insert(key, canonicalize_json(child.clone()));
-                }
-            }
-
-            JsonValue::Object(sorted)
-        }
-        JsonValue::Array(values) => {
-            JsonValue::Array(values.into_iter().map(canonicalize_json).collect())
-        }
-        scalar => scalar,
-    }
+    let mut value = value;
+    value.sort_all_objects();
+    value
 }
 
 #[cfg(test)]
