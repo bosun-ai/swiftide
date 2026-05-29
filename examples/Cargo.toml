@@ -94,10 +94,6 @@ name = "aws-bedrock-agent"
 path = "aws_bedrock_agent.rs"
 
 [[example]]
-name = "aws-bedrock-agent-enum-tool"
-path = "aws_bedrock_agent_enum_tool.rs"
-
-[[example]]
 doc-scrape-examples = true
 name = "store-multiple-vectors"
 path = "store_multiple_vectors.rs"

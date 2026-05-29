@@ -302,29 +302,27 @@ fn strip_ref_annotation_siblings(
         return Ok(());
     }
 
-    let mut unsupported = Vec::new();
-    let sibling_keys = schema
+    let unsupported = schema
         .keys()
-        .filter(|key| key.as_str() != "$ref")
+        .filter(|key| {
+            let key = key.as_str();
+            key != "$ref" && !SAFE_REF_ANNOTATIONS.contains(&key)
+        })
         .cloned()
         .collect::<Vec<_>>();
 
-    for key in sibling_keys {
-        if SAFE_REF_ANNOTATIONS.contains(&key.as_str()) {
-            schema.remove(&key);
-        } else {
-            unsupported.push(key);
-        }
-    }
-
-    if unsupported.is_empty() {
-        Ok(())
-    } else {
-        Err(ToolSchemaError::UnsupportedRefSiblingKeywords {
+    if !unsupported.is_empty() {
+        return Err(ToolSchemaError::UnsupportedRefSiblingKeywords {
             path: path.to_string(),
             keywords: unsupported.join(", "),
-        })
+        });
     }
+
+    for key in SAFE_REF_ANNOTATIONS {
+        schema.remove(*key);
+    }
+
+    Ok(())
 }
 
 fn parse_object_schema(
