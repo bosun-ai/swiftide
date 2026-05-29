@@ -37,6 +37,8 @@ pub enum ToolSchemaError {
     InvalidAdditionalProperties { path: String, kind: &'static str },
     #[error("strict tool schemas do not support $ref siblings {keywords} at {path}")]
     UnsupportedRefSiblingKeywords { path: String, keywords: String },
+    #[error("strict tool schemas do not support oneOf at {path}; use anyOf instead")]
+    OneOfUnsupported { path: String },
 }
 
 impl StrictToolParametersSchema {
@@ -183,8 +185,22 @@ fn normalize_schema_object(
     let mut normalized = schema.clone();
     rewrite_nullable_type_union(&mut normalized);
     rewrite_nullable_one_of(&mut normalized);
+    reject_non_nullable_one_of(&normalized, path)?;
     strip_ref_annotation_siblings(&mut normalized, path)?;
     Ok(normalized)
+}
+
+fn reject_non_nullable_one_of(
+    schema: &Map<String, Value>,
+    path: &SchemaPath,
+) -> Result<(), ToolSchemaError> {
+    if schema.contains_key("oneOf") {
+        Err(ToolSchemaError::OneOfUnsupported {
+            path: path.to_string(),
+        })
+    } else {
+        Ok(())
+    }
 }
 
 fn rewrite_nullable_type_union(schema: &mut Map<String, Value>) {
@@ -641,6 +657,28 @@ mod tests {
             body["anyOf"],
             Value::Array(vec![json!({ "type": "string" }), json!({ "type": "null" })])
         );
+    }
+
+    #[test]
+    fn strict_tool_schema_rejects_non_nullable_one_of() {
+        let schema: Schema = serde_json::from_value(json!({
+            "type": "object",
+            "properties": {
+                "body": {
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer" }
+                    ]
+                }
+            },
+            "required": ["body"]
+        }))
+        .expect("schema should deserialize");
+
+        let error = StrictToolParametersSchema::try_from_raw(Some(&schema))
+            .expect_err("non-null oneOf should be rejected");
+
+        assert!(error.to_string().contains("oneOf"));
     }
 
     #[test]

@@ -19,7 +19,7 @@ use swiftide_core::chat_completion::{
     ChatMessageContentSource, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
 };
 
-use super::{GenericOpenAI, openai_error_to_language_model_error, openai_tool_parameters_schema};
+use super::{GenericOpenAI, openai_error_to_language_model_error};
 use crate::openai::LanguageModelError;
 
 type LmResult<T> = Result<T, LanguageModelError>;
@@ -141,8 +141,9 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
 }
 
 fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
-    let parameters =
-        openai_tool_parameters_schema(spec).context("tool schema must be OpenAI compatible")?;
+    let parameters = spec
+        .canonical_parameters_schema_json()
+        .context("tool schema must be OpenAI compatible")?;
 
     let function = FunctionTool {
         name: spec.name.clone(),
