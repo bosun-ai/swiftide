@@ -39,6 +39,7 @@ schemars.workspace = true
 
 # Integrations
 async-openai = { workspace = true, optional = true, features = [
+  "byot",
   "chat-completion",
   "embedding",
   "responses",
@@ -154,6 +155,7 @@ tokio-stream = { workspace = true }
 eventsource-stream.workspace = true
 aws-smithy-eventstream = "0.60.19"
 tracing-subscriber = { workspace = true }
+async-openai = { workspace = true, features = ["rustls"] }
 
 
 [features]
