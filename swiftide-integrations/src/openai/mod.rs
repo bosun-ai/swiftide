@@ -253,9 +253,7 @@ impl Options {
         if let Some(user) = &other.user {
             self.user = Some(user.clone());
         }
-        if !other.extra_body.is_empty() {
-            self.extra_body.extend(other.extra_body.clone());
-        }
+        self.extra_body.extend(other.extra_body.clone());
         if let Some(dimensions) = other.dimensions {
             self.dimensions = Some(dimensions);
         }
@@ -318,8 +316,12 @@ pub(crate) fn request_body_with_extra_body<T: Serialize>(
     request: &T,
     extra_body: &serde_json::Map<String, serde_json::Value>,
 ) -> Result<serde_json::Value, LanguageModelError> {
-    debug_assert!(!extra_body.is_empty());
     let mut body = serde_json::to_value(request).map_err(LanguageModelError::permanent)?;
+
+    if extra_body.is_empty() {
+        return Ok(body);
+    }
+
     let object = body.as_object_mut().ok_or_else(|| {
         LanguageModelError::permanent("OpenAI request must serialize to a JSON object")
     })?;

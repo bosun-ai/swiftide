@@ -100,21 +100,13 @@ impl<
         tracing::trace!(model, request = ?request, "Sending request to OpenAI");
 
         let tracking_request = openai_request.clone();
-        let response: CreateChatCompletionResponse = if self.default_options.extra_body.is_empty() {
-            self.client
-                .chat()
-                .create(openai_request)
-                .await
-                .map_err(openai_error_to_language_model_error)?
-        } else {
-            let body =
-                request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
-            self.client
-                .chat()
-                .create_byot(body)
-                .await
-                .map_err(openai_error_to_language_model_error)?
-        };
+        let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
+        let response: CreateChatCompletionResponse = self
+            .client
+            .chat()
+            .create_byot(body)
+            .await
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
@@ -233,28 +225,20 @@ impl<
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let response_stream: ChatCompletionResponseStream =
-            match if self.default_options.extra_body.is_empty() {
-                self.client
-                    .chat()
-                    .create_stream(openai_request.clone())
-                    .await
-            } else {
-                let body = match request_body_with_extra_body(
-                    &openai_request,
-                    &self.default_options.extra_body,
-                ) {
-                    Ok(body) => body,
-                    Err(err) => return err.into(),
-                };
-                self.client
-                    .chat()
-                    .create_stream_byot::<_, CreateChatCompletionStreamResponse>(body)
-                    .await
-            } {
-                Ok(response) => response,
-                Err(e) => return openai_error_to_language_model_error(e).into(),
+        let body =
+            match request_body_with_extra_body(&openai_request, &self.default_options.extra_body) {
+                Ok(body) => body,
+                Err(err) => return err.into(),
             };
+        let response_stream: ChatCompletionResponseStream = match self
+            .client
+            .chat()
+            .create_stream_byot::<_, CreateChatCompletionStreamResponse>(body)
+            .await
+        {
+            Ok(response) => response,
+            Err(e) => return openai_error_to_language_model_error(e).into(),
+        };
 
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
@@ -383,21 +367,13 @@ impl<
         let create_request = build_responses_request_from_chat(self, request)?;
         let tracking_request = create_request.clone();
 
-        let response = if self.default_options.extra_body.is_empty() {
-            self.client
-                .responses()
-                .create(create_request)
-                .await
-                .map_err(openai_error_to_language_model_error)?
-        } else {
-            let body =
-                request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
-            self.client
-                .responses()
-                .create_byot(body)
-                .await
-                .map_err(openai_error_to_language_model_error)?
-        };
+        let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
+        let response = self
+            .client
+            .responses()
+            .create_byot(body)
+            .await
+            .map_err(openai_error_to_language_model_error)?;
 
         let completion = response_to_chat_completion(&response)?;
 
@@ -428,24 +404,17 @@ impl<
 
         create_request.stream = Some(true);
 
-        let stream = match if self.default_options.extra_body.is_empty() {
-            self.client
-                .responses()
-                .create_stream(create_request.clone())
-                .await
-        } else {
-            let body = match request_body_with_extra_body(
-                &create_request,
-                &self.default_options.extra_body,
-            ) {
+        let body =
+            match request_body_with_extra_body(&create_request, &self.default_options.extra_body) {
                 Ok(body) => body,
                 Err(err) => return err.into(),
             };
-            self.client
-                .responses()
-                .create_stream_byot::<_, async_openai::types::responses::ResponseStreamEvent>(body)
-                .await
-        } {
+        let stream = match self
+            .client
+            .responses()
+            .create_stream_byot::<_, async_openai::types::responses::ResponseStreamEvent>(body)
+            .await
+        {
             Ok(stream) => stream,
             Err(err) => return openai_error_to_language_model_error(err).into(),
         };
