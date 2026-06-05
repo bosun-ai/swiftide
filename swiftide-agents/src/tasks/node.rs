@@ -127,8 +127,8 @@ impl<T: TaskNode + 'static + ?Sized> NodeId<T> {
     /// Creates a typed node identifier for an already-registered node.
     ///
     /// Prefer [`Task::register_node`](crate::tasks::Task::register_node) when building normal task
-    /// graphs. Constructing an id manually is only correct when `id` refers to a node managed by the
-    /// caller's own task-like runtime.
+    /// graphs. Constructing an id manually is only correct when `id` refers to a node managed by
+    /// the caller's own task-like runtime.
     pub fn new(id: usize, _node: &T) -> Self {
         NodeId {
             id,
