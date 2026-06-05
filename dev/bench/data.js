@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777979936826,
+  "lastUpdate": 1780646414836,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31673,6 +31673,60 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 224262,
             "range": "± 1615",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "087943ecc0493548cab019ca7e779c4c3963b4bc",
+          "message": "feat(openai): support extra request body fields (#1094)\n\n## Summary\n\nAdds support for provider-specific top-level request fields in the\nOpenAI integration.\n\nThe new `OptionsBuilder::extra_body` hook lets callers attach additional\nJSON fields to Chat Completions and Responses API requests. Requests are\nstill built with the existing typed async-openai builders; immediately\nbefore dispatch, one shared helper serializes the typed request and\nmerges any configured extra fields.\n\n## Why\n\nSome OpenAI-compatible providers accept additional top-level request\nfields that are not represented in the OpenAI request structs. Without\nthis escape hatch, callers have to fork or bypass the integration to use\nthose provider-specific fields.\n\n## Implementation Notes\n\nThe OpenAI integration now has one request-body boundary for Chat\nCompletions and Responses API requests:\n\n- endpoint-specific code builds the normal typed request\n- `request_body_with_extra_body` serializes that request\n- when `extra_body` is empty, the serialized request is returned\nunchanged\n- when `extra_body` is set, those fields are merged into the top-level\nJSON object\n\nStreaming setup uses private `try_... -> Result<ChatCompletionStream,\nLanguageModelError>` helpers so setup failures use normal `?`\npropagation. The public trait methods convert setup failures to\nSwiftide's existing one-item error stream exactly once.\n\nThat keeps the provider-specific behavior encapsulated at the request\nboundary instead of branching every call site.\n\n## Proof\n\nVerified locally with focused integration tests:\n\n```text\ncargo test -p swiftide-integrations openai::chat_completion --features openai\n```\n\nResult:\n\n```text\n19 passed; 0 failed\n```\n\nThe tests cover:\n\n- regular Chat Completions with extra top-level fields\n- streaming Chat Completions with extra top-level fields\n- Responses API requests with extra top-level fields\n- streaming Responses API requests with extra top-level fields\n- default request body generation when no extra body is configured\n\nAlso checked formatting and linting:\n\n```text\ncargo fmt --all --check\ncargo clippy -p swiftide-integrations --features openai -- -D warnings\ngit diff --check\n```\n\nRefactor proof:\n\n```text\ngit diff --stat c136235a..b10012c4\n1 file changed, 63 insertions(+), 64 deletions(-)\n```\n\n`match request_body_with_extra_body` and `return err.into()` no longer\nappear in the OpenAI stream request setup.",
+          "timestamp": "2026-06-05T09:51:10+02:00",
+          "tree_id": "9485ece7e95f16b288507c884550a1bc19f8bf4d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/087943ecc0493548cab019ca7e779c4c3963b4bc"
+        },
+        "date": 1780646412212,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 745471,
+            "range": "± 18512",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 220900,
+            "range": "± 2711",
             "unit": "ns/iter"
           }
         ]
