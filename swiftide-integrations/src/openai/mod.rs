@@ -9,6 +9,7 @@ use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use reqwest_eventsource::Error as EventSourceError;
+use serde::Serialize;
 use std::pin::Pin;
 use std::sync::Arc;
 use swiftide_core::chat_completion::Usage;
@@ -200,6 +201,10 @@ pub struct Options {
     #[builder(default, setter(into))]
     pub user: Option<String>,
 
+    /// Additional top-level JSON fields for OpenAI-compatible providers.
+    #[builder(default, setter(custom))]
+    extra_body: serde_json::Map<String, serde_json::Value>,
+
     #[builder(default)]
     /// The number of dimensions the resulting output embeddings should have. Only supported in
     /// text-embedding-3 and later models.
@@ -247,6 +252,7 @@ impl Options {
         if let Some(user) = &other.user {
             self.user = Some(user.clone());
         }
+        self.extra_body.extend(other.extra_body.clone());
         if let Some(dimensions) = other.dimensions {
             self.dimensions = Some(dimensions);
         }
@@ -267,6 +273,7 @@ impl From<OptionsBuilder> for Options {
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
             user: value.user.flatten(),
+            extra_body: value.extra_body.unwrap_or_default(),
             dimensions: value.dimensions.flatten(),
         }
     }
@@ -287,9 +294,40 @@ impl From<&mut OptionsBuilder> for Options {
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
             user: value.user.flatten(),
+            extra_body: value.extra_body.unwrap_or_default(),
             dimensions: value.dimensions.flatten(),
         }
     }
+}
+
+impl OptionsBuilder {
+    /// Adds additional top-level JSON fields for OpenAI-compatible providers.
+    pub fn extra_body(
+        &mut self,
+        extra_body: serde_json::Map<String, serde_json::Value>,
+    ) -> &mut Self {
+        self.extra_body = Some(extra_body);
+        self
+    }
+}
+
+pub(crate) fn request_body_with_extra_body<T: Serialize>(
+    request: &T,
+    extra_body: &serde_json::Map<String, serde_json::Value>,
+) -> Result<serde_json::Value, LanguageModelError> {
+    let mut body = serde_json::to_value(request).map_err(LanguageModelError::permanent)?;
+
+    if extra_body.is_empty() {
+        return Ok(body);
+    }
+
+    let object = body.as_object_mut().ok_or_else(|| {
+        LanguageModelError::permanent("OpenAI request must serialize to a JSON object")
+    })?;
+
+    object.extend(extra_body.clone());
+
+    Ok(body)
 }
 
 impl OpenAI {
