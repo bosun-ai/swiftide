@@ -164,22 +164,42 @@ impl<
             return self.complete_stream_via_responses_api(request).await;
         }
 
-        let Some(model_name) = self.default_options.prompt_model.clone() else {
-            return LanguageModelError::permanent("Model not set").into();
-        };
+        match self.try_complete_stream(request).await {
+            Ok(stream) => stream,
+            Err(err) => err.into(),
+        }
+    }
+}
+
+impl<
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
+> GenericOpenAI<C>
+{
+    #[allow(clippy::too_many_lines)]
+    async fn try_complete_stream(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        let model_name = self
+            .default_options
+            .prompt_model
+            .clone()
+            .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
 
         #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
         let _ = &model_name;
 
-        let messages = match request
+        let messages = request
             .messages()
             .iter()
             .filter_map(|message| message_to_openai(message).transpose())
-            .collect::<Result<Vec<_>>>()
-        {
-            Ok(messages) => messages,
-            Err(e) => return LanguageModelError::from(e).into(),
-        };
+            .collect::<Result<Vec<_>>>()?;
 
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
@@ -196,17 +216,11 @@ impl<
         if !request.tools_spec().is_empty() {
             openai_request
                 .tools(
-                    match request
+                    request
                         .tools_spec()
                         .iter()
                         .map(tools_to_openai)
-                        .collect::<Result<Vec<_>>>()
-                    {
-                        Ok(tools) => tools,
-                        Err(e) => {
-                            return LanguageModelError::from(e).into();
-                        }
-                    },
+                        .collect::<Result<Vec<_>>>()?,
                 )
                 .tool_choice(ChatCompletionToolChoiceOption::Mode(
                     ToolChoiceOptions::Auto,
@@ -216,29 +230,19 @@ impl<
             }
         }
 
-        let openai_request = match openai_request.build() {
-            Ok(request) => request,
-            Err(e) => {
-                return openai_error_to_language_model_error(e).into();
-            }
-        };
+        let openai_request = openai_request
+            .build()
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let body =
-            match request_body_with_extra_body(&openai_request, &self.default_options.extra_body) {
-                Ok(body) => body,
-                Err(err) => return err.into(),
-            };
-        let response_stream: ChatCompletionResponseStream = match self
+        let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
+        let response_stream: ChatCompletionResponseStream = self
             .client
             .chat()
             .create_stream_byot::<_, CreateChatCompletionStreamResponse>(body)
             .await
-        {
-            Ok(response) => response,
-            Err(e) => return openai_error_to_language_model_error(e).into(),
-        };
+            .map_err(openai_error_to_language_model_error)?;
 
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
@@ -340,20 +344,11 @@ impl<
             },
         );
 
-        Box::pin(tracing_futures::Instrument::instrument(stream, span))
+        Ok(Box::pin(tracing_futures::Instrument::instrument(
+            stream, span,
+        )))
     }
-}
 
-impl<
-    C: async_openai::config::Config
-        + std::default::Default
-        + Sync
-        + Send
-        + std::fmt::Debug
-        + Clone
-        + 'static,
-> GenericOpenAI<C>
-{
     async fn complete_via_responses_api(
         &self,
         request: &ChatCompletionRequest<'_>,
@@ -392,32 +387,35 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> ChatCompletionStream {
-        #[allow(unused_variables)]
-        let Some(model_name) = self.default_options.prompt_model.clone() else {
-            return LanguageModelError::permanent("Model not set").into();
-        };
+        match self.try_complete_stream_via_responses_api(request).await {
+            Ok(stream) => stream,
+            Err(err) => err.into(),
+        }
+    }
 
-        let mut create_request = match build_responses_request_from_chat(self, request) {
-            Ok(req) => req,
-            Err(err) => return err.into(),
-        };
+    #[allow(clippy::too_many_lines)]
+    async fn try_complete_stream_via_responses_api(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        #[allow(unused_variables)]
+        let model_name = self
+            .default_options
+            .prompt_model
+            .clone()
+            .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
+
+        let mut create_request = build_responses_request_from_chat(self, request)?;
 
         create_request.stream = Some(true);
 
-        let body =
-            match request_body_with_extra_body(&create_request, &self.default_options.extra_body) {
-                Ok(body) => body,
-                Err(err) => return err.into(),
-            };
-        let stream = match self
+        let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
+        let stream = self
             .client
             .responses()
             .create_stream_byot::<_, async_openai::types::responses::ResponseStreamEvent>(body)
             .await
-        {
-            Ok(stream) => stream,
-            Err(err) => return openai_error_to_language_model_error(err).into(),
-        };
+            .map_err(openai_error_to_language_model_error)?;
 
         let stream_full = self.stream_full;
 
@@ -448,8 +446,9 @@ impl<
             Err(err) => Err(err),
         });
 
-        Box::pin(Instrument::instrument(mapped_stream, span))
+        Ok(Box::pin(Instrument::instrument(mapped_stream, span)))
     }
+
     #[allow(unused_variables)]
     pub(crate) fn track_completion<R, S>(
         &self,
