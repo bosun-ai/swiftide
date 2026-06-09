@@ -21,7 +21,8 @@
 //!     Transition::fan_out(&branch, value)
 //!         .join_with(join.join())
 //! })?;
-//! // Branches still decide where their own output goes before the join can run.
+//! // Branches still decide where their own output goes before the join can run. Fan-out branches
+//! // cannot finish independently; use a join node as the single place that finishes the task.
 //! task.register_transition(branch, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -84,6 +85,10 @@ where
     Payload: NodeArg,
 {
     /// Creates a join target that waits for every branch in the fan-out group.
+    ///
+    /// Fan-out branches cannot be independent task endings. To model branches that are
+    /// conceptually terminal, transition each branch to a join node and finish the task from that
+    /// join node.
     ///
     /// # Examples
     ///

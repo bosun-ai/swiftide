@@ -23,7 +23,8 @@
 //!         .and(&right, value)
 //!         .join_with(join.join())
 //! })?;
-//! // Branches still decide where their own output goes before the join can run.
+//! // Branches still decide where their own output goes before the join can run. Fan-out branches
+//! // cannot finish independently; use a join node as the single place that finishes the task.
 //! task.register_transition(left, join.join())?;
 //! task.register_transition(right, join.join())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
@@ -369,6 +370,10 @@ impl<To: TaskNode + ?Sized> From<MarkedTransition<To>> for Transition {
 /// Build one with [`Transition::fan_out`] and add additional branch targets with
 /// [`FanOutTransition::and`]. Each branch input is type-checked before the branch target is erased
 /// for runtime scheduling.
+///
+/// Fan-out always represents a joined branch group. True unjoined fan-out with multiple
+/// independent task endings is not supported; model that shape by sending each branch to a join
+/// node and finishing from the join node.
 #[derive(Debug)]
 #[must_use]
 pub struct FanOutTransition {
@@ -393,7 +398,8 @@ impl FanOutTransition {
     ///
     /// This defines the branch group and the join node that waits for every branch in that group.
     /// Each branch still needs its own registered transition to the same join target when it is
-    /// ready to contribute its output.
+    /// ready to contribute its output. If branches are conceptually terminal, register each branch
+    /// to transition to this join target and finish from the join node.
     pub fn join_with<J>(self, join_target: J) -> Transition
     where
         J: JoinDestination,
@@ -460,6 +466,9 @@ impl Transition {
     ///
     /// The returned [`FanOutTransition`] must attach an explicit join with
     /// [`FanOutTransition::join_with`] before it can be returned from a task transition.
+    /// Branches in that fan-out are joined branches, not independent task endings. To express
+    /// multiple logical endings, transition each branch to a join node and finish the task from the
+    /// join node.
     ///
     /// # Examples
     ///

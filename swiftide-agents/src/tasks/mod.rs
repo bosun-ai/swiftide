@@ -62,7 +62,8 @@
 //!         .and(&increment, value)
 //!         .join_with(join.join())
 //! })?;
-//! // Branches still decide where their own output goes before the join can run.
+//! // Branches still decide where their own output goes before the join can run. Fan-out branches
+//! // cannot finish independently; use a join node as the single place that finishes the task.
 //! task.register_transition(double, join.join())?;
 //! task.register_transition(increment, join.join())?;
 //! task.register_transition(join, task.transitions_to_finish())?;

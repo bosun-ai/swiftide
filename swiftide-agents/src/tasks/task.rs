@@ -340,6 +340,10 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
     /// Returns a typed transition closure that finishes the task with the final output.
     ///
+    /// Use this from the final node of a task. Fan-out branches cannot finish independently; when
+    /// multiple branches are conceptually terminal, route them to a join node and finish from that
+    /// join node instead.
+    ///
     /// # Examples
     ///
     /// ```no_run
