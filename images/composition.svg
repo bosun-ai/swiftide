@@ -21,8 +21,8 @@
 
   <rect class="core" x="420" y="165" width="360" height="180" />
   <text class="text" x="600" y="216" text-anchor="middle">Core Primitives</text>
-  <text class="small" x="600" y="255" text-anchor="middle">Prompts, messages, tools,</text>
-  <text class="small" x="600" y="284" text-anchor="middle">chat completions, traits</text>
+  <text class="small" x="600" y="255" text-anchor="middle">Prompts, LLMs,</text>
+  <text class="small" x="600" y="284" text-anchor="middle">chat completions, common interfaces</text>
   <text class="tiny" x="600" y="314" text-anchor="middle">The shared interaction model for higher-level flows</text>
 
   <rect class="panel" x="60" y="70" width="285" height="120" />
@@ -50,5 +50,5 @@
   <path class="arrow" d="M780 285 C815 310 820 390 855 390" />
   <path class="arrow" d="M600 165 L600 116" />
 
-  <text class="tiny" x="600" y="484" text-anchor="middle">Keep workflows explicit: typed hand-offs, opt-in integrations, observable execution.</text>
+  <text class="tiny" x="600" y="484" text-anchor="middle">Typed hand-offs, opt-in integrations, observable.</text>
 </svg>
