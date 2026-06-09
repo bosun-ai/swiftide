@@ -85,7 +85,7 @@ mod tests {
         ClientConfig,
         admin::{AdminClient, AdminOptions, NewTopic, TopicReplication},
         client::DefaultClientContext,
-        producer::{FutureProducer, FutureRecord, Producer},
+        producer::{FutureProducer, FutureRecord},
     };
     use swiftide_core::indexing::TextNode;
     use testcontainers::{ContainerAsync, runners::AsyncRunner};
@@ -164,7 +164,6 @@ mod tests {
             )
             .await
             .unwrap();
-        producer.flush(Duration::from_secs(0)).unwrap();
 
         let loader = Kafka::builder()
             .client_config(kafka_broker.client_config.clone())
