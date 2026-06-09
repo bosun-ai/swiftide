@@ -8,8 +8,8 @@ use std::{
 
 use async_trait::async_trait;
 use swiftide_agents::tasks::{
-    AnyJoinInput, ConcurrencyModel, JoinInput, NodeId, Task, TaskError, TaskNode, TaskRunState,
-    Transition,
+    AnyJoinInput, ConcurrencyModel, CurrentNodes, JoinInput, NodeId, Task, TaskError, TaskNode,
+    TaskRunState, Transition,
 };
 use tokio::{
     sync::Barrier,
@@ -353,6 +353,149 @@ async fn transition_pause_pauses_task() {
 
     let result = task.run(1).await.unwrap();
     assert_eq!(result, TaskRunState::Paused);
+}
+
+#[test]
+fn current_nodes_returns_none_without_resumable_state() {
+    let task: Task<i32, i32> = Task::new();
+
+    assert!(matches!(
+        task.current_nodes::<IntNode>(),
+        CurrentNodes::None
+    ));
+}
+
+#[test_log::test(tokio::test)]
+async fn current_nodes_returns_one_paused_matching_node() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(PauseOnceNode);
+    task.starts_with(start);
+    task.register_transition(start, move |_output| Transition::pause())
+        .unwrap();
+
+    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert!(matches!(
+        task.current_nodes::<PauseOnceNode>(),
+        CurrentNodes::One(_)
+    ));
+}
+
+#[test_log::test(tokio::test)]
+async fn current_nodes_returns_runnable_nodes_when_no_branch_is_paused() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    task.starts_with(start);
+    task.register_transition(start, task.transitions_to_finish())
+        .unwrap();
+
+    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Completed(2));
+    task.reset();
+
+    assert!(matches!(
+        task.current_nodes::<IntNode>(),
+        CurrentNodes::One(_)
+    ));
+}
+
+#[test_log::test(tokio::test)]
+async fn current_nodes_returns_multiple_paused_matching_nodes() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let left = task.register_node(PauseOnceNode);
+    let right = task.register_node(PauseOnceNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out(&left, input)
+            .and(&right, input)
+            .join_with(join.join())
+            .concurrency_model(ConcurrencyModel::Parallel)
+    })
+    .unwrap();
+    task.register_transition(left, move |_output| Transition::pause())
+        .unwrap();
+    task.register_transition(right, move |_output| Transition::pause())
+        .unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    let CurrentNodes::Multiple(nodes) = task.current_nodes::<PauseOnceNode>() else {
+        panic!("expected multiple paused nodes");
+    };
+    assert_eq!(nodes.len(), 2);
+}
+
+#[test_log::test(tokio::test)]
+async fn current_nodes_filters_mixed_current_node_types() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let left = task.register_node(PauseOnceNode);
+    let right = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out(&left, input)
+            .and(&right, input)
+            .join_with(join.join())
+            .concurrency_model(ConcurrencyModel::Parallel)
+    })
+    .unwrap();
+    task.register_transition(left, move |_output| Transition::pause())
+        .unwrap();
+    task.register_transition(right, move |_output| Transition::pause())
+        .unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert!(matches!(
+        task.current_nodes::<PauseOnceNode>(),
+        CurrentNodes::One(_)
+    ));
+    assert!(matches!(
+        task.current_nodes::<IntNode>(),
+        CurrentNodes::One(_)
+    ));
+}
+
+#[test_log::test(tokio::test)]
+async fn current_nodes_prefers_paused_nodes_over_runnable_nodes() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let start = task.register_node(IntNode);
+    let paused = task.register_node(PauseOnceNode);
+    let runnable = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    task.starts_with(start);
+    task.register_transition(start, move |input| {
+        Transition::fan_out(&paused, input)
+            .and(&runnable, input)
+            .join_with(join.join())
+    })
+    .unwrap();
+    task.register_transition(paused, move |_output| Transition::pause())
+        .unwrap();
+    task.register_transition(runnable, join.join()).unwrap();
+    task.register_transition(join, task.transitions_to_finish())
+        .unwrap();
+
+    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert!(matches!(
+        task.current_nodes::<PauseOnceNode>(),
+        CurrentNodes::One(_)
+    ));
+    assert!(matches!(
+        task.current_nodes::<IntNode>(),
+        CurrentNodes::None
+    ));
 }
 
 #[test_log::test(tokio::test)]

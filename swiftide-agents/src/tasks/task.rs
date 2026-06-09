@@ -60,6 +60,27 @@ pub enum TaskRunState<Output> {
     Paused,
 }
 
+/// The currently active task nodes that match a requested node type.
+#[derive(Debug)]
+pub enum CurrentNodes<'a, T> {
+    /// No current node has the requested type.
+    None,
+    /// Exactly one current node has the requested type.
+    One(&'a T),
+    /// Multiple current nodes have the requested type.
+    Multiple(Vec<&'a T>),
+}
+
+impl<'a, T> CurrentNodes<'a, T> {
+    fn from_matches(nodes: Vec<&'a T>) -> Self {
+        match nodes.len() {
+            0 => Self::None,
+            1 => Self::One(nodes[0]),
+            _ => Self::Multiple(nodes),
+        }
+    }
+}
+
 /// A typed task graph that can run sequential, branching, and joining workflows.
 ///
 /// Register nodes with [`Task::register_node`] or [`Task::register_node_fn`], choose a start node
@@ -393,11 +414,19 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
             .await
     }
 
-    /// Returns the node for the first paused or runnable branch when it has the requested type.
-    pub fn current_node<T: TaskNode + Clone + 'static>(&self) -> Option<&T> {
-        let node_id = self.runtime.current_node()?;
+    /// Returns the current paused or runnable nodes that have the requested type.
+    ///
+    /// Paused branches take precedence over runnable branches. Runnable branches are only returned
+    /// when no paused branches exist.
+    pub fn current_nodes<T: TaskNode + 'static>(&self) -> CurrentNodes<'_, T> {
+        let nodes = self
+            .runtime
+            .current_nodes()
+            .into_iter()
+            .filter_map(|node_id| self.nodes.get(node_id)?.node_as_any().downcast_ref::<T>())
+            .collect();
 
-        self.nodes.get(node_id)?.node_as_any().downcast_ref::<T>()
+        CurrentNodes::from_matches(nodes)
     }
 
     /// Registers a node in the task graph and returns its typed identifier.

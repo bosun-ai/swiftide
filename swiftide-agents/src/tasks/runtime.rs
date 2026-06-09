@@ -132,8 +132,10 @@ impl Runtime {
         self.state = None;
     }
 
-    pub(crate) fn current_node(&self) -> Option<usize> {
-        self.state.as_ref().and_then(RunState::current_node)
+    pub(crate) fn current_nodes(&self) -> Vec<usize> {
+        self.state
+            .as_ref()
+            .map_or_else(Vec::new, RunState::current_nodes)
     }
 
     pub(crate) async fn run<Input, Output>(
@@ -334,16 +336,25 @@ impl RunState {
         !self.runnable_branches.is_empty() || !self.paused_branches.is_empty()
     }
 
-    fn current_node(&self) -> Option<usize> {
-        self.paused_branches
-            .values()
-            .next()
+    fn current_nodes(&self) -> Vec<usize> {
+        if !self.paused_branches.is_empty() {
+            let mut paused = self
+                .paused_branches
+                .values()
+                .map(|branch| (branch.id.0, branch.current_node))
+                .collect::<Vec<_>>();
+            paused.sort_by_key(|(branch_id, _)| *branch_id);
+
+            return paused
+                .into_iter()
+                .map(|(_, current_node)| current_node)
+                .collect();
+        }
+
+        self.runnable_branches
+            .iter()
             .map(|branch| branch.current_node)
-            .or_else(|| {
-                self.runnable_branches
-                    .front()
-                    .map(|branch| branch.current_node)
-            })
+            .collect()
     }
 
     fn next_branch(&mut self) -> BranchId {

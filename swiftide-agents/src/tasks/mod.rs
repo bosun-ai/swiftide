@@ -84,7 +84,7 @@ mod transition;
 pub use adapters::{AsyncFn, SyncFn, TaskAgent};
 pub use errors::{NodeError, TaskError};
 pub use node::NodeId;
-pub use task::{Task, TaskRunState};
+pub use task::{CurrentNodes, Task, TaskRunState};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
     AnyJoinInput, AnyJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
