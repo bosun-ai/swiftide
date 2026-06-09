@@ -873,6 +873,83 @@ async fn join_target_concurrency_override_is_used_by_join_branch() {
     assert_eq!(result, TaskRunState::Completed(6));
 }
 
+#[test]
+fn join_arrival_concurrency_override_is_rejected() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let branch = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    let error = task
+        .register_transition(
+            branch,
+            join.join().concurrency_model(ConcurrencyModel::Parallel),
+        )
+        .unwrap_err();
+
+    assert!(
+        matches!(
+            error,
+            TaskError::InvalidState(ref message)
+                if message.contains("only apply to fan-out joins")
+        ),
+        "unexpected error: {error:?}"
+    );
+}
+
+#[test]
+fn mapped_join_arrival_concurrency_override_is_rejected() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let branch = task.register_node(IntNode);
+    let join = task.register_node(SumJoinNode);
+
+    let error = task
+        .register_transition(
+            branch,
+            join.join()
+                .concurrency_model(ConcurrencyModel::Parallel)
+                .map(|value| value),
+        )
+        .unwrap_err();
+
+    assert!(
+        matches!(
+            error,
+            TaskError::InvalidState(ref message)
+                if message.contains("only apply to fan-out joins")
+        ),
+        "unexpected error: {error:?}"
+    );
+}
+
+#[test]
+fn any_join_arrival_concurrency_override_is_rejected() {
+    let mut task: Task<i32, i32> = Task::new();
+
+    let branch = task.register_node(IntNode);
+    let join = task.register_node_fn(|input: &AnyJoinInput| -> Result<i32, Error> {
+        Ok(input.iter::<i32>().copied().sum())
+    });
+
+    let error = task
+        .register_transition(
+            branch,
+            join.join_any()
+                .concurrency_model(ConcurrencyModel::Parallel),
+        )
+        .unwrap_err();
+
+    assert!(
+        matches!(
+            error,
+            TaskError::InvalidState(ref message)
+                if message.contains("only apply to fan-out joins")
+        ),
+        "unexpected error: {error:?}"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn parallel_fanout_reaches_barrier() {
     let barrier = Arc::new(Barrier::new(2));

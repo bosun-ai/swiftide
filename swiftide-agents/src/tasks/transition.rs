@@ -219,7 +219,13 @@ where
         }
     }
 
-    /// Overrides the concurrency model for the join branch that will be scheduled.
+    /// Overrides the concurrency model for the join branch scheduled by
+    /// [`FanOutTransition::join_with`].
+    ///
+    /// This only applies when this target is passed to [`FanOutTransition::join_with`]. Branch
+    /// arrival transitions registered with
+    /// [`Task::register_transition`](crate::tasks::Task::register_transition) cannot set join
+    /// branch concurrency.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.definition.concurrency_model = Some(concurrency_model);
         self
@@ -298,21 +304,15 @@ impl<T: TaskNode<Input = AnyJoinInput> + ?Sized> AnyJoinTarget<T> {
         }
     }
 
-    /// Overrides the concurrency model for the join branch that will be scheduled.
+    /// Overrides the concurrency model for the join branch scheduled by
+    /// [`FanOutTransition::join_with`].
+    ///
+    /// This only applies when this target is passed to [`FanOutTransition::join_with`]. Branch
+    /// arrival transitions registered with
+    /// [`Task::register_transition`](crate::tasks::Task::register_transition) cannot set join
+    /// branch concurrency.
     pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
         self.definition.concurrency_model = Some(concurrency_model);
-        self
-    }
-}
-
-impl<T, Payload, F> MappedJoinTarget<T, Payload, F>
-where
-    T: TaskNode<Input = JoinInput<Payload>> + ?Sized,
-    Payload: NodeArg,
-{
-    /// Overrides the concurrency model for the join branch that will be scheduled.
-    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.join_target = self.join_target.concurrency_model(concurrency_model);
         self
     }
 }
