@@ -144,7 +144,7 @@ json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
 ## Estimate token counts using tiktoken
 tiktoken = ["swiftide-integrations/tiktoken"]
 
-#! ### Experimental
+#! ### Agent and task orchestration
 ## Typed task graphs
 swiftide-tasks = ["dep:swiftide-tasks"]
 ## GenAI agents and tools

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Swiftide composition overview</title>
+  <desc id="desc">Agents, tasks, pipelines, tools, integrations, and observability compose into Rust AI applications.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #1f2937; stroke-width: 2.5; rx: 16; }
+      .core { fill: #fff7ed; stroke: #c2410c; stroke-width: 3; rx: 18; }
+      .accent { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.5; rx: 14; }
+      .text { fill: #111827; font: 600 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .small { fill: #374151; font: 500 19px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .tiny { fill: #4b5563; font: 500 16px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .arrow { fill: none; stroke: #1f2937; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1f2937" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="520" rx="20" />
+
+  <rect class="core" x="435" y="170" width="330" height="170" />
+  <text class="text" x="600" y="222" text-anchor="middle">Typed Task Graph</text>
+  <text class="small" x="600" y="262" text-anchor="middle">Prompt steps, agents, tools,</text>
+  <text class="small" x="600" y="291" text-anchor="middle">domain nodes, fan-out, joins</text>
+
+  <rect class="panel" x="60" y="70" width="285" height="120" />
+  <text class="text" x="202" y="121" text-anchor="middle">Agent Harness</text>
+  <text class="tiny" x="202" y="154" text-anchor="middle">LLM loop, tools, hooks, HITL</text>
+
+  <rect class="panel" x="60" y="330" width="285" height="120" />
+  <text class="text" x="202" y="381" text-anchor="middle">RAG Pipelines</text>
+  <text class="tiny" x="202" y="414" text-anchor="middle">Load, chunk, embed, retrieve</text>
+
+  <rect class="panel" x="855" y="70" width="285" height="120" />
+  <text class="text" x="997" y="121" text-anchor="middle">Tools</text>
+  <text class="tiny" x="997" y="154" text-anchor="middle">Rust functions, executors, MCP</text>
+
+  <rect class="panel" x="855" y="330" width="285" height="120" />
+  <text class="text" x="997" y="381" text-anchor="middle">Integrations</text>
+  <text class="tiny" x="997" y="414" text-anchor="middle">Providers, storage, tracing</text>
+
+  <rect class="accent" x="445" y="35" width="310" height="80" />
+  <text class="text" x="600" y="86" text-anchor="middle">Rust AI Applications</text>
+
+  <path class="arrow" d="M345 130 C390 130 405 205 435 230" />
+  <path class="arrow" d="M345 390 C390 390 405 305 435 280" />
+  <path class="arrow" d="M765 230 C795 205 810 130 855 130" />
+  <path class="arrow" d="M765 280 C795 305 810 390 855 390" />
+  <path class="arrow" d="M600 170 L600 116" />
+  <path class="arrow" d="M600 116 L600 170" />
+
+  <text class="tiny" x="600" y="484" text-anchor="middle">Keep workflows explicit: typed hand-offs, opt-in integrations, observable execution.</text>
+</svg>
