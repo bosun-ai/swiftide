@@ -9,7 +9,7 @@ use std::{
 use async_trait::async_trait;
 use swiftide_tasks::{
     AnyJoinInput, ConcurrencyModel, CurrentNodes, JoinInput, NodeId, Task, TaskError, TaskNode,
-    TaskRunState, Transition,
+    TaskRunOutcome, Transition,
 };
 use tokio::{
     sync::Barrier,
@@ -260,12 +260,12 @@ async fn sequential_3_node_task_reset_works() {
         .unwrap();
 
     let res = task.run(1).await.unwrap();
-    assert_eq!(res, TaskRunState::Completed(4));
+    assert_eq!(res, TaskRunOutcome::Completed(4));
 
     task.reset();
 
     let rerun = task.resume().await.unwrap();
-    assert_eq!(rerun, TaskRunState::Completed(4));
+    assert_eq!(rerun, TaskRunOutcome::Completed(4));
 }
 
 #[test_log::test(tokio::test)]
@@ -281,7 +281,7 @@ async fn running_task_does_not_clone_registered_nodes() {
     task.register_transition(start, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Completed(1));
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Completed(1));
     assert_eq!(clone_count.load(Ordering::SeqCst), 0);
 }
 
@@ -307,7 +307,7 @@ async fn fan_out_can_join_multiple_branches() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(6));
+    assert_eq!(result, TaskRunOutcome::Completed(6));
 }
 
 #[test_log::test(tokio::test)]
@@ -339,7 +339,7 @@ async fn any_join_input_allows_mixed_branch_payloads() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(13));
+    assert_eq!(result, TaskRunOutcome::Completed(13));
 }
 
 #[test_log::test(tokio::test)]
@@ -352,7 +352,7 @@ async fn transition_pause_pauses_task() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Paused);
+    assert_eq!(result, TaskRunOutcome::Paused);
 }
 
 #[test]
@@ -374,7 +374,7 @@ async fn current_nodes_returns_one_paused_matching_node() {
     task.register_transition(start, move |_output| Transition::pause())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Paused);
     assert!(matches!(
         task.current_nodes::<PauseOnceNode>(),
         CurrentNodes::One(_)
@@ -390,7 +390,7 @@ async fn current_nodes_returns_runnable_nodes_when_no_branch_is_paused() {
     task.register_transition(start, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Completed(2));
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Completed(2));
     task.reset();
 
     assert!(matches!(
@@ -423,7 +423,7 @@ async fn current_nodes_returns_multiple_paused_matching_nodes() {
     task.register_transition(join, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Paused);
     let CurrentNodes::Multiple(nodes) = task.current_nodes::<PauseOnceNode>() else {
         panic!("expected multiple paused nodes");
     };
@@ -454,7 +454,7 @@ async fn current_nodes_filters_mixed_current_node_types() {
     task.register_transition(join, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Paused);
     assert!(matches!(
         task.current_nodes::<PauseOnceNode>(),
         CurrentNodes::One(_)
@@ -487,7 +487,7 @@ async fn current_nodes_prefers_paused_nodes_over_runnable_nodes() {
     task.register_transition(join, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Paused);
     assert!(matches!(
         task.current_nodes::<PauseOnceNode>(),
         CurrentNodes::One(_)
@@ -521,8 +521,8 @@ async fn pause_then_resume_completes() {
     task.register_transition(finish, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
-    assert_eq!(task.resume().await.unwrap(), TaskRunState::Completed(3));
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Paused);
+    assert_eq!(task.resume().await.unwrap(), TaskRunOutcome::Completed(3));
 }
 
 #[test_log::test(tokio::test)]
@@ -534,7 +534,7 @@ async fn run_rejects_overwriting_active_state() {
     task.register_transition(start, move |_output| Transition::pause())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Paused);
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Paused);
     assert!(matches!(
         task.run(2).await.unwrap_err(),
         TaskError::TaskActive
@@ -550,7 +550,7 @@ async fn resume_requires_resumable_state() {
     task.register_transition(start, task.transitions_to_finish())
         .unwrap();
 
-    assert_eq!(task.run(1).await.unwrap(), TaskRunState::Completed(2));
+    assert_eq!(task.run(1).await.unwrap(), TaskRunOutcome::Completed(2));
     assert!(matches!(
         task.resume().await.unwrap_err(),
         TaskError::NotResumable
@@ -749,7 +749,7 @@ async fn join_input_keeps_branch_creation_order() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(vec![2, 11]));
+    assert_eq!(result, TaskRunOutcome::Completed(vec![2, 11]));
 }
 
 #[test_log::test(tokio::test)]
@@ -774,7 +774,7 @@ async fn fan_out_join_scope_preserves_full_fanout_join() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(6));
+    assert_eq!(result, TaskRunOutcome::Completed(6));
 }
 
 #[test_log::test(tokio::test)]
@@ -802,7 +802,7 @@ async fn fan_out_join_scope_allows_branches_to_join_after_intermediate_nodes() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(16));
+    assert_eq!(result, TaskRunOutcome::Completed(16));
 }
 
 #[test_log::test(tokio::test)]
@@ -832,7 +832,7 @@ async fn fan_out_join_scope_waits_for_branch_that_finishes_before_join() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(13));
+    assert_eq!(result, TaskRunOutcome::Completed(13));
 }
 
 #[test_log::test(tokio::test)]
@@ -876,7 +876,7 @@ async fn register_transition_async_accepts_future_without_boxing() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(3));
+    assert_eq!(result, TaskRunOutcome::Completed(3));
 }
 
 #[test_log::test(tokio::test)]
@@ -898,7 +898,7 @@ async fn register_transition_maps_join_payload() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(6));
+    assert_eq!(result, TaskRunOutcome::Completed(6));
 }
 
 #[test_log::test(tokio::test)]
@@ -923,7 +923,7 @@ async fn register_transition_async_maps_join_payload() {
         .unwrap();
 
     let result = task.run(1).await.unwrap();
-    assert_eq!(result, TaskRunState::Completed(6));
+    assert_eq!(result, TaskRunOutcome::Completed(6));
 }
 
 #[test]
@@ -970,7 +970,7 @@ async fn task_default_parallel_runs_fanout_branches_concurrently() {
         .expect("task default should make fan-out branches parallel")
         .expect("task run");
 
-    assert_eq!(result, TaskRunState::Completed(4));
+    assert_eq!(result, TaskRunOutcome::Completed(4));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -1003,5 +1003,5 @@ async fn parallel_fanout_reaches_barrier() {
         .expect("parallel fan-out should not deadlock")
         .expect("task run");
 
-    assert_eq!(result, TaskRunState::Completed(4));
+    assert_eq!(result, TaskRunOutcome::Completed(4));
 }

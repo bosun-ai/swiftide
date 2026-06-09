@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
-use swiftide::agents::tasks::{NodeError, SyncFn, Task, TaskRunState, Transition};
+use swiftide::tasks::{NodeError, SyncFn, Task, TaskRunOutcome, Transition};
 use tokio::runtime::{Builder, Runtime};
 use tokio::time::sleep;
 
@@ -26,11 +26,11 @@ fn increment_node() -> SyncFn<impl Fn(&i32) -> Result<i32, NodeError> + Clone, i
 
 #[allow(clippy::type_complexity)]
 fn join_sum_node() -> SyncFn<
-    impl Fn(&swiftide::agents::tasks::JoinInput<i32>) -> Result<i32, NodeError> + Clone,
-    swiftide::agents::tasks::JoinInput<i32>,
+    impl Fn(&swiftide::tasks::JoinInput<i32>) -> Result<i32, NodeError> + Clone,
+    swiftide::tasks::JoinInput<i32>,
     i32,
 > {
-    SyncFn::new(|input: &swiftide::agents::tasks::JoinInput<i32>| {
+    SyncFn::new(|input: &swiftide::tasks::JoinInput<i32>| {
         Ok::<_, NodeError>(input.iter().copied().sum())
     })
 }
@@ -41,8 +41,8 @@ async fn complete_task(mut task: Task<i32, i32>, input: i32) -> i32 {
         .await
         .expect("task run")
     {
-        TaskRunState::Completed(output) => std::hint::black_box(output),
-        TaskRunState::Paused => panic!("benchmark task paused unexpectedly"),
+        TaskRunOutcome::Completed(output) => std::hint::black_box(output),
+        TaskRunOutcome::Paused => panic!("benchmark task paused unexpectedly"),
     }
 }
 
@@ -105,7 +105,7 @@ fn build_fanout_join_task(
             .join_with(join.join());
 
         if parallel {
-            transition.concurrency_model(swiftide::agents::tasks::ConcurrencyModel::Parallel)
+            transition.concurrency_model(swiftide::tasks::ConcurrencyModel::Parallel)
         } else {
             transition
         }

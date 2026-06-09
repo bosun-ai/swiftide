@@ -12,7 +12,7 @@ use tracing::Instrument as _;
 use super::{
     errors::{NodeError, TaskError},
     executor::EvaluatedTransition,
-    task::TaskRunState,
+    task::TaskRunOutcome,
     traits::{AnyNodeExecutor, NodeArg},
     transition::{
         BranchId, ConcurrencyModel, JoinDefinition, NextNode, Transition, TransitionAction,
@@ -144,7 +144,7 @@ impl Runtime {
         start_node: usize,
         default_concurrency_model: ConcurrencyModel,
         input: Input,
-    ) -> Result<TaskRunState<Output>, TaskError>
+    ) -> Result<TaskRunOutcome<Output>, TaskError>
     where
         Input: NodeArg,
         Output: NodeArg + Clone,
@@ -187,7 +187,7 @@ impl Runtime {
         &mut self,
         nodes: &[Arc<dyn AnyNodeExecutor>],
         default_concurrency_model: ConcurrencyModel,
-    ) -> Result<TaskRunState<Output>, TaskError>
+    ) -> Result<TaskRunOutcome<Output>, TaskError>
     where
         Output: NodeArg + Clone,
     {
@@ -207,7 +207,7 @@ impl Runtime {
         &mut self,
         nodes: &[Arc<dyn AnyNodeExecutor>],
         default_concurrency_model: ConcurrencyModel,
-    ) -> Result<TaskRunState<Output>, TaskError>
+    ) -> Result<TaskRunOutcome<Output>, TaskError>
     where
         Output: NodeArg + Clone,
     {
@@ -234,7 +234,7 @@ impl Runtime {
                                     break;
                                 }
                                 LoopControl::Complete(output) => {
-                                    return Ok(TaskRunState::Completed(output));
+                                    return Ok(TaskRunOutcome::Completed(output));
                                 }
                             }
                         }
@@ -254,13 +254,13 @@ impl Runtime {
                         pause_requested = true;
                         continue;
                     }
-                    LoopControl::Complete(output) => return Ok(TaskRunState::Completed(output)),
+                    LoopControl::Complete(output) => return Ok(TaskRunOutcome::Completed(output)),
                 }
             }
 
             if pause_requested {
                 self.state = Some(state);
-                return Ok(TaskRunState::Paused);
+                return Ok(TaskRunOutcome::Paused);
             }
 
             if state.runnable_branches.is_empty() {
@@ -270,7 +270,7 @@ impl Runtime {
 
         if !state.paused_branches.is_empty() {
             self.state = Some(state);
-            return Ok(TaskRunState::Paused);
+            return Ok(TaskRunOutcome::Paused);
         }
 
         Err(TaskError::Incomplete)

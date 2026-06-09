@@ -1,7 +1,7 @@
 //! This example illustrates how to fan out a task into multiple branches and join them again.
 
 use anyhow::Result;
-use swiftide::tasks::{ConcurrencyModel, JoinInput, NodeError, Task, TaskRunState, Transition};
+use swiftide::tasks::{ConcurrencyModel, JoinInput, NodeError, Task, TaskRunOutcome, Transition};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -35,11 +35,11 @@ async fn main() -> Result<()> {
     task.register_transition(join, task.transitions_to_finish())?;
 
     match task.run(5).await? {
-        TaskRunState::Completed(result) => {
+        TaskRunOutcome::Completed(result) => {
             assert_eq!(result, 16);
             println!("Joined result: {result}");
         }
-        TaskRunState::Paused => println!("Task paused"),
+        TaskRunOutcome::Paused => println!("Task paused"),
     }
 
     Ok(())

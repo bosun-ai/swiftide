@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use swiftide::{
     agents::{self, Agent, StopReason, errors::AgentError, tools::control::StopWithArgs},
     prompt::Prompt,
-    tasks::{NodeId, Task, TaskNode, TaskRunState, Transition},
+    tasks::{NodeId, Task, TaskNode, TaskRunOutcome, Transition},
     traits::SimplePrompt,
 };
 use tokio::sync::Mutex;
@@ -193,10 +193,10 @@ async fn main() -> Result<()> {
         );
 
     match task.run(request).await? {
-        TaskRunState::Completed(handoff_note) => {
+        TaskRunOutcome::Completed(handoff_note) => {
             println!("Generated hand-off note:\n{handoff_note}");
         }
-        TaskRunState::Paused => {
+        TaskRunOutcome::Paused => {
             println!("Task paused");
         }
     }

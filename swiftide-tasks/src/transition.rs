@@ -300,7 +300,7 @@ impl<T: TaskNode<Input = AnyJoinInput> + ?Sized> AnyJoinTarget<T> {
 /// # Examples
 ///
 /// ```no_run
-/// use swiftide_tasks::{NodeError, Task, TaskRunState, Transition};
+/// use swiftide_tasks::{NodeError, Task, TaskRunOutcome, Transition};
 ///
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -326,7 +326,7 @@ impl<T: TaskNode<Input = AnyJoinInput> + ?Sized> AnyJoinTarget<T> {
 /// task.register_transition(right, join.join())?;
 /// task.register_transition(join, task.transitions_to_finish())?;
 ///
-/// assert_eq!(task.run(1).await?, TaskRunState::Completed(5));
+/// assert_eq!(task.run(1).await?, TaskRunOutcome::Completed(5));
 /// # Ok(())
 /// # }
 /// ```
@@ -510,7 +510,7 @@ impl Transition {
     /// # Examples
     ///
     /// ```no_run
-    /// use swiftide_tasks::{NodeError, Task, TaskRunState, Transition};
+    /// use swiftide_tasks::{NodeError, Task, TaskRunOutcome, Transition};
     ///
     /// # #[tokio::main(flavor = "current_thread")]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -520,7 +520,7 @@ impl Transition {
     /// task.starts_with(start);
     /// task.register_transition(start, |_value| Transition::pause())?;
     ///
-    /// assert_eq!(task.run(1).await?, TaskRunState::Paused);
+    /// assert_eq!(task.run(1).await?, TaskRunOutcome::Paused);
     /// # Ok(())
     /// # }
     /// ```

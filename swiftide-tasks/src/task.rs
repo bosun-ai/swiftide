@@ -9,7 +9,7 @@
 //! # Examples
 //!
 //! ```no_run
-//! use swiftide_tasks::{NodeError, Task, TaskRunState};
+//! use swiftide_tasks::{NodeError, Task, TaskRunOutcome};
 //!
 //! # #[tokio::main(flavor = "current_thread")]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,7 +23,7 @@
 //! task.register_transition(start, move |value| finish.transitions_with(value))?;
 //! task.register_transition(finish, task.transitions_to_finish())?;
 //!
-//! assert_eq!(task.run(2).await?, TaskRunState::Completed(6));
+//! assert_eq!(task.run(2).await?, TaskRunOutcome::Completed(6));
 //! # Ok(())
 //! # }
 //! ```
@@ -53,7 +53,7 @@ type TypedNodeExecutor<T> =
 
 /// The observable outcome of calling [`Task::run`] or [`Task::resume`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TaskRunState<Output> {
+pub enum TaskRunOutcome<Output> {
     /// The task reached its finish transition and produced an output.
     Completed(Output),
     /// The task paused and can be continued with [`Task::resume`].
@@ -94,7 +94,7 @@ impl<'a, T> CurrentNodes<'a, T> {
 /// # Examples
 ///
 /// ```no_run
-/// use swiftide_tasks::{NodeError, Task, TaskRunState};
+/// use swiftide_tasks::{NodeError, Task, TaskRunOutcome};
 ///
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -108,7 +108,7 @@ impl<'a, T> CurrentNodes<'a, T> {
 /// task.register_transition(start, move |value| finish.transitions_with(value))?;
 /// task.register_transition(finish, task.transitions_to_finish())?;
 ///
-/// assert_eq!(task.run(2).await?, TaskRunState::Completed(9));
+/// assert_eq!(task.run(2).await?, TaskRunOutcome::Completed(9));
 /// # Ok(())
 /// # }
 /// ```
@@ -347,7 +347,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// # Examples
     ///
     /// ```no_run
-    /// use swiftide_tasks::{NodeError, Task, TaskRunState};
+    /// use swiftide_tasks::{NodeError, Task, TaskRunOutcome};
     ///
     /// # #[tokio::main(flavor = "current_thread")]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -357,7 +357,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// task.starts_with(start);
     /// task.register_transition(start, task.transitions_to_finish())?;
     ///
-    /// assert_eq!(task.run(2).await?, TaskRunState::Completed(3));
+    /// assert_eq!(task.run(2).await?, TaskRunOutcome::Completed(3));
     /// # Ok(())
     /// # }
     /// ```
@@ -367,8 +367,8 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
 
     /// Starts the task from its configured start node.
     ///
-    /// Returns [`TaskRunState::Completed`] when the task reaches its finish transition, or
-    /// [`TaskRunState::Paused`] when execution was intentionally paused.
+    /// Returns [`TaskRunOutcome::Completed`] when the task reaches its finish transition, or
+    /// [`TaskRunOutcome::Paused`] when execution was intentionally paused.
     ///
     /// # Errors
     ///
@@ -378,7 +378,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     pub async fn run(
         &mut self,
         input: impl Into<Input>,
-    ) -> Result<TaskRunState<Output>, TaskError> {
+    ) -> Result<TaskRunOutcome<Output>, TaskError> {
         if self.runtime.is_live() {
             return Err(TaskError::TaskActive);
         }
@@ -410,7 +410,7 @@ impl<Input: NodeArg + Clone, Output: NodeArg + Clone> Task<Input, Output> {
     /// Returns an error when the task graph is invalid, when there is no paused or reset state to
     /// resume, or when a node evaluation or transition fails while continuing execution.
     #[tracing::instrument(skip(self), name = "task.resume", err)]
-    pub async fn resume(&mut self) -> Result<TaskRunState<Output>, TaskError> {
+    pub async fn resume(&mut self) -> Result<TaskRunOutcome<Output>, TaskError> {
         self.validate_transitions()?;
 
         self.runtime

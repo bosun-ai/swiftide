@@ -17,7 +17,7 @@
 //! A small linear task:
 //!
 //! ```no_run
-//! use swiftide_tasks::{NodeError, Task, TaskRunState};
+//! use swiftide_tasks::{NodeError, Task, TaskRunOutcome};
 //!
 //! # #[tokio::main(flavor = "current_thread")]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,7 +32,7 @@
 //! task.register_transition(finish, task.transitions_to_finish())?;
 //!
 //! let result = task.run(2).await?;
-//! assert_eq!(result, TaskRunState::Completed(6));
+//! assert_eq!(result, TaskRunOutcome::Completed(6));
 //! # Ok(())
 //! # }
 //! ```
@@ -40,7 +40,7 @@
 //! A fan-out with an explicit join:
 //!
 //! ```no_run
-//! use swiftide_tasks::{JoinInput, NodeError, Task, TaskRunState, Transition};
+//! use swiftide_tasks::{JoinInput, NodeError, Task, TaskRunOutcome, Transition};
 //!
 //! # #[tokio::main(flavor = "current_thread")]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -69,7 +69,7 @@
 //! task.register_transition(join, task.transitions_to_finish())?;
 //!
 //! let result = task.run(3).await?;
-//! assert_eq!(result, TaskRunState::Completed(10));
+//! assert_eq!(result, TaskRunOutcome::Completed(10));
 //! # Ok(())
 //! # }
 //! ```
@@ -85,7 +85,7 @@ mod transition;
 pub use adapters::{AsyncFn, SyncFn};
 pub use errors::{NodeError, TaskError};
 pub use node::NodeId;
-pub use task::{CurrentNodes, Task, TaskRunState};
+pub use task::{CurrentNodes, Task, TaskRunOutcome};
 pub use traits::{DynNodeId, NodeArg, TaskNode};
 pub use transition::{
     AnyJoinInput, AnyJoinTarget, ConcurrencyModel, FanOutTransition, JoinInput, JoinTarget,
