@@ -14,13 +14,9 @@ use anyhow::Result;
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use swiftide::{
-    agents::{
-        self, Agent, StopReason,
-        errors::AgentError,
-        tasks::{NodeId, Task, TaskNode, TaskRunState, Transition},
-        tools::control::StopWithArgs,
-    },
+    agents::{self, Agent, StopReason, errors::AgentError, tools::control::StopWithArgs},
     prompt::Prompt,
+    tasks::{NodeId, Task, TaskNode, TaskRunState, Transition},
     traits::SimplePrompt,
 };
 use tokio::sync::Mutex;

@@ -320,6 +320,9 @@ Tasks are Swiftide's typed workflow graphs. Use them when your application is no
 prompt or a single agent loop, but a sequence of coordinated steps with explicit hand-offs between
 them.
 
+Enable the `swiftide-tasks` feature to use `swiftide::tasks`. The `swiftide-agents` feature also
+enables tasks and adds the agent task adapter.
+
 Typical uses for tasks:
 
 - preprocess input with a prompt step and hand the result to an agent

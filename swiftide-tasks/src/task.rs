@@ -3,8 +3,8 @@
 //! The nodes can be any type that implements the `TaskNode` trait, which defines how the node
 //! will be evaluated with its input and output.
 //!
-//! Most swiftide primitives implement `TaskNode`, and it's easy to implement your own. Since how
-//! agents interact is subject to taste, we recommend implementing your own.
+//! Prompt-like Swiftide primitives implement `TaskNode`, and it's easy to implement your own. Since
+//! how agents interact is subject to taste, we recommend implementing your own.
 //!
 //! # Examples
 //!
