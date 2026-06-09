@@ -89,7 +89,6 @@ impl JoinInputFactory {
 #[derive(Clone, Copy)]
 pub struct JoinDefinition {
     pub(crate) join_node_id: usize,
-    pub(crate) concurrency_model: Option<ConcurrencyModel>,
     input_factory: JoinInputFactory,
 }
 
@@ -97,7 +96,6 @@ impl std::fmt::Debug for JoinDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("JoinDefinition")
             .field("join_node_id", &self.join_node_id)
-            .field("concurrency_model", &self.concurrency_model)
             .finish_non_exhaustive()
     }
 }
@@ -106,7 +104,6 @@ impl JoinDefinition {
     fn typed<Payload: NodeArg>(join_node_id: usize) -> Self {
         Self {
             join_node_id,
-            concurrency_model: None,
             input_factory: JoinInputFactory::Fallible(typed_join_input::<Payload>),
         }
     }
@@ -114,7 +111,6 @@ impl JoinDefinition {
     fn any(join_node_id: usize) -> Self {
         Self {
             join_node_id,
-            concurrency_model: None,
             input_factory: JoinInputFactory::Infallible(any_join_input),
         }
     }
@@ -219,18 +215,6 @@ where
         }
     }
 
-    /// Overrides the concurrency model for the join branch scheduled by
-    /// [`FanOutTransition::join_with`].
-    ///
-    /// This only applies when this target is passed to [`FanOutTransition::join_with`]. Branch
-    /// arrival transitions registered with
-    /// [`Task::register_transition`](crate::tasks::Task::register_transition) cannot set join
-    /// branch concurrency.
-    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.definition.concurrency_model = Some(concurrency_model);
-        self
-    }
-
     /// Maps each joining branch output into the payload stored for the join node.
     ///
     /// # Examples
@@ -302,18 +286,6 @@ impl<T: TaskNode<Input = AnyJoinInput> + ?Sized> AnyJoinTarget<T> {
             definition: JoinDefinition::any(node_id.id()),
             _marker: PhantomData,
         }
-    }
-
-    /// Overrides the concurrency model for the join branch scheduled by
-    /// [`FanOutTransition::join_with`].
-    ///
-    /// This only applies when this target is passed to [`FanOutTransition::join_with`]. Branch
-    /// arrival transitions registered with
-    /// [`Task::register_transition`](crate::tasks::Task::register_transition) cannot set join
-    /// branch concurrency.
-    pub fn concurrency_model(mut self, concurrency_model: ConcurrencyModel) -> Self {
-        self.definition.concurrency_model = Some(concurrency_model);
-        self
     }
 }
 

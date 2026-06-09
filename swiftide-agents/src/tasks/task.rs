@@ -157,10 +157,9 @@ where
         task: &mut Task<Input, Output>,
         from: NodeId<From>,
     ) -> Result<(), TaskError> {
-        let definition = reject_join_arrival_concurrency_override(self.into_definition())?;
         task.set_join_handler(
             from,
-            definition,
+            self.into_definition(),
             Arc::new(move |output: From::Output| {
                 Box::pin(async move { Arc::new(output.into()) as Arc<dyn Any + Send + Sync> })
             }),
@@ -179,10 +178,9 @@ where
         task: &mut Task<Input, Output>,
         from: NodeId<From>,
     ) -> Result<(), TaskError> {
-        let definition = reject_join_arrival_concurrency_override(self.into_definition())?;
         task.set_join_handler(
             from,
-            definition,
+            self.into_definition(),
             Arc::new(move |output: From::Output| {
                 Box::pin(async move { Arc::new(output) as Arc<dyn Any + Send + Sync> })
             }),
@@ -203,11 +201,10 @@ where
         from: NodeId<From>,
     ) -> Result<(), TaskError> {
         let MappedJoinTarget { join_target, map } = self;
-        let definition = reject_join_arrival_concurrency_override(join_target.into_definition())?;
         let map = Arc::new(map);
         task.set_join_handler(
             from,
-            definition,
+            join_target.into_definition(),
             Arc::new(move |output: From::Output| {
                 let map = map.clone();
                 Box::pin(async move { Arc::new(map(output)) as Arc<dyn Any + Send + Sync> })
@@ -230,29 +227,16 @@ where
         from: NodeId<From>,
     ) -> Result<(), TaskError> {
         let MappedJoinTarget { join_target, map } = self;
-        let definition = reject_join_arrival_concurrency_override(join_target.into_definition())?;
         let map = Arc::new(map);
         task.set_join_handler(
             from,
-            definition,
+            join_target.into_definition(),
             Arc::new(move |output: From::Output| {
                 let map = map.clone();
                 Box::pin(async move { Arc::new(map(output).await) as Arc<dyn Any + Send + Sync> })
             }),
         )
     }
-}
-
-fn reject_join_arrival_concurrency_override(
-    definition: JoinDefinition,
-) -> Result<JoinDefinition, TaskError> {
-    if definition.concurrency_model.is_some() {
-        return Err(TaskError::invalid_state(
-            "Join target concurrency overrides only apply to fan-out joins",
-        ));
-    }
-
-    Ok(definition)
 }
 
 impl<Input: NodeArg, Output: NodeArg> Clone for Task<Input, Output> {

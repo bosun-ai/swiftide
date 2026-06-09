@@ -63,12 +63,9 @@ impl JoinGroupState {
         first_branch_id: BranchId,
         branch_count: usize,
     ) -> Self {
-        let concurrency_model = definition
-            .concurrency_model
-            .unwrap_or(default_concurrency_model);
         Self {
             definition,
-            concurrency_model,
+            concurrency_model: default_concurrency_model,
             first_branch_id: first_branch_id.0,
             payloads: vec![None; branch_count],
         }
