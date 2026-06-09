@@ -71,8 +71,8 @@ steps have typed inputs and outputs, and integrations are selected through featu
   and storage backends.
 - Trace agent, task, and pipeline execution with `tracing`, metrics, and Langfuse support.
 
-The core composition model is simple: use pipelines for data flows, agents for tool loops, and
-tasks for graphs of typed hand-offs.
+The core primitives provide the shared interaction model. Around them, use pipelines for data
+flows, agents for tool loops, and tasks for graphs of typed hand-offs.
 
 ## Quick Start
 
