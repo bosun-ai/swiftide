@@ -30,6 +30,7 @@ swiftide-core = { path = "../swiftide-core", version = "0.32" }
 swiftide-integrations = { path = "../swiftide-integrations", version = "0.32" }
 swiftide-indexing = { path = "../swiftide-indexing", version = "0.32" }
 swiftide-query = { path = "../swiftide-query", version = "0.32" }
+swiftide-tasks = { path = "../swiftide-tasks", version = "0.32", optional = true }
 swiftide-agents = { path = "../swiftide-agents", version = "0.32", optional = true }
 swiftide-macros = { path = "../swiftide-macros", version = "0.32", optional = true }
 swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.32", optional = true }
@@ -144,8 +145,10 @@ json-schema = ["swiftide-core/json-schema", "swiftide-agents/json-schema"]
 tiktoken = ["swiftide-integrations/tiktoken"]
 
 #! ### Experimental
+## Typed task graphs
+swiftide-tasks = ["dep:swiftide-tasks"]
 ## GenAI agents and tools
-swiftide-agents = ["dep:swiftide-agents"]
+swiftide-agents = ["dep:swiftide-agents", "swiftide-tasks"]
 ## Langfuse tracing and observability
 langfuse = [
   "swiftide-integrations/langfuse",

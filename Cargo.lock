@@ -9738,6 +9738,7 @@ dependencies = [
  "swiftide-langfuse",
  "swiftide-macros",
  "swiftide-query",
+ "swiftide-tasks",
  "swiftide-test-utils",
  "temp-dir",
  "test-log",
@@ -9759,7 +9760,6 @@ dependencies = [
  "futures-util",
  "indoc",
  "insta",
- "mockall",
  "rmcp",
  "schemars 1.2.1",
  "serde",
@@ -9768,6 +9768,7 @@ dependencies = [
  "strum_macros 0.28.0",
  "swiftide-core",
  "swiftide-indexing",
+ "swiftide-tasks",
  "temp-dir",
  "test-log",
  "thiserror 2.0.18",
@@ -10019,6 +10020,21 @@ dependencies = [
  "tera",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "swiftide-tasks"
+version = "0.32.1"
+dependencies = [
+ "async-trait",
+ "dyn-clone",
+ "futures-util",
+ "swiftide-core",
+ "test-log",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "trybuild",
 ]
 
 [[package]]
