@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780646414836,
+  "lastUpdate": 1781036179982,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31727,6 +31727,114 @@ window.BENCHMARK_DATA = {
             "name": "node_cache/redb",
             "value": 220900,
             "range": "± 2711",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1ee455d9c4b739eea76505bfc0ec3774088926a3",
+          "message": "feat(tasks)!: add typed fan-out and joins (#1047)\n\n## What changed\n\nThis PR expands Swiftide tasks from linear typed workflows into typed\ngraph workflows with explicit fan-out and join semantics.\n\nThe core behavior change is that a task can now branch into multiple\ntyped paths, wait for those branches at an explicit join node, and\nresume/inspect active work without collapsing everything into a single\ncurrent node. This makes branch and join behavior part of the task API\ninstead of an ad hoc runtime detail.\n\nBecause that grew the task runtime well beyond an agent helper module,\nthis PR also moves task graph primitives into a dedicated workspace\ncrate, `swiftide-tasks`. Agent-specific task integration remains in\n`swiftide-agents` as `TaskAgent`.\n\n## Breaking changes\n\nThis PR changes the public task API to support typed fan-out, joins,\nmultiple active branches, and explicit completion state.\n\n- **Fan-out now has explicit join semantics:** static fan-out must be\ncompleted with `join_with(...)`. Unjoined multiple-ending fan-out is not\nsupported; model it by routing each branch to a join node and finishing\nfrom that join.\n- **Join payloads are typed:** homogeneous joins use `JoinInput<T>` and\n`join.join()`. Use `AnyJoinInput` / `join_any()` only for deliberate\nmixed-payload advanced cases.\n- **Task completion state changed:** `Task::run` and `Task::resume` now\nreturn `TaskRunOutcome<Output>` instead of `Option<Output>`. Match\n`TaskRunOutcome::Completed(output)` and `TaskRunOutcome::Paused` instead\nof `Some(output)` / `None`.\n- **Finish API renamed and narrowed:** the old `done()` node and\n`transitions_to_done()` helper are gone. Finish tasks with\n`Task::transitions_to_finish()`; `Transition::finish` is internal.\n- **Current-node inspection changed:** `current_input`,\n`current_output`, `current_node`, `node_at`, and `node_at_index` are\ngone from the public task API. Use `Task::current_nodes::<T>() ->\nCurrentNodes<'_, T>` for paused/runnable node inspection.\n- **Transition types changed:** `TransitionPayload`,\n`MarkedTransitionPayload`, `NextNode`, `NodeId::as_transition`, and\n`NodeId::as_any` are no longer public API. Use `Transition::next`,\n`NodeId::transitions_with`, `Transition::pause`, and\n`Transition::error`.\n- **Crate/module path changed:** task graph primitives moved out of\n`swiftide-agents` into `swiftide-tasks`. Prefer `swiftide_tasks::{Task,\nTaskNode, Transition, ...}` or `swiftide::tasks::{...}` with the\n`swiftide-tasks` feature.\n- **Old nested modules removed:** imports such as\n`swiftide::agents::tasks::task::Task`, `...::node::NodeId`,\n`...::transition::TransitionPayload`, and `...::closures::SyncFn` no\nlonger match the public API. Import the re-exported top-level task items\ninstead.\n- **Compatibility path deprecated:** `swiftide_agents::tasks` /\n`swiftide::agents::tasks` remains as a backwards-compatible reexport\nmodule, but now emits a deprecation warning.\n- **Agent adapter moved:** `TaskAgent` is exported from\n`swiftide_agents::TaskAgent`. It is also still available through the\ndeprecated compatibility module.\n\n## Task API additions\n\n- Adds typed static fan-out with explicit joins.\n- Adds typed join inputs through `JoinInput<T>`.\n- Adds `AnyJoinInput` / `join_any()` only for advanced mixed-payload\njoins.\n- Adds `Task::current_nodes() -> CurrentNodes<'_, T>`, so multiple\nactive nodes are represented without cloning.\n- Adds configurable fan-out concurrency through `ConcurrencyModel` and\ntask defaults.\n- Adds runtime coverage for branch ordering, join target validation,\npaused/runnable branches, resume behavior, terminal branch handling, and\ntype-level join guarantees.\n\n## Crate structure\n\n- Adds `swiftide-tasks/` with the task graph runtime, transitions,\nnodes, errors, closure adapters, runtime tests, compile-fail tests, and\ntask rustdocs.\n- Removes the old task implementation files from\n`swiftide-agents/src/tasks/`.\n- Leaves `TaskAgent` in `swiftide-agents` to avoid coupling the task\ncrate back to the agent crate.\n- Adds `swiftide::tasks` as the public umbrella reexport for users that\ndepend on the main crate.\n\n## Docs and examples\n\n- Adds a fan-out and join task example.\n- Updates the existing task example to import task graph primitives from\n`swiftide::tasks`.\n- Documents that fan-out branches cannot be independent task endings and\nshould converge through a join node.\n- Updates README task guidance with the new feature and import path.\n- Adds rustdoc for the deprecated compatibility reexport.\n- Adds task rustdocs for linear tasks, typed fan-out, joins,\ncurrent-node inspection, and mixed-payload joins.\n\n## Verification\n\nSwiftide checks run locally:\n\n- `cargo +nightly fmt --all -- --check`\n- `cargo check --workspace --all-features`\n- `cargo clippy --workspace --all-targets --all-features -- -D warnings`\n- `cargo test -j 2 --tests --all-features --no-fail-fast`\n- `cargo test --doc --all-features --no-fail-fast`\n- `cargo hack check --each-feature --no-dev-deps`\n- `typos`\n- `git diff --check`\n- `cargo doc --workspace --all-features --no-deps`\n\nDownstream Quak verification against this branch:\n\n- Patched Quak to local Swiftide paths, including `swiftide-tasks`\n- Updated Quak task imports to `swiftide::tasks` and `TaskRunOutcome`\n- `cargo check -p quak-core --locked`\n- `cargo test -p quak-core --test dispatch_manifest_run_test --locked`\n- `cargo test -p quak-core --test tool_feedback_pause_test --locked`\n- `cargo clippy -p quak-core --all-targets --all-features --locked -- -D\nwarnings`\n- `cargo fmt --all --check`\n- `git diff --check`\n\nNote: the Quak command-handler tests need local Redis and Qdrant on\ntheir default ports. With those services available, the full `quak-core`\nsuite passed.\n\nBREAKING CHANGE: Tasks now support typed fan-out and explicit joins,\nwhich changes task completion, branch inspection, transition\nconstruction, and finish semantics.\nUpdate task code to return/match `TaskRunOutcome`, finish with\n`transitions_to_finish()`, build branches with\n`Transition::fan_out(...).join_with(...)`, and consume join payloads\nthrough `JoinInput<T>` or `AnyJoinInput`.\nTask primitives also moved to `swiftide-tasks` / `swiftide::tasks`; the\nold `swiftide_agents::tasks` path remains as a deprecated compatibility\nreexport.",
+          "timestamp": "2026-06-09T22:05:13+02:00",
+          "tree_id": "906000f5a28bddcad00124e1dc06c6b15154a2f4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1ee455d9c4b739eea76505bfc0ec3774088926a3"
+        },
+        "date": 1781036176775,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 915542,
+            "range": "± 24010",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252671,
+            "range": "± 2358",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2107,
+            "range": "± 1889",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7602,
+            "range": "± 334",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28355,
+            "range": "± 295",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4255506,
+            "range": "± 36328",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2133428,
+            "range": "± 25118",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16999525,
+            "range": "± 93073",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2150746,
+            "range": "± 14251",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67969567,
+            "range": "± 517329",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2172942,
+            "range": "± 16711",
             "unit": "ns/iter"
           }
         ]
