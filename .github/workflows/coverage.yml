@@ -22,7 +22,7 @@ jobs:
         uses: jlumbroso/free-disk-space@main
       - name: Checkout repository
         uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: llvm-tools-preview
       - name: Install Protoc
