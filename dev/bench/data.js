@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1781036179982,
+  "lastUpdate": 1781192022358,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31835,6 +31835,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2172942,
             "range": "± 16711",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e5fb5326f0d737e5f558da94c8e96d1ca0e70600",
+          "message": "docs: refresh README around agent harness (#1099)\n\n## Summary\n\n- Reframes the README around the agent harness, typed task graphs, and\nRAG composition model.\n- Adds a composition diagram and reshapes Quick Start around a clear\nfirst agent harness path.\n- Fixes OSS housekeeping links, including `LICENSE`, `CONTRIBUTING.md`,\nissue templates, and docs.rs README rendering.\n- Adds a `Cargo Features` crate-doc heading so generated feature docs do\nnot nest under the README license section.\n\n## Validation\n\n- `cargo +nightly fmt --all`\n- `typos README.md Cargo.toml swiftide/Cargo.toml swiftide/build.rs\nswiftide/src/lib.rs images/composition.svg`\n- `cargo doc -p swiftide --all-features --no-deps`\n- `cargo test --doc -p swiftide --all-features --no-fail-fast`\n\n`cargo doc` and doctests only emitted existing `edition2024`\nstabilization warnings.",
+          "timestamp": "2026-06-11T17:22:37+02:00",
+          "tree_id": "37188fa3913d7a0161ca3d89e3997fc25b872913",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e5fb5326f0d737e5f558da94c8e96d1ca0e70600"
+        },
+        "date": 1781192019749,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1012695,
+            "range": "± 18346",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258319,
+            "range": "± 1405",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1954,
+            "range": "± 1670",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7044,
+            "range": "± 261",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26313,
+            "range": "± 256",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4181617,
+            "range": "± 44890",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2094737,
+            "range": "± 9661",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16722977,
+            "range": "± 101968",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2108120,
+            "range": "± 8579",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66839915,
+            "range": "± 432825",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2130111,
+            "range": "± 6119",
             "unit": "ns/iter"
           }
         ]
