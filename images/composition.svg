@@ -1,54 +1,81 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
   <title id="title">Swiftide composition overview</title>
-  <desc id="desc">Swiftide core primitives sit at the center, with the agent harness, task graphs, RAG pipelines, and integrations composing around them.</desc>
+  <desc id="desc">Swiftide core primitives connect your Rust code to the agent harness, task graphs, RAG pipelines, and integrations.</desc>
   <defs>
     <style>
       .bg { fill: #f8fafc; }
-      .panel { fill: #ffffff; stroke: #1f2937; stroke-width: 2.5; rx: 16; }
-      .core { fill: #fff7ed; stroke: #c2410c; stroke-width: 3; rx: 18; }
-      .accent { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.5; rx: 14; }
-      .text { fill: #111827; font: 600 28px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      .small { fill: #374151; font: 500 19px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      .tiny { fill: #4b5563; font: 500 16px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-      .arrow { fill: none; stroke: #1f2937; stroke-width: 2.5; marker-end: url(#arrow); }
+      .card { fill: #ffffff; stroke: #1f2937; stroke-width: 2.5; }
+      .core { fill: #fff7ed; stroke: #c2410c; stroke-width: 3; }
+      .code { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.5; }
+      .label { fill: #111827; font: 700 26px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .small { fill: #374151; font: 650 19px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .line { fill: none; stroke: #475569; stroke-width: 2.5; stroke-linecap: round; }
+      .flow { fill: none; stroke: #334155; stroke-width: 3; stroke-linecap: round; marker-end: url(#arrow); }
+      .soft { fill: #e0f2fe; stroke: #0369a1; stroke-width: 2; }
+      .warm { fill: #ffedd5; stroke: #c2410c; stroke-width: 2; }
+      .green { fill: #dcfce7; stroke: #15803d; stroke-width: 2; }
+      .violet { fill: #ede9fe; stroke: #6d28d9; stroke-width: 2; }
+      .shadow { filter: drop-shadow(0 12px 24px rgb(15 23 42 / 0.10)); }
     </style>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#1f2937" />
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L10,4 z" fill="#334155" />
     </marker>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1200" height="520" rx="20" />
+  <rect class="bg" x="0" y="0" width="1200" height="520" rx="22" />
 
-  <rect class="core" x="420" y="165" width="360" height="180" />
-  <text class="text" x="600" y="216" text-anchor="middle">Core Primitives</text>
-  <text class="small" x="600" y="255" text-anchor="middle">Prompts, LLMs,</text>
-  <text class="small" x="600" y="284" text-anchor="middle">chat completions, common interfaces</text>
-  <text class="tiny" x="600" y="314" text-anchor="middle">The shared interaction model for higher-level flows</text>
+  <path class="flow" d="M450 210 C388 178 346 130 300 130" />
+  <path class="flow" d="M450 310 C388 342 346 390 300 390" />
+  <path class="flow" d="M750 210 C812 178 854 130 900 130" />
+  <path class="flow" d="M750 310 C812 342 854 390 900 390" />
+  <path class="flow" d="M600 175 L600 121" />
 
-  <rect class="panel" x="60" y="70" width="285" height="120" />
-  <text class="text" x="202" y="121" text-anchor="middle">Agent Harness</text>
-  <text class="tiny" x="202" y="154" text-anchor="middle">LLM loop, tools, hooks, HITL</text>
+  <rect class="code shadow" x="455" y="36" width="290" height="82" rx="18" />
+  <text class="label" x="600" y="90" text-anchor="middle">Your Rust Code</text>
 
-  <rect class="panel" x="60" y="330" width="285" height="120" />
-  <text class="text" x="202" y="381" text-anchor="middle">Typed Task Graphs</text>
-  <text class="tiny" x="202" y="414" text-anchor="middle">Nodes, transitions, joins</text>
+  <rect class="core shadow" x="450" y="176" width="300" height="168" rx="24" />
+  <circle class="warm" cx="600" cy="246" r="44" />
+  <circle class="soft" cx="568" cy="291" r="16" />
+  <circle class="green" cx="632" cy="291" r="16" />
+  <path class="line" d="M574 246 H626" />
+  <path class="line" d="M600 202 V230" />
+  <path class="line" d="M580 279 L600 246 L620 279" />
+  <text class="label" x="600" y="326" text-anchor="middle">Core Primitives</text>
 
-  <rect class="panel" x="855" y="70" width="285" height="120" />
-  <text class="text" x="997" y="121" text-anchor="middle">RAG Pipelines</text>
-  <text class="tiny" x="997" y="154" text-anchor="middle">Load, chunk, embed, retrieve</text>
+  <rect class="card shadow" x="60" y="70" width="285" height="120" rx="18" />
+  <circle class="soft" cx="105" cy="130" r="26" />
+  <path class="line" d="M94 130 C94 117 109 110 119 119" />
+  <path class="line" d="M120 119 L120 109 L130 109" />
+  <path class="line" d="M117 130 C117 143 102 150 92 141" />
+  <path class="line" d="M91 141 L91 151 L81 151" />
+  <text class="label" x="148" y="140">Agent Harness</text>
 
-  <rect class="panel" x="855" y="330" width="285" height="120" />
-  <text class="text" x="997" y="381" text-anchor="middle">Integrations</text>
-  <text class="tiny" x="997" y="414" text-anchor="middle">Providers, storage, tracing</text>
+  <rect class="card shadow" x="60" y="330" width="285" height="120" rx="18" />
+  <circle class="violet" cx="105" cy="390" r="26" />
+  <circle class="card" cx="92" cy="384" r="6" />
+  <circle class="card" cx="118" cy="384" r="6" />
+  <circle class="card" cx="105" cy="405" r="6" />
+  <path class="line" d="M98 386 L112 386" />
+  <path class="line" d="M96 389 L102 399" />
+  <path class="line" d="M115 389 L108 399" />
+  <text class="label" x="148" y="400">Task Graphs</text>
 
-  <rect class="accent" x="445" y="35" width="310" height="80" />
-  <text class="text" x="600" y="86" text-anchor="middle">Your Rust Code</text>
+  <rect class="card shadow" x="855" y="70" width="285" height="120" rx="18" />
+  <circle class="green" cx="900" cy="130" r="26" />
+  <rect class="card" x="887" y="112" width="24" height="32" rx="4" />
+  <path class="line" d="M893 121 H905" />
+  <path class="line" d="M893 130 H905" />
+  <path class="line" d="M893 139 H901" />
+  <circle class="bg" cx="916" cy="143" r="8" />
+  <path class="line" d="M922 149 L930 157" />
+  <text class="label" x="948" y="140">RAG Pipelines</text>
 
-  <path class="arrow" d="M420 230 C385 205 380 130 345 130" />
-  <path class="arrow" d="M420 285 C385 310 380 390 345 390" />
-  <path class="arrow" d="M780 230 C815 205 820 130 855 130" />
-  <path class="arrow" d="M780 285 C815 310 820 390 855 390" />
-  <path class="arrow" d="M600 165 L600 116" />
-
-  <text class="tiny" x="600" y="484" text-anchor="middle">Typed hand-offs, opt-in integrations, observable.</text>
+  <rect class="card shadow" x="855" y="330" width="285" height="120" rx="18" />
+  <circle class="warm" cx="900" cy="390" r="26" />
+  <path class="line" d="M891 377 V390" />
+  <path class="line" d="M909 377 V390" />
+  <path class="line" d="M884 390 H916" />
+  <path class="line" d="M892 390 C892 404 908 404 908 390" />
+  <path class="line" d="M900 404 V414" />
+  <text class="label" x="948" y="400">Integrations</text>
 </svg>
