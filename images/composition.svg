@@ -28,18 +28,9 @@
   <path class="flow" d="M450 310 C388 342 346 390 300 390" />
   <path class="flow" d="M750 210 C812 178 854 130 900 130" />
   <path class="flow" d="M750 310 C812 342 854 390 900 390" />
-  <path class="flow" d="M600 175 L600 121" />
 
-  <rect class="code shadow" x="455" y="36" width="290" height="82" rx="18" />
-  <text class="label" x="600" y="90" text-anchor="middle">Your Rust Code</text>
 
   <rect class="core shadow" x="450" y="176" width="300" height="168" rx="24" />
-  <circle class="warm" cx="600" cy="246" r="44" />
-  <circle class="soft" cx="568" cy="291" r="16" />
-  <circle class="green" cx="632" cy="291" r="16" />
-  <path class="line" d="M574 246 H626" />
-  <path class="line" d="M600 202 V230" />
-  <path class="line" d="M580 279 L600 246 L620 279" />
   <text class="label" x="600" y="326" text-anchor="middle">Core Primitives</text>
 
   <rect class="card shadow" x="60" y="70" width="285" height="120" rx="18" />

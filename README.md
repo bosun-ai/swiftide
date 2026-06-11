@@ -19,7 +19,7 @@
   <h1 align="center">Swiftide</h1>
 
   <p align="center">
-    Composable LLM agents, typed task graphs, and streaming RAG pipelines in Rust.
+    Composable LLM agents and harnass, typed task graphs, and streaming RAG pipelines in Rust.
     <br />
     <a href="https://docs.rs/swiftide/latest/swiftide/"><strong>API docs</strong></a>
     ·
@@ -31,12 +31,9 @@
   </p>
 </div>
 
-Swiftide is a Rust framework for building LLM applications with tools and workflows. It gives you
-an agent harness for tool use, typed task graphs for orchestration, and streaming indexing/query
-pipelines for retrieval-heavy applications.
-
-Use Swiftide to keep AI workflows explicit in Rust: tools are normal Rust functions or traits, task
-steps have typed inputs and outputs, and integrations are selected through feature flags.
+Swiftide is an opinionated framework for building LLM applications. It gives you
+an agent harness, typed task graphs for orchestration, and streaming, composable indexing/query
+pipelines for RAG.
 
 <div align="center">
     <img src="images/composition.svg" alt="Swiftide composition overview" width="100%" >
@@ -85,31 +82,16 @@ cargo add anyhow
 cargo add tokio --features macros,rt-multi-thread
 ```
 
-Set the API key expected by the OpenAI-compatible integration:
+If using OpenAI, set the API key expected by the OpenAI-compatible integration:
 
 ```sh
 export OPENAI_API_KEY=...
 ```
 
-Use the runnable agent harness example below as your first program.
-
-### Feature recipes
-
-```sh
-# Typed task graphs without agent integrations
-cargo add swiftide --features swiftide-tasks
-
-# Agents with MCP toolboxes
-cargo add swiftide --features swiftide-agents,mcp
-
-# RAG over code or documents with OpenAI, Qdrant, and tree-sitter
-cargo add swiftide --features openai,qdrant,tree-sitter
-```
-
 ## Agent Harness
 
-Agents are the harness for tool-using AI loops. They own message history, call an LLM, invoke tools,
-run hooks, and stop when no new messages remain or when a control tool requests it.
+Swiftide provides a harnass for building (semi) autonomous agents. The harnass owns message history, call an LLM, invoke tools,
+run hooks, and stopping. Tools are pure functions and easy to add. The AgentContext abstracts over message history (in memory by default) and provides tools access to the outside world via a ToolExecutor (local by default, see also the [docker executor](https://github.com/bosun-ai/swiftide-docker-executor)).
 
 ```rust
 use anyhow::Result;
@@ -160,7 +142,7 @@ async fn main() -> Result<()> {
 ```
 
 The agent calls the model, exposes `explain_concept` as a tool, prints new messages, and stops
-within the configured turn limit.
+within the configured turn limit. By default all agents have a tool to stop the loop. This can be customized.
 
 Agent capabilities include:
 
@@ -180,11 +162,9 @@ then look at the human approval, MCP, streaming, resume, and structured-output e
 Tasks are Swiftide's orchestration layer. A task is a typed graph of `TaskNode` steps. Each node has
 an input type, output type, and error type; transitions decide where the output goes next.
 
-Use tasks when a workflow grows beyond one agent loop: preprocess input, ask an agent for a typed
-decision, fan out work, join results, and render the final output.
+Tasks are strongly typed at build time. It allows you to compose agents, other swiftide components, and functions to create complex automations.
 
-Core wiring from [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs).
-`BriefingAgent` and `BriefingDecision` are defined in that example:
+From [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs).
 
 ```rust
 use swiftide::{
@@ -288,8 +268,7 @@ Swiftide integrations are feature-gated so application builds stay intentional.
 
 ## Examples
 
-The [`examples`](https://github.com/bosun-ai/swiftide/tree/master/examples) crate shows complete
-applications for each major workflow.
+The [`examples`](https://github.com/bosun-ai/swiftide/tree/master/examples) has a variety of examples.
 
 - Agents: [`hello_agents.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/hello_agents.rs),
   [`streaming_agents.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/streaming_agents.rs),
