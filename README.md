@@ -186,7 +186,7 @@ decision, fan out work, join results, and render the final output.
 Core wiring from [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs).
 `BriefingAgent` and `BriefingDecision` are defined in that example:
 
-```ignore
+```rust
 use swiftide::{
     prompt::Prompt,
     tasks::{Task, TaskRunOutcome, Transition},
@@ -243,7 +243,7 @@ Swiftide includes first-class indexing and querying pipelines for retrieval-augm
 Pipelines are streaming and composable: load data, transform it, embed it, cache it, store it, then
 retrieve and answer with a typed query flow.
 
-```ignore
+```rust
 use swiftide::{
     indexing::{self, loaders::FileLoader, transformers::{ChunkCode, Embed, MetadataQACode}},
     integrations::qdrant::Qdrant,
