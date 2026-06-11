@@ -55,6 +55,11 @@ pub mod errors;
 pub mod hooks;
 mod state;
 pub mod system_prompt;
+mod task_agent;
+#[deprecated(
+    since = "0.32.1",
+    note = "use swiftide_tasks or swiftide::tasks for task graph primitives, and swiftide_agents::TaskAgent for the agent adapter"
+)]
 pub mod tasks;
 pub mod tools;
 mod util;
@@ -62,6 +67,7 @@ mod util;
 pub use agent::{Agent, AgentBuilder, AgentBuilderError};
 pub use default_context::DefaultContext;
 pub use state::{State, StopReason};
+pub use task_agent::TaskAgent;
 
 #[cfg(any(test, debug_assertions))]
 pub mod test_utils;

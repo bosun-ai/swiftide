@@ -17,6 +17,10 @@ pub use swiftide_core::type_aliases::*;
 #[doc(inline)]
 pub use swiftide_agents as agents;
 
+#[cfg(feature = "swiftide-tasks")]
+#[doc(inline)]
+pub use swiftide_tasks as tasks;
+
 /// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {
     #[doc(inline)]

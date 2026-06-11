@@ -316,8 +316,8 @@ impl AgentBuilder {
 
     /// Define the available tools for the agent. Tools must implement the `Tool` trait.
     ///
-    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive
-    /// macro](`swiftide_macros::Tool`) for easy ways to create (many) tools.
+    /// See the `swiftide_macros::tool` attribute macro and the `swiftide_macros::Tool` derive
+    /// macro for easy ways to create (many) tools.
     pub fn tools<TOOL, I: IntoIterator<Item = TOOL>>(&mut self, tools: I) -> &mut Self
     where
         TOOL: Into<Box<dyn Tool>>,

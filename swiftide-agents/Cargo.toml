@@ -14,6 +14,7 @@ homepage.workspace = true
 
 [dependencies]
 swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-tasks = { path = "../swiftide-tasks", version = "0.32" }
 swiftide-indexing = { path = "../swiftide-indexing", version = "0.32" }
 anyhow.workspace = true
 async-trait.workspace = true
@@ -45,12 +46,10 @@ rmcp = { workspace = true, optional = true, default-features = false, features =
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
-mockall.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
 insta.workspace = true
 rmcp = { workspace = true, features = ["server"] }
-schemars = { workspace = true }
 
 [lints]
 workspace = true

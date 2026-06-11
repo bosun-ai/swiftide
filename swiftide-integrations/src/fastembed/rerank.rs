@@ -134,6 +134,7 @@ mod tests {
 
     use super::*;
 
+    #[ignore = "downloads a HuggingFace reranker model and can hit external rate limits"]
     #[tokio::test]
     async fn test_rerank_transform_response() {
         // Test reranking without a template

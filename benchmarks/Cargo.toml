@@ -15,7 +15,7 @@ homepage.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
-swiftide = { path = "../swiftide", features = ["all", "redb"] }
+swiftide = { path = "../swiftide", features = ["all", "redb", "swiftide-agents"] }
 serde_json = { workspace = true }
 criterion = { workspace = true, features = ["html_reports", "async_tokio"] }
 anyhow = { workspace = true }
@@ -37,4 +37,9 @@ harness = false
 [[bench]]
 name = "node-cache"
 path = "node_cache_comparison.rs"
+harness = false
+
+[[bench]]
+name = "task-runtime"
+path = "task_runtime.rs"
 harness = false

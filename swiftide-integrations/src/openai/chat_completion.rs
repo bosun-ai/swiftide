@@ -1125,13 +1125,6 @@ mod tests {
         use serde_json::Value;
         use wiremock::{Request, Respond};
 
-        let mock_server = MockServer::start().await;
-
-        let sse_body = "\
-data: {\"type\":\"response.completed\",\"sequence_number\":0,\"response\":{\"id\":\"resp_stream\",\"object\":\"response\",\"created_at\":123,\"status\":\"completed\",\"model\":\"gpt-4.1-mini\",\"output\":[{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"stream via responses\",\"annotations\":[]}]}],\"usage\":{\"input_tokens\":5,\"input_tokens_details\":{\"cached_tokens\":0},\"output_tokens\":3,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":8}}}\n\
-\n\
-data: [DONE]\n\n";
-
         struct ValidateResponsesStreamRequest {
             sse_body: &'static str,
         }
@@ -1147,6 +1140,13 @@ data: [DONE]\n\n";
                 ResponseTemplate::new(200).set_body_raw(self.sse_body, "text/event-stream")
             }
         }
+
+        let mock_server = MockServer::start().await;
+
+        let sse_body = "\
+data: {\"type\":\"response.completed\",\"sequence_number\":0,\"response\":{\"id\":\"resp_stream\",\"object\":\"response\",\"created_at\":123,\"status\":\"completed\",\"model\":\"gpt-4.1-mini\",\"output\":[{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"stream via responses\",\"annotations\":[]}]}],\"usage\":{\"input_tokens\":5,\"input_tokens_details\":{\"cached_tokens\":0},\"output_tokens\":3,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":8}}}\n\
+\n\
+data: [DONE]\n\n";
 
         Mock::given(method("POST"))
             .and(path("/responses"))
@@ -1290,8 +1290,6 @@ data: [DONE]\n\n";
         use serde_json::Value;
         use wiremock::{Request, Respond, ResponseTemplate};
 
-        let mock_server = wiremock::MockServer::start().await;
-
         struct ValidateExtraBody;
 
         impl Respond for ValidateExtraBody {
@@ -1327,6 +1325,8 @@ data: [DONE]\n\n";
                 }))
             }
         }
+
+        let mock_server = wiremock::MockServer::start().await;
 
         wiremock::Mock::given(wiremock::matchers::method("POST"))
             .and(wiremock::matchers::path("/chat/completions"))
@@ -1377,6 +1377,27 @@ data: [DONE]\n\n";
             _city: String,
         }
 
+        struct Validate(Value);
+
+        impl Respond for Validate {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let v: Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(v["model"], "gpt-4o");
+                assert_eq!(v["parallel_tool_calls"], true);
+                assert_eq!(v["tool_choice"], "auto");
+                let tools = v["tools"].as_array().unwrap();
+                assert_eq!(tools.len(), 2);
+                let tool_names = tools
+                    .iter()
+                    .map(|tool| tool["function"]["name"].as_str().unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(tool_names, vec!["alpha_tool", "get_weather"]);
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "application/json")
+                    .set_body_json(self.0.clone())
+            }
+        }
+
         let weather_tool = ToolSpec::builder()
             .name("get_weather")
             .description("weather")
@@ -1417,28 +1438,6 @@ data: [DONE]\n\n";
           }
         });
 
-        #[allow(clippy::items_after_statements)]
-        struct Validate(Value);
-        #[allow(clippy::items_after_statements)]
-        impl Respond for Validate {
-            fn respond(&self, request: &Request) -> ResponseTemplate {
-                let v: Value = serde_json::from_slice(&request.body).unwrap();
-                assert_eq!(v["model"], "gpt-4o");
-                assert_eq!(v["parallel_tool_calls"], true);
-                assert_eq!(v["tool_choice"], "auto");
-                let tools = v["tools"].as_array().unwrap();
-                assert_eq!(tools.len(), 2);
-                let tool_names = tools
-                    .iter()
-                    .map(|tool| tool["function"]["name"].as_str().unwrap())
-                    .collect::<Vec<_>>();
-                assert_eq!(tool_names, vec!["alpha_tool", "get_weather"]);
-                ResponseTemplate::new(200)
-                    .insert_header("content-type", "application/json")
-                    .set_body_json(self.0.clone())
-            }
-        }
-
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
             .respond_with(Validate(response_body.clone()))
@@ -1471,15 +1470,6 @@ data: [DONE]\n\n";
         use serde_json::Value;
         use wiremock::{Request, Respond};
 
-        let mock_server = MockServer::start().await;
-
-        let sse_body = "\
-data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\
-\n\
-data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":2,\"total_tokens\":3}}\n\
-\n\
-data: [DONE]\n\n";
-
         struct ValidateStreamExtraBody {
             sse_body: &'static str,
         }
@@ -1495,6 +1485,15 @@ data: [DONE]\n\n";
                 ResponseTemplate::new(200).set_body_raw(self.sse_body, "text/event-stream")
             }
         }
+
+        let mock_server = MockServer::start().await;
+
+        let sse_body = "\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"},\"finish_reason\":null}]}\n\
+\n\
+data: {\"id\":\"chatcmpl-123\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":2,\"total_tokens\":3}}\n\
+\n\
+data: [DONE]\n\n";
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
