@@ -539,6 +539,10 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
             args.temperature(temperature);
         }
 
+        if let Some(reasoning_effort) = &options.reasoning_effort {
+            args.reasoning_effort(reasoning_effort.clone());
+        }
+
         if let Some(seed) = options.seed {
             args.seed(seed);
         }
@@ -787,7 +791,7 @@ mod test {
 
     #[test]
     #[allow(deprecated)]
-    fn test_chat_completion_request_defaults_omits_reasoning_effort() {
+    fn test_chat_completion_request_defaults_sends_reasoning_effort() {
         let openai: OpenAI = OpenAI::builder()
             .default_options(
                 Options::builder()
@@ -813,7 +817,7 @@ mod test {
         assert_eq!(built.parallel_tool_calls, Some(true));
         assert_eq!(built.max_completion_tokens, Some(42));
         assert_eq!(built.temperature, Some(0.3));
-        assert_eq!(built.reasoning_effort, None);
+        assert_eq!(built.reasoning_effort, Some(ReasoningEffort::Low));
         assert_eq!(built.seed, Some(7));
         assert_eq!(built.presence_penalty, Some(1.1));
         assert_eq!(

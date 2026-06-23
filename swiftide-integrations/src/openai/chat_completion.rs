@@ -1211,7 +1211,7 @@ data: [DONE]\n\n";
                 assert_eq!(v["parallel_tool_calls"], true);
                 assert_eq!(v["max_completion_tokens"], 77);
                 assert!((v["temperature"].as_f64().unwrap() - 0.42).abs() < 1e-5);
-                assert_eq!(v["reasoning_effort"], serde_json::Value::Null);
+                assert_eq!(v["reasoning_effort"], "low");
                 assert_eq!(v["seed"], 42);
                 assert!((v["presence_penalty"].as_f64().unwrap() - 1.1).abs() < 1e-5);
 
