@@ -19,6 +19,7 @@ use swiftide_core::chat_completion::{
     ChatMessageContentSource, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
 };
 
+use super::tool_schema::OpenAiToolSchema;
 use super::{GenericOpenAI, openai_error_to_language_model_error};
 use crate::openai::LanguageModelError;
 
@@ -48,7 +49,7 @@ where
         let tools = request
             .tools_spec()
             .iter()
-            .map(tool_spec_to_responses_tool)
+            .map(|spec| tool_spec_to_responses_tool(spec, client.options().tool_strict_enabled()))
             .collect::<Result<Vec<_>>>()
             .map_err(LanguageModelError::permanent)?;
 
@@ -140,15 +141,14 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
     }
 }
 
-fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
-    let parameters = spec
-        .canonical_parameters_schema_json()
+fn tool_spec_to_responses_tool(spec: &ToolSpec, strict: bool) -> Result<Tool> {
+    let parameters = OpenAiToolSchema::try_from_spec(spec, strict)
         .context("tool schema must be OpenAI compatible")?;
 
     let function = FunctionTool {
         name: spec.name.clone(),
-        parameters: Some(parameters),
-        strict: Some(true),
+        parameters: Some(parameters.into_value()),
+        strict: Some(strict),
         description: Some(spec.description.clone()),
     };
 
@@ -1229,6 +1229,66 @@ mod tests {
         assert!(names.contains("page_id"));
         assert!(names.contains("block_id"));
         assert!(names.contains("discussion_id"));
+
+        let body_schema = function
+            .parameters
+            .as_ref()
+            .and_then(|schema| {
+                let definition_name = schema
+                    .pointer("/properties/request/$ref")
+                    .and_then(serde_json::Value::as_str)?
+                    .strip_prefix("#/$defs/")?;
+                schema
+                    .get("$defs")
+                    .and_then(|defs| defs.get(definition_name))
+                    .and_then(|definition| definition.pointer("/properties/body"))
+            })
+            .expect("nested body schema should be present");
+
+        assert_eq!(
+            body_schema["anyOf"],
+            json!([{ "type": "string" }, { "type": "null" }])
+        );
+    }
+
+    #[test]
+    fn test_build_responses_request_can_disable_tool_strict() {
+        let openai = OpenAI::builder()
+            .default_prompt_model("gpt-4.1")
+            .default_options(Options::builder().tool_strict(false))
+            .build()
+            .unwrap();
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("hi".into())])
+            .tool_specs([ToolSpec::builder()
+                .name("notion_create_comment")
+                .description("Create a comment")
+                .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+                .build()
+                .unwrap()])
+            .build()
+            .unwrap();
+
+        let create = build_responses_request_from_chat(&openai, &request).unwrap();
+        let tools = create.tools.expect("tools present");
+        let Tool::Function(function) = &tools[0] else {
+            panic!("expected function tool");
+        };
+
+        let nested_required = function.parameters.as_ref().and_then(|schema| {
+            let definition_name = schema
+                .pointer("/properties/request/$ref")
+                .and_then(serde_json::Value::as_str)?
+                .strip_prefix("#/$defs/")?;
+            schema
+                .get("$defs")
+                .and_then(|defs| defs.get(definition_name))
+                .and_then(|definition| definition.get("required"))
+        });
+
+        assert_eq!(function.strict, Some(false));
+        assert!(nested_required.is_none());
     }
 
     #[test]

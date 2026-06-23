@@ -730,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tools_to_anthropic_normalizes_nested_schema_refs() {
+    fn test_tools_to_anthropic_preserves_optional_nested_fields() {
         let tool_spec = ToolSpec::builder()
             .description("Creates a comment")
             .name("create_comment")
@@ -753,15 +753,14 @@ mod tests {
             Some(&Value::Array(vec![Value::String("request".into())]))
         );
 
-        assert!(input_schema.get("$schema").is_none());
-        assert_eq!(
-            input_schema["properties"]["request"],
-            json!({ "$ref": "#/$defs/NestedCommentRequest" })
-        );
-        assert_eq!(
-            input_schema["$defs"]["NestedCommentRequest"]["required"],
-            json!(["block_id", "body", "discussion_id", "page_id", "text"])
-        );
+        let nested_ref = input_schema["properties"]["request"]["$ref"]
+            .as_str()
+            .expect("nested request should be referenced");
+        let nested_name = nested_ref
+            .rsplit('/')
+            .next()
+            .expect("nested request ref name");
+        assert!(input_schema["$defs"][nested_name].get("required").is_none());
     }
 
     #[test]

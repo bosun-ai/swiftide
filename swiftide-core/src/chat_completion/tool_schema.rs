@@ -37,8 +37,6 @@ pub enum ToolSchemaError {
     InvalidAdditionalProperties { path: String, kind: &'static str },
     #[error("strict tool schemas do not support $ref siblings {keywords} at {path}")]
     UnsupportedRefSiblingKeywords { path: String, keywords: String },
-    #[error("strict tool schemas do not support oneOf at {path}; use anyOf instead")]
-    OneOfUnsupported { path: String },
 }
 
 impl StrictToolParametersSchema {
@@ -62,95 +60,8 @@ impl StrictToolParametersSchema {
         self.document
     }
 
-    pub fn into_provider_json(mut self) -> Value {
-        shape_provider_schema(&mut self.document);
-        self.document
-    }
-
     pub fn as_json(&self) -> &Value {
         &self.document
-    }
-}
-
-fn shape_provider_schema(schema: &mut Value) {
-    walk_schema_mut(schema, &mut |node| {
-        node.remove("$schema");
-        let has_rust_numeric_format = node
-            .get("format")
-            .and_then(Value::as_str)
-            .is_some_and(is_rust_numeric_format);
-
-        if has_rust_numeric_format {
-            node.remove("format");
-        }
-
-        let Some(properties) = node.get("properties").and_then(Value::as_object) else {
-            return;
-        };
-
-        node.insert(
-            "required".to_string(),
-            Value::Array(properties.keys().cloned().map(Value::String).collect()),
-        );
-    });
-}
-
-fn is_rust_numeric_format(format: &str) -> bool {
-    matches!(
-        format,
-        "int8"
-            | "int16"
-            | "int32"
-            | "int64"
-            | "int128"
-            | "isize"
-            | "uint"
-            | "uint8"
-            | "uint16"
-            | "uint32"
-            | "uint64"
-            | "uint128"
-            | "usize"
-    )
-}
-
-fn walk_schema_mut(value: &mut Value, visitor: &mut impl FnMut(&mut Map<String, Value>)) {
-    let Value::Object(node) = value else {
-        return;
-    };
-
-    visitor(node);
-    walk_schema_children_mut(node, visitor);
-}
-
-fn walk_schema_children_mut(
-    node: &mut Map<String, Value>,
-    visitor: &mut impl FnMut(&mut Map<String, Value>),
-) {
-    for key in ["items", "contains", "if", "then", "else", "not"] {
-        if let Some(child) = node.get_mut(key) {
-            walk_schema_mut(child, visitor);
-        }
-    }
-
-    for key in ["anyOf", "oneOf", "allOf", "prefixItems"] {
-        let Some(entries) = node.get_mut(key).and_then(Value::as_array_mut) else {
-            continue;
-        };
-
-        for child in entries {
-            walk_schema_mut(child, visitor);
-        }
-    }
-
-    for key in ["properties", "$defs", "definitions", "dependentSchemas"] {
-        let Some(entries) = node.get_mut(key).and_then(Value::as_object_mut) else {
-            continue;
-        };
-
-        for child in entries.values_mut() {
-            walk_schema_mut(child, visitor);
-        }
     }
 }
 
@@ -185,22 +96,8 @@ fn normalize_schema_object(
     let mut normalized = schema.clone();
     rewrite_nullable_type_union(&mut normalized);
     rewrite_nullable_one_of(&mut normalized);
-    reject_non_nullable_one_of(&normalized, path)?;
     strip_ref_annotation_siblings(&mut normalized, path)?;
     Ok(normalized)
-}
-
-fn reject_non_nullable_one_of(
-    schema: &Map<String, Value>,
-    path: &SchemaPath,
-) -> Result<(), ToolSchemaError> {
-    if schema.contains_key("oneOf") {
-        Err(ToolSchemaError::OneOfUnsupported {
-            path: path.to_string(),
-        })
-    } else {
-        Ok(())
-    }
 }
 
 fn rewrite_nullable_type_union(schema: &mut Map<String, Value>) {
@@ -660,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn strict_tool_schema_rejects_non_nullable_one_of() {
+    fn strict_tool_schema_preserves_non_nullable_one_of_for_provider_policy() {
         let schema: Schema = serde_json::from_value(json!({
             "type": "object",
             "properties": {
@@ -675,10 +572,14 @@ mod tests {
         }))
         .expect("schema should deserialize");
 
-        let error = StrictToolParametersSchema::try_from_raw(Some(&schema))
-            .expect_err("non-null oneOf should be rejected");
+        let rendered = StrictToolParametersSchema::try_from_raw(Some(&schema))
+            .expect("provider-neutral schema should preserve non-null oneOf")
+            .into_json();
 
-        assert!(error.to_string().contains("oneOf"));
+        assert_eq!(
+            rendered["properties"]["body"]["oneOf"],
+            json!([{ "type": "string" }, { "type": "integer" }])
+        );
     }
 
     #[test]

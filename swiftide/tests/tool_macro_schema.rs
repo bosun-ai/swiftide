@@ -38,7 +38,7 @@ async fn triage_ticket(
 }
 
 #[test]
-fn tool_macro_schema_is_provider_ready_for_nested_enum_arguments() {
+fn tool_macro_schema_inlines_nested_enum_arguments() {
     let spec = triage_ticket().tool_spec();
     let stored_schema = serde_json::to_value(
         spec.parameters_schema
