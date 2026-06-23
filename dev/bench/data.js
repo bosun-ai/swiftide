@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1781192022358,
+  "lastUpdate": 1782238723248,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -31943,6 +31943,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2130111,
             "range": "± 6119",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dd558c6a4cfe7880892a314dc503c761ade70bba",
+          "message": "fix(openai): send reasoning effort to chat completions (#1103)\n\n## Summary\n\n- forward `Options::reasoning_effort` into OpenAI-compatible chat\ncompletion requests\n- update the chat completion request tests to assert the field is sent\nas `reasoning_effort: \"low\"`\n- keep reasoning item replay scoped to the Responses API path\n\n## Root Cause\n\nSwiftide stored `reasoning_effort` in OpenAI options, but\n`chat_completion_request_defaults()` never copied it into the\n`CreateChatCompletionRequestArgs` builder. The underlying async-openai\nchat completion request type already supports the field.\n\n## Validation\n\n- `cargo test -p swiftide-integrations --features openai\ntest_chat_completion_request_defaults_sends_reasoning_effort`\n- `cargo test -p swiftide-integrations --features openai\ntest_complete_with_all_default_settings`\n- `git diff --cached --check`",
+          "timestamp": "2026-06-23T20:07:24+02:00",
+          "tree_id": "58625a864d5c72b73aeaaebef5b1b326511960dc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/dd558c6a4cfe7880892a314dc503c761ade70bba"
+        },
+        "date": 1782238721161,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1021866,
+            "range": "± 24706",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 261982,
+            "range": "± 1409",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1957,
+            "range": "± 1761",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7120,
+            "range": "± 265",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26286,
+            "range": "± 405",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4191091,
+            "range": "± 24560",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2092821,
+            "range": "± 12450",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16683973,
+            "range": "± 122760",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2109997,
+            "range": "± 10654",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66912099,
+            "range": "± 267615",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2131105,
+            "range": "± 7858",
             "unit": "ns/iter"
           }
         ]
