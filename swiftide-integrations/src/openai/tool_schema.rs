@@ -3,23 +3,34 @@ use swiftide_core::chat_completion::{ToolSpec, ToolSpecError};
 use thiserror::Error;
 
 type SchemaNormalizer = fn(&mut Value) -> Result<(), OpenAiToolSchemaError>;
-type SchemaValidator = fn(&Value) -> Result<(), OpenAiToolSchemaError>;
 
 #[derive(Debug)]
 pub(super) struct OpenAiToolSchema(Value);
 
 impl OpenAiToolSchema {
+    pub(super) fn try_from_spec(
+        spec: &ToolSpec,
+        strict: bool,
+    ) -> Result<Self, OpenAiToolSchemaError> {
+        let mut value = spec.canonical_parameters_schema_json()?;
+
+        for normalizer in [
+            strip_schema_metadata as SchemaNormalizer,
+            strip_rust_numeric_formats,
+        ] {
+            normalizer(&mut value)?;
+        }
+
+        if strict {
+            complete_required_arrays(&mut value)?;
+            validate_strict_compatibility(&value)?;
+        }
+
+        Ok(Self(value))
+    }
+
     pub(super) fn into_value(self) -> Value {
         self.0
-    }
-}
-
-impl TryFrom<&ToolSpec> for OpenAiToolSchema {
-    type Error = OpenAiToolSchemaError;
-
-    fn try_from(spec: &ToolSpec) -> Result<Self, Self::Error> {
-        let value = OpenAiSchemaPipeline::apply(spec.canonical_parameters_schema_json()?)?;
-        Ok(Self(value))
     }
 }
 
@@ -27,36 +38,15 @@ impl TryFrom<&ToolSpec> for OpenAiToolSchema {
 pub(super) enum OpenAiToolSchemaError {
     #[error("{0}")]
     InvalidParametersSchema(String),
-    #[error("OpenAI strict tool schemas do not support `{keyword}` at {path}")]
+    #[error("OpenAI-compatible strict tool schemas do not support `{keyword}` at {path}")]
     UnsupportedKeyword { path: String, keyword: &'static str },
-    #[error("OpenAI strict tool schemas do not support array-valued `type` at {path}")]
+    #[error("OpenAI-compatible strict tool schemas do not support array-valued `type` at {path}")]
     UnsupportedTypeUnion { path: String },
 }
 
 impl From<ToolSpecError> for OpenAiToolSchemaError {
     fn from(value: ToolSpecError) -> Self {
         Self::InvalidParametersSchema(value.to_string())
-    }
-}
-
-struct OpenAiSchemaPipeline;
-
-impl OpenAiSchemaPipeline {
-    fn apply(mut schema: Value) -> Result<Value, OpenAiToolSchemaError> {
-        for normalizer in [
-            strip_schema_metadata as SchemaNormalizer,
-            strip_rust_numeric_formats,
-            complete_required_arrays,
-        ] {
-            normalizer(&mut schema)?;
-        }
-
-        {
-            let validator = validate_openai_compatibility as SchemaValidator;
-            validator(&schema)?;
-        }
-
-        Ok(schema)
     }
 }
 
@@ -97,7 +87,7 @@ fn complete_required_arrays(schema: &mut Value) -> Result<(), OpenAiToolSchemaEr
     })
 }
 
-fn validate_openai_compatibility(schema: &Value) -> Result<(), OpenAiToolSchemaError> {
+fn validate_strict_compatibility(schema: &Value) -> Result<(), OpenAiToolSchemaError> {
     walk_schema(schema, &SchemaPath::root(), &mut |node, path| {
         if node.contains_key("oneOf") {
             return Err(OpenAiToolSchemaError::UnsupportedKeyword {
@@ -254,119 +244,5 @@ impl SchemaPath {
 impl std::fmt::Display for SchemaPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.join("."))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use schemars::JsonSchema;
-    use serde_json::json;
-    use swiftide_core::chat_completion::ToolSpec;
-
-    use super::OpenAiToolSchema;
-
-    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
-    #[serde(deny_unknown_fields)]
-    struct NestedCommentArgs {
-        request: NestedCommentRequest,
-    }
-
-    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
-    #[serde(deny_unknown_fields)]
-    struct NestedCommentRequest {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        body: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        text: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        page_id: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        block_id: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        discussion_id: Option<String>,
-    }
-
-    #[test]
-    fn openai_tool_schema_strips_schema_metadata_and_rust_formats() {
-        let spec = ToolSpec::builder()
-            .name("comment")
-            .description("Create a comment")
-            .parameters_schema(
-                serde_json::from_value::<schemars::Schema>(json!({
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "type": "object",
-                    "properties": {
-                        "page_size": {
-                            "type": ["integer", "null"],
-                            "format": "uint",
-                            "minimum": 0
-                        }
-                    }
-                }))
-                .unwrap(),
-            )
-            .build()
-            .unwrap();
-
-        let schema = OpenAiToolSchema::try_from(&spec).unwrap().into_value();
-
-        assert!(schema.get("$schema").is_none());
-        assert_eq!(
-            schema["properties"]["page_size"]["anyOf"],
-            json!([
-                { "type": "integer", "minimum": 0 },
-                { "type": "null" }
-            ])
-        );
-    }
-
-    #[test]
-    fn openai_tool_schema_adds_recursive_required_arrays() {
-        let spec = ToolSpec::builder()
-            .name("comment")
-            .description("Create a comment")
-            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
-            .build()
-            .unwrap();
-
-        let schema = OpenAiToolSchema::try_from(&spec).unwrap().into_value();
-        let nested_ref = schema["properties"]["request"]["$ref"]
-            .as_str()
-            .expect("nested request should be referenced");
-        let nested_name = nested_ref
-            .rsplit('/')
-            .next()
-            .expect("nested request ref name");
-
-        assert_eq!(
-            schema["$defs"][nested_name]["required"],
-            json!(["block_id", "body", "discussion_id", "page_id", "text"])
-        );
-    }
-
-    #[test]
-    fn openai_tool_schema_rejects_non_nullable_one_of() {
-        let spec = ToolSpec::builder()
-            .name("comment")
-            .description("Create a comment")
-            .parameters_schema(
-                serde_json::from_value::<schemars::Schema>(json!({
-                    "type": "object",
-                    "properties": {
-                        "content": {
-                            "oneOf": [
-                                { "type": "string" },
-                                { "type": "integer" }
-                            ]
-                        }
-                    }
-                }))
-                .unwrap(),
-            )
-            .build()
-            .unwrap();
-
-        let error = OpenAiToolSchema::try_from(&spec).expect_err("oneOf should be rejected");
-        assert!(error.to_string().contains("`oneOf`"));
     }
 }

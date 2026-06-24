@@ -77,12 +77,13 @@ impl<
             .to_owned();
 
         if !request.tools_spec().is_empty() {
+            let tool_strict = self.default_options.tool_strict_enabled();
             openai_request
                 .tools(
                     request
                         .tools_spec()
                         .iter()
-                        .map(tools_to_openai)
+                        .map(|spec| tools_to_openai(spec, tool_strict))
                         .collect::<Result<Vec<_>>>()?,
                 )
                 .tool_choice(ChatCompletionToolChoiceOption::Mode(
@@ -214,12 +215,13 @@ impl<
             .to_owned();
 
         if !request.tools_spec().is_empty() {
+            let tool_strict = self.default_options.tool_strict_enabled();
             openai_request
                 .tools(
                     request
                         .tools_spec()
                         .iter()
-                        .map(tools_to_openai)
+                        .map(|spec| tools_to_openai(spec, tool_strict))
                         .collect::<Result<Vec<_>>>()?,
                 )
                 .tool_choice(ChatCompletionToolChoiceOption::Mode(
@@ -555,16 +557,15 @@ pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
     None
 }
 
-fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
-    let parameters = OpenAiToolSchema::try_from(spec)
-        .context("tool schema must be OpenAI compatible")?
-        .into_value();
+fn tools_to_openai(spec: &ToolSpec, strict: bool) -> Result<ChatCompletionTools> {
+    let parameters = OpenAiToolSchema::try_from_spec(spec, strict)
+        .context("tool schema must be OpenAI compatible")?;
 
     let function = FunctionObject {
         name: spec.name.clone(),
         description: Some(spec.description.clone()),
-        parameters: Some(parameters),
-        strict: Some(true),
+        parameters: Some(parameters.into_value()),
+        strict: Some(strict),
     };
 
     Ok(ChatCompletionTools::Function(
@@ -769,7 +770,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool = tools_to_openai(&spec).expect("tool conversion succeeds");
+        let tool = tools_to_openai(&spec, true).expect("tool conversion succeeds");
 
         let function = match tool {
             ChatCompletionTools::Function(ref tool) => &tool.function,
@@ -800,7 +801,7 @@ mod tests {
             .build()
             .unwrap();
 
-        let tool = tools_to_openai(&spec).expect("tool conversion succeeds");
+        let tool = tools_to_openai(&spec, true).expect("tool conversion succeeds");
 
         let function = match tool {
             ChatCompletionTools::Function(ref tool) => &tool.function,
@@ -842,6 +843,57 @@ mod tests {
         assert!(names.contains("page_id"));
         assert!(names.contains("block_id"));
         assert!(names.contains("discussion_id"));
+
+        let body_schema = function
+            .parameters
+            .as_ref()
+            .and_then(|schema| {
+                let definition_name = schema
+                    .pointer("/properties/request/$ref")
+                    .and_then(serde_json::Value::as_str)?
+                    .strip_prefix("#/$defs/")?;
+                schema
+                    .get("$defs")
+                    .and_then(|defs| defs.get(definition_name))
+                    .and_then(|definition| definition.pointer("/properties/body"))
+            })
+            .expect("nested body schema should be present");
+
+        assert_eq!(
+            body_schema["anyOf"],
+            json!([{ "type": "string" }, { "type": "null" }])
+        );
+    }
+
+    #[test]
+    fn test_tools_to_openai_non_strict_preserves_optional_nested_fields() {
+        let spec = ToolSpec::builder()
+            .name("notion_create_comment")
+            .description("Create a comment")
+            .parameters_schema(schemars::schema_for!(NestedCommentArgs))
+            .build()
+            .unwrap();
+
+        let tool = tools_to_openai(&spec, false).expect("tool conversion succeeds");
+
+        let function = match tool {
+            ChatCompletionTools::Function(ref tool) => &tool.function,
+            ChatCompletionTools::Custom(_) => panic!("expected function tool"),
+        };
+
+        let nested_required = function.parameters.as_ref().and_then(|schema| {
+            let definition_name = schema
+                .pointer("/properties/request/$ref")
+                .and_then(serde_json::Value::as_str)?
+                .strip_prefix("#/$defs/")?;
+            schema
+                .get("$defs")
+                .and_then(|defs| defs.get(definition_name))
+                .and_then(|definition| definition.get("required"))
+        });
+
+        assert_eq!(function.strict, Some(false));
+        assert!(nested_required.is_none());
     }
 
     #[test]

@@ -40,7 +40,13 @@ impl swiftide::chat_completion::Tool for HelloDerive {
             .name("hello_derive")
             .description("Hello derive")
             .parameters_schema(
-                ::swiftide::reexports::schemars::schema_for!(HelloDeriveArgs),
+                ::swiftide::reexports::schemars::generate::SchemaSettings::default()
+                    .with(|settings| {
+                        settings.meta_schema = None;
+                        settings.inline_subschemas = true;
+                    })
+                    .into_generator()
+                    .into_root_schema_for::<HelloDeriveArgs>(),
             )
             .build()
             .unwrap()

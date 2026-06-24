@@ -22,7 +22,15 @@ pub fn tool_spec(args: &ToolArgs) -> TokenStream {
         let args_struct_ident = args.args_struct_ident();
         quote! {
             #builder
-                .parameters_schema(::swiftide::reexports::schemars::schema_for!(#args_struct_ident))
+                .parameters_schema(
+                    ::swiftide::reexports::schemars::generate::SchemaSettings::default()
+                        .with(|settings| {
+                            settings.meta_schema = None;
+                            settings.inline_subschemas = true;
+                        })
+                        .into_generator()
+                        .into_root_schema_for::<#args_struct_ident>()
+                )
                 .build()
                 .unwrap()
         }

@@ -17,7 +17,6 @@ use swiftide_core::{
 };
 
 use super::Anthropic;
-use super::tool_schema::AnthropicToolSchema;
 
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
@@ -399,9 +398,9 @@ fn tools_to_anthropic(
     .context("Failed to build tool")?
     .to_owned();
 
-    let schema = AnthropicToolSchema::try_from(spec)
-        .context("tool schema must be Anthropic compatible")?
-        .into_value();
+    let schema = spec
+        .canonical_parameters_schema_json()
+        .context("tool schema must be Anthropic compatible")?;
 
     map.insert("input_schema".to_string(), schema);
 
@@ -720,7 +719,7 @@ mod tests {
             .unwrap();
 
         let result = tools_to_anthropic(&tool_spec).unwrap();
-        let expected_schema = tool_spec.strict_parameters_schema().unwrap().into_json();
+        let expected_schema = tool_spec.canonical_parameters_schema_json().unwrap();
         let expected = json!({
             "name": "get_weather",
             "description": "Gets the weather",

@@ -156,6 +156,13 @@ pub struct Options {
     /// At this moment, o1 and o3-mini do not support it and should be set to `None`.
     pub parallel_tool_calls: Option<bool>,
 
+    /// Whether OpenAI-compatible tool calls should enforce strict schema validation.
+    ///
+    /// Defaults to `true` when not set. Disable this for providers whose OpenAI-compatible API
+    /// does not implement OpenAI's strict tool schema contract.
+    #[builder(default)]
+    pub tool_strict: Option<bool>,
+
     /// Maximum number of tokens to generate in the completion.
     ///
     /// By default, the limit is disabled
@@ -229,6 +236,9 @@ impl Options {
         if let Some(parallel_tool_calls) = other.parallel_tool_calls {
             self.parallel_tool_calls = Some(parallel_tool_calls);
         }
+        if let Some(tool_strict) = other.tool_strict {
+            self.tool_strict = Some(tool_strict);
+        }
         if let Some(max_completion_tokens) = other.max_completion_tokens {
             self.max_completion_tokens = Some(max_completion_tokens);
         }
@@ -266,6 +276,7 @@ impl From<OptionsBuilder> for Options {
             embed_model: value.embed_model.flatten(),
             prompt_model: value.prompt_model.flatten(),
             parallel_tool_calls: value.parallel_tool_calls.flatten(),
+            tool_strict: value.tool_strict.flatten(),
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
@@ -287,6 +298,7 @@ impl From<&mut OptionsBuilder> for Options {
             embed_model: value.embed_model.flatten(),
             prompt_model: value.prompt_model.flatten(),
             parallel_tool_calls: value.parallel_tool_calls.flatten(),
+            tool_strict: value.tool_strict.flatten(),
             max_completion_tokens: value.max_completion_tokens.flatten(),
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
@@ -309,6 +321,12 @@ impl OptionsBuilder {
     ) -> &mut Self {
         self.extra_body = Some(extra_body);
         self
+    }
+}
+
+impl Options {
+    pub(crate) fn tool_strict_enabled(&self) -> bool {
+        self.tool_strict.unwrap_or(true)
     }
 }
 
@@ -772,12 +790,14 @@ mod test {
     fn test_options_merge_overrides_set_fields() {
         let mut base = Options::builder()
             .prompt_model("a")
+            .tool_strict(false)
             .temperature(0.1)
             .build()
             .unwrap();
 
         let overlay = Options::builder()
             .prompt_model("b")
+            .tool_strict(true)
             .presence_penalty(0.2)
             .build()
             .unwrap();
@@ -785,6 +805,7 @@ mod test {
         base.merge(&overlay);
 
         assert_eq!(base.prompt_model.as_deref(), Some("b"));
+        assert_eq!(base.tool_strict, Some(true));
         assert_eq!(base.temperature, Some(0.1));
         assert_eq!(base.presence_penalty, Some(0.2));
     }

@@ -9,8 +9,6 @@ pub struct StrictToolParametersSchema {
 
 #[derive(Debug, Error)]
 pub enum ToolSchemaError {
-    #[error("failed to serialize tool schema")]
-    SerializeSchema(#[from] serde_json::Error),
     #[error("tool schema must be a JSON object")]
     RootMustBeObject,
     #[error("tool schema node at {path} must be a JSON object")]
@@ -43,16 +41,19 @@ pub enum ToolSchemaError {
 
 impl StrictToolParametersSchema {
     pub(super) fn try_from_raw(schema: Option<&Schema>) -> Result<Self, ToolSchemaError> {
-        let raw = match schema {
-            Some(schema) => serde_json::to_value(schema)?,
-            None => json!({}),
+        let document = if let Some(schema) = schema {
+            let root = schema
+                .as_value()
+                .as_object()
+                .ok_or(ToolSchemaError::RootMustBeObject)?;
+
+            Value::Object(parse_schema_object(root, &SchemaPath::root(), true)?)
+        } else {
+            let empty = Map::new();
+            Value::Object(parse_schema_object(&empty, &SchemaPath::root(), true)?)
         };
 
-        let root = raw.as_object().ok_or(ToolSchemaError::RootMustBeObject)?;
-
-        Ok(Self {
-            document: Value::Object(parse_schema_object(root, &SchemaPath::root(), true)?),
-        })
+        Ok(Self { document })
     }
 
     pub fn into_json(self) -> Value {
@@ -214,29 +215,27 @@ fn strip_ref_annotation_siblings(
         return Ok(());
     }
 
-    let mut unsupported = Vec::new();
-    let sibling_keys = schema
+    let unsupported = schema
         .keys()
-        .filter(|key| key.as_str() != "$ref")
+        .filter(|key| {
+            let key = key.as_str();
+            key != "$ref" && !SAFE_REF_ANNOTATIONS.contains(&key)
+        })
         .cloned()
         .collect::<Vec<_>>();
 
-    for key in sibling_keys {
-        if SAFE_REF_ANNOTATIONS.contains(&key.as_str()) {
-            schema.remove(&key);
-        } else {
-            unsupported.push(key);
-        }
-    }
-
-    if unsupported.is_empty() {
-        Ok(())
-    } else {
-        Err(ToolSchemaError::UnsupportedRefSiblingKeywords {
+    if !unsupported.is_empty() {
+        return Err(ToolSchemaError::UnsupportedRefSiblingKeywords {
             path: path.to_string(),
             keywords: unsupported.join(", "),
-        })
+        });
     }
+
+    for key in SAFE_REF_ANNOTATIONS {
+        schema.remove(*key);
+    }
+
+    Ok(())
 }
 
 fn parse_object_schema(
@@ -554,6 +553,32 @@ mod tests {
         assert_eq!(
             body["anyOf"],
             Value::Array(vec![json!({ "type": "string" }), json!({ "type": "null" })])
+        );
+    }
+
+    #[test]
+    fn strict_tool_schema_preserves_non_nullable_one_of_for_provider_policy() {
+        let schema: Schema = serde_json::from_value(json!({
+            "type": "object",
+            "properties": {
+                "body": {
+                    "oneOf": [
+                        { "type": "string" },
+                        { "type": "integer" }
+                    ]
+                }
+            },
+            "required": ["body"]
+        }))
+        .expect("schema should deserialize");
+
+        let rendered = StrictToolParametersSchema::try_from_raw(Some(&schema))
+            .expect("provider-neutral schema should preserve non-null oneOf")
+            .into_json();
+
+        assert_eq!(
+            rendered["properties"]["body"]["oneOf"],
+            json!([{ "type": "string" }, { "type": "integer" }])
         );
     }
 
