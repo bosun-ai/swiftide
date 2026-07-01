@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782238723248,
+  "lastUpdate": 1782894852657,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32051,6 +32051,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2131105,
             "range": "± 7858",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "tinco@bosun.ai",
+            "name": "Tinco Andringa",
+            "username": "tinco"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fc72726fc7f523e9d8c42bc6828acde5e5370ddb",
+          "message": "fix: Update to 1.x fixing RUSTSEC-2026-0189 (#1105)\n\n## Summary\n\n- upgrade the workspace `rmcp` dependency from `0.17` to the safe `1.x`\nline; Cargo resolves `rmcp`/`rmcp-macros` to `1.8.0`, which clears\nRUSTSEC-2026-0189\n- update the MCP adapter and example to use `rmcp` constructors for\nnon-exhaustive model types\n- refresh vulnerable lockfile entries for `anyhow`,\n`astral-tokio-tar`/`testcontainers`, `aws-lc-rs`/`aws-lc-sys`,\n`lz4_flex`, and `rustls-webpki`\n\n## Validation\n\n- `rustup update stable` locally; local stable is now `rustc 1.96.0`,\nmatching GitHub Actions stable\n- `cargo check --workspace --all-features`\n- `cargo clippy --workspace --all-targets --all-features -- -D warnings`\n- `cargo test -p swiftide-agents --features mcp test_socket --\n--nocapture`\n- `cargo test -p swiftide-tasks --test tasks_ui`\n- `cargo test --workspace`\n- `cargo deny check advisories` still fails only on existing\nunmaintained advisories: RUSTSEC-2025-0012 (`backoff`),\nRUSTSEC-2025-0119 (`number_prefix`), RUSTSEC-2024-0436 (`paste`), and\nRUSTSEC-2025-0134 (`rustls-pemfile`)",
+          "timestamp": "2026-07-01T10:23:00+02:00",
+          "tree_id": "4fea7faaa1b2d6638d81fa23a1ef49bc8778cea4",
+          "url": "https://github.com/bosun-ai/swiftide/commit/fc72726fc7f523e9d8c42bc6828acde5e5370ddb"
+        },
+        "date": 1782894850386,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1078994,
+            "range": "± 34620",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 258238,
+            "range": "± 1991",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1942,
+            "range": "± 1686",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7060,
+            "range": "± 264",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26448,
+            "range": "± 81",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4181416,
+            "range": "± 31475",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2102841,
+            "range": "± 14056",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16740684,
+            "range": "± 151186",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2112392,
+            "range": "± 12407",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67037430,
+            "range": "± 235214",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2135782,
+            "range": "± 7947",
             "unit": "ns/iter"
           }
         ]
