@@ -189,8 +189,12 @@ impl ToolArgs {
                 .resolved_type
                 .as_ref()
                 .expect("parameter types should be resolved");
+            let description = &param.description;
             let ident = syn::Ident::new(&param.name, proc_macro2::Span::call_site());
-            fields.push(quote! { pub #ident: #ty });
+            fields.push(quote! {
+                #[schemars(description = #description)]
+                pub #ident: #ty
+            });
         }
 
         let args_struct_ident = self.args_struct_ident();
