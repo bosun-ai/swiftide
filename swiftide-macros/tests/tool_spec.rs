@@ -28,6 +28,7 @@ impl DescribedDeriveTool {
         _agent_context: &dyn AgentContext,
         query: &str,
     ) -> Result<ToolOutput, ToolError> {
+        tokio::task::yield_now().await;
         Ok(format!("Searching for {query}").into())
     }
 }
