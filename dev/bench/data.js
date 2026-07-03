@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782894852657,
+  "lastUpdate": 1783091706283,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32159,6 +32159,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2135782,
             "range": "± 7947",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9e4f860ad9f3ea8268d7362a4a83f9c7538da58e",
+          "message": "fix(macros): expose tool argument descriptions (#1110)\n\n## Summary\n\n- Add schemars field descriptions to macro-generated tool argument\nstructs so `param(description = ...)` is included in the emitted tool\nschema.\n- Add high-level macro tests covering both attribute and derive macro\ntool specs.\n- Add provider-path regression coverage for OpenAI, Anthropic, and\nBedrock schema serialization.\n\n## Root cause\n\nThe macro stored parameter descriptions in `ToolArgs`, but the generated\nargs struct fields did not attach that metadata to schemars. As a\nresult, compiled tools could produce valid schemas while omitting\nargument descriptions from the final provider-facing spec.\n\n## Validation\n\n- `cargo +nightly fmt --all -- --check`\n- `cargo clippy --workspace --all-targets --all-features -- -D warnings`\n- `cargo test -p swiftide-macros`\n- `cargo test -p swiftide-macros --test tool_spec`\n- `cargo test -p swiftide-integrations --features openai\nopenai_tool_schema_preserves_property_descriptions`\n- `cargo test -p swiftide-integrations --features anthropic\nanthropic::chat_completion::tests::test_tools_to_anthropic`\n- `cargo test -p swiftide-integrations --features aws-bedrock\ntest_tool_config_from_specs_builds_schema`\n- `git diff --check`",
+          "timestamp": "2026-07-03T17:04:13+02:00",
+          "tree_id": "48e2a537d58330600475e70d272e4a9a2ed8cfee",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9e4f860ad9f3ea8268d7362a4a83f9c7538da58e"
+        },
+        "date": 1783091704067,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 904977,
+            "range": "± 26516",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 251073,
+            "range": "± 3181",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2064,
+            "range": "± 2322",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7518,
+            "range": "± 294",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28328,
+            "range": "± 257",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4262930,
+            "range": "± 31334",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2139947,
+            "range": "± 15089",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 17040017,
+            "range": "± 95525",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2153373,
+            "range": "± 14438",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67960888,
+            "range": "± 449801",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2181340,
+            "range": "± 22298",
             "unit": "ns/iter"
           }
         ]
