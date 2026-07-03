@@ -1660,6 +1660,7 @@ mod tests {
 
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
     struct WeatherArgs {
+        #[schemars(description = "City or region to retrieve weather for")]
         location: String,
     }
 
@@ -2353,6 +2354,23 @@ mod tests {
                 if schema.get("type") == Some(&Document::String("object".to_string()))
                     && schema.get("additionalProperties") == Some(&Document::Bool(false))
         ));
+
+        let Some(ToolInputSchema::Json(Document::Object(schema))) = spec.input_schema() else {
+            panic!("expected JSON object schema");
+        };
+        let Some(Document::Object(properties)) = schema.get("properties") else {
+            panic!("expected schema properties");
+        };
+        let Some(Document::Object(location)) = properties.get("location") else {
+            panic!("expected location property schema");
+        };
+
+        assert_eq!(
+            location.get("description"),
+            Some(&Document::String(
+                "City or region to retrieve weather for".to_string()
+            ))
+        );
     }
 
     #[test]

@@ -430,6 +430,7 @@ mod tests {
 
     #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
     struct LocationArgs {
+        #[schemars(description = "City or region to retrieve weather for")]
         location: String,
     }
 
@@ -721,6 +722,11 @@ mod tests {
 
         let result = tools_to_anthropic(&tool_spec).unwrap();
         let expected_schema = tool_spec.strict_parameters_schema().unwrap().into_json();
+        assert_eq!(
+            expected_schema["properties"]["location"]["description"],
+            json!("City or region to retrieve weather for")
+        );
+
         let expected = json!({
             "name": "get_weather",
             "description": "Gets the weather",
