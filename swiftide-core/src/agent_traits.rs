@@ -235,6 +235,15 @@ pub enum Command {
         current_dir: Option<PathBuf>,
         timeout: Option<Duration>,
     },
+    /// Execute a shell command with read-only access to the executor workspace.
+    ///
+    /// Executors that cannot enforce read-only semantics must return an error
+    /// instead of falling back to [`Command::Shell`].
+    ReadOnlyShell {
+        command: String,
+        current_dir: Option<PathBuf>,
+        timeout: Option<Duration>,
+    },
     ReadFile {
         path: PathBuf,
         current_dir: Option<PathBuf>,
@@ -251,6 +260,14 @@ pub enum Command {
 impl Command {
     pub fn shell<S: Into<String>>(cmd: S) -> Self {
         Command::Shell {
+            command: cmd.into(),
+            current_dir: None,
+            timeout: None,
+        }
+    }
+
+    pub fn read_only_shell<S: Into<String>>(cmd: S) -> Self {
+        Command::ReadOnlyShell {
             command: cmd.into(),
             current_dir: None,
             timeout: None,
@@ -290,6 +307,7 @@ impl Command {
         let dir = Some(path.into());
         match self {
             Command::Shell { current_dir, .. }
+            | Command::ReadOnlyShell { current_dir, .. }
             | Command::ReadFile { current_dir, .. }
             | Command::WriteFile { current_dir, .. } => {
                 *current_dir = dir;
@@ -301,6 +319,7 @@ impl Command {
     pub fn clear_current_dir(&mut self) -> &mut Self {
         match self {
             Command::Shell { current_dir, .. }
+            | Command::ReadOnlyShell { current_dir, .. }
             | Command::ReadFile { current_dir, .. }
             | Command::WriteFile { current_dir, .. } => {
                 *current_dir = None;
@@ -312,6 +331,7 @@ impl Command {
     pub fn current_dir_path(&self) -> Option<&Path> {
         match self {
             Command::Shell { current_dir, .. }
+            | Command::ReadOnlyShell { current_dir, .. }
             | Command::ReadFile { current_dir, .. }
             | Command::WriteFile { current_dir, .. } => current_dir.as_deref(),
         }
@@ -328,6 +348,7 @@ impl Command {
     pub fn timeout(&mut self, timeout: Duration) -> &mut Self {
         match self {
             Command::Shell { timeout: slot, .. }
+            | Command::ReadOnlyShell { timeout: slot, .. }
             | Command::ReadFile { timeout: slot, .. }
             | Command::WriteFile { timeout: slot, .. } => {
                 *slot = Some(timeout);
@@ -340,6 +361,7 @@ impl Command {
     pub fn clear_timeout(&mut self) -> &mut Self {
         match self {
             Command::Shell { timeout, .. }
+            | Command::ReadOnlyShell { timeout, .. }
             | Command::ReadFile { timeout, .. }
             | Command::WriteFile { timeout, .. } => {
                 *timeout = None;
@@ -352,6 +374,7 @@ impl Command {
     pub fn timeout_duration(&self) -> Option<&Duration> {
         match self {
             Command::Shell { timeout, .. }
+            | Command::ReadOnlyShell { timeout, .. }
             | Command::ReadFile { timeout, .. }
             | Command::WriteFile { timeout, .. } => timeout.as_ref(),
         }
