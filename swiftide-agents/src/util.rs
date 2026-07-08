@@ -5,7 +5,11 @@
 macro_rules! invoke_hooks {
     (OnStream, $self_expr:expr $(, $arg:expr)* ) => {{
         // For streaming we log less and only on the trace level
-        for hook in $self_expr.hooks_by_type(HookTypes::OnStream) {
+        let hooks = std::sync::Arc::clone(&$self_expr.hooks);
+        for hook in hooks
+            .iter()
+            .filter(|hook| HookTypes::OnStream == (*hook).into())
+        {
             // Downcast to the correct closure variant
             if let Hook::OnStream(hook_fn) = hook {
                 // Create a tracing span for instrumentation
@@ -29,7 +33,11 @@ macro_rules! invoke_hooks {
     }};
     ($hook_type:ident, $self_expr:expr $(, $arg:expr)* ) => {{
         // Iterate through every hook matching `HookTypes::$hook_type`
-        for hook in $self_expr.hooks_by_type(HookTypes::$hook_type) {
+        let hooks = std::sync::Arc::clone(&$self_expr.hooks);
+        for hook in hooks
+            .iter()
+            .filter(|hook| HookTypes::$hook_type == (*hook).into())
+        {
             // Downcast to the correct closure variant
             if let Hook::$hook_type(hook_fn) = hook {
                 // Create a tracing span for instrumentation
