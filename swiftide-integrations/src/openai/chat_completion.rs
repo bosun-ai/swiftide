@@ -541,8 +541,14 @@ fn truncate_data_url(url: &str) -> Option<String> {
         return None;
     }
 
-    let preview = &data[..MAX_DATA_PREVIEW];
-    let truncated = data.len() - MAX_DATA_PREVIEW;
+    // `MAX_DATA_PREVIEW` is a byte offset; back it up to the nearest char
+    // boundary so a multibyte payload cannot panic the slice.
+    let mut end = MAX_DATA_PREVIEW;
+    while !data.is_char_boundary(end) {
+        end -= 1;
+    }
+    let preview = &data[..end];
+    let truncated = data.len() - end;
 
     Some(format!(
         "{prefix},{preview}...[truncated {truncated} chars]"

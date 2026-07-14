@@ -398,10 +398,58 @@ fn truncate_data_url(url: &str) -> Cow<'_, str> {
         return Cow::Borrowed(url);
     }
 
-    let preview = &data[..MAX_DATA_PREVIEW];
-    let truncated = data.len() - MAX_DATA_PREVIEW;
+    // `MAX_DATA_PREVIEW` is a byte offset; back it up to the nearest char
+    // boundary so a multibyte payload cannot panic the slice.
+    let mut end = MAX_DATA_PREVIEW;
+    while !data.is_char_boundary(end) {
+        end -= 1;
+    }
+    let preview = &data[..end];
+    let truncated = data.len() - end;
 
     Cow::Owned(format!(
         "{prefix},{preview}...[truncated {truncated} chars]"
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn truncate_data_url_handles_multibyte_boundary() {
+        // 31 ASCII bytes followed by a 4-byte char put a character across byte
+        // 32, so the previous `&data[..32]` slice panicked. Guard the fix.
+        let data = format!("{}{}", "a".repeat(31), '\u{1F600}');
+        assert!(
+            !data.is_char_boundary(32),
+            "test setup: byte 32 must split a char"
+        );
+
+        let url = format!("data:text/plain,{data}");
+        let out = truncate_data_url(&url);
+
+        let expected = format!("data:text/plain,{}...[truncated 4 chars]", "a".repeat(31));
+        assert_eq!(out.as_ref(), expected);
+    }
+
+    #[test]
+    fn debug_url_source_does_not_panic_on_multibyte_data_url() {
+        let data = format!("{}{}", "a".repeat(31), '\u{1F600}');
+        let source = ChatMessageContentSource::url(format!("data:text/plain,{data}"));
+        // The Debug impl routes through `truncate_data_url`; it must not panic.
+        let _ = format!("{source:?}");
+    }
+
+    #[test]
+    fn truncate_data_url_leaves_non_data_and_short_urls_untouched() {
+        assert_eq!(
+            truncate_data_url("https://example.com/x").as_ref(),
+            "https://example.com/x"
+        );
+        assert_eq!(
+            truncate_data_url("data:text/plain,short").as_ref(),
+            "data:text/plain,short"
+        );
+    }
 }
