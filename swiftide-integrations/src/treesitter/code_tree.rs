@@ -54,6 +54,7 @@ pub struct CodeTree<'a> {
     language: SupportedLanguages,
 }
 
+#[derive(Debug)]
 pub struct ReferencesAndDefinitions {
     pub references: Vec<String>,
     pub definitions: Vec<String>,
@@ -67,7 +68,7 @@ impl CodeTree<'_> {
     ///
     /// Errors if the query is invalid or fails
     pub fn references_and_definitions(&self) -> Result<ReferencesAndDefinitions> {
-        let (defs, refs) = ts_queries_for_language(self.language);
+        let (defs, refs) = ts_queries_for_language(self.language)?;
 
         let defs_query = Query::new(&self.language.into(), defs)?;
         let refs_query = Query::new(&self.language.into(), refs)?;
@@ -108,13 +109,13 @@ impl CodeTree<'_> {
     }
 }
 
-fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'static str) {
+fn ts_queries_for_language(language: SupportedLanguages) -> Result<(&'static str, &'static str)> {
     use SupportedLanguages::{
         C, CSharp, Cpp, Elixir, Go, HTML, Java, Javascript, PHP, Python, Ruby, Rust, Solidity,
         Typescript,
     };
 
-    match language {
+    let queries = match language {
         Rust => (rust::DEFS, rust::REFS),
         Python => (python::DEFS, python::REFS),
         // The univocal proof that TS is just a linter
@@ -125,8 +126,11 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         Go => (go::DEFS, go::REFS),
         CSharp => (csharp::DEFS, csharp::REFS),
         Solidity => (solidity::DEFS, solidity::REFS),
-        C | Cpp | Elixir | PHP | HTML => unimplemented!(),
-    }
+        C | Cpp | Elixir | PHP | HTML => {
+            anyhow::bail!("References and definitions are not implemented for {language:?}")
+        }
+    };
+    Ok(queries)
 }
 
 #[cfg(test)]
@@ -148,6 +152,21 @@ mod tests {
         assert_eq!(result.references, vec!["println"]);
 
         assert_eq!(result.definitions, vec!["main"]);
+    }
+
+    #[test]
+    fn test_references_and_definitions_unimplemented_language_errors_instead_of_panicking() {
+        // C is a valid `SupportedLanguages` with a linked grammar but has no defs/refs queries,
+        // so this path used to `unimplemented!()` and panic. It must now return a clean error.
+        let parser = CodeParser::from_language(SupportedLanguages::C);
+        let tree = parser.parse("int main(void) { return 0; }").unwrap();
+        let err = tree.references_and_definitions().expect_err(
+            "references_and_definitions for an unimplemented language must error, not panic",
+        );
+        assert!(
+            err.to_string().contains("not implemented"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]

@@ -93,12 +93,12 @@ impl CodeOutliner {
         let mut cursor = root_node.walk();
         let mut summary = String::with_capacity(code.len());
         let mut last_end = 0;
-        self.outline_node(&mut cursor, code, &mut summary, &mut last_end);
+        self.outline_node(&mut cursor, code, &mut summary, &mut last_end)?;
         Ok(summary)
     }
 
-    fn is_unneeded_node(&self, node: Node) -> bool {
-        match self.language {
+    fn is_unneeded_node(&self, node: Node) -> Result<bool> {
+        let unneeded = match self.language {
             SupportedLanguages::Rust | SupportedLanguages::Java | SupportedLanguages::CSharp => {
                 matches!(node.kind(), "block")
             }
@@ -121,14 +121,17 @@ impl CodeOutliner {
                 }
                 _ => false,
             },
-            SupportedLanguages::Go => unimplemented!(),
-            SupportedLanguages::Solidity => unimplemented!(),
-            SupportedLanguages::C => unimplemented!(),
-            SupportedLanguages::Cpp => unimplemented!(),
-            SupportedLanguages::Elixir => unimplemented!(),
-            SupportedLanguages::HTML => unimplemented!(),
-            SupportedLanguages::PHP => unimplemented!(),
-        }
+            SupportedLanguages::Go
+            | SupportedLanguages::Solidity
+            | SupportedLanguages::C
+            | SupportedLanguages::Cpp
+            | SupportedLanguages::Elixir
+            | SupportedLanguages::HTML
+            | SupportedLanguages::PHP => {
+                anyhow::bail!("Outlining is not implemented for {:?}", self.language)
+            }
+        };
+        Ok(unneeded)
     }
 
     /// outlines a syntax node
@@ -148,23 +151,23 @@ impl CodeOutliner {
         source: &str,
         summary: &mut String,
         last_end: &mut usize,
-    ) {
+    ) -> Result<()> {
         let node = cursor.node();
         // If the node is not needed in the summary, skip it and go to the next sibling
-        if self.is_unneeded_node(node) {
+        if self.is_unneeded_node(node)? {
             summary.push_str(&source[*last_end..node.start_byte()]);
             *last_end = node.end_byte();
             if cursor.goto_next_sibling() {
-                self.outline_node(cursor, source, summary, last_end);
+                self.outline_node(cursor, source, summary, last_end)?;
             }
-            return;
+            return Ok(());
         }
 
         let mut next_cursor = cursor.clone();
 
         // If the node is a non-leaf, recursively outline its children
         if next_cursor.goto_first_child() {
-            self.outline_node(&mut next_cursor, source, summary, last_end);
+            self.outline_node(&mut next_cursor, source, summary, last_end)?;
         // If the node is a leaf, add the text to the summary
         } else {
             summary.push_str(&source[*last_end..node.end_byte()]);
@@ -172,10 +175,11 @@ impl CodeOutliner {
         }
 
         if cursor.goto_next_sibling() {
-            self.outline_node(cursor, source, summary, last_end);
+            self.outline_node(cursor, source, summary, last_end)?;
         } else {
             // Done with this node
         }
+        Ok(())
     }
 }
 
@@ -307,6 +311,22 @@ class Bla {
         assert_eq!(
             summary,
             "\nimport { Context as _, Result } from 'anyhow';\n// This is a comment\nfunction main(a, b) \n\nclass Bla {\n    constructor() \n\n    ok() \n}"
+        );
+    }
+
+    #[test]
+    fn test_outline_unimplemented_language_errors_instead_of_panicking() {
+        // Go is a valid `SupportedLanguages` variant with a linked grammar, so the code parses
+        // and reaches `is_unneeded_node`, which has no outline rules for it. That path used to
+        // `unimplemented!()` and panic; it must now surface a clean error.
+        let code = "package main\nfunc main() {\n\tprintln(\"hello\")\n}\n";
+        let outliner = CodeOutliner::new(SupportedLanguages::Go);
+        let err = outliner
+            .outline(code)
+            .expect_err("outlining an unimplemented language must return an error, not panic");
+        assert!(
+            err.to_string().contains("not implemented"),
+            "unexpected error: {err}"
         );
     }
 
