@@ -38,10 +38,7 @@ impl Loader for ScrapingLoader {
 
     fn into_stream(mut self) -> IndexingStream<String> {
         let (tx, rx) = tokio::sync::mpsc::channel(1000);
-        let mut spider_rx = self
-            .spider_website
-            .subscribe(0)
-            .expect("Failed to subscribe to spider");
+        let mut spider_rx = self.spider_website.subscribe(0);
         tracing::info!("Subscribed to spider");
 
         let _recv_thread = tokio::spawn(async move {
@@ -70,7 +67,10 @@ impl Loader for ScrapingLoader {
             tracing::info!("[Spider] Starting scrape loop");
             // TODO: It would be much nicer if this used `scrape` instead, as it is supposedly
             // more concurrent
-            spider_website.crawl().await;
+            //
+            // Boxed because spider's crawl future is large enough to trip
+            // `clippy::large_futures` when held across an await in a task.
+            Box::pin(spider_website.crawl()).await;
             tracing::info!("[Spider] Scrape loop finished");
         });
 
