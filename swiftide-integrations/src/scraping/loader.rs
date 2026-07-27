@@ -1,4 +1,5 @@
 use derive_builder::Builder;
+use spider::configuration::{SpiderCloudConfig, SpiderCloudMode};
 use spider::website::Website;
 
 use swiftide_core::{
@@ -14,6 +15,69 @@ use swiftide_core::{
 /// For more configuration options see their documentation.
 pub struct ScrapingLoader {
     spider_website: Website,
+}
+
+/// Spider Cloud config resolved from the environment once, or `None` when
+/// `SPIDER_CLOUD_API_KEY` is unset.
+static SPIDER_CLOUD: std::sync::OnceLock<Option<SpiderCloudConfig>> = std::sync::OnceLock::new();
+
+fn spider_cloud() -> Option<&'static SpiderCloudConfig> {
+    SPIDER_CLOUD.get_or_init(spider_cloud_from_env).as_ref()
+}
+
+/// Spider Cloud fetches from its own infrastructure, so it cannot reach hosts
+/// that are only routable from here. Those are left on the direct path.
+fn is_locally_routable(url: &str) -> bool {
+    use spider::url::Host;
+
+    let Ok(parsed) = spider::url::Url::parse(url) else {
+        return false;
+    };
+
+    match parsed.host() {
+        Some(Host::Domain(host)) => {
+            host == "localhost" || host.ends_with(".localhost") || host.ends_with(".local")
+        }
+        Some(Host::Ipv4(ip)) => {
+            ip.is_loopback() || ip.is_private() || ip.is_link_local() || ip.is_unspecified()
+        }
+        Some(Host::Ipv6(ip)) => ip.is_loopback() || ip.is_unspecified(),
+        None => false,
+    }
+}
+
+fn spider_cloud_from_env() -> Option<SpiderCloudConfig> {
+    let api_key = std::env::var("SPIDER_CLOUD_API_KEY").ok()?;
+    let api_key = api_key.trim();
+
+    if api_key.is_empty() {
+        return None;
+    }
+
+    // Anything unrecognized falls through to `Smart`, which proxies and
+    // escalates to the unblocker only when it sees bot protection.
+    let mode = match std::env::var("SPIDER_CLOUD_MODE")
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "proxy" => SpiderCloudMode::Proxy,
+        "api" => SpiderCloudMode::Api,
+        "unblocker" => SpiderCloudMode::Unblocker,
+        "fallback" => SpiderCloudMode::Fallback,
+        _ => SpiderCloudMode::Smart,
+    };
+
+    let mut config = SpiderCloudConfig::new(api_key).with_mode(mode);
+
+    if let Ok(api_url) = std::env::var("SPIDER_CLOUD_API_URL") {
+        if !api_url.trim().is_empty() {
+            config = config.with_api_url(api_url.trim());
+        }
+    }
+
+    Some(config)
 }
 
 impl ScrapingLoader {
@@ -38,6 +102,16 @@ impl Loader for ScrapingLoader {
 
     fn into_stream(mut self) -> IndexingStream<String> {
         let (tx, rx) = tokio::sync::mpsc::channel(1000);
+
+        if let Some(config) = spider_cloud() {
+            if is_locally_routable(self.spider_website.get_url().inner()) {
+                tracing::debug!("[Spider] Local host, skipping Spider Cloud");
+            } else {
+                tracing::info!(mode = ?config.mode, "[Spider] Using Spider Cloud");
+                self.spider_website.with_spider_cloud_config(config.clone());
+            }
+        }
+
         let mut spider_rx = self.spider_website.subscribe(0);
         tracing::info!("Subscribed to spider");
 
@@ -91,6 +165,28 @@ mod tests {
     use swiftide_core::indexing::Loader;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
+
+    #[test]
+    fn test_is_locally_routable() {
+        for url in [
+            "http://localhost:8080",
+            "http://127.0.0.1:3000",
+            "http://[::1]:3000",
+            "http://192.168.1.10",
+            "http://10.0.0.1",
+            "http://nas.local",
+        ] {
+            assert!(is_locally_routable(url), "{url} should be local");
+        }
+
+        for url in [
+            "https://example.com",
+            "https://books.toscrape.com",
+            "http://1.1.1.1",
+        ] {
+            assert!(!is_locally_routable(url), "{url} should not be local");
+        }
+    }
 
     #[test_log::test(tokio::test(flavor = "multi_thread"))]
     async fn test_scraping_loader_with_wiremock() {

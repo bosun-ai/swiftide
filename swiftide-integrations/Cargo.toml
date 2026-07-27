@@ -81,7 +81,9 @@ tree-sitter-html = { workspace = true, optional = true }
 tree-sitter-php = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
-spider = { workspace = true, optional = true, default-features = true }
+spider = { workspace = true, optional = true, default-features = true, features = [
+  "spider_cloud",
+] }
 htmd = { workspace = true, optional = true }
 aws-config = { workspace = true, features = [
   "behavior-version-latest",

@@ -4639,6 +4639,8 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash 0.2.0",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -9124,6 +9126,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_regex"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bafc8d0c5330cecff10f16b459b479fd9acaa5b4acd7167301414e21b0057012"
+dependencies = [
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "serde_repr"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9458,6 +9470,9 @@ dependencies = [
  "rand 0.9.2",
  "regex",
  "reqwest 0.13.3",
+ "serde",
+ "serde_json",
+ "serde_regex",
  "simdutf8",
  "smallvec",
  "spider_agent_types",
