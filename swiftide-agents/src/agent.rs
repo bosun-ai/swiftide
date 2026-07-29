@@ -45,8 +45,8 @@ use tracing::{Instrument, debug};
 #[derive(Builder)]
 pub struct Agent {
     /// Hooks are functions that are called at specific points in the agent's lifecycle.
-    #[builder(default, setter(into))]
-    pub(crate) hooks: Vec<Hook>,
+    #[builder(default, setter(custom))]
+    pub(crate) hooks: Arc<Vec<Hook>>,
     /// The context in which the agent operates, by default this is the `DefaultContext`.
     #[builder(
         setter(custom),
@@ -209,9 +209,15 @@ impl AgentBuilder {
 
     /// Add a hook to the agent.
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
-        let hooks = self.hooks.get_or_insert_with(Vec::new);
-        hooks.push(hook);
+        let hooks = self.hooks.get_or_insert_with(Arc::default);
+        Arc::make_mut(hooks).push(hook);
 
+        self
+    }
+
+    /// Set the hooks for the agent.
+    pub fn hooks(&mut self, hooks: impl Into<Vec<Hook>>) -> &mut Self {
+        self.hooks = Some(Arc::new(hooks.into()));
         self
     }
 
@@ -730,13 +736,6 @@ impl Agent {
         }
 
         Ok(())
-    }
-
-    fn hooks_by_type(&self, hook_type: HookTypes) -> Vec<&Hook> {
-        self.hooks
-            .iter()
-            .filter(|h| hook_type == (*h).into())
-            .collect()
     }
 
     fn find_tool_by_name(&self, tool_name: &str) -> Option<Box<dyn Tool>> {
@@ -1369,7 +1368,7 @@ mod tests {
             .before_tool(mock_before_tool.before_tool_fn())
             .after_completion(mock_after_completion.after_completion_fn())
             .after_tool(mock_after_tool.after_tool_fn())
-            .after_each(mock_after_each.hook_fn())
+            .after_each(mock_after_each.after_each_fn())
             .on_new_message(mock_on_message.message_hook_fn())
             .on_stop(mock_on_stop.stop_hook_fn())
             .build()
