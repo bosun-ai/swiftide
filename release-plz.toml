@@ -1,7 +1,7 @@
 [workspace]
 changelog_path = "./CHANGELOG.md"
 #changelog_config = "cliff.toml"
-git_tag_name = "v{{ version }}"
+git_tag_name = "{{ package }}-v{{ version }}"
 changelog_update = false
 git_tag_enable = false
 git_release_enable = false
@@ -24,6 +24,8 @@ changelog_include = [
   "swiftide-test-utils",
   "swiftide-agents",
   "swiftide-macros",
+  "swiftide-tasks",
+  "swiftide-langfuse",
 ]
 changelog_update = true
 

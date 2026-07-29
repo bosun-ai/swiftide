@@ -227,7 +227,7 @@ impl PgVector {
 
         Ok(format!(
             "CREATE INDEX IF NOT EXISTS {} ON {} USING hnsw ({} vector_cosine_ops)",
-            index_name, &self.table_name, vector_field
+            index_name, self.table_name, vector_field
         ))
     }
 

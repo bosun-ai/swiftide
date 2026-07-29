@@ -41,7 +41,7 @@ impl Loader for Parquet {
                     None
                 }
             })
-            .unwrap_or_else(|| panic!("Column {} not found in dataset", &self.column_name));
+            .unwrap_or_else(|| panic!("Column {} not found in dataset", self.column_name));
 
         let mask = ProjectionMask::roots(file_metadata.schema_descr(), [column_idx]);
         builder = builder.with_projection(mask);
