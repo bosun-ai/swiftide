@@ -45,8 +45,8 @@ use tracing::{Instrument, debug};
 #[derive(Builder)]
 pub struct Agent {
     /// Hooks are functions that are called at specific points in the agent's lifecycle.
-    #[builder(default, setter(into))]
-    pub(crate) hooks: Vec<Hook>,
+    #[builder(default, setter(custom))]
+    pub(crate) hooks: Arc<Vec<Hook>>,
     /// The context in which the agent operates, by default this is the `DefaultContext`.
     #[builder(
         setter(custom),
@@ -209,9 +209,15 @@ impl AgentBuilder {
 
     /// Add a hook to the agent.
     pub fn add_hook(&mut self, hook: Hook) -> &mut Self {
-        let hooks = self.hooks.get_or_insert_with(Vec::new);
-        hooks.push(hook);
+        let hooks = self.hooks.get_or_insert_with(Arc::default);
+        Arc::make_mut(hooks).push(hook);
 
+        self
+    }
+
+    /// Set the hooks for the agent.
+    pub fn hooks(&mut self, hooks: impl Into<Vec<Hook>>) -> &mut Self {
+        self.hooks = Some(Arc::new(hooks.into()));
         self
     }
 
@@ -316,8 +322,8 @@ impl AgentBuilder {
 
     /// Define the available tools for the agent. Tools must implement the `Tool` trait.
     ///
-    /// See the [tool attribute macro](`swiftide_macros::tool`) and the [tool derive
-    /// macro](`swiftide_macros::Tool`) for easy ways to create (many) tools.
+    /// See the `swiftide_macros::tool` attribute macro and the `swiftide_macros::Tool` derive
+    /// macro for easy ways to create (many) tools.
     pub fn tools<TOOL, I: IntoIterator<Item = TOOL>>(&mut self, tools: I) -> &mut Self
     where
         TOOL: Into<Box<dyn Tool>>,
@@ -618,14 +624,8 @@ impl Agent {
                 .is_some_and(|calls| !calls.is_empty());
 
         if let Some(reasoning_items) = response.reasoning.take() {
-            if has_assistant_message {
-                for item in reasoning_items {
-                    self.add_message(ChatMessage::Reasoning(item)).await?;
-                }
-            } else {
-                tracing::debug!(
-                    "Skipping reasoning items because no assistant message or tool call was produced"
-                );
+            for item in reasoning_items {
+                self.add_message(ChatMessage::Reasoning(item)).await?;
             }
         }
 
@@ -744,13 +744,6 @@ impl Agent {
         }
 
         Ok(())
-    }
-
-    fn hooks_by_type(&self, hook_type: HookTypes) -> Vec<&Hook> {
-        self.hooks
-            .iter()
-            .filter(|h| hook_type == (*h).into())
-            .collect()
     }
 
     fn find_tool_by_name(&self, tool_name: &str) -> Option<Box<dyn Tool>> {
@@ -979,7 +972,7 @@ mod tests {
     use serde::ser::Error;
     use swiftide_core::ToolFeedback;
     use swiftide_core::chat_completion::errors::ToolError;
-    use swiftide_core::chat_completion::{ChatCompletionResponse, ToolCall};
+    use swiftide_core::chat_completion::{ChatCompletionResponse, ReasoningItem, ToolCall};
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
@@ -1284,6 +1277,46 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn test_reasoning_only_completion_is_added_to_history() {
+        let prompt = "Plan the fix";
+        let mock_llm = MockChatCompletion::new();
+
+        let expected_chat_request = chat_request! {
+            user!(prompt);
+            tools = []
+        };
+
+        let reasoning_item = ReasoningItem {
+            id: "rs_123".into(),
+            summary: vec!["Inspect the failing path".into()],
+            content: None,
+            encrypted_content: None,
+            status: None,
+        };
+
+        let reasoning_only_response = ChatCompletionResponse::builder()
+            .reasoning(vec![reasoning_item.clone()])
+            .build()
+            .unwrap();
+
+        mock_llm.expect_complete(expected_chat_request, Ok(reasoning_only_response));
+
+        let mut agent = Agent::builder()
+            .llm(&mock_llm)
+            .no_system_prompt()
+            .build()
+            .unwrap();
+
+        agent.query_once(prompt).await.unwrap();
+
+        let history = agent.history().await.unwrap();
+
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0], user!(prompt));
+        assert_eq!(history[1], ChatMessage::Reasoning(reasoning_item));
+    }
+
+    #[test_log::test(tokio::test)]
     async fn test_agent_hooks() {
         let mock_before_all = MockHook::new("before_all").expect_calls(1).to_owned();
         let mock_on_start_fn = MockHook::new("on_start").expect_calls(1).to_owned();
@@ -1343,7 +1376,7 @@ mod tests {
             .before_tool(mock_before_tool.before_tool_fn())
             .after_completion(mock_after_completion.after_completion_fn())
             .after_tool(mock_after_tool.after_tool_fn())
-            .after_each(mock_after_each.hook_fn())
+            .after_each(mock_after_each.after_each_fn())
             .on_new_message(mock_on_message.message_hook_fn())
             .on_stop(mock_on_stop.stop_hook_fn())
             .build()

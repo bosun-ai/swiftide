@@ -4,7 +4,7 @@
 use anyhow::Result;
 use rmcp::{
     ServiceExt as _,
-    model::{ClientInfo, Implementation},
+    model::{ClientCapabilities, ClientInfo, Implementation},
     transport::{ConfigureCommandExt as _, TokioChildProcess},
 };
 use swiftide::agents::{self, tools::mcp::McpToolbox};
@@ -27,17 +27,10 @@ async fn main() -> Result<()> {
     });
 
     // First set up our client info to identify ourselves to the server
-    let client_info = ClientInfo {
-        client_info: Implementation {
-            name: "swiftide-example".into(),
-            version: env!("CARGO_PKG_VERSION").into(),
-            title: None,
-            description: None,
-            icons: None,
-            website_url: None,
-        },
-        ..Default::default()
-    };
+    let client_info = ClientInfo::new(
+        ClientCapabilities::default(),
+        Implementation::new("swiftide-example", env!("CARGO_PKG_VERSION")),
+    );
 
     // Use `rmcp` to start the server
     let running_service = client_info

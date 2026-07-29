@@ -1,0 +1,14 @@
+error[E0308]: `if` and `else` have incompatible types
+  --> tests/ui/linear_transition_requires_single_target_type.rs:76:13
+   |
+73 | /         if output.is_empty() {
+74 | |             second.transitions_with(output)
+   | |             ------------------------------- expected because of this
+75 | |         } else {
+76 | |             third.transitions_with(output)
+   | |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `MarkedTransition<SecondNode>`, found `MarkedTransition<ThirdNode>`
+77 | |         }
+   | |_________- `if` and `else` have incompatible types
+   |
+   = note: expected struct `MarkedTransition<SecondNode>`
+              found struct `MarkedTransition<ThirdNode>`

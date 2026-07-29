@@ -10,7 +10,9 @@ expression: "crate::test_utils::pretty_macro_output(&output)"
 )]
 #[schemars(crate = "::swiftide::reexports::schemars", deny_unknown_fields)]
 pub struct SearchCodeArgs {
+    #[schemars(description = "my param description")]
     pub code_query: String,
+    #[schemars(description = "my param description")]
     pub other: String,
 }
 #[derive(Clone, Default)]

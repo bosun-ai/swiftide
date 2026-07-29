@@ -10,7 +10,9 @@ use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use rmcp::RoleClient;
 use rmcp::ServiceExt;
-use rmcp::model::{CallToolRequestParams, ClientInfo, Implementation, InitializeRequestParams};
+use rmcp::model::{
+    CallToolRequestParams, ClientCapabilities, ClientInfo, Implementation, InitializeRequestParams,
+};
 use rmcp::service::RunningService;
 use rmcp::transport::IntoTransport;
 use schemars::Schema;
@@ -114,17 +116,10 @@ impl McpToolbox {
     }
 
     fn default_client_info() -> ClientInfo {
-        ClientInfo {
-            client_info: Implementation {
-                name: "swiftide".into(),
-                version: env!("CARGO_PKG_VERSION").into(),
-                title: None,
-                description: None,
-                icons: None,
-                website_url: None,
-            },
-            ..Default::default()
-        }
+        ClientInfo::new(
+            ClientCapabilities::default(),
+            Implementation::new("swiftide", env!("CARGO_PKG_VERSION")),
+        )
     }
 
     /// Disconnects from the MCP server if it is running
@@ -171,6 +166,7 @@ impl ToolBox for McpToolbox {
 
         let filter = self.filter.as_ref();
         let mut server_name = peer_info
+            .as_ref()
             .map_or("mcp", |info| info.server_info.name.as_str())
             .trim()
             .to_owned();
@@ -263,12 +259,10 @@ impl Tool for McpTool {
             None => None,
         };
 
-        let request = CallToolRequestParams {
-            meta: None,
-            name: self.server_tool_name.clone().into(),
-            arguments: args,
-            task: None,
-        };
+        let mut request = CallToolRequestParams::new(self.server_tool_name.clone());
+        if let Some(args) = args {
+            request = request.with_arguments(args);
+        }
 
         let Some(service) = &*self.client.read().await else {
             return Err(
@@ -506,6 +500,7 @@ mod tests {
 
         #[derive(Debug, Clone)]
         pub struct Calculator {
+            #[allow(dead_code)]
             tool_router: ToolRouter<Self>,
         }
 
@@ -554,11 +549,10 @@ mod tests {
         #[tool_handler]
         impl ServerHandler for Calculator {
             fn get_info(&self) -> ServerInfo {
-                ServerInfo {
-                    instructions: Some("A simple calculator".into()),
-                    capabilities: ServerCapabilities::builder().enable_tools().build(),
-                    ..Default::default()
-                }
+                let mut info = ServerInfo::default();
+                info.instructions = Some("A simple calculator".into());
+                info.capabilities = ServerCapabilities::builder().enable_tools().build();
+                info
             }
         }
     }

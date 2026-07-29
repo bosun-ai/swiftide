@@ -6,6 +6,7 @@
 #![allow(unused_imports, reason = "that is what we do here")]
 #![allow(clippy::doc_markdown, reason = "the readme is invalid and that is ok")]
 #![doc = include_str!(env!("DOC_README"))]
+#![doc = "## Cargo Features"]
 #![doc = document_features::document_features!()]
 
 #[doc(inline)]
@@ -16,6 +17,10 @@ pub use swiftide_core::type_aliases::*;
 #[cfg(feature = "swiftide-agents")]
 #[doc(inline)]
 pub use swiftide_agents as agents;
+
+#[cfg(feature = "swiftide-tasks")]
+#[doc(inline)]
+pub use swiftide_tasks as tasks;
 
 /// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {

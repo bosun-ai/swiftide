@@ -286,6 +286,13 @@ mod tests {
         discussion_id: Option<String>,
     }
 
+    #[derive(serde::Serialize, serde::Deserialize, JsonSchema)]
+    #[serde(deny_unknown_fields)]
+    struct DescribedArgs {
+        #[schemars(description = "Search text used to find matching code")]
+        query: String,
+    }
+
     #[test]
     fn openai_tool_schema_strips_schema_metadata_and_rust_formats() {
         let spec = ToolSpec::builder()
@@ -341,6 +348,23 @@ mod tests {
         assert_eq!(
             schema["$defs"][nested_name]["required"],
             json!(["block_id", "body", "discussion_id", "page_id", "text"])
+        );
+    }
+
+    #[test]
+    fn openai_tool_schema_preserves_property_descriptions() {
+        let spec = ToolSpec::builder()
+            .name("search_code")
+            .description("Searches indexed source code")
+            .parameters_schema(schemars::schema_for!(DescribedArgs))
+            .build()
+            .unwrap();
+
+        let schema = OpenAiToolSchema::try_from(&spec).unwrap().into_value();
+
+        assert_eq!(
+            schema["properties"]["query"]["description"],
+            json!("Search text used to find matching code")
         );
     }
 

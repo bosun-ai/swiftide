@@ -1,38 +1,4 @@
-<details>
-  <summary>Table of Contents</summary>
-
-<!--toc:start-->
-
-- [What is Swiftide?](#what-is-swiftide)
-  - [High level features](#high-level-features)
-- [Latest updates on our blog :fire:](#latest-updates-on-our-blog-fire)
-- [Examples](#examples)
-- [Vision](#vision)
-- [Features](#features)
-  - [In detail](#in-detail)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage and concepts](#usage-and-concepts)
-  - [Indexing](#indexing)
-  - [Querying](#querying)
-- [Contributing](#contributing)
-- [Core Team Members](#core-team-members)
-- [License](#license)
-<!--toc:end-->
-
-</details>
-
 <a name="readme-top"></a>
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
 
 ![CI](https://img.shields.io/github/actions/workflow/status/bosun-ai/swiftide/test.yml?style=flat-square)
 ![Coverage Status](https://img.shields.io/coverallsCoverage/github/bosun-ai/swiftide?style=flat-square)
@@ -44,294 +10,316 @@
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-<!-- PROJECT LOGO -->
 <br />
 <div align="center">
   <a href="https://github.com/bosun-ai/swiftide">
-    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/logo.png" alt="Logo" width="250" height="250">
+    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/logo.png" alt="Swiftide logo" width="190" height="190">
   </a>
 
-  <h3 align="center">Swiftide</h3>
+  <h1 align="center">Swiftide</h1>
 
   <p align="center">
-Fast, streaming indexing, query, and agentic LLM applications in Rust
+    Composable LLM agents and harness, typed task graphs, and streaming RAG pipelines in Rust.
     <br />
-    <a href="https://swiftide.rs"><strong>Read more on swiftide.rs »</strong></a>
-    <br />
-    <br />
-    <!-- <a href="https://github.com/bosun-ai/swiftide">View Demo</a> -->
-    <a href="https://docs.rs/swiftide/latest/swiftide/">API Docs</a>
+    <a href="https://docs.rs/swiftide/latest/swiftide/"><strong>API docs</strong></a>
     ·
-    <a href="https://github.com/bosun-ai/swiftide/issues/new?labels=bug&template=bug_report.md">Report Bug</a>
+    <a href="https://github.com/bosun-ai/swiftide/tree/master/examples"><strong>Examples</strong></a>
     ·
-    <a href="https://github.com/bosun-ai/swiftide/issues/new?labels=enhancement&template=feature_request.md">Request Feature</a>
+    <a href="https://swiftide.rs"><strong>Website</strong></a>
     ·
-    <a href="https://discord.gg/3jjXYen9UY">Discord</a>
+    <a href="https://discord.gg/3jjXYen9UY"><strong>Discord</strong></a>
   </p>
 </div>
 
-<!-- ABOUT THE PROJECT -->
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## What is Swiftide?
-
-<!-- [![Product Name Screen Shot][product-screenshot]](https://example.com) -->
-
-Swiftide is a Rust library for building LLM applications. From performing a simple prompt completion, to building fast, streaming indexing and querying pipelines, to building agents that can use tools and call other agents.
-
-### High level features
-
-- Simple primitives for common LLM tasks
-- Build fast, streaming indexing and querying pipelines
-- Easily build agents, mix and match with previously built pipelines
-- A modular and extendable API, with minimal abstractions
-- Integrations with popular LLMs and storage providers
-- Ready to use pipeline transformations or bring your own
-- Build graph like workflows with Tasks
-- [Langfuse](https://langfuse.com) support
+Swiftide is an opinionated framework for building LLM applications. It gives you
+an agent harness, typed task graphs for orchestration, and streaming, composable indexing/query
+pipelines for RAG.
 
 <div align="center">
-    <img src="https://raw.githubusercontent.com/bosun-ai/swiftide/master/images/overview.png" alt="Swiftide overview" width="100%" >
+    <img src="images/composition.svg" alt="Swiftide composition overview" width="100%" >
 </div>
 
-Part of the [bosun.ai](https://bosun.ai) project. An upcoming platform for autonomous code improvement.
+<details>
+  <summary>Table of Contents</summary>
 
-We <3 feedback: project ideas, suggestions, and complaints are very welcome. Feel free to open an issue or contact us on [discord](https://discord.gg/3jjXYen9UY).
+- [Why Swiftide](#why-swiftide)
+- [Quick Start](#quick-start)
+- [Agent Harness](#agent-harness)
+- [Typed Task Graphs](#typed-task-graphs)
+- [RAG Pipelines](#rag-pipelines)
+- [Integrations](#integrations)
+- [Examples](#examples)
+- [Project Status](#project-status)
+- [Contributing](#contributing)
+- [Core Team Members](#core-team-members)
+- [License](#license)
 
-> [!CAUTION]
-> Swiftide is under heavy development and can have breaking changes. Documentation might fall short of all features, and despite our efforts be slightly outdated. We recommend to always keep an eye on our [github](https://github.com/bosun-ai/swiftide) and [api documentation](https://docs.rs/swiftide/latest/swiftide/). If you found an issue or have any kind of feedback we'd love to hear from you.
+</details>
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## Why Swiftide
 
-## Latest updates on our blog :fire:
+- Build agents that loop over LLM calls, tool calls, lifecycle hooks, and stop conditions.
+- Compose prompt steps, agents, command executors, and domain-specific Rust code in typed task
+  graphs.
+- Fan out work into parallel branches and join typed results back into one task output.
+- Pause and resume agents or tasks for human approval, external callbacks, or persisted state.
+- Bring tools from local Rust functions, custom `Tool` implementations, or MCP servers.
+- Stream large indexing and retrieval workloads through loaders, transformers, embedders, caches,
+  and storage backends.
+- Trace agent, task, and pipeline execution with `tracing`, metrics, and Langfuse support.
 
-- [Swiftide 0.31 - Tasks, Langfuse, Multi-Modal, and more](http://blog.bosun.ai/swiftide-0-31/)
-- [Swiftide 0.27 - Easy human-in-the-loop flows for agentic AI](http://blog.bosun.ai/swiftide-0-27/)
-- [Swiftide 0.26 - Streaming agents](http://blog.bosun.ai/swiftide-0-26/)
-- [Releasing kwaak with kwaak](https://bosun.ai/posts/releasing-kwaak-with-kwaak/)
-- [Swiftide 0.16 - AI Agents in Rust](https://bosun.ai/posts/swiftide-0-16/)
-- [Rust in LLM based tools for performance](https://bosun.ai/posts/rust-for-genai-performance/)
-- [Evaluate Swiftide pipelines with Ragas](https://bosun.ai/posts/evaluating-swiftide-with-ragas/) (2024-09-15)
-- [Release - Swiftide 0.12](https://bosun.ai/posts/swiftide-0-12/) (2024-09-13)
-- [Local code intel with Ollama, FastEmbed and OpenTelemetry](https://bosun.ai/posts/ollama-and-telemetry/) (2024-09-04)
+The core primitives provide the shared interaction model. Around them, use pipelines for data
+flows, agents for tool loops, and tasks for graphs of typed hand-offs.
 
-More on our [blog](https://blog.bosun.ai/)
+## Quick Start
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+Swiftide keeps default dependencies light. Start with the agent harness and add the integrations
+your application needs.
+
+```sh
+cargo add swiftide --features swiftide-agents,openai
+cargo add anyhow
+cargo add tokio --features macros,rt-multi-thread
+```
+
+If using OpenAI, set the API key expected by the OpenAI-compatible integration:
+
+```sh
+export OPENAI_API_KEY=...
+```
+
+## Agent Harness
+
+Swiftide provides a harnass for building (semi) autonomous agents. The harnass owns message history, call an LLM, invoke tools,
+run hooks, and stopping. Tools are pure functions and easy to add. The AgentContext abstracts over message history (in memory by default) and provides tools access to the outside world via a ToolExecutor (local by default, see also the [docker executor](https://github.com/bosun-ai/swiftide-docker-executor)).
+
+```rust
+use anyhow::Result;
+use swiftide::{
+    agents,
+    chat_completion::{ToolOutput, errors::ToolError},
+    traits::AgentContext,
+};
+
+#[swiftide::tool(
+    description = "Looks up a Swiftide concept",
+    param(name = "concept", description = "Concept to explain")
+)]
+async fn explain_concept(
+    _context: &dyn AgentContext,
+    concept: &str,
+) -> Result<ToolOutput, ToolError> {
+    let explanation = match concept {
+        "tasks" => "Tasks compose typed nodes into explicit workflows.",
+        "agents" => "Agents run LLM completions, tools, hooks, and stop conditions.",
+        "pipelines" => "Pipelines stream data through indexing and retrieval steps.",
+        _ => "Swiftide composes agents, task graphs, tools, and RAG pipelines.",
+    };
+
+    Ok(explanation.into())
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let openai = swiftide::integrations::openai::OpenAI::builder()
+        .default_prompt_model("gpt-4o-mini")
+        .build()?;
+
+    agents::Agent::builder()
+        .llm(&openai)
+        .tools([explain_concept()])
+        .on_new_message(|_, message| {
+            println!("{message}");
+            Box::pin(async { Ok(()) })
+        })
+        .limit(8)
+        .build()?
+        .query("Explain Swiftide tasks and agents in one paragraph.")
+        .await?;
+
+    Ok(())
+}
+```
+
+The agent calls the model, exposes `explain_concept` as a tool, prints new messages, and stops
+within the configured turn limit. By default all agents have a tool to stop the loop. This can be customized.
+
+Agent capabilities include:
+
+- function tools through `#[swiftide::tool]`, derived tools, or manual `Tool` implementations
+- lifecycle hooks before and after completions, tools, messages, streaming chunks, start, and stop
+- local or custom `ToolExecutor` implementations for command/file access
+- human-in-the-loop approval via `ApprovalRequired` and feedback-aware contexts
+- structured stop and failure payloads with custom JSON schemas
+- MCP toolboxes that load tools at runtime
+- streaming responses and reasoning-item handling for providers that support them
+
+Start with [`examples/hello_agents.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/hello_agents.rs),
+then look at the human approval, MCP, streaming, resume, and structured-output examples.
+
+## Typed Task Graphs
+
+Tasks are Swiftide's orchestration layer. A task is a typed graph of `TaskNode` steps. Each node has
+an input type, output type, and error type; transitions decide where the output goes next.
+
+Tasks are strongly typed at build time. It allows you to compose agents, other swiftide components, and functions to create complex automations.
+
+From [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs).
+
+```rust
+use swiftide::{
+    prompt::Prompt,
+    tasks::{Task, TaskRunOutcome, Transition},
+    traits::SimplePrompt,
+};
+use std::sync::Arc;
+
+let prompt_model: Arc<dyn SimplePrompt> = Arc::new(openai.clone());
+let briefing_agent = BriefingAgent::new(agent);
+let mut task: Task<Prompt, String> = Task::new();
+
+let brief = task.register_node(prompt_model.clone());
+let decide = task.register_node(briefing_agent);
+let render = task.register_node(prompt_model);
+
+task.starts_with(brief);
+task.register_transition(brief, move |short_brief| {
+    decide.transitions_with(short_brief)
+})?;
+task.register_transition(decide, move |decision: BriefingDecision| {
+    Transition::next(
+        &render,
+        Prompt::from("Write a hand-off note for {{audience}}: {{summary}}")
+            .with_context_value("audience", decision.audience)
+            .with_context_value("summary", decision.summary),
+    )
+})?;
+task.register_transition(render, task.transitions_to_finish())?;
+
+match task.run(Prompt::from("Summarize the rollout plan")).await? {
+    TaskRunOutcome::Completed(note) => println!("{note}"),
+    TaskRunOutcome::Paused => println!("Task paused"),
+}
+```
+
+Task capabilities include:
+
+- closure nodes for small glue steps and `TaskNode` implementations for domain logic
+- typed `NodeId` handles, transitions, and join payloads
+- static fan-out with explicit joins
+- sequential or parallel branch execution
+- pause, resume, and reset support
+- adapters for prompt-like Swiftide primitives, chat completions, and tool executors
+- `TaskAgent` for the simple case where an agent should run as a task node
+
+See [`examples/tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs) for a
+prompt plus custom agent workflow, and
+[`examples/tasks_fanout.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks_fanout.rs)
+for fan-out and join.
+
+## RAG Pipelines
+
+Swiftide includes first-class indexing and querying pipelines for retrieval-augmented generation.
+Pipelines are streaming and composable: load data, transform it, embed it, cache it, store it, then
+retrieve and answer with a typed query flow.
+
+```rust
+use swiftide::{
+    indexing::{self, loaders::FileLoader, transformers::{ChunkCode, Embed, MetadataQACode}},
+    integrations::qdrant::Qdrant,
+};
+
+async fn index(openai: swiftide::integrations::openai::OpenAI) -> anyhow::Result<()> {
+    let qdrant = Qdrant::builder()
+        .collection_name("swiftide-code")
+        .vector_size(1536)
+        .batch_size(50)
+        .build()?;
+
+    indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
+        .with_default_llm_client(openai.clone())
+        .then_chunk(ChunkCode::try_for_language_and_chunk_size("rust", 10..2048)?)
+        .then(MetadataQACode::default())
+        .then_in_batch(Embed::new(openai))
+        .then_store_with(qdrant)
+        .run()
+        .await?;
+
+    Ok(())
+}
+```
+
+Indexing supports loaders, caches, chunkers, transformers, batch transformers, embedders, and
+storage backends. Query pipelines support query transformation, retrieval, response
+transformation, answer generation, hybrid search, reranking patterns, and evaluation.
+
+## Integrations
+
+Swiftide integrations are feature-gated so application builds stay intentional.
+
+| Area | Supported integrations |
+| --- | --- |
+| LLM providers | OpenAI and Azure OpenAI, Anthropic, Gemini, OpenRouter, AWS Bedrock Converse API, Groq, Ollama, Dashscope |
+| Tooling | MCP toolboxes, local command execution, custom tool executors |
+| Storage and retrieval | Qdrant, Redis, LanceDB, PgVector, DuckDB, Redb |
+| Loading data | Files, scraping, Fluvio, Kafka, Parquet, executor-backed file streams |
+| Code and text processing | Markdown, text splitting, tree-sitter code chunking and metadata |
+| Observability | `tracing`, metrics, Langfuse |
 
 ## Examples
 
-Indexing a local code project, chunking into smaller pieces, enriching the nodes with metadata, and persisting into [Qdrant](https://qdrant.tech):
+The [`examples`](https://github.com/bosun-ai/swiftide/tree/master/examples) has a variety of examples.
 
-```rust
-indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
-        .with_default_llm_client(openai_client.clone())
-        .filter_cached(Redis::try_from_url(
-            redis_url,
-            "swiftide-examples",
-        )?)
-        .then_chunk(ChunkCode::try_for_language_and_chunk_size(
-            "rust",
-            10..2048,
-        )?)
-        .then(MetadataQACode::default())
-        .then(move |node| my_own_thing(node))
-        .then_in_batch(Embed::new(openai_client.clone()))
-        .then_store_with(
-            Qdrant::builder()
-                .batch_size(50)
-                .vector_size(1536)
-                .build()?,
-        )
-        .run()
-        .await?;
-```
+- Agents: [`hello_agents.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/hello_agents.rs),
+  [`streaming_agents.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/streaming_agents.rs),
+  [`agents_with_human_in_the_loop.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/agents_with_human_in_the_loop.rs),
+  [`agents_mcp_tools.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/agents_mcp_tools.rs)
+- Structured outputs and control tools:
+  [`stop_with_args_custom_schema.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/stop_with_args_custom_schema.rs),
+  [`agent_can_fail_custom_schema.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/agent_can_fail_custom_schema.rs)
+- Tasks:
+  [`tasks.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks.rs),
+  [`tasks_fanout.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/tasks_fanout.rs)
+- RAG and retrieval:
+  [`index_codebase.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/index_codebase.rs),
+  [`query_pipeline.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/query_pipeline.rs),
+  [`hybrid_search.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/hybrid_search.rs)
+- Provider and observability examples:
+  [`responses_api.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/responses_api.rs),
+  [`responses_api_reasoning.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/responses_api_reasoning.rs),
+  [`aws_bedrock_agent.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/aws_bedrock_agent.rs),
+  [`langfuse.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/langfuse.rs)
 
-Querying for an example on how to use the query pipeline:
+More background is available on the [Bosun blog](https://blog.bosun.ai/), including posts about
+tasks, streaming agents, human-in-the-loop flows, and Rust performance for AI tools.
 
-```rust
-query::Pipeline::default()
-    .then_transform_query(GenerateSubquestions::from_client(
-        openai_client.clone(),
-    ))
-    .then_transform_query(Embed::from_client(
-        openai_client.clone(),
-    ))
-    .then_retrieve(qdrant.clone())
-    .then_answer(Simple::from_client(openai_client.clone()))
-    .query("How can I use the query pipeline in Swiftide?")
-    .await?;
-```
+## Project Status
 
-Running an agent that can search code:
+Swiftide is pre-1.0. APIs can change while the agent harness and task graph APIs settle around
+production use. The current API docs and examples are the most reliable source of exact signatures.
 
-```rust
-#[swiftide::tool(
-    description = "Searches code",
-    param(name = "code_query", description = "The code query")
-)]
-async fn search_code(
-    context: &dyn AgentContext,
-    code_query: &str,
-) -> Result<ToolOutput, ToolError> {
-    let command_output = context
-        .executor()
-        .exec_cmd(&Command::shell(format!("rg '{code_query}'")))
-        .await?;
-
-    Ok(command_output.into())
-}
-
-agents::Agent::builder()
-    .llm(&openai)
-    .tools(vec![search_code()])
-    .build()?
-    .query("In what file can I find an example of a swiftide agent?")
-    .await?;
-```
-
-Agents loop over LLM calls, tool calls, and lifecycle hooks until a final answer is reached.
-
-_You can find more detailed examples in [/examples](https://github.com/bosun-ai/swiftide/tree/master/examples)_
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Vision
-
-Our goal is to create a fast, extendable platform for building LLM applications in Rust, to further the development of automated AI applications, with an easy-to-use and easy-to-extend api.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Features
-
-- Simple primitives for common LLM tasks
-- Fast, modular streaming indexing pipeline with async, parallel processing
-- Experimental query pipeline
-- Experimental agent framework
-- A variety of loaders, transformers, semantic chunkers, embedders, and more
-- Bring your own transformers by extending straightforward traits or use a closure
-- Splitting and merging pipelines
-- Jinja-like templating for prompts
-- Store into multiple backends
-- Integrations with OpenAI, Groq, Gemini, Anthropic, Redis, Qdrant, Ollama, FastEmbed-rs, Fluvio, LanceDB, and Treesitter
-- Evaluate pipelines with RAGAS
-- Sparse vector support for hybrid search
-- `tracing` supported for logging and tracing, see /examples and the `tracing` crate for more information.
-- Tracing layer for exporting to Langfuse
-
-### In detail
-
-| **Feature**                                  | **Details**                                                                                                                                                          |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Supported Large Language Model providers** | OpenAI (and Azure) <br> Anthropic <br> Gemini <br> OpenRouter <br> AWS Bedrock (Converse API) <br> Groq - All models <br> Ollama - All models                 |
-| **Agents**                           | All the boiler plate for autonomous agents so you don't have to                                                                                     |
-| **Tasks** | Build graph like workflows with tasks, combining all the above to build complex applications                                                                                     |
-| **Loading data**                             | Files <br> Scraping <br> Fluvio <br> Parquet <br> Kafka <br> Other pipelines and streams                                                                                        |
-| **Example and pre-build transformers and metadata generation**     | Generate Question and answerers for both text and code (Hyde) <br> Summaries, titles and queries via an LLM <br> Extract definitions and references with tree-sitter |
-| **Splitting and chunking**                   | Markdown <br> Text (text_splitter) <br> Code (with tree-sitter)                                                                                                      |
-| **Storage**                                  | Qdrant <br> Redis <br> LanceDB <br> Postgres <br> Duckdb                                                                                                                                       |
-| **Query pipeline**                           | Similarity and hybrid search, query and response transformations, and evaluation                                                                                     |
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- GETTING STARTED -->
-
-## Getting Started
-
-### Prerequisites
-
-Make sure you have the rust toolchain installed. [rustup](https://rustup.rs) Is the recommended approach.
-
-To use OpenAI, an API key is required. Note that by default `async_openai` uses the `OPENAI_API_KEY` environment variables.
-
-Other integrations might have their own requirements.
-
-### Installation
-
-1. Set up a new Rust project
-2. Add swiftide
-
-   ```sh
-   cargo add swiftide
-   ```
-
-3. Enable the features of integrations you would like to use in your `Cargo.toml`
-4. Write a pipeline (see our examples and documentation)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- USAGE EXAMPLES -->
-
-## Usage and concepts
-
-Before building your streams, you need to enable and configure any integrations required. See /examples.
-
-_We have a lot of examples, please refer to /examples and the [Documentation](https://docs.rs/swiftide/latest/swiftide/)_
-
-> [!NOTE]
-> No integrations are enabled by default as some are code heavy. We recommend you to cherry-pick the integrations you need. By convention flags have the same name as the integration they represent.
-
-### Indexing
-
-An indexing stream starts with a Loader that emits Nodes. For instance, with the Fileloader each file is a Node.
-
-You can then slice and dice, augment, and filter nodes. Each different kind of step in the pipeline requires different traits. This enables extension.
-
-Nodes are generic over their inner type. This is a transition in progress, but when you BYO, feel free to slice and dice. The inner type can change midway through the pipeline.
-
-- **from_loader** `(impl Loader)` starting point of the stream, creates and emits Nodes
-- **filter_cached** `(impl NodeCache)` filters cached nodes
-- **then** `(impl Transformer)` transforms the node and puts it on the stream
-- **then_in_batch** `(impl BatchTransformer)` transforms multiple nodes and puts them on the stream
-- **then_chunk** `(impl ChunkerTransformer)` transforms a single node and emits multiple nodes
-- **then_store_with** `(impl Storage)` stores the nodes in a storage backend, this can be chained
-
-Additionally, several generic transformers are implemented. They take implementers of `SimplePrompt` and `EmbedModel` to do their things.
-
-> [!WARNING]
-> Due to the performance, chunking before adding metadata gives rate limit errors on OpenAI very fast, especially with faster models like gpt-5-nano. Be aware. The `async-openai` crate provides an exmponential backoff strategy. If that is still a problem, there is also a decorator that supports streaming in `swiftide_core/indexing_decorators`.
-
-### Querying
-
-A query stream starts with a search strategy. In the query pipeline a `Query` goes through several stages. Transformers and retrievers work together to get the right context into a prompt, before generating an answer. Transformers and Retrievers operate on different stages of the Query via a generic statemachine. Additionally, the search strategy is generic over the pipeline and Retrievers need to implement specifically for each strategy.
-
-That sounds like a lot but, tl&dr; the query pipeline is _fully and strongly typed_.
-
-- **Pending** The query has not been executed, and can be further transformed with transformers
-- **Retrieved** Documents have been retrieved, and can be further transformed to provide context for an answer
-- **Answered** The query is done
-
-Additionally, query pipelines can also be evaluated. I.e. by [Ragas](https://ragas.io).
-
-Similar to the indexing pipeline each step is governed by simple Traits and closures implement these traits as well.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ROADMAP -->
+Swiftide is part of the [bosun.ai](https://bosun.ai) project.
 
 ## Contributing
 
-Swiftide is in a very early stage and we are aware that we lack features for the wider community. Contributions are very welcome. :tada:
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), open an issue for design
+discussion, file a
+[bug report](https://github.com/bosun-ai/swiftide/issues/new?template=bug_report.md), or propose a
+[feature](https://github.com/bosun-ai/swiftide/issues/new?template=feature_request.md). Join the
+[Discord](https://discord.gg/3jjXYen9UY) for a faster feedback loop.
 
-If you have a great idea, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
+Before opening a pull request:
 
-Indexing and querying are performance sensitive tasks. Please make sure to consider allocations and performance when contributing.
+1. Run the focused checks for the crates you changed.
+2. Run `cargo +nightly fmt --all -- --check`.
+3. Run `cargo clippy --workspace --all-targets --all-features -- -D warnings` when touching shared behavior.
+4. Add or update examples, tests, or rustdoc when behavior changes.
 
-AI Generated code is welcome and not frowned upon. Please be genuine and think critically about what you add.
+AI-generated code is welcome and should be reviewed like any other code. Keep abstractions small,
+keep domain logic separate from plumbing, and pay attention to allocations in indexing, querying,
+and task execution paths.
 
-If you just want to contribute (bless you!), see [our issues](https://github.com/bosun-ai/swiftide/issues) or join us on Discord.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-AI Agents can refer to [AGENTS.md](AGENTS.md) for workspace layout, commands, and expectations tailored to agents.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+AI agents can refer to [AGENTS.md](AGENTS.md) for workspace layout, commands, and expectations.
 
 ## Core Team Members
 
@@ -345,7 +333,7 @@ AI Agents can refer to [AGENTS.md](AGENTS.md) for workspace layout, commands, an
           alt=""
         />
         <br /><sub><b>timonv</b></sub>
-        <br /><sub>open for swiftide consulting</sub>
+        <br /><br />
       </a>
     </td>
     <td align="center">
@@ -362,23 +350,18 @@ AI Agents can refer to [AGENTS.md](AGENTS.md) for workspace layout, commands, an
   </tr>
 </table>
 
-<!-- LICENSE -->
-
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
 [contributors-shield]: https://img.shields.io/github/contributors/bosun-ai/swiftide.svg?style=flat-square
 [contributors-url]: https://github.com/bosun-ai/swiftide/graphs/contributors
 [stars-shield]: https://img.shields.io/github/stars/bosun-ai/swiftide.svg?style=flat-square
 [stars-url]: https://github.com/bosun-ai/swiftide/stargazers
 [license-shield]: https://img.shields.io/github/license/bosun-ai/swiftide.svg?style=flat-square
-[license-url]: https://github.com/bosun-ai/swiftide/blob/master/LICENSE.txt
+[license-url]: https://github.com/bosun-ai/swiftide/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/company/bosun-ai
 [Crate Badge]: https://img.shields.io/crates/v/swiftide?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44

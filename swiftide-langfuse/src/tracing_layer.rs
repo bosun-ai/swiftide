@@ -4,9 +4,8 @@ use reqwest::Client;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::str::FromStr as _;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::{env, fmt};
-use tokio::sync::Mutex;
 use tracing::field::{Field, Visit};
 use tracing::{Event, Id, Level, Metadata, Subscriber, span};
 use tracing_subscriber::Layer;
@@ -240,26 +239,8 @@ impl LangfuseLayer {
         Ok(())
     }
 
-    pub async fn handle_span(&self, span_id: u64, mut span_data: SpanData) {
+    pub async fn handle_span(&self, mut span_data: SpanData, parent_id: Option<String>) {
         let observation_id = span_data.observation_id.clone();
-
-        let langfuse_ty = span_data
-            .get("langfuse.type")
-            .unwrap_or(ObservationType::Span);
-
-        {
-            let mut spans = self.span_tracker.lock().await;
-            spans.add_span(span_id, observation_id.clone(), langfuse_ty);
-        }
-
-        // Get parent ID if it exists
-        let parent_id = if let Some(parent_span_id) = span_data.parent_span_id {
-            let spans = self.span_tracker.lock().await;
-            spans.get_span(parent_span_id).cloned().map(|(id, _)| id)
-        } else {
-            None
-        };
-
         let trace_id = self.ensure_trace_id().await;
 
         // Create the span observation
@@ -268,13 +249,7 @@ impl LangfuseLayer {
         self.batch_manager.add_event(event).await;
     }
 
-    pub async fn handle_span_close(&self, span_id: u64) {
-        let Some((observation_id, langfuse_type)) =
-            self.span_tracker.lock().await.remove_span(span_id)
-        else {
-            return;
-        };
-
+    pub async fn handle_span_close(&self, observation_id: String, langfuse_type: ObservationType) {
         let trace_id = self.ensure_trace_id().await;
 
         let event = IngestionEvent::new_observation_update(ObservationBody {
@@ -288,33 +263,42 @@ impl LangfuseLayer {
     }
 
     pub async fn ensure_trace_id(&self) -> String {
-        let mut spans = self.span_tracker.lock().await;
-        if let Some(id) = spans.current_trace_id.clone() {
-            return id;
+        let (trace_id, trace_create_event) = {
+            let mut spans = self
+                .span_tracker
+                .lock()
+                .expect("span tracker mutex poisoned");
+            if let Some(id) = spans.current_trace_id.clone() {
+                (id, None)
+            } else {
+                let trace_id = Uuid::new_v4().to_string();
+                spans.current_trace_id = Some(trace_id.clone());
+
+                let event = IngestionEvent::new_trace_create(TraceBody {
+                    id: Some(Some(trace_id.clone())),
+                    name: Some(Some(Utc::now().timestamp().to_string())),
+                    timestamp: Some(Some(Utc::now().to_rfc3339())),
+                    public: Some(Some(false)),
+                    ..Default::default()
+                });
+
+                (trace_id, Some(event))
+            }
+        };
+
+        if let Some(event) = trace_create_event {
+            self.batch_manager.add_event(event).await;
         }
-
-        let trace_id = Uuid::new_v4().to_string();
-        spans.current_trace_id = Some(trace_id.clone());
-
-        let event = IngestionEvent::new_trace_create(TraceBody {
-            id: Some(Some(trace_id.clone())),
-            name: Some(Some(Utc::now().timestamp().to_string())),
-            timestamp: Some(Some(Utc::now().to_rfc3339())),
-            public: Some(Some(false)),
-            ..Default::default()
-        });
-        self.batch_manager.add_event(event).await;
 
         trace_id
     }
 
-    pub async fn handle_record(&self, span_id: u64, metadata: serde_json::Map<String, Value>) {
-        let Some((observation_id, langfuse_type)) =
-            self.span_tracker.lock().await.get_span(span_id).cloned()
-        else {
-            return;
-        };
-
+    pub async fn handle_record(
+        &self,
+        observation_id: String,
+        langfuse_type: ObservationType,
+        metadata: serde_json::Map<String, Value>,
+    ) {
         let trace_id = self.ensure_trace_id().await;
         let metadata = SpanData::from(metadata);
         let remaining = metadata.remaining_metadata().map(Into::into);
@@ -369,27 +353,67 @@ where
             parent_span_id,
         };
 
+        let observation_id = span_data.observation_id.clone();
+        let langfuse_ty = span_data
+            .get("langfuse.type")
+            .unwrap_or(ObservationType::Span);
+        let parent_id = parent_span_id.and_then(|parent_span_id| {
+            self.span_tracker
+                .lock()
+                .expect("span tracker mutex poisoned")
+                .get_span(parent_span_id)
+                .cloned()
+                .map(|(id, _)| id)
+        });
+
+        self.span_tracker
+            .lock()
+            .expect("span tracker mutex poisoned")
+            .add_span(span_id, observation_id, langfuse_ty);
+
         let layer = self.clone();
-        tokio::spawn(async move { layer.handle_span(span_id, span_data).await });
+        tokio::spawn(async move { layer.handle_span(span_data, parent_id).await });
     }
 
     fn on_close(&self, id: Id, _ctx: Context<'_, S>) {
-        let span_id = id.into_u64();
+        let Some((observation_id, langfuse_type)) = self
+            .span_tracker
+            .lock()
+            .expect("span tracker mutex poisoned")
+            .remove_span(id.into_u64())
+        else {
+            return;
+        };
         let layer = self.clone();
 
-        tokio::spawn(async move { layer.handle_span_close(span_id).await });
+        tokio::spawn(async move { layer.handle_span_close(observation_id, langfuse_type).await });
     }
 
     fn on_record(&self, span: &Id, values: &span::Record<'_>, _ctx: Context<'_, S>) {
-        let span_id = span.into_u64();
         let mut visitor = JsonVisitor::new();
         values.record(&mut visitor);
         let metadata = visitor.recorded_fields;
 
-        if !metadata.is_empty() {
-            let layer = self.clone();
-            tokio::spawn(async move { layer.handle_record(span_id, metadata).await });
+        if metadata.is_empty() {
+            return;
         }
+
+        let Some((observation_id, langfuse_type)) = self
+            .span_tracker
+            .lock()
+            .expect("span tracker mutex poisoned")
+            .get_span(span.into_u64())
+            .cloned()
+        else {
+            return;
+        };
+
+        let layer = self.clone();
+        tokio::spawn(async move {
+            layer
+                .handle_record(observation_id, langfuse_type, metadata)
+                .await;
+        });
     }
 
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
@@ -397,10 +421,22 @@ where
         event.record(&mut visitor);
         let metadata = visitor.recorded_fields;
 
-        if let Some(span_id) = ctx.lookup_current().map(|span| span.id().into_u64()) {
-            let layer = self.clone();
-            tokio::spawn(async move { layer.handle_record(span_id, metadata).await });
-        }
+        let Some((observation_id, langfuse_type)) = ctx.lookup_current().and_then(|span| {
+            self.span_tracker
+                .lock()
+                .expect("span tracker mutex poisoned")
+                .get_span(span.id().into_u64())
+                .cloned()
+        }) else {
+            return;
+        };
+
+        let layer = self.clone();
+        tokio::spawn(async move {
+            layer
+                .handle_record(observation_id, langfuse_type, metadata)
+                .await;
+        });
     }
 }
 
@@ -447,6 +483,7 @@ impl Visit for JsonVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex as StdMutex;
     use tokio::sync::Mutex;
     use tracing::{Level, subscriber::set_global_default};
     use tracing_subscriber::prelude::*;
@@ -478,7 +515,7 @@ mod tests {
         };
         let langfuse_layer = LangfuseLayer {
             batch_manager: batch_mgr.boxed(),
-            span_tracker: Arc::new(Mutex::new(SpanTracker::new())),
+            span_tracker: Arc::new(StdMutex::new(SpanTracker::new())),
         };
 
         let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::sink());
@@ -548,5 +585,45 @@ mod tests {
         } else {
             panic!("Did not capture a GENERATION observation as expected");
         }
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_generation_event_update_survives_immediate_span_close() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let batch_mgr = InMemoryBatchManager {
+            events: Arc::clone(&events),
+        };
+        let langfuse_layer = LangfuseLayer {
+            batch_manager: batch_mgr.boxed(),
+            span_tracker: Arc::new(StdMutex::new(SpanTracker::new())),
+        };
+
+        let subscriber = tracing_subscriber::Registry::default().with(langfuse_layer);
+        let dispatch = tracing::Dispatch::new(subscriber);
+
+        tracing::dispatcher::with_default(&dispatch, || {
+            let span = tracing::span!(Level::INFO, "prompt", langfuse.type = "GENERATION");
+            let _enter = span.enter();
+            tracing::debug!(
+                langfuse.input = "late-input",
+                langfuse.status_message = "late-status",
+            );
+        });
+
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
+        let events = events.lock().await;
+        let update = events
+            .iter()
+            .find_map(|event| match event {
+                crate::models::ingestion_event::IngestionEvent::ObservationUpdate(update) => {
+                    Some(update)
+                }
+                _ => None,
+            })
+            .expect("observation update");
+
+        assert_eq!(update.body.input, Some(Some("late-input".into())));
+        assert_eq!(update.body.status_message, Some(Some("late-status".into())));
     }
 }

@@ -5,9 +5,10 @@ use async_openai::types::chat::{
     ChatCompletionRequestMessageContentPartImage, ChatCompletionRequestMessageContentPartText,
     ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
     ChatCompletionRequestUserMessageArgs, ChatCompletionRequestUserMessageContent,
-    ChatCompletionRequestUserMessageContentPart, ChatCompletionStreamOptions,
-    ChatCompletionToolChoiceOption, ChatCompletionTools, FunctionCall, FunctionObject, ImageUrl,
-    InputAudio, InputAudioFormat, ToolChoiceOptions,
+    ChatCompletionRequestUserMessageContentPart, ChatCompletionResponseStream,
+    ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools,
+    CreateChatCompletionResponse, CreateChatCompletionStreamResponse, FunctionCall, FunctionObject,
+    ImageUrl, InputAudio, InputAudioFormat, ToolChoiceOptions,
 };
 use async_trait::async_trait;
 use base64::Engine as _;
@@ -25,12 +26,11 @@ use swiftide_core::chat_completion::{
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
-use super::GenericOpenAI;
-use super::openai_error_to_language_model_error;
 use super::responses_api::{
     build_responses_request_from_chat, response_to_chat_completion, responses_stream_adapter,
 };
 use super::tool_schema::OpenAiToolSchema;
+use super::{GenericOpenAI, openai_error_to_language_model_error, request_body_with_extra_body};
 use tracing_futures::Instrument;
 
 #[async_trait]
@@ -100,10 +100,11 @@ impl<
         tracing::trace!(model, request = ?request, "Sending request to OpenAI");
 
         let tracking_request = openai_request.clone();
-        let response = self
+        let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
+        let response: CreateChatCompletionResponse = self
             .client
             .chat()
-            .create(openai_request)
+            .create_byot(body)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -163,22 +164,42 @@ impl<
             return self.complete_stream_via_responses_api(request).await;
         }
 
-        let Some(model_name) = self.default_options.prompt_model.clone() else {
-            return LanguageModelError::permanent("Model not set").into();
-        };
+        match self.try_complete_stream(request).await {
+            Ok(stream) => stream,
+            Err(err) => err.into(),
+        }
+    }
+}
+
+impl<
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
+> GenericOpenAI<C>
+{
+    #[allow(clippy::too_many_lines)]
+    async fn try_complete_stream(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        let model_name = self
+            .default_options
+            .prompt_model
+            .clone()
+            .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
 
         #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
         let _ = &model_name;
 
-        let messages = match request
+        let messages = request
             .messages()
             .iter()
             .filter_map(|message| message_to_openai(message).transpose())
-            .collect::<Result<Vec<_>>>()
-        {
-            Ok(messages) => messages,
-            Err(e) => return LanguageModelError::from(e).into(),
-        };
+            .collect::<Result<Vec<_>>>()?;
 
         // Build the request to be sent to the OpenAI API.
         let mut openai_request = self
@@ -195,17 +216,11 @@ impl<
         if !request.tools_spec().is_empty() {
             openai_request
                 .tools(
-                    match request
+                    request
                         .tools_spec()
                         .iter()
                         .map(tools_to_openai)
-                        .collect::<Result<Vec<_>>>()
-                    {
-                        Ok(tools) => tools,
-                        Err(e) => {
-                            return LanguageModelError::from(e).into();
-                        }
-                    },
+                        .collect::<Result<Vec<_>>>()?,
                 )
                 .tool_choice(ChatCompletionToolChoiceOption::Mode(
                     ToolChoiceOptions::Auto,
@@ -215,24 +230,19 @@ impl<
             }
         }
 
-        let openai_request = match openai_request.build() {
-            Ok(request) => request,
-            Err(e) => {
-                return openai_error_to_language_model_error(e).into();
-            }
-        };
+        let openai_request = openai_request
+            .build()
+            .map_err(openai_error_to_language_model_error)?;
 
         tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
 
-        let response_stream = match self
+        let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
+        let response_stream: ChatCompletionResponseStream = self
             .client
             .chat()
-            .create_stream(openai_request.clone())
+            .create_stream_byot::<_, CreateChatCompletionStreamResponse>(body)
             .await
-        {
-            Ok(response) => response,
-            Err(e) => return openai_error_to_language_model_error(e).into(),
-        };
+            .map_err(openai_error_to_language_model_error)?;
 
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
@@ -334,20 +344,11 @@ impl<
             },
         );
 
-        Box::pin(tracing_futures::Instrument::instrument(stream, span))
+        Ok(Box::pin(tracing_futures::Instrument::instrument(
+            stream, span,
+        )))
     }
-}
 
-impl<
-    C: async_openai::config::Config
-        + std::default::Default
-        + Sync
-        + Send
-        + std::fmt::Debug
-        + Clone
-        + 'static,
-> GenericOpenAI<C>
-{
     async fn complete_via_responses_api(
         &self,
         request: &ChatCompletionRequest<'_>,
@@ -361,10 +362,11 @@ impl<
         let create_request = build_responses_request_from_chat(self, request)?;
         let tracking_request = create_request.clone();
 
+        let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
         let response = self
             .client
             .responses()
-            .create(create_request)
+            .create_byot(body)
             .await
             .map_err(openai_error_to_language_model_error)?;
 
@@ -385,27 +387,35 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> ChatCompletionStream {
-        #[allow(unused_variables)]
-        let Some(model_name) = self.default_options.prompt_model.clone() else {
-            return LanguageModelError::permanent("Model not set").into();
-        };
+        match self.try_complete_stream_via_responses_api(request).await {
+            Ok(stream) => stream,
+            Err(err) => err.into(),
+        }
+    }
 
-        let mut create_request = match build_responses_request_from_chat(self, request) {
-            Ok(req) => req,
-            Err(err) => return err.into(),
-        };
+    #[allow(clippy::too_many_lines)]
+    async fn try_complete_stream_via_responses_api(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        #[allow(unused_variables)]
+        let model_name = self
+            .default_options
+            .prompt_model
+            .clone()
+            .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
+
+        let mut create_request = build_responses_request_from_chat(self, request)?;
 
         create_request.stream = Some(true);
 
-        let stream = match self
+        let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
+        let stream = self
             .client
             .responses()
-            .create_stream(create_request.clone())
+            .create_stream_byot::<_, async_openai::types::responses::ResponseStreamEvent>(body)
             .await
-        {
-            Ok(stream) => stream,
-            Err(err) => return openai_error_to_language_model_error(err).into(),
-        };
+            .map_err(openai_error_to_language_model_error)?;
 
         let stream_full = self.stream_full;
 
@@ -436,8 +446,9 @@ impl<
             Err(err) => Err(err),
         });
 
-        Box::pin(Instrument::instrument(mapped_stream, span))
+        Ok(Box::pin(Instrument::instrument(mapped_stream, span)))
     }
+
     #[allow(unused_variables)]
     pub(crate) fn track_completion<R, S>(
         &self,
@@ -1028,6 +1039,8 @@ mod tests {
             fn respond(&self, request: &Request) -> ResponseTemplate {
                 let body: Value = serde_json::from_slice(&request.body).unwrap();
                 assert_eq!(body["model"], self.expected_model);
+                assert_eq!(body["tensorzero::episode_id"], "responses-episode");
+                assert_eq!(body["tensorzero::tags"]["user_id"], "responses-user");
                 let input = body["input"].as_array().expect("input array");
                 assert_eq!(input.len(), 1);
                 assert_eq!(input[0]["role"], "user");
@@ -1052,9 +1065,21 @@ mod tests {
         let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
         let async_openai = async_openai::Client::with_config(config);
 
+        let extra_body = serde_json::Map::from_iter([
+            (
+                "tensorzero::episode_id".to_string(),
+                serde_json::json!("responses-episode"),
+            ),
+            (
+                "tensorzero::tags".to_string(),
+                serde_json::json!({"user_id": "responses-user"}),
+            ),
+        ]);
+
         let openai = OpenAI::builder()
             .client(async_openai)
             .default_prompt_model("gpt-4.1-mini")
+            .default_options(Options::builder().extra_body(extra_body))
             .use_responses_api(true)
             .build()
             .expect("Can create OpenAI client.");
@@ -1096,6 +1121,73 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn test_complete_stream_responses_api_sends_extra_body() {
+        use serde_json::Value;
+        use wiremock::{Request, Respond};
+
+        struct ValidateResponsesStreamRequest {
+            sse_body: &'static str,
+        }
+
+        impl Respond for ValidateResponsesStreamRequest {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let body: Value = serde_json::from_slice(&request.body).unwrap();
+
+                assert_eq!(body["tensorzero::episode_id"], "responses-stream-episode");
+                assert_eq!(body["tensorzero::tags"]["user_id"], "responses-stream-user");
+                assert_eq!(body["stream"], true);
+
+                ResponseTemplate::new(200).set_body_raw(self.sse_body, "text/event-stream")
+            }
+        }
+
+        let mock_server = MockServer::start().await;
+
+        let sse_body = "\
+data: {\"type\":\"response.completed\",\"sequence_number\":0,\"response\":{\"id\":\"resp_stream\",\"object\":\"response\",\"created_at\":123,\"status\":\"completed\",\"model\":\"gpt-4.1-mini\",\"output\":[{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"stream via responses\",\"annotations\":[]}]}],\"usage\":{\"input_tokens\":5,\"input_tokens_details\":{\"cached_tokens\":0},\"output_tokens\":3,\"output_tokens_details\":{\"reasoning_tokens\":0},\"total_tokens\":8}}}\n\
+\n\
+data: [DONE]\n\n";
+
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ValidateResponsesStreamRequest { sse_body })
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let extra_body = serde_json::Map::from_iter([
+            (
+                "tensorzero::episode_id".to_string(),
+                serde_json::json!("responses-stream-episode"),
+            ),
+            (
+                "tensorzero::tags".to_string(),
+                serde_json::json!({"user_id": "responses-stream-user"}),
+            ),
+        ]);
+
+        let openai = OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4.1-mini")
+            .default_options(Options::builder().extra_body(extra_body))
+            .use_responses_api(true)
+            .build()
+            .expect("Can create OpenAI client.");
+
+        let request = ChatCompletionRequest::builder()
+            .messages(vec![ChatMessage::User("Hello via responses stream".into())])
+            .build()
+            .unwrap();
+
+        let results: Vec<_> = openai.complete_stream(&request).await.collect().await;
+        let last = results.last().unwrap().as_ref().unwrap();
+        assert_eq!(last.message(), Some("stream via responses"));
+        assert_eq!(last.usage.as_ref().map(|u| u.total_tokens), Some(8));
+    }
+
+    #[test_log::test(tokio::test)]
     #[allow(clippy::items_after_statements)]
     async fn test_complete_with_all_default_settings() {
         use serde_json::Value;
@@ -1119,7 +1211,7 @@ mod tests {
                 assert_eq!(v["parallel_tool_calls"], true);
                 assert_eq!(v["max_completion_tokens"], 77);
                 assert!((v["temperature"].as_f64().unwrap() - 0.42).abs() < 1e-5);
-                assert_eq!(v["reasoning_effort"], serde_json::Value::Null);
+                assert_eq!(v["reasoning_effort"], "low");
                 assert_eq!(v["seed"], 42);
                 assert!((v["presence_penalty"].as_f64().unwrap() - 1.1).abs() < 1e-5);
 
@@ -1194,6 +1286,88 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn test_complete_sends_extra_body() {
+        use serde_json::Value;
+        use wiremock::{Request, Respond, ResponseTemplate};
+
+        struct ValidateExtraBody;
+
+        impl Respond for ValidateExtraBody {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let body: Value = serde_json::from_slice(&request.body).unwrap();
+
+                assert_eq!(body["tensorzero::episode_id"], "episode-1");
+                assert_eq!(body["tensorzero::tags"]["user_id"], "user-1");
+                assert_eq!(body["model"], "gpt-4-turbo");
+
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                    "id": "chatcmpl-extra-body",
+                    "object": "chat.completion",
+                    "created": 123,
+                    "model": "gpt-4-turbo",
+                    "choices": [{
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "extra body validated",
+                            "refusal": null,
+                            "annotations": []
+                        },
+                        "logprobs": null,
+                        "finish_reason": "stop"
+                    }],
+                    "usage": {
+                        "prompt_tokens": 1,
+                        "completion_tokens": 2,
+                        "total_tokens": 3
+                    },
+                    "service_tier": "default"
+                }))
+            }
+        }
+
+        let mock_server = wiremock::MockServer::start().await;
+
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .and(wiremock::matchers::path("/chat/completions"))
+            .respond_with(ValidateExtraBody)
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let async_openai = async_openai::Client::with_config(config);
+
+        let extra_body = serde_json::Map::from_iter([
+            (
+                "tensorzero::episode_id".to_string(),
+                serde_json::json!("episode-1"),
+            ),
+            (
+                "tensorzero::tags".to_string(),
+                serde_json::json!({"user_id": "user-1"}),
+            ),
+        ]);
+
+        let openai = crate::openai::OpenAI::builder()
+            .client(async_openai)
+            .default_prompt_model("gpt-4-turbo")
+            .default_options(Options::builder().extra_body(extra_body))
+            .build()
+            .expect("Can create OpenAI client.");
+
+        let request = swiftide_core::chat_completion::ChatCompletionRequest::builder()
+            .messages(vec![swiftide_core::chat_completion::ChatMessage::User(
+                "Test".into(),
+            )])
+            .build()
+            .unwrap();
+
+        let response = openai.complete(&request).await.unwrap();
+
+        assert_eq!(response.message(), Some("extra body validated"));
+    }
+
+    #[test_log::test(tokio::test)]
     async fn test_complete_with_tools_sets_auto_choice_and_parallel_calls() {
         use serde_json::Value;
         use wiremock::{Request, Respond, ResponseTemplate};
@@ -1201,6 +1375,27 @@ mod tests {
         #[derive(schemars::JsonSchema)]
         struct WeatherArgs {
             _city: String,
+        }
+
+        struct Validate(Value);
+
+        impl Respond for Validate {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let v: Value = serde_json::from_slice(&request.body).unwrap();
+                assert_eq!(v["model"], "gpt-4o");
+                assert_eq!(v["parallel_tool_calls"], true);
+                assert_eq!(v["tool_choice"], "auto");
+                let tools = v["tools"].as_array().unwrap();
+                assert_eq!(tools.len(), 2);
+                let tool_names = tools
+                    .iter()
+                    .map(|tool| tool["function"]["name"].as_str().unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(tool_names, vec!["alpha_tool", "get_weather"]);
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "application/json")
+                    .set_body_json(self.0.clone())
+            }
         }
 
         let weather_tool = ToolSpec::builder()
@@ -1243,28 +1438,6 @@ mod tests {
           }
         });
 
-        #[allow(clippy::items_after_statements)]
-        struct Validate(Value);
-        #[allow(clippy::items_after_statements)]
-        impl Respond for Validate {
-            fn respond(&self, request: &Request) -> ResponseTemplate {
-                let v: Value = serde_json::from_slice(&request.body).unwrap();
-                assert_eq!(v["model"], "gpt-4o");
-                assert_eq!(v["parallel_tool_calls"], true);
-                assert_eq!(v["tool_choice"], "auto");
-                let tools = v["tools"].as_array().unwrap();
-                assert_eq!(tools.len(), 2);
-                let tool_names = tools
-                    .iter()
-                    .map(|tool| tool["function"]["name"].as_str().unwrap())
-                    .collect::<Vec<_>>();
-                assert_eq!(tool_names, vec!["alpha_tool", "get_weather"]);
-                ResponseTemplate::new(200)
-                    .insert_header("content-type", "application/json")
-                    .set_body_json(self.0.clone())
-            }
-        }
-
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
             .respond_with(Validate(response_body.clone()))
@@ -1294,6 +1467,25 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     async fn test_complete_stream_happy_path() {
+        use serde_json::Value;
+        use wiremock::{Request, Respond};
+
+        struct ValidateStreamExtraBody {
+            sse_body: &'static str,
+        }
+
+        impl Respond for ValidateStreamExtraBody {
+            fn respond(&self, request: &Request) -> ResponseTemplate {
+                let body: Value = serde_json::from_slice(&request.body).unwrap();
+
+                assert_eq!(body["tensorzero::episode_id"], "stream-episode");
+                assert_eq!(body["tensorzero::tags"]["user_id"], "stream-user");
+                assert_eq!(body["stream"], true);
+
+                ResponseTemplate::new(200).set_body_raw(self.sse_body, "text/event-stream")
+            }
+        }
+
         let mock_server = MockServer::start().await;
 
         let sse_body = "\
@@ -1305,16 +1497,28 @@ data: [DONE]\n\n";
 
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
+            .respond_with(ValidateStreamExtraBody { sse_body })
             .mount(&mock_server)
             .await;
 
         let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
         let async_openai = async_openai::Client::with_config(config);
 
+        let extra_body = serde_json::Map::from_iter([
+            (
+                "tensorzero::episode_id".to_string(),
+                serde_json::json!("stream-episode"),
+            ),
+            (
+                "tensorzero::tags".to_string(),
+                serde_json::json!({"user_id": "stream-user"}),
+            ),
+        ]);
+
         let openai = OpenAI::builder()
             .client(async_openai)
             .default_prompt_model("gpt-4o-mini")
+            .default_options(Options::builder().extra_body(extra_body))
             .build()
             .unwrap();
 
@@ -1522,7 +1726,6 @@ data: [DONE]\n\n";
     #[test_log::test(tokio::test)]
     async fn test_track_completion_invokes_on_usage_callback() {
         use std::sync::atomic::{AtomicUsize, Ordering};
-
         let hits = Arc::new(AtomicUsize::new(0));
         let hits_clone = hits.clone();
         let openai = OpenAI::builder()
