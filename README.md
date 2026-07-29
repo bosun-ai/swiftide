@@ -19,7 +19,7 @@
   <h1 align="center">Swiftide</h1>
 
   <p align="center">
-    Composable LLM agents and harnass, typed task graphs, and streaming RAG pipelines in Rust.
+    Composable LLM agents and harness, typed task graphs, and streaming RAG pipelines in Rust.
     <br />
     <a href="https://docs.rs/swiftide/latest/swiftide/"><strong>API docs</strong></a>
     ·
