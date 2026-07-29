@@ -9,8 +9,8 @@ use swiftide_core::AgentContext;
 
 use crate::Agent;
 use crate::hooks::{
-    AfterCompletionFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn, MessageHookFn,
-    OnStartFn, OnStopFn, OnStreamFn,
+    AfterCompletionFn, AfterEachFn, AfterToolFn, BeforeAllFn, BeforeCompletionFn, BeforeToolFn,
+    MessageHookFn, OnStartFn, OnStopFn, OnStreamFn,
 };
 
 #[macro_export]
@@ -273,7 +273,20 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn hook_fn(&self) -> impl BeforeAllFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent| {
+        move |_: &mut Agent| {
+            let called = Arc::clone(&called);
+            Box::pin(async move {
+                let mut called = called.lock().unwrap();
+                *called += 1;
+                Ok(())
+            })
+        }
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn after_each_fn(&self) -> impl AfterEachFn + use<> {
+        let called = Arc::clone(&self.called);
+        move |_: &mut Agent| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -286,7 +299,7 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn on_start_fn(&self) -> impl OnStartFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent| {
+        move |_: &mut Agent| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -298,7 +311,7 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn before_completion_fn(&self) -> impl BeforeCompletionFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent, _| {
+        move |_: &mut Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -311,7 +324,7 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn after_completion_fn(&self) -> impl AfterCompletionFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent, _| {
+        move |_: &mut Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -324,7 +337,7 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn after_tool_fn(&self) -> impl AfterToolFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent, _, _| {
+        move |_: &mut Agent, _, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -337,7 +350,7 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn before_tool_fn(&self) -> impl BeforeToolFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent, _| {
+        move |_: &mut Agent, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
@@ -363,7 +376,7 @@ impl MockHook {
     #[allow(clippy::missing_panics_doc)]
     pub fn stop_hook_fn(&self) -> impl OnStopFn + use<> {
         let called = Arc::clone(&self.called);
-        move |_: &Agent, _, _| {
+        move |_: &mut Agent, _, _| {
             let called = Arc::clone(&called);
             Box::pin(async move {
                 let mut called = called.lock().unwrap();
