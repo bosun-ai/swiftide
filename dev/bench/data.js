@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785327408212,
+  "lastUpdate": 1785327494371,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32375,6 +32375,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2137577,
             "range": "± 9232",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "30923+thesurlydev@users.noreply.github.com",
+            "name": "Shane Witbeck",
+            "username": "thesurlydev"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "72d9211b9750b9cbe87861033a58ad95f24666b7",
+          "message": "docs: Fix typo in README description (#1114)\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2026-07-29T14:06:50+02:00",
+          "tree_id": "d06fe5c7fb5015053a12c9ce79ae3d27c39bcbfa",
+          "url": "https://github.com/bosun-ai/swiftide/commit/72d9211b9750b9cbe87861033a58ad95f24666b7"
+        },
+        "date": 1785327491034,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1042013,
+            "range": "± 34699",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 259115,
+            "range": "± 5194",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2009,
+            "range": "± 1804",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7223,
+            "range": "± 314",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26861,
+            "range": "± 270",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4193139,
+            "range": "± 24597",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2104485,
+            "range": "± 10500",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16748229,
+            "range": "± 105309",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2124076,
+            "range": "± 13840",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67019317,
+            "range": "± 338751",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2141954,
+            "range": "± 9903",
             "unit": "ns/iter"
           }
         ]
