@@ -1279,7 +1279,7 @@ mod tests {
         };
 
         let reasoning_item = ReasoningItem {
-            id: "rs_123".into(),
+            id: Some("rs_123".into()),
             summary: vec!["Inspect the failing path".into()],
             content: None,
             encrypted_content: None,

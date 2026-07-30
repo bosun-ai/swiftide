@@ -235,7 +235,7 @@ fn chat_messages_to_input_items(
                 }
 
                 let reasoning_item = async_openai::types::responses::ReasoningItem {
-                    id: Some(item.id.clone()),
+                    id: item.id.clone(),
                     summary: Vec::new(),
                     content: None,
                     encrypted_content: item.encrypted_content.clone(),
@@ -734,7 +734,7 @@ fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningIte
         .iter()
         .filter_map(|item| match item {
             OutputItem::Reasoning(reasoning) => Some(ReasoningItem {
-                id: reasoning.id.clone().unwrap_or_default(),
+                id: reasoning.id.clone(),
                 summary: reasoning
                     .summary
                     .iter()
@@ -1295,7 +1295,7 @@ mod tests {
     #[test]
     fn test_chat_messages_to_input_items_includes_reasoning_with_encrypted_content() {
         let message = ChatMessage::Reasoning(ReasoningItem {
-            id: "reasoning_1".to_string(),
+            id: Some("reasoning_1".to_string()),
             summary: vec!["First".to_string(), "Second".to_string()],
             encrypted_content: Some("encrypted".to_string()),
             ..Default::default()
@@ -1386,7 +1386,7 @@ mod tests {
             .unwrap();
 
         let existing_reasoning = ReasoningItem {
-            id: "existing_reasoning".to_string(),
+            id: Some("existing_reasoning".to_string()),
             summary: vec!["keep".to_string()],
             encrypted_content: None,
             ..Default::default()
@@ -1422,7 +1422,7 @@ mod tests {
                 .reasoning
                 .as_ref()
                 .and_then(|items| items.first())
-                .map(|item| item.id.as_str()),
+                .and_then(|item| item.id.as_deref()),
             Some("existing_reasoning")
         );
         assert_eq!(
@@ -1552,12 +1552,48 @@ mod tests {
         let reasoning = completion.reasoning.expect("reasoning items present");
 
         assert_eq!(reasoning.len(), 1);
-        assert_eq!(reasoning[0].id, "reasoning_1");
+        assert_eq!(reasoning[0].id.as_deref(), Some("reasoning_1"));
         assert_eq!(
             reasoning[0].summary,
             vec!["First".to_string(), "Second".to_string()]
         );
         assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("encrypted"));
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_preserves_missing_reasoning_id() {
+        let response: Response = serde_json::from_value(json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "reasoning",
+                    "summary": [],
+                    "encrypted_content": "encrypted"
+                }
+            ],
+            "usage": sample_usage(),
+        }))
+        .expect("valid response json");
+
+        let completion = response_to_chat_completion(&response).unwrap();
+        let mut reasoning = completion.reasoning.expect("reasoning items present");
+        assert_eq!(reasoning.len(), 1);
+        assert!(reasoning[0].id.is_none());
+
+        let replayed =
+            chat_messages_to_input_items(&[ChatMessage::Reasoning(reasoning.remove(0))], true)
+                .expect("reasoning replay succeeds");
+
+        let InputItem::Item(async_openai::types::responses::Item::Reasoning(reasoning_item)) =
+            &replayed[0]
+        else {
+            panic!("expected reasoning item");
+        };
+        assert!(reasoning_item.id.is_none());
     }
 
     #[test]

@@ -1446,7 +1446,7 @@ fn reasoning_item_from_reasoning_text(
     signature: Option<&str>,
 ) -> ReasoningItem {
     ReasoningItem {
-        id: format!("bedrock_reasoning_{content_block_index}"),
+        id: Some(format!("bedrock_reasoning_{content_block_index}")),
         summary: Vec::new(),
         content: Some(vec![text.to_string()]),
         encrypted_content: signature.map(ToString::to_string),
@@ -1484,14 +1484,17 @@ fn ensure_reasoning_item(
 ) -> &mut ReasoningItem {
     let reasoning = response.reasoning.get_or_insert_with(Vec::new);
     let reasoning_id = format!("bedrock_reasoning_{content_block_index}");
-    if let Some(position) = reasoning.iter().position(|item| item.id == reasoning_id) {
+    if let Some(position) = reasoning
+        .iter()
+        .position(|item| item.id.as_deref() == Some(reasoning_id.as_str()))
+    {
         return reasoning
             .get_mut(position)
             .expect("position from iter().position must exist");
     }
 
     reasoning.push(ReasoningItem {
-        id: reasoning_id,
+        id: Some(reasoning_id),
         summary: Vec::new(),
         content: None,
         encrypted_content: None,
@@ -2531,7 +2534,7 @@ mod tests {
         assert_eq!(completion.message.as_deref(), Some("Working on it"));
         let reasoning = completion.reasoning.expect("reasoning items");
         assert_eq!(reasoning.len(), 1);
-        assert_eq!(reasoning[0].id, "bedrock_reasoning_0");
+        assert_eq!(reasoning[0].id.as_deref(), Some("bedrock_reasoning_0"));
         assert_eq!(
             reasoning[0].content.as_ref().and_then(|c| c.first()),
             Some(&"I should call a weather tool".to_string())
@@ -2544,7 +2547,7 @@ mod tests {
         let request = ChatCompletionRequest::builder()
             .messages(vec![
                 ChatMessage::Reasoning(ReasoningItem {
-                    id: "r1".to_string(),
+                    id: Some("r1".to_string()),
                     summary: Vec::new(),
                     content: Some(vec!["I should call a weather tool".to_string()]),
                     encrypted_content: Some("sig_123".to_string()),
@@ -2854,7 +2857,7 @@ mod tests {
         assert_eq!(tool_call.args(), Some("{\"location\":\"Amsterdam\"}"));
         let reasoning = response.reasoning.expect("reasoning item");
         assert_eq!(reasoning.len(), 1);
-        assert_eq!(reasoning[0].id, "bedrock_reasoning_2");
+        assert_eq!(reasoning[0].id.as_deref(), Some("bedrock_reasoning_2"));
         assert_eq!(
             reasoning[0].content.as_ref().and_then(|c| c.first()),
             Some(&"Thinking...".to_string())
