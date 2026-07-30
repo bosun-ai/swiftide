@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785327494371,
+  "lastUpdate": 1785437691960,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32483,6 +32483,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2141954,
             "range": "± 9903",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "26e6d162914f16517e4e3b0c52e12e97b770af3a",
+          "message": "fix(ci): restore master checks (#1132)\n\n## What changed\n\n- update `ethnum` to `1.5.3`, which compiles with the current stable\nRust toolchain\n- resolve new Rust 1.97 Clippy findings without changing behavior\n- give internal crates package-specific tag namespaces while retaining\nthe single `swiftide` release tag\n- include `swiftide-tasks` and `swiftide-langfuse` changes in the shared\nchangelog\n\n## Why\n\nMaster CI failed before reaching Swiftide because `ethnum 1.5.2` relied\non a `TryFromIntError`\nsize assumption that changed in the current Rust toolchain. Once that\nwas fixed, the lint job\nexposed new deny-by-default Clippy findings.\n\nRelease automation also treated the old global `v0.32.1` tag as the\nbaseline for the new\nunpublished `swiftide-tasks` crate. Package-specific internal tag\nnamespaces avoid that collision\nwithout creating extra tags; `swiftide` remains the only package that\nemits a Git tag and GitHub\nrelease.\n\n## Validation\n\n- `cargo check --workspace --all-features`\n- `cargo clippy --workspace --all-targets --all-features -- -D warnings`\n- `cargo +nightly fmt --all -- --check`\n- `cargo test -p swiftide-core`\n- `cargo test -p swiftide-integrations responses_api --all-features`\n- `cargo test -p swiftide-macros`\n- `cargo test --doc --all-features --no-fail-fast`\n- isolated `release-plz update -p swiftide-tasks --allow-dirty`",
+          "timestamp": "2026-07-30T20:43:47+02:00",
+          "tree_id": "bc940d51b0d0b4ed09b4c0d59429384d478e3924",
+          "url": "https://github.com/bosun-ai/swiftide/commit/26e6d162914f16517e4e3b0c52e12e97b770af3a"
+        },
+        "date": 1785437689042,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 730852,
+            "range": "± 42594",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 175045,
+            "range": "± 878",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2109,
+            "range": "± 1238",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7679,
+            "range": "± 329",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 29002,
+            "range": "± 1420",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4170118,
+            "range": "± 24510",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2097025,
+            "range": "± 14911",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16666839,
+            "range": "± 74968",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2108794,
+            "range": "± 5724",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66746899,
+            "range": "± 280878",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2138628,
+            "range": "± 7163",
             "unit": "ns/iter"
           }
         ]
