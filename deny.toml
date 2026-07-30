@@ -15,7 +15,6 @@ allow = [
   "Apache-2.0 WITH LLVM-exception",
   "Unlicense",
   "CC0-1.0",
-  "zlib-acknowledgement",
   "Zlib",
   "0BSD",
   "Unicode-3.0",

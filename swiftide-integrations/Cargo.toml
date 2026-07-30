@@ -111,7 +111,7 @@ deadpool = { workspace = true, features = [
 ], optional = true }
 fluvio = { workspace = true, optional = true }
 rdkafka = { workspace = true, optional = true }
-arrow-array = { version = "57.3", default-features = false, optional = true }
+arrow-array = { version = "58.4", default-features = false, optional = true }
 parquet-arrow-array = { package = "arrow-array", version = "59.1", default-features = false, optional = true }
 lancedb = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true, features = [
