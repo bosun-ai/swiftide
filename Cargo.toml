@@ -105,7 +105,7 @@ quote = { version = "1.0", default-features = false }
 redis = { version = "1.0", default-features = false }
 reqwest = { version = "0.13", default-features = false }
 secrecy = { version = "0.10", default-features = false }
-syn = { version = "3.0", default-features = false }
+syn = { version = "2.0", default-features = false }
 tera = { version = "1.20", default-features = false }
 text-splitter = { version = "0.32", default-features = false }
 tracing-subscriber = { version = "0.3", default-features = true }
@@ -129,8 +129,6 @@ duckdb = { version = "1", default-features = false }
 libduckdb-sys = { version = "1", default-features = false }
 metrics = { version = "0.24", default-features = false }
 tiktoken-rs = { version = "0.9", default-features = false }
-reqwest-eventsource = { version = "0.6", default-features = false }
-
 # Testing
 test-log = { version = "0.2" }
 testcontainers = { version = "0.27", features = ["http_wait"] }
@@ -153,6 +151,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 blocks_in_conditions = "allow"
+items_after_statements = "allow"
 must_use_candidate = "allow"
 module_name_repetitions = "allow"
 missing_fields_in_debug = "allow"

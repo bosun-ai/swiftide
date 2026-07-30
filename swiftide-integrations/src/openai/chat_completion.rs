@@ -998,6 +998,7 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     #[allow(clippy::items_after_statements)]
+    #[allow(clippy::too_many_lines)]
     async fn test_complete_responses_api() {
         use serde_json::{Value, json};
         use wiremock::{Request, Respond};

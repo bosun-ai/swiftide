@@ -3,12 +3,11 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
-use async_openai::error::{OpenAIError, StreamError};
+use async_openai::error::OpenAIError;
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
 use derive_builder::Builder;
 use reqwest::StatusCode;
-use reqwest_eventsource::Error as EventSourceError;
 use serde::Serialize;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -583,8 +582,10 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
     match e {
         OpenAIError::ApiError(api_error) => {
             // If the response is an ApiError, it could be a context length exceeded error
-            if api_error.code == Some("context_length_exceeded".to_string()) {
+            if api_error.api_error.code.as_deref() == Some("context_length_exceeded") {
                 LanguageModelError::context_length_exceeded(OpenAIError::ApiError(api_error))
+            } else if api_error.status_code == StatusCode::TOO_MANY_REQUESTS {
+                LanguageModelError::transient(OpenAIError::ApiError(api_error))
             } else {
                 LanguageModelError::permanent(OpenAIError::ApiError(api_error))
             }
@@ -600,14 +601,7 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
             LanguageModelError::transient(e)
         }
         OpenAIError::StreamError(stream_error) => {
-            // Note that this will _retry_ the stream. We have to assume that the stream just
-            // started if a 429 happens. For future readers, internally the streaming crate
-            // (eventsource) already applies backoff.
-            if is_rate_limited_stream_error(&stream_error) {
-                LanguageModelError::transient(OpenAIError::StreamError(stream_error))
-            } else {
-                LanguageModelError::permanent(OpenAIError::StreamError(stream_error))
-            }
+            LanguageModelError::permanent(OpenAIError::StreamError(stream_error))
         }
         OpenAIError::FileSaveError(_)
         | OpenAIError::FileReadError(_)
@@ -615,25 +609,10 @@ pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelErro
     }
 }
 
-fn is_rate_limited_stream_error(error: &StreamError) -> bool {
-    match error {
-        StreamError::ReqwestEventSource(inner) => match inner {
-            EventSourceError::InvalidStatusCode(status, _) => {
-                *status == StatusCode::TOO_MANY_REQUESTS
-            }
-            EventSourceError::Transport(source) => {
-                source.status() == Some(StatusCode::TOO_MANY_REQUESTS)
-            }
-            _ => false,
-        },
-        StreamError::UnknownEvent(_) | StreamError::EventStream(_) => false,
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use async_openai::error::{ApiError, OpenAIError, StreamError};
+    use async_openai::error::{ApiError, ApiErrorResponse, OpenAIError, StreamError};
     use eventsource_stream::Event;
 
     /// test default embed model
@@ -685,7 +664,10 @@ mod test {
             code: Some("context_length_exceeded".to_string()),
         };
 
-        let openai_error = OpenAIError::ApiError(api_error);
+        let openai_error = OpenAIError::ApiError(ApiErrorResponse {
+            status_code: StatusCode::BAD_REQUEST,
+            api_error,
+        });
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as ContextLengthExceeded
@@ -705,7 +687,10 @@ mod test {
             code: Some("invalid_api_key".to_string()),
         };
 
-        let openai_error = OpenAIError::ApiError(api_error);
+        let openai_error = OpenAIError::ApiError(ApiErrorResponse {
+            status_code: StatusCode::UNAUTHORIZED,
+            api_error,
+        });
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as PermanentError

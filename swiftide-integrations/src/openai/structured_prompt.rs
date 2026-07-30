@@ -81,7 +81,7 @@ impl<
             json_schema: ResponseFormatJsonSchema {
                 description: None,
                 name: "structured_prompt".into(),
-                schema: Some(schema_value),
+                schema: schema_value,
                 strict: Some(true),
             },
         };

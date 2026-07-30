@@ -97,7 +97,7 @@ pub struct PgVector {
 
     /// SQL statement used for executing bulk insert.
     #[builder(default = "Arc::new(OnceLock::new())")]
-    sql_stmt_bulk_insert: Arc<OnceLock<String>>,
+    sql_stmt_bulk_insert: Arc<OnceLock<Arc<String>>>,
 }
 
 impl fmt::Debug for PgVector {

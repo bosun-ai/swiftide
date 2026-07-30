@@ -148,6 +148,7 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
         parameters: Some(parameters),
         strict: Some(true),
         description: Some(spec.description.clone()),
+        defer_loading: None,
     };
 
     Ok(Tool::Function(function))
@@ -184,6 +185,7 @@ fn chat_messages_to_input_items(
                         let function_call = FunctionToolCall {
                             arguments,
                             call_id: call_id.clone(),
+                            namespace: None,
                             name: tool_call.name().to_owned(),
                             id: None,
                             status: Some(OutputStatus::InProgress),
@@ -233,7 +235,7 @@ fn chat_messages_to_input_items(
                 }
 
                 let reasoning_item = async_openai::types::responses::ReasoningItem {
-                    id: item.id.clone(),
+                    id: Some(item.id.clone()),
                     summary: Vec::new(),
                     content: None,
                     encrypted_content: item.encrypted_content.clone(),
@@ -732,7 +734,7 @@ fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningIte
         .iter()
         .filter_map(|item| match item {
             OutputItem::Reasoning(reasoning) => Some(ReasoningItem {
-                id: reasoning.id.clone(),
+                id: reasoning.id.clone().unwrap_or_default(),
                 summary: reasoning
                     .summary
                     .iter()
@@ -745,7 +747,16 @@ fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningIte
                 content: reasoning
                     .content
                     .as_ref()
-                    .map(|c| c.iter().map(|c| c.text.clone()).collect()),
+                    .map(|content| {
+                        content
+                            .iter()
+                            .map(|content| match content {
+                                async_openai::types::responses::ReasoningItemContent::ReasoningText(
+                                    text,
+                                ) => text.text.clone(),
+                            })
+                            .collect()
+                    }),
                 status: {
                     if let Some(status) = &reasoning.status {
                         match status {
@@ -864,7 +875,7 @@ where
         format: TextResponseFormatConfiguration::JsonSchema(ResponseFormatJsonSchema {
             description: None,
             name: "swiftide_structured_output".into(),
-            schema: Some(schema),
+            schema,
             strict: Some(true),
         }),
         verbosity: None,
@@ -1006,6 +1017,7 @@ mod tests {
                 })
                 .collect(),
             id: id.to_string(),
+            phase: None,
             role: AssistantRole::Assistant,
             status: OutputStatus::Completed,
         }
@@ -1301,7 +1313,7 @@ mod tests {
             panic!("expected reasoning item");
         };
 
-        assert_eq!(reasoning_item.id, "reasoning_1");
+        assert_eq!(reasoning_item.id.as_deref(), Some("reasoning_1"));
         assert!(reasoning_item.summary.is_empty());
         assert_eq!(
             reasoning_item.encrypted_content.as_deref(),
@@ -1322,6 +1334,7 @@ mod tests {
         let function_call = FunctionToolCall {
             arguments: String::new(),
             call_id: String::new(),
+            namespace: None,
             name: "lookup".to_string(),
             id: Some("call_456".to_string()),
             status: Some(OutputStatus::Completed),
@@ -1340,6 +1353,7 @@ mod tests {
             OutputItem::FunctionCall(FunctionToolCall {
                 arguments: "{}".to_string(),
                 call_id: "call".to_string(),
+                namespace: None,
                 name: "noop".to_string(),
                 id: None,
                 status: Some(OutputStatus::Completed),

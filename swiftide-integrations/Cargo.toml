@@ -106,7 +106,6 @@ reqwest = { workspace = true, optional = true }
 reqwest_0_12 = { package = "reqwest", version = "0.12", default-features = false, features = [
   "rustls-tls-native-roots-no-provider",
 ], optional = true }
-reqwest-eventsource = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
   "rt_tokio_1",
@@ -194,8 +193,6 @@ tree-sitter = [
 # OpenAI for embedding and prompting
 openai = [
   "dep:async-openai",
-  "dep:reqwest_0_12",
-  "dep:reqwest-eventsource",
   "dep:reqwest",
   "swiftide-core/openai",
 ]

@@ -10566,7 +10566,6 @@ dependencies = [
  "regex",
  "reqwest 0.12.28",
  "reqwest 0.13.4",
- "reqwest-eventsource",
  "schemars 1.2.2",
  "secrecy",
  "serde",
@@ -10655,7 +10654,7 @@ dependencies = [
  "serde_json",
  "swiftide",
  "swiftide-core",
- "syn 3.0.3",
+ "syn 2.0.119",
  "tokio",
  "trybuild",
 ]

@@ -102,7 +102,6 @@ impl Loader for ScrapingLoader {
 
     fn into_stream(mut self) -> IndexingStream<String> {
         let (tx, rx) = tokio::sync::mpsc::channel(1000);
-
         if let Some(config) = spider_cloud() {
             if is_locally_routable(self.spider_website.get_url().inner()) {
                 tracing::debug!("[Spider] Local host, skipping Spider Cloud");
@@ -111,7 +110,6 @@ impl Loader for ScrapingLoader {
                 self.spider_website.with_spider_cloud_config(config.clone());
             }
         }
-
         let mut spider_rx = self.spider_website.subscribe(0);
         tracing::info!("Subscribed to spider");
 

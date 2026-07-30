@@ -972,8 +972,8 @@ mod tests {
         State, assistant, chat_request, chat_response, summary, system, tool_failed, tool_output,
         user,
     };
-
     use crate::test_utils::{MockHook, MockTool};
+    use crate::tools::control::ApprovalRequired;
 
     #[test_log::test(tokio::test)]
     async fn test_agent_builder_defaults() {
@@ -1619,11 +1619,6 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     async fn test_agent_with_approval_required_tool() {
-        use super::*;
-        use crate::tools::control::ApprovalRequired;
-        use crate::{assistant, chat_request, chat_response, user};
-        use swiftide_core::chat_completion::ToolCall;
-
         // Step 1: Build a tool that needs approval.
         let mock_tool = MockTool::default();
         mock_tool.expect_invoke_ok("Great!".into(), None);
@@ -1693,11 +1688,6 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     async fn test_agent_with_approval_required_tool_denied() {
-        use super::*;
-        use crate::tools::control::ApprovalRequired;
-        use crate::{assistant, chat_request, chat_response, user};
-        use swiftide_core::chat_completion::ToolCall;
-
         // Step 1: Build a tool that needs approval.
         let mock_tool = MockTool::default();
 
