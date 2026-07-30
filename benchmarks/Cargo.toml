@@ -1,10 +1,9 @@
-cargo-features = ["edition2024"]
-
 [package]
 name = "benchmarks"
 publish = false
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
 keywords.workspace = true
