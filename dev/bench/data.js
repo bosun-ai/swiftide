@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785437691960,
+  "lastUpdate": 1785437738203,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32591,6 +32591,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2138628,
             "range": "± 7163",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jeff@spider.cloud",
+            "name": "Jeff Mendez",
+            "username": "j-mendez"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d19fc1d47c9e555e3d78dc50c226dff711e70c6e",
+          "message": "feat(scraping): optional Spider Cloud support (#1125)\n\nAdds optional [Spider Cloud](https://spider.cloud) support to\n`ScrapingLoader` for sites that block direct fetches.\n\n```bash\nSPIDER_CLOUD_API_KEY=sk-...   # opt-in\nSPIDER_CLOUD_MODE=smart       # optional: smart (default) | proxy | unblocker | api | fallback\n```\n\nWith no key set the loader behaves exactly as before. Applied in\n`into_stream` so it covers `from_url`, `from_spider`, and the builder.\n\nLoopback and private hosts skip the cloud since it can't reach them —\nwithout that the existing wiremock tests fail when a key happens to be\nset in your environment.\n\nVerified against a live site: cloud path returns content, an invalid key\nreturns nothing (so the proxy is really in the path), and the wiremock\ntests pass with and without a key set.\n\nStacks on #1124.\n\n---------\n\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2026-07-30T20:44:13+02:00",
+          "tree_id": "47d60f34f251b9632f1f57a0cd7d6f2dba38dd5d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d19fc1d47c9e555e3d78dc50c226dff711e70c6e"
+        },
+        "date": 1785437735654,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 925421,
+            "range": "± 20593",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 252360,
+            "range": "± 6916",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2055,
+            "range": "± 2245",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7564,
+            "range": "± 308",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28261,
+            "range": "± 297",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4236961,
+            "range": "± 40025",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2141172,
+            "range": "± 14690",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 17044894,
+            "range": "± 101636",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2157768,
+            "range": "± 18047",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 68052587,
+            "range": "± 449607",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2192401,
+            "range": "± 15044",
             "unit": "ns/iter"
           }
         ]
