@@ -701,6 +701,24 @@ mod test {
     }
 
     #[test]
+    fn test_rate_limit_api_error_is_transient() {
+        let api_error = ApiError {
+            message: "Rate limit exceeded".to_string(),
+            r#type: Some("rate_limit_error".to_string()),
+            param: None,
+            code: None,
+        };
+
+        let openai_error = OpenAIError::ApiError(ApiErrorResponse {
+            status_code: StatusCode::TOO_MANY_REQUESTS,
+            api_error,
+        });
+        let result = openai_error_to_language_model_error(openai_error);
+
+        assert!(matches!(result, LanguageModelError::TransientError(_)));
+    }
+
+    #[test]
     fn test_file_save_error_is_permanent() {
         // Create a file save error
         let openai_error = OpenAIError::FileSaveError("Failed to save file".to_string());

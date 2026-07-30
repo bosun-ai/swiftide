@@ -968,12 +968,12 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
+    use crate::test_utils::{MockHook, MockTool};
+    use crate::tools::control::ApprovalRequired;
     use crate::{
         State, assistant, chat_request, chat_response, summary, system, tool_failed, tool_output,
         user,
     };
-    use crate::test_utils::{MockHook, MockTool};
-    use crate::tools::control::ApprovalRequired;
 
     #[test_log::test(tokio::test)]
     async fn test_agent_builder_defaults() {

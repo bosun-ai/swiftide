@@ -135,10 +135,7 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
 
         tracing::debug!("Running retrieve with SQL: {}", sql.sql().as_str());
 
-        let data: Vec<VectorSearchResult> = sql
-            .build_query_as()
-            .fetch_all(pool)
-            .await?;
+        let data: Vec<VectorSearchResult> = sql.build_query_as().fetch_all(pool).await?;
 
         let docs = data.into_iter().map(Into::into).collect();
 

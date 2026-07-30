@@ -744,19 +744,16 @@ fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningIte
                         }
                     })
                     .collect(),
-                content: reasoning
-                    .content
-                    .as_ref()
-                    .map(|content| {
-                        content
-                            .iter()
-                            .map(|content| match content {
-                                async_openai::types::responses::ReasoningItemContent::ReasoningText(
-                                    text,
-                                ) => text.text.clone(),
-                            })
-                            .collect()
-                    }),
+                content: reasoning.content.as_ref().map(|content| {
+                    content
+                        .iter()
+                        .map(|content| match content {
+                            async_openai::types::responses::ReasoningItemContent::ReasoningText(
+                                text,
+                            ) => text.text.clone(),
+                        })
+                        .collect()
+                }),
                 status: {
                     if let Some(status) = &reasoning.status {
                         match status {
