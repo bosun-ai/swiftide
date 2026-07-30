@@ -25,15 +25,19 @@ pub use swiftide_tasks as tasks;
 /// Common traits for common behaviour, re-exported from indexing and query
 pub mod traits {
     #[doc(inline)]
-    pub use swiftide_core::agent_traits::*;
+    pub use swiftide_core::agent_traits::{AgentContext, MessageHistory, ToolFeedback};
     #[doc(inline)]
     pub use swiftide_core::chat_completion::traits::*;
+    #[doc(inline)]
+    pub use swiftide_core::command_output::*;
     #[doc(inline)]
     pub use swiftide_core::indexing_traits::*;
     #[doc(inline)]
     pub use swiftide_core::query_traits::*;
     #[doc(inline)]
     pub use swiftide_core::token_estimation::{Estimatable, EstimateTokens};
+    #[doc(inline)]
+    pub use swiftide_core::tool_executor::*;
 }
 
 #[doc(inline)]

@@ -7,6 +7,7 @@
 
 pub mod agent_traits;
 pub mod chat_completion;
+pub mod command_output;
 pub mod indexing_decorators;
 mod indexing_defaults;
 mod indexing_stream;
@@ -18,6 +19,7 @@ pub mod query_traits;
 mod search_strategies;
 mod stream_backoff;
 pub mod token_estimation;
+pub mod tool_executor;
 pub mod type_aliases;
 
 pub mod document;
@@ -28,11 +30,13 @@ mod metadata;
 mod query_evaluation;
 
 /// All traits are available from the root
-pub use crate::agent_traits::*;
+pub use crate::agent_traits::{AgentContext, MessageHistory, ToolFeedback};
 pub use crate::chat_completion::traits::*;
+pub use crate::command_output::*;
 pub use crate::indexing_traits::*;
 pub use crate::query_traits::*;
 pub use crate::token_estimation::*;
+pub use crate::tool_executor::*;
 
 // Decorators are available from the root
 pub use crate::indexing_decorators::*;

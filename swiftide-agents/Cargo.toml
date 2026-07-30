@@ -63,3 +63,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 mcp = ["dep:rmcp"]
 json-schema = ["swiftide-core/json-schema"]
 langfuse = []
+
+[target."cfg(unix)".dependencies]
+nix = { version = "=0.31.2", features = ["signal", "process"] }
