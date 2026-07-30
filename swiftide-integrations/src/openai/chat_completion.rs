@@ -360,7 +360,6 @@ impl<
             .context("Model not set")?;
 
         let create_request = build_responses_request_from_chat(self, request)?;
-        let tracking_request = create_request.clone();
 
         let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
         let response = self
@@ -370,12 +369,12 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let completion = response_to_chat_completion(&response)?;
+        let completion = response_to_chat_completion(response)?;
 
         self.track_completion(
             model,
             completion.usage.as_ref(),
-            Some(&tracking_request),
+            Some(&create_request),
             Some(&completion),
         );
 

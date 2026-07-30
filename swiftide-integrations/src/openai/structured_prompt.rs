@@ -166,11 +166,8 @@ impl<
             .context("Failed to get schema as value")
             .map_err(LanguageModelError::permanent)?;
 
-        let create_request = build_responses_request_from_prompt_with_schema(
-            self,
-            prompt_text.clone(),
-            schema_value,
-        )?;
+        let create_request =
+            build_responses_request_from_prompt_with_schema(self, prompt_text, schema_value)?;
         let tracking_request = create_request.clone();
 
         let response = self
@@ -180,11 +177,7 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let completion = response_to_chat_completion(&response)?;
-
-        let message = completion.message.clone().ok_or_else(|| {
-            LanguageModelError::PermanentError("Expected content in response".into())
-        })?;
+        let mut completion = response_to_chat_completion(response)?;
 
         self.track_completion(
             model,
@@ -192,6 +185,10 @@ impl<
             Some(&tracking_request),
             Some(&completion),
         );
+
+        let message = completion.message.take().ok_or_else(|| {
+            LanguageModelError::PermanentError("Expected content in response".into())
+        })?;
 
         let parsed = serde_json::from_str(&message)
             .with_context(|| format!("Failed to parse response\n {message}"))
