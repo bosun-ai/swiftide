@@ -36,7 +36,10 @@ fn is_locally_routable(url: &str) -> bool {
 
     match parsed.host() {
         Some(Host::Domain(host)) => {
-            host == "localhost" || host.ends_with(".localhost") || host.ends_with(".local")
+            host.eq_ignore_ascii_case("localhost")
+                || host.rsplit_once('.').is_some_and(|(_, suffix)| {
+                    suffix.eq_ignore_ascii_case("localhost") || suffix.eq_ignore_ascii_case("local")
+                })
         }
         Some(Host::Ipv4(ip)) => {
             ip.is_loopback() || ip.is_private() || ip.is_link_local() || ip.is_unspecified()
@@ -71,10 +74,10 @@ fn spider_cloud_from_env() -> Option<SpiderCloudConfig> {
 
     let mut config = SpiderCloudConfig::new(api_key).with_mode(mode);
 
-    if let Ok(api_url) = std::env::var("SPIDER_CLOUD_API_URL") {
-        if !api_url.trim().is_empty() {
-            config = config.with_api_url(api_url.trim());
-        }
+    if let Ok(api_url) = std::env::var("SPIDER_CLOUD_API_URL")
+        && !api_url.trim().is_empty()
+    {
+        config = config.with_api_url(api_url.trim());
     }
 
     Some(config)
