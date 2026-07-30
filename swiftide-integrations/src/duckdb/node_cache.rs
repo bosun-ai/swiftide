@@ -37,7 +37,7 @@ impl<T: Chunk> NodeCache for Duckdb<T> {
 
         let sql = format!(
             "SELECT EXISTS(SELECT 1 FROM {} WHERE uuid = ?)",
-            &self.cache_table
+            self.cache_table
         );
 
         let lock = self.connection.lock().unwrap();
@@ -68,7 +68,7 @@ impl<T: Chunk> NodeCache for Duckdb<T> {
 
         let sql = format!(
             "INSERT INTO {} (uuid, path) VALUES (?, ?) ON CONFLICT (uuid) DO NOTHING",
-            &self.cache_table
+            self.cache_table
         );
 
         let lock = self.connection.lock().unwrap();
@@ -95,7 +95,7 @@ impl<T: Chunk> NodeCache for Duckdb<T> {
     }
 
     async fn clear(&self) -> anyhow::Result<()> {
-        let sql = format!("DROP TABLE IF EXISTS {}", &self.cache_table);
+        let sql = format!("DROP TABLE IF EXISTS {}", self.cache_table);
         let lock = self.connection.lock().unwrap();
         let mut stmt = lock
             .prepare(&sql)

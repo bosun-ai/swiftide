@@ -129,11 +129,8 @@ fn convert_metadata(value: &serde_json::Value) -> Option<HashMap<String, String>
         serde_json::Value::Object(map) => {
             let mut out = HashMap::with_capacity(map.len());
             for (key, val) in map {
-                if let Some(s) = val.as_str() {
-                    out.insert(key.clone(), s.to_owned());
-                } else {
-                    return None;
-                }
+                let value = val.as_str()?;
+                out.insert(key.clone(), value.to_owned());
             }
             Some(out)
         }
