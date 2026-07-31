@@ -148,6 +148,7 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
         parameters: Some(parameters),
         strict: Some(true),
         description: Some(spec.description.clone()),
+        defer_loading: None,
     };
 
     Ok(Tool::Function(function))
@@ -183,7 +184,8 @@ fn chat_messages_to_input_items(
 
                         let function_call = FunctionToolCall {
                             arguments,
-                            call_id: call_id.clone(),
+                            call_id,
+                            namespace: None,
                             name: tool_call.name().to_owned(),
                             id: None,
                             status: Some(OutputStatus::InProgress),
@@ -417,12 +419,11 @@ impl ResponsesStreamState {
                     );
                     Some(self.emit(stream_full, false))
                 }
-                OutputItem::Message(message) => {
-                    collect_message_text_from_message(&message).map(|text| {
+                OutputItem::Message(message) => collect_message_text_from_message(message, "\n")
+                    .map(|text| {
                         self.response.append_message_delta(Some(text.as_str()));
                         self.emit(stream_full, false)
-                    })
-                }
+                    }),
                 _ => None,
             },
             ResponseStreamEvent::ResponseOutputItemDone(event) => {
@@ -475,13 +476,13 @@ impl ResponsesStreamState {
                 }
             }
             ResponseStreamEvent::ResponseCompleted(completed) => {
-                metadata_to_chat_completion(&completed.response, &mut self.response)?;
+                metadata_to_chat_completion(completed.response, &mut self.response)?;
                 self.response.delta = None;
                 self.finished = true;
                 Some(self.emit(stream_full, true))
             }
             ResponseStreamEvent::ResponseIncomplete(incomplete) => {
-                metadata_to_chat_completion(&incomplete.response, &mut self.response)?;
+                metadata_to_chat_completion(incomplete.response, &mut self.response)?;
                 self.response.delta = None;
                 self.finished = true;
                 Some(self.emit(stream_full, true))
@@ -611,192 +612,169 @@ impl Stream for ResponsesStreamAdapter {
     }
 }
 
-pub(super) fn response_to_chat_completion(response: &Response) -> LmResult<ChatCompletionResponse> {
-    if matches!(response.status, Status::Failed) {
-        let error = response.error.as_ref().map_or_else(
+pub(super) fn response_to_chat_completion(response: Response) -> LmResult<ChatCompletionResponse> {
+    let Response {
+        status,
+        error,
+        output,
+        usage,
+        ..
+    } = response;
+
+    if matches!(status, Status::Failed) {
+        let error = error.as_ref().map_or_else(
             || "OpenAI Responses API returned failure".to_string(),
             |err| format!("{}: {}", err.code, err.message),
         );
         return Err(LanguageModelError::permanent(error));
     }
 
-    let mut builder = ChatCompletionResponse::builder();
+    let mut completion = ChatCompletionResponse::default();
+    merge_output_items(output, &mut completion, "")?;
 
-    let reasoning_items = collect_reasoning_items_from_items(&response.output);
-    if !reasoning_items.is_empty() {
-        builder.reasoning(reasoning_items);
+    if let Some(usage) = usage.as_ref() {
+        completion.usage = Some(Usage::from(usage));
     }
 
-    if let Some(text) = response.output_text().filter(|s| !s.is_empty()) {
-        builder.message(text);
-    } else if let Some(text) = collect_message_text_from_items(&response.output) {
-        builder.message(text);
-    }
-
-    let tool_calls = collect_tool_calls_from_items(&response.output)?;
-    if !tool_calls.is_empty() {
-        builder.tool_calls(tool_calls);
-    }
-
-    if let Some(usage) = response.usage.as_ref() {
-        builder.usage(Usage::from(usage));
-    }
-
-    builder.build().map_err(LanguageModelError::from)
+    Ok(completion)
 }
 
 pub(super) fn metadata_to_chat_completion(
-    metadata: &Response,
+    metadata: Response,
     accumulator: &mut ChatCompletionResponse,
 ) -> LmResult<()> {
     if let Some(usage) = metadata.usage.as_ref() {
         accumulator.usage = Some(Usage::from(usage));
     }
 
-    if accumulator.message.is_none()
-        && let Some(text) = collect_message_text_from_items(&metadata.output)
+    merge_output_items(metadata.output, accumulator, "\n")
+}
+
+fn merge_output_items(
+    output: Vec<OutputItem>,
+    accumulator: &mut ChatCompletionResponse,
+    message_separator: &str,
+) -> LmResult<()> {
+    let mut message = accumulator.message.is_none().then(String::new);
+    let mut tool_calls = accumulator.tool_calls.is_none().then(Vec::new);
+    let mut reasoning = accumulator.reasoning.is_none().then(Vec::new);
+
+    for item in output {
+        match item {
+            OutputItem::Message(output_message) => {
+                if let Some(message) = message.as_mut()
+                    && let Some(text) =
+                        collect_message_text_from_message(output_message, message_separator)
+                {
+                    if message.is_empty() {
+                        *message = text;
+                    } else {
+                        message.push_str(message_separator);
+                        message.push_str(&text);
+                    }
+                }
+            }
+            OutputItem::FunctionCall(function_call) => {
+                if let Some(tool_calls) = tool_calls.as_mut() {
+                    tool_calls.push(tool_call_from_function_call(function_call)?);
+                }
+            }
+            OutputItem::Reasoning(reasoning_item) => {
+                if let Some(reasoning) = reasoning.as_mut() {
+                    reasoning.push(reasoning_item_from_response(reasoning_item));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if message.as_ref().is_some_and(|message| !message.is_empty()) {
+        accumulator.message = message;
+    }
+    if tool_calls
+        .as_ref()
+        .is_some_and(|tool_calls| !tool_calls.is_empty())
     {
-        accumulator.message = Some(text);
+        accumulator.tool_calls = tool_calls;
     }
-
-    if accumulator.tool_calls.is_none() {
-        let tool_calls = collect_tool_calls_from_items(&metadata.output)?;
-        if !tool_calls.is_empty() {
-            accumulator.tool_calls = Some(tool_calls);
-        }
-    }
-
-    if accumulator.reasoning.is_none() {
-        let reasoning_items = collect_reasoning_items_from_items(&metadata.output);
-        if !reasoning_items.is_empty() {
-            accumulator.reasoning = Some(reasoning_items);
-        }
+    if reasoning
+        .as_ref()
+        .is_some_and(|reasoning| !reasoning.is_empty())
+    {
+        accumulator.reasoning = reasoning;
     }
 
     Ok(())
 }
 
-fn collect_message_text_from_items(output: &[OutputItem]) -> Option<String> {
-    let mut buffer = String::new();
-
-    for item in output {
-        if let OutputItem::Message(OutputMessage { content, .. }) = item {
-            for part in content {
-                if let OutputMessageContent::OutputText(text) = part {
-                    if !buffer.is_empty() {
-                        buffer.push('\n');
-                    }
-                    buffer.push_str(&text.text);
-                }
-            }
-        }
-    }
-
-    if buffer.is_empty() {
-        None
-    } else {
-        Some(buffer)
-    }
-}
-
-fn collect_message_text_from_message(message: &OutputMessage) -> Option<String> {
-    let mut buffer = String::new();
-
-    for part in &message.content {
-        if let OutputMessageContent::OutputText(text) = part {
-            if !buffer.is_empty() {
-                buffer.push('\n');
-            }
-            buffer.push_str(&text.text);
-        }
-    }
-
-    if buffer.is_empty() {
-        None
-    } else {
-        Some(buffer)
-    }
-}
-
-fn collect_tool_calls_from_items(output: &[OutputItem]) -> LmResult<Vec<ToolCall>> {
-    let calls = output.iter().filter_map(|item| match item {
-        OutputItem::FunctionCall(function_call) => Some(function_call),
-        _ => None,
+fn collect_message_text_from_message(
+    message: OutputMessage,
+    message_separator: &str,
+) -> Option<String> {
+    let mut text_parts = message.content.into_iter().filter_map(|part| match part {
+        OutputMessageContent::OutputText(text) => Some(text.text),
+        OutputMessageContent::Refusal(_) => None,
     });
+    let mut buffer = text_parts.next()?;
 
-    tool_calls_from_iter(calls)
+    for text in text_parts {
+        if !buffer.is_empty() {
+            buffer.push_str(message_separator);
+        }
+        buffer.push_str(&text);
+    }
+
+    (!buffer.is_empty()).then_some(buffer)
 }
 
-fn collect_reasoning_items_from_items(output: &[OutputItem]) -> Vec<ReasoningItem> {
-    output
-        .iter()
-        .filter_map(|item| match item {
-            OutputItem::Reasoning(reasoning) => Some(ReasoningItem {
-                id: reasoning.id.clone(),
-                summary: reasoning
-                    .summary
-                    .iter()
-                    .map(|part| match part {
-                        async_openai::types::responses::SummaryPart::SummaryText(summary) => {
-                            summary.text.clone()
-                        }
-                    })
-                    .collect(),
-                content: reasoning
-                    .content
-                    .as_ref()
-                    .map(|c| c.iter().map(|c| c.text.clone()).collect()),
-                status: {
-                    if let Some(status) = &reasoning.status {
-                        match status {
-                            OutputStatus::Completed => {
-                                Some(swiftide_core::chat_completion::ReasoningStatus::Completed)
-                            }
-                            OutputStatus::InProgress => {
-                                Some(swiftide_core::chat_completion::ReasoningStatus::InProgress)
-                            }
-                            OutputStatus::Incomplete => {
-                                Some(swiftide_core::chat_completion::ReasoningStatus::Incomplete)
-                            }
-                        }
-                    } else {
-                        None
+fn reasoning_item_from_response(
+    reasoning: async_openai::types::responses::ReasoningItem,
+) -> ReasoningItem {
+    ReasoningItem {
+        id: reasoning.id,
+        summary: reasoning
+            .summary
+            .into_iter()
+            .map(|part| match part {
+                async_openai::types::responses::SummaryPart::SummaryText(summary) => summary.text,
+            })
+            .collect(),
+        content: reasoning.content.map(|content| {
+            content
+                .into_iter()
+                .map(|content| match content {
+                    async_openai::types::responses::ReasoningItemContent::ReasoningText(text) => {
+                        text.text
                     }
-                },
-                encrypted_content: reasoning.encrypted_content.clone(),
-            }),
-            _ => None,
-        })
-        .collect()
+                })
+                .collect()
+        }),
+        status: reasoning.status.map(|status| match status {
+            OutputStatus::Completed => swiftide_core::chat_completion::ReasoningStatus::Completed,
+            OutputStatus::InProgress => swiftide_core::chat_completion::ReasoningStatus::InProgress,
+            OutputStatus::Incomplete => swiftide_core::chat_completion::ReasoningStatus::Incomplete,
+        }),
+        encrypted_content: reasoning.encrypted_content,
+    }
 }
 
-fn tool_call_from_function_call(function_call: &FunctionToolCall) -> LmResult<ToolCall> {
+fn tool_call_from_function_call(function_call: FunctionToolCall) -> LmResult<ToolCall> {
     let id = if function_call.call_id.is_empty() {
-        function_call.id.as_deref().unwrap_or_default().to_string()
+        function_call.id.unwrap_or_default()
     } else {
-        function_call.call_id.clone()
+        function_call.call_id
     };
 
     let mut builder = ToolCall::builder();
     builder.id(id);
-    builder.name(function_call.name.clone());
+    builder.name(function_call.name);
     if !function_call.arguments.is_empty() {
-        builder.maybe_args(Some(function_call.arguments.clone()));
+        builder.maybe_args(Some(function_call.arguments));
     }
     builder
         .build()
         .context("Failed to build tool call")
         .map_err(LanguageModelError::permanent)
-}
-
-fn tool_calls_from_iter<'a, I>(calls: I) -> LmResult<Vec<ToolCall>>
-where
-    I: IntoIterator<Item = &'a FunctionToolCall>,
-{
-    calls
-        .into_iter()
-        .map(tool_call_from_function_call)
-        .collect::<Result<Vec<_>, _>>()
 }
 
 fn function_call_identifier(function_call: &FunctionToolCall) -> &str {
@@ -864,7 +842,7 @@ where
         format: TextResponseFormatConfiguration::JsonSchema(ResponseFormatJsonSchema {
             description: None,
             name: "swiftide_structured_output".into(),
-            schema: Some(schema),
+            schema,
             strict: Some(true),
         }),
         verbosity: None,
@@ -1006,6 +984,7 @@ mod tests {
                 })
                 .collect(),
             id: id.to_string(),
+            phase: None,
             role: AssistantRole::Assistant,
             status: OutputStatus::Completed,
         }
@@ -1286,7 +1265,7 @@ mod tests {
     #[test]
     fn test_chat_messages_to_input_items_includes_reasoning_with_encrypted_content() {
         let message = ChatMessage::Reasoning(ReasoningItem {
-            id: "reasoning_1".to_string(),
+            id: Some("reasoning_1".to_string()),
             summary: vec!["First".to_string(), "Second".to_string()],
             encrypted_content: Some("encrypted".to_string()),
             ..Default::default()
@@ -1301,7 +1280,7 @@ mod tests {
             panic!("expected reasoning item");
         };
 
-        assert_eq!(reasoning_item.id, "reasoning_1");
+        assert_eq!(reasoning_item.id.as_deref(), Some("reasoning_1"));
         assert!(reasoning_item.summary.is_empty());
         assert_eq!(
             reasoning_item.encrypted_content.as_deref(),
@@ -1322,12 +1301,13 @@ mod tests {
         let function_call = FunctionToolCall {
             arguments: String::new(),
             call_id: String::new(),
+            namespace: None,
             name: "lookup".to_string(),
             id: Some("call_456".to_string()),
             status: Some(OutputStatus::Completed),
         };
 
-        let tool_call = tool_call_from_function_call(&function_call).expect("tool call");
+        let tool_call = tool_call_from_function_call(function_call).expect("tool call");
         assert_eq!(tool_call.id(), "call_456");
         assert_eq!(tool_call.name(), "lookup");
         assert!(tool_call.args().is_none());
@@ -1340,6 +1320,7 @@ mod tests {
             OutputItem::FunctionCall(FunctionToolCall {
                 arguments: "{}".to_string(),
                 call_id: "call".to_string(),
+                namespace: None,
                 name: "noop".to_string(),
                 id: None,
                 status: Some(OutputStatus::Completed),
@@ -1347,12 +1328,13 @@ mod tests {
             OutputItem::Message(output_message("msg_2", &["Third"])),
         ];
 
-        let collected = collect_message_text_from_items(&output).expect("text present");
-        assert_eq!(collected, "First\nSecond\nThird");
+        let mut completion = ChatCompletionResponse::default();
+        merge_output_items(output, &mut completion, "\n").expect("output merges");
+        assert_eq!(completion.message.as_deref(), Some("First\nSecond\nThird"));
 
         let message = output_message("msg_single", &["Line one", "Line two"]);
         let collected_message =
-            collect_message_text_from_message(&message).expect("message text present");
+            collect_message_text_from_message(message, "\n").expect("message text present");
         assert_eq!(collected_message, "Line one\nLine two");
     }
 
@@ -1361,7 +1343,7 @@ mod tests {
         let metadata = response_with_message_tool_reasoning("metadata message");
 
         let mut empty = ChatCompletionResponse::default();
-        metadata_to_chat_completion(&metadata, &mut empty).expect("metadata applies");
+        metadata_to_chat_completion(metadata, &mut empty).expect("metadata applies");
         assert_eq!(empty.message.as_deref(), Some("metadata message"));
         assert!(empty.tool_calls.is_some());
         assert!(empty.reasoning.is_some());
@@ -1375,7 +1357,7 @@ mod tests {
             .unwrap();
 
         let existing_reasoning = ReasoningItem {
-            id: "existing_reasoning".to_string(),
+            id: Some("existing_reasoning".to_string()),
             summary: vec!["keep".to_string()],
             encrypted_content: None,
             ..Default::default()
@@ -1396,7 +1378,11 @@ mod tests {
             .build()
             .unwrap();
 
-        metadata_to_chat_completion(&metadata, &mut existing).expect("metadata applies");
+        metadata_to_chat_completion(
+            response_with_message_tool_reasoning("metadata message"),
+            &mut existing,
+        )
+        .expect("metadata applies");
         assert_eq!(existing.message.as_deref(), Some("existing message"));
         assert_eq!(
             existing
@@ -1411,7 +1397,7 @@ mod tests {
                 .reasoning
                 .as_ref()
                 .and_then(|items| items.first())
-                .map(|item| item.id.as_str()),
+                .and_then(|item| item.id.as_deref()),
             Some("existing_reasoning")
         );
         assert_eq!(
@@ -1483,7 +1469,8 @@ mod tests {
                     "role": "assistant",
                     "status": "completed",
                     "content": [
-                        {"type": "output_text", "text": "Assistant reply", "annotations": []}
+                        {"type": "output_text", "text": "Assistant reply", "annotations": []},
+                        {"type": "output_text", "text": " continued", "annotations": []}
                     ]
                 },
                 {
@@ -1499,8 +1486,8 @@ mod tests {
         }))
         .expect("valid response json");
 
-        let completion = response_to_chat_completion(&response).unwrap();
-        assert_eq!(completion.message(), Some("Assistant reply"));
+        let completion = response_to_chat_completion(response).unwrap();
+        assert_eq!(completion.message(), Some("Assistant reply continued"));
 
         let tool_calls = completion.tool_calls().expect("tool calls present");
         assert_eq!(tool_calls.len(), 1);
@@ -1537,16 +1524,52 @@ mod tests {
         }))
         .expect("valid response json");
 
-        let completion = response_to_chat_completion(&response).unwrap();
+        let completion = response_to_chat_completion(response).unwrap();
         let reasoning = completion.reasoning.expect("reasoning items present");
 
         assert_eq!(reasoning.len(), 1);
-        assert_eq!(reasoning[0].id, "reasoning_1");
+        assert_eq!(reasoning[0].id.as_deref(), Some("reasoning_1"));
         assert_eq!(
             reasoning[0].summary,
             vec!["First".to_string(), "Second".to_string()]
         );
         assert_eq!(reasoning[0].encrypted_content.as_deref(), Some("encrypted"));
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_preserves_missing_reasoning_id() {
+        let response: Response = serde_json::from_value(json!({
+            "created_at": 0,
+            "id": "resp",
+            "model": "gpt-4.1",
+            "object": "response",
+            "status": "completed",
+            "output": [
+                {
+                    "type": "reasoning",
+                    "summary": [],
+                    "encrypted_content": "encrypted"
+                }
+            ],
+            "usage": sample_usage(),
+        }))
+        .expect("valid response json");
+
+        let completion = response_to_chat_completion(response).unwrap();
+        let mut reasoning = completion.reasoning.expect("reasoning items present");
+        assert_eq!(reasoning.len(), 1);
+        assert!(reasoning[0].id.is_none());
+
+        let replayed =
+            chat_messages_to_input_items(&[ChatMessage::Reasoning(reasoning.remove(0))], true)
+                .expect("reasoning replay succeeds");
+
+        let InputItem::Item(async_openai::types::responses::Item::Reasoning(reasoning_item)) =
+            &replayed[0]
+        else {
+            panic!("expected reasoning item");
+        };
+        assert!(reasoning_item.id.is_none());
     }
 
     #[test]
@@ -1892,7 +1915,7 @@ mod tests {
         }))
         .unwrap();
 
-        let err = response_to_chat_completion(&response).unwrap_err();
+        let err = response_to_chat_completion(response).unwrap_err();
         assert!(
             matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("oops"))
         );

@@ -268,6 +268,7 @@ async fn test_pgvector_retrieve() {
 /// - Pass configuration through the query generator closure
 /// - Keep the strategy struct minimal and focused on query generation
 #[test_log::test(tokio::test)]
+#[allow(clippy::too_many_lines)]
 async fn test_pgvector_retrieve_dynamic_search() {
     // Setup temporary directory and file for testing
     let tempdir = TempDir::new().unwrap();
@@ -337,7 +338,7 @@ async fn test_pgvector_retrieve_dynamic_search() {
     // Configure search strategy
     // Create a custom query generator with metadata filtering
     let custom_strategy = query::search_strategies::CustomStrategy::from_query(
-        move |query_node| -> Result<sqlx::QueryBuilder<'static, sqlx::Postgres>> {
+        move |query_node| -> Result<sqlx::QueryBuilder<sqlx::Postgres>> {
             const CUSTOM_STRATEGY_MAX_RESULTS: i64 = 5;
             let mut builder = sqlx::QueryBuilder::new("");
             let table: &str = pgv_storage_for_closure.get_table_name();

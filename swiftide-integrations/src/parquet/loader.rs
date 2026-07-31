@@ -1,8 +1,8 @@
 use anyhow::{Context as _, Result};
-use arrow_array::{LargeStringArray, StringArray, StringViewArray};
 use fs_err::tokio::File;
 use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
+use parquet_arrow_array::{LargeStringArray, StringArray, StringViewArray};
 use swiftide_core::{
     Loader,
     indexing::{IndexingStream, TextNode},

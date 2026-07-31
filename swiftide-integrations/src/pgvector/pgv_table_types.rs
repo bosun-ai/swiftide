@@ -9,9 +9,9 @@ use crate::pgvector::PgVector;
 use anyhow::{Result, anyhow};
 use pgvector as ExtPgVector;
 use regex::Regex;
-use sqlx::PgPool;
 use sqlx::postgres::PgArguments;
 use sqlx::postgres::PgPoolOptions;
+use sqlx::{AssertSqlSafe, PgPool};
 use std::collections::BTreeMap;
 use swiftide_core::indexing::{EmbeddedField, TextNode};
 use tokio::time::sleep;
@@ -259,7 +259,8 @@ impl PgVector {
             .get()
             .ok_or_else(|| anyhow!("SQL bulk insert statement not set"))?;
 
-        let query = self.bind_bulk_data_to_query(sqlx::query(sql), &bulk_data)?;
+        let query =
+            self.bind_bulk_data_to_query(sqlx::query(AssertSqlSafe(sql.clone())), &bulk_data)?;
 
         query
             .execute(&mut *tx)
@@ -331,6 +332,14 @@ impl PgVector {
     pub(crate) fn generate_unnest_upsert_sql(&self) -> Result<String> {
         if self.fields.is_empty() {
             return Err(anyhow!("Cannot generate upsert SQL with empty fields"));
+        }
+        if !Self::is_valid_identifier(&self.table_name)
+            || self
+                .fields
+                .iter()
+                .any(|field| !Self::is_valid_identifier(field.field_name()))
+        {
+            return Err(anyhow!("Invalid table or field name"));
         }
 
         let mut columns = Vec::new();
