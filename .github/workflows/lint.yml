@@ -33,6 +33,8 @@ jobs:
         uses: crate-ci/typos@master
       - name: Lint dependencies
         uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          rust-version: "1.97.1"
       - name: clippy
         run: cargo clippy --all-targets --all-features --workspace
         env:
