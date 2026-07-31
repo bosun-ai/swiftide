@@ -2,22 +2,37 @@
 //!
 //! By default will use the current directory as the working directory.
 use std::{
+    borrow::Cow,
     collections::HashMap,
+    fs::File,
+    io::{self, PipeReader, pipe},
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
 };
 
-use anyhow::{Context as _, Result};
+#[cfg(unix)]
+use std::os::fd::OwnedFd;
+#[cfg(windows)]
+use std::os::windows::io::OwnedHandle;
+
+use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
+#[cfg(windows)]
+use process_wrap::tokio::JobObject;
+#[cfg(unix)]
+use process_wrap::tokio::ProcessGroup;
+use process_wrap::tokio::{CommandWrap, KillOnDrop};
 use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{
-    io::{AsyncBufReadExt as _, AsyncWriteExt as _},
-    task::JoinHandle,
+    io::{AsyncReadExt as _, AsyncWriteExt as _},
+    process::ChildStdin,
     time,
 };
+
+const OUTPUT_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[derive(Debug, Clone, Builder)]
 pub struct LocalExecutor {
@@ -65,11 +80,11 @@ impl LocalExecutor {
         LocalExecutorBuilder::default()
     }
 
-    fn resolve_workdir(&self, cmd: &Command) -> PathBuf {
+    fn resolve_workdir<'a>(&'a self, cmd: &'a Command) -> Cow<'a, Path> {
         match cmd.current_dir_path() {
-            Some(path) if path.is_absolute() => path.to_path_buf(),
-            Some(path) => self.workdir.join(path),
-            None => self.workdir.clone(),
+            Some(path) if path.is_absolute() => Cow::Borrowed(path),
+            Some(path) => Cow::Owned(self.workdir.join(path)),
+            None => Cow::Borrowed(&self.workdir),
         }
     }
 
@@ -77,144 +92,86 @@ impl LocalExecutor {
         cmd.timeout_duration().copied().or(self.default_timeout)
     }
 
-    #[allow(clippy::too_many_lines)]
     async fn exec_shell(
         &self,
         cmd: &str,
         workdir: &Path,
         timeout: Option<Duration>,
     ) -> Result<CommandOutput, CommandError> {
-        let lines: Vec<&str> = cmd.lines().collect();
-        let mut child = if let Some(first_line) = lines.first()
-            && first_line.starts_with("#!")
-        {
-            let interpreter = first_line.trim_start_matches("#!/usr/bin/env ").trim();
-            tracing::info!(interpreter, "detected shebang; running as script");
-
-            let mut command = tokio::process::Command::new(interpreter);
-
-            if self.env_clear {
-                tracing::info!("clearing environment variables");
-                command.env_clear();
+        let (mut command, input) = if let Some(script) = ShellScript::parse(cmd) {
+            tracing::info!(interpreter = script.interpreter, "detected shebang");
+            let mut command = tokio::process::Command::new(script.interpreter);
+            if let Some(argument) = script.argument {
+                command.arg(argument);
             }
-
-            for var in &self.env_remove {
-                tracing::info!(var, "clearing environment variable");
-                command.env_remove(var);
-            }
-
-            for (key, value) in &self.envs {
-                tracing::info!(key, "setting environment variable");
-                command.env(key, value);
-            }
-
-            let mut child = command
-                .current_dir(workdir)
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()?;
-
-            if let Some(mut stdin) = child.stdin.take() {
-                let body = lines[1..].join("\n");
-                stdin.write_all(body.as_bytes()).await?;
-            }
-
-            child
+            (command, Some(script.body.as_bytes()))
         } else {
             tracing::info!("no shebang detected; running as command");
-
             let mut command = tokio::process::Command::new("sh");
-
-            // Treat as shell command
-            command.arg("-c").arg(cmd).current_dir(workdir);
-
-            if self.env_clear {
-                tracing::info!("clearing environment variables");
-                command.env_clear();
-            }
-
-            for var in &self.env_remove {
-                tracing::info!(var, "clearing environment variable");
-                command.env_remove(var);
-            }
-
-            for (key, value) in &self.envs {
-                tracing::info!(key, "setting environment variable");
-                command.env(key, value);
-            }
-            command
-                .current_dir(workdir)
-                .stdin(Stdio::null())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()?
+            command.arg("-c").arg(cmd);
+            (command, None)
         };
 
-        let stdout_task = if let Some(stdout) = child.stdout.take() {
-            Some(tokio::spawn(async move {
-                let mut lines = tokio::io::BufReader::new(stdout).lines();
-                let mut out = Vec::new();
-                while let Ok(Some(line)) = lines.next_line().await {
-                    out.push(line);
-                }
-                out
-            }))
-        } else {
-            tracing::warn!("Command has no stdout");
-            None
-        };
+        self.configure_command(&mut command);
 
-        let stderr_task = if let Some(stderr) = child.stderr.take() {
-            Some(tokio::spawn(async move {
-                let mut lines = tokio::io::BufReader::new(stderr).lines();
-                let mut out = Vec::new();
-                while let Ok(Some(line)) = lines.next_line().await {
-                    out.push(line);
-                }
-                out
-            }))
-        } else {
-            tracing::warn!("Command has no stderr");
-            None
+        let (reader, writer) = pipe()?;
+        command
+            .current_dir(workdir)
+            .stdin(if input.is_some() {
+                Stdio::piped()
+            } else {
+                Stdio::null()
+            })
+            .stdout(writer.try_clone()?)
+            .stderr(writer);
+
+        let mut command = CommandWrap::from(command);
+        #[cfg(unix)]
+        command.wrap(ProcessGroup::leader());
+        #[cfg(windows)]
+        command.wrap(JobObject);
+        command.wrap(KillOnDrop);
+
+        let mut child = command.spawn()?;
+        drop(command);
+        let stdin = child.stdin().take();
+        let mut reader = async_pipe_reader(reader);
+        let mut output = Vec::new();
+
+        let execution = async {
+            let write_input = write_input(stdin, input);
+            let (status, _, ()) =
+                tokio::try_join!(child.wait(), reader.read_to_end(&mut output), write_input)?;
+            Ok::<_, io::Error>(status)
         };
 
         let status = match timeout {
             Some(limit) => {
-                if let Ok(result) = time::timeout(limit, child.wait()).await {
-                    result.map_err(|err| CommandError::ExecutorError(err.into()))?
-                } else {
+                let Ok(result) = time::timeout(limit, execution).await else {
                     tracing::warn!(?limit, "command exceeded timeout; terminating");
-                    if let Err(err) = child.start_kill() {
-                        tracing::warn!(?err, "failed to start kill on timed out command");
+                    if let Err(error) = Box::into_pin(child.kill()).await
+                        && error.kind() != io::ErrorKind::InvalidInput
+                    {
+                        tracing::warn!(?error, "failed to kill command");
                     }
-                    if let Err(err) = child.wait().await {
-                        tracing::warn!(?err, "failed to reap command after timeout");
-                    }
-
-                    let (stdout, stderr) =
-                        Self::collect_process_output(stdout_task, stderr_task).await;
-                    let cmd_output = Self::command_output(&stdout, &stderr);
+                    drain_output(&mut reader, &mut output).await;
 
                     return Err(CommandError::TimedOut {
                         timeout: limit,
-                        output: cmd_output,
+                        output: output.into(),
                     });
-                }
+                };
+                result?
             }
-            None => child
-                .wait()
-                .await
-                .map_err(|err| CommandError::ExecutorError(err.into()))?,
+            None => execution.await?,
         };
 
-        let (stdout, stderr) = Self::collect_process_output(stdout_task, stderr_task).await;
-        let cmd_output = Self::command_output(&stdout, &stderr);
+        let output = CommandOutput::new(output);
 
         if status.success() {
-            Ok(cmd_output)
+            Ok(output)
         } else {
-            Err(CommandError::NonZeroExit(cmd_output))
+            Err(CommandError::NonZeroExit(output))
         }
     }
 
@@ -224,12 +181,8 @@ impl LocalExecutor {
         path: &Path,
         timeout: Option<Duration>,
     ) -> Result<CommandOutput, CommandError> {
-        let path = if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            workdir.join(path)
-        };
-        let read_future = fs_err::tokio::read(&path);
+        let path = resolve_path(workdir, path);
+        let read_future = fs_err::tokio::read(path.as_ref());
         let output = match timeout {
             Some(limit) => match time::timeout(limit, read_future).await {
                 Ok(result) => result?,
@@ -243,9 +196,7 @@ impl LocalExecutor {
             None => read_future.await?,
         };
 
-        Ok(String::from_utf8(output)
-            .context("Failed to parse read file output")?
-            .into())
+        Ok(output.into())
     }
 
     async fn exec_write_file(
@@ -255,15 +206,11 @@ impl LocalExecutor {
         content: &str,
         timeout: Option<Duration>,
     ) -> Result<CommandOutput, CommandError> {
-        let path = if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            workdir.join(path)
-        };
+        let path = resolve_path(workdir, path);
         if let Some(parent) = path.parent() {
             let _ = fs_err::tokio::create_dir_all(parent).await;
         }
-        let write_future = fs_err::tokio::write(&path, content);
+        let write_future = fs_err::tokio::write(path.as_ref(), content);
         match timeout {
             Some(limit) => match time::timeout(limit, write_future).await {
                 Ok(result) => result?,
@@ -280,39 +227,82 @@ impl LocalExecutor {
         Ok(CommandOutput::empty())
     }
 
-    async fn collect_process_output(
-        stdout_task: Option<JoinHandle<Vec<String>>>,
-        stderr_task: Option<JoinHandle<Vec<String>>>,
-    ) -> (Vec<String>, Vec<String>) {
-        let stdout = match stdout_task {
-            Some(task) => match task.await {
-                Ok(lines) => lines,
-                Err(err) => {
-                    tracing::warn!(?err, "failed to collect stdout from command");
-                    Vec::new()
-                }
-            },
-            None => Vec::new(),
-        };
-
-        let stderr = match stderr_task {
-            Some(task) => match task.await {
-                Ok(lines) => lines,
-                Err(err) => {
-                    tracing::warn!(?err, "failed to collect stderr from command");
-                    Vec::new()
-                }
-            },
-            None => Vec::new(),
-        };
-
-        (stdout, stderr)
-    }
-
-    fn command_output(stdout: &[String], stderr: &[String]) -> CommandOutput {
-        CommandOutput::from_parts(stdout.join("\n"), stderr.join("\n"))
+    fn configure_command(&self, command: &mut tokio::process::Command) {
+        if self.env_clear {
+            tracing::info!("clearing environment variables");
+            command.env_clear();
+        }
+        for var in &self.env_remove {
+            tracing::info!(var, "clearing environment variable");
+            command.env_remove(var);
+        }
+        for (key, value) in &self.envs {
+            tracing::info!(key, "setting environment variable");
+            command.env(key, value);
+        }
     }
 }
+
+struct ShellScript<'a> {
+    interpreter: &'a str,
+    argument: Option<&'a str>,
+    body: &'a str,
+}
+
+impl<'a> ShellScript<'a> {
+    fn parse(command: &'a str) -> Option<Self> {
+        let (shebang, body) = command.split_once('\n').unwrap_or((command, ""));
+        let directive = shebang.strip_prefix("#!")?.trim();
+        let split = directive.find(char::is_whitespace);
+        let (interpreter, argument) = split.map_or((directive, None), |index| {
+            let argument = directive[index..].trim();
+            (
+                &directive[..index],
+                (!argument.is_empty()).then_some(argument),
+            )
+        });
+
+        (!interpreter.is_empty()).then_some(Self {
+            interpreter,
+            argument,
+            body,
+        })
+    }
+}
+
+fn resolve_path<'a>(workdir: &'a Path, path: &'a Path) -> Cow<'a, Path> {
+    if path.is_absolute() {
+        Cow::Borrowed(path)
+    } else {
+        Cow::Owned(workdir.join(path))
+    }
+}
+
+async fn write_input(mut stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io::Result<()> {
+    if let (Some(stdin), Some(input)) = (&mut stdin, input) {
+        stdin.write_all(input).await?;
+    }
+    Ok(())
+}
+
+async fn drain_output(reader: &mut tokio::fs::File, output: &mut Vec<u8>) {
+    match time::timeout(OUTPUT_DRAIN_TIMEOUT, reader.read_to_end(output)).await {
+        Ok(Ok(_)) => {}
+        Ok(Err(error)) => tracing::warn!(?error, "failed to drain command output"),
+        Err(_) => tracing::warn!("timed out draining command output"),
+    }
+}
+
+#[cfg(unix)]
+fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
+    tokio::fs::File::from_std(File::from(OwnedFd::from(reader)))
+}
+
+#[cfg(windows)]
+fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
+    tokio::fs::File::from_std(File::from(OwnedHandle::from(reader)))
+}
+
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
     /// Execute a `Command` on the local machine
@@ -356,6 +346,21 @@ mod tests {
     use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
 
+    #[cfg(unix)]
+    async fn wait_for_process_exit(pid: i32) -> anyhow::Result<()> {
+        time::timeout(Duration::from_secs(2), async {
+            while std::process::Command::new("kill")
+                .args(["-0", &pid.to_string()])
+                .status()
+                .is_ok_and(|status| status.success())
+            {
+                time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await?;
+        Ok(())
+    }
+
     #[tokio::test]
     async fn test_local_executor_write_and_read_file() -> anyhow::Result<()> {
         // Create a temporary directory
@@ -389,13 +394,13 @@ mod tests {
         let output = executor.exec_cmd(&read_cmd).await?;
 
         // Verify that the content read from the file matches the expected content
-        assert_eq!(output.to_string(), format!("{file_content}"));
+        assert_eq!(output.to_string_lossy(), format!("{file_content}\n"));
 
         let output = executor
             .exec_cmd(&Command::read_file(&file_path))
             .await
             .unwrap();
-        assert_eq!(output.to_string(), format!("{file_content}\n"));
+        assert_eq!(output.to_string_lossy(), format!("{file_content}\n"));
 
         Ok(())
     }
@@ -419,14 +424,13 @@ mod tests {
         let output = executor.exec_cmd(&echo_cmd).await?;
 
         // Verify that the output matches the expected content
-        assert_eq!(output.to_string().trim(), "hello world");
-        assert!(output.stderr.is_empty());
+        assert_eq!(output.to_string_lossy().trim(), "hello world");
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_local_executor_preserves_stdout_and_stderr() -> anyhow::Result<()> {
+    async fn test_local_executor_preserves_exact_combined_output() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
@@ -441,16 +445,13 @@ mod tests {
             ))
             .await?;
 
-        assert_eq!(output.stdout, "hello stdout");
-        assert_eq!(output.stderr, "hello stderr");
-        assert_eq!(output.to_string(), "hello stdout");
-        assert!(format!("{output:?}").contains("hello stderr"));
+        assert_eq!(output.to_string_lossy(), "hello stdouthello stderr");
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_local_executor_keeps_display_empty_when_stdout_is_empty() -> anyhow::Result<()> {
+    async fn test_local_executor_preserves_stderr_only_failure() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
@@ -464,14 +465,126 @@ mod tests {
             .await
         {
             Err(CommandError::NonZeroExit(output)) => {
-                assert!(output.stdout.is_empty());
-                assert_eq!(output.stderr, "boom");
-                assert_eq!(output.to_string(), "");
-                assert_eq!(output.as_ref(), "");
+                assert_eq!(output.to_string_lossy(), "boom");
             }
             other => anyhow::bail!("expected non-zero exit, got {other:?}"),
         }
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_preserves_shell_write_order_without_delays() -> anyhow::Result<()>
+    {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor {
+            workdir: temp_dir.path().to_path_buf(),
+            ..Default::default()
+        };
+
+        let output = executor
+            .exec_cmd(&Command::shell(
+                "printf 'one'; printf 'two' >&2; printf 'three'",
+            ))
+            .await?;
+
+        assert_eq!(output.to_string_lossy(), "onetwothree");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_does_not_invent_or_remove_newlines() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor::new(temp_dir.path());
+
+        let output = executor
+            .exec_cmd(&Command::shell(
+                "printf 'one\\n'; printf 'two\\r\\n' >&2; printf '\\n'",
+            ))
+            .await?;
+
+        assert_eq!(output.as_bytes(), b"one\ntwo\r\n\n");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_preserves_partial_output_on_timeout() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor {
+            workdir: temp_dir.path().to_path_buf(),
+            ..Default::default()
+        };
+        let command = Command::shell("printf 'one'; printf 'two' >&2; sleep 1")
+            .with_timeout(Duration::from_millis(100));
+
+        match executor.exec_cmd(&command).await {
+            Err(CommandError::TimedOut { output, .. }) => {
+                assert_eq!(output.to_string_lossy(), "onetwo");
+            }
+            other => anyhow::bail!("expected timeout, got {other:?}"),
+        }
+
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn timing_out_execution_kills_spawned_processes() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pid_file = temp_dir.path().join("child.pid");
+        let executor = LocalExecutor::new(temp_dir.path());
+        let command = Command::shell(format!(
+            "sleep 30 & echo $! > '{}'; wait",
+            pid_file.display()
+        ))
+        .with_timeout(Duration::from_millis(500));
+
+        assert!(matches!(
+            executor.exec_cmd(&command).await,
+            Err(CommandError::TimedOut { .. })
+        ));
+        let pid = fs_err::tokio::read_to_string(pid_file)
+            .await?
+            .trim()
+            .parse()?;
+        wait_for_process_exit(pid).await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_passes_shebang_argument() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor::new(temp_dir.path());
+
+        match executor
+            .exec_cmd(&Command::shell(
+                "#!/bin/sh -e\nprintf before\nfalse\nprintf after",
+            ))
+            .await
+        {
+            Err(CommandError::NonZeroExit(output)) => {
+                assert_eq!(output.as_bytes(), b"before");
+            }
+            other => anyhow::bail!("expected non-zero exit, got {other:?}"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_does_not_wait_for_redirected_background_processes()
+    -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor::new(temp_dir.path());
+        let command =
+            Command::shell("sleep 5 >/dev/null 2>&1 &").with_timeout(Duration::from_millis(500));
+
+        let output = executor.exec_cmd(&command).await?;
+
+        assert!(output.is_empty());
         Ok(())
     }
 
@@ -491,7 +604,7 @@ mod tests {
         match executor.exec_cmd(&cmd).await {
             Err(CommandError::TimedOut { timeout, output }) => {
                 assert_eq!(timeout, Duration::from_millis(100));
-                assert!(output.to_string().contains("ready"));
+                assert!(output.to_string_lossy().contains("ready"));
             }
             other => anyhow::bail!("expected timeout error, got {other:?}"),
         }
@@ -512,8 +625,7 @@ mod tests {
         match executor.exec_cmd(&Command::shell("sleep 1")).await {
             Err(CommandError::TimedOut { timeout, output }) => {
                 assert_eq!(timeout, Duration::from_millis(100));
-                assert!(output.to_string().is_empty());
-                assert!(output.stderr.is_empty());
+                assert!(output.is_empty());
             }
             other => anyhow::bail!("expected default timeout, got {other:?}"),
         }
@@ -538,7 +650,8 @@ mod tests {
         let echo_cmd = Command::shell("printenv");
 
         // Execute the echo command
-        let output = executor.exec_cmd(&echo_cmd).await?.to_string();
+        let result = executor.exec_cmd(&echo_cmd).await?;
+        let output = result.to_string_lossy();
 
         // Verify that the output matches the expected content
         // assert_eq!(output.to_string().trim(), "");
@@ -564,7 +677,8 @@ mod tests {
         let echo_cmd = Command::shell("printenv");
 
         // Execute the echo command
-        let output = executor.exec_cmd(&echo_cmd).await?.to_string();
+        let result = executor.exec_cmd(&echo_cmd).await?;
+        let output = result.to_string_lossy();
 
         // Verify that the output matches the expected content
         // assert_eq!(output.to_string().trim(), "");
@@ -592,7 +706,8 @@ mod tests {
         let echo_cmd = Command::shell("printenv");
 
         // Execute the echo command
-        let output = executor.exec_cmd(&echo_cmd).await?.to_string();
+        let result = executor.exec_cmd(&echo_cmd).await?;
+        let output = result.to_string_lossy();
 
         // Verify that the output matches the expected content
         // assert_eq!(output.to_string().trim(), "");
@@ -618,10 +733,8 @@ print("hello from python")
 print(1 + 2)"#;
 
         // Execute the echo command
-        let output = executor
-            .exec_cmd(&Command::shell(script))
-            .await?
-            .to_string();
+        let result = executor.exec_cmd(&Command::shell(script)).await?;
+        let output = result.to_string_lossy();
 
         // Verify that the output matches the expected content
         assert!(output.contains("hello from python"));
@@ -663,7 +776,7 @@ print(1 + 2)"#;
         let output = executor.exec_cmd(&read_cmd).await?;
 
         // Verify that the content read from the file matches the expected content
-        assert_eq!(output.to_string(), format!("{file_content}"));
+        assert_eq!(output.to_string_lossy(), format!("{file_content}\n"));
 
         Ok(())
     }
@@ -707,11 +820,28 @@ print(1 + 2)"#;
         let read_cmd = Command::read_file(file_path.clone());
 
         // Execute the read command
-        let output = executor.exec_cmd(&read_cmd).await?.stdout;
+        let output = executor
+            .exec_cmd(&read_cmd)
+            .await?
+            .to_string_lossy()
+            .into_owned();
 
         // Verify that the content read from the file matches the expected content
         assert_eq!(output, file_content);
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn read_file_preserves_invalid_utf8() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let file = temp_dir.path().join("bytes.bin");
+        fs_err::tokio::write(&file, b"valid\xff").await?;
+        let executor = LocalExecutor::new(temp_dir.path());
+
+        let output = executor.exec_cmd(&Command::read_file(file)).await?;
+
+        assert_eq!(output.as_bytes(), b"valid\xff");
         Ok(())
     }
 
@@ -765,7 +895,8 @@ print(1 + 2)"#;
 
         // 2. Run a shell command in workdir and check output is workdir
         let pwd_cmd = Command::shell("pwd");
-        let pwd_output = executor.exec_cmd(&pwd_cmd).await?.to_string();
+        let pwd_result = executor.exec_cmd(&pwd_cmd).await?;
+        let pwd_output = pwd_result.to_string_lossy();
         let pwd_path = std::fs::canonicalize(pwd_output.trim())?;
         let temp_path = std::fs::canonicalize(temp_path)?;
         assert_eq!(pwd_path, temp_path);
@@ -782,7 +913,8 @@ print(1 + 2)"#;
 
         // 5. Write/read using ReadFile
         let read_cmd = Command::read_file(fname);
-        let read_output = executor.exec_cmd(&read_cmd).await?.to_string();
+        let read_result = executor.exec_cmd(&read_cmd).await?;
+        let read_output = read_result.to_string_lossy();
         assert_eq!(read_output.trim(), "test123");
 
         // 6. Clean up
@@ -809,7 +941,8 @@ print(1 + 2)"#;
 
         let mut pwd_cmd = Command::shell("pwd");
         pwd_cmd.current_dir(Path::new("nested"));
-        let pwd_output = executor.exec_cmd(&pwd_cmd).await?.to_string();
+        let pwd_result = executor.exec_cmd(&pwd_cmd).await?;
+        let pwd_output = pwd_result.to_string_lossy();
         let pwd_path = std::fs::canonicalize(pwd_output.trim())?;
         assert_eq!(pwd_path, std::fs::canonicalize(&nested_dir)?);
 
@@ -822,7 +955,8 @@ print(1 + 2)"#;
 
         let mut read_cmd = Command::read_file("file.txt");
         read_cmd.current_dir(Path::new("nested"));
-        let read_output = executor.exec_cmd(&read_cmd).await?.to_string();
+        let read_result = executor.exec_cmd(&read_cmd).await?;
+        let read_output = read_result.to_string_lossy();
         assert_eq!(read_output.trim(), "hello");
 
         Ok(())

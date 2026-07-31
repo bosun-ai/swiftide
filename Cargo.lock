@@ -10100,6 +10100,7 @@ dependencies = [
  "futures-util",
  "indoc",
  "insta",
+ "process-wrap",
  "rmcp",
  "schemars 1.2.2",
  "serde",
