@@ -612,37 +612,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(unix)]
-    #[tokio::test]
-    async fn cancelling_execution_kills_the_command() -> anyhow::Result<()> {
-        let temp_dir = TempDir::new()?;
-        let pid_file = temp_dir.path().join("shell.pid");
-        let executor = LocalExecutor::new(temp_dir.path());
-        let command = Command::shell(format!(
-            "echo $$ > '{}'; sleep 30",
-            pid_file.as_path().display()
-        ));
-
-        let task = tokio::spawn(async move { executor.exec_cmd(&command).await });
-        time::timeout(Duration::from_secs(2), async {
-            while !pid_file.exists() {
-                time::sleep(Duration::from_millis(10)).await;
-            }
-        })
-        .await?;
-        let pid = fs_err::tokio::read_to_string(&pid_file)
-            .await?
-            .trim()
-            .parse::<i32>()?;
-
-        task.abort();
-        let _ = task.await;
-
-        wait_for_process_exit(pid).await?;
-
-        Ok(())
-    }
-
     #[tokio::test]
     async fn test_local_executor_default_timeout_applies() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;

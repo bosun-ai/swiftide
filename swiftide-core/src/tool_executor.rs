@@ -9,6 +9,7 @@ use crate::{command_output::CommandOutput, indexing::IndexingStream};
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
+use thiserror::Error;
 
 /// A `ToolExecutor` provides an interface for agents to interact with a system
 /// in an isolated context.
@@ -188,48 +189,22 @@ impl ToolExecutor for Box<dyn ToolExecutor> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum CommandError {
     /// The executor itself failed
-    ExecutorError(anyhow::Error),
+    #[error("executor error: {0:#}")]
+    ExecutorError(#[from] anyhow::Error),
 
     /// The command exceeded its allotted time budget
+    #[error("command timed out after {timeout:?}: {output}")]
     TimedOut {
         timeout: Duration,
         output: CommandOutput,
     },
 
     /// The command failed, i.e. failing tests with stderr. This error might be handled
+    #[error("command failed with NonZeroExit: {0}")]
     NonZeroExit(CommandOutput),
-}
-
-impl std::fmt::Display for CommandError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::ExecutorError(error) => write!(formatter, "executor error: {error:#}"),
-            Self::TimedOut { timeout, output } => {
-                write!(formatter, "command timed out after {timeout:?}: {output}")
-            }
-            Self::NonZeroExit(output) => {
-                write!(formatter, "command failed with NonZeroExit: {output}")
-            }
-        }
-    }
-}
-
-impl std::error::Error for CommandError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::ExecutorError(error) => Some(error.as_ref()),
-            Self::TimedOut { .. } | Self::NonZeroExit(_) => None,
-        }
-    }
-}
-
-impl From<anyhow::Error> for CommandError {
-    fn from(error: anyhow::Error) -> Self {
-        Self::ExecutorError(error)
-    }
 }
 
 impl From<std::io::Error> for CommandError {
