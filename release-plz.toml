@@ -5,6 +5,7 @@ git_tag_name = "{{ package }}-v{{ version }}"
 changelog_update = false
 git_tag_enable = false
 git_release_enable = false
+release_always = false
 repo_url = "https://github.com/bosun-ai/swiftide"
 
 [[package]]
