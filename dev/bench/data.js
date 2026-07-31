@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785437738203,
+  "lastUpdate": 1785507057695,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32699,6 +32699,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2192401,
             "range": "± 15044",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bcff57e1bf38d8951784d482d1c8c9a3ecb3418a",
+          "message": "chore(deps)!: update dependencies (#1133)\n\n## What changed\n\n- rebase the dependency update onto current `master`\n- refresh the Cargo lockfile to the latest compatible dependency\nversions\n- update `parquet` to 59.1, `lancedb` to 0.33, `duckdb` to 1.10505,\n`sqlx` to 0.9, and `text-splitter` to 0.32\n- remove the obsolete Arrow 57 family; LanceDB and DuckDB now share\nArrow 58.4, while Parquet uses latest Arrow 59.1\n- adapt OpenAI, SQLx, Spider, and Bedrock integrations to updated APIs\n- preserve missing OpenAI reasoning IDs instead of replaying invalid\nempty IDs\n- require Rust 1.97 across every workspace package\n- enable Cargo Deny in CI and update the dependency policy\n- bind pgvector metadata filter values and validate generated SQL\nidentifiers\n\nA single Arrow 59.1 family is not currently possible without patching\nupstream crates: latest LanceDB and DuckDB both require Arrow 58.\n\n## Compatibility\n\n- the minimum supported Rust version is now 1.97\n- `ReasoningItem.id` is now `Option<String>` so providers can omit the\nID safely\n- public SQLx, text-splitter, LanceDB, and DuckDB types follow their\nupdated dependency APIs\n\n## Validation\n\n- `cargo check --workspace --all-features`\n- `cargo clippy --workspace --all-targets --all-features -- -D warnings`\n- focused OpenAI, Bedrock, agent reasoning, LanceDB, DuckDB, Parquet,\nand Spider tests\n- `cargo +nightly fmt --all -- --check`\n- `cargo deny check`\n- `git diff --check`\n\nCargo Hack is intentionally run only by GitHub Actions.\n\nBREAKING CHANGE: Swiftide now requires Rust 1.97. `ReasoningItem.id` is\nnow `Option<String>`, and public SQLx, text-splitter, LanceDB, and\nDuckDB types follow their upgraded dependency APIs.",
+          "timestamp": "2026-07-31T15:59:25+02:00",
+          "tree_id": "639c88f25f233b9b5f033fef034ae7f45ea6a845",
+          "url": "https://github.com/bosun-ai/swiftide/commit/bcff57e1bf38d8951784d482d1c8c9a3ecb3418a"
+        },
+        "date": 1785507055171,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 903049,
+            "range": "± 35801",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 264874,
+            "range": "± 2087",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2108,
+            "range": "± 2184",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7690,
+            "range": "± 300",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28645,
+            "range": "± 936",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4253912,
+            "range": "± 26536",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2139216,
+            "range": "± 13588",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16965001,
+            "range": "± 85314",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2155872,
+            "range": "± 13790",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67905588,
+            "range": "± 360832",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2187291,
+            "range": "± 9472",
             "unit": "ns/iter"
           }
         ]
