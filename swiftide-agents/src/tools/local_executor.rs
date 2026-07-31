@@ -19,11 +19,16 @@ use std::os::windows::io::OwnedHandle;
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
+#[cfg(windows)]
+use process_wrap::tokio::JobObject;
+#[cfg(unix)]
+use process_wrap::tokio::ProcessGroup;
+use process_wrap::tokio::{CommandWrap, KillOnDrop};
 use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
-    process::{Child, ChildStdin},
+    process::ChildStdin,
     time,
 };
 
@@ -108,12 +113,10 @@ impl LocalExecutor {
         };
 
         self.configure_command(&mut command);
-        configure_process_group(&mut command);
 
         let (reader, writer) = pipe()?;
         command
             .current_dir(workdir)
-            .kill_on_drop(true)
             .stdin(if input.is_some() {
                 Stdio::piped()
             } else {
@@ -122,10 +125,16 @@ impl LocalExecutor {
             .stdout(writer.try_clone()?)
             .stderr(writer);
 
+        let mut command = CommandWrap::from(command);
+        #[cfg(unix)]
+        command.wrap(ProcessGroup::leader());
+        #[cfg(windows)]
+        command.wrap(JobObject);
+        command.wrap(KillOnDrop);
+
         let mut child = command.spawn()?;
         drop(command);
-        let mut process_group = ProcessGroupGuard::new(&child)?;
-        let stdin = child.stdin.take();
+        let stdin = child.stdin().take();
         let mut reader = async_pipe_reader(reader);
         let mut output = Vec::new();
 
@@ -140,7 +149,11 @@ impl LocalExecutor {
             Some(limit) => {
                 let Ok(result) = time::timeout(limit, execution).await else {
                     tracing::warn!(?limit, "command exceeded timeout; terminating");
-                    process_group.terminate(&mut child).await;
+                    if let Err(error) = Box::into_pin(child.kill()).await
+                        && error.kind() != io::ErrorKind::InvalidInput
+                    {
+                        tracing::warn!(?error, "failed to kill command");
+                    }
                     drain_output(&mut reader, &mut output).await;
 
                     return Err(CommandError::TimedOut {
@@ -153,7 +166,6 @@ impl LocalExecutor {
             None => execution.await?,
         };
 
-        process_group.disarm();
         let output = CommandOutput::new(output);
 
         if status.success() {
@@ -291,77 +303,6 @@ fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
     tokio::fs::File::from_std(File::from(OwnedHandle::from(reader)))
 }
 
-fn configure_process_group(command: &mut tokio::process::Command) {
-    #[cfg(unix)]
-    command.process_group(0);
-}
-
-struct ProcessGroupGuard {
-    #[cfg(unix)]
-    pid: Option<nix::unistd::Pid>,
-}
-
-impl ProcessGroupGuard {
-    fn new(child: &Child) -> io::Result<Self> {
-        #[cfg(unix)]
-        {
-            let pid = child
-                .id()
-                .ok_or_else(|| io::Error::other("spawned command has no process id"))?;
-            let pid = i32::try_from(pid)
-                .map_err(|_| io::Error::other("command process id is out of range"))?;
-            Ok(Self {
-                pid: Some(nix::unistd::Pid::from_raw(pid)),
-            })
-        }
-        #[cfg(not(unix))]
-        {
-            let _ = child;
-            Ok(Self {})
-        }
-    }
-
-    fn disarm(&mut self) {
-        #[cfg(unix)]
-        {
-            self.pid = None;
-        }
-    }
-
-    async fn terminate(&mut self, child: &mut Child) {
-        if let Err(error) = self.kill() {
-            tracing::warn!(?error, "failed to kill command process group");
-        }
-        if let Err(error) = child.start_kill()
-            && error.kind() != io::ErrorKind::InvalidInput
-        {
-            tracing::warn!(?error, "failed to kill command");
-        }
-        if let Err(error) = child.wait().await {
-            tracing::warn!(?error, "failed to reap command");
-        }
-    }
-
-    fn kill(&mut self) -> io::Result<()> {
-        #[cfg(unix)]
-        if let Some(pid) = self.pid.take() {
-            let group = nix::unistd::Pid::from_raw(-pid.as_raw());
-            match nix::sys::signal::kill(group, nix::sys::signal::Signal::SIGKILL) {
-                Ok(()) | Err(nix::errno::Errno::ESRCH) => {}
-                Err(error) => return Err(error.into()),
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Drop for ProcessGroupGuard {
-    fn drop(&mut self) {
-        if let Err(error) = self.kill() {
-            tracing::warn!(?error, "failed to clean up command process group");
-        }
-    }
-}
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
     /// Execute a `Command` on the local machine
@@ -404,6 +345,21 @@ mod tests {
     use std::{path::Path, sync::Arc, time::Duration};
     use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
+
+    #[cfg(unix)]
+    async fn wait_for_process_exit(pid: i32) -> anyhow::Result<()> {
+        time::timeout(Duration::from_secs(2), async {
+            while std::process::Command::new("kill")
+                .args(["-0", &pid.to_string()])
+                .status()
+                .is_ok_and(|status| status.success())
+            {
+                time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await?;
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_local_executor_write_and_read_file() -> anyhow::Result<()> {
@@ -573,6 +529,31 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn timing_out_execution_kills_spawned_processes() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let pid_file = temp_dir.path().join("child.pid");
+        let executor = LocalExecutor::new(temp_dir.path());
+        let command = Command::shell(format!(
+            "sleep 30 & echo $! > '{}'; wait",
+            pid_file.display()
+        ))
+        .with_timeout(Duration::from_millis(500));
+
+        assert!(matches!(
+            executor.exec_cmd(&command).await,
+            Err(CommandError::TimedOut { .. })
+        ));
+        let pid = fs_err::tokio::read_to_string(pid_file)
+            .await?
+            .trim()
+            .parse()?;
+        wait_for_process_exit(pid).await?;
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn test_local_executor_passes_shebang_argument() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
@@ -633,7 +614,7 @@ mod tests {
 
     #[cfg(unix)]
     #[tokio::test]
-    async fn cancelling_execution_kills_the_command_process_group() -> anyhow::Result<()> {
+    async fn cancelling_execution_kills_the_command() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let pid_file = temp_dir.path().join("shell.pid");
         let executor = LocalExecutor::new(temp_dir.path());
@@ -657,16 +638,7 @@ mod tests {
         task.abort();
         let _ = task.await;
 
-        time::timeout(Duration::from_secs(2), async {
-            while std::process::Command::new("kill")
-                .args(["-0", &pid.to_string()])
-                .status()
-                .is_ok_and(|status| status.success())
-            {
-                time::sleep(Duration::from_millis(10)).await;
-            }
-        })
-        .await?;
+        wait_for_process_exit(pid).await?;
 
         Ok(())
     }

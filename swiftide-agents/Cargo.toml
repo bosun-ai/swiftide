@@ -35,6 +35,7 @@ tokio-stream.workspace = true
 tokio-util = { workspace = true, features = ["rt"] }
 convert_case.workspace = true
 schemars = { workspace = true, features = ["derive"] }
+process-wrap = { version = "=9.0.3", default-features = false, features = ["job-object", "kill-on-drop", "process-group", "tokio1"] }
 
 # Mcp
 rmcp = { workspace = true, optional = true, default-features = false, features = [
@@ -63,6 +64,3 @@ rustdoc-args = ["--cfg", "docsrs"]
 mcp = ["dep:rmcp"]
 json-schema = ["swiftide-core/json-schema"]
 langfuse = []
-
-[target."cfg(unix)".dependencies]
-nix = { version = "=0.31.2", features = ["signal", "process"] }
