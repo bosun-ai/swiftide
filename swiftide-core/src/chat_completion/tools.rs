@@ -110,7 +110,7 @@ impl<S: AsRef<str>> From<S> for ToolOutput {
 
 impl From<CommandOutput> for ToolOutput {
     fn from(output: CommandOutput) -> Self {
-        ToolOutput::Text(output.into_string_lossy())
+        ToolOutput::Text(output.into_stdout_string_lossy())
     }
 }
 impl std::fmt::Display for ToolOutput {

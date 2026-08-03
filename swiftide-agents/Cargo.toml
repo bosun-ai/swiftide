@@ -31,7 +31,7 @@ fs-err = { workspace = true, features = ["tokio"] }
 thiserror.workspace = true
 futures-util.workspace = true
 tokio-stream.workspace = true
-tokio-util = { workspace = true, features = ["rt"] }
+tokio-util = { workspace = true, features = ["io", "rt"] }
 convert_case.workspace = true
 schemars = { workspace = true, features = ["derive"] }
 process-wrap = { version = "=9.0.3", default-features = false, features = ["job-object", "kill-on-drop", "process-group", "tokio1"] }
