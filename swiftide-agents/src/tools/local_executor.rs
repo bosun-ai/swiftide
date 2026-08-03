@@ -4,19 +4,11 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    fs::File,
-    io::{self, PipeReader, pipe},
+    io,
     path::{Path, PathBuf},
-    pin::Pin,
     process::Stdio,
-    task::{Context, Poll},
     time::Duration,
 };
-
-#[cfg(unix)]
-use std::os::fd::OwnedFd;
-#[cfg(windows)]
-use std::os::windows::io::OwnedHandle;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -27,7 +19,9 @@ use process_wrap::tokio::JobObject;
 #[cfg(unix)]
 use process_wrap::tokio::ProcessGroup;
 use process_wrap::tokio::{CommandWrap, KillOnDrop};
-use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
+use swiftide_core::{
+    Command, CommandError, CommandOutput, CommandOutputChunk, Loader, ToolExecutor,
+};
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{io::AsyncWriteExt as _, process::ChildStdin, time};
 use tokio_util::io::ReaderStream;
@@ -115,8 +109,6 @@ impl LocalExecutor {
 
         self.configure_command(&mut command);
 
-        let (stdout_reader, stdout_writer) = pipe()?;
-        let (stderr_reader, stderr_writer) = pipe()?;
         command
             .current_dir(workdir)
             .stdin(if input.is_some() {
@@ -124,8 +116,8 @@ impl LocalExecutor {
             } else {
                 Stdio::null()
             })
-            .stdout(stdout_writer)
-            .stderr(stderr_writer);
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         let mut command = CommandWrap::from(command);
         #[cfg(unix)]
@@ -137,20 +129,28 @@ impl LocalExecutor {
         let mut child = command.spawn()?;
         drop(command);
         let stdin = child.stdin().take();
-        let stdout = CommandOutputStream::Stdout(ReaderStream::with_capacity(
-            async_pipe_reader(stdout_reader),
+        let stdout = ReaderStream::with_capacity(
+            child
+                .stdout()
+                .take()
+                .expect("stdout is configured as piped"),
             OUTPUT_READ_SIZE,
-        ));
-        let stderr = CommandOutputStream::Stderr(ReaderStream::with_capacity(
-            async_pipe_reader(stderr_reader),
+        )
+        .map(|chunk| chunk.map(CommandOutputChunk::Stdout));
+        let stderr = ReaderStream::with_capacity(
+            child
+                .stderr()
+                .take()
+                .expect("stderr is configured as piped"),
             OUTPUT_READ_SIZE,
-        ));
+        )
+        .map(|chunk| chunk.map(CommandOutputChunk::Stderr));
         let mut output_stream = stream::select(stdout, stderr);
-        let mut output = CommandOutput::empty();
+        let mut output_chunks = Vec::new();
 
         let execution = async {
             let write_input = write_input(stdin, input);
-            let read_output = collect_output(&mut output_stream, &mut output);
+            let read_output = collect_output(&mut output_stream, &mut output_chunks);
             let (status, (), ()) = tokio::try_join!(child.wait(), read_output, write_input)?;
             Ok::<_, io::Error>(status)
         };
@@ -164,11 +164,11 @@ impl LocalExecutor {
                     {
                         tracing::warn!(?error, "failed to kill command");
                     }
-                    drain_output(&mut output_stream, &mut output).await;
+                    drain_output(&mut output_stream, &mut output_chunks).await;
 
                     return Err(CommandError::TimedOut {
                         timeout: limit,
-                        output,
+                        output: CommandOutput::from_chunks(output_chunks),
                     });
                 };
                 result?
@@ -176,6 +176,7 @@ impl LocalExecutor {
             None => execution.await?,
         };
 
+        let output = CommandOutput::from_chunks(output_chunks);
         if status.success() {
             Ok(output)
         } else {
@@ -293,74 +294,25 @@ async fn write_input(mut stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io:
     Ok(())
 }
 
-enum CommandOutputChunk<T> {
-    Stdout(T),
-    Stderr(T),
-}
-
-enum CommandOutputStream<S> {
-    Stdout(S),
-    Stderr(S),
-}
-
-impl<S, T, E> Stream for CommandOutputStream<S>
+async fn collect_output<S>(stream: &mut S, chunks: &mut Vec<CommandOutputChunk>) -> io::Result<()>
 where
-    S: Stream<Item = std::result::Result<T, E>> + Unpin,
-{
-    type Item = std::result::Result<CommandOutputChunk<T>, E>;
-
-    fn poll_next(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let (stream, map) = match &mut *self {
-            Self::Stdout(stream) => (
-                stream,
-                CommandOutputChunk::Stdout as fn(T) -> CommandOutputChunk<T>,
-            ),
-            Self::Stderr(stream) => (
-                stream,
-                CommandOutputChunk::Stderr as fn(T) -> CommandOutputChunk<T>,
-            ),
-        };
-
-        Pin::new(stream)
-            .poll_next(context)
-            .map(|item| item.map(|result| result.map(map)))
-    }
-}
-
-async fn collect_output<S, T>(stream: &mut S, output: &mut CommandOutput) -> io::Result<()>
-where
-    S: Stream<Item = io::Result<CommandOutputChunk<T>>> + Unpin,
-    T: AsRef<[u8]>,
+    S: Stream<Item = io::Result<CommandOutputChunk>> + Unpin,
 {
     while let Some(chunk) = stream.next().await {
-        match chunk? {
-            CommandOutputChunk::Stdout(bytes) => output.stdout.extend_from_slice(bytes.as_ref()),
-            CommandOutputChunk::Stderr(bytes) => output.stderr.extend_from_slice(bytes.as_ref()),
-        }
+        chunks.push(chunk?);
     }
     Ok(())
 }
 
-async fn drain_output<S, T>(stream: &mut S, output: &mut CommandOutput)
+async fn drain_output<S>(stream: &mut S, chunks: &mut Vec<CommandOutputChunk>)
 where
-    S: Stream<Item = io::Result<CommandOutputChunk<T>>> + Unpin,
-    T: AsRef<[u8]>,
+    S: Stream<Item = io::Result<CommandOutputChunk>> + Unpin,
 {
-    match time::timeout(OUTPUT_DRAIN_TIMEOUT, collect_output(stream, output)).await {
+    match time::timeout(OUTPUT_DRAIN_TIMEOUT, collect_output(stream, chunks)).await {
         Ok(Ok(())) => {}
         Ok(Err(error)) => tracing::warn!(?error, "failed to drain command output"),
         Err(_) => tracing::warn!("timed out draining command output"),
     }
-}
-
-#[cfg(unix)]
-fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
-    tokio::fs::File::from_std(File::from(OwnedFd::from(reader)))
-}
-
-#[cfg(windows)]
-fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
-    tokio::fs::File::from_std(File::from(OwnedHandle::from(reader)))
 }
 
 #[async_trait]
@@ -505,8 +457,8 @@ mod tests {
             ))
             .await?;
 
-        assert_eq!(output.stdout, b"hello stdout");
-        assert_eq!(output.stderr, b"hello stderr");
+        assert_eq!(output.stdout_to_string_lossy(), "hello stdout");
+        assert_eq!(output.stderr_to_string_lossy(), "hello stderr");
 
         Ok(())
     }
@@ -526,8 +478,8 @@ mod tests {
             .await
         {
             Err(CommandError::NonZeroExit(output)) => {
-                assert!(output.stdout.is_empty());
-                assert_eq!(output.stderr, b"boom");
+                assert!(output.stdout_to_string_lossy().is_empty());
+                assert_eq!(output.stderr_to_string_lossy(), "boom");
             }
             other => anyhow::bail!("expected non-zero exit, got {other:?}"),
         }
@@ -549,8 +501,32 @@ mod tests {
             ))
             .await?;
 
-        assert_eq!(output.stdout, b"onethree");
-        assert_eq!(output.stderr, b"two");
+        assert_eq!(output.stdout_to_string_lossy(), "onethree");
+        assert_eq!(output.stderr_to_string_lossy(), "two");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_retains_observed_chunk_order() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor::new(temp_dir.path());
+
+        let output = executor
+            .exec_cmd(&Command::shell(
+                "printf 'one'; sleep 0.05; printf 'two' >&2; sleep 0.05; printf 'three'",
+            ))
+            .await?;
+
+        assert_eq!(output.to_string_lossy(), "onetwothree");
+        assert!(matches!(
+            output.chunks(),
+            [
+                CommandOutputChunk::Stdout(_),
+                CommandOutputChunk::Stderr(_),
+                CommandOutputChunk::Stdout(_)
+            ]
+        ));
 
         Ok(())
     }
@@ -566,8 +542,8 @@ mod tests {
             ))
             .await?;
 
-        assert_eq!(output.stdout, b"one\n\n");
-        assert_eq!(output.stderr, b"two\r\n");
+        assert_eq!(output.stdout_to_string_lossy(), "one\n\n");
+        assert_eq!(output.stderr_to_string_lossy(), "two\r\n");
 
         Ok(())
     }
@@ -584,8 +560,8 @@ mod tests {
 
         match executor.exec_cmd(&command).await {
             Err(CommandError::TimedOut { output, .. }) => {
-                assert_eq!(output.stdout, b"one");
-                assert_eq!(output.stderr, b"two");
+                assert_eq!(output.stdout_to_string_lossy(), "one");
+                assert_eq!(output.stderr_to_string_lossy(), "two");
             }
             other => anyhow::bail!("expected timeout, got {other:?}"),
         }
@@ -630,8 +606,8 @@ mod tests {
             .await
         {
             Err(CommandError::NonZeroExit(output)) => {
-                assert_eq!(output.stdout, b"before");
-                assert!(output.stderr.is_empty());
+                assert_eq!(output.stdout_to_string_lossy(), "before");
+                assert!(output.stderr_to_string_lossy().is_empty());
             }
             other => anyhow::bail!("expected non-zero exit, got {other:?}"),
         }
@@ -867,7 +843,7 @@ print(1 + 2)"#;
         let result = executor.exec_cmd(&cmd).await;
 
         if let Err(err) = result {
-            assert!(matches!(err, CommandError::NonZeroExit(..)));
+            assert!(matches!(err, CommandError::ExecutorError(..)));
         } else {
             panic!("Expected error but got {result:?}");
         }
@@ -906,8 +882,9 @@ print(1 + 2)"#;
 
         let output = executor.exec_cmd(&Command::read_file(file)).await?;
 
-        assert_eq!(output.stdout, b"valid\xff");
-        assert!(output.stderr.is_empty());
+        assert_eq!(output.chunks().len(), 1);
+        assert_eq!(output.chunks()[0].as_bytes(), b"valid\xff");
+        assert!(output.stderr_to_string_lossy().is_empty());
         Ok(())
     }
 

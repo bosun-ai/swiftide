@@ -10127,6 +10127,7 @@ dependencies = [
  "async-openai",
  "async-trait",
  "backoff",
+ "bytes",
  "derive_builder",
  "dyn-clone",
  "futures-util",
