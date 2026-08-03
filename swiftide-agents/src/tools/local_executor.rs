@@ -27,15 +27,20 @@ use tokio::{io::AsyncWriteExt as _, process::ChildStdin, time};
 use tokio_util::io::ReaderStream;
 
 const OUTPUT_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
-const OUTPUT_READ_SIZE: usize = 8 * 1024;
+const DEFAULT_OUTPUT_READ_SIZE: usize = 8 * 1024;
 
 #[derive(Debug, Clone, Builder)]
+#[builder(build_fn(validate = "Self::validate"))]
 pub struct LocalExecutor {
     #[builder(default = ".".into(), setter(into))]
     workdir: PathBuf,
 
     #[builder(default)]
     default_timeout: Option<Duration>,
+
+    /// Maximum bytes read from an output pipe per chunk.
+    #[builder(default = "DEFAULT_OUTPUT_READ_SIZE")]
+    output_read_size: usize,
 
     /// Clears env variables before executing commands.
     #[builder(default)]
@@ -53,10 +58,21 @@ impl Default for LocalExecutor {
         LocalExecutor {
             workdir: ".".into(),
             default_timeout: None,
+            output_read_size: DEFAULT_OUTPUT_READ_SIZE,
             env_clear: false,
             env_remove: Vec::new(),
             envs: HashMap::new(),
         }
+    }
+}
+
+impl LocalExecutorBuilder {
+    fn validate(&self) -> Result<(), String> {
+        if self.output_read_size == Some(0) {
+            return Err("output read size must be greater than zero".into());
+        }
+
+        Ok(())
     }
 }
 
@@ -65,6 +81,7 @@ impl LocalExecutor {
         LocalExecutor {
             workdir: workdir.into(),
             default_timeout: None,
+            output_read_size: DEFAULT_OUTPUT_READ_SIZE,
             env_clear: false,
             env_remove: Vec::new(),
             envs: HashMap::new(),
@@ -134,7 +151,7 @@ impl LocalExecutor {
                 .stdout()
                 .take()
                 .expect("stdout is configured as piped"),
-            OUTPUT_READ_SIZE,
+            self.output_read_size,
         )
         .map(|chunk| chunk.map(CommandOutputChunk::Stdout));
         let stderr = ReaderStream::with_capacity(
@@ -142,7 +159,7 @@ impl LocalExecutor {
                 .stderr()
                 .take()
                 .expect("stderr is configured as piped"),
-            OUTPUT_READ_SIZE,
+            self.output_read_size,
         )
         .map(|chunk| chunk.map(CommandOutputChunk::Stderr));
         let mut output_stream = stream::select(stdout, stderr);
@@ -460,6 +477,40 @@ mod tests {
         assert_eq!(output.stderr_to_string_lossy(), "hello stderr");
 
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_local_executor_uses_configured_output_read_size() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor::builder()
+            .workdir(temp_dir.path().to_path_buf())
+            .output_read_size(3)
+            .build()?;
+
+        let output = executor
+            .exec_cmd(&Command::shell("printf 'abcdef'; printf 'uvwxyz' >&2"))
+            .await?;
+
+        assert!(
+            output
+                .chunks()
+                .iter()
+                .all(|chunk| chunk.as_bytes().len() <= 3)
+        );
+        assert_eq!(output.stdout_to_string_lossy(), "abcdef");
+        assert_eq!(output.stderr_to_string_lossy(), "uvwxyz");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_local_executor_rejects_zero_output_read_size() {
+        assert!(
+            LocalExecutor::builder()
+                .output_read_size(0)
+                .build()
+                .is_err()
+        );
     }
 
     #[tokio::test]
