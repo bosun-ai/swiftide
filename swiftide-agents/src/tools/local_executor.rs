@@ -352,7 +352,6 @@ impl ToolExecutor for LocalExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures_util::StreamExt as _;
     use indoc::indoc;
     use std::{path::Path, sync::Arc, time::Duration};
     use swiftide_core::{Command, ExecutorExt, ToolExecutor};
