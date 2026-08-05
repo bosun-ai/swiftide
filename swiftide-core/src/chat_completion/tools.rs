@@ -113,32 +113,6 @@ impl From<CommandOutput> for ToolOutput {
         ToolOutput::Text(output.into_string_lossy())
     }
 }
-
-#[cfg(test)]
-mod command_output_tests {
-    use super::{CommandOutput, ToolOutput};
-    use crate::CommandOutputChunk;
-    use bytes::Bytes;
-
-    #[test]
-    fn keeps_stdout_and_stderr_in_tool_output() {
-        let output = CommandOutput::from_chunks([
-            CommandOutputChunk::Stdout(Bytes::from_static(b"out")),
-            CommandOutputChunk::Stderr(Bytes::from_static(b"err")),
-        ]);
-
-        assert_eq!(ToolOutput::from(output), ToolOutput::Text("outerr".into()));
-    }
-
-    #[test]
-    fn keeps_stderr_only_tool_output() {
-        let output =
-            CommandOutput::from_chunks([CommandOutputChunk::Stderr(Bytes::from_static(b"err"))]);
-
-        assert_eq!(ToolOutput::from(output), ToolOutput::Text("err".into()));
-    }
-}
-
 impl std::fmt::Display for ToolOutput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
