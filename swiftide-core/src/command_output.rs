@@ -87,6 +87,11 @@ impl CommandOutput {
         })
     }
 
+    /// Converts all output to owned text in observed chunk order.
+    pub fn to_string_lossy(&self) -> String {
+        bytes_into_string_lossy(self.bytes())
+    }
+
     /// Returns all output bytes in observed chunk order.
     pub fn into_bytes(self) -> Vec<u8> {
         let output_len = self.len();
@@ -139,7 +144,7 @@ impl<T: Into<Bytes>> From<T> for CommandOutput {
 
 impl std::fmt::Display for CommandOutput {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(&String::from_utf8_lossy(&self.bytes()))
+        formatter.write_str(&self.to_string_lossy())
     }
 }
 
@@ -170,6 +175,13 @@ mod tests {
         let output = output([stdout("one"), stderr("two"), stdout("three")]);
 
         assert_eq!(output.into_string_lossy(), "onetwothree");
+    }
+
+    #[test]
+    fn reads_output_as_owned_text_in_observed_order() {
+        let output = output([stdout("one"), stderr("two"), stdout("three")]);
+
+        assert_eq!(output.to_string_lossy(), "onetwothree");
     }
 
     #[test]
