@@ -7,7 +7,6 @@ use async_openai::error::OpenAIError;
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
 use derive_builder::Builder;
-use reqwest::StatusCode;
 use serde::Serialize;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -16,6 +15,7 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
+mod provider_error;
 mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
@@ -579,34 +579,7 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
 }
 
 pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelError {
-    match e {
-        OpenAIError::ApiError(api_error) => {
-            // If the response is an ApiError, it could be a context length exceeded error
-            if api_error.api_error.code.as_deref() == Some("context_length_exceeded") {
-                LanguageModelError::context_length_exceeded(OpenAIError::ApiError(api_error))
-            } else if api_error.status_code == StatusCode::TOO_MANY_REQUESTS {
-                LanguageModelError::transient(OpenAIError::ApiError(api_error))
-            } else {
-                LanguageModelError::permanent(OpenAIError::ApiError(api_error))
-            }
-        }
-        OpenAIError::Reqwest(e) => {
-            // async_openai passes any network errors as reqwest errors, so we just assume they are
-            // recoverable
-            LanguageModelError::transient(e)
-        }
-        OpenAIError::JSONDeserialize(_, _) => {
-            // OpenAI generated a non-json response, probably a temporary problem on their side
-            // (i.e. reverse proxy can't find an available backend)
-            LanguageModelError::transient(e)
-        }
-        OpenAIError::StreamError(stream_error) => {
-            LanguageModelError::permanent(OpenAIError::StreamError(stream_error))
-        }
-        OpenAIError::FileSaveError(_)
-        | OpenAIError::FileReadError(_)
-        | OpenAIError::InvalidArgument(_) => LanguageModelError::permanent(e),
-    }
+    provider_error::openai_error_to_language_model_error(e)
 }
 
 #[cfg(test)]
@@ -614,6 +587,7 @@ mod test {
     use super::*;
     use async_openai::error::{ApiError, ApiErrorResponse, OpenAIError, StreamError};
     use eventsource_stream::Event;
+    use reqwest::StatusCode;
 
     /// test default embed model
     #[test]
