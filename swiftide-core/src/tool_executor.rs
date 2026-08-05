@@ -209,7 +209,7 @@ pub enum CommandError {
 
 impl From<std::io::Error> for CommandError {
     fn from(err: std::io::Error) -> Self {
-        CommandError::ExecutorError(err.into())
+        CommandError::NonZeroExit(err.to_string().into())
     }
 }
 
@@ -225,13 +225,6 @@ mod command_error_tests {
             CommandError::NonZeroExit(output).to_string(),
             "command failed with NonZeroExit: onetwo"
         );
-    }
-
-    #[test]
-    fn classifies_io_errors_as_executor_errors() {
-        let error = CommandError::from(std::io::Error::other("failed"));
-
-        assert!(matches!(error, CommandError::ExecutorError(_)));
     }
 }
 
