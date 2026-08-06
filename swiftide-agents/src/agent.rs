@@ -458,6 +458,8 @@ impl Agent {
         }
 
         if self.state.is_pending() {
+            invoke_hooks!(BeforeAll, self);
+
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
                     .add_messages(vec![ChatMessage::System(
@@ -470,7 +472,6 @@ impl Agent {
                     .map_err(AgentError::MessageHistoryError)?;
             }
 
-            invoke_hooks!(BeforeAll, self);
 
             self.load_toolboxes().await?;
         }
