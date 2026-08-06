@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785507057695,
+  "lastUpdate": 1786011850324,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -32807,6 +32807,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2187291,
             "range": "± 9472",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2a0cb5253f2ce93c1021b29508e9eb96dd3b7dc9",
+          "message": "feat(core)!: separate command output streams (#1146)\n\n## What changed\n\n- store command output as ordered, tagged `Bytes` chunks\n- expose stdout and stderr as iterators over borrowed `Bytes`\n- keep combined bytes and text available for existing callers\n- remove stream view types and per-stream string helpers\n- let the local executor stream pipe reads directly into output chunks\n\n## Why\n\nOne ordered chunk list retains the output an agent sees while preserving\nwhich pipe produced each chunk. Stream access borrows existing bytes.\nCombined access borrows empty and single-chunk output and joins\nmulti-chunk output once.\n\nOrdering reflects when the executor observes each pipe. Separate\noperating-system pipes cannot prove process write order.\n\n## Developer impact\n\nUse `chunks()` for tagged output, `stdout()` or `stderr()` for one pipe,\nand `as_bytes()`, `to_string_lossy()`, or their consuming forms for\ncombined output.\n\n```rust\nfor bytes in output.stderr() {\n    handle(bytes);\n}\n```\n\n## Validation\n\n- `cargo +nightly fmt --all -- --check`\n- `cargo clippy -p swiftide-core -p swiftide-agents --all-targets\n--all-features --locked -- -D warnings`\n- `cargo test -p swiftide-core command_output --lib --locked`\n- `cargo test -p swiftide-agents local_executor --lib --locked`\n- `cargo test -p swiftide-core --doc`",
+          "timestamp": "2026-08-06T12:14:16+02:00",
+          "tree_id": "1ba76c742a19cc73f25e37154385459ebd5d828c",
+          "url": "https://github.com/bosun-ai/swiftide/commit/2a0cb5253f2ce93c1021b29508e9eb96dd3b7dc9"
+        },
+        "date": 1786011847399,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 734589,
+            "range": "± 14873",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 202684,
+            "range": "± 4334",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1643,
+            "range": "± 1333",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5952,
+            "range": "± 379",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22097,
+            "range": "± 577",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4228695,
+            "range": "± 20181",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2122894,
+            "range": "± 7717",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16897110,
+            "range": "± 111259",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2135522,
+            "range": "± 14497",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67479728,
+            "range": "± 219811",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2150940,
+            "range": "± 14009",
             "unit": "ns/iter"
           }
         ]
