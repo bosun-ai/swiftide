@@ -17,6 +17,11 @@ const OPENAI_NON_RETRYABLE_QUOTA_ERRORS: &[&str] = &[
     "organization_usage_limit_exceeded",
 ];
 
+// Bifrost deliberately emits this as HTTP 502 to distinguish broken upstream credentials from
+// the caller's Bifrost credentials, but retrying cannot succeed until its configuration changes:
+// https://docs.getbifrost.ai/features/retries-and-fallbacks
+const BIFROST_NON_RETRYABLE_ERROR_TYPES: &[&str] = &["upstream_credentials_exhausted"];
+
 // Canonical retryable OpenRouter error_type values for Chat Completions:
 // https://openrouter.ai/docs/api_reference/errors-and-debugging#typed-error-codes
 const OPENROUTER_TRANSIENT_ERROR_TYPES: &[&str] = &[
@@ -37,6 +42,9 @@ enum ErrorClassification {
 #[derive(Debug, Deserialize)]
 struct ProviderErrorResponse {
     error: Option<ProviderErrorBody>,
+    #[serde(rename = "type")]
+    error_type: Option<String>,
+    status_code: Option<u16>,
     #[serde(default)]
     choices: Vec<ProviderErrorChoice>,
 }
@@ -84,28 +92,39 @@ struct ProviderError {
     code: Option<String>,
     error_type: Option<String>,
     provider_code: Option<String>,
+    status: Option<StatusCode>,
 }
 
 impl ProviderError {
     fn from_response(content: &str) -> Option<Self> {
         let response: ProviderErrorResponse = serde_json::from_str(content).ok()?;
+        let status = response
+            .status_code
+            .and_then(|code| StatusCode::from_u16(code).ok());
+        let response_error_type = response.error_type;
         let error = response
             .error
             .or_else(|| response.choices.into_iter().find_map(|choice| choice.error))?;
         let metadata = error.metadata.unwrap_or_default();
-        let error_type = metadata.error_type.or(error.error_type).or(error.api_type);
+        let error_type = metadata
+            .error_type
+            .or(error.error_type)
+            .or(error.api_type)
+            .or(response_error_type);
 
         Some(Self {
             message: error.message,
             code: error.code.map(|code| code.to_string()),
             error_type,
             provider_code: metadata.provider_code.map(|code| code.to_string()),
+            status,
         })
     }
 
     fn classification(&self) -> ErrorClassification {
         classify_error(
-            status_from_code(self.code.as_deref()),
+            self.status
+                .or_else(|| status_from_code(self.code.as_deref())),
             [
                 self.code.as_deref(),
                 self.error_type.as_deref(),
@@ -185,17 +204,27 @@ fn status_from_code(code: Option<&str>) -> Option<StatusCode> {
 // behavior, in precedence order:
 //
 // 1. `context_length_exceeded` maps to Swiftide's specialized context-length error.
-// 2. OpenAI's documented billing/spend/quota identifiers override HTTP 429 because retrying them
-//    cannot succeed without account action. `OPENAI_NON_RETRYABLE_QUOTA_ERRORS` contains the full
-//    set currently documented at:
+// 2. Explicit permanent identifiers override otherwise-retryable statuses. OpenAI's documented
+//    billing/spend/quota identifiers override HTTP 429 because retrying them cannot succeed
+//    without account action. `OPENAI_NON_RETRYABLE_QUOTA_ERRORS` contains the full set currently
+//    documented at:
 //    https://developers.openai.com/api/docs/guides/error-codes#api-errors
-// 3. `OPENROUTER_TRANSIENT_ERROR_TYPES` is built from every canonical `error_type` in OpenRouter's
+//    Bifrost's `upstream_credentials_exhausted` similarly overrides its synthetic HTTP 502 because
+//    it means every configured upstream credential failed permanently:
+//    https://docs.getbifrost.ai/features/retries-and-fallbacks
+// 3. Other Bifrost gateway errors classify correctly from their top-level `status_code`: documented
+//    governance limits use 429, blocked/budget/request failures use 400/402/403, transient gateway
+//    failures use 5xx, and cancellation uses 499. Reading the status avoids duplicating its types:
+//    https://docs.getbifrost.ai/features/governance/virtual-keys#error-responses
+//    https://github.com/maximhq/bifrost/blob/dev/core/schemas/bifrost.go
+//    https://github.com/maximhq/bifrost/blob/dev/core/bifrost.go
+// 4. `OPENROUTER_TRANSIENT_ERROR_TYPES` is built from every canonical `error_type` in OpenRouter's
 //    rate-limiting and availability group (`rate_limit_exceeded`, `provider_overloaded`, and
 //    `provider_unavailable`) plus its retryable generic failures (`server` and `timeout`):
 //    https://openrouter.ai/docs/api_reference/errors-and-debugging#typed-error-codes
-// 4. OpenRouter documents an in-band numeric `error.code` as the equivalent HTTP status, so 408,
+// 5. OpenRouter documents an in-band numeric `error.code` as the equivalent HTTP status, so 408,
 //    429, and 5xx are transient just like ordinary HTTP errors.
-// 5. All remaining documented OpenRouter types (other token/length, authentication/authorization,
+// 6. All remaining documented OpenRouter types (other token/length, authentication/authorization,
 //    request validation, content policy, image, and `unmapped`) default to permanent. OpenRouter
 //    transforms the other token/length types into successful Chat Completions with finish_reason
 //    `length`, so only `context_length_exceeded` needs special error handling here.
@@ -210,7 +239,9 @@ fn classify_error<'a>(
     }
 
     // Explicit non-retryable types take precedence over a transport status.
-    if contains_identifier(&identifiers, OPENAI_NON_RETRYABLE_QUOTA_ERRORS) {
+    if contains_identifier(&identifiers, OPENAI_NON_RETRYABLE_QUOTA_ERRORS)
+        || contains_identifier(&identifiers, BIFROST_NON_RETRYABLE_ERROR_TYPES)
+    {
         return ErrorClassification::Permanent;
     }
 
@@ -352,6 +383,53 @@ mod tests {
             assert!(matches!(
                 openai_error_to_language_model_error(json_deserialize_error(&content)),
                 LanguageModelError::TransientError(_)
+            ));
+        }
+    }
+
+    #[test]
+    fn bifrost_gateway_status_classifies_in_band_errors() {
+        for (status, error_type) in [
+            (429, "rate_limited"),
+            (429, "token_limited"),
+            (429, "request_limited"),
+            (504, "request_timed_out"),
+            (503, "request_dropped"),
+            (502, "provider_connection_failed"),
+        ] {
+            let content = format!(
+                r#"{{"status_code":{status},"error":{{"type":"{error_type}","message":"Try again"}}}}"#
+            );
+            assert!(matches!(
+                openai_error_to_language_model_error(json_deserialize_error(&content)),
+                LanguageModelError::TransientError(_)
+            ));
+        }
+
+        let outer_type = json_deserialize_error(
+            r#"{"type":"no_eligible_keys","status_code":503,"error":{"message":"Keys are temporarily suppressed"}}"#,
+        );
+        assert!(matches!(
+            openai_error_to_language_model_error(outer_type),
+            LanguageModelError::TransientError(_)
+        ));
+    }
+
+    #[test]
+    fn bifrost_exhausted_credentials_is_permanent_despite_bad_gateway_status() {
+        for error in [
+            json_deserialize_error(
+                r#"{"status_code":502,"error":{"type":"upstream_credentials_exhausted","message":"All configured credentials failed"}}"#,
+            ),
+            api_error(
+                StatusCode::BAD_GATEWAY,
+                "upstream_credentials_exhausted",
+                None,
+            ),
+        ] {
+            assert!(matches!(
+                openai_error_to_language_model_error(error),
+                LanguageModelError::PermanentError(_)
             ));
         }
     }
