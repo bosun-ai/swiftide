@@ -1,49 +1,134 @@
+//! Command output that retains stdout and stderr identity in observed order.
+
 use std::borrow::Cow;
 
-/// The exact bytes observed while executing a command.
+use bytes::Bytes;
+
+/// A chunk observed while reading a command's output pipes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommandOutputChunk {
+    /// Bytes read from stdout.
+    Stdout(Bytes),
+    /// Bytes read from stderr.
+    Stderr(Bytes),
+}
+
+impl CommandOutputChunk {
+    /// Returns the bytes in this chunk.
+    pub fn as_bytes(&self) -> &Bytes {
+        match self {
+            Self::Stdout(bytes) | Self::Stderr(bytes) => bytes,
+        }
+    }
+}
+
+/// Output collected from a finished command.
+///
+/// Chunks retain the order in which the executor observed stdout and stderr. This is not a
+/// guarantee of the order in which the process wrote to separate operating-system pipes.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CommandOutput {
-    bytes: Vec<u8>,
+    chunks: Vec<CommandOutputChunk>,
 }
 
 impl CommandOutput {
+    /// Creates command output without any chunks.
     pub fn empty() -> Self {
         Self::default()
     }
 
-    pub fn new(bytes: impl Into<Vec<u8>>) -> Self {
+    /// Creates output containing one stdout chunk.
+    pub fn new(stdout: impl Into<Bytes>) -> Self {
+        Self::from_chunks([CommandOutputChunk::Stdout(stdout.into())])
+    }
+
+    /// Creates output from chunks in the order they were observed.
+    ///
+    /// Empty chunks are discarded.
+    pub fn from_chunks(chunks: impl IntoIterator<Item = CommandOutputChunk>) -> Self {
         Self {
-            bytes: bytes.into(),
+            chunks: chunks
+                .into_iter()
+                .filter(|chunk| !chunk.as_bytes().is_empty())
+                .collect(),
         }
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
-        &self.bytes
+    /// Returns the ordered stdout and stderr chunks.
+    pub fn chunks(&self) -> &[CommandOutputChunk] {
+        &self.chunks
     }
 
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.bytes
+    /// Iterates over borrowed stdout chunks in observed order.
+    pub fn stdout(&self) -> impl Iterator<Item = &Bytes> {
+        self.chunks.iter().filter_map(|chunk| match chunk {
+            CommandOutputChunk::Stdout(bytes) => Some(bytes),
+            CommandOutputChunk::Stderr(_) => None,
+        })
     }
 
+    /// Iterates over borrowed stderr chunks in observed order.
+    pub fn stderr(&self) -> impl Iterator<Item = &Bytes> {
+        self.chunks.iter().filter_map(|chunk| match chunk {
+            CommandOutputChunk::Stdout(_) => None,
+            CommandOutputChunk::Stderr(bytes) => Some(bytes),
+        })
+    }
+
+    /// Returns all output bytes in observed chunk order.
+    pub fn as_bytes(&self) -> Cow<'_, [u8]> {
+        match self.chunks.as_slice() {
+            [] => Cow::Borrowed(&[]),
+            [chunk] => Cow::Borrowed(chunk.as_bytes()),
+            chunks => {
+                let mut bytes = Vec::with_capacity(self.len());
+                for chunk in chunks {
+                    bytes.extend_from_slice(chunk.as_bytes());
+                }
+                Cow::Owned(bytes)
+            }
+        }
+    }
+
+    /// Converts all output to text in observed chunk order.
     pub fn to_string_lossy(&self) -> Cow<'_, str> {
-        String::from_utf8_lossy(&self.bytes)
+        match self.as_bytes() {
+            Cow::Borrowed(bytes) => String::from_utf8_lossy(bytes),
+            Cow::Owned(bytes) => Cow::Owned(bytes_into_string_lossy(bytes)),
+        }
     }
 
+    /// Returns all output bytes in observed chunk order.
+    pub fn into_bytes(self) -> Vec<u8> {
+        let output_len = self.len();
+        let mut bytes = Vec::with_capacity(output_len);
+        for chunk in self.chunks {
+            bytes.extend_from_slice(chunk.as_bytes());
+        }
+        bytes
+    }
+
+    /// Converts all output to owned text in observed chunk order.
     pub fn into_string_lossy(self) -> String {
-        String::from_utf8(self.bytes)
-            .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+        bytes_into_string_lossy(self.into_bytes())
     }
 
+    /// Returns the number of bytes across all chunks.
     pub fn len(&self) -> usize {
-        self.bytes.len()
+        self.chunks
+            .iter()
+            .map(CommandOutputChunk::as_bytes)
+            .map(Bytes::len)
+            .sum()
     }
 
+    /// Returns `true` when there is no stdout or stderr output.
     pub fn is_empty(&self) -> bool {
-        self.bytes.is_empty()
+        self.chunks.is_empty()
     }
 }
 
-impl<T: Into<Vec<u8>>> From<T> for CommandOutput {
+impl<T: Into<Bytes>> From<T> for CommandOutput {
     fn from(value: T) -> Self {
         Self::new(value)
     }
@@ -55,44 +140,108 @@ impl std::fmt::Display for CommandOutput {
     }
 }
 
+fn bytes_into_string_lossy(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes)
+        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::CommandOutput;
+    use super::{CommandOutput, CommandOutputChunk};
+    use bytes::Bytes;
     use std::borrow::Cow;
 
     #[test]
-    fn borrows_valid_text() {
-        let output = CommandOutput::new("hello");
+    fn exposes_borrowed_stream_chunks_in_observed_order() {
+        let output = output([stdout("one"), stderr("two"), stdout("three")]);
+        let stdout = output.stdout().collect::<Vec<_>>();
+        let stderr = output.stderr().collect::<Vec<_>>();
+
+        assert_eq!(
+            stdout.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+            [b"one".as_slice(), b"three".as_slice()]
+        );
+        assert_eq!(
+            stderr.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+            [b"two".as_slice()]
+        );
+        assert_eq!(stdout[0].as_ptr(), output.chunks()[0].as_bytes().as_ptr());
+        assert_eq!(stderr[0].as_ptr(), output.chunks()[1].as_bytes().as_ptr());
+    }
+
+    #[test]
+    fn combines_exact_bytes_in_observed_order() {
+        let output = output([stdout("one"), stderr("two"), stdout("three")]);
+
+        assert_eq!(output.as_bytes(), b"onetwothree".as_slice());
+        assert_eq!(output.into_bytes(), b"onetwothree");
+    }
+
+    #[test]
+    fn borrows_single_chunk_text() {
+        let output = output([stdout("hello")]);
 
         assert!(matches!(output.to_string_lossy(), Cow::Borrowed("hello")));
     }
 
     #[test]
+    fn owns_multi_chunk_text() {
+        let output = output([stdout("one"), stderr("two")]);
+
+        assert!(matches!(output.to_string_lossy(), Cow::Owned(text) if text == "onetwo"));
+    }
+
+    #[test]
+    fn decodes_utf8_split_across_chunks() {
+        let output = output([
+            stdout(Bytes::from_static(&[0xf0, 0x9f])),
+            stdout(Bytes::from_static(&[0x98, 0x80])),
+        ]);
+
+        assert_eq!(output.to_string_lossy(), "😀");
+    }
+
+    #[test]
     fn replaces_invalid_utf8_only_when_text_is_requested() {
-        let output = CommandOutput::new(b"valid\xff".as_slice());
+        let output = output([stdout(Bytes::from_static(b"valid\xff"))]);
 
-        assert_eq!(output.as_bytes(), b"valid\xff");
-        assert!(matches!(output.to_string_lossy(), Cow::Owned(_)));
-        assert_eq!(output.to_string_lossy(), "valid\u{fffd}");
+        assert_eq!(output.into_string_lossy(), "valid\u{fffd}");
     }
 
     #[test]
-    fn consuming_valid_text_reuses_the_output_allocation() {
-        let bytes = b"hello".to_vec();
-        let pointer = bytes.as_ptr();
+    fn display_uses_observed_chunk_order() {
+        let output = output([stdout("out"), stderr("err")]);
 
-        let rendered = CommandOutput::new(bytes).into_string_lossy();
-
-        assert_eq!(rendered.as_ptr(), pointer);
+        assert_eq!(output.to_string(), "outerr");
     }
 
     #[test]
-    fn preserves_exact_bytes() {
-        let bytes = b"one\r\ntwo\n\n".to_vec();
+    fn display_decodes_utf8_split_across_chunks() {
+        let output = output([
+            stdout(Bytes::from_static(&[0xf0, 0x9f])),
+            stdout(Bytes::from_static(&[0x98, 0x80])),
+        ]);
 
-        let output = CommandOutput::new(bytes);
+        assert_eq!(output.to_string(), "😀");
+    }
 
-        assert_eq!(output.as_bytes(), b"one\r\ntwo\n\n");
-        assert_eq!(output.len(), 10);
+    #[test]
+    fn omits_empty_chunks() {
+        let output = output([stdout(""), stderr("")]);
+
+        assert!(output.is_empty());
+        assert!(output.chunks().is_empty());
+    }
+
+    fn output(chunks: impl IntoIterator<Item = CommandOutputChunk>) -> CommandOutput {
+        CommandOutput::from_chunks(chunks)
+    }
+
+    fn stdout(bytes: impl Into<Bytes>) -> CommandOutputChunk {
+        CommandOutputChunk::Stdout(bytes.into())
+    }
+
+    fn stderr(bytes: impl Into<Bytes>) -> CommandOutputChunk {
+        CommandOutputChunk::Stderr(bytes.into())
     }
 }

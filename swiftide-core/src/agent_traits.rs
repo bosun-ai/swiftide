@@ -5,7 +5,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-pub use crate::command_output::CommandOutput;
+pub use crate::command_output::{CommandOutput, CommandOutputChunk};
 pub use crate::tool_executor::*;
 
 /// Feedback that can be given on a tool, i.e. with a human in the loop

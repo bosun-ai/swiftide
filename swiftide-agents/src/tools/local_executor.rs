@@ -4,33 +4,27 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
-    fs::File,
-    io::{self, PipeReader, pipe},
+    io,
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
 };
 
-#[cfg(unix)]
-use std::os::fd::OwnedFd;
-#[cfg(windows)]
-use std::os::windows::io::OwnedHandle;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use derive_builder::Builder;
+use futures_util::{Stream, StreamExt as _, stream};
 #[cfg(windows)]
 use process_wrap::tokio::JobObject;
 #[cfg(unix)]
 use process_wrap::tokio::ProcessGroup;
 use process_wrap::tokio::{CommandWrap, KillOnDrop};
-use swiftide_core::{Command, CommandError, CommandOutput, Loader, ToolExecutor};
-use swiftide_indexing::loaders::FileLoader;
-use tokio::{
-    io::{AsyncReadExt as _, AsyncWriteExt as _},
-    process::ChildStdin,
-    time,
+use swiftide_core::{
+    Command, CommandError, CommandOutput, CommandOutputChunk, Loader, ToolExecutor,
 };
+use swiftide_indexing::loaders::FileLoader;
+use tokio::{io::AsyncWriteExt as _, process::ChildStdin, time};
+use tokio_util::io::ReaderStream;
 
 const OUTPUT_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -114,7 +108,6 @@ impl LocalExecutor {
 
         self.configure_command(&mut command);
 
-        let (reader, writer) = pipe()?;
         command
             .current_dir(workdir)
             .stdin(if input.is_some() {
@@ -122,8 +115,8 @@ impl LocalExecutor {
             } else {
                 Stdio::null()
             })
-            .stdout(writer.try_clone()?)
-            .stderr(writer);
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         let mut command = CommandWrap::from(command);
         #[cfg(unix)]
@@ -135,13 +128,27 @@ impl LocalExecutor {
         let mut child = command.spawn()?;
         drop(command);
         let stdin = child.stdin().take();
-        let mut reader = async_pipe_reader(reader);
-        let mut output = Vec::new();
+        let stdout = ReaderStream::new(
+            child
+                .stdout()
+                .take()
+                .expect("stdout is configured as piped"),
+        )
+        .map(|chunk| chunk.map(CommandOutputChunk::Stdout));
+        let stderr = ReaderStream::new(
+            child
+                .stderr()
+                .take()
+                .expect("stderr is configured as piped"),
+        )
+        .map(|chunk| chunk.map(CommandOutputChunk::Stderr));
+        let mut output_stream = stream::select(stdout, stderr);
+        let mut output_chunks = Vec::new();
 
         let execution = async {
             let write_input = write_input(stdin, input);
-            let (status, _, ()) =
-                tokio::try_join!(child.wait(), reader.read_to_end(&mut output), write_input)?;
+            let read_output = collect_output(&mut output_stream, &mut output_chunks);
+            let (status, (), ()) = tokio::try_join!(child.wait(), read_output, write_input)?;
             Ok::<_, io::Error>(status)
         };
 
@@ -154,11 +161,11 @@ impl LocalExecutor {
                     {
                         tracing::warn!(?error, "failed to kill command");
                     }
-                    drain_output(&mut reader, &mut output).await;
+                    drain_output(&mut output_stream, &mut output_chunks).await;
 
                     return Err(CommandError::TimedOut {
                         timeout: limit,
-                        output: output.into(),
+                        output: CommandOutput::from_chunks(output_chunks),
                     });
                 };
                 result?
@@ -166,8 +173,7 @@ impl LocalExecutor {
             None => execution.await?,
         };
 
-        let output = CommandOutput::new(output);
-
+        let output = CommandOutput::from_chunks(output_chunks);
         if status.success() {
             Ok(output)
         } else {
@@ -285,22 +291,25 @@ async fn write_input(mut stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io:
     Ok(())
 }
 
-async fn drain_output(reader: &mut tokio::fs::File, output: &mut Vec<u8>) {
-    match time::timeout(OUTPUT_DRAIN_TIMEOUT, reader.read_to_end(output)).await {
-        Ok(Ok(_)) => {}
+async fn collect_output<S>(stream: &mut S, chunks: &mut Vec<CommandOutputChunk>) -> io::Result<()>
+where
+    S: Stream<Item = io::Result<CommandOutputChunk>> + Unpin,
+{
+    while let Some(chunk) = stream.next().await {
+        chunks.push(chunk?);
+    }
+    Ok(())
+}
+
+async fn drain_output<S>(stream: &mut S, chunks: &mut Vec<CommandOutputChunk>)
+where
+    S: Stream<Item = io::Result<CommandOutputChunk>> + Unpin,
+{
+    match time::timeout(OUTPUT_DRAIN_TIMEOUT, collect_output(stream, chunks)).await {
+        Ok(Ok(())) => {}
         Ok(Err(error)) => tracing::warn!(?error, "failed to drain command output"),
         Err(_) => tracing::warn!("timed out draining command output"),
     }
-}
-
-#[cfg(unix)]
-fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
-    tokio::fs::File::from_std(File::from(OwnedFd::from(reader)))
-}
-
-#[cfg(windows)]
-fn async_pipe_reader(reader: PipeReader) -> tokio::fs::File {
-    tokio::fs::File::from_std(File::from(OwnedHandle::from(reader)))
 }
 
 #[async_trait]
@@ -340,11 +349,15 @@ impl ToolExecutor for LocalExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures_util::StreamExt as _;
     use indoc::indoc;
     use std::{path::Path, sync::Arc, time::Duration};
     use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
+
+    fn stream_string<'a, T: AsRef<[u8]> + 'a>(chunks: impl Iterator<Item = &'a T>) -> String {
+        String::from_utf8_lossy(&chunks.flat_map(AsRef::as_ref).copied().collect::<Vec<_>>())
+            .into_owned()
+    }
 
     #[cfg(unix)]
     async fn wait_for_process_exit(pid: i32) -> anyhow::Result<()> {
@@ -430,27 +443,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_local_executor_preserves_exact_combined_output() -> anyhow::Result<()> {
-        let temp_dir = TempDir::new()?;
-        let temp_path = temp_dir.path();
-
-        let executor = LocalExecutor {
-            workdir: temp_path.to_path_buf(),
-            ..Default::default()
-        };
-
-        let output = executor
-            .exec_cmd(&Command::shell(
-                "printf 'hello stdout'; printf 'hello stderr' >&2",
-            ))
-            .await?;
-
-        assert_eq!(output.to_string_lossy(), "hello stdouthello stderr");
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn test_local_executor_preserves_stderr_only_failure() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
@@ -465,7 +457,8 @@ mod tests {
             .await
         {
             Err(CommandError::NonZeroExit(output)) => {
-                assert_eq!(output.to_string_lossy(), "boom");
+                assert!(stream_string(output.stdout()).is_empty());
+                assert_eq!(stream_string(output.stderr()), "boom");
             }
             other => anyhow::bail!("expected non-zero exit, got {other:?}"),
         }
@@ -474,21 +467,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_local_executor_preserves_shell_write_order_without_delays() -> anyhow::Result<()>
-    {
+    async fn test_local_executor_retains_observed_chunk_order() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
-        let executor = LocalExecutor {
-            workdir: temp_dir.path().to_path_buf(),
-            ..Default::default()
-        };
+        let executor = LocalExecutor::new(temp_dir.path());
 
         let output = executor
             .exec_cmd(&Command::shell(
-                "printf 'one'; printf 'two' >&2; printf 'three'",
+                "printf 'one'; sleep 0.05; printf 'two' >&2; sleep 0.05; printf 'three'",
             ))
             .await?;
 
-        assert_eq!(output.to_string_lossy(), "onetwothree");
+        assert_eq!(output.to_string(), "onetwothree");
+        assert_eq!(stream_string(output.stdout()), "onethree");
+        assert_eq!(stream_string(output.stderr()), "two");
+        assert!(matches!(
+            output.chunks(),
+            [
+                CommandOutputChunk::Stdout(_),
+                CommandOutputChunk::Stderr(_),
+                CommandOutputChunk::Stdout(_)
+            ]
+        ));
 
         Ok(())
     }
@@ -504,7 +503,8 @@ mod tests {
             ))
             .await?;
 
-        assert_eq!(output.as_bytes(), b"one\ntwo\r\n\n");
+        assert_eq!(stream_string(output.stdout()), "one\n\n");
+        assert_eq!(stream_string(output.stderr()), "two\r\n");
 
         Ok(())
     }
@@ -521,7 +521,8 @@ mod tests {
 
         match executor.exec_cmd(&command).await {
             Err(CommandError::TimedOut { output, .. }) => {
-                assert_eq!(output.to_string_lossy(), "onetwo");
+                assert_eq!(stream_string(output.stdout()), "one");
+                assert_eq!(stream_string(output.stderr()), "two");
             }
             other => anyhow::bail!("expected timeout, got {other:?}"),
         }
@@ -566,7 +567,7 @@ mod tests {
             .await
         {
             Err(CommandError::NonZeroExit(output)) => {
-                assert_eq!(output.as_bytes(), b"before");
+                assert_eq!(output.to_string_lossy(), "before");
             }
             other => anyhow::bail!("expected non-zero exit, got {other:?}"),
         }
@@ -820,11 +821,8 @@ print(1 + 2)"#;
         let read_cmd = Command::read_file(file_path.clone());
 
         // Execute the read command
-        let output = executor
-            .exec_cmd(&read_cmd)
-            .await?
-            .to_string_lossy()
-            .into_owned();
+        let output = executor.exec_cmd(&read_cmd).await?;
+        let output = output.to_string_lossy();
 
         // Verify that the content read from the file matches the expected content
         assert_eq!(output, file_content);
@@ -841,7 +839,7 @@ print(1 + 2)"#;
 
         let output = executor.exec_cmd(&Command::read_file(file)).await?;
 
-        assert_eq!(output.as_bytes(), b"valid\xff");
+        assert_eq!(output.as_bytes().as_ref(), b"valid\xff");
         Ok(())
     }
 
