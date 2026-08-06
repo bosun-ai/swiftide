@@ -6,6 +6,9 @@ changelog_update = false
 git_tag_enable = false
 git_release_enable = false
 release_always = false
+# swiftide-tasks is unpublished and shares the root README. Five relevant path commits exist
+# after v0.32.1; release-plz ignores this limit once the crate has been published.
+max_analyze_commits = 5
 repo_url = "https://github.com/bosun-ai/swiftide"
 
 [[package]]
