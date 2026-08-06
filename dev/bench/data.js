@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786012385481,
+  "lastUpdate": 1786028054651,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33023,6 +33023,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2126118,
             "range": "± 2750",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a76ff4e57e21ca0fda48b6778e21bf0c021450d4",
+          "message": "refactor(agents)!: use Prompt for system messages (#1151)\n\n## What changed\n\n- Agents now store an optional `Prompt` for their system message.\n- Agents no longer create a default system prompt.\n- Removed the structured `SystemPrompt` builder and its built-in prompt\ntext.\n- Added mutable Tera context insertion to `Prompt`.\n- Run `before_all` hooks before rendering and storing the first system\nmessage.\n\n## Why\n\n`Prompt` already owns templates, Tera context, and rendering. A separate\nsystem-prompt type duplicated those responsibilities and imposed one\nprompt structure on every application.\n\nApplications can now own their complete Tera template, register partials\nthrough `Prompt::extend`, and insert setup-time context before the first\nrender. Swiftide still stores one system message and does not change it\nlater.\n\n## Checks\n\n- `cargo test -p swiftide-core` — 82 passed, 3 ignored\n- `cargo test -p swiftide-agents` — 70 passed, 1 ignored\n- `cargo clippy --all-targets --all-features --workspace -- -D warnings`\n- `cargo fmt --all -- --check`\n- `git diff --check`",
+          "timestamp": "2026-08-06T16:42:15+02:00",
+          "tree_id": "bc772f710cdd0e4ad9b34d2a714faab662228e39",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a76ff4e57e21ca0fda48b6778e21bf0c021450d4"
+        },
+        "date": 1786028051313,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1087916,
+            "range": "± 35323",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 272376,
+            "range": "± 14658",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1939,
+            "range": "± 2041",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7061,
+            "range": "± 281",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26326,
+            "range": "± 118",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4192619,
+            "range": "± 29079",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2104503,
+            "range": "± 12794",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16724439,
+            "range": "± 92093",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2114449,
+            "range": "± 11244",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66950939,
+            "range": "± 428861",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2130211,
+            "range": "± 5676",
             "unit": "ns/iter"
           }
         ]
