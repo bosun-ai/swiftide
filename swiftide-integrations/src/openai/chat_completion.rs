@@ -996,6 +996,112 @@ mod tests {
     }
 
     #[test_log::test(tokio::test)]
+    async fn test_complete_http_200_provider_error_envelope() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "error": {
+                    "message": "Service unavailable.",
+                    "code": 504,
+                    "metadata": { "error_type": "timeout" }
+                }
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let openai = OpenAI::builder()
+            .client(async_openai::Client::with_config(config))
+            .default_prompt_model("gpt-4o")
+            .build()
+            .unwrap();
+        let request = ChatCompletionRequest::from(vec![ChatMessage::User("Hi".into())]);
+
+        let error = openai.complete(&request).await.unwrap_err();
+        assert!(matches!(error, LanguageModelError::TransientError(_)));
+        let message = error.to_string();
+        assert!(message.contains("Service unavailable."));
+        assert!(message.contains("504"));
+        assert!(message.contains("timeout"));
+        assert!(!message.contains("missing field `id`"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_partial_provider_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "choices": [{
+                    "message": { "role": "assistant", "content": "partial output" },
+                    "finish_reason": "error",
+                    "error": {
+                        "message": "Provider disconnected mid-generation",
+                        "code": 502,
+                        "metadata": { "error_type": "provider_unavailable" }
+                    }
+                }]
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let openai = OpenAI::builder()
+            .client(async_openai::Client::with_config(config))
+            .default_prompt_model("gpt-4o")
+            .build()
+            .unwrap();
+        let request = ChatCompletionRequest::from(vec![ChatMessage::User("Hi".into())]);
+
+        let error = openai.complete(&request).await.unwrap_err();
+        assert!(matches!(error, LanguageModelError::TransientError(_)));
+        let message = error.to_string();
+        assert!(message.contains("Provider disconnected mid-generation"));
+        assert!(message.contains("502"));
+        assert!(message.contains("provider_unavailable"));
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_mid_stream_provider_error() {
+        let mock_server = MockServer::start().await;
+        let sse_body = concat!(
+            "data: {\"id\":\"gen-123\",\"object\":\"chat.completion.chunk\",",
+            "\"created\":123,\"model\":\"gpt-4o\",\"provider\":\"OpenAI\",",
+            "\"error\":{\"code\":429,\"message\":\"Rate limit exceeded\",",
+            "\"metadata\":{\"error_type\":\"rate_limit_exceeded\"}},",
+            "\"choices\":[{\"index\":0,\"delta\":{\"content\":\"\"},",
+            "\"finish_reason\":\"error\"}]}\n\n",
+            "data: [DONE]\n\n",
+        );
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new().with_api_base(mock_server.uri());
+        let openai = OpenAI::builder()
+            .client(async_openai::Client::with_config(config))
+            .default_prompt_model("gpt-4o")
+            .build()
+            .unwrap();
+        let request = ChatCompletionRequest::from(vec![ChatMessage::User("Hi".into())]);
+
+        let mut stream = openai.complete_stream(&request).await;
+        let error = stream.next().await.unwrap().unwrap_err();
+        assert!(matches!(error, LanguageModelError::TransientError(_)));
+        let message = error.to_string();
+        assert!(message.contains("Rate limit exceeded"));
+        assert!(message.contains("429"));
+        assert!(message.contains("rate_limit_exceeded"));
+        assert!(stream.next().await.is_none());
+    }
+
+    #[test_log::test(tokio::test)]
     #[allow(clippy::items_after_statements)]
     #[allow(clippy::too_many_lines)]
     async fn test_complete_responses_api() {
