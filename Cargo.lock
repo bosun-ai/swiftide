@@ -10060,7 +10060,7 @@ name = "swiftide"
 version = "0.32.1"
 dependencies = [
  "anyhow",
- "arrow-array 58.4.0",
+ "arrow-array 59.1.0",
  "async-openai",
  "async-trait",
  "document-features",
