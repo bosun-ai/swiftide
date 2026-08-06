@@ -17,9 +17,8 @@
 //!   outside world.
 //! * **Tool Execution**: A context takes a tool executor (local by default) to execute its tools
 //!   on. This enables tools to be run i.e. in containers, remote, etc.
-//! * **System prompt defaults**: `SystemPrompt` provides a default, customizable prompt for the
-//!   agent. If you want to provider your own prompt, the builder takes anything that converts into
-//!   a `Prompt`, including strings.
+//! * **System prompts**: The agent builder accepts anything that converts into a `Prompt`,
+//!   including strings.
 //! * **Open Telemetry**: Agents are fully instrumented with open telemetry.
 //!
 //! # Example
@@ -54,7 +53,6 @@ mod default_context;
 pub mod errors;
 pub mod hooks;
 mod state;
-pub mod system_prompt;
 mod task_agent;
 #[deprecated(
     since = "0.32.1",
