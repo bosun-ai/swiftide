@@ -103,6 +103,12 @@ impl Prompt {
     /// Adds a key-value pair to the context of the Prompt
     #[must_use]
     pub fn with_context_value(mut self, key: &str, value: impl Into<tera::Value>) -> Self {
+        self.insert_context_value(key, value);
+        self
+    }
+
+    /// Inserts a value into the template context.
+    pub fn insert_context_value(&mut self, key: &str, value: impl Into<tera::Value>) -> &mut Self {
         let context = self.context.get_or_insert_with(tera::Context::default);
         context.insert(key, &value.into());
         self
@@ -188,6 +194,14 @@ mod test {
     async fn test_one_off_from_string() {
         let mut prompt: Prompt = "hello {{world}}".into();
         prompt = prompt.with_context_value("world", "swiftide");
+
+        assert_eq!(prompt.render().unwrap(), "hello swiftide");
+    }
+
+    #[test]
+    fn inserts_context_after_prompt_creation() {
+        let mut prompt = Prompt::from("hello {{world}}");
+        prompt.insert_context_value("world", "swiftide");
 
         assert_eq!(prompt.render().unwrap(), "hello swiftide");
     }

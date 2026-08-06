@@ -8,7 +8,6 @@ use crate::{
     },
     invoke_hooks,
     state::{self, StopReason},
-    system_prompt::SystemPrompt,
     tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
 use std::{
@@ -37,8 +36,7 @@ use tracing::{Instrument, debug};
 ///
 /// - The default context is the `DefaultContext`, executing tools locally with the `LocalExecutor`.
 /// - A default `stop` tool is provided for agents to explicitly stop if needed
-/// - The default `SystemPrompt` instructs the agent with chain of thought and some common
-///   safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
+/// - No system prompt is configured by default.
 ///
 ///   Agents are *not* cheap to clone. However, if an agent gets cloned, it will operate on the
 ///   same context.
@@ -71,25 +69,18 @@ pub struct Agent {
     ///
     /// Some agents profit significantly from a tailored prompt. But it is not always needed.
     ///
-    /// See [`SystemPrompt`] for an opiniated, customizable system prompt.
-    ///
-    /// Swiftide provides a default system prompt for all agents.
-    ///
-    /// Alternatively you can also provide a `Prompt` directly, or disable the system prompt.
+    /// Anything that converts into a [`Prompt`] can be provided.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// # use swiftide_agents::system_prompt::SystemPrompt;
     /// # use swiftide_agents::Agent;
     /// Agent::builder()
-    ///     .system_prompt(
-    ///         SystemPrompt::builder().role("You are an expert engineer")
-    ///         .build().unwrap())
+    ///     .system_prompt("You are an expert engineer")
     ///     .build().unwrap();
     /// ```
-    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default()))]
-    pub(crate) system_prompt: Option<SystemPrompt>,
+    #[builder(setter(into, strip_option), default)]
+    pub(crate) system_prompt: Option<Prompt>,
 
     /// Initial state of the agent
     #[builder(private, default = state::State::default())]
@@ -196,7 +187,7 @@ impl AgentBuilder {
     }
 
     /// Returns a mutable reference to the system prompt, if it is set.
-    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+    pub fn system_prompt_mut(&mut self) -> Option<&mut Prompt> {
         self.system_prompt.as_mut().and_then(Option::as_mut)
     }
 
@@ -464,7 +455,6 @@ impl Agent {
                 self.context
                     .add_messages(vec![ChatMessage::System(
                         system_prompt
-                            .to_prompt()
                             .render()
                             .map_err(AgentError::FailedToRenderSystemPrompt)?,
                     )])
@@ -773,14 +763,14 @@ impl Agent {
     }
 
     /// Retrieve the system prompt, if it is set.
-    pub fn system_prompt(&self) -> Option<&SystemPrompt> {
+    pub fn system_prompt(&self) -> Option<&Prompt> {
         self.system_prompt.as_ref()
     }
 
     /// Retrieve a mutable reference to the system prompt, if it is set.
     ///
     /// Note that the system prompt is rendered only once, when the agent starts for the first time
-    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+    pub fn system_prompt_mut(&mut self) -> Option<&mut Prompt> {
         self.system_prompt.as_mut()
     }
 
@@ -982,6 +972,7 @@ mod tests {
 
         // Build the agent
         let agent = Agent::builder().llm(&mock_llm).build().unwrap();
+        assert!(agent.system_prompt().is_none());
 
         // Check that the context is the default context
 
@@ -1388,19 +1379,15 @@ mod tests {
             Ok(chat_response!("Done"; tool_calls = [])),
         );
 
-        let system_prompt = SystemPrompt::builder()
-            .template("Base\n{{additional}}")
-            .build()
-            .unwrap();
         let mut agent = Agent::builder()
             .llm(&mock_llm)
-            .system_prompt(system_prompt)
+            .system_prompt("Base\n{{skills}}")
             .before_all(|agent: &mut Agent| {
                 Box::pin(async move {
                     agent
                         .system_prompt_mut()
                         .unwrap()
-                        .with_added_additional("Skills");
+                        .insert_context_value("skills", "Skills");
                     Ok(())
                 })
             })
