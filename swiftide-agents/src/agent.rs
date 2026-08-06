@@ -458,6 +458,8 @@ impl Agent {
         }
 
         if self.state.is_pending() {
+            invoke_hooks!(BeforeAll, self);
+
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
                     .add_messages(vec![ChatMessage::System(
@@ -469,8 +471,6 @@ impl Agent {
                     .await
                     .map_err(AgentError::MessageHistoryError)?;
             }
-
-            invoke_hooks!(BeforeAll, self);
 
             self.load_toolboxes().await?;
         }
@@ -1375,6 +1375,39 @@ mod tests {
             .unwrap();
 
         agent.query(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn before_all_can_extend_the_initial_system_prompt() {
+        let mock_llm = MockChatCompletion::new();
+        mock_llm.expect_complete(
+            chat_request! {
+                system!("Base\nSkills"),
+                user!("Hello"); tools = []
+            },
+            Ok(chat_response!("Done"; tool_calls = [])),
+        );
+
+        let system_prompt = SystemPrompt::builder()
+            .template("Base\n{{additional}}")
+            .build()
+            .unwrap();
+        let mut agent = Agent::builder()
+            .llm(&mock_llm)
+            .system_prompt(system_prompt)
+            .before_all(|agent: &mut Agent| {
+                Box::pin(async move {
+                    agent
+                        .system_prompt_mut()
+                        .unwrap()
+                        .with_added_additional("Skills");
+                    Ok(())
+                })
+            })
+            .build()
+            .unwrap();
+
+        agent.query_once("Hello").await.unwrap();
     }
 
     #[test_log::test(tokio::test)]

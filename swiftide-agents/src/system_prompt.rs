@@ -100,6 +100,19 @@ impl SystemPrompt {
         self
     }
 
+    /// Appends raw markdown to the additional markdown field.
+    pub fn with_added_additional(&mut self, additional: impl AsRef<str>) -> &mut Self {
+        let additional = additional.as_ref();
+        match &mut self.additional {
+            Some(existing) if !existing.is_empty() => {
+                existing.push_str("\n\n");
+                existing.push_str(additional);
+            }
+            _ => self.additional = Some(additional.to_string()),
+        }
+        self
+    }
+
     /// Sets the template.
     pub fn with_template(&mut self, template: impl Into<Prompt>) -> &mut Self {
         self.template = template.into();
@@ -350,5 +363,17 @@ mod tests {
         assert_eq!(sp.role.as_deref(), Some("explainer"));
         assert_eq!(sp.additional.as_deref(), Some("AGENTS.md here"));
         assert_eq!(sp.template.render().unwrap(), "Template: {{role}}");
+    }
+
+    #[test]
+    fn test_with_added_additional_preserves_existing_markdown() {
+        let mut sp = SystemPrompt::default();
+        sp.with_additional("AGENTS.md here")
+            .with_added_additional("Skills here");
+
+        assert_eq!(
+            sp.additional.as_deref(),
+            Some("AGENTS.md here\n\nSkills here")
+        );
     }
 }
