@@ -77,9 +77,9 @@ impl std::fmt::Debug for DefaultContext {
 
 impl DefaultContext {
     /// Create a new context with a custom executor
-    pub fn from_executor<T: Into<Arc<dyn ToolExecutor>>>(executor: T) -> DefaultContext {
+    pub fn from_executor(executor: Arc<dyn ToolExecutor>) -> DefaultContext {
         DefaultContext {
-            tool_executor: executor.into(),
+            tool_executor: executor,
             ..Default::default()
         }
     }
