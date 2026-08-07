@@ -160,7 +160,10 @@ where
 }
 
 #[async_trait]
-impl ToolExecutor for Arc<dyn ToolExecutor> {
+impl<T> ToolExecutor for Arc<T>
+where
+    T: ToolExecutor + ?Sized,
+{
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         self.as_ref().exec_cmd(cmd).await
     }
