@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786028054651,
+  "lastUpdate": 1786377930225,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33131,6 +33131,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2130211,
             "range": "± 5676",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3736ce790b1d953f0ddbe2258d332d19545a6d47",
+          "message": "fix(tasks): render node errors with display (#1154)\n\n## What changed\n\n- render wrapped task node errors with the inner error's `Display`\noutput\n- add a regression test using a byte-backed error\n\n## Why\n\nTask nodes formatted their inner errors with `Debug`. Non-zero command\nfailures therefore exposed command output as a numeric byte list instead\nof readable text.\n\n## Impact\n\nTask failures and Sentry events now contain readable command error text.\n\n## Validation\n\n- `cargo test -p swiftide-tasks --lib`\n- `cargo clippy -p swiftide-tasks --lib --tests -- -D warnings`\n- `cargo fmt --all -- --check`",
+          "timestamp": "2026-08-10T17:53:52+02:00",
+          "tree_id": "ad5a0547c9375bbe5797cec4e77e593bbcf7605d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3736ce790b1d953f0ddbe2258d332d19545a6d47"
+        },
+        "date": 1786377927427,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 914719,
+            "range": "± 36365",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 265691,
+            "range": "± 2183",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2058,
+            "range": "± 2080",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7621,
+            "range": "± 302",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28083,
+            "range": "± 352",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4259028,
+            "range": "± 29848",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2143555,
+            "range": "± 16904",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 17063234,
+            "range": "± 100166",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2146856,
+            "range": "± 8914",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67765169,
+            "range": "± 439919",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2175562,
+            "range": "± 20621",
             "unit": "ns/iter"
           }
         ]
