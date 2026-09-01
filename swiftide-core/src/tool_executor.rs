@@ -5,7 +5,10 @@ use std::{
     time::Duration,
 };
 
-use crate::{command_output::CommandOutput, indexing::IndexingStream};
+use crate::{
+    command_output::{CommandOutput, CommandOutputChunk},
+    indexing::IndexingStream,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
@@ -27,6 +30,19 @@ pub trait ToolExecutor: Send + Sync + DynClone {
     /// Execute a command in the executor
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError>;
 
+    /// Execute a command and report output as it becomes available.
+    async fn exec_cmd_streaming(
+        &self,
+        cmd: &Command,
+        output: &mut dyn CommandOutputSink,
+    ) -> Result<CommandOutput, CommandError> {
+        let result = self.exec_cmd(cmd).await;
+        if let Some(command_output) = command_output(&result) {
+            report_output(command_output, output);
+        }
+        result
+    }
+
     /// Stream files from the executor
     async fn stream_files(
         &self,
@@ -36,6 +52,40 @@ pub trait ToolExecutor: Send + Sync + DynClone {
 }
 
 dyn_clone::clone_trait_object!(ToolExecutor);
+
+/// Receives command output in the order the executor observed it.
+pub trait CommandOutputSink: Send {
+    fn on_chunk(&mut self, chunk: &CommandOutputChunk);
+}
+
+impl<F> CommandOutputSink for F
+where
+    F: FnMut(&CommandOutputChunk) + Send,
+{
+    fn on_chunk(&mut self, chunk: &CommandOutputChunk) {
+        self(chunk);
+    }
+}
+
+impl CommandOutputSink for () {
+    fn on_chunk(&mut self, _chunk: &CommandOutputChunk) {}
+}
+
+fn command_output(result: &Result<CommandOutput, CommandError>) -> Option<&CommandOutput> {
+    match result {
+        Ok(output)
+        | Err(CommandError::NonZeroExit(output) | CommandError::TimedOut { output, .. }) => {
+            Some(output)
+        }
+        Err(CommandError::ExecutorError(_)) => None,
+    }
+}
+
+fn report_output(output: &CommandOutput, sink: &mut dyn CommandOutputSink) {
+    for chunk in output.chunks() {
+        sink.on_chunk(chunk);
+    }
+}
 
 /// Lightweight executor wrapper that applies a default working directory to forwarded commands.
 ///
@@ -106,6 +156,17 @@ where
         self.executor.exec_cmd(scoped_cmd.as_ref()).await
     }
 
+    async fn exec_cmd_streaming(
+        &self,
+        cmd: &Command,
+        output: &mut dyn CommandOutputSink,
+    ) -> Result<CommandOutput, CommandError> {
+        let scoped_cmd = self.apply_scope(cmd);
+        self.executor
+            .exec_cmd_streaming(scoped_cmd.as_ref(), output)
+            .await
+    }
+
     async fn stream_files(
         &self,
         path: &Path,
@@ -150,6 +211,14 @@ where
         (**self).exec_cmd(cmd).await
     }
 
+    async fn exec_cmd_streaming(
+        &self,
+        cmd: &Command,
+        output: &mut dyn CommandOutputSink,
+    ) -> Result<CommandOutput, CommandError> {
+        (**self).exec_cmd_streaming(cmd, output).await
+    }
+
     async fn stream_files(
         &self,
         path: &Path,
@@ -165,6 +234,14 @@ impl ToolExecutor for Arc<dyn ToolExecutor> {
         self.as_ref().exec_cmd(cmd).await
     }
 
+    async fn exec_cmd_streaming(
+        &self,
+        cmd: &Command,
+        output: &mut dyn CommandOutputSink,
+    ) -> Result<CommandOutput, CommandError> {
+        self.as_ref().exec_cmd_streaming(cmd, output).await
+    }
+
     async fn stream_files(
         &self,
         path: &Path,
@@ -178,6 +255,14 @@ impl ToolExecutor for Arc<dyn ToolExecutor> {
 impl ToolExecutor for Box<dyn ToolExecutor> {
     async fn exec_cmd(&self, cmd: &Command) -> Result<CommandOutput, CommandError> {
         self.as_ref().exec_cmd(cmd).await
+    }
+
+    async fn exec_cmd_streaming(
+        &self,
+        cmd: &Command,
+        output: &mut dyn CommandOutputSink,
+    ) -> Result<CommandOutput, CommandError> {
+        self.as_ref().exec_cmd_streaming(cmd, output).await
     }
 
     async fn stream_files(
