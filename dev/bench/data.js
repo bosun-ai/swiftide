@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786377930225,
+  "lastUpdate": 1789572160137,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33239,6 +33239,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2175562,
             "range": "± 20621",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "goingforstudying@gmail.com",
+            "name": "goingforstudying-ctrl",
+            "username": "goingforstudying-ctrl"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ad42fa97caee7e0702711222d28ec9c6f56c84d5",
+          "message": "fix(indexing): cache nodes only after the pipeline finishes them (#1164)\n\nWas running a continuously restarting indexing job against Qdrant and\nnoticed documents silently vanishing from the index whenever the embed\nor store step hiccuped. `filter_cached` writes the cache entry the\nmoment a node passes the filter, so anything that fails further down the\npipeline is still marked as processed and gets skipped forever on the\nnext run.\n\nSame underlying thing as #151, and it's the caching half of what #1044\nran into with `filter_cached` being unsafe for them. I saw #800 fixed\nthis once by moving the set to the end of the run but got reverted in\n#852, so this take avoids the background task and channel entirely: the\npipeline just keeps the caches registered with `filter_cached` around\nand, inside `run()`, marks a node only once it actually reaches the end\nof the stream. Nothing to drain, nothing to await.\n\nTo make that work with chunking, nodes now carry a `parent_id` pointing\nat the first node they were derived from (set in `build_from_other`),\nand the cache key functions in the redis/redb/duckdb integrations prefer\nthat id. A document that fans out into 50 chunks is cached once, under\nthe same id `filter_cached` originally checked.\n\n`NodeCache` gains a `set_by_id` for the deferred write. I made it a\nrequired method, so custom cache implementations will need to add it —\nseemed better than a default that silently does the wrong thing.\n\nWhat this doesn't fix: if one chunk out of fifty fails and the pipeline\nhas `filter_errors`, the other 49 still mark the document as cached.\nDoing that properly needs per-document chunk accounting, which felt out\nof scope here.\n\nTests: new unit tests in swiftide-indexing cover failure (nothing\ncached), success (cached once), already-cached skip, chunk dedup to the\nparent id, and multiple caches. `cargo test -p swiftide-core -p\nswiftide-indexing --all-features` and `cargo check -p\nswiftide-integrations --features redis,redb,duckdb` pass locally, plus\nclippy on the two core crates. Full workspace `--all-features` needs to\nbuild datafusion and bundled duckdb from source which my box didn't\nsurvive, so I left that to CI.\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n## Summary by CodeRabbit\n\n* **New Features**\n* Added lineage tracking for derived pipeline nodes, preserving their\noriginal source identity.\n  * Added support for marking completed nodes as cached by identifier.\n* Improved cache key consistency for derived and chunked outputs across\nsupported backends.\n\n* **Bug Fixes**\n* Cache completion tracking now respects the filters and branches that\nprocessed each source.\n  * Cache entries avoid duplicate registrations.\n* Cache table initialization and insertion errors no longer interrupt\nprocessing.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-09-16T17:11:00+02:00",
+          "tree_id": "d748c952955e2e4f64776f93105e62916d75dd38",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ad42fa97caee7e0702711222d28ec9c6f56c84d5"
+        },
+        "date": 1789572156921,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 947750,
+            "range": "± 24288",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 267763,
+            "range": "± 2234",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2063,
+            "range": "± 2199",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7532,
+            "range": "± 699",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28042,
+            "range": "± 2370",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4269860,
+            "range": "± 38458",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2132720,
+            "range": "± 13068",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 17013772,
+            "range": "± 109614",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2155178,
+            "range": "± 12586",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 68200382,
+            "range": "± 474449",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2191626,
+            "range": "± 23439",
             "unit": "ns/iter"
           }
         ]
