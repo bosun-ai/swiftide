@@ -344,26 +344,34 @@ impl ToolExecutor for LocalExecutor {
     ) -> Result<swiftide_core::CommandOutput, CommandError> {
         let workdir = __self.resolve_workdir(cmd);
         let timeout = __self.resolve_timeout(cmd);
-        match cmd {
+        let result = match cmd {
             Command::Shell { command, .. } => {
-                __self.exec_shell(command, &workdir, timeout, output).await
+                return __self.exec_shell(command, &workdir, timeout, output).await;
             }
-            Command::ReadFile { path, .. } => {
-                let result = __self.exec_read_file(&workdir, path, timeout).await;
-                if let Ok(command_output) = &result {
-                    for chunk in command_output.chunks() {
-                        output.on_chunk(chunk);
-                    }
-                }
-                result
-            }
+            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path, timeout).await,
             Command::WriteFile { path, content, .. } => {
                 __self
                     .exec_write_file(&workdir, path, content, timeout)
                     .await
             }
             _ => unimplemented!("Unsupported command: {cmd:?}"),
+        };
+
+        if let Ok(command_output)
+        | Err(
+            CommandError::NonZeroExit(command_output)
+            | CommandError::TimedOut {
+                output: command_output,
+                ..
+            },
+        ) = &result
+        {
+            for chunk in command_output.chunks() {
+                output.on_chunk(chunk);
+            }
         }
+
+        result
     }
 
     async fn stream_files(
@@ -434,6 +442,32 @@ mod tests {
             CommandOutput::from_chunks(observed.0.lock().unwrap().clone()).as_bytes(),
             final_output.as_bytes()
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn streams_file_command_error_output() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let executor = LocalExecutor::new(temp_dir.path());
+        let commands = [
+            Command::read_file("missing.txt"),
+            Command::write_file(temp_dir.path(), "content"),
+        ];
+
+        for command in commands {
+            let mut streamed = RecordedOutput::default();
+            let result = executor.exec_cmd_streaming(&command, &mut streamed).await;
+            let Err(CommandError::NonZeroExit(command_output)) = result else {
+                anyhow::bail!("expected file command to fail, got {result:?}");
+            };
+
+            assert!(!command_output.is_empty());
+            assert_eq!(
+                CommandOutput::from_chunks(streamed.0.lock().unwrap().clone()),
+                command_output
+            );
+        }
+
         Ok(())
     }
 
