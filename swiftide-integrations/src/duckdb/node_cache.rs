@@ -57,41 +57,15 @@ impl<T: Chunk> NodeCache for Duckdb<T> {
     }
 
     async fn set(&self, node: &Node<T>) {
-        if let Err(err) = self
-            .lazy_create_cache()
-            .await
-            .context("failed to create cache table")
-        {
-            tracing::error!("Failed to create cache table: {:#}", err);
-            return;
-        }
+        let key = self.node_key(node);
+        let path = node.path.to_string_lossy().into_owned();
+        self.insert_cache_key(key, path).await;
+    }
 
-        let sql = format!(
-            "INSERT INTO {} (uuid, path) VALUES (?, ?) ON CONFLICT (uuid) DO NOTHING",
-            self.cache_table
-        );
-
-        let lock = self.connection.lock().unwrap();
-        let mut stmt = match lock
-            .prepare(&sql)
-            .context("Failed to prepare duckdb statement for cache set")
-        {
-            Ok(stmt) => stmt,
-            Err(err) => {
-                tracing::error!(
-                    "Failed to prepare duckdb statement for cache set: {:#}",
-                    err
-                );
-                return;
-            }
-        };
-
-        if let Err(err) = stmt
-            .execute([self.node_key(node), node.path.to_string_lossy().into()])
-            .context("failed to insert into cache table")
-        {
-            tracing::error!("Failed to insert into cache table: {:#}", err);
-        }
+    async fn set_by_id(&self, id: uuid::Uuid) {
+        // The path is unknown for deferred cache writes; it is not read anywhere.
+        self.insert_cache_key(self.node_key_for_id(id), String::new())
+            .await;
     }
 
     async fn clear(&self) -> anyhow::Result<()> {

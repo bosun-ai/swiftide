@@ -192,7 +192,53 @@ impl<T: Chunk> Duckdb<T> {
 
     /// Formats a node key for the cache table
     pub fn node_key(&self, node: &swiftide_core::indexing::Node<T>) -> String {
-        format!("{}.{}", self.cache_key_prefix, node.id())
+        let cache_id = node.parent_id().unwrap_or_else(|| node.id());
+        self.node_key_for_id(cache_id)
+    }
+
+    /// Formats a cache key for a given node id
+    pub fn node_key_for_id(&self, id: uuid::Uuid) -> String {
+        format!("{}.{}", self.cache_key_prefix, id)
+    }
+
+    /// Inserts a key into the cache table, creating the table if needed. Errors are logged, not
+    /// propagated, matching the other cache writes.
+    async fn insert_cache_key(&self, key: String, path: String) {
+        if let Err(err) = self
+            .lazy_create_cache()
+            .await
+            .context("failed to create cache table")
+        {
+            tracing::error!("Failed to create cache table: {:#}", err);
+            return;
+        }
+
+        let sql = format!(
+            "INSERT INTO {} (uuid, path) VALUES (?, ?) ON CONFLICT (uuid) DO NOTHING",
+            self.cache_table
+        );
+
+        let lock = self.connection.lock().unwrap();
+        let mut stmt = match lock
+            .prepare(&sql)
+            .context("Failed to prepare duckdb statement for cache set")
+        {
+            Ok(stmt) => stmt,
+            Err(err) => {
+                tracing::error!(
+                    "Failed to prepare duckdb statement for cache set: {:#}",
+                    err
+                );
+                return;
+            }
+        };
+
+        if let Err(err) = stmt
+            .execute([key, path])
+            .context("failed to insert into cache table")
+        {
+            tracing::error!("Failed to insert into cache table: {:#}", err);
+        }
     }
 
     fn hybrid_query_sql(
