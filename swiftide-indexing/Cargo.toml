@@ -29,6 +29,7 @@ serde_json = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 indoc = { workspace = true }
+uuid = { workspace = true }
 
 ignore = { workspace = true }
 text-splitter = { workspace = true, features = ["markdown"] }
