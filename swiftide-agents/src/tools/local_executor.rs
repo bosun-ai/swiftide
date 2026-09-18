@@ -21,7 +21,7 @@ use process_wrap::tokio::ProcessGroup;
 use process_wrap::tokio::{CommandWrap, KillOnDrop};
 use swiftide_core::{
     Command, CommandError, CommandOutput, CommandOutputChunk, CommandOutputSink, Loader,
-    ToolExecutor, report_buffered_output,
+    ToolExecutor,
 };
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{io::AsyncWriteExt as _, process::ChildStdin, time};
@@ -129,7 +129,7 @@ impl LocalExecutor {
 
         let mut child = match command.spawn() {
             Ok(child) => child,
-            Err(error) => return report_buffered_output(Err(error.into()), output_sink),
+            Err(error) => return output_sink.report_buffered(Err(error.into())),
         };
         drop(command);
         let stdin = child.stdin().take();
@@ -334,12 +334,13 @@ async fn drain_output<S>(
 #[async_trait]
 impl ToolExecutor for LocalExecutor {
     /// Execute a `Command` on the local machine
-    #[tracing::instrument(skip_self)]
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
-        self.exec_cmd_streaming(cmd, &mut ()).await
+        self.exec_cmd_streaming(cmd, &mut |_: &CommandOutputChunk| {})
+            .await
     }
 
-    #[tracing::instrument(skip_all)]
+    /// Shell commands stream as they run; file commands report their output once finished.
+    #[tracing::instrument(skip_all, fields(?cmd))]
     async fn exec_cmd_streaming(
         &self,
         cmd: &Command,
@@ -347,21 +348,19 @@ impl ToolExecutor for LocalExecutor {
     ) -> Result<swiftide_core::CommandOutput, CommandError> {
         let workdir = __self.resolve_workdir(cmd);
         let timeout = __self.resolve_timeout(cmd);
-        match cmd {
+        let buffered = match cmd {
             Command::Shell { command, .. } => {
-                __self.exec_shell(command, &workdir, timeout, output).await
+                return __self.exec_shell(command, &workdir, timeout, output).await;
             }
-            Command::ReadFile { path, .. } => {
-                report_buffered_output(__self.exec_read_file(&workdir, path, timeout).await, output)
-            }
-            Command::WriteFile { path, content, .. } => report_buffered_output(
+            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path, timeout).await,
+            Command::WriteFile { path, content, .. } => {
                 __self
                     .exec_write_file(&workdir, path, content, timeout)
-                    .await,
-                output,
-            ),
+                    .await
+            }
             _ => unimplemented!("Unsupported command: {cmd:?}"),
-        }
+        };
+        output.report_buffered(buffered)
     }
 
     async fn stream_files(
@@ -427,6 +426,7 @@ mod tests {
         let executor = LocalExecutor::new(temp_dir.path());
         let commands = [
             Command::read_file("missing.txt"),
+            // writing to a directory fails
             Command::write_file(temp_dir.path(), "content"),
             Command::shell("#!/missing/interpreter\necho unreachable"),
         ];
