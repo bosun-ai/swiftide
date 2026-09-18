@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789572160137,
+  "lastUpdate": 1789737757166,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33347,6 +33347,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2191626,
             "range": "± 23439",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "13d36c0fc922752b322a4d95b82a847b3d2ad84f",
+          "message": "feat(agents): stream output while commands run (#1162)\n\n## What changed\n\n- Send stdout and stderr while a command is still running.\n- Keep the completed command result unchanged.\n\n## Why\n\nUsers can see progress instead of waiting for the command to finish.\n\n## Checks\n\n- 157 tests passed\n- Clippy passed\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n## Summary by CodeRabbit\n\n* **New Features**\n* Command execution now supports streaming output as it becomes\navailable, including output from successful and failed file operations.\n* Output produced before non-zero exits or timeouts is delivered when\navailable.\n* Streaming output works across standard executor wrappers and scoped\nexecution contexts.\n* **Compatibility**\n* Existing buffered command results and error handling remain unchanged\nfor current integrations.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-09-18T13:10:53Z",
+          "tree_id": "7ace98cd0f1d7df94d4b2eaecfeab7b2d25f7160",
+          "url": "https://github.com/bosun-ai/swiftide/commit/13d36c0fc922752b322a4d95b82a847b3d2ad84f"
+        },
+        "date": 1789737753904,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1078359,
+            "range": "± 37365",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 274434,
+            "range": "± 3485",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1943,
+            "range": "± 1860",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7001,
+            "range": "± 359",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26420,
+            "range": "± 237",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4193759,
+            "range": "± 36478",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2099964,
+            "range": "± 12290",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16710185,
+            "range": "± 84049",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2107597,
+            "range": "± 13029",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66759842,
+            "range": "± 304880",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2143186,
+            "range": "± 9846",
             "unit": "ns/iter"
           }
         ]
