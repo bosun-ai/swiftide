@@ -36,7 +36,7 @@ pub trait ToolExecutor: Send + Sync + DynClone {
         cmd: &Command,
         output: &mut dyn CommandOutputSink,
     ) -> Result<CommandOutput, CommandError> {
-        report_buffered_output(self.exec_cmd(cmd).await, output)
+        output.report_buffered(self.exec_cmd(cmd).await)
     }
 
     /// Stream files from the executor
@@ -51,7 +51,30 @@ dyn_clone::clone_trait_object!(ToolExecutor);
 
 /// Receives command output in the order the executor observed it.
 pub trait CommandOutputSink: Send {
+    /// Called from the executor's read loop, so it must not block.
     fn on_chunk(&mut self, chunk: &CommandOutputChunk);
+
+    /// Reports the output of an already finished command and returns the result unchanged.
+    ///
+    /// Executors that buffer output use this to satisfy the streaming contract after the fact.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error from `result` after reporting any output it carries.
+    fn report_buffered(
+        &mut self,
+        result: Result<CommandOutput, CommandError>,
+    ) -> Result<CommandOutput, CommandError> {
+        if let Ok(output)
+        | Err(CommandError::NonZeroExit(output) | CommandError::TimedOut { output, .. }) =
+            &result
+        {
+            for chunk in output.chunks() {
+                self.on_chunk(chunk);
+            }
+        }
+        result
+    }
 }
 
 impl<F> CommandOutputSink for F
@@ -61,31 +84,6 @@ where
     fn on_chunk(&mut self, chunk: &CommandOutputChunk) {
         self(chunk);
     }
-}
-
-impl CommandOutputSink for () {
-    fn on_chunk(&mut self, _chunk: &CommandOutputChunk) {}
-}
-
-/// Reports the output of an already finished command to `sink` and returns the result unchanged.
-///
-/// Executors that buffer output use this to satisfy the streaming contract after the fact.
-///
-/// # Errors
-///
-/// Returns the error from `result` after reporting any output it carries.
-pub fn report_buffered_output(
-    result: Result<CommandOutput, CommandError>,
-    sink: &mut dyn CommandOutputSink,
-) -> Result<CommandOutput, CommandError> {
-    if let Ok(output)
-    | Err(CommandError::NonZeroExit(output) | CommandError::TimedOut { output, .. }) = &result
-    {
-        for chunk in output.chunks() {
-            sink.on_chunk(chunk);
-        }
-    }
-    result
 }
 
 /// Lightweight executor wrapper that applies a default working directory to forwarded commands.
