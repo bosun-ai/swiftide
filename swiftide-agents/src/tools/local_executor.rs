@@ -21,7 +21,7 @@ use process_wrap::tokio::ProcessGroup;
 use process_wrap::tokio::{CommandWrap, KillOnDrop};
 use swiftide_core::{
     Command, CommandError, CommandOutput, CommandOutputChunk, CommandOutputSink, Loader,
-    ToolExecutor,
+    ToolExecutor, report_buffered_output,
 };
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{io::AsyncWriteExt as _, process::ChildStdin, time};
@@ -92,7 +92,7 @@ impl LocalExecutor {
         cmd: &str,
         workdir: &Path,
         timeout: Option<Duration>,
-        output_sink: &mut dyn CommandOutputSink,
+        output_sink: &mut CommandOutputSink<'_>,
     ) -> Result<CommandOutput, CommandError> {
         let (mut command, input) = if let Some(script) = ShellScript::parse(cmd) {
             tracing::info!(interpreter = script.interpreter, "detected shebang");
@@ -129,7 +129,7 @@ impl LocalExecutor {
 
         let mut child = match command.spawn() {
             Ok(child) => child,
-            Err(error) => return output_sink.report_buffered(Err(error.into())),
+            Err(error) => return report_buffered_output(Err(error.into()), output_sink),
         };
         drop(command);
         let stdin = child.stdin().take();
@@ -299,14 +299,14 @@ async fn write_input(mut stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io:
 async fn collect_output<S>(
     stream: &mut S,
     chunks: &mut Vec<CommandOutputChunk>,
-    output_sink: &mut dyn CommandOutputSink,
+    output_sink: &mut CommandOutputSink<'_>,
 ) -> io::Result<()>
 where
     S: Stream<Item = io::Result<CommandOutputChunk>> + Unpin,
 {
     while let Some(chunk) = stream.next().await {
         let chunk = chunk?;
-        output_sink.on_chunk(&chunk);
+        output_sink(&chunk);
         chunks.push(chunk);
     }
     Ok(())
@@ -315,7 +315,7 @@ where
 async fn drain_output<S>(
     stream: &mut S,
     chunks: &mut Vec<CommandOutputChunk>,
-    output_sink: &mut dyn CommandOutputSink,
+    output_sink: &mut CommandOutputSink<'_>,
 ) where
     S: Stream<Item = io::Result<CommandOutputChunk>> + Unpin,
 {
@@ -335,8 +335,7 @@ async fn drain_output<S>(
 impl ToolExecutor for LocalExecutor {
     /// Execute a `Command` on the local machine
     async fn exec_cmd(&self, cmd: &Command) -> Result<swiftide_core::CommandOutput, CommandError> {
-        self.exec_cmd_streaming(cmd, &mut |_: &CommandOutputChunk| {})
-            .await
+        self.exec_cmd_streaming(cmd, &mut |_| {}).await
     }
 
     /// Shell commands stream as they run; file commands report their output once finished.
@@ -344,7 +343,7 @@ impl ToolExecutor for LocalExecutor {
     async fn exec_cmd_streaming(
         &self,
         cmd: &Command,
-        output: &mut dyn CommandOutputSink,
+        output: &mut CommandOutputSink<'_>,
     ) -> Result<swiftide_core::CommandOutput, CommandError> {
         let workdir = __self.resolve_workdir(cmd);
         let timeout = __self.resolve_timeout(cmd);
@@ -360,7 +359,7 @@ impl ToolExecutor for LocalExecutor {
             }
             _ => unimplemented!("Unsupported command: {cmd:?}"),
         };
-        output.report_buffered(buffered)
+        report_buffered_output(buffered, output)
     }
 
     async fn stream_files(
@@ -397,10 +396,13 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let executor = LocalExecutor::new(temp_dir.path());
         let (streamed, mut received) = mpsc::unbounded_channel();
-        let mut output = |chunk: &CommandOutputChunk| streamed.send(chunk.clone()).unwrap();
         let command = Command::shell("printf first; sleep 0.2; printf second >&2");
 
-        let execution = executor.exec_cmd_streaming(&command, &mut output);
+        let execution = async {
+            executor
+                .exec_cmd_streaming(&command, &mut |chunk| streamed.send(chunk.clone()).unwrap())
+                .await
+        };
         tokio::pin!(execution);
 
         let first_chunk = tokio::select! {
@@ -434,7 +436,7 @@ mod tests {
         for command in commands {
             let mut streamed = Vec::new();
             let result = executor
-                .exec_cmd_streaming(&command, &mut |chunk: &CommandOutputChunk| {
+                .exec_cmd_streaming(&command, &mut |chunk| {
                     streamed.push(chunk.clone());
                 })
                 .await;
