@@ -21,7 +21,7 @@ use process_wrap::tokio::ProcessGroup;
 use process_wrap::tokio::{CommandWrap, KillOnDrop};
 use swiftide_core::{
     Command, CommandError, CommandOutput, CommandOutputChunk, CommandOutputSink, Loader,
-    ToolExecutor,
+    ToolExecutor, report_buffered_output,
 };
 use swiftide_indexing::loaders::FileLoader;
 use tokio::{io::AsyncWriteExt as _, process::ChildStdin, time};
@@ -127,7 +127,10 @@ impl LocalExecutor {
         command.wrap(JobObject);
         command.wrap(KillOnDrop);
 
-        let mut child = command.spawn()?;
+        let mut child = match command.spawn() {
+            Ok(child) => child,
+            Err(error) => return report_buffered_output(Err(error.into()), output_sink),
+        };
         drop(command);
         let stdin = child.stdin().take();
         let stdout = ReaderStream::new(
@@ -344,34 +347,21 @@ impl ToolExecutor for LocalExecutor {
     ) -> Result<swiftide_core::CommandOutput, CommandError> {
         let workdir = __self.resolve_workdir(cmd);
         let timeout = __self.resolve_timeout(cmd);
-        let result = match cmd {
+        match cmd {
             Command::Shell { command, .. } => {
-                return __self.exec_shell(command, &workdir, timeout, output).await;
+                __self.exec_shell(command, &workdir, timeout, output).await
             }
-            Command::ReadFile { path, .. } => __self.exec_read_file(&workdir, path, timeout).await,
-            Command::WriteFile { path, content, .. } => {
+            Command::ReadFile { path, .. } => {
+                report_buffered_output(__self.exec_read_file(&workdir, path, timeout).await, output)
+            }
+            Command::WriteFile { path, content, .. } => report_buffered_output(
                 __self
                     .exec_write_file(&workdir, path, content, timeout)
-                    .await
-            }
+                    .await,
+                output,
+            ),
             _ => unimplemented!("Unsupported command: {cmd:?}"),
-        };
-
-        if let Ok(command_output)
-        | Err(
-            CommandError::NonZeroExit(command_output)
-            | CommandError::TimedOut {
-                output: command_output,
-                ..
-            },
-        ) = &result
-        {
-            for chunk in command_output.chunks() {
-                output.on_chunk(chunk);
-            }
         }
-
-        result
     }
 
     async fn stream_files(
@@ -393,79 +383,67 @@ impl ToolExecutor for LocalExecutor {
 mod tests {
     use super::*;
     use indoc::indoc;
-    use std::{
-        path::Path,
-        sync::{Arc, Mutex},
-        time::Duration,
-    };
-    use swiftide_core::{Command, CommandOutputSink, ExecutorExt, ToolExecutor};
+    use std::{path::Path, sync::Arc, time::Duration};
+    use swiftide_core::{Command, ExecutorExt, ToolExecutor};
     use temp_dir::TempDir;
+    use tokio::sync::mpsc;
 
     fn stream_string<'a, T: AsRef<[u8]> + 'a>(chunks: impl Iterator<Item = &'a T>) -> String {
         String::from_utf8_lossy(&chunks.flat_map(AsRef::as_ref).copied().collect::<Vec<_>>())
             .into_owned()
     }
 
-    #[derive(Clone, Default)]
-    struct RecordedOutput(Arc<Mutex<Vec<CommandOutputChunk>>>);
-
-    impl CommandOutputSink for RecordedOutput {
-        fn on_chunk(&mut self, chunk: &CommandOutputChunk) {
-            self.0.lock().unwrap().push(chunk.clone());
-        }
-    }
-
     #[tokio::test]
     async fn streams_shell_output_before_the_command_finishes() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let executor = LocalExecutor::new(temp_dir.path());
-        let mut output = RecordedOutput::default();
-        let observed = output.clone();
+        let (streamed, mut received) = mpsc::unbounded_channel();
+        let mut output = |chunk: &CommandOutputChunk| streamed.send(chunk.clone()).unwrap();
         let command = Command::shell("printf first; sleep 0.2; printf second >&2");
 
         let execution = executor.exec_cmd_streaming(&command, &mut output);
         tokio::pin!(execution);
 
-        tokio::select! {
+        let first_chunk = tokio::select! {
             result = &mut execution => anyhow::bail!("command finished before streaming output: {result:?}"),
-            () = time::sleep(Duration::from_millis(100)) => {}
-        }
-
-        assert_eq!(
-            CommandOutput::from_chunks(observed.0.lock().unwrap().clone()).as_bytes(),
-            b"first".as_slice()
-        );
+            chunk = received.recv() => chunk.expect("sink is alive while the command runs"),
+        };
+        assert_eq!(first_chunk.as_bytes(), b"first".as_slice());
 
         let final_output = execution.await?;
         assert_eq!(final_output.as_bytes(), b"firstsecond".as_slice());
-        assert_eq!(
-            CommandOutput::from_chunks(observed.0.lock().unwrap().clone()).as_bytes(),
-            final_output.as_bytes()
-        );
+
+        let mut chunks = vec![first_chunk];
+        while let Ok(chunk) = received.try_recv() {
+            chunks.push(chunk);
+        }
+        assert_eq!(CommandOutput::from_chunks(chunks), final_output);
         Ok(())
     }
 
     #[tokio::test]
-    async fn streams_file_command_error_output() -> anyhow::Result<()> {
+    async fn streams_buffered_error_output() -> anyhow::Result<()> {
         let temp_dir = TempDir::new()?;
         let executor = LocalExecutor::new(temp_dir.path());
         let commands = [
             Command::read_file("missing.txt"),
             Command::write_file(temp_dir.path(), "content"),
+            Command::shell("#!/missing/interpreter\necho unreachable"),
         ];
 
         for command in commands {
-            let mut streamed = RecordedOutput::default();
-            let result = executor.exec_cmd_streaming(&command, &mut streamed).await;
+            let mut streamed = Vec::new();
+            let result = executor
+                .exec_cmd_streaming(&command, &mut |chunk: &CommandOutputChunk| {
+                    streamed.push(chunk.clone());
+                })
+                .await;
             let Err(CommandError::NonZeroExit(command_output)) = result else {
-                anyhow::bail!("expected file command to fail, got {result:?}");
+                anyhow::bail!("expected {command:?} to fail, got {result:?}");
             };
 
             assert!(!command_output.is_empty());
-            assert_eq!(
-                CommandOutput::from_chunks(streamed.0.lock().unwrap().clone()),
-                command_output
-            );
+            assert_eq!(CommandOutput::from_chunks(streamed), command_output);
         }
 
         Ok(())
