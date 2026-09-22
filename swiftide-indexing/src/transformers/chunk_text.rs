@@ -53,12 +53,14 @@ pub struct ChunkText {
 }
 
 impl Default for ChunkText {
+    /// Creates a transformer using the default maximum chunk size.
     fn default() -> Self {
         Self::from_max_characters(DEFAULT_MAX_CHAR_SIZE)
     }
 }
 
 impl ChunkText {
+    /// Creates a builder for configuring a text chunk transformer.
     pub fn builder() -> ChunkTextBuilder {
         ChunkTextBuilder::default()
     }
@@ -87,12 +89,17 @@ impl ChunkText {
         self
     }
 
+    /// Returns the minimum byte length accepted for a produced chunk.
+    ///
+    /// The configured range is expressed as characters, but filtering uses the chunk string's
+    /// byte length, matching the existing transformer behavior.
     fn min_size(&self) -> usize {
         self.range.start
     }
 }
 
 impl ChunkTextBuilder {
+    /// Builds the underlying splitter from the configured range or maximum size.
     fn default_client(&self) -> Arc<TextSplitter<Characters>> {
         let chunk_config: ChunkConfig<Characters> = self
             .range
@@ -137,6 +144,7 @@ impl ChunkerTransformer for ChunkText {
         }))
     }
 
+    /// Returns the configured concurrency limit for chunk processing.
     fn concurrency(&self) -> Option<usize> {
         self.concurrency
     }
