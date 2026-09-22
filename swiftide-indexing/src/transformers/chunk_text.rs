@@ -164,6 +164,7 @@ mod test {
         ";
 
     #[tokio::test]
+    /// Verifies maximum-size chunking trims boundaries and emits the expected paragraphs.
     async fn test_transforming_with_max_characters_and_trimming() {
         let chunker = ChunkText::from_max_characters(40);
 
@@ -184,6 +185,7 @@ mod test {
     }
 
     #[tokio::test]
+    /// Verifies emitted chunks stay within each configured character range.
     async fn test_always_within_range() {
         let ranges = vec![(10..15), (20..25), (30..35), (40..45), (50..55)];
         for range in ranges {
@@ -212,6 +214,7 @@ mod test {
     }
 
     #[test]
+    /// Verifies the builder accepts a custom splitter, concurrency, and range.
     fn test_builder() {
         ChunkText::builder()
             .chunker(text_splitter::TextSplitter::new(40))
@@ -231,10 +234,12 @@ mod test {
 
         use super::ChunkText;
 
+        /// Builds metadata used to verify field preservation.
         fn metadata() -> Metadata {
             Metadata::from([("language", "日本語"), ("kind", "regression")])
         }
 
+        /// Builds dense vectors used to verify field preservation.
         fn dense_vectors() -> HashMap<EmbeddedField, Vec<f32>> {
             HashMap::from([
                 (EmbeddedField::Chunk, vec![1.0, 2.0, 3.0]),
@@ -242,6 +247,7 @@ mod test {
             ])
         }
 
+        /// Builds sparse vectors used to verify field preservation.
         fn sparse_vectors() -> HashMap<EmbeddedField, SparseEmbedding> {
             HashMap::from([(
                 EmbeddedField::Chunk,
@@ -252,6 +258,7 @@ mod test {
             )])
         }
 
+        /// Asserts that chunking preserves node fields and assigns the expected parent.
         fn assert_preserved(node: &TextNode, output: &TextNode, parent: Option<uuid::Uuid>) {
             assert_eq!(output.path, node.path);
             assert_eq!(output.metadata, node.metadata);
@@ -265,6 +272,7 @@ mod test {
         }
 
         #[tokio::test]
+        /// Verifies full field preservation and parent assignment when the input has no parent.
         async fn preserves_full_node_fields_and_assigns_absent_parent() {
             let source = "αβγ 日本語 metadata-preservation payload ".repeat(8);
             let node = TextNode::builder()
@@ -294,6 +302,7 @@ mod test {
         }
 
         #[tokio::test]
+        /// Verifies existing parents, Unicode chunks, and blank-chunk filtering.
         async fn preserves_existing_parent_unicode_and_discards_blank_chunks() {
             let parent = uuid::Uuid::new_v4();
             let source = "\n\n  αβγ 日本語  \n\n café \n\t";
