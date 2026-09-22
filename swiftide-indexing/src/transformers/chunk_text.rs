@@ -109,6 +109,7 @@ impl ChunkerTransformer for ChunkText {
     type Input = String;
     type Output = String;
 
+    /// Splits text while preserving node fields and the original parent identity on every output.
     #[tracing::instrument(skip_all, name = "transformers.chunk_text")]
     async fn transform_node(&self, node: TextNode) -> IndexingStream<String> {
         let chunks = self
@@ -123,12 +124,17 @@ impl ChunkerTransformer for ChunkText {
                 }
             })
             .collect::<Vec<String>>();
+        let parent_id = node.parent_id.unwrap_or_else(|| node.id());
+        let mut template = node;
+        // Cache the parent before clearing the owned input chunk from the reusable template.
+        template.chunk.clear();
+        template.parent_id = Some(parent_id);
 
-        IndexingStream::iter(
-            chunks
-                .into_iter()
-                .map(move |chunk| TextNode::build_from_other(&node).chunk(chunk).build()),
-        )
+        IndexingStream::iter(chunks.into_iter().map(move |chunk| {
+            let mut output = template.clone();
+            output.chunk = chunk;
+            Ok(output)
+        }))
     }
 
     fn concurrency(&self) -> Option<usize> {
@@ -205,5 +211,121 @@ mod test {
             .range(10..20)
             .build()
             .unwrap();
+    }
+
+    mod regression {
+        use std::collections::HashMap;
+
+        use futures_util::stream::TryStreamExt;
+        use swiftide_core::ChunkerTransformer;
+        use swiftide_core::SparseEmbedding;
+        use swiftide_core::indexing::{EmbedMode, EmbeddedField, Metadata, TextNode};
+
+        use super::ChunkText;
+
+        fn metadata() -> Metadata {
+            Metadata::from([("language", "日本語"), ("kind", "regression")])
+        }
+
+        fn dense_vectors() -> HashMap<EmbeddedField, Vec<f32>> {
+            HashMap::from([
+                (EmbeddedField::Chunk, vec![1.0, 2.0, 3.0]),
+                (EmbeddedField::Metadata("kind".into()), vec![4.0, 5.0]),
+            ])
+        }
+
+        fn sparse_vectors() -> HashMap<EmbeddedField, SparseEmbedding> {
+            HashMap::from([(
+                EmbeddedField::Chunk,
+                SparseEmbedding {
+                    indices: vec![2, 9],
+                    values: vec![0.25, 0.75],
+                },
+            )])
+        }
+
+        fn assert_preserved(node: &TextNode, output: &TextNode, parent: Option<uuid::Uuid>) {
+            assert_eq!(output.path, node.path);
+            assert_eq!(output.metadata, node.metadata);
+            assert_eq!(output.vectors, node.vectors);
+            assert_eq!(output.sparse_vectors, node.sparse_vectors);
+            assert_eq!(output.embed_mode, node.embed_mode);
+            assert_eq!(output.original_size, node.original_size);
+            assert_eq!(output.offset, node.offset);
+            assert_eq!(output.parent_id, parent);
+            assert!(!output.chunk.is_empty());
+        }
+
+        #[tokio::test]
+        async fn preserves_full_node_fields_and_assigns_absent_parent() {
+            let source = "αβγ 日本語 metadata-preservation payload ".repeat(8);
+            let node = TextNode::builder()
+                .path("fixtures/unicode.txt")
+                .chunk(source)
+                .metadata(metadata())
+                .vectors(dense_vectors())
+                .sparse_vectors(sparse_vectors())
+                .embed_mode(EmbedMode::Both)
+                .original_size(4096usize)
+                .offset(37usize)
+                .build()
+                .unwrap();
+            let original_id = node.id();
+
+            let outputs: Vec<TextNode> = ChunkText::from_chunk_range(1..32)
+                .transform_node(node.clone())
+                .await
+                .try_collect()
+                .await
+                .unwrap();
+
+            assert!(outputs.len() > 1);
+            for output in &outputs {
+                assert_preserved(&node, output, Some(original_id));
+            }
+        }
+
+        #[tokio::test]
+        async fn preserves_existing_parent_unicode_and_discards_blank_chunks() {
+            let parent = uuid::Uuid::new_v4();
+            let source = "\n\n  αβγ 日本語  \n\n café \n\t";
+            let node = TextNode::builder()
+                .path("fixtures/blank-and-unicode.txt")
+                .chunk(source)
+                .metadata(metadata())
+                .vectors(dense_vectors())
+                .sparse_vectors(sparse_vectors())
+                .embed_mode(EmbedMode::Both)
+                .original_size(source.len())
+                .offset(11usize)
+                .parent_id(parent)
+                .build()
+                .unwrap();
+
+            let outputs: Vec<TextNode> = ChunkText::from_chunk_range(1..32)
+                .transform_node(node.clone())
+                .await
+                .try_collect()
+                .await
+                .unwrap();
+
+            assert!(!outputs.is_empty());
+            assert!(outputs.iter().all(|output| !output.chunk.trim().is_empty()));
+            assert!(outputs.iter().any(|output| output.chunk.contains("α")));
+            assert!(outputs.iter().any(|output| output.chunk.contains("日本語")));
+            assert!(outputs.iter().any(|output| output.chunk.contains("café")));
+            for output in &outputs {
+                assert_preserved(&node, output, Some(parent));
+            }
+
+            let blank = TextNode::new("\n \t\n");
+            let blank_outputs: Vec<TextNode> = ChunkText::from_chunk_range(1..32)
+                .transform_node(blank)
+                .await
+                .try_collect()
+                .await
+                .unwrap();
+            assert!(blank_outputs.is_empty());
+        }
     }
 }
