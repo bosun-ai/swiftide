@@ -115,17 +115,11 @@ impl ChunkerTransformer for ChunkCode {
         if let Ok(split) = split_result {
             let mut offset = 0;
 
-            IndexingStream::iter(split.into_iter().map(move |chunk| {
-                let chunk_size = chunk.len();
-
-                let node = TextNode::build_from_other(&node)
-                    .chunk(chunk)
-                    .offset(offset)
-                    .build();
-
+            IndexingStream::iter(node.into_chunks(split).map(move |mut chunk| {
+                let chunk_size = chunk.chunk.len();
+                chunk.offset = offset;
                 offset += chunk_size;
-
-                node
+                Ok(chunk)
             }))
         } else {
             // Send the error downstream
@@ -137,5 +131,64 @@ impl ChunkerTransformer for ChunkCode {
 
     fn concurrency(&self) -> Option<usize> {
         self.concurrency
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use futures_util::stream::TryStreamExt;
+    use swiftide_core::{ChunkerTransformer, indexing::Metadata};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn preserves_code_chunks_offsets_and_first_ancestor() {
+        let code = "fn alpha() { println!(\"α\"); }\nfn beta() { println!(\"β\"); }\nfn gamma() { println!(\"γ\"); }";
+        let transformer =
+            ChunkCode::try_for_language_and_chunk_size(SupportedLanguages::Rust, 32).unwrap();
+        let source = TextNode::builder()
+            .path("fixtures/日本語.rs")
+            .chunk(code)
+            .metadata(Metadata::from([("language", "Rust")]))
+            .original_size(code.len())
+            .offset(99usize)
+            .build()
+            .unwrap();
+        let chunks = transformer.chunker.split(&source.chunk).unwrap();
+        assert!(chunks.len() > 1);
+        let outputs: Vec<TextNode> = transformer
+            .transform_node(source.clone())
+            .await
+            .try_collect()
+            .await
+            .unwrap();
+
+        let mut offset = 0;
+        for (output, chunk) in outputs.iter().zip(&chunks) {
+            let expected = TextNode::build_from_other(&source)
+                .chunk(chunk.clone())
+                .offset(offset)
+                .build()
+                .unwrap();
+            assert_eq!(output, &expected);
+            offset += chunk.len();
+        }
+        assert_eq!(outputs.len(), chunks.len());
+
+        let parent = uuid::Uuid::new_v4();
+        let mut descendant = source;
+        descendant.parent_id = Some(parent);
+        let child_outputs: Vec<TextNode> = transformer
+            .transform_node(descendant)
+            .await
+            .try_collect()
+            .await
+            .unwrap();
+        assert_eq!(child_outputs.len(), outputs.len());
+        assert!(
+            child_outputs
+                .iter()
+                .all(|output| output.parent_id == Some(parent))
+        );
     }
 }

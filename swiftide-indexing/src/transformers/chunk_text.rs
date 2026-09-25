@@ -131,17 +131,7 @@ impl ChunkerTransformer for ChunkText {
                 }
             })
             .collect::<Vec<String>>();
-        let parent_id = node.parent_id.unwrap_or_else(|| node.id());
-        let mut template = node;
-        // Cache the parent before clearing the owned input chunk from the reusable template.
-        template.chunk.clear();
-        template.parent_id = Some(parent_id);
-
-        IndexingStream::iter(chunks.into_iter().map(move |chunk| {
-            let mut output = template.clone();
-            output.chunk = chunk;
-            Ok(output)
-        }))
+        IndexingStream::iter(node.into_chunks(chunks).map(Ok))
     }
 
     /// Returns the configured concurrency limit for chunk processing.
