@@ -53,12 +53,14 @@ pub struct ChunkText {
 }
 
 impl Default for ChunkText {
+    /// Creates a transformer using the default maximum chunk size.
     fn default() -> Self {
         Self::from_max_characters(DEFAULT_MAX_CHAR_SIZE)
     }
 }
 
 impl ChunkText {
+    /// Creates a builder for configuring a text chunk transformer.
     pub fn builder() -> ChunkTextBuilder {
         ChunkTextBuilder::default()
     }
@@ -87,12 +89,17 @@ impl ChunkText {
         self
     }
 
+    /// Returns the minimum byte length accepted for a produced chunk.
+    ///
+    /// The configured range is expressed as characters, but filtering uses the chunk string's
+    /// byte length, matching the existing transformer behavior.
     fn min_size(&self) -> usize {
         self.range.start
     }
 }
 
 impl ChunkTextBuilder {
+    /// Builds the underlying splitter from the configured range or maximum size.
     fn default_client(&self) -> Arc<TextSplitter<Characters>> {
         let chunk_config: ChunkConfig<Characters> = self
             .range
@@ -109,6 +116,7 @@ impl ChunkerTransformer for ChunkText {
     type Input = String;
     type Output = String;
 
+    /// Splits text while preserving node fields and the original parent identity on every output.
     #[tracing::instrument(skip_all, name = "transformers.chunk_text")]
     async fn transform_node(&self, node: TextNode) -> IndexingStream<String> {
         let chunks = self
@@ -123,14 +131,10 @@ impl ChunkerTransformer for ChunkText {
                 }
             })
             .collect::<Vec<String>>();
-
-        IndexingStream::iter(
-            chunks
-                .into_iter()
-                .map(move |chunk| TextNode::build_from_other(&node).chunk(chunk).build()),
-        )
+        IndexingStream::iter(node.into_chunks(chunks).map(Ok))
     }
 
+    /// Returns the configured concurrency limit for chunk processing.
     fn concurrency(&self) -> Option<usize> {
         self.concurrency
     }
@@ -150,6 +154,7 @@ mod test {
         ";
 
     #[tokio::test]
+    /// Verifies maximum-size chunking trims boundaries and emits the expected paragraphs.
     async fn test_transforming_with_max_characters_and_trimming() {
         let chunker = ChunkText::from_max_characters(40);
 
@@ -170,6 +175,7 @@ mod test {
     }
 
     #[tokio::test]
+    /// Verifies emitted chunks stay within each configured character range.
     async fn test_always_within_range() {
         let ranges = vec![(10..15), (20..25), (30..35), (40..45), (50..55)];
         for range in ranges {
@@ -198,6 +204,7 @@ mod test {
     }
 
     #[test]
+    /// Verifies the builder accepts a custom splitter, concurrency, and range.
     fn test_builder() {
         ChunkText::builder()
             .chunker(text_splitter::TextSplitter::new(40))
@@ -205,5 +212,127 @@ mod test {
             .range(10..20)
             .build()
             .unwrap();
+    }
+
+    mod regression {
+        use std::collections::HashMap;
+
+        use futures_util::stream::TryStreamExt;
+        use swiftide_core::ChunkerTransformer;
+        use swiftide_core::SparseEmbedding;
+        use swiftide_core::indexing::{EmbedMode, EmbeddedField, Metadata, TextNode};
+
+        use super::ChunkText;
+
+        /// Builds metadata used to verify field preservation.
+        fn metadata() -> Metadata {
+            Metadata::from([("language", "日本語"), ("kind", "regression")])
+        }
+
+        /// Builds dense vectors used to verify field preservation.
+        fn dense_vectors() -> HashMap<EmbeddedField, Vec<f32>> {
+            HashMap::from([
+                (EmbeddedField::Chunk, vec![1.0, 2.0, 3.0]),
+                (EmbeddedField::Metadata("kind".into()), vec![4.0, 5.0]),
+            ])
+        }
+
+        /// Builds sparse vectors used to verify field preservation.
+        fn sparse_vectors() -> HashMap<EmbeddedField, SparseEmbedding> {
+            HashMap::from([(
+                EmbeddedField::Chunk,
+                SparseEmbedding {
+                    indices: vec![2, 9],
+                    values: vec![0.25, 0.75],
+                },
+            )])
+        }
+
+        /// Asserts that chunking preserves node fields and assigns the expected parent.
+        fn assert_preserved(node: &TextNode, output: &TextNode, parent: Option<uuid::Uuid>) {
+            assert_eq!(output.path, node.path);
+            assert_eq!(output.metadata, node.metadata);
+            assert_eq!(output.vectors, node.vectors);
+            assert_eq!(output.sparse_vectors, node.sparse_vectors);
+            assert_eq!(output.embed_mode, node.embed_mode);
+            assert_eq!(output.original_size, node.original_size);
+            assert_eq!(output.offset, node.offset);
+            assert_eq!(output.parent_id, parent);
+            assert!(!output.chunk.is_empty());
+        }
+
+        #[tokio::test]
+        /// Verifies full field preservation and parent assignment when the input has no parent.
+        async fn preserves_full_node_fields_and_assigns_absent_parent() {
+            let source = "αβγ 日本語 metadata-preservation payload ".repeat(8);
+            let node = TextNode::builder()
+                .path("fixtures/unicode.txt")
+                .chunk(source)
+                .metadata(metadata())
+                .vectors(dense_vectors())
+                .sparse_vectors(sparse_vectors())
+                .embed_mode(EmbedMode::Both)
+                .original_size(4096usize)
+                .offset(37usize)
+                .build()
+                .unwrap();
+            let original_id = node.id();
+
+            let outputs: Vec<TextNode> = ChunkText::from_chunk_range(1..32)
+                .transform_node(node.clone())
+                .await
+                .try_collect()
+                .await
+                .unwrap();
+
+            assert!(outputs.len() > 1);
+            for output in &outputs {
+                assert_preserved(&node, output, Some(original_id));
+            }
+        }
+
+        #[tokio::test]
+        /// Verifies existing parents, Unicode chunks, and blank-chunk filtering.
+        async fn preserves_existing_parent_unicode_and_discards_blank_chunks() {
+            let parent = uuid::Uuid::new_v4();
+            let source = "\n\n  αβγ 日本語  \n\n café \n\t";
+            let node = TextNode::builder()
+                .path("fixtures/blank-and-unicode.txt")
+                .chunk(source)
+                .metadata(metadata())
+                .vectors(dense_vectors())
+                .sparse_vectors(sparse_vectors())
+                .embed_mode(EmbedMode::Both)
+                .original_size(source.len())
+                .offset(11usize)
+                .parent_id(parent)
+                .build()
+                .unwrap();
+
+            let outputs: Vec<TextNode> = ChunkText::from_chunk_range(1..32)
+                .transform_node(node.clone())
+                .await
+                .try_collect()
+                .await
+                .unwrap();
+
+            assert!(!outputs.is_empty());
+            assert!(outputs.iter().all(|output| !output.chunk.trim().is_empty()));
+            assert!(outputs.iter().any(|output| output.chunk.contains("α")));
+            assert!(outputs.iter().any(|output| output.chunk.contains("日本語")));
+            assert!(outputs.iter().any(|output| output.chunk.contains("café")));
+            for output in &outputs {
+                assert_preserved(&node, output, Some(parent));
+            }
+
+            let blank = TextNode::new("\n \t\n");
+            let blank_outputs: Vec<TextNode> = ChunkText::from_chunk_range(1..32)
+                .transform_node(blank)
+                .await
+                .try_collect()
+                .await
+                .unwrap();
+            assert!(blank_outputs.is_empty());
+        }
     }
 }
