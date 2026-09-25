@@ -133,7 +133,7 @@ tiktoken-rs = { version = "0.9", default-features = false }
 test-log = { version = "0.2" }
 testcontainers = { version = "0.27", features = ["http_wait"] }
 testcontainers-modules = { version = "0.15" }
-mockall = { version = "0.14" }
+mockall = { version = "0.15" }
 temp-dir = { version = "0.2" }
 wiremock = { version = "0.6" }
 test-case = { version = "3.3" }
