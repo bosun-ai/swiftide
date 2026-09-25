@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790344651984,
+  "lastUpdate": 1790348121464,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33563,6 +33563,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2145704,
             "range": "± 12910",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d89c842427f3d2d03b592b1b6f7a2bad0f3bf12d",
+          "message": "fix(indexing): keep pipeline futures sendable (#1175)\n\n## Why\n\n`Pipeline::run` stopped producing a `Send` future after deferred cache\nwrites were made concurrent. Downstream async trait implementations\ncannot await the pipeline even when their storage and streams are\nsendable.\n\n## What changed\n\n- materialize the cache callback futures before creating the concurrent\nstream\n- add a compile-time test that requires the pipeline run future to\nimplement `Send`\n\nConcurrent cache writes and the existing concurrency limit remain\nunchanged.\n\n## Proof\n\n- `cargo test -p swiftide-indexing --all-features`: 50 passed; doc tests\npassed\n- `cargo clippy -p swiftide-indexing --all-targets --all-features -- -D\nwarnings`\n- `cargo +nightly fmt --all -- --check`\n- Fluyt `cargo check --workspace --all-features` with this commit\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Improved the indexing pipeline’s handling of cache updates while\nretaining its existing concurrency limits. This supports more consistent\npipeline execution without changing how indexing results are presented.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-09-25T14:43:27Z",
+          "tree_id": "c55336133830876e489bd381e9ec3a8293d87357",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d89c842427f3d2d03b592b1b6f7a2bad0f3bf12d"
+        },
+        "date": 1790348118577,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1078455,
+            "range": "± 38434",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 271378,
+            "range": "± 2159",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1970,
+            "range": "± 1847",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7182,
+            "range": "± 302",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 27097,
+            "range": "± 227",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4183043,
+            "range": "± 23841",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2107021,
+            "range": "± 9331",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16789812,
+            "range": "± 82828",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2122152,
+            "range": "± 6812",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66990587,
+            "range": "± 365035",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2138282,
+            "range": "± 6613",
             "unit": "ns/iter"
           }
         ]
