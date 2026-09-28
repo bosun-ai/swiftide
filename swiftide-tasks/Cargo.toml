@@ -12,7 +12,7 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-core = { path = "../swiftide-core", version = "0.33" }
 async-trait.workspace = true
 dyn-clone.workspace = true
 futures-util.workspace = true
