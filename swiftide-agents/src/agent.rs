@@ -655,31 +655,19 @@ impl Agent {
             let tool_span = tracing::info_span!(
                 "tool",
                 "otel.name" = format!("tool.{}", tool.name().as_ref()),
-            );
+            )
+            .or_current();
 
             let handle_tool_call = tool_call.clone();
-            let handle = tokio::spawn(async move {
-                    let handle_tool_call = handle_tool_call;
-                    let output = tool.invoke(&*context, &handle_tool_call)
-                        .await?;
+            let handle = tokio::spawn(
+                async move { tool.invoke(&*context, &handle_tool_call).await }
+                    .instrument(tool_span.clone()),
+            );
 
-                if cfg!(feature = "langfuse") {
-                    tracing::debug!(
-                        langfuse.output = %output,
-                        langfuse.input = handle_tool_call.args(),
-                        tool_name = tool.name().as_ref(),
-                    );
-                } else {
-                    tracing::debug!(output = output.to_string(), args = ?handle_tool_call.args(), tool_name = tool.name().as_ref(), "Completed tool call");
-                }
-
-                    Ok(output)
-                }.instrument(tool_span.or_current()));
-
-            handles.push((handle, tool_call));
+            handles.push((handle, tool_call, tool_span));
         }
 
-        for (handle, tool_call) in handles {
+        for (handle, tool_call, tool_span) in handles {
             let mut output = handle
                 .await
                 .map_err(|err| AgentError::ToolFailedToJoin(tool_call.name().to_string(), err))?;
@@ -687,6 +675,8 @@ impl Agent {
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
             if let Err(error) = output {
+                let failed = ToolOutput::fail(error.to_string());
+                tool_span.in_scope(|| trace_tool_output(tool_call, &failed));
                 let stop = self.tool_calls_over_limit(tool_call);
                 if stop {
                     tracing::error!(
@@ -700,11 +690,8 @@ impl Agent {
                         "Tool call failed, retrying",
                     );
                 }
-                self.add_message(ChatMessage::ToolOutput(
-                    tool_call.clone(),
-                    ToolOutput::fail(error.to_string()),
-                ))
-                .await?;
+                self.add_message(ChatMessage::ToolOutput(tool_call.clone(), failed))
+                    .await?;
                 if stop {
                     self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
                         .await;
@@ -714,6 +701,7 @@ impl Agent {
             }
 
             let output = output?;
+            tool_span.in_scope(|| trace_tool_output(tool_call, &output));
             self.handle_control_tools(tool_call, &output).await;
 
             // Feedback required leaves the tool call open
@@ -946,6 +934,27 @@ fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessa
     }
 
     None
+}
+
+/// Records the tool output that ends up in the history, i.e. after `AfterTool` hooks have run.
+///
+/// Hooks can truncate or summarize large outputs; recording the raw output would make tracing
+/// layers copy it regardless.
+fn trace_tool_output(tool_call: &ToolCall, output: &ToolOutput) {
+    if cfg!(feature = "langfuse") {
+        debug!(
+            langfuse.output = %output,
+            langfuse.input = tool_call.args(),
+            tool_name = tool_call.name(),
+        );
+    } else {
+        debug!(
+            output = %output,
+            args = ?tool_call.args(),
+            tool_name = tool_call.name(),
+            "Completed tool call"
+        );
+    }
 }
 
 #[cfg(test)]
