@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790348121464,
+  "lastUpdate": 1790928471745,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33671,6 +33671,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2138282,
             "range": "± 6613",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d8c6e2d5150677ccdbcd9cc4353b0cdb47a42659",
+          "message": "fix(langfuse): stop retrying rejected batch items forever (#1178)\n\n## Why\n\nIf Langfuse keeps answering a batch with no successes (for example a 207\nwhere every event is rejected because it is too large, invalid, or\nunauthorized), the batch manager put the **entire** batch back on the\nqueue and resent it every 5 seconds, forever. Each new event joined the\nretained batch, so memory grew without bound and the whole thing was\nre-serialized on every interval.\n\nWe hit this downstream: a 32 MiB tool output stayed in memory long after\nthe agent was dropped, because the Langfuse endpoint replied with an\nempty `successes` list.\n\n## What changed\n\n- Only events Langfuse reports as failing with a retryable status (`429`\nor `5xx`) are requeued, using the event ids in the response `errors`.\n- Each event is sent at most 3 times, then dropped.\n- Events rejected with any other status (e.g. `4xx`) are dropped\nimmediately; they will never succeed.\n- Dropped events are logged as counts (`rejected`, `exhausted`), never\nwith their payload.\n- A response with empty `successes` and empty `errors` no longer counts\nas \"everything failed\"; nothing is retried.\n- Added `IngestionEvent::id()` to match response entries with sent\nevents.\n\n## Before / after\n\n| Langfuse keeps answering | Before | After |\n| --- | --- | --- |\n| 207, every event `400` | whole batch resent every 5s, forever, growing\n| dropped on first response |\n| 207, every event `500` | whole batch resent every 5s, forever, growing\n| retried up to 3 sends, then dropped |\n| `{\"successes\":[],\"errors\":[]}` | whole batch resent forever | nothing\nretried |\n\n## How it's proven\n\nNew wiremock tests in `langfuse_batch_manager.rs`:\n\n- `drops_events_langfuse_rejects_as_client_errors`: 400s are not\nrequeued, one request only.\n- `retries_server_errors_a_bounded_number_of_times`: 500s are sent\nexactly 3 times, then the queue and attempt tracking are empty.\n- `pending_batch_stays_bounded_while_langfuse_keeps_failing`: adding an\nevent on each of 20 failing flushes never retains more than 2 pending\nevents.\n- `empty_response_retries_nothing`.\n\n`cargo test -p swiftide-langfuse`, `cargo clippy -p swiftide-langfuse\n--all-targets --all-features -- -D warnings` and `cargo +nightly fmt\n--all -- --check` pass.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Langfuse event delivery now retries rate-limit and server errors up to\nthree times, helping recover from temporary service issues.\n* Events that fail with other errors, or still fail after the retry\nlimit, are no longer retried. Partial failures are reported, and batches\nwith no successful deliveries continue to return an error.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-10-02T09:57:55+02:00",
+          "tree_id": "61ff5667dae589b109ff2ff4d62a3b138cfb5c8a",
+          "url": "https://github.com/bosun-ai/swiftide/commit/d8c6e2d5150677ccdbcd9cc4353b0cdb47a42659"
+        },
+        "date": 1790928468820,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 727413,
+            "range": "± 12115",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 204958,
+            "range": "± 4519",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1641,
+            "range": "± 1449",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5878,
+            "range": "± 237",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22005,
+            "range": "± 534",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4227236,
+            "range": "± 29038",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2121352,
+            "range": "± 9024",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16887973,
+            "range": "± 108347",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2133012,
+            "range": "± 6759",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67626342,
+            "range": "± 228626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2158673,
+            "range": "± 8187",
             "unit": "ns/iter"
           }
         ]
