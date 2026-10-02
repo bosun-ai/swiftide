@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790928471745,
+  "lastUpdate": 1790928505977,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33779,6 +33779,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2158673,
             "range": "± 8187",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "03669d860330f1b97595b53e005f92c5a024bf2b",
+          "message": "perf(core): avoid copying single-chunk command output (#1177)\n\n## Why\n\nConverting a `CommandOutput` into owned bytes or text always copied the\nwhole output, even when it was a single chunk. With large command\noutputs (tens to hundreds of MB, e.g. `git diff --binary`), this extra\ncopy doubled peak memory for the conversion and contributed to an OOM in\na downstream service.\n\n## What changed\n\n`CommandOutput::into_bytes` now hands a single chunk's `Bytes` straight\nto `Vec<u8>`. When the buffer is uniquely owned (the usual case),\n`bytes` reuses the allocation instead of copying. Output with multiple\nchunks is still concatenated with one copy. `into_string_lossy` builds\non `into_bytes` and already avoided a second copy for valid UTF-8, so it\nbenefits too.\n\n- Before: `into_bytes` / `into_string_lossy` on a 200 MB single-chunk\noutput allocated and copied another 200 MB.\n- After: the existing buffer is reused; no extra allocation.\n\nNo public API changes.\n\n## How it was proven\n\nNew unit test\n`reuses_single_chunk_allocation_when_converted_into_owned_output` checks\nthat the data pointer of the original `Bytes` matches the pointer of the\nresulting `Vec<u8>` and `String`. It failed before the change and passes\nafter. `cargo test -p swiftide-core`, clippy (`-D warnings`) and `cargo\n+nightly fmt --check` pass.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n* **Performance**\n* Improved command output conversion efficiency by reusing existing\nstorage when possible. Outputs containing multiple chunks continue to be\ncombined in their original order.\n* Byte and lossy-text conversions now benefit from the same storage\nreuse when the output consists of a single chunk.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-10-02T09:56:43+02:00",
+          "tree_id": "6ad73c8a10a686deb3e45499b895ea4a7edb5138",
+          "url": "https://github.com/bosun-ai/swiftide/commit/03669d860330f1b97595b53e005f92c5a024bf2b"
+        },
+        "date": 1790928503374,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 916058,
+            "range": "± 27145",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 264951,
+            "range": "± 1473",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2066,
+            "range": "± 2082",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7538,
+            "range": "± 286",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 28110,
+            "range": "± 244",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4256339,
+            "range": "± 27605",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2139044,
+            "range": "± 15299",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 17013957,
+            "range": "± 89253",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2153993,
+            "range": "± 9716",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67942568,
+            "range": "± 340131",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2172160,
+            "range": "± 18734",
             "unit": "ns/iter"
           }
         ]
