@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790928596437,
+  "lastUpdate": 1790928774274,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33995,6 +33995,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2151024,
             "range": "± 11737",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ebede65eb0334bd55654fc29b1c8e05a1061cc54",
+          "message": "perf(agents): trace tool output after AfterTool hooks (#1180)\n\n## Why\n\nAgents trace every tool output at debug level. That happened right after\nthe tool ran, before `AfterTool` hooks. Hooks are where users truncate\nor summarize large outputs so they don't spread through the system. But\ntracing layers that capture fields still got the raw output. Langfuse,\nfor example, formats it into a `String`, wraps it in JSON, batches it,\nand serializes it again.\n\nWe hit this in production. One agent turn with a 32 MiB tool output\npeaked at 2.3x the output size without Langfuse and 4.1x with it, which\nled to an OOM. The agent itself only kept the truncated version.\n\n## What changed\n\n- The tool output is now traced after `AfterTool` hooks, so the traced\nvalue is the one that goes into the history. It is still recorded inside\nthe `tool` span, so Langfuse attribution is unchanged.\n- The non-Langfuse branch uses `%output` instead of an eager\n`output.to_string()`.\n- Failed tool calls are now traced too, as the failure message the LLM\nsees. Before, only successful outputs were traced.\n\nSide effect: the `tool` span now closes after the hooks have run, not as\nsoon as the tool returns.\n\n## Before / after\n\nWith an `AfterTool` hook that replaces `\"huge raw output\"` with\n`\"truncated\"`:\n\n- Before: the trace records `\"huge raw output\"`\n- After: the trace records `truncated`\n\n## How it's tested\n\nThe new `swiftide-agents/tests/tool_output_tracing.rs` adds a capturing\n`tracing` layer and checks what gets recorded inside the `tool` span:\n- an `AfterTool` hook truncates the output, and only the truncated\noutput is traced\n- a failed tool call is traced as `Tool call failed: ...`\n\nThe test fails on `master` and passes with this change. It runs in its\nown test binary because tracing caches callsite interest globally, and a\ncapturing subscriber in the lib test binary was flaky next to the\n`test_log` tests.\n\n`cargo test -p swiftide-agents` passes with default features, with\n`--features langfuse` and with `--all-features`. `cargo clippy -p\nswiftide-agents --all-targets --all-features -- -D warnings` and `cargo\n+nightly fmt --all -- --check` are clean.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Tool traces now reflect outputs after post-tool processing, including\nfailures as presented for retry handling.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-10-02T10:03:34+02:00",
+          "tree_id": "2f03a0f5cc71567e06f1c3852e3f84192f71a1b1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/ebede65eb0334bd55654fc29b1c8e05a1061cc54"
+        },
+        "date": 1790928771865,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 542488,
+            "range": "± 27264",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 159521,
+            "range": "± 2297",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1526,
+            "range": "± 1723",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5810,
+            "range": "± 256",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22446,
+            "range": "± 1046",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4178519,
+            "range": "± 22140",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2098958,
+            "range": "± 7282",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16740252,
+            "range": "± 63306",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2109109,
+            "range": "± 6316",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66857811,
+            "range": "± 366152",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2123333,
+            "range": "± 10129",
             "unit": "ns/iter"
           }
         ]
