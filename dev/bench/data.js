@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790928505977,
+  "lastUpdate": 1790928596437,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -33887,6 +33887,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2172160,
             "range": "± 18734",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "59a743113237c47e9af977f9ec80a1c2c6dcd54c",
+          "message": "perf(langfuse): move recorded values instead of cloning them (#1179)\n\n## Why\n\nWith `LangfuseLayer` enabled at DEBUG, every recorded `langfuse.*` value\nwas copied more than once before it reached the batch manager. For large\nvalues, like a 32 MiB tool output or a full chat-completion request in\n`langfuse.input`, that adds tens of MiB of peak memory per span or\nevent. dhat profiling showed `<serde_json::Value as Clone>::clone` from\n`SpanData::get` and the full-map clone in `remaining_metadata` at the\npeak.\n\n## What changed\n\nAll changes are in `swiftide-langfuse/src/tracing_layer.rs`:\n\n- `SpanData::take` removes a field from the metadata and deserializes\nthe owned value. Large strings move into the ingestion event without\nbeing copied. `observation_create_from` and `handle_record` now use it.\n- `remaining_metadata(&self)` (clone the map, then filter it) is now\n`into_remaining_metadata(self)`, which filters the map it already owns.\n- `SpanData::get` (still used for `langfuse.type` in `on_new_span` and\nfor `otel.name`) deserializes from a borrow instead of cloning the value\nfirst.\n- Dropped a few unneeded `String` clones of ids in `handle_span_close`\nand `handle_record`.\n\n`SpanData` is crate-private, so the public API does not change. What\ngets sent to Langfuse also stays the same. The one visible difference:\nwhen a `langfuse.*` field fails to parse, the warning still logs the key\nand error but no longer includes the value, because the value has\nalready been moved.\n\nI left `JsonVisitor::record_str` as it is. tracing only hands us a\n`&str`, so one owned copy is unavoidable. For non-JSON text the\nspeculative `Value::from_str` fails on the first byte, so it costs\nalmost nothing. JSON strings, like the `langfuse.input`/`output`\nproduced by `langfuse_json` in swiftide-integrations, should keep being\nparsed into structured values. Narrowing the parse to `{`/`[` would turn\nscalar strings such as `\"42\"` into strings in the output without saving\nany meaningful work.\n\n## How it's proven\n\n- New `take_moves_large_values_out_of_the_metadata_without_copying`\ntest: a 1 MiB output string taken from the metadata keeps the same heap\nbuffer pointer, so it was moved and not cloned. The remaining metadata\nkeeps only the non-`langfuse.` keys.\n- New `test_span_and_event_fields_reach_langfuse_unchanged` test: a\nGENERATION span with structured JSON input, model, `otel.name` and plain\nmetadata, plus a DEBUG event with output, version and metadata. It\nasserts the exact create and update bodies. This test also passes\nagainst `master`'s implementation, so the output is the same before and\nafter.\n- The existing `full_flow` insta snapshot of the full ingestion payload\nis unchanged.\n- `cargo test -p swiftide-langfuse`, `cargo clippy -p swiftide-langfuse\n--all-targets --all-features -- -D warnings` and `cargo +nightly fmt\n--all` all pass.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n* **Refactor**\n* Improved how tracing data is transferred into observation events,\nwhile keeping unrelated metadata available.\n  * Observation names continue to use `otel.name` when it can be read.\n* **Tests**\n* Added coverage for handling large metadata values and routing span and\nevent fields into observation events.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-10-02T09:59:48+02:00",
+          "tree_id": "160f30009e3653e5e294b0f9b34af34cae3ccd93",
+          "url": "https://github.com/bosun-ai/swiftide/commit/59a743113237c47e9af977f9ec80a1c2c6dcd54c"
+        },
+        "date": 1790928593611,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 726670,
+            "range": "± 9667",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 208026,
+            "range": "± 1865",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1635,
+            "range": "± 1306",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5860,
+            "range": "± 267",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 21785,
+            "range": "± 594",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4188250,
+            "range": "± 27070",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2107236,
+            "range": "± 16668",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16756482,
+            "range": "± 94655",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2123429,
+            "range": "± 10555",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67484429,
+            "range": "± 350056",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2151024,
+            "range": "± 11737",
             "unit": "ns/iter"
           }
         ]
