@@ -80,7 +80,7 @@ fluvio = { version = "0.50.1", default-features = false }
 rdkafka = { version = "0.39.0", features = ["cmake-build"] }
 lancedb = { version = "0.33", default-features = false, features = ["remote"] }
 # Needs to stay in sync with whatever lancdb uses, nice
-arrow-array = { version = "58.4", default-features = false }
+arrow-array = { version = "59.1", default-features = false }
 parquet = { version = "59.1", default-features = false, features = ["async"] }
 redb = { version = "3.1", default-features = false }
 sqlx = { version = "0.9", features = [
