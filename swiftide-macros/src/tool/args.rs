@@ -78,9 +78,18 @@ impl ToolArgs {
     pub fn try_from_attribute_input(input: &ItemFn, args: TokenStream) -> Result<Self, Error> {
         validate_first_argument_is_agent_context(input)?;
 
-        let attr_args = NestedMeta::parse_meta_list(args)?;
+        let mut attr_args = NestedMeta::parse_meta_list(args)?;
+        let doc_comments = ToolDocComments::from_fn(input);
+        if !has_explicit_description(&attr_args)
+            && let Some(description) = &doc_comments.description
+        {
+            attr_args.extend(NestedMeta::parse_meta_list(
+                quote!(description = #description),
+            )?);
+        }
 
         let mut args = ToolArgs::from_list(&attr_args)?;
+        args.apply_doc_comments(doc_comments);
         for arg in input.sig.inputs.iter().skip(1) {
             if let FnArg::Typed(PatType { pat, ty, .. }) = arg
                 && let Pat::Ident(ident) = &**pat
@@ -99,6 +108,28 @@ impl ToolArgs {
         args.with_name_from_ident(&input.sig.ident);
 
         Ok(args)
+    }
+
+    fn apply_doc_comments(&mut self, parsed: ToolDocComments) {
+        if matches!(&self.description, Description::Literal(value) if value.is_empty())
+            && let Some(description) = parsed.description.as_ref()
+        {
+            self.description = Description::Literal(description.clone());
+        }
+
+        for (name, description) in parsed.parameters {
+            if let Some(param) = self.params.iter_mut().find(|param| param.name == name) {
+                if param.description.is_empty() {
+                    param.description = description;
+                }
+            } else {
+                self.params.push(ParamOptions {
+                    name,
+                    description,
+                    ..ParamOptions::default()
+                });
+            }
+        }
     }
 
     pub fn infer_param_types(&mut self) -> Result<(), Error> {
@@ -218,6 +249,94 @@ impl ToolArgs {
             proc_macro2::Span::call_site(),
         )
     }
+}
+
+#[derive(Default)]
+struct ToolDocComments {
+    description: Option<String>,
+    parameters: Vec<(String, String)>,
+}
+
+impl ToolDocComments {
+    fn from_fn(input: &ItemFn) -> Self {
+        let docs = input
+            .attrs
+            .iter()
+            .filter(|attr| attr.path().is_ident("doc"))
+            .filter_map(|attr| match &attr.meta {
+                syn::Meta::NameValue(meta) => match &meta.value {
+                    syn::Expr::Lit(expr) => match &expr.lit {
+                        syn::Lit::Str(value) => Some(value.value()),
+                        _ => None,
+                    },
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        Self::parse(&docs)
+    }
+
+    fn parse(lines: &[String]) -> Self {
+        let mut docs = Self::default();
+        let mut description_lines = Vec::new();
+        let mut in_arguments = false;
+        let mut before_sections = true;
+
+        for line in lines {
+            let line = line.trim();
+            if let Some(heading) = line.strip_prefix('#') {
+                let heading = heading.trim_start_matches('#').trim();
+                in_arguments = heading.eq_ignore_ascii_case("arguments")
+                    || heading.eq_ignore_ascii_case("parameters");
+                before_sections = false;
+                continue;
+            }
+
+            if in_arguments {
+                if let Some(parameter) = parse_parameter_doc_line(line) {
+                    docs.parameters.push(parameter);
+                }
+            } else if before_sections && !line.is_empty() {
+                description_lines.push(line);
+            }
+        }
+
+        if !description_lines.is_empty() {
+            docs.description = Some(description_lines.join(" "));
+        }
+
+        docs
+    }
+}
+
+fn has_explicit_description(args: &[NestedMeta]) -> bool {
+    args.iter().any(|arg| {
+        matches!(arg, NestedMeta::Meta(syn::Meta::NameValue(value)) if value.path.is_ident("description"))
+    })
+}
+
+fn parse_parameter_doc_line(line: &str) -> Option<(String, String)> {
+    let line = line
+        .strip_prefix("- ")
+        .or_else(|| line.strip_prefix("* "))?;
+    let (name, description) = if let Some(rest) = line.strip_prefix('`') {
+        let (name, rest) = rest.split_once('`')?;
+        let description = rest
+            .trim_start()
+            .strip_prefix(':')
+            .or_else(|| rest.trim_start().strip_prefix('-'))?;
+        (name, description)
+    } else {
+        line.split_once(':')?
+    };
+    let name = name.trim();
+    let description = description.trim();
+    if name.is_empty() || description.is_empty() {
+        return None;
+    }
+
+    Some((name.to_owned(), description.to_owned()))
 }
 
 fn validate_spec_and_fn_args_match(tool_args: &ToolArgs, item_fn: &ItemFn) -> Result<(), Error> {
@@ -376,4 +495,36 @@ fn validate_first_argument_is_agent_context(input_fn: &ItemFn) -> Result<(), Err
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod doc_comment_tests {
+    use super::ToolDocComments;
+
+    #[test]
+    fn parses_summary_and_argument_bullets() {
+        let docs = [
+            " Search indexed documents.".to_owned(),
+            String::new(),
+            " # Arguments".to_owned(),
+            " - `query`: Text to search for.".to_owned(),
+            " - `limit` - Maximum number of results.".to_owned(),
+            " # Returns".to_owned(),
+            " A list of matching documents.".to_owned(),
+        ];
+
+        let parsed = ToolDocComments::parse(&docs);
+
+        assert_eq!(
+            parsed.description.as_deref(),
+            Some("Search indexed documents.")
+        );
+        assert_eq!(
+            parsed.parameters,
+            vec![
+                ("query".to_owned(), "Text to search for.".to_owned()),
+                ("limit".to_owned(), "Maximum number of results.".to_owned()),
+            ]
+        );
+    }
 }

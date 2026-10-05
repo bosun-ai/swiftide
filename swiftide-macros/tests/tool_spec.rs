@@ -15,6 +15,35 @@ async fn described_attribute_tool(
     Ok(format!("Searching for {query}").into())
 }
 
+/// Searches indexed notes.
+///
+/// # Arguments
+/// - `query`: Text to search for.
+/// - `limit`: Maximum number of notes to return.
+#[swiftide_macros::tool]
+async fn documented_attribute_tool(
+    _agent_context: &dyn AgentContext,
+    query: &str,
+    limit: usize,
+) -> Result<ToolOutput, ToolError> {
+    Ok(format!("Searching for {query}, limited to {limit}").into())
+}
+
+/// Documentation used only when the matching attribute value is omitted.
+///
+/// # Arguments
+/// - `query`: Documentation fallback.
+#[swiftide_macros::tool(
+    description = "Explicit tool description",
+    param(name = "query", description = "Explicit parameter description")
+)]
+async fn explicit_attribute_tool(
+    _agent_context: &dyn AgentContext,
+    query: &str,
+) -> Result<ToolOutput, ToolError> {
+    Ok(format!("Searching for {query}").into())
+}
+
 #[derive(Clone, Tool)]
 #[tool(
     description = "Searches indexed source code",
@@ -60,6 +89,32 @@ fn derive_macro_exposes_argument_description_in_tool_spec() {
     assert_eq!(
         argument_description(&spec, "query").as_deref(),
         Some("Search text used to find matching code")
+    );
+}
+
+#[test]
+fn attribute_macro_reads_summary_and_arguments_from_doc_comments() {
+    let spec = documented_attribute_tool().tool_spec();
+
+    assert_eq!(spec.description, "Searches indexed notes.");
+    assert_eq!(
+        argument_description(&spec, "query").as_deref(),
+        Some("Text to search for.")
+    );
+    assert_eq!(
+        argument_description(&spec, "limit").as_deref(),
+        Some("Maximum number of notes to return.")
+    );
+}
+
+#[test]
+fn attribute_values_override_doc_comment_fallbacks() {
+    let spec = explicit_attribute_tool().tool_spec();
+
+    assert_eq!(spec.description, "Explicit tool description");
+    assert_eq!(
+        argument_description(&spec, "query").as_deref(),
+        Some("Explicit parameter description")
     );
 }
 
