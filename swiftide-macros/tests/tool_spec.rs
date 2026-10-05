@@ -18,7 +18,8 @@ async fn described_attribute_tool(
 /// Searches indexed notes.
 ///
 /// # Arguments
-/// - `query`: Text to search for.
+/// - `_agent_context`: Context for the current agent.
+/// - `query`: Text to search for. Matching is case-insensitive.
 /// - `limit`: Maximum number of notes to return.
 #[swiftide_macros::tool]
 async fn documented_attribute_tool(
@@ -99,12 +100,13 @@ fn attribute_macro_reads_summary_and_arguments_from_doc_comments() {
     assert_eq!(spec.description, "Searches indexed notes.");
     assert_eq!(
         argument_description(&spec, "query").as_deref(),
-        Some("Text to search for.")
+        Some("Text to search for. Matching is case-insensitive.")
     );
     assert_eq!(
         argument_description(&spec, "limit").as_deref(),
         Some("Maximum number of notes to return.")
     );
+    assert_eq!(argument_description(&spec, "_agent_context"), None);
 }
 
 #[test]

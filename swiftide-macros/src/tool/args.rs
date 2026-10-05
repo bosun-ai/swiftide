@@ -89,7 +89,7 @@ impl ToolArgs {
         }
 
         let mut args = ToolArgs::from_list(&attr_args)?;
-        args.apply_doc_comments(doc_comments);
+        args.apply_doc_comments(doc_comments, input);
         for arg in input.sig.inputs.iter().skip(1) {
             if let FnArg::Typed(PatType { pat, ty, .. }) = arg
                 && let Pat::Ident(ident) = &**pat
@@ -110,14 +110,26 @@ impl ToolArgs {
         Ok(args)
     }
 
-    fn apply_doc_comments(&mut self, parsed: ToolDocComments) {
+    fn apply_doc_comments(&mut self, parsed: ToolDocComments, input: &ItemFn) {
         if matches!(&self.description, Description::Literal(value) if value.is_empty())
             && let Some(description) = parsed.description.as_ref()
         {
             self.description = Description::Literal(description.clone());
         }
 
+        let context_name = input.sig.inputs.first().and_then(|arg| match arg {
+            FnArg::Typed(PatType { pat, .. }) => match &**pat {
+                Pat::Ident(ident) => Some(ident.ident.to_string()),
+                _ => None,
+            },
+            FnArg::Receiver(_) => None,
+        });
+
         for (name, description) in parsed.parameters {
+            if context_name.as_deref() == Some(name.as_str()) {
+                continue;
+            }
+
             if let Some(param) = self.params.iter_mut().find(|param| param.name == name) {
                 if param.description.is_empty() {
                     param.description = description;
@@ -294,8 +306,15 @@ impl ToolDocComments {
             }
 
             if in_arguments {
-                if let Some(parameter) = parse_parameter_doc_line(line) {
-                    docs.parameters.push(parameter);
+                if line.starts_with("- ") || line.starts_with("* ") {
+                    if let Some(parameter) = parse_parameter_doc_line(line) {
+                        docs.parameters.push(parameter);
+                    }
+                } else if !line.is_empty()
+                    && let Some((_, description)) = docs.parameters.last_mut()
+                {
+                    description.push(' ');
+                    description.push_str(line);
                 }
             } else if before_sections && !line.is_empty() {
                 description_lines.push(line);
