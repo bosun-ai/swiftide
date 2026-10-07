@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790928774274,
+  "lastUpdate": 1791379915048,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -34103,6 +34103,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2123333,
             "range": "± 10129",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "db63c9d7a31a2765085551f79ae283fc9b22e791",
+          "message": "refactor(core): replace the CommandOutputSink trait with a closure alias (#1171)\n\n## What changed\n\nFollow-up to #1162, after reviewing the streaming code for further\nreductions. The streaming feature now adds exactly two public items to\nswiftide-core: the `CommandOutputSink<'_>` closure alias and\n`report_buffered_output`.\n\n- `CommandOutputSink` is a type alias for `dyn\nFnMut(&CommandOutputChunk) + Send` instead of a trait with a blanket\nclosure impl. Callers write `&mut |chunk| ...` with no type annotation,\nbecause the closure is coerced straight to the expected signature.\n- The unit sink impl is gone. The buffered `exec_cmd` passes `&mut |_|\n{}`.\n- `LocalExecutor::exec_cmd_streaming` returns early for shell commands\nand wraps the buffered file arms once, so \"shell streams, files report\nafterwards\" is visible in the code.\n- `exec_cmd` no longer opens a second tracing span on top of\n`exec_cmd_streaming`. The remaining span records the command.\n- The alias documents that the sink runs inside the executor's read loop\nand must not block.\n\nBefore:\n\n```rust\nexecutor.exec_cmd_streaming(&cmd, &mut |chunk: &CommandOutputChunk| ui.push(chunk)).await\n```\n\nAfter:\n\n```rust\nexecutor.exec_cmd_streaming(&cmd, &mut |chunk| ui.push(chunk)).await\n```\n\n## Why\n\nFewer public items for the same behaviour, and a nicer call site. The\ntrait was never in a tagged release, so this is not a breaking change\nfor published versions.\n\n## Checks\n\n- Clippy warning-free and rustfmt clean for swiftide-core and\nswiftide-agents.\n- All tests in both crates pass, and `cargo check --workspace\n--all-targets` is clean.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n- **New Features**\n- Added consistent command-output streaming through callback-based\nhandlers.\n- Buffered command results, including errors and timeouts, can now be\nforwarded through the same output handler before the result is returned.\n\n- **Refactor**\n- Simplified the command-output handling API by replacing the previous\nsink interface with a closure-based callback.\n- Updated command execution integrations to use the revised streaming\ncallback signature.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-10-07T15:21:59+02:00",
+          "tree_id": "6ce88b79cd80cf612dd093bd02ddf8426891f0bc",
+          "url": "https://github.com/bosun-ai/swiftide/commit/db63c9d7a31a2765085551f79ae283fc9b22e791"
+        },
+        "date": 1791379912531,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 719887,
+            "range": "± 61102",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 127706,
+            "range": "± 8041",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1776,
+            "range": "± 1082",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6232,
+            "range": "± 473",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 24259,
+            "range": "± 1253",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4174000,
+            "range": "± 30135",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2088745,
+            "range": "± 13174",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16745194,
+            "range": "± 116442",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2116206,
+            "range": "± 11597",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66992336,
+            "range": "± 319949",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2145203,
+            "range": "± 13455",
             "unit": "ns/iter"
           }
         ]
