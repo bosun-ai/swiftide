@@ -14,6 +14,7 @@ use swiftide_test_utils::*;
 use temp_dir::TempDir;
 use wiremock::MockServer;
 
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 async fn test_query_pipeline() {
     // Setup temporary directory and file for testing
@@ -68,6 +69,7 @@ async fn test_query_pipeline() {
     assert!(!result.answer().is_empty());
 }
 
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 async fn test_hybrid_search_qdrant() {
     // Setup temporary directory and file for testing

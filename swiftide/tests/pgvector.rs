@@ -139,6 +139,7 @@ async fn test_pgvector_indexing() {
 /// a mock `OpenAI` client, configures `PgVector`, and executes a query
 /// to ensure the pipeline retrieves the correct data and generates
 /// an expected response.
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 async fn test_pgvector_retrieve() {
     // Setup temporary directory and file for testing
@@ -267,6 +268,7 @@ async fn test_pgvector_retrieve() {
 /// - Define search parameters as constants in the implementation scope
 /// - Pass configuration through the query generator closure
 /// - Keep the strategy struct minimal and focused on query generation
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 #[allow(clippy::too_many_lines)]
 async fn test_pgvector_retrieve_dynamic_search() {
