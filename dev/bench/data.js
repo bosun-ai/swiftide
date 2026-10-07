@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791379915048,
+  "lastUpdate": 1791379944707,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -34211,6 +34211,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2145203,
             "range": "± 13455",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1b0d6d46c9d7a66ea000ae0c3e08de3ec073b313",
+          "message": "fix(ci): ignore external FastEmbed tests (#1139)\n\n## Why\n\nThe master test run fails when Hugging Face rate-limits FastEmbed model\ndownloads with HTTP 429.\n\n## What changed\n\n- Ignore the ten tests that download FastEmbed models\n- Keep them available through `cargo test -- --ignored`\n\n## Checks\n\n- `cargo +nightly fmt --all -- --check`\n- FastEmbed unit tests: 2 ignored, no failures\n- Integration test sources compile; local linking is unavailable because\nDuckDB is not installed\n- Cargo Hack left to hosted CI",
+          "timestamp": "2026-10-07T15:22:27+02:00",
+          "tree_id": "c1bfa683d17123573f54958bd57b760c68dcf2b2",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1b0d6d46c9d7a66ea000ae0c3e08de3ec073b313"
+        },
+        "date": 1791379941712,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 718054,
+            "range": "± 11942",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 207588,
+            "range": "± 1031",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1651,
+            "range": "± 1450",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5975,
+            "range": "± 272",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22011,
+            "range": "± 641",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4221458,
+            "range": "± 20450",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2126686,
+            "range": "± 10312",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16890277,
+            "range": "± 91574",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2130284,
+            "range": "± 7348",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67577079,
+            "range": "± 365052",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2153633,
+            "range": "± 11371",
             "unit": "ns/iter"
           }
         ]
