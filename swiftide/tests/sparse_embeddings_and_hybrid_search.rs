@@ -29,6 +29,7 @@ use wiremock::MockServer;
 /// # Errors
 /// If the indexing pipeline encounters an error, the test will print the received requests
 /// for debugging purposes.
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 #[allow(clippy::too_many_lines)]
 async fn test_sparse_indexing_pipeline() {
