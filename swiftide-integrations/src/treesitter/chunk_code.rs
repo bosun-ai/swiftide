@@ -146,9 +146,9 @@ mod tests {
         let code = "fn alpha() { println!(\"α\"); }\nfn beta() { println!(\"β\"); }\nfn gamma() { println!(\"γ\"); }";
         let transformer =
             ChunkCode::try_for_language_and_chunk_size(SupportedLanguages::Rust, 32).unwrap();
-        let source = TextNode::builder()
+        let source: TextNode = TextNode::builder()
             .path("fixtures/日本語.rs")
-            .chunk(code)
+            .chunk(code.to_owned())
             .metadata(Metadata::from([("language", "Rust")]))
             .original_size(code.len())
             .offset(99usize)
