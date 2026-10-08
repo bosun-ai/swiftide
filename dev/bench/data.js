@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791448163488,
+  "lastUpdate": 1791452524541,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -34427,6 +34427,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2127986,
             "range": "± 4131",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69136413+Prajwal-k-tech@users.noreply.github.com",
+            "name": "Prajwal Kumar K",
+            "username": "Prajwal-k-tech"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8163a376131539cd969b5302167729fab947285b",
+          "message": "feat(macros): read tool metadata from Rustdoc (#1182)\n\n## Summary\n\nRead the summary and `# Arguments` / `# Parameters` bullets from Rustdoc\nwhen building a tool with the `#[tool]` attribute macro. Explicit\n`description` and `param` values take precedence. The derive macro\ncontinues to require its existing description.\n\nCloses #981.\n\n## Validation\n\n- `cargo test -p swiftide-macros` (unit, trybuild, and tool-spec\nintegration tests)\n- `cargo clippy -p swiftide-macros --all-targets -- -D warnings`\n- `cargo +nightly fmt --all -- --check`\n- `git diff --check`\n\nThe trybuild suite prints a pre-existing unused-variable warning from\n`tool_multiple_arguments_pass.rs`; all tests pass.\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n## Summary by CodeRabbit\n\n* **New Features**\n* Tool descriptions and parameter descriptions can be read from function\ndocumentation, including supported `Arguments` and `Parameters`\nsections. Documented parameter descriptions are applied when their names\nmatch the tool’s parameters.\n* Explicit description attributes take precedence over documentation\ncomments. The tool documentation now includes an async example.\n* **Bug Fixes**\n  * Empty tool descriptions are now reported as a missing description.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-10-08T09:30:15Z",
+          "tree_id": "b58076b34a38754c5446d727ee301982b58a3d91",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8163a376131539cd969b5302167729fab947285b"
+        },
+        "date": 1791452522162,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1066057,
+            "range": "± 35246",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 276443,
+            "range": "± 3308",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1964,
+            "range": "± 1976",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7080,
+            "range": "± 319",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26255,
+            "range": "± 878",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4174402,
+            "range": "± 22044",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2105635,
+            "range": "± 12296",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16682422,
+            "range": "± 83170",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2106831,
+            "range": "± 16437",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66929190,
+            "range": "± 273451",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2129600,
+            "range": "± 10364",
             "unit": "ns/iter"
           }
         ]
