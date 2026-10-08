@@ -996,12 +996,14 @@ impl<T: Chunk> Pipeline<T> {
 
             // Bound the marking work to the pipeline's concurrency so a large
             // corpus does not issue one serial round-trip per source id.
-            futures_util::stream::iter(
-                to_mark.into_iter().map(|(mark_cached, id)| mark_cached(id)),
-            )
-            .buffer_unordered(self.concurrency)
-            .collect::<Vec<()>>()
-            .await;
+            let mark_futures: Vec<Pin<Box<dyn Future<Output = ()> + Send>>> = to_mark
+                .into_iter()
+                .map(|(mark_cached, id)| mark_cached(id))
+                .collect();
+            futures_util::stream::iter(mark_futures)
+                .buffer_unordered(self.concurrency)
+                .collect::<Vec<()>>()
+                .await;
         }
 
         self.stats.increment_nodes_processed(total_nodes);
@@ -1038,6 +1040,13 @@ mod tests {
     use crate::persist::MemoryStorage;
     use mockall::Sequence;
     use swiftide_core::indexing::*;
+
+    #[test]
+    fn pipeline_run_future_is_send() {
+        fn assert_send<T: Send>(_: T) {}
+
+        assert_send(Pipeline::<String>::default().run());
+    }
 
     /// Tests a simple run of the indexing pipeline.
     #[test_log::test(tokio::test)]

@@ -122,6 +122,7 @@ impl FastEmbedBuilder {
 mod tests {
     use super::*;
 
+    #[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
     #[tokio::test]
     async fn test_fastembed() {
         let fastembed = FastEmbed::try_default().unwrap();
@@ -129,6 +130,7 @@ mod tests {
         assert_eq!(embeddings.len(), 1);
     }
 
+    #[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
     #[tokio::test]
     async fn test_sparse_fastembed() {
         let fastembed = FastEmbed::try_default_sparse().unwrap();
