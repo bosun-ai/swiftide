@@ -1123,50 +1123,19 @@ impl<T: Chunk> Pipeline<T> {
         // Report per-document outcomes to persist observers. A document with a
         // failure anywhere in its fan-out is reported as failed even when some
         // of its nodes completed, so observers never ACK a partial document.
-        if !self.persist_observers.is_empty() {
-            let failed_docs = FailedIds::collect_docs(&self.failed_ids);
-
-            let mut persisted: Vec<(Arc<str>, usize)> = completed_doc_counts
-                .into_iter()
-                .filter(|(doc_id, _)| !failed_docs.contains_key(doc_id.as_ref()))
-                .collect();
-            persisted.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-            let mut failed: Vec<(Arc<str>, String)> = failed_docs.into_iter().collect();
-            failed.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-
-            // Fire every callback even if one observer errors, so all
-            // observers see all outcomes; the run then fails with the first
-            // observer error.
-            let mut observer_error = None;
-            for observer in &self.persist_observers {
-                for (doc_id, count) in &persisted {
-                    if let Err(err) = observer.on_persisted(doc_id, *count).await {
-                        tracing::error!(
-                            observer = observer.name(),
-                            ?err,
-                            "persist observer failed"
-                        );
-                        observer_error.get_or_insert(err);
-                    }
-                }
-                for (doc_id, message) in &failed {
-                    let failure = anyhow::anyhow!(message.clone());
-                    if let Err(err) = observer.on_failed(doc_id, &failure).await {
-                        tracing::error!(
-                            observer = observer.name(),
-                            ?err,
-                            "persist observer failed"
-                        );
-                        observer_error.get_or_insert(err);
-                    }
-                }
-            }
-
-            if let Some(err) = observer_error {
-                return Err(err);
-            }
-        }
+        // The error is returned only after the stats are finalized below so a
+        // failing observer does not leave a fully stored run without its
+        // completion stats.
+        let observer_result = if self.persist_observers.is_empty() {
+            Ok(())
+        } else {
+            Self::notify_persist_observers(
+                &self.persist_observers,
+                &self.failed_ids,
+                completed_doc_counts,
+            )
+            .await
+        };
 
         self.stats.increment_nodes_processed(total_nodes);
         self.stats.complete();
@@ -1191,6 +1160,60 @@ impl<T: Chunk> Pipeline<T> {
 
         tracing::Span::current().record("total_nodes", total_nodes);
 
+        observer_result
+    }
+
+    /// Reports per-document outcomes to every registered persist observer.
+    ///
+    /// A document with a failure anywhere in its fan-out is reported as failed
+    /// even when some of its nodes completed, so observers never ACK a partial
+    /// document. Every callback fires even if one observer errors, so all
+    /// observers see all outcomes; the run then fails with the first observer
+    /// error.
+    async fn notify_persist_observers(
+        persist_observers: &[Arc<dyn PersistObserver>],
+        failed_ids: &Arc<FailedIds>,
+        completed_doc_counts: HashMap<Arc<str>, usize>,
+    ) -> Result<()> {
+        let failed_docs = FailedIds::collect_docs(failed_ids);
+
+        let mut persisted: Vec<(Arc<str>, usize)> = completed_doc_counts
+            .into_iter()
+            .filter(|(doc_id, _)| !failed_docs.contains_key(doc_id.as_ref()))
+            .collect();
+        persisted.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        let mut failed: Vec<(Arc<str>, String)> = failed_docs.into_iter().collect();
+        failed.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        let mut observer_error = None;
+        for observer in persist_observers {
+            for (doc_id, count) in &persisted {
+                if let Err(err) = observer.on_persisted(doc_id, *count).await {
+                    tracing::error!(
+                        observer = observer.name(),
+                        ?err,
+                        "persist observer failed"
+                    );
+                    observer_error.get_or_insert(err);
+                }
+            }
+            for (doc_id, message) in &failed {
+                let failure = anyhow::anyhow!(message.clone());
+                if let Err(err) = observer.on_failed(doc_id, &failure).await {
+                    tracing::error!(
+                        observer = observer.name(),
+                        ?err,
+                        "persist observer failed"
+                    );
+                    observer_error.get_or_insert(err);
+                }
+            }
+        }
+
+        if let Some(err) = observer_error {
+            return Err(err);
+        }
         Ok(())
     }
 }
