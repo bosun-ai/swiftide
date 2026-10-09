@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791452524541,
+  "lastUpdate": 1791585076940,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -34535,6 +34535,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2129600,
             "range": "± 10364",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "i@dex.moe",
+            "name": "Dex Hunter",
+            "username": "dexhunter"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1a5efe906fa886726401a3c69642de74a26b8251",
+          "message": "perf(core): share parent derivation across chunkers (#1173)\n\n## Summary\n\nChunking one text node into several outputs repeatedly hashed its full\noriginal chunk to derive the parent ID. `Node<String>::into_chunks` now\nresolves the parent once per input and builds each output from a cleared\nchunk template. `ChunkText`, `ChunkMarkdown`, and TreeSitter `ChunkCode`\nuse that shared path. Node fields and code offsets are preserved;\n`Node::id()` still reflects changes to public path and chunk fields. The\nserialized node shape is unchanged.\n\nRefs #691\n\n## Benchmark\n\nOn 295 tracked Swiftide Rust files (1,906,671 bytes),\n`ChunkText::from_chunk_range(256..1024)` produced 4,201 chunks. The\nfrozen evaluator validated the full Node output at concurrency 1 and 4\nbefore timing, then took three timed samples at each setting. The timed\nboundary covers local file loading, chunking, and draining on a\ntwo-thread Tokio runtime; it excludes embeddings, providers, and network\naccess. The release build used Rust 1.97.1 on Linux x86_64 with an AMD\nEPYC 7R13 and a two-core CPU quota.\n\nThe September 25 exact-source replay measured 196.69 ms for the baseline\nand 28.43 ms for the production code in this PR, an 85.55% reduction.\nThe scalar is the mean of the two per-concurrency medians. The original\noptimization search contains five distinct evaluated candidates under\nthis evaluator; its [public Weco\ntrajectory](https://dashboard.weco.ai/share/wVl-VFUpq3n57RL-m2ZFJSkLCGg2wJMM)\nremains available. That review revision was replayed separately and is\nnot another optimizer candidate. The test fixture correction below\nleaves production code unchanged; these measurements are retained from\nthat replay.\n\n## Verification\n\n- Earlier focused native tests passed: 9 core node, 5 text chunker, and\n4 Markdown chunker tests.\n- Earlier Clippy checks passed for core and indexing libraries and\ntests, and for the TreeSitter integration library. Formatting passed on\nthat revision.\n- The retained exact-source frozen evaluator replay passed.\n- The previous\n[test](https://github.com/bosun-ai/swiftide/actions/runs/36155853934)\nand\n[lint](https://github.com/bosun-ai/swiftide/actions/runs/36155853869) CI\nruns failed to compile the `ChunkCode` regression fixture;\n[coverage](https://github.com/bosun-ai/swiftide/actions/runs/36155853770)\nalso failed. The fixture now explicitly builds a `TextNode` with an\nowned `String`.\n- After this correction, all 39 focused TreeSitter tests passed,\nincluding the `ChunkCode` regression. Clippy passed for the integration\nlibrary and tests with the `tree-sitter` feature and warnings denied.\nFull workspace CI for the correction remains unverified.\n\nThis contribution was prepared with AI assistance. The implementation\nand measurements were checked against the pinned source and evaluator\nreceipts.\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Text, Markdown, and code chunks now consistently retain their source\nnode’s fields and parent relationship.\n* Code chunks continue to receive cumulative offsets, starting from\nzero.\n* Blank text chunks are discarded, and empty chunk input produces no\noutput nodes.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Aiden <aiden@weco.ai>\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2026-10-09T22:19:48Z",
+          "tree_id": "597037f27bd6a0f104753c3f9eb7854c20ebe21d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/1a5efe906fa886726401a3c69642de74a26b8251"
+        },
+        "date": 1791585074050,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 921226,
+            "range": "± 35202",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 271204,
+            "range": "± 1440",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2069,
+            "range": "± 1946",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7559,
+            "range": "± 304",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 27949,
+            "range": "± 320",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4262112,
+            "range": "± 31313",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2141358,
+            "range": "± 19144",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16977509,
+            "range": "± 115205",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2149109,
+            "range": "± 12278",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67781357,
+            "range": "± 582667",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2174063,
+            "range": "± 16541",
             "unit": "ns/iter"
           }
         ]
