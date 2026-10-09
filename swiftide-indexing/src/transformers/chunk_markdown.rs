@@ -131,11 +131,7 @@ impl ChunkerTransformer for ChunkMarkdown {
             })
             .collect::<Vec<String>>();
 
-        IndexingStream::iter(
-            chunks
-                .into_iter()
-                .map(move |chunk| TextNode::build_from_other(&node).chunk(chunk).build()),
-        )
+        IndexingStream::iter(node.into_chunks(chunks).map(Ok))
     }
 
     fn concurrency(&self) -> Option<usize> {
@@ -212,6 +208,51 @@ mod test {
                 })
             );
         }
+    }
+
+    #[tokio::test]
+    async fn preserves_chunk_output_and_node_fields() {
+        let source = TextNode::builder()
+            .path("fixtures/日本語.md")
+            .chunk(MARKDOWN.to_string())
+            .metadata(swiftide_core::indexing::Metadata::from([(
+                "language",
+                "日本語",
+            )]))
+            .original_size(MARKDOWN.len())
+            .offset(9usize)
+            .build()
+            .unwrap();
+        let outputs: Vec<TextNode> = ChunkMarkdown::from_max_characters(40)
+            .transform_node(source.clone())
+            .await
+            .try_collect()
+            .await
+            .unwrap();
+        assert!(outputs.len() > 1);
+        for output in &outputs {
+            let expected = TextNode::build_from_other(&source)
+                .chunk(output.chunk.clone())
+                .build()
+                .unwrap();
+            assert_eq!(output, &expected);
+        }
+
+        let parent = uuid::Uuid::new_v4();
+        let mut descendant = source;
+        descendant.parent_id = Some(parent);
+        let child_outputs: Vec<TextNode> = ChunkMarkdown::from_max_characters(40)
+            .transform_node(descendant)
+            .await
+            .try_collect()
+            .await
+            .unwrap();
+        assert_eq!(child_outputs.len(), outputs.len());
+        assert!(
+            child_outputs
+                .iter()
+                .all(|output| output.parent_id == Some(parent))
+        );
     }
 
     #[test]
