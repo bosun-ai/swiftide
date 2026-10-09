@@ -1080,11 +1080,30 @@ impl<T: Chunk> Pipeline<T> {
             }
         }
 
+        // Report per-document outcomes to persist observers before touching
+        // the caches. A document with a failure anywhere in its fan-out is
+        // reported as failed even when some of its nodes completed, so
+        // observers never ACK a partial document. The error is returned only
+        // after the stats are finalized below so a failing observer does not
+        // leave a fully stored run without its completion stats.
+        let observer_result = if self.persist_observers.is_empty() {
+            Ok(())
+        } else {
+            Self::notify_persist_observers(
+                &self.persist_observers,
+                &self.failed_ids,
+                completed_doc_counts,
+            )
+            .await
+        };
+
         // The stream completed without errors; only now mark the parents in
-        // the caches. Parents that had a failure recorded anywhere in their
-        // fan-out are skipped so their failed chunks are retried on the next
-        // run.
-        if !self.node_caches.is_empty() {
+        // the caches, and only when the observers acknowledged the run.
+        // Marking a cache before the observer ACK would let a retry skip
+        // documents whose notification never landed. Parents that had a
+        // failure recorded anywhere in their fan-out are skipped so their
+        // failed chunks are retried on the next run.
+        if observer_result.is_ok() && !self.node_caches.is_empty() {
             // Each source id is marked only in the caches whose filter it
             // actually passed. Marking every cache combined by `merge` would
             // let one branch skip a node another branch processed when the
@@ -1119,23 +1138,6 @@ impl<T: Chunk> Pipeline<T> {
                 .collect::<Vec<()>>()
                 .await;
         }
-
-        // Report per-document outcomes to persist observers. A document with a
-        // failure anywhere in its fan-out is reported as failed even when some
-        // of its nodes completed, so observers never ACK a partial document.
-        // The error is returned only after the stats are finalized below so a
-        // failing observer does not leave a fully stored run without its
-        // completion stats.
-        let observer_result = if self.persist_observers.is_empty() {
-            Ok(())
-        } else {
-            Self::notify_persist_observers(
-                &self.persist_observers,
-                &self.failed_ids,
-                completed_doc_counts,
-            )
-            .await
-        };
 
         self.stats.increment_nodes_processed(total_nodes);
         self.stats.complete();
@@ -1190,22 +1192,14 @@ impl<T: Chunk> Pipeline<T> {
         for observer in persist_observers {
             for (doc_id, count) in &persisted {
                 if let Err(err) = observer.on_persisted(doc_id, *count).await {
-                    tracing::error!(
-                        observer = observer.name(),
-                        ?err,
-                        "persist observer failed"
-                    );
+                    tracing::error!(observer = observer.name(), ?err, "persist observer failed");
                     observer_error.get_or_insert(err);
                 }
             }
             for (doc_id, message) in &failed {
                 let failure = anyhow::anyhow!(message.clone());
                 if let Err(err) = observer.on_failed(doc_id, &failure).await {
-                    tracing::error!(
-                        observer = observer.name(),
-                        ?err,
-                        "persist observer failed"
-                    );
+                    tracing::error!(observer = observer.name(), ?err, "persist observer failed");
                     observer_error.get_or_insert(err);
                 }
             }
@@ -2102,5 +2096,40 @@ mod tests {
             .await;
 
         assert_eq!(result.unwrap_err().to_string(), "ack failed");
+    }
+
+    #[tokio::test]
+    async fn test_observer_error_leaves_cache_unmarked() {
+        let mut loader = MockLoader::new();
+        let mut cache = MockNodeCache::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::from("doc a").with_doc_id("doc-a").to_owned())].into());
+
+        cache.expect_name().returning(|| "test_cache");
+        cache.expect_get().times(1).returning(|_| false);
+        // The observer rejects the run, so nothing may be marked cached;
+        // otherwise a retry would skip the document that was never acked.
+        cache.expect_set_by_id().times(0);
+
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .returning(|_, _| Err(anyhow::anyhow!("ack failed")));
+
+        let result = Pipeline::from_loader(loader)
+            .filter_cached(cache)
+            .then_store_with(storage.clone())
+            .observe_persist(observer)
+            .run()
+            .await;
+
+        assert_eq!(result.unwrap_err().to_string(), "ack failed");
+        // Storage still happened; only the observer ACK failed
+        assert_eq!(storage.get_all().await.len(), 1);
     }
 }
