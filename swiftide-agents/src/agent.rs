@@ -8,7 +8,6 @@ use crate::{
     },
     invoke_hooks,
     state::{self, StopReason},
-    system_prompt::SystemPrompt,
     tools::{arg_preprocessor::ArgPreprocessor, control::Stop},
 };
 use std::{
@@ -37,8 +36,7 @@ use tracing::{Instrument, debug};
 ///
 /// - The default context is the `DefaultContext`, executing tools locally with the `LocalExecutor`.
 /// - A default `stop` tool is provided for agents to explicitly stop if needed
-/// - The default `SystemPrompt` instructs the agent with chain of thought and some common
-///   safeguards, but is otherwise quite bare. In a lot of cases this can be sufficient.
+/// - No system prompt is configured by default.
 ///
 ///   Agents are *not* cheap to clone. However, if an agent gets cloned, it will operate on the
 ///   same context.
@@ -71,25 +69,18 @@ pub struct Agent {
     ///
     /// Some agents profit significantly from a tailored prompt. But it is not always needed.
     ///
-    /// See [`SystemPrompt`] for an opiniated, customizable system prompt.
-    ///
-    /// Swiftide provides a default system prompt for all agents.
-    ///
-    /// Alternatively you can also provide a `Prompt` directly, or disable the system prompt.
+    /// Anything that converts into a [`Prompt`] can be provided.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// # use swiftide_agents::system_prompt::SystemPrompt;
     /// # use swiftide_agents::Agent;
     /// Agent::builder()
-    ///     .system_prompt(
-    ///         SystemPrompt::builder().role("You are an expert engineer")
-    ///         .build().unwrap())
+    ///     .system_prompt("You are an expert engineer")
     ///     .build().unwrap();
     /// ```
-    #[builder(setter(into, strip_option), default = Some(SystemPrompt::default()))]
-    pub(crate) system_prompt: Option<SystemPrompt>,
+    #[builder(setter(into, strip_option), default)]
+    pub(crate) system_prompt: Option<Prompt>,
 
     /// Initial state of the agent
     #[builder(private, default = state::State::default())]
@@ -196,7 +187,7 @@ impl AgentBuilder {
     }
 
     /// Returns a mutable reference to the system prompt, if it is set.
-    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+    pub fn system_prompt_mut(&mut self) -> Option<&mut Prompt> {
         self.system_prompt.as_mut().and_then(Option::as_mut)
     }
 
@@ -458,19 +449,18 @@ impl Agent {
         }
 
         if self.state.is_pending() {
+            invoke_hooks!(BeforeAll, self);
+
             if let Some(system_prompt) = &self.system_prompt {
                 self.context
                     .add_messages(vec![ChatMessage::System(
                         system_prompt
-                            .to_prompt()
                             .render()
                             .map_err(AgentError::FailedToRenderSystemPrompt)?,
                     )])
                     .await
                     .map_err(AgentError::MessageHistoryError)?;
             }
-
-            invoke_hooks!(BeforeAll, self);
 
             self.load_toolboxes().await?;
         }
@@ -673,31 +663,19 @@ impl Agent {
             let tool_span = tracing::info_span!(
                 "tool",
                 "otel.name" = format!("tool.{}", tool.name().as_ref()),
-            );
+            )
+            .or_current();
 
             let handle_tool_call = tool_call.clone();
-            let handle = tokio::spawn(async move {
-                    let handle_tool_call = handle_tool_call;
-                    let output = tool.invoke(&*context, &handle_tool_call)
-                        .await?;
+            let handle = tokio::spawn(
+                async move { tool.invoke(&*context, &handle_tool_call).await }
+                    .instrument(tool_span.clone()),
+            );
 
-                if cfg!(feature = "langfuse") {
-                    tracing::debug!(
-                        langfuse.output = %output,
-                        langfuse.input = handle_tool_call.args(),
-                        tool_name = tool.name().as_ref(),
-                    );
-                } else {
-                    tracing::debug!(output = output.to_string(), args = ?handle_tool_call.args(), tool_name = tool.name().as_ref(), "Completed tool call");
-                }
-
-                    Ok(output)
-                }.instrument(tool_span.or_current()));
-
-            handles.push((handle, tool_call));
+            handles.push((handle, tool_call, tool_span));
         }
 
-        for (handle, tool_call) in handles {
+        for (handle, tool_call, tool_span) in handles {
             let mut output = handle
                 .await
                 .map_err(|err| AgentError::ToolFailedToJoin(tool_call.name().to_string(), err))?;
@@ -705,6 +683,8 @@ impl Agent {
             invoke_hooks!(AfterTool, self, &tool_call, &mut output);
 
             if let Err(error) = output {
+                let failed = ToolOutput::fail(error.to_string());
+                tool_span.in_scope(|| trace_tool_output(tool_call, &failed));
                 let stop = self.tool_calls_over_limit(tool_call);
                 if stop {
                     tracing::error!(
@@ -718,11 +698,8 @@ impl Agent {
                         "Tool call failed, retrying",
                     );
                 }
-                self.add_message(ChatMessage::ToolOutput(
-                    tool_call.clone(),
-                    ToolOutput::fail(error.to_string()),
-                ))
-                .await?;
+                self.add_message(ChatMessage::ToolOutput(tool_call.clone(), failed))
+                    .await?;
                 if stop {
                     self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
                         .await;
@@ -732,6 +709,7 @@ impl Agent {
             }
 
             let output = output?;
+            tool_span.in_scope(|| trace_tool_output(tool_call, &output));
             self.handle_control_tools(tool_call, &output).await;
 
             // Feedback required leaves the tool call open
@@ -781,14 +759,14 @@ impl Agent {
     }
 
     /// Retrieve the system prompt, if it is set.
-    pub fn system_prompt(&self) -> Option<&SystemPrompt> {
+    pub fn system_prompt(&self) -> Option<&Prompt> {
         self.system_prompt.as_ref()
     }
 
     /// Retrieve a mutable reference to the system prompt, if it is set.
     ///
     /// Note that the system prompt is rendered only once, when the agent starts for the first time
-    pub fn system_prompt_mut(&mut self) -> Option<&mut SystemPrompt> {
+    pub fn system_prompt_mut(&mut self) -> Option<&mut Prompt> {
         self.system_prompt.as_mut()
     }
 
@@ -966,6 +944,27 @@ fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessa
     None
 }
 
+/// Records the tool output that ends up in the history, i.e. after `AfterTool` hooks have run.
+///
+/// Hooks can truncate or summarize large outputs; recording the raw output would make tracing
+/// layers copy it regardless.
+fn trace_tool_output(tool_call: &ToolCall, output: &ToolOutput) {
+    if cfg!(feature = "langfuse") {
+        debug!(
+            langfuse.output = %output,
+            langfuse.input = tool_call.args(),
+            tool_name = tool_call.name(),
+        );
+    } else {
+        debug!(
+            output = %output,
+            args = ?tool_call.args(),
+            tool_name = tool_call.name(),
+            "Completed tool call"
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -976,12 +975,12 @@ mod tests {
     use swiftide_core::test_utils::MockChatCompletion;
 
     use super::*;
+    use crate::test_utils::{MockHook, MockTool};
+    use crate::tools::control::ApprovalRequired;
     use crate::{
         State, assistant, chat_request, chat_response, summary, system, tool_failed, tool_output,
         user,
     };
-
-    use crate::test_utils::{MockHook, MockTool};
 
     #[test_log::test(tokio::test)]
     async fn test_agent_builder_defaults() {
@@ -990,6 +989,7 @@ mod tests {
 
         // Build the agent
         let agent = Agent::builder().llm(&mock_llm).build().unwrap();
+        assert!(agent.system_prompt().is_none());
 
         // Check that the context is the default context
 
@@ -1287,7 +1287,7 @@ mod tests {
         };
 
         let reasoning_item = ReasoningItem {
-            id: "rs_123".into(),
+            id: Some("rs_123".into()),
             summary: vec!["Inspect the failing path".into()],
             content: None,
             encrypted_content: None,
@@ -1383,6 +1383,35 @@ mod tests {
             .unwrap();
 
         agent.query(prompt).await.unwrap();
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn before_all_can_extend_the_initial_system_prompt() {
+        let mock_llm = MockChatCompletion::new();
+        mock_llm.expect_complete(
+            chat_request! {
+                system!("Base\nSkills"),
+                user!("Hello"); tools = []
+            },
+            Ok(chat_response!("Done"; tool_calls = [])),
+        );
+
+        let mut agent = Agent::builder()
+            .llm(&mock_llm)
+            .system_prompt("Base\n{{skills}}")
+            .before_all(|agent: &mut Agent| {
+                Box::pin(async move {
+                    agent
+                        .system_prompt_mut()
+                        .unwrap()
+                        .insert_context_value("skills", "Skills");
+                    Ok(())
+                })
+            })
+            .build()
+            .unwrap();
+
+        agent.query_once("Hello").await.unwrap();
     }
 
     #[test_log::test(tokio::test)]
@@ -1627,11 +1656,6 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     async fn test_agent_with_approval_required_tool() {
-        use super::*;
-        use crate::tools::control::ApprovalRequired;
-        use crate::{assistant, chat_request, chat_response, user};
-        use swiftide_core::chat_completion::ToolCall;
-
         // Step 1: Build a tool that needs approval.
         let mock_tool = MockTool::default();
         mock_tool.expect_invoke_ok("Great!".into(), None);
@@ -1701,11 +1725,6 @@ mod tests {
 
     #[test_log::test(tokio::test)]
     async fn test_agent_with_approval_required_tool_denied() {
-        use super::*;
-        use crate::tools::control::ApprovalRequired;
-        use crate::{assistant, chat_request, chat_response, user};
-        use swiftide_core::chat_completion::ToolCall;
-
         // Step 1: Build a tool that needs approval.
         let mock_tool = MockTool::default();
 

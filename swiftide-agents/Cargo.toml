@@ -1,9 +1,8 @@
-cargo-features = ["edition2024"]
-
 [package]
 name = "swiftide-agents"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
 keywords.workspace = true
@@ -32,9 +31,10 @@ fs-err = { workspace = true, features = ["tokio"] }
 thiserror.workspace = true
 futures-util.workspace = true
 tokio-stream.workspace = true
-tokio-util = { workspace = true, features = ["rt"] }
+tokio-util = { workspace = true, features = ["io", "rt"] }
 convert_case.workspace = true
 schemars = { workspace = true, features = ["derive"] }
+process-wrap = { version = "=9.0.3", default-features = false, features = ["job-object", "kill-on-drop", "process-group", "tokio1"] }
 
 # Mcp
 rmcp = { workspace = true, optional = true, default-features = false, features = [
@@ -50,6 +50,7 @@ test-log.workspace = true
 temp-dir.workspace = true
 insta.workspace = true
 rmcp = { workspace = true, features = ["server"] }
+tracing-subscriber.workspace = true
 
 [lints]
 workspace = true

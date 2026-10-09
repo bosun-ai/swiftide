@@ -2,8 +2,7 @@ use crate::pgvector::{FieldConfig, PgVector, PgVectorBuilder};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use pgvector::Vector;
-use sqlx::{Column, Row, prelude::FromRow, types::Uuid};
-use std::fmt::Write as _;
+use sqlx::{Column, Postgres, QueryBuilder, Row, prelude::FromRow, types::Uuid};
 use swiftide_core::{
     Retrieve,
     document::Document,
@@ -88,49 +87,55 @@ impl Retrieve<SimilaritySingleEmbedding<String>> for PgVector {
             )
             .collect();
 
-        // Start building the SQL query
-        let mut sql = format!(
-            "SELECT {} FROM {}",
-            default_columns.join(", "),
-            self.table_name
-        );
-
-        if let Some(filter) = search_strategy.filter() {
-            let filter_parts: Vec<&str> = filter.split('=').collect();
-            if filter_parts.len() == 2 {
-                let key = filter_parts[0].trim();
-                let value = filter_parts[1].trim().trim_matches('"');
-                tracing::debug!(
-                    "Filter being applied: key = {:#?}, value = {:#?}",
-                    key,
-                    value
-                );
-
-                let sql_filter = format!(
-                    " WHERE meta_{}->>'{}' = '{}'",
-                    PgVector::normalize_field_name(key),
-                    key,
-                    value
-                );
-                sql.push_str(&sql_filter);
-            } else {
-                return Err(anyhow!("Invalid filter format"));
-            }
+        if !PgVector::is_valid_identifier(&self.table_name)
+            || default_columns
+                .iter()
+                .any(|column| !PgVector::is_valid_identifier(column))
+            || !PgVector::is_valid_identifier(&vector_column_name)
+        {
+            return Err(anyhow!("Invalid table or field name"));
         }
 
-        // Add the ORDER BY clause for vector similarity search
-        write!(sql, " ORDER BY {vector_column_name} <=> $1 LIMIT $2")?;
+        let mut sql = QueryBuilder::<Postgres>::new("SELECT ");
+        sql.push(default_columns.join(", "))
+            .push(" FROM ")
+            .push(&self.table_name);
 
-        tracing::debug!("Running retrieve with SQL: {}", sql);
+        if let Some(filter) = search_strategy.filter() {
+            let (key, value) = filter
+                .split_once('=')
+                .ok_or_else(|| anyhow!("Invalid filter format"))?;
+            let key = key.trim();
+            let value = value.trim().trim_matches('"');
+            let metadata_column = format!("meta_{}", PgVector::normalize_field_name(key));
+
+            tracing::debug!(
+                "Filter being applied: key = {:#?}, value = {:#?}",
+                key,
+                value
+            );
+
+            sql.push(" WHERE ")
+                .push(metadata_column)
+                .push("->>")
+                .push_bind(key.to_owned())
+                .push(" = ")
+                .push_bind(value.to_owned());
+        }
 
         let top_k = i32::try_from(search_strategy.top_k())
             .map_err(|_| anyhow!("Failed to convert top_k to i32"))?;
 
-        let data: Vec<VectorSearchResult> = sqlx::query_as(&sql)
-            .bind(embedding)
-            .bind(top_k)
-            .fetch_all(pool)
-            .await?;
+        sql.push(" ORDER BY ")
+            .push(vector_column_name)
+            .push(" <=> ")
+            .push_bind(embedding)
+            .push(" LIMIT ")
+            .push_bind(top_k);
+
+        tracing::debug!("Running retrieve with SQL: {}", sql.sql().as_str());
+
+        let data: Vec<VectorSearchResult> = sql.build_query_as().fetch_all(pool).await?;
 
         let docs = data.into_iter().map(Into::into).collect();
 
@@ -155,10 +160,10 @@ impl Retrieve<SimilaritySingleEmbedding> for PgVector {
 }
 
 #[async_trait]
-impl Retrieve<CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>> for PgVector {
+impl Retrieve<CustomStrategy<sqlx::QueryBuilder<sqlx::Postgres>>> for PgVector {
     async fn retrieve(
         &self,
-        search_strategy: &CustomStrategy<sqlx::QueryBuilder<'static, sqlx::Postgres>>,
+        search_strategy: &CustomStrategy<sqlx::QueryBuilder<sqlx::Postgres>>,
         query: Query<states::Pending>,
     ) -> Result<Query<states::Retrieved>> {
         // Get the database pool

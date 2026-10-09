@@ -1,9 +1,8 @@
-cargo-features = ["edition2024"]
-
 [package]
 name = "swiftide-integrations"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
 keywords.workspace = true
@@ -81,7 +80,9 @@ tree-sitter-html = { workspace = true, optional = true }
 tree-sitter-php = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
-spider = { workspace = true, optional = true, default-features = true }
+spider = { workspace = true, optional = true, default-features = true, features = [
+  "spider_cloud",
+] }
 htmd = { workspace = true, optional = true }
 aws-config = { workspace = true, features = [
   "behavior-version-latest",
@@ -104,14 +105,14 @@ reqwest = { workspace = true, optional = true }
 reqwest_0_12 = { package = "reqwest", version = "0.12", default-features = false, features = [
   "rustls-tls-native-roots-no-provider",
 ], optional = true }
-reqwest-eventsource = { workspace = true, optional = true }
 deadpool = { workspace = true, features = [
   "managed",
   "rt_tokio_1",
 ], optional = true }
 fluvio = { workspace = true, optional = true }
 rdkafka = { workspace = true, optional = true }
-arrow-array = { version = "57.3", default-features = false, optional = true }
+arrow-array = { version = "58.4", default-features = false, optional = true }
+parquet-arrow-array = { package = "arrow-array", version = "59.1", default-features = false, optional = true }
 lancedb = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true, features = [
   "async",
@@ -192,8 +193,6 @@ tree-sitter = [
 # OpenAI for embedding and prompting
 openai = [
   "dep:async-openai",
-  "dep:reqwest_0_12",
-  "dep:reqwest-eventsource",
   "dep:reqwest",
   "swiftide-core/openai",
 ]
@@ -229,7 +228,7 @@ fluvio = ["dep:fluvio"]
 # Kafka loader
 kafka = ["dep:rdkafka"]
 # Paruqet loader
-parquet = ["dep:arrow-array", "dep:parquet"]
+parquet = ["dep:parquet", "dep:parquet-arrow-array"]
 # Anthropic for prompting and completions
 anthropic = ["dep:async-anthropic", "dep:reqwest_0_12"]
 # Duckdb for indexing and retrieval

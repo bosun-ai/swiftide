@@ -1,8 +1,8 @@
 use anyhow::{Context as _, Result};
-use arrow_array::{LargeStringArray, StringArray, StringViewArray};
 use fs_err::tokio::File;
 use futures_util::StreamExt as _;
 use parquet::arrow::{ParquetRecordBatchStreamBuilder, ProjectionMask};
+use parquet_arrow_array::{LargeStringArray, StringArray, StringViewArray};
 use swiftide_core::{
     Loader,
     indexing::{IndexingStream, TextNode},
@@ -41,7 +41,7 @@ impl Loader for Parquet {
                     None
                 }
             })
-            .unwrap_or_else(|| panic!("Column {} not found in dataset", &self.column_name));
+            .unwrap_or_else(|| panic!("Column {} not found in dataset", self.column_name));
 
         let mask = ProjectionMask::roots(file_metadata.schema_descr(), [column_idx]);
         builder = builder.with_projection(mask);

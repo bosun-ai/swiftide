@@ -1,9 +1,8 @@
-cargo-features = ["edition2024"]
-
 [package]
 name = "swiftide-core"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
 keywords.workspace = true
@@ -42,6 +41,7 @@ pretty_assertions = { workspace = true, optional = true }
 # Integrations
 qdrant-client = { workspace = true, optional = true }
 backoff = { version = "0.4.0", features = ["futures", "tokio"] }
+bytes = { workspace = true }
 
 [dev-dependencies]
 test-case = { workspace = true }

@@ -3,12 +3,10 @@
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
 
-use async_openai::error::{OpenAIError, StreamError};
+use async_openai::error::OpenAIError;
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use async_openai::types::embeddings::CreateEmbeddingRequestArgs;
 use derive_builder::Builder;
-use reqwest::StatusCode;
-use reqwest_eventsource::Error as EventSourceError;
 use serde::Serialize;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -17,6 +15,7 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
+mod provider_error;
 mod responses_api;
 mod simple_prompt;
 mod structured_prompt;
@@ -580,61 +579,15 @@ impl<C: async_openai::config::Config + Default> GenericOpenAI<C> {
 }
 
 pub fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageModelError {
-    match e {
-        OpenAIError::ApiError(api_error) => {
-            // If the response is an ApiError, it could be a context length exceeded error
-            if api_error.code == Some("context_length_exceeded".to_string()) {
-                LanguageModelError::context_length_exceeded(OpenAIError::ApiError(api_error))
-            } else {
-                LanguageModelError::permanent(OpenAIError::ApiError(api_error))
-            }
-        }
-        OpenAIError::Reqwest(e) => {
-            // async_openai passes any network errors as reqwest errors, so we just assume they are
-            // recoverable
-            LanguageModelError::transient(e)
-        }
-        OpenAIError::JSONDeserialize(_, _) => {
-            // OpenAI generated a non-json response, probably a temporary problem on their side
-            // (i.e. reverse proxy can't find an available backend)
-            LanguageModelError::transient(e)
-        }
-        OpenAIError::StreamError(stream_error) => {
-            // Note that this will _retry_ the stream. We have to assume that the stream just
-            // started if a 429 happens. For future readers, internally the streaming crate
-            // (eventsource) already applies backoff.
-            if is_rate_limited_stream_error(&stream_error) {
-                LanguageModelError::transient(OpenAIError::StreamError(stream_error))
-            } else {
-                LanguageModelError::permanent(OpenAIError::StreamError(stream_error))
-            }
-        }
-        OpenAIError::FileSaveError(_)
-        | OpenAIError::FileReadError(_)
-        | OpenAIError::InvalidArgument(_) => LanguageModelError::permanent(e),
-    }
-}
-
-fn is_rate_limited_stream_error(error: &StreamError) -> bool {
-    match error {
-        StreamError::ReqwestEventSource(inner) => match inner {
-            EventSourceError::InvalidStatusCode(status, _) => {
-                *status == StatusCode::TOO_MANY_REQUESTS
-            }
-            EventSourceError::Transport(source) => {
-                source.status() == Some(StatusCode::TOO_MANY_REQUESTS)
-            }
-            _ => false,
-        },
-        StreamError::UnknownEvent(_) | StreamError::EventStream(_) => false,
-    }
+    provider_error::openai_error_to_language_model_error(e)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use async_openai::error::{ApiError, OpenAIError, StreamError};
+    use async_openai::error::{ApiError, ApiErrorResponse, OpenAIError, StreamError};
     use eventsource_stream::Event;
+    use reqwest::StatusCode;
 
     /// test default embed model
     #[test]
@@ -685,7 +638,10 @@ mod test {
             code: Some("context_length_exceeded".to_string()),
         };
 
-        let openai_error = OpenAIError::ApiError(api_error);
+        let openai_error = OpenAIError::ApiError(ApiErrorResponse {
+            status_code: StatusCode::BAD_REQUEST,
+            api_error,
+        });
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as ContextLengthExceeded
@@ -705,7 +661,10 @@ mod test {
             code: Some("invalid_api_key".to_string()),
         };
 
-        let openai_error = OpenAIError::ApiError(api_error);
+        let openai_error = OpenAIError::ApiError(ApiErrorResponse {
+            status_code: StatusCode::UNAUTHORIZED,
+            api_error,
+        });
         let result = openai_error_to_language_model_error(openai_error);
 
         // Verify it's categorized as PermanentError
@@ -713,6 +672,24 @@ mod test {
             LanguageModelError::PermanentError(_) => {} // Expected
             _ => panic!("Expected PermanentError, got {result:?}"),
         }
+    }
+
+    #[test]
+    fn test_rate_limit_api_error_is_transient() {
+        let api_error = ApiError {
+            message: "Rate limit exceeded".to_string(),
+            r#type: Some("rate_limit_error".to_string()),
+            param: None,
+            code: None,
+        };
+
+        let openai_error = OpenAIError::ApiError(ApiErrorResponse {
+            status_code: StatusCode::TOO_MANY_REQUESTS,
+            api_error,
+        });
+        let result = openai_error_to_language_model_error(openai_error);
+
+        assert!(matches!(result, LanguageModelError::TransientError(_)));
     }
 
     #[test]

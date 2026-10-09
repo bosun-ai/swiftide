@@ -7,8 +7,9 @@ use super::tools::{ToolCall, ToolOutput};
 /// Reasoning items returned by chat providers that expose chain-of-thought metadata.
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct ReasoningItem {
-    /// Unique identifier for this reasoning item
-    pub id: String,
+    /// Provider-assigned identifier for this reasoning item, when available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     /// Reasoning summary content
     pub summary: Vec<String>,
     /// Reasoning text content

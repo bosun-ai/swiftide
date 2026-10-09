@@ -52,6 +52,12 @@ async fn main() -> Result<()> {
     let mut builder = Agent::builder();
     builder
         .llm(&openai)
+        .system_prompt(
+            "You are a workflow finisher. Summarize completed work and recommend next actions. \
+             When done, call the `stop` tool with the provided JSON schema. Always include \
+             `details`, using null when there is nothing to add. Never fabricate task status \
+             values outside the schema.",
+        )
         .without_default_stop_tool()
         .tools([stop_tool.clone()])
         .on_stop(|_, reason, _| {
@@ -67,17 +73,6 @@ async fn main() -> Result<()> {
                 Ok(())
             })
         });
-
-    if let Some(prompt) = builder.system_prompt_mut() {
-        prompt
-            .with_role("Workflow finisher")
-            .with_guidelines([
-                "Summarize the work that was just completed and recommend next actions.",
-                "When you are done, call the `stop` tool using the provided JSON schema.",
-                "Always include the `details` field; use null when there is nothing to add.",
-            ])
-            .with_constraints(["Never fabricate task status values outside the schema."]);
-    }
 
     let mut agent = builder.build()?;
 

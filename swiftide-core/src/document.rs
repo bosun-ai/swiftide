@@ -134,7 +134,7 @@ mod tests {
         let doc1 = Document::new("A", None);
         let doc2 = Document::new("B", None);
 
-        assert!(doc1.cmp(&doc2) == std::cmp::Ordering::Less);
+        assert_eq!(doc1.cmp(&doc2), std::cmp::Ordering::Less);
     }
 
     #[test]

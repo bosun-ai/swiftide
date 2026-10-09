@@ -64,6 +64,12 @@ async fn main() -> Result<()> {
     let mut builder = Agent::builder();
     builder
         .llm(&openai)
+        .system_prompt(
+            "You are an incident response coordinator. If the task cannot be completed, call \
+             `task_failed` with the provided JSON schema. Populate every required field, include \
+             at least one `recommended_actions` entry, and document the impact. Do not claim \
+             success while blockers remain unresolved.",
+        )
         .tools([failure_tool.clone()])
         .on_stop(|_, reason, _| {
             Box::pin(async move {
@@ -74,17 +80,6 @@ async fn main() -> Result<()> {
                 Ok(())
             })
         });
-
-    if let Some(prompt) = builder.system_prompt_mut() {
-        prompt
-            .with_role("Incident response coordinator")
-            .with_guidelines([
-                "If the task cannot be completed, call the `task_failed` tool using the provided JSON schema.",
-                "Populate all required fields and list at least one `recommended_actions` entry.",
-                "Clearly document the impact so downstream teams can prioritize remediation.",
-            ])
-            .with_constraints(["Do not claim success when blockers remain unresolved."]);
-    }
 
     let mut agent = builder.build()?;
 

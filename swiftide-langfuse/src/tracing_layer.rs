@@ -30,13 +30,14 @@ pub struct SpanData {
 }
 
 impl SpanData {
+    /// Deserializes a metadata field, leaving it in place.
     pub fn get<T>(&self, key: &str) -> Option<T>
     where
         T: serde::de::DeserializeOwned,
     {
-        if let Some(value) = self.metadata.get(key) {
-            let parsed = serde_json::from_value(value.clone());
-            if let Err(e) = &parsed {
+        let value = self.metadata.get(key)?;
+        T::deserialize(value)
+            .inspect_err(|e| {
                 tracing::warn!(
                     error.msg = %e,
                     error.type = %std::any::type_name_of_val(e),
@@ -44,23 +45,37 @@ impl SpanData {
                     value = %value,
                     "[Langfuse] Failed to parse metadata field"
                 );
-            }
-
-            return parsed.ok();
-        }
-        None
+            })
+            .ok()
     }
 
-    /// Returns metadata with all keys that do not start with "langfuse."
-    #[must_use]
-    pub fn remaining_metadata(&self) -> Option<serde_json::Map<String, Value>> {
-        let mut metadata = self.metadata.clone();
-        metadata.retain(|k, _| !k.starts_with("langfuse."));
+    /// Removes a metadata field and deserializes it, moving the value instead of copying it.
+    pub fn take<T>(&mut self, key: &str) -> Option<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let value = self.metadata.remove(key)?;
+        serde_json::from_value(value)
+            .inspect_err(|e| {
+                tracing::warn!(
+                    error.msg = %e,
+                    error.type = %std::any::type_name_of_val(e),
+                    key = %key,
+                    "[Langfuse] Failed to parse metadata field"
+                );
+            })
+            .ok()
+    }
 
-        if metadata.is_empty() {
+    /// Consumes the metadata, keeping all keys that do not start with "langfuse."
+    #[must_use]
+    pub fn into_remaining_metadata(mut self) -> Option<serde_json::Map<String, Value>> {
+        self.metadata.retain(|k, _| !k.starts_with("langfuse."));
+
+        if self.metadata.is_empty() {
             None
         } else {
-            Some(metadata)
+            Some(self.metadata)
         }
     }
 }
@@ -127,41 +142,52 @@ pub struct LangfuseLayer {
 fn observation_create_from(
     trace_id: &str,
     observation_id: &str,
-    span_data: &mut SpanData,
+    mut span_data: SpanData,
     parent_observation_id: Option<String>,
 ) -> IngestionEvent {
     // Expect all langfuse values to be prefixed by "langfuse."
-    // Extract the fields from the metadata
+    // Values are moved out of the metadata so large inputs and outputs are not copied.
+    let start_time = span_data
+        .take("langfuse.start_time")
+        .unwrap_or_else(|| std::mem::take(&mut span_data.start_time));
+
+    // `otel.name` is not a langfuse field and stays in the metadata as well
+    let name = span_data
+        .get("otel.name")
+        .unwrap_or_else(|| std::mem::take(&mut span_data.name));
+    let level = span_data.level;
+    let r#type = span_data
+        .take("langfuse.type")
+        .unwrap_or(ObservationType::Span);
+    let swiftide_usage = span_data.take::<swiftide_core::chat_completion::Usage>("langfuse.usage");
+    let model = span_data.take("langfuse.model");
+    let model_parameters = span_data.take("langfuse.model_parameters");
+    let input = span_data.take("langfuse.input");
+    let version = span_data.take("langfuse.version");
+    let output = span_data.take("langfuse.output");
+    let status_message = span_data.take("langfuse.status_message");
+    let environment = span_data.take("langfuse.environment");
 
     // Metadata is all values without a langfuse prefix
-    let metadata = span_data.remaining_metadata().map(Into::into);
-
-    let start_time = span_data
-        .get("langfuse.start_time")
-        .unwrap_or(span_data.start_time.clone());
-
-    let name = span_data.get("otel.name").unwrap_or(span_data.name.clone());
-    let swiftide_usage = span_data.get::<swiftide_core::chat_completion::Usage>("langfuse.usage");
+    let metadata = span_data.into_remaining_metadata().map(Into::into);
 
     IngestionEvent::new_observation_create(ObservationBody {
         id: Some(Some(observation_id.to_string())),
         trace_id: Some(Some(trace_id.to_string())),
-        r#type: span_data
-            .get("langfuse.type")
-            .unwrap_or(ObservationType::Span),
+        r#type,
         name: Some(Some(name)),
         start_time: Some(Some(start_time)),
-        level: Some(span_data.level),
+        level: Some(level),
         parent_observation_id: Some(parent_observation_id),
         metadata: Some(metadata),
-        model: Some(span_data.get("langfuse.model")),
-        model_parameters: Some(span_data.get("langfuse.model_parameters")),
-        input: Some(span_data.get("langfuse.input")),
-        version: Some(span_data.get("langfuse.version")),
-        output: Some(span_data.get("langfuse.output")),
+        model: Some(model),
+        model_parameters: Some(model_parameters),
+        input: Some(input),
+        version: Some(version),
+        output: Some(output),
         usage: swiftide_usage.map(|u| Box::new(u.into())),
-        status_message: Some(span_data.get("langfuse.status_message")),
-        environment: Some(span_data.get("langfuse.environment")),
+        status_message: Some(status_message),
+        environment: Some(environment),
 
         completion_start_time: None,
         end_time: None,
@@ -239,12 +265,12 @@ impl LangfuseLayer {
         Ok(())
     }
 
-    pub async fn handle_span(&self, mut span_data: SpanData, parent_id: Option<String>) {
+    pub async fn handle_span(&self, span_data: SpanData, parent_id: Option<String>) {
         let observation_id = span_data.observation_id.clone();
         let trace_id = self.ensure_trace_id().await;
 
         // Create the span observation
-        let event = observation_create_from(&trace_id, &observation_id, &mut span_data, parent_id);
+        let event = observation_create_from(&trace_id, &observation_id, span_data, parent_id);
 
         self.batch_manager.add_event(event).await;
     }
@@ -253,9 +279,9 @@ impl LangfuseLayer {
         let trace_id = self.ensure_trace_id().await;
 
         let event = IngestionEvent::new_observation_update(ObservationBody {
-            id: Some(Some(observation_id.clone())),
+            id: Some(Some(observation_id)),
             r#type: langfuse_type,
-            trace_id: Some(Some(trace_id.clone())),
+            trace_id: Some(Some(trace_id)),
             end_time: Some(Some(Utc::now().to_rfc3339())),
             ..Default::default()
         });
@@ -300,23 +326,32 @@ impl LangfuseLayer {
         metadata: serde_json::Map<String, Value>,
     ) {
         let trace_id = self.ensure_trace_id().await;
-        let metadata = SpanData::from(metadata);
-        let remaining = metadata.remaining_metadata().map(Into::into);
+        let mut span_data = SpanData::from(metadata);
+        // Values are moved out of the metadata so large inputs and outputs are not copied.
         let swiftide_usage =
-            metadata.get::<swiftide_core::chat_completion::Usage>("langfuse.usage");
+            span_data.take::<swiftide_core::chat_completion::Usage>("langfuse.usage");
+        let input = span_data.take("langfuse.input");
+        let output = span_data.take("langfuse.output");
+        let model = span_data.take("langfuse.model");
+        let model_parameters = span_data.take("langfuse.model_parameters");
+        let version = span_data.take("langfuse.version");
+        let status_message = span_data.take("langfuse.status_message");
+        let environment = span_data.take("langfuse.environment");
+        let remaining = span_data.into_remaining_metadata().map(Into::into);
+
         let event = IngestionEvent::new_observation_update(ObservationBody {
-            id: Some(Some(observation_id.clone())),
-            trace_id: Some(Some(trace_id.clone())),
+            id: Some(Some(observation_id)),
+            trace_id: Some(Some(trace_id)),
             r#type: langfuse_type,
             metadata: Some(remaining),
-            input: Some(metadata.get("langfuse.input")),
-            output: Some(metadata.get("langfuse.output")),
-            model: Some(metadata.get("langfuse.model")),
-            model_parameters: Some(metadata.get("langfuse.model_parameters")),
-            version: Some(metadata.get("langfuse.version")),
+            input: Some(input),
+            output: Some(output),
+            model: Some(model),
+            model_parameters: Some(model_parameters),
+            version: Some(version),
             usage: swiftide_usage.map(|u| Box::new(u.into())),
-            status_message: Some(metadata.get("langfuse.status_message")),
-            environment: Some(metadata.get("langfuse.environment")),
+            status_message: Some(status_message),
+            environment: Some(environment),
             ..Default::default()
         });
 
@@ -625,5 +660,99 @@ mod tests {
 
         assert_eq!(update.body.input, Some(Some("late-input".into())));
         assert_eq!(update.body.status_message, Some(Some("late-status".into())));
+    }
+    #[test]
+    fn take_moves_large_values_out_of_the_metadata_without_copying() {
+        let output = "x".repeat(1024 * 1024);
+        let output_ptr = output.as_ptr();
+        let mut span_data = SpanData::from(serde_json::Map::from_iter([
+            ("langfuse.output".to_string(), Value::String(output)),
+            ("foo".to_string(), Value::from(42)),
+        ]));
+
+        let taken: Value = span_data.take("langfuse.output").unwrap();
+
+        // Same heap buffer: the value was moved, not cloned
+        assert_eq!(taken.as_str().unwrap().as_ptr(), output_ptr);
+        assert!(!span_data.metadata.contains_key("langfuse.output"));
+        assert_eq!(
+            span_data.into_remaining_metadata(),
+            Some(serde_json::Map::from_iter([(
+                "foo".to_string(),
+                Value::from(42)
+            )]))
+        );
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_span_and_event_fields_reach_langfuse_unchanged() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let batch_mgr = InMemoryBatchManager {
+            events: Arc::clone(&events),
+        };
+        let langfuse_layer = LangfuseLayer {
+            batch_manager: batch_mgr.boxed(),
+            span_tracker: Arc::new(StdMutex::new(SpanTracker::new())),
+        };
+
+        let subscriber = tracing_subscriber::Registry::default().with(langfuse_layer);
+        let dispatch = tracing::Dispatch::new(subscriber);
+
+        let request = serde_json::json!({"messages": [{"role": "user", "content": "hi"}]});
+        tracing::dispatcher::with_default(&dispatch, || {
+            let span = tracing::span!(
+                Level::INFO,
+                "prompt",
+                otel.name = "chat",
+                langfuse.type = "GENERATION",
+                langfuse.model = "gpt-test",
+                langfuse.input = serde_json::to_string_pretty(&request).unwrap(),
+                foo = 42
+            );
+            let _enter = span.enter();
+            tracing::debug!(
+                langfuse.output = "plain text output",
+                langfuse.version = "v1",
+                bar = "baz",
+            );
+        });
+
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
+        let events = events.lock().await;
+        let create = events
+            .iter()
+            .find_map(|event| match event {
+                IngestionEvent::ObservationCreate(create) => Some(&create.body),
+                _ => None,
+            })
+            .expect("observation create");
+        assert_eq!(create.r#type, ObservationType::Generation);
+        assert_eq!(create.name, Some(Some("chat".into())));
+        assert_eq!(create.model, Some(Some("gpt-test".into())));
+        assert_eq!(create.input, Some(Some(request)));
+        assert_eq!(create.output, Some(None));
+        assert_eq!(
+            create.metadata,
+            Some(Some(serde_json::json!({"foo": 42, "otel.name": "chat"})))
+        );
+
+        let update = events
+            .iter()
+            .find_map(|event| match event {
+                IngestionEvent::ObservationUpdate(update) if update.body.end_time.is_none() => {
+                    Some(&update.body)
+                }
+                _ => None,
+            })
+            .expect("observation update");
+        assert_eq!(update.r#type, ObservationType::Generation);
+        assert_eq!(update.output, Some(Some("plain text output".into())));
+        assert_eq!(update.version, Some(Some("v1".into())));
+        assert_eq!(update.input, Some(None));
+        assert_eq!(
+            update.metadata,
+            Some(Some(serde_json::json!({"bar": "baz"})))
+        );
     }
 }

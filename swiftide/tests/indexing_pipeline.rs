@@ -32,6 +32,7 @@ use wiremock::MockServer;
 /// If the indexing pipeline encounters an error, the test will print the received requests
 /// for debugging purposes.
 #[test_log::test(tokio::test)]
+#[allow(clippy::too_many_lines)]
 async fn test_indexing_pipeline() {
     // Setup temporary directory and file for testing
     let tempdir = TempDir::new().unwrap();

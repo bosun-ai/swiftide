@@ -484,7 +484,7 @@ impl ChatCompletionResponse {
         completion_tokens: u32,
         total_tokens: u32,
     ) -> &mut Self {
-        debug_assert!(prompt_tokens + completion_tokens == total_tokens);
+        debug_assert_eq!(prompt_tokens + completion_tokens, total_tokens);
 
         if let Some(usage) = &mut self.usage {
             usage.prompt_tokens += prompt_tokens;

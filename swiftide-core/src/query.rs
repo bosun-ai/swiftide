@@ -277,8 +277,8 @@ impl std::fmt::Debug for TransformationEvent {
                 write!(
                     f,
                     "Transformed: {} -> {}",
-                    &debug_long_utf8(before, 100),
-                    &debug_long_utf8(after, 100)
+                    debug_long_utf8(before, 100),
+                    debug_long_utf8(after, 100)
                 )
             }
             TransformationEvent::Retrieved {
@@ -289,8 +289,8 @@ impl std::fmt::Debug for TransformationEvent {
                 write!(
                     f,
                     "Retrieved: {} -> {}\nDocuments: {:?}",
-                    &debug_long_utf8(before, 100),
-                    &debug_long_utf8(after, 100),
+                    debug_long_utf8(before, 100),
+                    debug_long_utf8(after, 100),
                     documents.len()
                 )
             }

@@ -71,6 +71,11 @@ pub struct Node<T: Chunk> {
     /// from in bytes
     #[builder(default)]
     pub offset: usize,
+    /// Id of the first node this node was derived from. Set when a node is created via
+    /// [`Node::build_from_other`] (chunking, conversions) so derived nodes keep pointing at the
+    /// node that entered the pipeline.
+    #[builder(default)]
+    pub parent_id: Option<uuid::Uuid>,
 }
 
 pub type TextNode = Node<String>;
@@ -136,6 +141,8 @@ impl<T: Chunk> Debug for Node<T> {
 impl<T: Chunk> Node<T> {
     /// Builds a new instance of `Node`, returning a `NodeBuilder`. Copies
     /// over the fields from the provided `Node`.
+    ///
+    /// The new node points at the node that entered the pipeline via [`Node::parent_id`].
     pub fn build_from_other(node: &Node<T>) -> NodeBuilder<T> {
         NodeBuilder::default()
             .path(node.path.clone())
@@ -146,6 +153,7 @@ impl<T: Chunk> Node<T> {
             .embed_mode(node.embed_mode)
             .original_size(node.original_size)
             .offset(node.offset)
+            .parent_id(node.parent_id.unwrap_or_else(|| node.id()))
             .to_owned()
     }
 
@@ -199,6 +207,11 @@ impl<T: Chunk> Node<T> {
         let bytes = [self.path.as_os_str().as_bytes(), self.chunk.as_ref()].concat();
 
         uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
+    }
+
+    /// Returns the id of the first node this node was derived from, if any.
+    pub fn parent_id(&self) -> Option<uuid::Uuid> {
+        self.parent_id
     }
 }
 
@@ -356,7 +369,12 @@ mod tests {
         let builder = Node::build_from_other(&original_node);
         let new_node = builder.build().unwrap();
 
-        assert_eq!(original_node, new_node);
+        assert_eq!(new_node.parent_id(), Some(original_node.id()));
+        assert_eq!(new_node.chunk, original_node.chunk);
+        assert_eq!(new_node.path, original_node.path);
+        assert_eq!(new_node.metadata, original_node.metadata);
+        assert_eq!(new_node.vectors, original_node.vectors);
+        assert_eq!(new_node.sparse_vectors, original_node.sparse_vectors);
     }
 
     #[test]
@@ -382,6 +400,20 @@ mod tests {
         let builder = Node::build_from_other(&original_node);
         let new_node = builder.build().unwrap();
 
-        assert_eq!(original_node, new_node);
+        assert_eq!(new_node.parent_id(), Some(original_node.id()));
+        assert_eq!(new_node.chunk, original_node.chunk);
+        assert_eq!(new_node.vectors, original_node.vectors);
+        assert_eq!(new_node.sparse_vectors, original_node.sparse_vectors);
+    }
+
+    #[test]
+    fn test_build_from_other_keeps_first_ancestor_as_parent() {
+        let original_node = Node::from("test_chunk");
+        let child_node = Node::build_from_other(&original_node).build().unwrap();
+        let grandchild_node = Node::build_from_other(&child_node).build().unwrap();
+
+        assert_eq!(original_node.parent_id(), None);
+        assert_eq!(child_node.parent_id(), Some(original_node.id()));
+        assert_eq!(grandchild_node.parent_id(), Some(original_node.id()));
     }
 }

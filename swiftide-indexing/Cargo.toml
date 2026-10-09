@@ -1,9 +1,8 @@
-cargo-features = ["edition2024"]
-
 [package]
 name = "swiftide-indexing"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
 keywords.workspace = true
@@ -30,6 +29,7 @@ serde_json = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 indoc = { workspace = true }
+uuid = { workspace = true }
 
 ignore = { workspace = true }
 text-splitter = { workspace = true, features = ["markdown"] }

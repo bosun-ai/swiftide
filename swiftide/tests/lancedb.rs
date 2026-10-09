@@ -23,6 +23,7 @@ use swiftide_test_utils::{mock_chat_completions, openai_client};
 use temp_dir::TempDir;
 use wiremock::MockServer;
 
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 async fn test_lancedb() {
     // Setup temporary directory and file for testing
@@ -100,6 +101,7 @@ async fn test_lancedb() {
     );
 }
 
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 async fn test_lancedb_retrieve_dynamic_search() {
     // Setup temporary directory and file for testing

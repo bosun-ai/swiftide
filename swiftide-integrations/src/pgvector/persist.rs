@@ -12,6 +12,8 @@
 use crate::pgvector::PgVector;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
+use sqlx::AssertSqlSafe;
+use std::sync::Arc;
 use swiftide_core::{
     Persist,
     indexing::{IndexingStream, TextNode},
@@ -30,7 +32,7 @@ impl Persist for PgVector {
             let sql = self.generate_unnest_upsert_sql()?;
 
             self.sql_stmt_bulk_insert
-                .set(sql)
+                .set(Arc::new(sql))
                 .map_err(|_| anyhow!("SQL bulk store statement is already set"))?;
         }
 
@@ -42,11 +44,15 @@ impl Persist for PgVector {
 
         // Create table
         let create_table_sql = self.generate_create_table_sql()?;
-        sqlx::query(&create_table_sql).execute(&mut *tx).await?;
+        sqlx::query(AssertSqlSafe(create_table_sql))
+            .execute(&mut *tx)
+            .await?;
 
         // Create HNSW index
         let index_sql = self.create_index_sql()?;
-        sqlx::query(&index_sql).execute(&mut *tx).await?;
+        sqlx::query(AssertSqlSafe(index_sql))
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
 

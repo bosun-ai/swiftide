@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use crate::command_output::CommandOutput;
 use derive_builder::Builder;
 use schemars::Schema;
 use serde::{Deserialize, Serialize};
@@ -104,6 +105,12 @@ impl ToolOutput {
 impl<S: AsRef<str>> From<S> for ToolOutput {
     fn from(value: S) -> Self {
         ToolOutput::Text(value.as_ref().to_string())
+    }
+}
+
+impl From<CommandOutput> for ToolOutput {
+    fn from(output: CommandOutput) -> Self {
+        ToolOutput::Text(output.into_string_lossy())
     }
 }
 impl std::fmt::Display for ToolOutput {

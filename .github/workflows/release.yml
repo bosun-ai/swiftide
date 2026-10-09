@@ -25,6 +25,35 @@ jobs:
         uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Match package changelogs to the shared release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_tag="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
+          test -n "$release_tag"
+          release_version="${release_tag#v}"
+
+          cargo metadata --no-deps --format-version 1 |
+            jq -r '.packages[] | select(.publish != []) | .name' |
+            while read -r package; do
+              status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+                --user-agent 'swiftide-release-workflow' \
+                "https://crates.io/api/v1/crates/${package}/${release_version}")"
+
+              case "$status" in
+                200)
+                  package_tag="${package}-v${release_version}"
+                  git rev-parse --verify --quiet "refs/tags/${package_tag}" >/dev/null ||
+                    git tag "$package_tag" "$release_tag"
+                  ;;
+                404) ;;
+                *)
+                  echo "crates.io returned HTTP ${status} for ${package} ${release_version}" >&2
+                  exit 1
+                  ;;
+              esac
+            done
       - name: Run release-plz
         uses: MarcoIeni/release-plz-action@v0.5
         env:

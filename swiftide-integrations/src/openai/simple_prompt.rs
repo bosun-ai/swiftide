@@ -134,7 +134,7 @@ impl<
             .as_ref()
             .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
 
-        let create_request = build_responses_request_from_prompt(self, prompt_text.clone())?;
+        let create_request = build_responses_request_from_prompt(self, prompt_text)?;
 
         let response = self
             .client
@@ -143,11 +143,7 @@ impl<
             .await
             .map_err(openai_error_to_language_model_error)?;
 
-        let completion = response_to_chat_completion(&response)?;
-
-        let message = completion.message.clone().ok_or_else(|| {
-            LanguageModelError::PermanentError("Expected content in response".into())
-        })?;
+        let mut completion = response_to_chat_completion(response)?;
 
         self.track_completion(
             model,
@@ -156,7 +152,9 @@ impl<
             Some(&completion),
         );
 
-        Ok(message)
+        completion.message.take().ok_or_else(|| {
+            LanguageModelError::PermanentError("Expected content in response".into())
+        })
     }
 }
 
