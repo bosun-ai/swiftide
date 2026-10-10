@@ -488,12 +488,15 @@ impl<T: Chunk> Pipeline<T> {
                 let failed_ids = failed_ids.clone();
                 let span = trace_span!("then", transformer);
 
+                let id = node.parent_id.unwrap_or_else(|| node.id());
+                let doc_id = node.doc_id.clone();
+                let join_failed_ids = failed_ids.clone();
+                let join_doc_id = doc_id.clone();
+
                 task::spawn(
                     async move {
                         node_trace_log!(transformer, node, "Transforming node");
 
-                        let id = node.parent_id.unwrap_or_else(|| node.id());
-                        let doc_id = node.doc_id.clone();
                         let result = transformer.transform_node(node).await;
                         if let Err(error) = &result {
                             record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
@@ -502,7 +505,13 @@ impl<T: Chunk> Pipeline<T> {
                     }
                     .instrument(span.or_current()),
                 )
-                .err_into::<anyhow::Error>()
+                .map_err(move |join_error| {
+                    // A panicked or cancelled task records nothing otherwise, and
+                    // `filter_errors` would let the document report as persisted.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                    error
+                })
             })
             .try_buffer_unordered(concurrency)
             .map(|x| x.and_then(|x| x));
@@ -552,6 +561,9 @@ impl<T: Chunk> Pipeline<T> {
                     .iter()
                     .filter_map(|node| node.doc_id.clone())
                     .collect();
+                let join_failed_ids = failed_ids.clone();
+                let join_parent_ids = parent_ids.clone();
+                let join_doc_ids = doc_ids.clone();
 
                 tokio::spawn(
                     async move {
@@ -568,7 +580,12 @@ impl<T: Chunk> Pipeline<T> {
                     }
                     .instrument(span.or_current()),
                 )
-                .map_err(anyhow::Error::from)
+                .map_err(move |join_error| {
+                    // A panicked or cancelled batch task records nothing otherwise.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &join_parent_ids, &join_doc_ids, &error);
+                    error
+                })
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency) // First get the streams from each future
@@ -603,12 +620,15 @@ impl<T: Chunk> Pipeline<T> {
                 let failed_ids = failed_ids.clone();
                 let span = trace_span!("then_chunk", chunker);
 
+                let id = node.parent_id.unwrap_or_else(|| node.id());
+                let doc_id = node.doc_id.clone();
+                let join_failed_ids = failed_ids.clone();
+                let join_doc_id = doc_id.clone();
+
                 tokio::spawn(
                     async move {
                         node_trace_log!(chunker, node, "Chunking node");
 
-                        let id = node.parent_id.unwrap_or_else(|| node.id());
-                        let doc_id = node.doc_id.clone();
                         chunker.transform_node(node).await.inspect(move |item| {
                             if let Err(error) = item {
                                 record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
@@ -617,7 +637,12 @@ impl<T: Chunk> Pipeline<T> {
                     }
                     .instrument(span.or_current()),
                 )
-                .map_err(anyhow::Error::from)
+                .map_err(move |join_error| {
+                    // A panicked or cancelled task records nothing otherwise.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                    error
+                })
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
@@ -655,12 +680,15 @@ impl<T: Chunk> Pipeline<T> {
                 let failed_ids = failed_ids.clone();
                 let span = trace_span!("then_expand", chunker);
 
+                let id = node.parent_id.unwrap_or_else(|| node.id());
+                let doc_id = node.doc_id.clone();
+                let join_failed_ids = failed_ids.clone();
+                let join_doc_id = doc_id.clone();
+
                 tokio::spawn(
                     async move {
                         node_trace_log!(chunker, node, "Expanding node");
 
-                        let id = node.parent_id.unwrap_or_else(|| node.id());
-                        let doc_id = node.doc_id.clone();
                         chunker.transform_node(node).await.inspect(move |item| {
                             if let Err(error) = item {
                                 record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
@@ -669,7 +697,12 @@ impl<T: Chunk> Pipeline<T> {
                     }
                     .instrument(span.or_current()),
                 )
-                .map_err(anyhow::Error::from)
+                .map_err(move |join_error| {
+                    // A panicked or cancelled task records nothing otherwise.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                    error
+                })
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
@@ -735,6 +768,9 @@ impl<T: Chunk> Pipeline<T> {
                         .iter()
                         .filter_map(|node| node.doc_id.clone())
                         .collect();
+                    let join_failed_ids = failed_ids.clone();
+                    let join_parent_ids = parent_ids.clone();
+                    let join_doc_ids = doc_ids.clone();
 
                     tokio::spawn(
                         async move {
@@ -748,7 +784,17 @@ impl<T: Chunk> Pipeline<T> {
                         }
                         .instrument(span.or_current()),
                     )
-                    .map_err(anyhow::Error::from)
+                    .map_err(move |join_error| {
+                        // A panicked or cancelled batch task records nothing otherwise.
+                        let error = anyhow::Error::from(join_error);
+                        record_failed_ids(
+                            &join_failed_ids,
+                            &join_parent_ids,
+                            &join_doc_ids,
+                            &error,
+                        );
+                        error
+                    })
                 })
                 .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
@@ -761,12 +807,15 @@ impl<T: Chunk> Pipeline<T> {
                     let failed_ids = failed_ids.clone();
                     let span = trace_span!("then_store_with", storage);
 
+                    let id = node.parent_id.unwrap_or_else(|| node.id());
+                    let doc_id = node.doc_id.clone();
+                    let join_failed_ids = failed_ids.clone();
+                    let join_doc_id = doc_id.clone();
+
                     tokio::spawn(
                         async move {
                             node_trace_log!(storage, node, "Storing node");
 
-                            let id = node.parent_id.unwrap_or_else(|| node.id());
-                            let doc_id = node.doc_id.clone();
                             let result = storage.store(node).await;
                             if let Err(error) = &result {
                                 record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
@@ -775,7 +824,12 @@ impl<T: Chunk> Pipeline<T> {
                         }
                         .instrument(span.or_current()),
                     )
-                    .err_into::<anyhow::Error>()
+                    .map_err(move |join_error| {
+                        // A panicked or cancelled task records nothing otherwise.
+                        let error = anyhow::Error::from(join_error);
+                        record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                        error
+                    })
                 })
                 .try_buffer_unordered(self.concurrency)
                 .map(|x| x.and_then(|x| x))
@@ -2049,6 +2103,54 @@ mod tests {
 
         // doc-a's surviving chunk and both doc-b chunks were still stored
         assert_eq!(storage.get_all().await.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_observer_reports_panicked_task_as_failed() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        let doc_a = Node::from("doc a").with_doc_id("doc-a").to_owned();
+        let doc_b = Node::from("doc b").with_doc_id("doc-b").to_owned();
+
+        loader
+            .expect_into_stream()
+            .returning(move || vec![Ok(doc_a.clone()), Ok(doc_b.clone())].into());
+
+        // doc-a's transform panics inside the spawned task; doc-b transforms fine.
+        // A plain closure keeps the panic out of mockall's shared expectation lock.
+        let transformer = |node: TextNode| {
+            assert!(node.doc_id.as_deref() != Some("doc-a"), "transform blew up");
+            Ok(node)
+        };
+
+        // The join failure must be recorded: doc-a is reported failed, not persisted
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_failed()
+            .times(1)
+            .withf(|doc_id, error| {
+                doc_id == "doc-a" && error.to_string().contains("transform blew up")
+            })
+            .returning(|_, _| Ok(()));
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .withf(|doc_id, count| doc_id == "doc-b" && *count == 1)
+            .returning(|_, _| Ok(()));
+
+        Pipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage.clone())
+            .observe_persist(observer)
+            .filter_errors()
+            .run()
+            .await
+            .unwrap();
+
+        // only doc-b was stored
+        assert_eq!(storage.get_all().await.len(), 1);
     }
 
     #[tokio::test]
