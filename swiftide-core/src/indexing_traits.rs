@@ -520,6 +520,78 @@ impl<T: Chunk> NodeCache for &dyn NodeCache<Input = T> {
 }
 
 #[async_trait]
+/// Observes per-document persist outcomes of an indexing pipeline run.
+///
+/// A document is identified by the [`Node::doc_id`] its nodes carry. When the run finishes,
+/// the pipeline calls [`PersistObserver::on_persisted`] once per document whose nodes all made
+/// it through, and [`PersistObserver::on_failed`] once per document that had a failure recorded
+/// anywhere in its fan-out. Nodes without a `doc_id` are not reported.
+///
+/// Failure attribution is conservative: if a batch stage fails, every document in that batch is
+/// reported as failed, matching how the pipeline marks node caches.
+///
+/// Callbacks fire after the pipeline stream finished; a run aborted by an unfiltered error
+/// reports nothing. If a callback returns an error, the run fails with that error after the
+/// remaining callbacks have fired.
+pub trait PersistObserver: Send + Sync + Debug {
+    /// All nodes carrying `doc_id` completed the pipeline. `node_count` is how many nodes with
+    /// that id reached the end of the pipeline.
+    async fn on_persisted(&self, doc_id: &str, node_count: usize) -> Result<()>;
+
+    /// A node carrying `doc_id` failed somewhere in the pipeline. Other documents are
+    /// unaffected.
+    async fn on_failed(&self, doc_id: &str, error: &anyhow::Error) -> Result<()>;
+
+    fn name(&self) -> &'static str {
+        let name = std::any::type_name::<Self>();
+        name.split("::").last().unwrap_or(name)
+    }
+}
+
+#[cfg(feature = "test-utils")]
+mock! {
+    #[derive(Debug)]
+    pub PersistObserver {}
+
+    #[async_trait]
+    impl PersistObserver for PersistObserver {
+        async fn on_persisted(&self, doc_id: &str, node_count: usize) -> Result<()>;
+        async fn on_failed(&self, doc_id: &str, error: &anyhow::Error) -> Result<()>;
+        fn name(&self) -> &'static str;
+    }
+
+    impl Clone for PersistObserver {
+        fn clone(&self) -> Self;
+    }
+}
+
+#[async_trait]
+impl PersistObserver for Box<dyn PersistObserver> {
+    async fn on_persisted(&self, doc_id: &str, node_count: usize) -> Result<()> {
+        self.as_ref().on_persisted(doc_id, node_count).await
+    }
+    async fn on_failed(&self, doc_id: &str, error: &anyhow::Error) -> Result<()> {
+        self.as_ref().on_failed(doc_id, error).await
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
+impl PersistObserver for Arc<dyn PersistObserver> {
+    async fn on_persisted(&self, doc_id: &str, node_count: usize) -> Result<()> {
+        self.as_ref().on_persisted(doc_id, node_count).await
+    }
+    async fn on_failed(&self, doc_id: &str, error: &anyhow::Error) -> Result<()> {
+        self.as_ref().on_failed(doc_id, error).await
+    }
+    fn name(&self) -> &'static str {
+        self.as_ref().name()
+    }
+}
+
+#[async_trait]
 /// Embeds a list of strings and returns its embeddings.
 /// Assumes the strings will be moved.
 pub trait EmbeddingModel: Send + Sync + Debug + DynClone {

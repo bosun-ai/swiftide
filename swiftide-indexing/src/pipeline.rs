@@ -1,8 +1,8 @@
 use anyhow::Result;
 use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
 use swiftide_core::{
-    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
-    Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
+    BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, PersistObserver,
+    SimplePrompt, Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
     indexing::{Chunk, IndexingDefaults},
     statistics::StatsCollector,
 };
@@ -13,7 +13,7 @@ use tokio::{
 use tracing::Instrument;
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     pin::Pin,
     sync::{Arc, Mutex as StdMutex},
     time::Duration,
@@ -61,6 +61,7 @@ macro_rules! pipeline_with_new_stream {
             node_caches: $pipeline.node_caches.clone(),
             failed_ids: $pipeline.failed_ids.clone(),
             passed_cache_ids: $pipeline.passed_cache_ids.clone(),
+            persist_observers: $pipeline.persist_observers.clone(),
         }
     };
 }
@@ -98,6 +99,9 @@ pub struct Pipeline<T: Chunk> {
     // each cache's filter. `run` marks each source only in the caches that
     // actually processed it instead of every cache combined by `merge`.
     passed_cache_ids: Arc<PassedCacheIds>,
+    // Observers that get one callback per document (by `Node::doc_id`) after
+    // a run, reporting whether the document's nodes all made it through.
+    persist_observers: Vec<Arc<dyn PersistObserver>>,
 }
 
 type DynStorageSetupFn =
@@ -111,9 +115,13 @@ type DynNodeCacheSet =
 /// Shared registry of source ids whose processing failed. Pipelines produced
 /// by `split_by` share one registry; `merge` links independent registries so
 /// [`Pipeline::run`] sees failures recorded by either side.
+///
+/// Besides the source ids, the first error per document id is kept so persist
+/// observers can report what went wrong for their document.
 #[derive(Default)]
 struct FailedIds {
     own: StdMutex<HashSet<Uuid>>,
+    own_docs: StdMutex<HashMap<Arc<str>, String>>,
     linked: StdMutex<Vec<Arc<FailedIds>>>,
 }
 
@@ -123,6 +131,16 @@ impl FailedIds {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .extend(ids.iter().copied());
+    }
+
+    /// Records the first error seen for a document id. Later errors for the
+    /// same document do not replace it.
+    fn record_doc(&self, doc_id: Arc<str>, message: String) {
+        self.own_docs
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(doc_id)
+            .or_insert(message);
     }
 
     /// Whether `id` was recorded in this registry or in any registry linked
@@ -155,6 +173,40 @@ impl FailedIds {
         }
 
         false
+    }
+
+    /// All (document id, first recorded error message) pairs recorded in this
+    /// registry or in any registry linked into it by [`Pipeline::merge`].
+    fn collect_docs(root: &Arc<FailedIds>) -> HashMap<Arc<str>, String> {
+        let mut visited = HashSet::new();
+        let mut stack = vec![Arc::clone(root)];
+        let mut docs = HashMap::new();
+
+        while let Some(node) = stack.pop() {
+            let key = Arc::as_ptr(&node) as usize;
+            if !visited.insert(key) {
+                continue;
+            }
+
+            for (doc_id, message) in node
+                .own_docs
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .iter()
+            {
+                docs.entry(Arc::clone(doc_id))
+                    .or_insert_with(|| message.clone());
+            }
+
+            let linked = node
+                .linked
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone();
+            stack.extend(linked);
+        }
+
+        docs
     }
 }
 
@@ -216,9 +268,18 @@ impl PassedCacheIds {
 
 /// Records the source ids of nodes whose processing failed. The ids are
 /// checked by [`Pipeline::run`] when it decides which source nodes may be
-/// marked as cached.
-fn record_failed_ids(failed_ids: &Arc<FailedIds>, ids: &[Uuid]) {
+/// marked as cached. Document ids of the failed nodes get their first error
+/// stored so persist observers can report it.
+fn record_failed_ids(
+    failed_ids: &Arc<FailedIds>,
+    ids: &[Uuid],
+    doc_ids: &[Arc<str>],
+    error: &anyhow::Error,
+) {
     failed_ids.record(ids);
+    for doc_id in doc_ids {
+        failed_ids.record_doc(Arc::clone(doc_id), error.to_string());
+    }
 }
 
 impl<T: Chunk> Default for Pipeline<T> {
@@ -235,6 +296,7 @@ impl<T: Chunk> Default for Pipeline<T> {
             node_caches: Vec::new(),
             failed_ids: Arc::new(FailedIds::default()),
             passed_cache_ids: Arc::new(PassedCacheIds::default()),
+            persist_observers: Vec::new(),
         }
     }
 }
@@ -376,6 +438,27 @@ impl<T: Chunk> Pipeline<T> {
         self
     }
 
+    /// Registers an observer that gets called once per document after the run finishes.
+    ///
+    /// Documents are identified by the [`Node::doc_id`] their nodes carry. Documents whose
+    /// nodes all reached the end of the pipeline are reported via
+    /// [`PersistObserver::on_persisted`], documents with a failure anywhere in their fan-out
+    /// via [`PersistObserver::on_failed`]. Nodes without a `doc_id` are not reported. Can be
+    /// called multiple times; each registered observer receives every callback.
+    ///
+    /// # Arguments
+    ///
+    /// * `observer` - An observer that implements the `PersistObserver` trait.
+    ///
+    /// # Returns
+    ///
+    /// An instance of `Pipeline` with the observer registered.
+    #[must_use]
+    pub fn observe_persist(mut self, observer: impl PersistObserver + 'static) -> Self {
+        self.persist_observers.push(Arc::new(observer));
+        self
+    }
+
     /// Adds a transformer to the pipeline.
     ///
     /// Closures can also be provided as transformers.
@@ -405,20 +488,30 @@ impl<T: Chunk> Pipeline<T> {
                 let failed_ids = failed_ids.clone();
                 let span = trace_span!("then", transformer);
 
+                let id = node.parent_id.unwrap_or_else(|| node.id());
+                let doc_id = node.doc_id.clone();
+                let join_failed_ids = failed_ids.clone();
+                let join_doc_id = doc_id.clone();
+
                 task::spawn(
                     async move {
                         node_trace_log!(transformer, node, "Transforming node");
 
-                        let id = node.parent_id.unwrap_or_else(|| node.id());
                         let result = transformer.transform_node(node).await;
-                        if result.is_err() {
-                            record_failed_ids(&failed_ids, &[id]);
+                        if let Err(error) = &result {
+                            record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
                         }
                         result
                     }
                     .instrument(span.or_current()),
                 )
-                .err_into::<anyhow::Error>()
+                .map_err(move |join_error| {
+                    // A panicked or cancelled task records nothing otherwise, and
+                    // `filter_errors` would let the document report as persisted.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                    error
+                })
             })
             .try_buffer_unordered(concurrency)
             .map(|x| x.and_then(|x| x));
@@ -464,6 +557,13 @@ impl<T: Chunk> Pipeline<T> {
                     .iter()
                     .map(|node| node.parent_id.unwrap_or_else(|| node.id()))
                     .collect();
+                let doc_ids: Vec<Arc<str>> = nodes
+                    .iter()
+                    .filter_map(|node| node.doc_id.clone())
+                    .collect();
+                let join_failed_ids = failed_ids.clone();
+                let join_parent_ids = parent_ids.clone();
+                let join_doc_ids = doc_ids.clone();
 
                 tokio::spawn(
                     async move {
@@ -473,14 +573,19 @@ impl<T: Chunk> Pipeline<T> {
                             .batch_transform(nodes)
                             .await
                             .inspect(move |item| {
-                                if item.is_err() {
-                                    record_failed_ids(&failed_ids, &parent_ids);
+                                if let Err(error) = item {
+                                    record_failed_ids(&failed_ids, &parent_ids, &doc_ids, error);
                                 }
                             })
                     }
                     .instrument(span.or_current()),
                 )
-                .map_err(anyhow::Error::from)
+                .map_err(move |join_error| {
+                    // A panicked or cancelled batch task records nothing otherwise.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &join_parent_ids, &join_doc_ids, &error);
+                    error
+                })
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency) // First get the streams from each future
@@ -515,20 +620,29 @@ impl<T: Chunk> Pipeline<T> {
                 let failed_ids = failed_ids.clone();
                 let span = trace_span!("then_chunk", chunker);
 
+                let id = node.parent_id.unwrap_or_else(|| node.id());
+                let doc_id = node.doc_id.clone();
+                let join_failed_ids = failed_ids.clone();
+                let join_doc_id = doc_id.clone();
+
                 tokio::spawn(
                     async move {
                         node_trace_log!(chunker, node, "Chunking node");
 
-                        let id = node.parent_id.unwrap_or_else(|| node.id());
                         chunker.transform_node(node).await.inspect(move |item| {
-                            if item.is_err() {
-                                record_failed_ids(&failed_ids, &[id]);
+                            if let Err(error) = item {
+                                record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
                             }
                         })
                     }
                     .instrument(span.or_current()),
                 )
-                .map_err(anyhow::Error::from)
+                .map_err(move |join_error| {
+                    // A panicked or cancelled task records nothing otherwise.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                    error
+                })
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
@@ -566,20 +680,29 @@ impl<T: Chunk> Pipeline<T> {
                 let failed_ids = failed_ids.clone();
                 let span = trace_span!("then_expand", chunker);
 
+                let id = node.parent_id.unwrap_or_else(|| node.id());
+                let doc_id = node.doc_id.clone();
+                let join_failed_ids = failed_ids.clone();
+                let join_doc_id = doc_id.clone();
+
                 tokio::spawn(
                     async move {
                         node_trace_log!(chunker, node, "Expanding node");
 
-                        let id = node.parent_id.unwrap_or_else(|| node.id());
                         chunker.transform_node(node).await.inspect(move |item| {
-                            if item.is_err() {
-                                record_failed_ids(&failed_ids, &[id]);
+                            if let Err(error) = item {
+                                record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
                             }
                         })
                     }
                     .instrument(span.or_current()),
                 )
-                .map_err(anyhow::Error::from)
+                .map_err(move |join_error| {
+                    // A panicked or cancelled task records nothing otherwise.
+                    let error = anyhow::Error::from(join_error);
+                    record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                    error
+                })
             })
             .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency)
@@ -641,20 +764,37 @@ impl<T: Chunk> Pipeline<T> {
                         .iter()
                         .map(|node| node.parent_id.unwrap_or_else(|| node.id()))
                         .collect();
+                    let doc_ids: Vec<Arc<str>> = nodes
+                        .iter()
+                        .filter_map(|node| node.doc_id.clone())
+                        .collect();
+                    let join_failed_ids = failed_ids.clone();
+                    let join_parent_ids = parent_ids.clone();
+                    let join_doc_ids = doc_ids.clone();
 
                     tokio::spawn(
                         async move {
                             batch_node_trace_log!(storage, nodes, "batch storing nodes");
 
                             storage.batch_store(nodes).await.inspect(move |item| {
-                                if item.is_err() {
-                                    record_failed_ids(&failed_ids, &parent_ids);
+                                if let Err(error) = item {
+                                    record_failed_ids(&failed_ids, &parent_ids, &doc_ids, error);
                                 }
                             })
                         }
                         .instrument(span.or_current()),
                     )
-                    .map_err(anyhow::Error::from)
+                    .map_err(move |join_error| {
+                        // A panicked or cancelled batch task records nothing otherwise.
+                        let error = anyhow::Error::from(join_error);
+                        record_failed_ids(
+                            &join_failed_ids,
+                            &join_parent_ids,
+                            &join_doc_ids,
+                            &error,
+                        );
+                        error
+                    })
                 })
                 .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
@@ -667,20 +807,29 @@ impl<T: Chunk> Pipeline<T> {
                     let failed_ids = failed_ids.clone();
                     let span = trace_span!("then_store_with", storage);
 
+                    let id = node.parent_id.unwrap_or_else(|| node.id());
+                    let doc_id = node.doc_id.clone();
+                    let join_failed_ids = failed_ids.clone();
+                    let join_doc_id = doc_id.clone();
+
                     tokio::spawn(
                         async move {
                             node_trace_log!(storage, node, "Storing node");
 
-                            let id = node.parent_id.unwrap_or_else(|| node.id());
                             let result = storage.store(node).await;
-                            if result.is_err() {
-                                record_failed_ids(&failed_ids, &[id]);
+                            if let Err(error) = &result {
+                                record_failed_ids(&failed_ids, &[id], doc_id.as_slice(), error);
                             }
                             result
                         }
                         .instrument(span.or_current()),
                     )
-                    .err_into::<anyhow::Error>()
+                    .map_err(move |join_error| {
+                        // A panicked or cancelled task records nothing otherwise.
+                        let error = anyhow::Error::from(join_error);
+                        record_failed_ids(&join_failed_ids, &[id], join_doc_id.as_slice(), &error);
+                        error
+                    })
                 })
                 .try_buffer_unordered(self.concurrency)
                 .map(|x| x.and_then(|x| x))
@@ -794,6 +943,18 @@ impl<T: Chunk> Pipeline<T> {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .push(other.passed_cache_ids);
+        }
+
+        // Combine persist observers like the cache registrations above so
+        // observers on either side receive every document's outcome.
+        for observer in other.persist_observers {
+            if !self
+                .persist_observers
+                .iter()
+                .any(|existing| Arc::ptr_eq(existing, &observer))
+            {
+                self.persist_observers.push(observer);
+            }
         }
 
         Self {
@@ -949,6 +1110,7 @@ impl<T: Chunk> Pipeline<T> {
 
         let mut total_nodes = 0u64;
         let mut completed_ids = HashSet::new();
+        let mut completed_doc_counts: HashMap<Arc<str>, usize> = HashMap::new();
 
         while let Some(node) = self.stream.try_next().await? {
             total_nodes += 1;
@@ -964,13 +1126,38 @@ impl<T: Chunk> Pipeline<T> {
             if !self.node_caches.is_empty() {
                 completed_ids.insert(node.parent_id.unwrap_or_else(|| node.id()));
             }
+
+            if !self.persist_observers.is_empty()
+                && let Some(doc_id) = &node.doc_id
+            {
+                *completed_doc_counts.entry(Arc::clone(doc_id)).or_default() += 1;
+            }
         }
 
+        // Report per-document outcomes to persist observers before touching
+        // the caches. A document with a failure anywhere in its fan-out is
+        // reported as failed even when some of its nodes completed, so
+        // observers never ACK a partial document. The error is returned only
+        // after the stats are finalized below so a failing observer does not
+        // leave a fully stored run without its completion stats.
+        let observer_result = if self.persist_observers.is_empty() {
+            Ok(())
+        } else {
+            Self::notify_persist_observers(
+                &self.persist_observers,
+                &self.failed_ids,
+                completed_doc_counts,
+            )
+            .await
+        };
+
         // The stream completed without errors; only now mark the parents in
-        // the caches. Parents that had a failure recorded anywhere in their
-        // fan-out are skipped so their failed chunks are retried on the next
-        // run.
-        if !self.node_caches.is_empty() {
+        // the caches, and only when the observers acknowledged the run.
+        // Marking a cache before the observer ACK would let a retry skip
+        // documents whose notification never landed. Parents that had a
+        // failure recorded anywhere in their fan-out are skipped so their
+        // failed chunks are retried on the next run.
+        if observer_result.is_ok() && !self.node_caches.is_empty() {
             // Each source id is marked only in the caches whose filter it
             // actually passed. Marking every cache combined by `merge` would
             // let one branch skip a node another branch processed when the
@@ -1029,6 +1216,52 @@ impl<T: Chunk> Pipeline<T> {
 
         tracing::Span::current().record("total_nodes", total_nodes);
 
+        observer_result
+    }
+
+    /// Reports per-document outcomes to every registered persist observer.
+    ///
+    /// A document with a failure anywhere in its fan-out is reported as failed
+    /// even when some of its nodes completed, so observers never ACK a partial
+    /// document. Every callback fires even if one observer errors, so all
+    /// observers see all outcomes; the run then fails with the first observer
+    /// error.
+    async fn notify_persist_observers(
+        persist_observers: &[Arc<dyn PersistObserver>],
+        failed_ids: &Arc<FailedIds>,
+        completed_doc_counts: HashMap<Arc<str>, usize>,
+    ) -> Result<()> {
+        let failed_docs = FailedIds::collect_docs(failed_ids);
+
+        let mut persisted: Vec<(Arc<str>, usize)> = completed_doc_counts
+            .into_iter()
+            .filter(|(doc_id, _)| !failed_docs.contains_key(doc_id.as_ref()))
+            .collect();
+        persisted.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        let mut failed: Vec<(Arc<str>, String)> = failed_docs.into_iter().collect();
+        failed.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        let mut observer_error = None;
+        for observer in persist_observers {
+            for (doc_id, count) in &persisted {
+                if let Err(err) = observer.on_persisted(doc_id, *count).await {
+                    tracing::error!(observer = observer.name(), ?err, "persist observer failed");
+                    observer_error.get_or_insert(err);
+                }
+            }
+            for (doc_id, message) in &failed {
+                let failure = anyhow::anyhow!(message.clone());
+                if let Err(err) = observer.on_failed(doc_id, &failure).await {
+                    tracing::error!(observer = observer.name(), ?err, "persist observer failed");
+                    observer_error.get_or_insert(err);
+                }
+            }
+        }
+
+        if let Some(err) = observer_error {
+            return Err(err);
+        }
         Ok(())
     }
 }
@@ -1742,5 +1975,263 @@ mod tests {
 
         // The left node and the one successful right child were stored
         assert_eq!(storage.get_all().await.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_observer_persisted_once_per_document() {
+        let mut loader = MockLoader::new();
+        let mut chunker = MockChunkerTransformer::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+        let mut seq = Sequence::new();
+
+        let doc_a = Node::from("doc a").with_doc_id("doc-a").to_owned();
+        let doc_b = Node::from("doc b").with_doc_id("doc-b").to_owned();
+
+        loader
+            .expect_into_stream()
+            .returning(move || vec![Ok(doc_a.clone()), Ok(doc_b.clone())].into());
+
+        chunker.expect_transform_node().returning(|node| {
+            vec![
+                Ok(Node::build_from_other(&node)
+                    .chunk("chunk 1".to_string())
+                    .build()
+                    .unwrap()),
+                Ok(Node::build_from_other(&node)
+                    .chunk("chunk 2".to_string())
+                    .build()
+                    .unwrap()),
+            ]
+            .into()
+        });
+        chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "chunker");
+
+        // Observers fire after the run, documents in sorted order
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .in_sequence(&mut seq)
+            .withf(|doc_id, count| doc_id == "doc-a" && *count == 2)
+            .returning(|_, _| Ok(()));
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .in_sequence(&mut seq)
+            .withf(|doc_id, count| doc_id == "doc-b" && *count == 2)
+            .returning(|_, _| Ok(()));
+        observer.expect_on_failed().times(0);
+
+        Pipeline::from_loader(loader)
+            .then_chunk(chunker)
+            .then_store_with(storage.clone())
+            .observe_persist(observer)
+            .run()
+            .await
+            .unwrap();
+
+        assert_eq!(storage.get_all().await.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn test_observer_reports_partial_document_as_failed() {
+        let mut loader = MockLoader::new();
+        let mut chunker = MockChunkerTransformer::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        let doc_a = Node::from("doc a").with_doc_id("doc-a").to_owned();
+        let doc_b = Node::from("doc b").with_doc_id("doc-b").to_owned();
+
+        loader
+            .expect_into_stream()
+            .returning(move || vec![Ok(doc_a.clone()), Ok(doc_b.clone())].into());
+
+        // doc-a loses a chunk halfway; doc-b chunks fine
+        chunker.expect_transform_node().returning(|node| {
+            if node.doc_id.as_deref() == Some("doc-a") {
+                vec![
+                    Ok(Node::build_from_other(&node)
+                        .chunk("chunk 1".to_string())
+                        .build()
+                        .unwrap()),
+                    Err(anyhow::anyhow!("chunking failed halfway")),
+                ]
+                .into()
+            } else {
+                vec![
+                    Ok(Node::build_from_other(&node)
+                        .chunk("chunk 1".to_string())
+                        .build()
+                        .unwrap()),
+                    Ok(Node::build_from_other(&node)
+                        .chunk("chunk 2".to_string())
+                        .build()
+                        .unwrap()),
+                ]
+                .into()
+            }
+        });
+        chunker.expect_concurrency().returning(|| None);
+        chunker.expect_name().returning(|| "chunker");
+
+        // The partial document must not be ACKed, only reported as failed
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_failed()
+            .times(1)
+            .withf(|doc_id, error| {
+                doc_id == "doc-a" && error.to_string().contains("chunking failed halfway")
+            })
+            .returning(|_, _| Ok(()));
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .withf(|doc_id, count| doc_id == "doc-b" && *count == 2)
+            .returning(|_, _| Ok(()));
+
+        Pipeline::from_loader(loader)
+            .then_chunk(chunker)
+            .then_store_with(storage.clone())
+            .observe_persist(observer)
+            .filter_errors()
+            .run()
+            .await
+            .unwrap();
+
+        // doc-a's surviving chunk and both doc-b chunks were still stored
+        assert_eq!(storage.get_all().await.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_observer_reports_panicked_task_as_failed() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        let doc_a = Node::from("doc a").with_doc_id("doc-a").to_owned();
+        let doc_b = Node::from("doc b").with_doc_id("doc-b").to_owned();
+
+        loader
+            .expect_into_stream()
+            .returning(move || vec![Ok(doc_a.clone()), Ok(doc_b.clone())].into());
+
+        // doc-a's transform panics inside the spawned task; doc-b transforms fine.
+        // A plain closure keeps the panic out of mockall's shared expectation lock.
+        let transformer = |node: TextNode| {
+            assert!(node.doc_id.as_deref() != Some("doc-a"), "transform blew up");
+            Ok(node)
+        };
+
+        // The join failure must be recorded: doc-a is reported failed, not persisted
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_failed()
+            .times(1)
+            .withf(|doc_id, error| {
+                doc_id == "doc-a" && error.to_string().contains("transform blew up")
+            })
+            .returning(|_, _| Ok(()));
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .withf(|doc_id, count| doc_id == "doc-b" && *count == 1)
+            .returning(|_, _| Ok(()));
+
+        Pipeline::from_loader(loader)
+            .then(transformer)
+            .then_store_with(storage.clone())
+            .observe_persist(observer)
+            .filter_errors()
+            .run()
+            .await
+            .unwrap();
+
+        // only doc-b was stored
+        assert_eq!(storage.get_all().await.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_observer_ignores_nodes_without_doc_id() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(TextNode::default()), Ok(TextNode::default())].into());
+
+        observer.expect_name().returning(|| "observer");
+        observer.expect_on_persisted().times(0);
+        observer.expect_on_failed().times(0);
+
+        Pipeline::from_loader(loader)
+            .then_store_with(storage)
+            .observe_persist(observer)
+            .run()
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_observer_error_fails_the_run() {
+        let mut loader = MockLoader::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::from("doc a").with_doc_id("doc-a").to_owned())].into());
+
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .returning(|_, _| Err(anyhow::anyhow!("ack failed")));
+
+        let result = Pipeline::from_loader(loader)
+            .then_store_with(storage)
+            .observe_persist(observer)
+            .run()
+            .await;
+
+        assert_eq!(result.unwrap_err().to_string(), "ack failed");
+    }
+
+    #[tokio::test]
+    async fn test_observer_error_leaves_cache_unmarked() {
+        let mut loader = MockLoader::new();
+        let mut cache = MockNodeCache::new();
+        let storage = MemoryStorage::default();
+        let mut observer = MockPersistObserver::new();
+
+        loader
+            .expect_into_stream()
+            .returning(|| vec![Ok(Node::from("doc a").with_doc_id("doc-a").to_owned())].into());
+
+        cache.expect_name().returning(|| "test_cache");
+        cache.expect_get().times(1).returning(|_| false);
+        // The observer rejects the run, so nothing may be marked cached;
+        // otherwise a retry would skip the document that was never acked.
+        cache.expect_set_by_id().times(0);
+
+        observer.expect_name().returning(|| "observer");
+        observer
+            .expect_on_persisted()
+            .times(1)
+            .returning(|_, _| Err(anyhow::anyhow!("ack failed")));
+
+        let result = Pipeline::from_loader(loader)
+            .filter_cached(cache)
+            .then_store_with(storage.clone())
+            .observe_persist(observer)
+            .run()
+            .await;
+
+        assert_eq!(result.unwrap_err().to_string(), "ack failed");
+        // Storage still happened; only the observer ACK failed
+        assert_eq!(storage.get_all().await.len(), 1);
     }
 }

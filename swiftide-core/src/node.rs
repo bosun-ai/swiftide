@@ -23,6 +23,7 @@ use std::{
     hash::{Hash, Hasher},
     os::unix::ffi::OsStrExt,
     path::PathBuf,
+    sync::Arc,
 };
 
 use derive_builder::Builder;
@@ -76,6 +77,11 @@ pub struct Node<T: Chunk> {
     /// node that entered the pipeline.
     #[builder(default)]
     pub parent_id: Option<uuid::Uuid>,
+    /// Stable identifier of the logical document this node belongs to. Loaders can set it and
+    /// nodes derived via [`Node::build_from_other`] keep it, so chunks of one document share
+    /// the id. [`crate::PersistObserver`] uses it to report per-document outcomes.
+    #[builder(default)]
+    pub doc_id: Option<Arc<str>>,
 }
 
 pub type TextNode = Node<String>;
@@ -94,6 +100,11 @@ impl<T: Chunk> NodeBuilder<T> {
         vectors: Option<HashMap<EmbeddedField, Embedding>>,
     ) -> &mut Self {
         self.vectors = Some(vectors);
+        self
+    }
+
+    pub fn maybe_doc_id(&mut self, doc_id: Option<Arc<str>>) -> &mut Self {
+        self.doc_id = Some(doc_id);
         self
     }
 }
@@ -154,6 +165,7 @@ impl<T: Chunk> Node<T> {
             .original_size(node.original_size)
             .offset(node.offset)
             .parent_id(node.parent_id.unwrap_or_else(|| node.id()))
+            .maybe_doc_id(node.doc_id.clone())
             .to_owned()
     }
 
@@ -177,6 +189,11 @@ impl<T: Chunk> Node<T> {
 
     pub fn with_metadata(&mut self, metadata: impl Into<Metadata>) -> &mut Self {
         self.metadata = metadata.into();
+        self
+    }
+
+    pub fn with_doc_id(&mut self, doc_id: impl Into<Arc<str>>) -> &mut Self {
+        self.doc_id = Some(doc_id.into());
         self
     }
 
@@ -499,5 +516,13 @@ mod tests {
         assert_eq!(original_node.parent_id(), None);
         assert_eq!(child_node.parent_id(), Some(original_node.id()));
         assert_eq!(grandchild_node.parent_id(), Some(original_node.id()));
+    }
+
+    #[test]
+    fn test_build_from_other_keeps_doc_id() {
+        let original_node = Node::from("test_chunk").with_doc_id("doc-1").to_owned();
+        let child_node = Node::build_from_other(&original_node).build().unwrap();
+
+        assert_eq!(child_node.doc_id.as_deref(), Some("doc-1"));
     }
 }
