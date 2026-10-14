@@ -618,19 +618,66 @@ pub(super) fn response_to_chat_completion(response: Response) -> LmResult<ChatCo
         error,
         output,
         usage,
+        incomplete_details,
         ..
     } = response;
 
-    if matches!(status, Status::Failed) {
-        let error = error.as_ref().map_or_else(
-            || "OpenAI Responses API returned failure".to_string(),
-            |err| format!("{}: {}", err.code, err.message),
-        );
-        return Err(LanguageModelError::permanent(error));
+    match status {
+        Status::Completed => {}
+        Status::Failed => {
+            let error = error.as_ref().map_or_else(
+                || "OpenAI Responses API returned failure".to_string(),
+                |err| format!("{}: {}", err.code, err.message),
+            );
+            return Err(LanguageModelError::permanent(error));
+        }
+        Status::Incomplete => {
+            let error = incomplete_details.as_ref().map_or_else(
+                || "OpenAI Responses API returned incomplete".to_string(),
+                |details| {
+                    format!(
+                        "OpenAI Responses API returned incomplete: {}",
+                        details.reason
+                    )
+                },
+            );
+            return Err(LanguageModelError::permanent(error));
+        }
+        Status::Queued => {
+            return Err(LanguageModelError::permanent(
+                "OpenAI Responses API returned queued",
+            ));
+        }
+        Status::InProgress => {
+            return Err(LanguageModelError::permanent(
+                "OpenAI Responses API returned in_progress",
+            ));
+        }
+        Status::Cancelled => {
+            return Err(LanguageModelError::permanent(
+                "OpenAI Responses API returned cancelled",
+            ));
+        }
+    }
+
+    if output.iter().any(|item| {
+        matches!(item, OutputItem::Message(message) if message.content.iter().any(|content| {
+            matches!(content, OutputMessageContent::Refusal(_))
+        }))
+    }) {
+        return Err(LanguageModelError::permanent(
+            "OpenAI Responses API returned a provider refusal",
+        ));
     }
 
     let mut completion = ChatCompletionResponse::default();
     merge_output_items(output, &mut completion, "")?;
+
+    if completion.message.is_none() && completion.tool_calls.is_none() {
+        return Err(LanguageModelError::permanent(
+            "OpenAI Responses API completed with no assistant text or function calls",
+        ));
+    }
 
     if let Some(usage) = usage.as_ref() {
         completion.usage = Some(Usage::from(usage));
@@ -1510,6 +1557,10 @@ mod tests {
             "object": "response",
             "status": "completed",
             "output": [
+                {"type": "message", "id": "msg", "role": "assistant",
+                 "status": "completed", "content": [
+                     {"type": "output_text", "text": "Answer", "annotations": []}
+                 ]},
                 {
                     "type": "reasoning",
                     "id": "reasoning_1",
@@ -1545,6 +1596,10 @@ mod tests {
             "object": "response",
             "status": "completed",
             "output": [
+                {"type": "message", "id": "msg", "role": "assistant",
+                 "status": "completed", "content": [
+                     {"type": "output_text", "text": "Answer", "annotations": []}
+                 ]},
                 {
                     "type": "reasoning",
                     "summary": [],
@@ -1900,6 +1955,115 @@ mod tests {
         assert!(
             matches!(err, LanguageModelError::PermanentError(msg) if msg.to_string().contains("bad things"))
         );
+    }
+
+    fn unary_response(status: &str, output: &serde_json::Value) -> Response {
+        serde_json::from_value(json!({
+            "created_at": 0, "id": "resp", "model": "gpt-4.1",
+            "object": "response", "status": status, "output": output,
+        }))
+        .expect("valid response json")
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_rejects_unfinished_statuses() {
+        for status in ["queued", "in_progress", "cancelled", "incomplete"] {
+            for output in [
+                json!([]),
+                json!([{
+                    "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                    "content": [{"type": "output_text", "text": "Partial answer", "annotations": []}]
+                }]),
+            ] {
+                let err = response_to_chat_completion(unary_response(status, &output)).unwrap_err();
+                assert!(matches!(err, LanguageModelError::PermanentError(message)
+                    if message.to_string().contains(status)));
+            }
+        }
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_preserves_incomplete_reason() {
+        for reason in ["max_output_tokens", "content_filter"] {
+            let response: Response = serde_json::from_value(json!({
+                "created_at": 0, "id": "resp", "model": "gpt-4.1", "object": "response",
+                "status": "incomplete", "output": [], "incomplete_details": {"reason": reason},
+            }))
+            .expect("valid incomplete response json");
+            let err = response_to_chat_completion(response).unwrap_err();
+            assert!(matches!(err, LanguageModelError::PermanentError(message)
+                if message.to_string().contains(reason)));
+        }
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_rejects_unusable_completed_output() {
+        for output in [
+            json!([]),
+            json!([{
+                "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                "content": [{"type": "output_text", "text": "", "annotations": []}]
+            }]),
+            json!([{"type": "reasoning", "id": "reason", "summary": []}]),
+        ] {
+            let err =
+                response_to_chat_completion(unary_response("completed", &output)).unwrap_err();
+            assert!(matches!(err, LanguageModelError::PermanentError(message)
+                if message.to_string().contains("no assistant text or function calls")));
+        }
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_reports_refusal_without_refusal_text() {
+        let response = unary_response(
+            "completed",
+            &json!([{
+                "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                "content": [{"type": "refusal", "refusal": "private refusal text"}]
+            }]),
+        );
+        let err = response_to_chat_completion(response).unwrap_err();
+        assert!(matches!(err, LanguageModelError::PermanentError(message)
+            if message.to_string().contains("refusal")
+                && !message.to_string().contains("private refusal text")));
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_preserves_structured_text() {
+        let response = unary_response(
+            "completed",
+            &json!([{
+                "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                "content": [{"type": "output_text", "text": "{\"answer\":42}", "annotations": []}]
+            }]),
+        );
+        let completion = response_to_chat_completion(response).unwrap();
+        assert_eq!(completion.message(), Some("{\"answer\":42}"));
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_accepts_function_calls_without_text() {
+        for mut output in [
+            json!([]),
+            json!([{
+                "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                "content": [{"type": "output_text", "text": "", "annotations": []}]
+            }]),
+        ] {
+            for id in ["first", "second"] {
+                output.as_array_mut().unwrap().push(json!({
+                    "type": "function_call", "call_id": id, "name": "get_weather",
+                    "arguments": "{}", "status": "completed"
+                }));
+            }
+            let completion =
+                response_to_chat_completion(unary_response("completed", &output)).unwrap();
+            assert_eq!(completion.message(), None);
+            let calls = completion.tool_calls().expect("function calls present");
+            assert_eq!(calls.len(), 2);
+            assert_eq!(calls[0].id(), "first");
+            assert_eq!(calls[1].id(), "second");
+        }
     }
 
     #[test]
