@@ -1,32 +1,24 @@
 name: Release
 
 permissions:
-  contents: read
+  pull-requests: write
+  contents: write
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/release.yml
-      - release-plz.toml
-  workflow_dispatch:
   push:
     branches:
       - master
 
 jobs:
   release-swiftide:
-    name: Release preparation
+    name: Crates.io
     runs-on: ubuntu-latest
-    env:
-      CARGO_BUILD_JOBS: 2
-      CARGO_PROFILE_DEV_DEBUG: 0
-      CARGO_INCREMENTAL: 0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ github.event_name == 'push' && secrets.RELEASE_PLZ_TOKEN || github.token }}
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install system dependencies
@@ -38,14 +30,12 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Match package changelogs to the shared release tag
-        id: release-tag
         shell: bash
         run: |
           set -euo pipefail
 
-          release_tag="$(git tag --merged HEAD --list 'v*' --sort=-version:refname | sed -n '1p')"
+          release_tag="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
           test -n "$release_tag"
-          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
           release_version="${release_tag#v}"
 
           cargo metadata --no-deps --format-version 1 |
@@ -68,46 +58,9 @@ jobs:
                   ;;
               esac
             done
-      - name: Prepare released source for API comparison
-        shell: bash
-        env:
-          RELEASE_TAG: ${{ steps.release-tag.outputs.tag }}
-        run: |
-          git clone --quiet --no-hardlinks --no-checkout . "$RUNNER_TEMP/release-baseline"
-          git -C "$RUNNER_TEMP/release-baseline" checkout --quiet --detach "$RELEASE_TAG"
-
-          # v0.32.1 admits newer dependencies that break its API build. Use the
-          # versions recorded in its lockfile until the next release replaces it.
-          if [[ "$RELEASE_TAG" == v0.32.1 ]]; then
-            sed -i \
-              -e 's/async-openai = { version = ">=0.29.6"/async-openai = { version = "=0.30.1"/' \
-              -e 's/qdrant-client = { version = "1.15"/qdrant-client = { version = "=1.15.0"/' \
-              -e 's/pgvector = { version = "0.4"/pgvector = { version = "=0.4.1"/' \
-              -e 's/spider = { version = "2.37"/spider = { version = "=2.37.159"/' \
-              "$RUNNER_TEMP/release-baseline/Cargo.toml"
-          fi
-      - name: Install release tools
-        uses: taiki-e/install-action@v2
-        with:
-          tool: release-plz@0.3.172,cargo-semver-checks@0.51.0
-      - name: Validate release preparation without publishing
-        if: github.event_name != 'push'
-        env:
-          GIT_TOKEN: ${{ github.token }}
-        run: release-plz update --registry-manifest-path "$RUNNER_TEMP/release-baseline/Cargo.toml"
-      - name: Configure release author
-        if: github.event_name == 'push'
-        uses: release-plz/git-config@59144859caf016f8b817a2ac9b051578729173c4
+      - name: Run release-plz
+        uses: MarcoIeni/release-plz-action@v0.5
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
-      - name: Prepare release pull request
-        if: github.event_name == 'push'
-        env:
-          GIT_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
-        run: release-plz release-pr --registry-manifest-path "$RUNNER_TEMP/release-baseline/Cargo.toml"
-      - name: Publish release
-        if: github.event_name == 'push'
-        env:
-          GIT_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: release-plz release
+          GITHUB_REPO: ${{ github.repository }}
