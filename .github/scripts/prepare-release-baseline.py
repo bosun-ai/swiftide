@@ -9,15 +9,22 @@ def repair_dependencies(directory: Path, tag: str) -> None:
     if tag != "v0.32.1":
         return
 
-    # The published requirement admits incompatible OpenAI APIs. Use the version
-    # recorded in this release's Cargo.lock without changing its Rust source.
+    # These requirements now admit incompatible APIs. Use the versions recorded
+    # in this release's Cargo.lock without changing its Rust source.
     manifest = directory / "Cargo.toml"
-    original = 'async-openai = { version = ">=0.29.6", default-features = false }'
-    replacement = 'async-openai = { version = "=0.30.1", default-features = false }'
     contents = manifest.read_text()
-    if contents.count(original) != 1:
-        raise ValueError("Unexpected async-openai requirement in v0.32.1")
-    manifest.write_text(contents.replace(original, replacement))
+    for name, requirement, released_version in [
+        ("async-openai", ">=0.29.6", "0.30.1"),
+        ("qdrant-client", "1.15", "1.15.0"),
+        ("pgvector", "0.4", "0.4.1"),
+        ("spider", "2.37", "2.37.159"),
+    ]:
+        original = f'{name} = {{ version = "{requirement}"'
+        replacement = f'{name} = {{ version = "={released_version}"'
+        if contents.count(original) != 1:
+            raise ValueError(f"Unexpected {name} requirement in v0.32.1")
+        contents = contents.replace(original, replacement)
+    manifest.write_text(contents)
 
 
 def main() -> None:
