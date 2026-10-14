@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791973806496,
+  "lastUpdate": 1791988181100,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -34859,6 +34859,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2133099,
             "range": "± 11073",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "48f6b7c393bbc435f3b1e1838d92c36e8c753b9a",
+          "message": "fix(deps): update rustls to address security advisories (#1192)\n\nCargo-deny fails on four security advisories affecting Rustls 0.23.45.\nUpdate the lockfile to 0.23.46, which fixes RUSTSEC-2026-0346,\nRUSTSEC-2026-0347, RUSTSEC-2026-0348, and RUSTSEC-2026-0349.\n\nThis changes only the Rustls version and checksum. Cargo-deny passes all\nchecks with all features and the lockfile, and `cargo check -p\nswiftide-core --all-features --locked` passes.\n\nThe fix belongs on master so release-plz can include it when\nregenerating the release PR #976.",
+          "timestamp": "2026-10-14T16:20:05+02:00",
+          "tree_id": "17436afe6324e6669613e3b73879b67365b9a15d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/48f6b7c393bbc435f3b1e1838d92c36e8c753b9a"
+        },
+        "date": 1791988177776,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 711943,
+            "range": "± 14868",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 208040,
+            "range": "± 2105",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1692,
+            "range": "± 1580",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6007,
+            "range": "± 235",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22514,
+            "range": "± 412",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4229064,
+            "range": "± 21514",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2125371,
+            "range": "± 14569",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16896574,
+            "range": "± 88185",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2129764,
+            "range": "± 8530",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67578510,
+            "range": "± 263864",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2152612,
+            "range": "± 13218",
             "unit": "ns/iter"
           }
         ]
