@@ -660,23 +660,22 @@ pub(super) fn response_to_chat_completion(response: Response) -> LmResult<ChatCo
         }
     }
 
-    if output.iter().any(|item| {
+    let has_refusal = output.iter().any(|item| {
         matches!(item, OutputItem::Message(message) if message.content.iter().any(|content| {
             matches!(content, OutputMessageContent::Refusal(_))
         }))
-    }) {
-        return Err(LanguageModelError::permanent(
-            "OpenAI Responses API returned a provider refusal",
-        ));
-    }
+    });
 
     let mut completion = ChatCompletionResponse::default();
     merge_output_items(output, &mut completion, "")?;
 
     if completion.message.is_none() && completion.tool_calls.is_none() {
-        return Err(LanguageModelError::permanent(
-            "OpenAI Responses API completed with no assistant text or function calls",
-        ));
+        let error = if has_refusal {
+            "OpenAI Responses API returned a provider refusal"
+        } else {
+            "OpenAI Responses API completed with no assistant text or function calls"
+        };
+        return Err(LanguageModelError::permanent(error));
     }
 
     if let Some(usage) = usage.as_ref() {
@@ -2026,6 +2025,46 @@ mod tests {
         assert!(matches!(err, LanguageModelError::PermanentError(message)
             if message.to_string().contains("refusal")
                 && !message.to_string().contains("private refusal text")));
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_preserves_text_alongside_refusal() {
+        let response = unary_response(
+            "completed",
+            &json!([{
+                "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                "content": [
+                    {"type": "output_text", "text": "Usable answer", "annotations": []},
+                    {"type": "refusal", "refusal": "private refusal text"}
+                ]
+            }]),
+        );
+        let completion = response_to_chat_completion(response).unwrap();
+        assert_eq!(completion.message(), Some("Usable answer"));
+    }
+
+    #[test]
+    fn test_response_to_chat_completion_preserves_function_call_alongside_refusal() {
+        let response = unary_response(
+            "completed",
+            &json!([
+                {
+                    "type": "message", "id": "msg", "role": "assistant", "status": "completed",
+                    "content": [{"type": "refusal", "refusal": "private refusal text"}]
+                },
+                {
+                    "type": "function_call", "call_id": "call", "name": "get_weather",
+                    "arguments": "{}", "status": "completed"
+                }
+            ]),
+        );
+        let completion = response_to_chat_completion(response).unwrap();
+        assert_eq!(completion.message(), None);
+        let calls = completion.tool_calls().expect("function call present");
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].id(), "call");
+        assert_eq!(calls[0].name(), "get_weather");
+        assert_eq!(calls[0].args(), Some("{}"));
     }
 
     #[test]
