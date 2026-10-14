@@ -31,7 +31,7 @@ reqwest = { workspace = true, features = [
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
-swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-core = { path = "../swiftide-core", version = "0.33" }
 
 [dev-dependencies]
 wiremock.workspace = true
