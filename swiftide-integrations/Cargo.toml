@@ -99,7 +99,7 @@ aws-sdk-bedrockruntime = { workspace = true, features = [
   "rt-tokio",
 ], optional = true }
 aws-smithy-types = { workspace = true, optional = true }
-aws-smithy-json = { version = "0.62.4", optional = true }
+aws-smithy-json = { version = "0.63", optional = true }
 secrecy = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 reqwest_0_12 = { package = "reqwest", version = "0.12", default-features = false, features = [
@@ -111,7 +111,7 @@ deadpool = { workspace = true, features = [
 ], optional = true }
 fluvio = { workspace = true, optional = true }
 rdkafka = { workspace = true, optional = true }
-arrow-array = { version = "58.4", default-features = false, optional = true }
+arrow-array = { workspace = true, optional = true }
 parquet-arrow-array = { package = "arrow-array", version = "59.1", default-features = false, optional = true }
 lancedb = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true, features = [
