@@ -25,8 +25,8 @@ version = 2
 ignore = [
   { id = "RUSTSEC-2024-0384", reason = "Instant is unmaintained" },
   { id = "RUSTSEC-2024-0436", reason = "Paste is transitive and has no safe upgrade" },
+  { id = "RUSTSEC-2024-0449", reason = "Unsafe-libyaml is transitive through Fluvio and LanceDB's Lindera tokenizer; no patched version is available" },
   { id = "RUSTSEC-2025-0012", reason = "Backoff is transitive through async-anthropic and has no safe upgrade" },
-  { id = "RUSTSEC-2025-0134", reason = "Rustls-pemfile is transitive through qdrant-client and has no safe upgrade" },
 ]
 
 [bans]
