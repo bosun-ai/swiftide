@@ -1,24 +1,33 @@
 name: Release
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .github/scripts/*release*baseline*.py
+      - release-plz.toml
+  workflow_dispatch:
   push:
     branches:
       - master
 
 jobs:
   release-swiftide:
-    name: Crates.io
+    name: Release preparation
     runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_INCREMENTAL: 0
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          token: ${{ github.event_name == 'push' && secrets.RELEASE_PLZ_TOKEN || github.token }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install system dependencies
@@ -30,12 +39,14 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Match package changelogs to the shared release tag
+        id: release-tag
         shell: bash
         run: |
           set -euo pipefail
 
-          release_tag="$(git tag --list 'v*' --sort=-version:refname | head -n 1)"
+          release_tag="$(git tag --merged HEAD --list 'v*' --sort=-version:refname | sed -n '1p')"
           test -n "$release_tag"
+          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
           release_version="${release_tag#v}"
 
           cargo metadata --no-deps --format-version 1 |
@@ -58,9 +69,34 @@ jobs:
                   ;;
               esac
             done
-      - name: Run release-plz
-        uses: MarcoIeni/release-plz-action@v0.5
+      - name: Test release baseline preparation
+        run: python3 -B -m unittest discover -s .github/scripts -p 'test_release_baseline.py'
+      - name: Prepare released source for API comparison
+        env:
+          RELEASE_TAG: ${{ steps.release-tag.outputs.tag }}
+        run: python3 .github/scripts/prepare-release-baseline.py "$RELEASE_TAG" "$RUNNER_TEMP/release-baseline"
+      - name: Install release tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: release-plz@0.3.172,cargo-semver-checks@0.51.0
+      - name: Validate release preparation without publishing
+        if: github.event_name != 'push'
+        env:
+          GIT_TOKEN: ${{ github.token }}
+        run: release-plz update --registry-manifest-path "$RUNNER_TEMP/release-baseline/Cargo.toml"
+      - name: Configure release author
+        if: github.event_name == 'push'
+        uses: release-plz/git-config@59144859caf016f8b817a2ac9b051578729173c4
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Prepare release pull request
+        if: github.event_name == 'push'
+        env:
+          GIT_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+        run: release-plz release-pr --registry-manifest-path "$RUNNER_TEMP/release-baseline/Cargo.toml"
+      - name: Publish release
+        if: github.event_name == 'push'
+        env:
+          GIT_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          GITHUB_REPO: ${{ github.repository }}
+        run: release-plz release
