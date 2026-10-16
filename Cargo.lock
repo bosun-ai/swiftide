@@ -10293,6 +10293,7 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-solidity",
  "tree-sitter-typescript",
+ "ts-parser-perl",
  "uuid",
  "wiremock",
 ]
@@ -11505,6 +11506,16 @@ dependencies = [
  "target-triple",
  "termcolor",
  "toml 1.1.4+spec-1.1.0",
+]
+
+[[package]]
+name = "ts-parser-perl"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db3cd8574afc19af4d3db44fe0cf94a5e8fc3f4056c0326baf5ba01a29666129"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
 ]
 
 [[package]]

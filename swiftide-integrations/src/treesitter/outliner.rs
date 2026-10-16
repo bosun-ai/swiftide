@@ -128,6 +128,8 @@ impl CodeOutliner {
             SupportedLanguages::Elixir => unimplemented!(),
             SupportedLanguages::HTML => unimplemented!(),
             SupportedLanguages::PHP => unimplemented!(),
+            #[cfg(feature = "tree-sitter-perl")]
+            SupportedLanguages::Perl => unimplemented!(),
         }
     }
 

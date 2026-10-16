@@ -124,6 +124,7 @@ tree-sitter-elixir = { version = "0.3.4", default-features = false }
 tree-sitter-html = { version = "0.23", default-features = false }
 tree-sitter-php = { version = "0.24", default-features = false }
 tree-sitter-c-sharp = { version = "0.23", default-features = false }
+ts-parser-perl = { version = "2.0", default-features = false }
 async-anthropic = { version = "0.6.0", default-features = false }
 duckdb = { version = "1.10505", default-features = false }
 libduckdb-sys = { version = "1.10505", default-features = false }

@@ -83,6 +83,9 @@ pub enum SupportedLanguages {
     HTML,
     #[serde(alias = "php", alias = "PHP", alias = "Php")]
     PHP,
+    #[cfg(feature = "tree-sitter-perl")]
+    #[serde(alias = "perl")]
+    Perl,
 }
 
 impl Hash for SupportedLanguages {
@@ -136,6 +139,9 @@ static HTML_EXTENSIONS: &[&str] = &["html", "htm", "xhtml"];
 
 static PHP_EXTENSIONS: &[&str] = &["php"];
 
+#[cfg(feature = "tree-sitter-perl")]
+static PERL_EXTENSIONS: &[&str] = &["pm", "pl", "t"];
+
 impl SupportedLanguages {
     /// Returns the file extensions associated with the supported language.
     ///
@@ -157,6 +163,8 @@ impl SupportedLanguages {
             SupportedLanguages::Elixir => ELIXIR_EXTENSIONS,
             SupportedLanguages::HTML => HTML_EXTENSIONS,
             SupportedLanguages::PHP => PHP_EXTENSIONS,
+            #[cfg(feature = "tree-sitter-perl")]
+            SupportedLanguages::Perl => PERL_EXTENSIONS,
         }
     }
 }
@@ -189,6 +197,8 @@ impl From<SupportedLanguages> for tree_sitter::Language {
             SupportedLanguages::Elixir => tree_sitter_elixir::LANGUAGE,
             SupportedLanguages::HTML => tree_sitter_html::LANGUAGE,
             SupportedLanguages::PHP => tree_sitter_php::LANGUAGE_PHP,
+            #[cfg(feature = "tree-sitter-perl")]
+            SupportedLanguages::Perl => ts_parser_perl::LANGUAGE,
         }
         .into()
     }
@@ -253,6 +263,28 @@ mod test {
             SupportedLanguages::from_str("elixir"),
             Ok(SupportedLanguages::Elixir)
         );
+    }
+
+    #[cfg(feature = "tree-sitter-perl")]
+    #[test]
+    fn test_perl_is_parsed_by_name_and_extension() {
+        assert_eq!(
+            SupportedLanguages::from_str("perl"),
+            Ok(SupportedLanguages::Perl)
+        );
+        assert_eq!(
+            SupportedLanguages::Perl.file_extensions(),
+            &["pm", "pl", "t"]
+        );
+
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&SupportedLanguages::Perl.into())
+            .expect("Perl grammar loads");
+        let tree = parser
+            .parse("package Foo;\nsub bar { return 1 }\n1;\n", None)
+            .expect("Perl source parses");
+        assert!(!tree.root_node().has_error());
     }
 
     #[test]
