@@ -15,6 +15,7 @@ use swiftide_core::{
 use swiftide_indexing::{loaders, transformers};
 use swiftide_integrations::fastembed::FastEmbed;
 
+#[ignore = "downloads HuggingFace embedding models and can hit external rate limits"]
 #[test_log::test(tokio::test)]
 async fn test_name_on_dyn() {
     let fastembed: Box<dyn EmbeddingModel> = Box::new(FastEmbed::try_default().unwrap());

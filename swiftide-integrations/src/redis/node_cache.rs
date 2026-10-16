@@ -62,9 +62,20 @@ impl<T: Chunk> NodeCache for Redis<T> {
     /// Logs an error if the node cannot be set in the cache.
     #[tracing::instrument(skip_all, level = "trace")]
     async fn set(&self, node: &Node<T>) {
+        self.set_by_id(node.parent_id().unwrap_or_else(|| node.id()))
+            .await;
+    }
+
+    /// Marks the node identified by `id` as cached.
+    ///
+    /// # Errors
+    ///
+    /// Logs an error if the node cannot be set in the cache.
+    #[tracing::instrument(skip_all, level = "trace")]
+    async fn set_by_id(&self, id: uuid::Uuid) {
         if let Some(mut cm) = self.lazy_connect().await {
             let result: Result<(), redis::RedisError> = redis::cmd("SET")
-                .arg(self.cache_key_for_node(node))
+                .arg(self.cache_key_for_id(id))
                 .arg(1)
                 .query_async(&mut cm)
                 .await;

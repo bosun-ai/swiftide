@@ -1,7 +1,7 @@
 #![allow(clippy::used_underscore_binding)]
 #![allow(clippy::needless_continue)]
 
-use args::ToolArgs;
+use args::{Description, ToolArgs};
 use darling::{Error, FromDeriveInput};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -105,6 +105,9 @@ struct ToolDerive {
 
 impl ToolDerive {
     pub fn update_defaults(mut self) -> Result<Self, Error> {
+        if matches!(self.tool.tool_description(), Description::Literal(value) if value.is_empty()) {
+            return Err(Error::missing_field("description"));
+        }
         self.tool.with_name_from_ident(&self.ident);
         self.tool.infer_param_types()?;
         Ok(self)

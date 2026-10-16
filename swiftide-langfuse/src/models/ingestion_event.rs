@@ -33,6 +33,22 @@ impl Default for IngestionEvent {
 }
 
 impl IngestionEvent {
+    /// The client generated id Langfuse reports back in its ingestion response.
+    pub fn id(&self) -> &str {
+        match self {
+            IngestionEvent::TraceCreate(event) => &event.id,
+            IngestionEvent::ScoreCreate(event) => &event.id,
+            IngestionEvent::SpanCreate(event) => &event.id,
+            IngestionEvent::SpanUpdate(event) => &event.id,
+            IngestionEvent::GenerationCreate(event) => &event.id,
+            IngestionEvent::GenerationUpdate(event) => &event.id,
+            IngestionEvent::EventCreate(event) => &event.id,
+            IngestionEvent::SdkLog(event) => &event.id,
+            IngestionEvent::ObservationCreate(event) => &event.id,
+            IngestionEvent::ObservationUpdate(event) => &event.id,
+        }
+    }
+
     pub fn new_trace_create(body: models::TraceBody) -> Self {
         IngestionEvent::TraceCreate(Box::new(models::TraceCreate::new(
             body,

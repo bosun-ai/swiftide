@@ -422,6 +422,11 @@ pub trait NodeCache: Send + Sync + Debug + DynClone {
     async fn get(&self, node: &Node<Self::Input>) -> bool;
     async fn set(&self, node: &Node<Self::Input>);
 
+    /// Marks the node identified by `id` as cached. Used by the pipeline to cache nodes only
+    /// after they made it through the whole pipeline, so a node that failed midway is not
+    /// skipped on the next run.
+    async fn set_by_id(&self, id: uuid::Uuid);
+
     /// Optionally provide a method to clear the cache
     async fn clear(&self) -> Result<()> {
         unimplemented!("Clear not implemented")
@@ -445,6 +450,7 @@ mock! {
         type Input = String;
         async fn get(&self, node: &Node<String>) -> bool;
         async fn set(&self, node: &Node<String>);
+        async fn set_by_id(&self, id: uuid::Uuid);
         async fn clear(&self) -> Result<()>;
         fn name(&self) -> &'static str;
 
@@ -465,6 +471,9 @@ impl<T: Chunk> NodeCache for Box<dyn NodeCache<Input = T>> {
     async fn set(&self, node: &Node<T>) {
         self.as_ref().set(node).await;
     }
+    async fn set_by_id(&self, id: uuid::Uuid) {
+        self.as_ref().set_by_id(id).await;
+    }
     async fn clear(&self) -> Result<()> {
         self.as_ref().clear().await
     }
@@ -482,6 +491,9 @@ impl<T: Chunk> NodeCache for Arc<dyn NodeCache<Input = T>> {
     async fn set(&self, node: &Node<T>) {
         self.as_ref().set(node).await;
     }
+    async fn set_by_id(&self, id: uuid::Uuid) {
+        self.as_ref().set_by_id(id).await;
+    }
     async fn clear(&self) -> Result<()> {
         self.as_ref().clear().await
     }
@@ -498,6 +510,9 @@ impl<T: Chunk> NodeCache for &dyn NodeCache<Input = T> {
     }
     async fn set(&self, node: &Node<T>) {
         (*self).set(node).await;
+    }
+    async fn set_by_id(&self, id: uuid::Uuid) {
+        (*self).set_by_id(id).await;
     }
     async fn clear(&self) -> Result<()> {
         (*self).clear().await

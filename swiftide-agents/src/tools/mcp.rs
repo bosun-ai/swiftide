@@ -287,10 +287,8 @@ impl Tool for McpTool {
         let content = if content.is_empty() {
             structured_content.map(|structured| structured.to_string())
         } else {
-            let mut iter = content.into_iter().filter_map(|c| match c.raw {
-                rmcp::model::RawContent::Text(rmcp::model::RawTextContent { text, .. }) => {
-                    Some(text)
-                }
+            let mut iter = content.into_iter().filter_map(|content| match content {
+                rmcp::model::ContentBlock::Text(text) => Some(text.text),
                 _ => None,
             });
             iter.next().map(|first| {
@@ -483,7 +481,7 @@ mod tests {
         use rmcp::{
             ErrorData as McpError, ServerHandler,
             handler::server::{tool::ToolRouter, wrapper::Parameters},
-            model::{CallToolResult, Content, ServerCapabilities, ServerInfo},
+            model::{CallToolResult, ContentBlock, ServerCapabilities, ServerInfo},
             schemars, tool, tool_handler,
         };
 
@@ -518,7 +516,7 @@ mod tests {
                 &self,
                 Parameters(Request { a, b }): Parameters<Request>,
             ) -> Result<CallToolResult, McpError> {
-                Ok(CallToolResult::success(vec![Content::text(
+                Ok(CallToolResult::success(vec![ContentBlock::text(
                     (a + b).to_string(),
                 )]))
             }
@@ -529,7 +527,7 @@ mod tests {
                 &self,
                 Parameters(Request { a, b }): Parameters<Request>,
             ) -> Result<CallToolResult, McpError> {
-                Ok(CallToolResult::success(vec![Content::text(
+                Ok(CallToolResult::success(vec![ContentBlock::text(
                     (a - b).to_string(),
                 )]))
             }
@@ -540,7 +538,7 @@ mod tests {
                 &self,
                 Parameters(OptRequest { text }): Parameters<OptRequest>,
             ) -> Result<CallToolResult, McpError> {
-                Ok(CallToolResult::success(vec![Content::text(
+                Ok(CallToolResult::success(vec![ContentBlock::text(
                     text.unwrap_or_default(),
                 )]))
             }

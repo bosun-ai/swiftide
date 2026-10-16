@@ -63,12 +63,17 @@ impl NodeCache for Redb {
     }
 
     async fn set(&self, node: &TextNode) {
+        self.set_by_id(node.parent_id().unwrap_or_else(|| node.id()))
+            .await;
+    }
+
+    async fn set_by_id(&self, id: uuid::Uuid) {
         let write_txn = self.database.begin_write().unwrap();
 
         {
             let mut table = write_txn.open_table(self.table_definition()).unwrap();
 
-            table.insert(self.node_key(node), true).unwrap();
+            table.insert(self.node_key_for_id(id), true).unwrap();
         }
         write_txn.commit().unwrap();
     }

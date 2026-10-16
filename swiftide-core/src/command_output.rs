@@ -20,6 +20,12 @@ impl CommandOutputChunk {
             Self::Stdout(bytes) | Self::Stderr(bytes) => bytes,
         }
     }
+
+    fn into_bytes(self) -> Bytes {
+        match self {
+            Self::Stdout(bytes) | Self::Stderr(bytes) => bytes,
+        }
+    }
 }
 
 /// Output collected from a finished command.
@@ -99,13 +105,21 @@ impl CommandOutput {
     }
 
     /// Returns all output bytes in observed chunk order.
+    ///
+    /// A single chunk reuses its allocation when it is uniquely owned; multiple chunks are
+    /// concatenated with one copy.
     pub fn into_bytes(self) -> Vec<u8> {
         let output_len = self.len();
-        let mut bytes = Vec::with_capacity(output_len);
-        for chunk in self.chunks {
-            bytes.extend_from_slice(chunk.as_bytes());
+        match <[CommandOutputChunk; 1]>::try_from(self.chunks) {
+            Ok([chunk]) => chunk.into_bytes().into(),
+            Err(chunks) => {
+                let mut bytes = Vec::with_capacity(output_len);
+                for chunk in chunks {
+                    bytes.extend_from_slice(chunk.as_bytes());
+                }
+                bytes
+            }
         }
-        bytes
     }
 
     /// Converts all output to owned text in observed chunk order.
@@ -175,6 +189,20 @@ mod tests {
 
         assert_eq!(output.as_bytes(), b"onetwothree".as_slice());
         assert_eq!(output.into_bytes(), b"onetwothree");
+    }
+
+    #[test]
+    fn reuses_single_chunk_allocation_when_converted_into_owned_output() {
+        let bytes = Bytes::from(b"hello".to_vec());
+        let data = bytes.as_ptr();
+
+        let owned_bytes = output([stdout(bytes)]).into_bytes();
+        assert_eq!(owned_bytes, b"hello");
+        assert_eq!(owned_bytes.as_ptr(), data);
+
+        let text = output([stdout(owned_bytes)]).into_string_lossy();
+        assert_eq!(text, "hello");
+        assert_eq!(text.as_ptr(), data);
     }
 
     #[test]

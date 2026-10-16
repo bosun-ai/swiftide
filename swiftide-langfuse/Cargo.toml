@@ -12,7 +12,6 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-# TODO: Go over these
 serde.workspace = true
 serde_with = { version = "^3.8", default-features = false, features = [
   "base64",
@@ -20,22 +19,19 @@ serde_with = { version = "^3.8", default-features = false, features = [
   "macros",
 ] }
 serde_json.workspace = true
-serde_repr = "^0.1"
 chrono = { workspace = true, features = ["now"] }
 tokio.workspace = true
 uuid.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-futures = "^0.3"
-url = "^2.5"
-reqwest = { version = "^0.13", default-features = false, features = [
+reqwest = { workspace = true, features = [
   "json",
   "multipart",
 ] }
 anyhow.workspace = true
 async-trait.workspace = true
 dyn-clone.workspace = true
-swiftide-core = { path = "../swiftide-core", version = "0.32" }
+swiftide-core = { path = "../swiftide-core", version = "0.33" }
 
 [dev-dependencies]
 wiremock.workspace = true

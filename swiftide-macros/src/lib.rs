@@ -26,6 +26,22 @@ pub fn indexing_transformer(args: TokenStream, input: TokenStream) -> TokenStrea
 #[proc_macro_attribute]
 /// Creates a `Tool` from an async function.
 ///
+/// Tool and parameter descriptions can be provided with `description` and
+/// `param` attributes, or documented on the function:
+///
+/// ```ignore
+/// /// Searches indexed documents.
+/// ///
+/// /// # Arguments
+/// /// - `query`: Text to search for.
+/// #[tool]
+/// async fn search(context: &dyn AgentContext, query: &str) -> Result<ToolOutput, ToolError> {
+///     // ...
+/// }
+/// ```
+///
+/// Explicit attribute descriptions take precedence over doc comments.
+///
 /// # Example
 /// ```ignore
 /// #[tool(description = "Searches code", param(name = "code_query", description = "The code query"))]

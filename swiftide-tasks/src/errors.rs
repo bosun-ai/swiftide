@@ -118,7 +118,7 @@ impl std::fmt::Display for NodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Node error in node {}: {:?}",
+            "Node error in node {}: {}",
             self.node_id, self.node_error
         )
     }
@@ -136,5 +136,28 @@ impl NodeError {
             transition: transition.map(Arc::new),
             node_id,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::NodeError;
+
+    #[derive(Debug)]
+    struct ByteBackedError(Vec<u8>);
+
+    impl std::fmt::Display for ByteBackedError {
+        fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str(&String::from_utf8_lossy(&self.0))
+        }
+    }
+
+    impl std::error::Error for ByteBackedError {}
+
+    #[test]
+    fn node_error_uses_inner_error_display() {
+        let error = NodeError::new(ByteBackedError(b"readable failure".to_vec()), 2, None);
+
+        assert_eq!(error.to_string(), "Node error in node 2: readable failure");
     }
 }

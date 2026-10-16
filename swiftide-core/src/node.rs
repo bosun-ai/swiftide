@@ -71,6 +71,11 @@ pub struct Node<T: Chunk> {
     /// from in bytes
     #[builder(default)]
     pub offset: usize,
+    /// Id of the first node this node was derived from. Set when a node is created via
+    /// [`Node::build_from_other`] (chunking, conversions) so derived nodes keep pointing at the
+    /// node that entered the pipeline.
+    #[builder(default)]
+    pub parent_id: Option<uuid::Uuid>,
 }
 
 pub type TextNode = Node<String>;
@@ -136,6 +141,8 @@ impl<T: Chunk> Debug for Node<T> {
 impl<T: Chunk> Node<T> {
     /// Builds a new instance of `Node`, returning a `NodeBuilder`. Copies
     /// over the fields from the provided `Node`.
+    ///
+    /// The new node points at the node that entered the pipeline via [`Node::parent_id`].
     pub fn build_from_other(node: &Node<T>) -> NodeBuilder<T> {
         NodeBuilder::default()
             .path(node.path.clone())
@@ -146,6 +153,7 @@ impl<T: Chunk> Node<T> {
             .embed_mode(node.embed_mode)
             .original_size(node.original_size)
             .offset(node.offset)
+            .parent_id(node.parent_id.unwrap_or_else(|| node.id()))
             .to_owned()
     }
 
@@ -200,9 +208,34 @@ impl<T: Chunk> Node<T> {
 
         uuid::Uuid::new_v3(&uuid::Uuid::NAMESPACE_OID, &bytes)
     }
+
+    /// Returns the id of the first node this node was derived from, if any.
+    pub fn parent_id(&self) -> Option<uuid::Uuid> {
+        self.parent_id
+    }
 }
 
 impl Node<String> {
+    /// Derives nodes from chunks while retaining the first ancestor as their parent.
+    ///
+    /// Resolves the parent before removing the input text, then reuses the remaining
+    /// fields for every output without cloning the full input text.
+    pub fn into_chunks(
+        self,
+        chunks: impl IntoIterator<Item = String>,
+    ) -> impl Iterator<Item = Self> {
+        let parent_id = self.parent_id.unwrap_or_else(|| self.id());
+        let mut template = self;
+        template.chunk.clear();
+        template.parent_id = Some(parent_id);
+
+        chunks.into_iter().map(move |chunk| {
+            let mut node = template.clone();
+            node.chunk = chunk;
+            node
+        })
+    }
+
     /// Creates embeddable data depending on chosen `EmbedMode`.
     ///
     /// # Returns
@@ -356,7 +389,12 @@ mod tests {
         let builder = Node::build_from_other(&original_node);
         let new_node = builder.build().unwrap();
 
-        assert_eq!(original_node, new_node);
+        assert_eq!(new_node.parent_id(), Some(original_node.id()));
+        assert_eq!(new_node.chunk, original_node.chunk);
+        assert_eq!(new_node.path, original_node.path);
+        assert_eq!(new_node.metadata, original_node.metadata);
+        assert_eq!(new_node.vectors, original_node.vectors);
+        assert_eq!(new_node.sparse_vectors, original_node.sparse_vectors);
     }
 
     #[test]
@@ -382,6 +420,84 @@ mod tests {
         let builder = Node::build_from_other(&original_node);
         let new_node = builder.build().unwrap();
 
-        assert_eq!(original_node, new_node);
+        assert_eq!(new_node.parent_id(), Some(original_node.id()));
+        assert_eq!(new_node.chunk, original_node.chunk);
+        assert_eq!(new_node.vectors, original_node.vectors);
+        assert_eq!(new_node.sparse_vectors, original_node.sparse_vectors);
+    }
+
+    #[test]
+    fn into_chunks_preserves_fields_and_first_ancestor() {
+        let source = TextNode::builder()
+            .path("fixtures/日本語.txt")
+            .chunk("αβγ parent".to_string())
+            .metadata(Metadata::from([("language", "日本語")]))
+            .vectors(HashMap::from([(EmbeddedField::Chunk, vec![1.0, 2.0])]))
+            .sparse_vectors(HashMap::from([(
+                EmbeddedField::Chunk,
+                SparseEmbedding {
+                    indices: vec![2],
+                    values: vec![0.5],
+                },
+            )]))
+            .embed_mode(EmbedMode::Both)
+            .original_size(100usize)
+            .offset(7usize)
+            .build()
+            .unwrap();
+        let parent_id = source.id();
+        let chunks = vec!["αβγ".to_string(), "日本語".to_string()];
+        let outputs: Vec<_> = source.clone().into_chunks(chunks.clone()).collect();
+        assert_eq!(outputs.len(), 2);
+        for (output, chunk) in outputs.iter().zip(chunks) {
+            assert_eq!(output.chunk, chunk);
+            assert_eq!(output.path, source.path);
+            assert_eq!(output.metadata, source.metadata);
+            assert_eq!(output.vectors, source.vectors);
+            assert_eq!(output.sparse_vectors, source.sparse_vectors);
+            assert_eq!(output.embed_mode, source.embed_mode);
+            assert_eq!(output.original_size, source.original_size);
+            assert_eq!(output.offset, source.offset);
+            assert_eq!(output.parent_id, Some(parent_id));
+        }
+
+        let descendant: Vec<_> = outputs[0]
+            .clone()
+            .into_chunks(["child".to_string()])
+            .collect();
+        assert_eq!(descendant[0].parent_id, Some(parent_id));
+
+        let no_outputs: Vec<_> = source.into_chunks(Vec::<String>::new()).collect();
+        assert!(no_outputs.is_empty());
+    }
+
+    #[test]
+    fn into_chunks_preserves_explicit_parent_and_live_id() {
+        let mut source = Node::from("original");
+        let original_id = source.id();
+        source.path = "changed.txt".into();
+        source.chunk = "changed".into();
+        assert_ne!(source.id(), original_id);
+
+        let explicit_parent = uuid::Uuid::new_v4();
+        source.parent_id = Some(explicit_parent);
+        let children: Vec<_> = source.into_chunks(["one".into(), "two".into()]).collect();
+        assert_eq!(children.len(), 2);
+        assert!(
+            children
+                .iter()
+                .all(|child| child.parent_id == Some(explicit_parent))
+        );
+    }
+
+    #[test]
+    fn test_build_from_other_keeps_first_ancestor_as_parent() {
+        let original_node = Node::from("test_chunk");
+        let child_node = Node::build_from_other(&original_node).build().unwrap();
+        let grandchild_node = Node::build_from_other(&child_node).build().unwrap();
+
+        assert_eq!(original_node.parent_id(), None);
+        assert_eq!(child_node.parent_id(), Some(original_node.id()));
+        assert_eq!(grandchild_node.parent_id(), Some(original_node.id()));
     }
 }

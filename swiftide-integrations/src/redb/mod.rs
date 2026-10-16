@@ -74,7 +74,13 @@ impl Redb {
         RedbBuilder::default()
     }
     pub fn node_key(&self, node: &swiftide_core::indexing::TextNode) -> String {
-        format!("{}.{}", self.cache_key_prefix, node.id())
+        let cache_id = node.parent_id().unwrap_or_else(|| node.id());
+        self.node_key_for_id(cache_id)
+    }
+
+    /// Formats a cache key for a given node id
+    pub fn node_key_for_id(&self, id: uuid::Uuid) -> String {
+        format!("{}.{}", self.cache_key_prefix, id)
     }
 
     pub fn table_definition(&self) -> redb::TableDefinition<'_, String, bool> {
