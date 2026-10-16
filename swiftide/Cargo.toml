@@ -78,6 +78,9 @@ tree-sitter = [
   "swiftide-indexing/tree-sitter",
 ]
 
+## Adds Perl to the tree-sitter languages
+tree-sitter-perl = ["tree-sitter", "swiftide-integrations/tree-sitter-perl"]
+
 ## OpenAI
 openai = ["swiftide-integrations/openai"]
 

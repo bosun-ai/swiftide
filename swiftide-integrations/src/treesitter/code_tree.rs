@@ -126,6 +126,8 @@ fn ts_queries_for_language(language: SupportedLanguages) -> (&'static str, &'sta
         CSharp => (csharp::DEFS, csharp::REFS),
         Solidity => (solidity::DEFS, solidity::REFS),
         C | Cpp | Elixir | PHP | HTML => unimplemented!(),
+        #[cfg(feature = "tree-sitter-perl")]
+        SupportedLanguages::Perl => unimplemented!(),
     }
 }
 
