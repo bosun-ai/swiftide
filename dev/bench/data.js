@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791993152689,
+  "lastUpdate": 1792165299464,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -35075,6 +35075,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2122849,
             "range": "± 5012",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b657f669540f2b6aec324db905b57d8debab31b2",
+          "message": "chore(deps): bump mockall from 0.14.0 to 0.15.0 (#1142)\n\nBumps [mockall](https://github.com/asomers/mockall) from 0.14.0 to\n0.15.0.\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/asomers/mockall/blob/master/CHANGELOG.md\">mockall's\nchangelog</a>.</em></p>\n<blockquote>\n<h2>[ 0.15.0 ] - 2026-06-28</h2>\n<h3>Added</h3>\n<ul>\n<li>Compatibility with the <code>#[auto_impl]</code> macro.\n(<a\nhref=\"https://redirect.github.com/asomers/mockall/pull/686\">#686</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/fc2c853cf7491c49147170d9f442eeb8d7589c2e\"><code>fc2c853</code></a>\nchore: Release</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/551faddeb11e8eb4daeca0fdbff796450895041e\"><code>551fadd</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/asomers/mockall/issues/688\">#688</a>\nfrom asomers/audit-job-lockfile</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/21529e363179dc49ffd7cf3547edfa17844e6e47\"><code>21529e3</code></a>\nFix the audit CI job</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/2270cdb77897aeb55326ba730f1c1fc2131cc8e1\"><code>2270cdb</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/asomers/mockall/issues/686\">#686</a>\nfrom Kranzes/automock-auto_impl-compat</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/d3b041dae87aea957f70424c640c62720039b700\"><code>d3b041d</code></a>\nAdd compatibility with the <code>#[auto_impl]</code> macro</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/055886ee2fdc6656e1c216e85b45c49a44a001ea\"><code>055886e</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/asomers/mockall/issues/687\">#687</a>\nfrom asomers/clippy-june-2026</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/ed4bf074003e23413fe8363534290cbe56183650\"><code>ed4bf07</code></a>\nClippy cleanup</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/f7a4d6f750a1f7ca4c1f24a357be8b8ede12ecad\"><code>f7a4d6f</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/asomers/mockall/issues/685\">#685</a>\nfrom asomers/clippy=may-2026</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/ba151801be1657b68d5cfc0c99abafef5fa27111\"><code>ba15180</code></a>\nClippy cleanup: useless_borrows_in_formatting</li>\n<li><a\nhref=\"https://github.com/asomers/mockall/commit/de22d570dc00c3ddce603bf9105eb5f82e7c5a90\"><code>de22d57</code></a>\nMerge pull request <a\nhref=\"https://redirect.github.com/asomers/mockall/issues/684\">#684</a>\nfrom asomers/github-workflows</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/asomers/mockall/compare/v0.14.0...v0.15.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\n\n> **Note**\n> Automatic rebases have been disabled on this pull request as it has\nbeen open for over 30 days.\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Timon Vonk <timonv@gmail.com>",
+          "timestamp": "2026-10-16T15:29:22Z",
+          "tree_id": "a5fce475d66400023ac4e3154b5b0a4a7a034d08",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b657f669540f2b6aec324db905b57d8debab31b2"
+        },
+        "date": 1792165296978,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1074249,
+            "range": "± 39414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 276429,
+            "range": "± 3206",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1961,
+            "range": "± 1769",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7172,
+            "range": "± 281",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 27068,
+            "range": "± 265",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4188306,
+            "range": "± 35593",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2099869,
+            "range": "± 9049",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16732906,
+            "range": "± 82153",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2101659,
+            "range": "± 10391",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66935234,
+            "range": "± 278841",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2128990,
+            "range": "± 5867",
             "unit": "ns/iter"
           }
         ]
