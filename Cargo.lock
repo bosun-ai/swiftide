@@ -1426,7 +1426,7 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "benchmarks"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "criterion",
@@ -10049,7 +10049,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "swiftide"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "arrow-array 58.4.0",
@@ -10081,7 +10081,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-agents"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10114,7 +10114,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-core"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -10148,7 +10148,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-examples"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -10172,7 +10172,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-indexing"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10203,7 +10203,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-integrations"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "arrow-array 58.4.0",
@@ -10292,7 +10292,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-langfuse"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10315,7 +10315,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-macros"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10339,7 +10339,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-query"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10358,7 +10358,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-tasks"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "async-trait",
  "dyn-clone",
@@ -10373,7 +10373,7 @@ dependencies = [
 
 [[package]]
 name = "swiftide-test-utils"
-version = "0.33.0"
+version = "0.33.1"
 dependencies = [
  "async-openai",
  "serde",
