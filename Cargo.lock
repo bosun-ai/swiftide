@@ -10052,7 +10052,7 @@ name = "swiftide"
 version = "0.33.0"
 dependencies = [
  "anyhow",
- "arrow-array 58.4.0",
+ "arrow-array 59.3.0",
  "async-openai",
  "async-trait",
  "document-features",
@@ -10206,7 +10206,6 @@ name = "swiftide-integrations"
 version = "0.33.0"
 dependencies = [
  "anyhow",
- "arrow-array 58.4.0",
  "arrow-array 59.3.0",
  "async-anthropic",
  "async-openai",
