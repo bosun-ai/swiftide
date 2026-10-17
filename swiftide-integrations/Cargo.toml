@@ -78,6 +78,7 @@ tree-sitter-c-sharp = { workspace = true, optional = true }
 tree-sitter-elixir = { workspace = true, optional = true }
 tree-sitter-html = { workspace = true, optional = true }
 tree-sitter-php = { workspace = true, optional = true }
+ts-parser-perl = { workspace = true, optional = true }
 
 fastembed = { workspace = true, optional = true }
 spider = { workspace = true, optional = true, default-features = true, features = [
@@ -190,6 +191,8 @@ tree-sitter = [
   "dep:tree-sitter-html",
   "dep:tree-sitter-php",
 ]
+# Perl grammar, opt-in as few users need it
+tree-sitter-perl = ["tree-sitter", "dep:ts-parser-perl"]
 # OpenAI for embedding and prompting
 openai = [
   "dep:async-openai",
