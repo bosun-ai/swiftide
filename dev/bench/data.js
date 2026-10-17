@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792165299464,
+  "lastUpdate": 1792262978359,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -35183,6 +35183,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2128990,
             "range": "± 5867",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "27d50db438c85a824bfc450aaef72ae14c65233e",
+          "message": "feat(integrations): add Perl to SupportedLanguages behind tree-sitter-perl (#1198)\n\n## Why\n\nWe want to index Perl codebases (e.g. Netdisco) with tree-sitter. Few\nswiftide users need Perl, so this adds it **opt-in**. The default\n`tree-sitter` feature compiles exactly the same grammars as before.\n\n## What\n\n- New feature `tree-sitter-perl` on `swiftide` and\n`swiftide-integrations` (it implies `tree-sitter`).\n- `SupportedLanguages::Perl` (serde/strum name `perl`, extensions `pm`,\n`pl`, `t`) exists only with that feature. The enum is already\n`#[non_exhaustive]`, so this adds no breaking change for downstream\nmatches.\n- Uses [`ts-parser-perl`](https://crates.io/crates/ts-parser-perl) 2.0,\nthe maintained tree-sitter-perl grammar that Neovim uses. The older\n`tree-sitter-perl` 1.1.2 crate is unmaintained, and its published\npackage lacks its `queries/` directory.\n- The outliner and the defs/refs code tree don't support Perl yet\n(`unimplemented!()`, as for PHP and Elixir).\n\n```toml\nswiftide = { version = \"0.33\", features = [\"tree-sitter\", \"tree-sitter-perl\"] }\n```\n\n## How it was tested\n\n- New test, gated on the feature: `perl` parses to\n`SupportedLanguages::Perl`, its extensions are `pm/pl/t`, and a small\nPerl file parses without errors.\n- `cargo clippy --all-targets` for `swiftide-integrations`, with\n`tree-sitter` alone and with `tree-sitter-perl`. CI runs\n`--all-features`, so it covers the Perl path.\n- Downstream: the grammar parses all 434 Perl files of Netdisco (1.7 MB)\nwith zero error nodes, in 0.25 s.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n## Summary by CodeRabbit\n\n* **New Features**\n* Added opt-in Perl language support for `.pm`, `.pl`, and `.t` files,\nincluding grammar loading and source parsing.\n* **Limitations**\n* Perl code queries and outlining are not yet supported; using those\nfeatures with Perl may result in an unimplemented-operation error.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-10-17T20:37:53+02:00",
+          "tree_id": "7b93106b35f5202d069b4d5a623d752dc270c12d",
+          "url": "https://github.com/bosun-ai/swiftide/commit/27d50db438c85a824bfc450aaef72ae14c65233e"
+        },
+        "date": 1792262975957,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 1080284,
+            "range": "± 30968",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 276987,
+            "range": "± 10499",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2004,
+            "range": "± 2000",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7326,
+            "range": "± 280",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 27516,
+            "range": "± 292",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4187045,
+            "range": "± 30045",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2103018,
+            "range": "± 10427",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16708310,
+            "range": "± 70389",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2121940,
+            "range": "± 8124",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66914870,
+            "range": "± 317310",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2137347,
+            "range": "± 9233",
             "unit": "ns/iter"
           }
         ]
