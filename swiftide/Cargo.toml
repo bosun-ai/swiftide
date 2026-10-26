@@ -84,7 +84,10 @@ tree-sitter-perl = ["tree-sitter", "swiftide-integrations/tree-sitter-perl"]
 ## OpenAI
 openai = ["swiftide-integrations/openai"]
 
-## Groq 
+## Cheaper Inference prompting
+cheaperinference = ["swiftide-integrations/cheaperinference"]
+
+## Groq
 groq = ["swiftide-integrations/groq"]
 
 ## Google Gemini 

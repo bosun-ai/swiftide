@@ -259,7 +259,7 @@ Swiftide integrations are feature-gated so application builds stay intentional.
 
 | Area | Supported integrations |
 | --- | --- |
-| LLM providers | OpenAI and Azure OpenAI, Anthropic, Gemini, OpenRouter, AWS Bedrock Converse API, Groq, Ollama, Dashscope |
+| LLM providers | OpenAI and Azure OpenAI, Anthropic, Gemini, OpenRouter, AWS Bedrock Converse API, Groq, Ollama, Dashscope, Cheaper Inference |
 | Tooling | MCP toolboxes, local command execution, custom tool executors |
 | Storage and retrieval | Qdrant, Redis, LanceDB, PgVector, DuckDB, Redb |
 | Loading data | Files, scraping, Fluvio, Kafka, Parquet, executor-backed file streams |

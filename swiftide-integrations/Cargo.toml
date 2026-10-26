@@ -199,7 +199,9 @@ openai = [
   "dep:reqwest",
   "swiftide-core/openai",
 ]
-# Groq 
+# Cheaper Inference prompting
+cheaperinference = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Groq
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Goolge Gemini
 gemini = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
