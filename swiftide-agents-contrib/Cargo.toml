@@ -1,0 +1,60 @@
+[package]
+name = "swiftide-agents-contrib"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords.workspace = true
+description = "Optional tools, context hooks, and executor helpers for Swiftide agents"
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+swiftide-core = { path = "../swiftide-core", version = "0.33", default-features = false }
+swiftide-agents = { path = "../swiftide-agents", version = "0.33", default-features = false, optional = true }
+anyhow = { workspace = true, optional = true }
+async-trait = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+tokio = { workspace = true, features = ["sync"], optional = true }
+tracing = { workspace = true, optional = true }
+document-features.workspace = true
+shell-escape = { version = "0.1.5", default-features = false, optional = true }
+
+[features]
+default = []
+## Tool-output truncation and summarization, and conversation compression hooks.
+context-management = ["dep:swiftide-agents", "dep:anyhow", "dep:async-trait", "dep:tracing"]
+## An in-memory plan tool with shared, inspectable state.
+planning = ["dep:async-trait", "dep:serde", "dep:serde_json", "dep:schemars"]
+## File reading with line ranges, exact text replacement, and file-oriented patches.
+file-tools = ["dep:shell-escape", "dep:anyhow", "dep:async-trait", "dep:serde", "dep:serde_json", "dep:schemars"]
+## Start an executor on its first operation and share it across clones.
+lazy-executor = ["dep:anyhow", "dep:async-trait", "dep:tokio"]
+
+[dev-dependencies]
+swiftide-agents = { path = "../swiftide-agents", version = "0.33", default-features = false }
+anyhow.workspace = true
+async-trait.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+temp-dir.workspace = true
+futures-util.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[[example]]
+name = "coding_tools"
+required-features = ["planning", "file-tools"]
+
+[[example]]
+name = "context_hooks"
+required-features = ["context-management"]

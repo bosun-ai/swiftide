@@ -31,6 +31,7 @@ swiftide-indexing = { path = "../swiftide-indexing", version = "0.33" }
 swiftide-query = { path = "../swiftide-query", version = "0.33" }
 swiftide-tasks = { path = "../swiftide-tasks", version = "0.33", optional = true }
 swiftide-agents = { path = "../swiftide-agents", version = "0.33", optional = true }
+swiftide-agents-contrib = { path = "../swiftide-agents-contrib", version = "0.33", default-features = false, optional = true }
 swiftide-macros = { path = "../swiftide-macros", version = "0.33", optional = true }
 swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.33", optional = true }
 
@@ -151,6 +152,16 @@ tiktoken = ["swiftide-integrations/tiktoken"]
 swiftide-tasks = ["dep:swiftide-tasks"]
 ## GenAI agents and tools
 swiftide-agents = ["dep:swiftide-agents", "swiftide-tasks"]
+## Optional agent tools, hooks, and executor helpers (no capabilities enabled).
+agents-contrib = ["dep:swiftide-agents-contrib", "swiftide-agents"]
+## Tool output summarization and conversation compression hooks.
+agents-contrib-context = ["agents-contrib", "swiftide-agents-contrib/context-management"]
+## A shared in-memory plan tool.
+agents-contrib-planning = ["agents-contrib", "swiftide-agents-contrib/planning"]
+## File reading with line ranges, exact replacement, and file-oriented patches.
+agents-contrib-file-tools = ["agents-contrib", "swiftide-agents-contrib/file-tools"]
+## Lazy initialization of caller-provided executors.
+agents-contrib-lazy-executor = ["agents-contrib", "swiftide-agents-contrib/lazy-executor"]
 ## Langfuse tracing and observability
 langfuse = [
   "swiftide-integrations/langfuse",

@@ -45,6 +45,7 @@ pipelines for RAG.
 - [Why Swiftide](#why-swiftide)
 - [Quick Start](#quick-start)
 - [Agent Harness](#agent-harness)
+- [Agent Tools and Hooks](#agent-tools-and-hooks)
 - [Typed Task Graphs](#typed-task-graphs)
 - [RAG Pipelines](#rag-pipelines)
 - [Integrations](#integrations)
@@ -90,8 +91,12 @@ export OPENAI_API_KEY=...
 
 ## Agent Harness
 
-Swiftide provides a harnass for building (semi) autonomous agents. The harnass owns message history, call an LLM, invoke tools,
-run hooks, and stopping. Tools are pure functions and easy to add. The AgentContext abstracts over message history (in memory by default) and provides tools access to the outside world via a ToolExecutor (local by default, see also the [docker executor](https://github.com/bosun-ai/swiftide-docker-executor)).
+Use the agent harness to call a model, run tools, and control when an agent stops. Add tools as
+Rust functions or `Tool` implementations, and use hooks to run logic during the agent lifecycle.
+
+`AgentContext` manages conversation history and gives tools access to a `ToolExecutor`. Use the
+local executor or run commands in an isolated environment with the
+[Docker executor](https://github.com/bosun-ai/swiftide-docker-executor).
 
 ```rust
 use anyhow::Result;
@@ -156,6 +161,29 @@ Agent capabilities include:
 
 Start with [`examples/hello_agents.rs`](https://github.com/bosun-ai/swiftide/blob/master/examples/hello_agents.rs),
 then look at the human approval, MCP, streaming, resume, and structured-output examples.
+
+## Agent Tools and Hooks
+
+Use [`swiftide-agents-contrib`](swiftide-agents-contrib/README.md) to add file tools, plans,
+context hooks, and lazy executors to your agents. Choose the features you need and register
+the components on your agent.
+
+| Feature on `swiftide` | What it provides |
+| --- | --- |
+| `agents-contrib-file-tools` | Read whole files or selected lines with `ReadFile`, replace text with `ExactReplace`, and edit files with `ApplyPatch`. |
+| `agents-contrib-planning` | Track steps and progress with `UpdatePlan` and inspect them through `PlanMemory`. |
+| `agents-contrib-context` | Shorten large tool outputs with `ToolSummarizer` and summarize long conversations with `ContextCompression`. |
+| `agents-contrib-lazy-executor` | Start an executor when the agent first needs it with `LazyExecutor`. |
+
+```sh
+cargo add swiftide --features agents-contrib-file-tools,agents-contrib-planning
+```
+
+Import components from `swiftide::agents_contrib`, for example
+`swiftide::agents_contrib::tools::ReadFile`. File reads accept optional `start_line` and `end_line`
+arguments (one-based, inclusive); excerpts retain the file's original line numbers.
+Contrib features are off by default. See the [crate guide](swiftide-agents-contrib/README.md)
+for examples, defaults, and the features to use when depending on the contrib crate directly.
 
 ## Typed Task Graphs
 

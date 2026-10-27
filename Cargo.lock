@@ -9149,6 +9149,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "shell-escape"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45bb67a18fa91266cc7807181f62f9178a6873bfad7dc788c42e6430db40184f"
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10064,6 +10070,7 @@ dependencies = [
  "serde_json",
  "sqlx 0.9.0",
  "swiftide-agents",
+ "swiftide-agents-contrib",
  "swiftide-core",
  "swiftide-indexing",
  "swiftide-integrations",
@@ -10110,6 +10117,25 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "swiftide-agents-contrib"
+version = "0.33.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "document-features",
+ "futures-util",
+ "schemars 1.2.3",
+ "serde",
+ "serde_json",
+ "shell-escape",
+ "swiftide-agents",
+ "swiftide-core",
+ "temp-dir",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

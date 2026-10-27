@@ -18,6 +18,21 @@ pub use swiftide_core::type_aliases::*;
 #[doc(inline)]
 pub use swiftide_agents as agents;
 
+/// Optional agent tools, context hooks, and executor helpers.
+///
+/// ```
+/// # #[cfg(all(feature = "agents-contrib-planning", feature = "agents-contrib-file-tools"))]
+/// # {
+/// use swiftide::agents_contrib::tools::{ApplyPatch, ExactReplace, ReadFile, UpdatePlan};
+/// let mut builder = swiftide::agents::Agent::builder();
+/// builder.add_tool(UpdatePlan::default()).add_tool(ReadFile::default())
+///     .add_tool(ExactReplace).add_tool(ApplyPatch);
+/// # }
+/// ```
+#[cfg(feature = "agents-contrib")]
+#[doc(inline)]
+pub use swiftide_agents_contrib as agents_contrib;
+
 #[cfg(feature = "swiftide-tasks")]
 #[doc(inline)]
 pub use swiftide_tasks as tasks;
