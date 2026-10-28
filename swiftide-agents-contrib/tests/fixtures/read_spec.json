@@ -1,37 +1,76 @@
-{
-  "name": "Read",
-  "description": "Reads a file from the local filesystem. Use absolute file paths. The output includes line numbers.",
-  "parameters_schema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "ReadArgs",
-    "type": "object",
-    "properties": {
-      "file_path": {
-        "description": "The absolute path to the file to read",
-        "type": "string"
+[
+  {
+    "name": "read_file",
+    "description": "Reads file content. Reads up to 2000 lines by default. When you already know which part of the file you need, only read that part: use `offset` and `limit`.",
+    "parameters_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "ReadFileArgs",
+      "type": "object",
+      "properties": {
+        "file_name": {
+          "description": "Full path of the file",
+          "type": "string"
+        },
+        "offset": {
+          "description": "Optional line number to start reading from (1-indexed). Defaults to 1.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "limit": {
+          "description": "Optional number of lines to read. Defaults to 2000.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
       },
-      "limit": {
-        "description": "The number of lines to read. Only provide if the file is too large to read at once.",
-        "type": [
-          "integer",
-          "null"
-        ],
-        "format": "uint",
-        "minimum": 0
+      "required": [
+        "file_name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "read_file_with_line_numbers",
+    "description": "Reads file content, including line numbers. You MUST use this tool to retrieve line numbers before making an edit with edit_file. Reads up to 2000 lines by default. When you already know which part of the file you need, only read that part: use `offset` and `limit`.",
+    "parameters_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "ReadFileWithLineNumbersArgs",
+      "type": "object",
+      "properties": {
+        "file_name": {
+          "description": "Full path of the file",
+          "type": "string"
+        },
+        "offset": {
+          "description": "Optional line number to start reading from (1-indexed). Defaults to 1. Line numbers stay those of the file.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "limit": {
+          "description": "Optional number of lines to read. Defaults to 2000.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
       },
-      "offset": {
-        "description": "The line number to start reading from. Only provide if the file is too large to read at once",
-        "type": [
-          "integer",
-          "null"
-        ],
-        "format": "uint",
-        "minimum": 0
-      }
-    },
-    "additionalProperties": false,
-    "required": [
-      "file_path"
-    ]
+      "required": [
+        "file_name"
+      ],
+      "additionalProperties": false
+    }
   }
-}
+]

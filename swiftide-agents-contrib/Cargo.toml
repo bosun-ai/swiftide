@@ -37,7 +37,7 @@ context-management = ["dep:swiftide-agents", "dep:anyhow", "dep:async-trait", "d
 ## An in-memory plan tool with shared state.
 planning = ["dep:async-trait", "dep:serde", "dep:serde_json", "dep:schemars"]
 ## File reading with line ranges, exact text replacement, and file-oriented patches.
-file-tools = ["dep:shell-escape", "dep:anyhow", "dep:async-trait", "dep:serde", "dep:serde_json", "dep:schemars", "dep:tokio"]
+file-tools = ["dep:shell-escape", "dep:anyhow", "dep:async-trait", "dep:serde", "dep:serde_json", "dep:schemars", "dep:tracing"]
 ## Start an executor on its first operation and share it across clones.
 lazy-executor = ["dep:anyhow", "dep:async-trait", "dep:tokio", "dep:swiftide-agents", "dep:shell-escape", "dep:base64", "dep:sha2", "dep:tokio-util"]
 

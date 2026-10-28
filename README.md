@@ -180,9 +180,10 @@ cargo add swiftide --features agents-contrib-file-tools,agents-contrib-planning
 ```
 
 Import components from `swiftide::agents_contrib`, for example
-`swiftide::agents_contrib::tools::ReadFile`. It registers `Read`, which accepts an absolute
-`file_path`, optional one-based `offset`, and optional `limit`. Reads default to 2,000 numbered
-lines with the source tool's 100,000-character budget and continuation guidance for partial pages.
+`swiftide::agents_contrib::tools::ReadFile` registers `read_file`; add `.with_line_numbers()`
+for `read_file_with_line_numbers`. Both accept `file_name`, optional one-based `offset`, and optional
+`limit`. Reads default to 2,000 lines, truncate long lines at 2,000 characters, and refuse windows
+above the source tool's 100,000-character budget. Partial pages explain how to continue.
 Contrib features are off by default. See the [crate guide](swiftide-agents-contrib/README.md)
 for examples, defaults, and the features to use when depending on the contrib crate directly.
 

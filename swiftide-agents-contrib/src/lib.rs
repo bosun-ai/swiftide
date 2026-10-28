@@ -18,3 +18,6 @@ pub mod tools;
 
 #[cfg(feature = "context-management")]
 mod support;
+
+#[cfg(any(feature = "context-management", feature = "file-tools"))]
+mod command;

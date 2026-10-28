@@ -1,141 +1,20 @@
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    path::{Path, PathBuf},
-    sync::{Arc, Mutex, Weak},
-};
+use std::{borrow::Cow, fmt::Write as _};
 
+use crate::command::accept_non_zero_exit;
 use async_trait::async_trait;
 use schemars::{JsonSchema, schema_for};
 use serde::Deserialize;
-use shell_escape::escape;
 use swiftide_core::{
     AgentContext, Command,
-    chat_completion::{Tool, ToolCall, ToolOutput, ToolSpecBuilder, errors::ToolError},
+    chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
 };
-use tokio::sync::Mutex as AsyncMutex;
 
-const DEFAULT_READ_LIMIT: usize = 2_000;
-const MAX_READ_LIMIT: usize = 100_000;
-const MAX_READ_CHARACTERS: usize = 100_000;
-const READ_META_PREFIX: &str = "__QUAK_CLAUDE_READ_META__";
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct FileFingerprint {
-    size: u64,
-    modified: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-enum FileKind {
-    File,
-    Symlink,
-    Missing,
-    Other,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct FileInfo {
-    kind: FileKind,
-    fingerprint: Option<FileFingerprint>,
-}
-
-#[derive(Clone, Debug)]
-struct ReadState {
-    fingerprint: FileFingerprint,
-    complete: bool,
-    covered_ranges: Vec<(usize, usize)>,
-    eof_line: Option<usize>,
-}
-
-impl ReadState {
-    fn new(fingerprint: FileFingerprint, complete: bool) -> Self {
-        Self {
-            fingerprint,
-            complete,
-            covered_ranges: Vec::new(),
-            eof_line: None,
-        }
-    }
-
-    fn record(&mut self, observation: ReadObservation) {
-        if let Some(range) = observation.range {
-            self.covered_ranges.push(range);
-            self.covered_ranges.sort_unstable_by_key(|range| range.0);
-            self.covered_ranges = self.covered_ranges.drain(..).fold(
-                Vec::<(usize, usize)>::new(),
-                |mut merged, range| {
-                    if let Some(previous) = merged.last_mut()
-                        && range.0 <= previous.1.saturating_add(1)
-                    {
-                        previous.1 = previous.1.max(range.1);
-                    } else {
-                        merged.push(range);
-                    }
-                    merged
-                },
-            );
-        }
-        if observation.eof_line.is_some() {
-            self.eof_line = observation.eof_line;
-        }
-        self.complete |= match self.eof_line {
-            Some(0) => true,
-            Some(eof_line) => self
-                .covered_ranges
-                .first()
-                .is_some_and(|&(start, end)| start == 1 && end >= eof_line),
-            None => false,
-        };
-    }
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct FileReadState {
-    reads: Mutex<HashMap<(usize, PathBuf), ReadState>>,
-    file_locks: Mutex<HashMap<PathBuf, Weak<AsyncMutex<()>>>>,
-}
-
-impl FileReadState {
-    fn file_lock(&self, path: &Path) -> Arc<AsyncMutex<()>> {
-        let mut locks = self.file_locks.lock().expect("file lock map poisoned");
-        if let Some(lock) = locks.get(path).and_then(Weak::upgrade) {
-            return lock;
-        }
-
-        let lock = Arc::new(AsyncMutex::new(()));
-        locks.insert(path.to_path_buf(), Arc::downgrade(&lock));
-        lock
-    }
-
-    fn record_page(
-        &self,
-        context: &dyn AgentContext,
-        path: &Path,
-        fingerprint: FileFingerprint,
-        observation: ReadObservation,
-    ) {
-        let mut reads = self.reads.lock().expect("read state map poisoned");
-        let state = reads
-            .entry((context_id(context), path.to_path_buf()))
-            .or_insert_with(|| ReadState::new(fingerprint.clone(), false));
-        if state.fingerprint != fingerprint {
-            *state = ReadState::new(fingerprint, false);
-        }
-        state.record(observation);
-    }
-}
-
-fn context_id(context: &dyn AgentContext) -> usize {
-    std::ptr::from_ref(context).cast::<()>() as usize
-}
-
-/// Fluyt's capped `Read` tool, preserving its arguments, formatting, and read-state checks.
+/// Read file pages using Fluyt's shared file reader (tool name: `read_file`).
 ///
-/// Uses absolute `file_path`, optional one-based `offset` (zero also starts at one), and optional
-/// `limit`. Defaults to 2,000 lines, with the original 100,000-character budget calculation.
-/// The tool checks file metadata before and after reads and retains page coverage in its state.
-/// Empty files, past-end reads, partial pages, and errors use the source tool's messages.
+/// Accepts `file_name`, optional one-based `offset` (zero starts at one), and optional `limit`.
+/// Defaults to 2,000 lines, cuts long lines at 2,000 characters, and refuses windows over
+/// 100,000 characters using the source accounting. Partial pages explain how to continue.
+/// Relative and absolute paths are passed to the executor unchanged.
 ///
 /// # Examples
 ///
@@ -144,33 +23,65 @@ fn context_id(context: &dyn AgentContext) -> usize {
 /// use swiftide_agents_contrib::tools::ReadFile;
 /// Agent::builder().add_tool(ReadFile::default());
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ReadFile {
-    state: Arc<FileReadState>,
-}
-
-impl Default for ReadFile {
-    fn default() -> Self {
-        Self::with_state(Arc::default())
-    }
+    numbered: bool,
 }
 
 impl ReadFile {
-    pub(crate) fn with_state(state: Arc<FileReadState>) -> Self {
-        Self { state }
+    /// Register `read_file_with_line_numbers`, retaining original file line numbers.
+    ///
+    /// Both modes use the same paging and output limits.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::tools::ReadFile;
+    /// Agent::builder().add_tool(ReadFile::default().with_line_numbers());
+    /// ```
+    #[must_use]
+    pub fn with_line_numbers(mut self) -> Self {
+        self.numbered = true;
+        self
     }
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-struct ReadArgs {
-    /// The absolute path to the file to read
-    file_path: String,
+/// Lines a file read returns when the caller gives no `limit`.
+const DEFAULT_READ_LINES: usize = 2_000;
+/// Characters kept from a single line; the rest of a longer line is cut.
+const MAX_READ_LINE_CHARS: usize = 2_000;
+/// Largest window a file read returns: ~25,000 tokens at the summarizer's four characters per
+/// token. File reads are exempt from tool summarization, so this bound keeps them out of context.
+const MAX_READ_CHARS: usize = 100_000;
+const TRUNCATED_LINE_MARKER: &str = "… [line truncated]";
+
+const NUMBERED_READ_DESCRIPTION: &str = "Reads file content, including line numbers. You MUST use this tool to retrieve line numbers before making an edit with edit_file. Reads up to 2000 lines by default. When you already know which part of the file you need, only read that part: use `offset` and `limit`.";
+const READ_DESCRIPTION: &str = "Reads file content. Reads up to 2000 lines by default. When you already know which part of the file you need, only read that part: use `offset` and `limit`.";
+
+#[derive(Deserialize, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+struct ReadFileArgs {
+    #[schemars(description = "Full path of the file")]
+    file_name: String,
     #[schemars(
-        description = "The line number to start reading from. Only provide if the file is too large to read at once"
+        description = "Optional line number to start reading from (1-indexed). Defaults to 1."
     )]
     offset: Option<usize>,
-    /// The number of lines to read. Only provide if the file is too large to read at once.
+    #[schemars(description = "Optional number of lines to read. Defaults to 2000.")]
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+struct ReadFileWithLineNumbersArgs {
+    #[schemars(description = "Full path of the file")]
+    file_name: String,
+    #[schemars(
+        description = "Optional line number to start reading from (1-indexed). Defaults to 1. Line numbers stay those of the file."
+    )]
+    offset: Option<usize>,
+    #[schemars(description = "Optional number of lines to read. Defaults to 2000.")]
     limit: Option<usize>,
 }
 
@@ -178,325 +89,295 @@ struct ReadArgs {
 impl Tool for ReadFile {
     async fn invoke(
         &self,
-        agent_context: &dyn AgentContext,
-        tool_call: &ToolCall,
+        context: &dyn AgentContext,
+        call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
-        let args = tool_call
-            .args()
-            .ok_or_else(|| ToolError::missing_arguments("Read"))?;
-        let payload: ReadArgs = serde_json::from_str(args)?;
-        if let Some(error) = absolute_path_error(&payload.file_path) {
-            return Ok(ToolOutput::fail(error));
+        let args = call.args().ok_or_else(|| {
+            ToolError::missing_arguments(format!("No arguments provided for {}", self.name()))
+        })?;
+        if self.numbered {
+            let args: ReadFileWithLineNumbersArgs = serde_json::from_str(args)?;
+            read_file_with_line_numbers(context, &args.file_name, args.offset, args.limit).await
+        } else {
+            let args: ReadFileArgs = serde_json::from_str(args)?;
+            read_file(context, &args.file_name, args.offset, args.limit).await
         }
-
-        let path = Path::new(&payload.file_path);
-        let lock = self.state.file_lock(path);
-        let _guard = lock.lock().await;
-        let before = file_info(agent_context, path).await?;
-        let Some(before_fingerprint) = before.fingerprint.as_ref() else {
-            return Ok(ToolOutput::fail(format!(
-                "{} is not a regular file",
-                path.display()
-            )));
-        };
-        let page = match read_text_page(
-            agent_context,
-            path,
-            payload.offset,
-            payload.limit,
-            before_fingerprint.size,
-        )
-        .await?
-        {
-            ReadPage::Content {
-                rendered,
-                observation,
-            } => {
-                let after = file_info(agent_context, path).await?;
-                if before != after {
-                    return Ok(ToolOutput::fail(format!(
-                        "{} changed while it was being read; retry the Read",
-                        path.display()
-                    )));
-                }
-                let Some(fingerprint) = after.fingerprint else {
-                    return Ok(ToolOutput::fail(format!(
-                        "{} is not a regular file",
-                        path.display()
-                    )));
-                };
-                self.state
-                    .record_page(agent_context, path, fingerprint, observation);
-                rendered
-            }
-            ReadPage::Failure(message) => return Ok(ToolOutput::fail(message)),
-            ReadPage::PastEnd => unreachable!("past-end pages are rendered before returning"),
-        };
-
-        Ok(ToolOutput::text(page))
     }
-
     fn name(&self) -> Cow<'_, str> {
-        Cow::Borrowed("Read")
+        Cow::Borrowed(if self.numbered {
+            "read_file_with_line_numbers"
+        } else {
+            "read_file"
+        })
     }
-
-    fn tool_spec(&self) -> swiftide_core::chat_completion::ToolSpec {
-        ToolSpecBuilder::default()
-            .name("Read")
-            .description(
-                "Reads a file from the local filesystem. Use absolute file paths. The output includes line numbers.",
-            )
-            .parameters_schema(schema_for!(ReadArgs))
-            .build()
-            .expect("tool spec is valid")
-    }
-}
-
-fn absolute_path_error(file_path: &str) -> Option<String> {
-    (!Path::new(file_path).is_absolute())
-        .then(|| format!("file_path must be an absolute path, but received `{file_path}`"))
-}
-
-#[derive(Debug)]
-enum ReadPage {
-    Content {
-        rendered: String,
-        observation: ReadObservation,
-    },
-    Failure(String),
-    PastEnd,
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-struct ReadObservation {
-    range: Option<(usize, usize)>,
-    eof_line: Option<usize>,
-}
-
-impl ReadObservation {
-    fn page(start: usize, last: usize, emitted: usize, reached_eof: bool) -> Self {
-        Self {
-            range: (emitted > 0).then_some((start, last)),
-            eof_line: reached_eof.then_some(last),
+    fn tool_spec(&self) -> ToolSpec {
+        if self.numbered {
+            ToolSpec::builder()
+                .name("read_file_with_line_numbers")
+                .description(NUMBERED_READ_DESCRIPTION)
+                .parameters_schema(schema_for!(ReadFileWithLineNumbersArgs))
+                .build()
+                .expect("tool spec is valid")
+        } else {
+            ToolSpec::builder()
+                .name("read_file")
+                .description(READ_DESCRIPTION)
+                .parameters_schema(schema_for!(ReadFileArgs))
+                .build()
+                .expect("tool spec is valid")
         }
     }
 }
 
-async fn read_text_page(
+async fn read_file(
     context: &dyn AgentContext,
-    path: &Path,
+    file_name: &str,
     offset: Option<usize>,
     limit: Option<usize>,
-    file_size: u64,
-) -> Result<ReadPage, ToolError> {
-    let start = offset.filter(|offset| *offset > 0).unwrap_or(1);
-
-    if limit.is_some_and(|limit| limit > MAX_READ_LIMIT) {
-        return Ok(ReadPage::Failure(format!(
-            "limit must not exceed {MAX_READ_LIMIT}; use multiple Read calls"
-        )));
-    }
-    let line_limit = limit.unwrap_or(DEFAULT_READ_LIMIT);
-    if line_limit == 0 {
-        return Ok(ReadPage::Failure("limit must be 1 or greater".to_string()));
-    }
-
-    let explicit_range = offset.is_some() || limit.is_some();
-    let escaped_path = escape(Cow::Owned(path.display().to_string()));
-    let byte_limit = MAX_READ_CHARACTERS + 1;
-    let explicit = usize::from(explicit_range);
-    let command = format!(
-        "LC_ALL=C tail -n +{start} {escaped_path} | head -c {byte_limit} | \
-         awk -v start={start} -v max_lines={line_limit} -v max_chars={MAX_READ_CHARACTERS} -v explicit={explicit} "
-    ) + r#"'
-BEGIN { emitted=0; chars=0; partial=0; overflow=0; last=0 }
-emitted >= max_lines { partial=1; exit }
-{
-    rendered_length=length($0)+16
-    if (rendered_length > max_chars) {
-        overflow=1
-        exit
-    }
-    if (chars+rendered_length > max_chars) {
-        if (explicit) overflow=1
-        else partial=1
-        exit
-    }
-    line_number=start+NR-1
-    printf "%6d→%s\n", line_number, $0
-    emitted++
-    chars+=rendered_length
-    last=line_number
+) -> Result<ToolOutput, ToolError> {
+    read_file_window(context, file_name, offset, limit, false).await
 }
-END {
-    if (NR==0) status="empty-range"
-    else if (overflow) status="overflow"
-    else if (partial) status="partial"
-    else status="complete"
-    printf "__QUAK_CLAUDE_READ_META__\t%s\t%d\t%d\n", status, last, emitted
-}
-' "#;
-    let output = context
-        .executor()
-        .exec_cmd(&Command::shell(command))
-        .await?
-        .into_string_lossy();
-    let page = parse_read_page(&output, path, start, explicit_range, file_size)?;
-    if !matches!(page, ReadPage::PastEnd) {
-        return Ok(page);
-    }
 
-    let total_lines = count_file_lines(context, path).await?;
-    Ok(ReadPage::Content {
-        rendered: format!(
-            "The file has {total_lines} lines; offset {start} is past the end of the file."
-        ),
-        observation: ReadObservation::default(),
+// TODO: Better to have a single read_file tool with an optional line number flag
+async fn read_file_with_line_numbers(
+    context: &dyn AgentContext,
+    file_name: &str,
+    offset: Option<usize>,
+    limit: Option<usize>,
+) -> Result<ToolOutput, ToolError> {
+    read_file_window(context, file_name, offset, limit, true).await
+}
+
+async fn read_file_window(
+    context: &dyn AgentContext,
+    file_name: &str,
+    offset: Option<usize>,
+    limit: Option<usize>,
+    numbered: bool,
+) -> Result<ToolOutput, ToolError> {
+    // Like Claude Code's Read, offset 0 means the first line.
+    let offset = offset.filter(|offset| *offset > 0).unwrap_or(1);
+    let limit = limit.unwrap_or(DEFAULT_READ_LINES);
+    if limit == 0 {
+        return Ok(ToolOutput::fail("limit must be 1 or greater"));
+    }
+    // i.e. if the file doesn't exist, just forward that message
+    let output = accept_non_zero_exit(
+        context
+            .executor()
+            .exec_cmd(&Command::read_file(file_name))
+            .await,
+    )?;
+    let file = output.to_string_lossy();
+
+    Ok(match file_window(&file, offset, limit, numbered) {
+        Ok(window) => window.into_owned().into(),
+        Err(message) => ToolOutput::fail(message),
     })
 }
 
-fn parse_read_page(
-    output: &str,
-    path: &Path,
-    start: usize,
-    explicit_range: bool,
-    file_size: u64,
-) -> Result<ReadPage, ToolError> {
-    let marker = output.rfind(READ_META_PREFIX).ok_or_else(|| {
-        ToolError::unknown(anyhow::anyhow!(
-            "Read did not return page metadata for {}",
-            path.display()
-        ))
-    })?;
-    let rendered = output[..marker].trim_end_matches('\n');
-    let metadata = output[marker..].split_whitespace().collect::<Vec<_>>();
-    if metadata.len() != 4 {
-        return Err(ToolError::unknown(anyhow::anyhow!(
-            "Read returned invalid page metadata for {}",
-            path.display()
-        )));
+/// Selects `limit` lines starting at line `offset` (1-indexed) and renders them, numbered with
+/// their line in the file when `numbered`. Lines are cut at [`MAX_READ_LINE_CHARS`]; a window over
+/// [`MAX_READ_CHARS`] is refused. Content under every limit is returned unchanged.
+fn file_window(
+    content: &str,
+    offset: usize,
+    limit: usize,
+    numbered: bool,
+) -> Result<Cow<'_, str>, String> {
+    if content.is_empty() {
+        return Ok(Cow::Borrowed("File exists but has empty contents."));
     }
-    let status = metadata[1];
-    let last = metadata[2].parse::<usize>().map_err(anyhow::Error::from)?;
-    let emitted = metadata[3].parse::<usize>().map_err(anyhow::Error::from)?;
 
-    Ok(match status {
-        "empty-range" if file_size == 0 => ReadPage::Content {
-            rendered: "File exists but has empty contents.".to_string(),
-            observation: ReadObservation {
-                range: None,
-                eof_line: (start == 1).then_some(0),
-            },
-        },
-        "empty-range" => ReadPage::PastEnd,
-        "overflow" => ReadPage::Failure(if explicit_range {
-            format!(
-                "The requested range in {} exceeds the Read output limit. Use a smaller limit or search for specific content.",
-                path.display()
-            )
+    let mut lines = content.split_inclusive('\n');
+    let skipped = lines.by_ref().take(offset - 1).count();
+    let mut rendered = String::new();
+    let mut chars = 0;
+    let mut shown = 0;
+    let mut truncated_any = false;
+    for (line_number, line) in (offset..).zip(lines.by_ref().take(limit)) {
+        shown += 1;
+        let text = if numbered {
+            strip_line_ending(line)
         } else {
-            format!(
-                "A line in {} exceeds the Read output limit. Search for specific content instead.",
-                path.display()
-            )
-        }),
-        "partial" => {
-            if explicit_range {
-                return Ok(ReadPage::Content {
-                    rendered: rendered.to_string(),
-                    observation: ReadObservation::page(start, last, emitted, false),
-                });
+            line
+        };
+        let (kept, truncated) = match text.char_indices().nth(MAX_READ_LINE_CHARS) {
+            Some((cut, _)) => (&text[..cut], true),
+            None => (text, false),
+        };
+        truncated_any |= truncated;
+        // Numbered lines also carry their `N|` prefix and a separating newline.
+        let numbering = if numbered {
+            line_number.ilog10() as usize + 3
+        } else {
+            0
+        };
+        chars += kept.chars().count() + numbering;
+        if chars > MAX_READ_CHARS {
+            // Keep counting so the refusal can say how large the window is.
+            continue;
+        }
+        if numbered {
+            if shown > 1 {
+                rendered.push('\n');
             }
-            let next = last.saturating_add(1).max(start);
-            let content = if rendered.is_empty() {
-                format!(
-                    "[PARTIAL view: no complete line fit in this page. Continue with offset={next} and a smaller limit, or search for specific content.]"
-                )
-            } else {
-                format!(
-                    "{rendered}\n\n[PARTIAL view: showing lines {start}-{last}. Continue with offset={next} and a smaller limit.]"
-                )
-            };
-            ReadPage::Content {
-                rendered: content,
-                observation: ReadObservation::page(start, last, emitted, false),
+            let _ = write!(rendered, "{line_number}|");
+        }
+        rendered.push_str(kept);
+        if truncated {
+            rendered.push_str(TRUNCATED_LINE_MARKER);
+            if !numbered {
+                rendered.push_str(line_ending(line));
             }
         }
-        "complete" => ReadPage::Content {
-            rendered: rendered.to_string(),
-            observation: ReadObservation::page(start, last, emitted, true),
-        },
-        _ => {
-            return Err(ToolError::unknown(anyhow::anyhow!(
-                "Read returned unknown page status `{status}` for {}",
-                path.display()
-            )));
-        }
-    })
+    }
+
+    if shown == 0 {
+        return Ok(Cow::Owned(format!(
+            "The file has {skipped} lines; offset {offset} is past the end of the file."
+        )));
+    }
+    if chars > MAX_READ_CHARS {
+        return Err(format!(
+            "File content (~{tokens} tokens) exceeds the maximum of {max} tokens. Use the offset and limit parameters to read a specific part of the file, or search it first.",
+            tokens = chars / 4,
+            max = MAX_READ_CHARS / 4,
+        ));
+    }
+
+    let remaining = lines.count();
+    if remaining == 0 {
+        return Ok(if !numbered && offset == 1 && !truncated_any {
+            Cow::Borrowed(content)
+        } else {
+            Cow::Owned(rendered)
+        });
+    }
+    if !rendered.ends_with('\n') {
+        rendered.push('\n');
+    }
+    let _ = write!(
+        rendered,
+        "[File has {remaining} more lines. Use offset={next} to continue.]",
+        next = offset + shown
+    );
+    Ok(Cow::Owned(rendered))
 }
 
-async fn count_file_lines(context: &dyn AgentContext, path: &Path) -> Result<usize, ToolError> {
-    let escaped_path = escape(Cow::Owned(path.display().to_string()));
-    let command = format!(
-        "line_count=$(wc -l < {escaped_path}) || exit; \
-         if [ -s {escaped_path} ] && [ \"$(tail -c 1 {escaped_path} | wc -l)\" -eq 0 ]; \
-         then line_count=$((line_count + 1)); fi; printf '%s\\n' \"$line_count\""
-    );
-    let output = context
-        .executor()
-        .exec_cmd(&Command::shell(command))
-        .await?
-        .into_string_lossy();
-    output
-        .trim()
-        .parse::<usize>()
-        .map_err(anyhow::Error::from)
-        .map_err(ToolError::from)
+/// Mirrors `str::lines`, so numbered output keeps its existing format.
+fn strip_line_ending(line: &str) -> &str {
+    let line = line.strip_suffix('\n').unwrap_or(line);
+    line.strip_suffix('\r').unwrap_or(line)
 }
 
-async fn file_info(context: &dyn AgentContext, path: &Path) -> Result<FileInfo, ToolError> {
-    let escaped_path = escape(Cow::Owned(path.display().to_string()));
-    let command = format!(
-        "if [ ! -e {escaped_path} ] && [ ! -L {escaped_path} ]; then printf 'missing\\n'; \
-         elif [ ! -f {escaped_path} ]; then printf 'other\\n'; \
-         else if [ -L {escaped_path} ]; then printf 'symlink|'; else printf 'file|'; fi; \
-         if stat -c '%s|%y|%Z' {escaped_path} >/dev/null 2>&1; \
-         then stat -c '%s|%y|%Z' {escaped_path}; \
-         else stat -f '%z|%m|%c' {escaped_path}; fi; fi"
-    );
-    let output = context
-        .executor()
-        .exec_cmd(&Command::shell(command))
-        .await?
-        .into_string_lossy();
-    let trimmed = output.trim();
-    let fields = trimmed.splitn(4, '|').collect::<Vec<_>>();
-    let kind = match fields.first().copied() {
-        Some("file") => FileKind::File,
-        Some("symlink") => FileKind::Symlink,
-        Some("missing") => FileKind::Missing,
-        Some("other") => FileKind::Other,
-        _ => {
-            return Err(ToolError::unknown(anyhow::anyhow!(
-                "Could not inspect {}",
-                path.display()
-            )));
-        }
-    };
-    let fingerprint = if matches!(kind, FileKind::File | FileKind::Symlink) {
-        if fields.len() != 4 {
-            return Err(ToolError::unknown(anyhow::anyhow!(
-                "Could not fingerprint {}",
-                path.display()
-            )));
-        }
-        Some(FileFingerprint {
-            size: fields[1].parse::<u64>().map_err(anyhow::Error::from)?,
-            modified: format!("{}|{}", fields[2], fields[3]),
+fn line_ending(line: &str) -> &str {
+    &line[strip_line_ending(line).len()..]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn numbered_lines(range: std::ops::RangeInclusive<usize>) -> String {
+        range.fold(String::new(), |mut lines, n| {
+            let _ = writeln!(lines, "line {n}");
+            lines
         })
-    } else {
-        None
-    };
+    }
 
-    Ok(FileInfo { kind, fingerprint })
+    #[test]
+    fn a_file_under_the_limits_is_returned_unchanged() {
+        for content in ["one\ntwo\r\nthree", "one\ntwo\n", "\n\n"] {
+            assert!(matches!(
+                file_window(content, 1, DEFAULT_READ_LINES, false),
+                Ok(Cow::Borrowed(window)) if window == content
+            ));
+            let old_numbered = content
+                .lines()
+                .enumerate()
+                .map(|(i, l)| format!("{}|{l}", i + 1))
+                .collect::<Vec<_>>()
+                .join("\n");
+            assert_eq!(
+                file_window(content, 1, DEFAULT_READ_LINES, true).unwrap(),
+                old_numbered
+            );
+        }
+    }
+
+    #[test]
+    fn by_default_the_first_2000_lines_are_returned_and_the_rest_announced() {
+        let content = numbered_lines(1..=2_500);
+
+        let window = file_window(&content, 1, DEFAULT_READ_LINES, false).unwrap();
+
+        assert_eq!(
+            window,
+            numbered_lines(1..=2_000) + "[File has 500 more lines. Use offset=2001 to continue.]"
+        );
+    }
+
+    #[test]
+    fn offset_and_limit_return_exactly_that_window_with_file_line_numbers() {
+        let content = numbered_lines(1..=10);
+
+        assert_eq!(
+            file_window(&content, 4, 2, true).unwrap(),
+            "4|line 4\n5|line 5\n[File has 5 more lines. Use offset=6 to continue.]"
+        );
+        assert_eq!(
+            file_window(&content, 4, 2, false).unwrap(),
+            "line 4\nline 5\n[File has 5 more lines. Use offset=6 to continue.]"
+        );
+        assert_eq!(
+            file_window(&content, 9, 5, true).unwrap(),
+            "9|line 9\n10|line 10"
+        );
+    }
+
+    #[test]
+    fn lines_longer_than_2000_characters_are_cut() {
+        let long = "é".repeat(MAX_READ_LINE_CHARS + 5);
+        let content = format!("{long}\nshort\n");
+        let kept = "é".repeat(MAX_READ_LINE_CHARS);
+
+        assert_eq!(
+            file_window(&content, 1, DEFAULT_READ_LINES, false).unwrap(),
+            format!("{kept}{TRUNCATED_LINE_MARKER}\nshort\n")
+        );
+        assert_eq!(
+            file_window(&content, 1, DEFAULT_READ_LINES, true).unwrap(),
+            format!("1|{kept}{TRUNCATED_LINE_MARKER}\n2|short")
+        );
+    }
+
+    #[test]
+    fn an_offset_past_the_end_explains_itself() {
+        assert_eq!(
+            file_window("one\ntwo\n", 5, DEFAULT_READ_LINES, true).unwrap(),
+            "The file has 2 lines; offset 5 is past the end of the file."
+        );
+    }
+
+    #[test]
+    fn an_empty_file_says_it_exists_but_is_empty() {
+        assert_eq!(
+            file_window("", 1, DEFAULT_READ_LINES, false).unwrap(),
+            "File exists but has empty contents."
+        );
+    }
+
+    #[test]
+    fn a_window_over_100k_characters_is_refused_with_the_paging_hint() {
+        let content = format!("{}\n", "x".repeat(1_000)).repeat(150);
+
+        let refusal = file_window(&content, 1, DEFAULT_READ_LINES, false).unwrap_err();
+
+        assert_eq!(
+            refusal,
+            "File content (~37537 tokens) exceeds the maximum of 25000 tokens. Use the offset and limit parameters to read a specific part of the file, or search it first."
+        );
+        assert!(file_window(&content, 1, 50, false).is_ok());
+    }
 }

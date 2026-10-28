@@ -1,20 +1,10 @@
-use swiftide_core::{CommandError, CommandOutput};
+pub(crate) use crate::command::accept_non_zero_exit;
 
 pub(crate) const FILE_READ_TOOL_NAMES: &[&str] =
     &["read_file", "read_file_with_line_numbers", "Read"];
 
 pub(crate) fn is_file_read_tool(name: &str) -> bool {
     FILE_READ_TOOL_NAMES.contains(&name)
-}
-
-pub(crate) fn accept_non_zero_exit(
-    result: Result<CommandOutput, CommandError>,
-) -> Result<CommandOutput, CommandError> {
-    if let Err(CommandError::NonZeroExit(output)) = result {
-        tracing::warn!(?output, "command exited with non-zero status");
-        return Ok(output);
-    }
-    result
 }
 
 pub(crate) struct Templates;

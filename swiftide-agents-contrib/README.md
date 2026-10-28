@@ -2,7 +2,7 @@
 
 Optional tools, context hooks, and executor helpers for Swiftide agents, extracted from Fluyt.
 Choose features and register the components your agent needs. No features are enabled by default.
-See [source parity](SOURCE_PARITY.md) for the source revision and extraction details.
+See [source parity](https://github.com/bosun-ai/swiftide/blob/master/swiftide-agents-contrib/SOURCE_PARITY.md) for the source revision and extraction details.
 
 ```toml
 [dependencies]
@@ -13,7 +13,7 @@ swiftide-agents-contrib = { version = "0.33", features = ["planning", "file-tool
 
 | Feature | Components | Requirements |
 | --- | --- | --- |
-| `file-tools` | `ReadFile`, `ExactReplace`, `ApplyPatch` | An executor with a POSIX-like shell and the source tools' `tail`, `head`, `awk`, `stat`, `wc`, `mkdir`, and `rm` commands |
+| `file-tools` | `ReadFile`, `ExactReplace`, `ApplyPatch` | An executor with a POSIX-like shell and the source tools' `cat`, `mkdir`, and `rm` commands |
 | `planning` | `UpdatePlan`, `PlanMemory`, `PlanItem`, `PlanStatus` | In-process memory |
 | `context-management` | `ToolSummarizer`, `ContextCompression`, and builders | Caller-supplied models and Git context; examples also use `anyhow = "1"` |
 | `lazy-executor` | `LazyExecutor`, `ToolExecutorExt` | An async executor factory; downloads use `dd`, `base64`, and `sha256sum` |
@@ -42,23 +42,29 @@ Agent::builder()
 
 | Tool name | Arguments | Behavior |
 | --- | --- | --- |
-| `Read` | Absolute `file_path`, optional `offset` and `limit` | Defaults to 2,000 numbered lines. Zero offset starts at one. Explicit limits must be 1–100,000. |
+| `read_file` | `file_name`, optional `offset` and `limit` | Defaults to 2,000 lines. Zero offset starts at one; zero limit fails. |
+| `read_file_with_line_numbers` | Same arguments | Same reader and caps, with original `N|` line numbers. |
 | `edit` | `file_path`, `old_string`, `new_string`, optional `replace_all` | Replaces a unique exact match, or all matches when requested. |
 | `apply_patch` | `patch` | Adds, updates, moves, and deletes files using the format below. |
 | `update_plan` | `items` and `explanation`, both required | Stores steps with `pending`, `in_progress`, or `completed` status. Empty items retrieve the plan. |
 
-`ReadFile` exposes Fluyt's capped `Read`, with its original argument names, output formatting,
-metadata checks, and page coverage tracking. Its text budget is 100,000 using the source
-calculation of line length plus 16 characters per line. Default pages include continuation
-instructions when partial. Explicit requests over the budget fail. Clones share read state.
-The uncapped `read_file` tool is not included.
+`ReadFile::default()` registers `read_file`; `ReadFile::default().with_line_numbers()` registers
+`read_file_with_line_numbers`. Both use Fluyt's shared reader unchanged. They accept relative or
+absolute paths, cut lines at 2,000 characters with `… [line truncated]`, and refuse a selected
+window over 100,000 characters using the source accounting. A partial page explains the next
+offset. Files below all limits retain their original text in plain mode.
 
 ```json
-{"file_path":"/project/src/lib.rs","offset":2001,"limit":1000}
+{"file_name":"src/lib.rs","offset":2001,"limit":1000}
 ```
+
+The executor reads the complete file before selecting and rendering the page, matching Fluyt.
+Nonzero command exits are forwarded as text. The separate provider-specific `Read` tool and its
+edit-state tracking are not exposed here.
 
 `UpdatePlan` rejects empty steps and multiple in-progress steps without replacing the plan.
 Clones share state; fresh default tools have independent plans. State is not persisted.
+Supply an empty `explanation` string when there is nothing to explain.
 
 ```text
 *** Begin Patch

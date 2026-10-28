@@ -1,11 +1,11 @@
 # Source parity
 
 This crate extracts the following implementations from Fluyt commit
-`3f7a5d15` (`quak/quak-core/`). Fluyt is unchanged.
+`aa62169de72ff16ac92d4e5aec54bf3cd8773c00` (remote `master`, verified with `git ls-remote`) (`quak/quak-core/`). Fluyt is unchanged.
 
 | Contrib API | Source under `src/` | Preserved behavior |
 | --- | --- | --- |
-| `ReadFile` (tool name `Read`) | `tools/claude_code_file_tools.rs`: `ClaudeCodeRead` and its reachable helpers | Absolute paths, arguments, 2,000-line default, character accounting, numbered output, metadata checks, locks, and page coverage |
+| `ReadFile` (`read_file` and `read_file_with_line_numbers`) | `tools/read_file.rs` | Shared window selection, arguments, 2,000-line default, 2,000-character line truncation, 100,000-character window limit, numbering, continuation, and executor errors |
 | `ExactReplace` | `tools/exact_replace.rs` | Arguments, lossy decoding, exact matching, validation, errors, and writes |
 | `ApplyPatch` | `tools/apply_patch.rs` | Parser, matching, newline handling, path validation, shell commands, operation order, retry detection, and reports |
 | `UpdatePlan` | `tools/update_plan.rs` | Shared state, required arguments, validation, trimming, rendering, and errors |
@@ -15,20 +15,21 @@ This crate extracts the following implementations from Fluyt commit
 | `ToolExecutorExt` and download helpers | `traits.rs`, `executor_download.rs` | Lifecycle, scoped delegation, chunking, size checks, binary transport, checksum, and error cleanup |
 
 The two prompt templates are copied verbatim from `templates/tool_summarizer.md` and
-`templates/conversation_summary.md`. The source's uncapped `read_file`, other provider file tools,
+`templates/conversation_summary.md`. The separate provider-specific `Read`/`Edit`/`Write` tools
 and context compression v2 are not exposed.
 
 ## Extraction adapters
 
 - Imports target `swiftide-core` and `swiftide-agents` directly. Internal application registration
   and Quacker wiring are removed; callers register tools and hooks explicitly.
-- `ClaudeCodeRead` is named `ReadFile` in Rust, and its state has a generic internal name.
-  Its model-visible name remains `Read`. State helpers used only by unextracted write/edit tools
-  are omitted. This does not attach read-state checks to the separate `ExactReplace` tool.
-- `UpdatePlan` and original-instructions recovery implement `Tool` directly instead of using the
-  facade derive macro, which would create a crate dependency cycle. Their generated contracts
-  are retained, including schema descriptions and required fields. Public plan documentation
-  is kept out of model-facing schemas.
+- `ReadFile` wraps the source's two file-reading entry points in one Rust type. The default
+  registers `read_file`; `with_line_numbers()` registers `read_file_with_line_numbers`.
+  Both call the original shared window implementation. Tool names and descriptions, arguments,
+  schemas, and missing-argument errors retain the source derive macro's contracts.
+- The reader, `UpdatePlan`, and original-instructions recovery implement `Tool` directly instead
+  of using the facade derive macro, which would create a crate dependency cycle. Their generated
+  contracts are retained, including schema descriptions and required fields. Public plan
+  documentation is kept out of model-facing schemas.
 - A private template adapter embeds the two templates and renders them with Tera. Neither
   template depends on application templates, custom filters, or includes.
 - `ToolExecutorExt` retains the generic source contract; application executor implementations
@@ -42,7 +43,7 @@ and context compression v2 are not exposed.
 
 Runtime function bodies were compared against this source revision, ignoring comments,
 whitespace, import paths, and the listed type names. Templates were checked byte for byte.
-Tests exercise source read limits and race checks, patch operations and failures, exact
+Tests exercise source paging, line truncation, window refusal, and both read contracts, patch operations and failures, exact
 replacement, plan contracts, hook defaults and failures, initialization, and binary downloads.
 Public examples compile as doctests, and each feature is checked independently.
 

@@ -1,24 +1,21 @@
 #![cfg(feature = "file-tools")]
+
+use std::sync::Arc;
+
 use serde_json::{Value, json};
-use std::{path::Path, sync::Arc};
 use swiftide_agents::{DefaultContext, tools::local_executor::LocalExecutor};
 use swiftide_agents_contrib::tools::ReadFile;
 use swiftide_core::{
-    Command, CommandError, CommandOutput, ToolExecutor,
+    ToolExecutor,
     chat_completion::{Tool, ToolCall, ToolOutput},
-    indexing::IndexingStream,
 };
-fn context(directory: &Path) -> DefaultContext {
-    DefaultContext::from_executor(Arc::new(
-        LocalExecutor::builder().workdir(directory).build().unwrap(),
-    ) as Arc<dyn ToolExecutor>)
-}
-async fn read(tool: &ReadFile, context: &DefaultContext, args: Value) -> ToolOutput {
+
+async fn invoke(tool: &ReadFile, context: &DefaultContext, args: Value) -> ToolOutput {
     tool.invoke(
         context,
         &ToolCall::builder()
             .id("read")
-            .name("Read")
+            .name(tool.name())
             .args(args.to_string())
             .build()
             .unwrap(),
@@ -26,152 +23,125 @@ async fn read(tool: &ReadFile, context: &DefaultContext, args: Value) -> ToolOut
     .await
     .unwrap()
 }
+
 #[tokio::test]
-async fn source_read_arguments_numbering_empty_files_and_past_end_messages_are_preserved() {
-    let directory = temp_dir::TempDir::new().unwrap();
-    let path = directory.path().join("a file's.txt");
-    std::fs::write(&path, "one\ntwo\nthree").unwrap();
-    let context = context(directory.path());
-    let tool = ReadFile::default();
-    for (offset, limit, expected) in [
-        (None, None, "     1→one\n     2→two\n     3→three"),
-        (Some(0), Some(1), "     1→one"),
-        (Some(2), Some(2), "     2→two\n     3→three"),
-        (
-            Some(30),
-            None,
-            "The file has 3 lines; offset 30 is past the end of the file.",
-        ),
-    ] {
-        assert_eq!(
-            read(
-                &tool,
-                &context,
-                json!({"file_path":path,"offset":offset,"limit":limit})
-            )
-            .await
-            .as_text(),
-            Some(expected)
-        );
-    }
-    assert!(
-        read(&tool, &context, json!({"file_path":"relative.txt"}))
-            .await
-            .as_fail()
-            .is_some()
-    );
-    assert!(
-        read(&tool, &context, json!({"file_path":path,"limit":0}))
-            .await
-            .as_fail()
-            .is_some()
-    );
-    assert!(
-        read(&tool, &context, json!({"file_path":path,"limit":100_001}))
-            .await
-            .as_fail()
-            .is_some()
-    );
-    std::fs::write(&path, "").unwrap();
-    assert_eq!(
-        read(&tool, &context, json!({"file_path":path}))
-            .await
-            .as_text(),
-        Some("File exists but has empty contents.")
-    );
-}
-#[tokio::test]
-async fn source_default_line_limit_continuation_and_character_accounting_are_preserved() {
-    use std::fmt::Write as _;
-    let directory = temp_dir::TempDir::new().unwrap();
-    let path = directory.path().join("large.txt");
-    let context = context(directory.path());
-    let tool = ReadFile::default();
-    let mut text = String::new();
-    for line in 1..=2001 {
-        writeln!(text, "line {line}").unwrap();
-    }
-    std::fs::write(&path, text).unwrap();
-    let output = read(&tool, &context, json!({"file_path":path})).await;
-    assert!(
-        output
-            .as_text()
-            .unwrap()
-            .contains("PARTIAL view: showing lines 1-2000")
-    );
-    assert!(output.as_text().unwrap().contains("offset=2001"));
-    assert!(!output.as_text().unwrap().contains("line 2001"));
-    let next = read(&tool, &context, json!({"file_path":path,"offset":2001})).await;
-    assert_eq!(next.as_text(), Some("  2001→line 2001"));
-    std::fs::write(&path, format!("{}\n", "x".repeat(100)).repeat(1000)).unwrap();
-    let output = read(&tool, &context, json!({"file_path":path})).await;
-    // The source budget reserves 16 characters per line; it is not the rendered byte count.
-    assert!(output.as_text().unwrap().contains("showing lines 1-862"));
-    assert!(output.as_text().unwrap().contains("offset=863"));
-    assert!(
-        read(&tool, &context, json!({"file_path":path,"limit":1000}))
-            .await
-            .as_fail()
-            .is_some()
-    );
-    std::fs::write(&path, "x".repeat(100_001)).unwrap();
-    assert!(
-        read(&tool, &context, json!({"file_path":path}))
-            .await
-            .as_fail()
-            .is_some()
-    );
-}
-#[derive(Clone)]
-struct ChangeDuringRead {
-    executor: LocalExecutor,
-    path: std::path::PathBuf,
-}
-#[async_trait::async_trait]
-impl ToolExecutor for ChangeDuringRead {
-    async fn exec_cmd(&self, command: &Command) -> Result<CommandOutput, CommandError> {
-        let result = self.executor.exec_cmd(command).await?;
-        if matches!(command,Command::Shell{command,..} if command.contains("__QUAK_CLAUDE_READ_META__"))
-        {
-            std::fs::write(&self.path, "changed after the read").unwrap();
-        }
-        Ok(result)
-    }
-    async fn stream_files(
-        &self,
-        path: &Path,
-        extensions: Option<Vec<String>>,
-    ) -> anyhow::Result<IndexingStream<String>> {
-        self.executor.stream_files(path, extensions).await
-    }
-}
-#[tokio::test]
-async fn source_metadata_check_rejects_a_file_changed_during_reading() {
-    let directory = temp_dir::TempDir::new().unwrap();
-    let path = directory.path().join("file.txt");
-    std::fs::write(&path, "old").unwrap();
-    let context = DefaultContext::from_executor(Arc::new(ChangeDuringRead {
-        executor: LocalExecutor::builder()
-            .workdir(directory.path())
+async fn both_source_read_modes_page_through_executor_output_with_original_line_numbers() {
+    let dir = temp_dir::TempDir::new().unwrap();
+    let path = dir.path().join("notes.txt");
+    std::fs::write(&path, "line 1\nline 2\nline 3\n").unwrap();
+    let context = DefaultContext::from_executor(Arc::new(
+        LocalExecutor::builder()
+            .workdir(dir.path())
             .build()
             .unwrap(),
-        path: path.clone(),
-    }) as Arc<dyn ToolExecutor>);
-    assert!(
-        read(&ReadFile::default(), &context, json!({"file_path":path}))
+    ) as Arc<dyn ToolExecutor>);
+    let plain = ReadFile::default();
+    let numbered = plain.clone().with_line_numbers();
+    assert_eq!(
+        invoke(&plain, &context, json!({"file_name":"notes.txt"}))
             .await
-            .as_fail()
-            .unwrap()
-            .contains("changed while it was being read")
+            .as_text(),
+        Some("line 1\nline 2\nline 3\n")
     );
+    assert_eq!(
+        invoke(
+            &numbered,
+            &context,
+            json!({"file_name":"notes.txt","offset":2,"limit":1})
+        )
+        .await
+        .as_text(),
+        Some("2|line 2\n[File has 1 more lines. Use offset=3 to continue.]")
+    );
+    assert_eq!(
+        invoke(
+            &plain,
+            &context,
+            json!({"file_name":path,"offset":0,"limit":1})
+        )
+        .await
+        .as_text(),
+        Some("line 1\n[File has 2 more lines. Use offset=2 to continue.]")
+    );
+    for tool in [&plain, &numbered] {
+        assert_eq!(
+            invoke(tool, &context, json!({"file_name":"notes.txt","limit":0}))
+                .await
+                .as_fail(),
+            Some("limit must be 1 or greater")
+        );
+        assert!(
+            invoke(tool, &context, json!({"file_name":"missing.txt"}))
+                .await
+                .as_text()
+                .unwrap()
+                .contains("missing.txt")
+        );
+        // The source derive macro accepts extra keys at runtime despite its strict schema.
+        assert!(
+            invoke(
+                tool,
+                &context,
+                json!({"file_name":"notes.txt","extra":true})
+            )
+            .await
+            .as_text()
+            .is_some()
+        );
+        let call = ToolCall::builder()
+            .id("missing-args")
+            .name(tool.name())
+            .build()
+            .unwrap();
+        let error = tool.invoke(&context, &call).await.unwrap_err();
+        assert!(
+            matches!(error, swiftide_core::chat_completion::errors::ToolError::MissingArguments(message) if message == format!("No arguments provided for {}",tool.name()))
+        );
+    }
+}
+
+#[tokio::test]
+async fn both_source_read_modes_apply_default_paging_line_truncation_and_window_refusal() {
+    let dir = temp_dir::TempDir::new().unwrap();
+    let path = dir.path().join("notes.txt");
+    let context =
+        DefaultContext::from_executor(Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>);
+    for tool in [ReadFile::default(), ReadFile::default().with_line_numbers()] {
+        std::fs::write(&path, "small\n".repeat(2_500)).unwrap();
+        let output = invoke(&tool, &context, json!({"file_name":path})).await;
+        assert!(
+            output
+                .as_text()
+                .unwrap()
+                .ends_with("[File has 500 more lines. Use offset=2001 to continue.]")
+        );
+        std::fs::write(&path, "é".repeat(2_005)).unwrap();
+        let output = invoke(&tool, &context, json!({"file_name":path})).await;
+        assert!(output.as_text().unwrap().ends_with("… [line truncated]"));
+        assert_eq!(output.as_text().unwrap().matches('é').count(), 2_000);
+        std::fs::write(&path, format!("{}\n", "x".repeat(1_000)).repeat(150)).unwrap();
+        assert!(
+            invoke(&tool, &context, json!({"file_name":path}))
+                .await
+                .as_fail()
+                .unwrap()
+                .contains("exceeds the maximum of 25000 tokens")
+        );
+        assert!(
+            invoke(&tool, &context, json!({"file_name":path,"limit":50}))
+                .await
+                .as_text()
+                .is_some()
+        );
+    }
 }
 
 #[test]
-fn read_spec_matches_the_source_snapshot() {
-    let expected: serde_json::Value =
-        serde_json::from_str(include_str!("fixtures/read_spec.json")).unwrap();
-    assert_eq!(
-        serde_json::to_value(ReadFile::default().tool_spec()).unwrap(),
-        expected
-    );
+fn read_specs_preserve_the_source_macro_contracts() {
+    let expected: Value = serde_json::from_str(include_str!("fixtures/read_spec.json")).unwrap();
+    let actual: Vec<_> = [ReadFile::default(), ReadFile::default().with_line_numbers()]
+        .iter()
+        .map(Tool::tool_spec)
+        .collect();
+    assert_eq!(serde_json::to_value(actual).unwrap(), expected);
 }
