@@ -111,18 +111,89 @@ async fn empty_files_and_ranges_past_the_end_return_empty_text() {
 }
 
 #[tokio::test]
-async fn full_reads_do_not_apply_an_implicit_output_limit() {
+async fn default_pages_stop_after_two_thousand_lines_and_explain_how_to_continue() {
     let directory = temp_dir::TempDir::new().unwrap();
-    let contents = "long file contents\n".repeat(10_000);
+    use std::fmt::Write as _;
+    let mut contents = String::new();
+    for line in 1..=2_001 {
+        writeln!(contents, "line {line}").unwrap();
+    }
     std::fs::write(directory.path().join("large.txt"), &contents).unwrap();
+    let context = context(directory.path());
+    for tool in [ReadFile::default(), ReadFile::default().with_line_numbers()] {
+        let result = read(&tool, &context, json!({"file_name":"large.txt"}))
+            .await
+            .unwrap();
+        let output = result.as_text().unwrap();
+        assert!(output.contains("line 2000\n"));
+        assert!(!output.contains("line 2001\n"));
+        assert!(output.contains("PARTIAL view"));
+        assert!(output.contains("start_line=2001"));
+        let next = read(
+            &tool,
+            &context,
+            json!({"file_name":"large.txt","start_line":2001}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(next.as_text(), Some("2001|line 2001\n"));
+    }
     let result = read(
         &ReadFile::default(),
-        &context(directory.path()),
+        &context,
+        json!({"file_name":"large.txt","end_line":2001}),
+    )
+    .await
+    .unwrap();
+    assert!(result.as_text().unwrap().contains("2001|line 2001\n"));
+    assert!(!result.as_text().unwrap().contains("PARTIAL"));
+}
+
+#[tokio::test]
+async fn text_budget_marks_default_pages_and_rejects_oversized_ranges_or_single_lines() {
+    let directory = temp_dir::TempDir::new().unwrap();
+    let line = format!("{}\n", "α".repeat(10_000));
+    std::fs::write(directory.path().join("large.txt"), line.repeat(6)).unwrap();
+    std::fs::write(directory.path().join("long.txt"), "x".repeat(100_001)).unwrap();
+    let context = context(directory.path());
+    let result = read(
+        &ReadFile::default(),
+        &context,
         json!({"file_name":"large.txt"}),
     )
     .await
     .unwrap();
-    assert_eq!(result.content(), Some(contents.as_str()));
+    let output = result.as_text().unwrap();
+    assert!(output.contains("PARTIAL view"));
+    assert!(output.contains("start_line=5"));
+    assert!(!output.contains('\u{fffd}'));
+    assert!(output.len() < 100_200);
+    for args in [
+        json!({"file_name":"large.txt","end_line":6}),
+        json!({"file_name":"long.txt"}),
+    ] {
+        assert!(
+            read(&ReadFile::default(), &context, args)
+                .await
+                .unwrap()
+                .as_fail()
+                .is_some()
+        );
+    }
+    // Bytes beyond a requested range must not make a valid small excerpt fail.
+    std::fs::write(
+        directory.path().join("prefix.txt"),
+        format!("short\n{}", "x".repeat(100_001)),
+    )
+    .unwrap();
+    let result = read(
+        &ReadFile::default(),
+        &context,
+        json!({"file_name":"prefix.txt","end_line":1}),
+    )
+    .await
+    .unwrap();
+    assert_eq!(result.as_text(), Some("1|short\n"));
 }
 
 #[derive(Clone)]
@@ -172,7 +243,9 @@ async fn excerpts_select_lines_inside_the_executor_without_reading_the_whole_fil
     assert_eq!(result.content(), Some("2|two\n3|three\n"));
     let commands = commands.lock().unwrap();
     assert_eq!(commands.len(), 1);
-    assert!(matches!(&commands[0], Command::Shell { command, .. } if command.starts_with("awk ")));
+    assert!(
+        matches!(&commands[0], Command::Shell { command, .. } if command.contains("tail -n +2 | head -n 3 | head -c 100001"))
+    );
 }
 
 #[tokio::test]
@@ -195,6 +268,7 @@ async fn invalid_ranges_fail_before_touching_the_executor_and_file_errors_remain
         json!({"file_name":"missing","start_line":-1}),
         json!({"file_name":"missing","start_line":4,"end_line":2}),
         json!({"file_name":"missing","unexpected":1}),
+        json!({"file_name":"missing","end_line":100_001}),
     ] {
         let result = read(&ReadFile::default(), &context, args).await;
         assert!(result.is_err() || result.unwrap().as_fail().is_some());
@@ -203,6 +277,7 @@ async fn invalid_ranges_fail_before_touching_the_executor_and_file_errors_remain
     for args in [
         json!({"file_name":"missing"}),
         json!({"file_name":"missing","start_line":2}),
+        json!({"file_name":"."}),
     ] {
         assert!(read(&ReadFile::default(), &context, args).await.is_err());
     }

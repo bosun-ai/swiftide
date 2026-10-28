@@ -17,7 +17,10 @@ use swiftide_core::{
 /// relative and cannot contain parent directory components. Operations execute in order; a
 /// patch is not a transaction. Read the returned report to see which operations succeeded.
 /// The executor controls filesystem access, including symlinks and isolation. Shell operations
-/// require a POSIX-like shell with `mkdir` and `rm` supporting `--`.
+/// require a POSIX-like shell with `mkdir` and `rm` supporting `--` and file identity tests
+/// (`-ef`). Moves onto the same file through symlinks or hard links are rejected before writing.
+/// Coordinate concurrent filesystem changes in the executor; path checks and writes are separate
+/// operations.
 ///
 /// The tool name is `apply_patch`. Its `patch` argument uses file headers and line-based hunks:
 ///

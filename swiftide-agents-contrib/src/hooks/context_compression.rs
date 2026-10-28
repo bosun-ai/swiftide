@@ -5,7 +5,10 @@ use std::{
 
 use anyhow::{Result, ensure};
 use async_trait::async_trait;
-use swiftide_agents::{Agent, hooks::AfterEachFn};
+use swiftide_agents::{
+    Agent,
+    hooks::{AfterEachFn, Hook},
+};
 use swiftide_core::{
     AgentContext, ChatCompletion,
     chat_completion::{ChatMessage, Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
@@ -24,20 +27,21 @@ struct CompressionPolicy {
 
 /// Summarize a conversation after a turn or token threshold.
 ///
-/// Register with [`swiftide_agents::AgentBuilder::after_each`]. The default trigger is five
+/// Add the lifecycle hooks from [`Self::hooks`] to your agent builder. The default trigger is five
 /// completed turns; [`ContextCompressionBuilder::context_limit`] adds a token trigger.
 /// Supply a model through [`ContextCompressionBuilder::llm`]. Stopped agents and final answers
-/// without tool calls are skipped; skipped final answers retain the turn counter. A
-/// successful summary is appended using Swiftide's existing summary message behavior, so full
-/// history stays available while subsequent completions use the latest summary. A user continuation
-/// message follows the summary for providers requiring a final user/tool turn.
+/// without tool calls are skipped; skipped final answers retain the turn counter. Completions
+/// that add no messages leave history and counters unchanged. A successful summary is appended
+/// using Swiftide's existing summary message behavior, so full history stays available while
+/// subsequent completions use the latest summary. A user continuation message follows the summary
+/// for providers requiring a final user/tool turn.
 ///
 /// A `read_original_instructions` tool is installed after compression. It returns the first user
 /// message verbatim; multipart instructions are reattached after all tool results are recorded,
-/// preserving their media and the order of tool exchanges. The
-/// tool name is reserved by this hook. Model/estimation failures leave history unchanged and are
-/// logged without message content. Compaction is lossy; use a separate durable store for facts
-/// that must never be omitted. Create a fresh hook for each independent agent.
+/// preserving their media and the order of tool exchanges. The tool name is reserved by this hook.
+/// Model/estimation failures leave history unchanged and are logged without message content.
+/// Compaction is lossy; use a separate durable store for facts that must never be omitted. Create a
+/// fresh hook for each independent agent.
 ///
 /// # Examples
 ///
@@ -56,7 +60,9 @@ struct CompressionPolicy {
 ///         .context_limit(32_000)
 ///         .summarize_every_turns(5)
 ///         .build()?;
-///     agent.after_each(compression.summarize_hook());
+///     for hook in compression.hooks() {
+///         agent.add_hook(hook);
+///     }
 ///     Ok(())
 /// }
 /// ```
@@ -84,7 +90,9 @@ pub struct ContextCompression<E = CharEstimator> {
 ///         .context_limit(32_000)
 ///         .summarize_every_turns(5)
 ///         .build()?;
-///     agent.after_each(compression.summarize_hook());
+///     for hook in compression.hooks() {
+///         agent.add_hook(hook);
+///     }
 ///     Ok(())
 /// }
 /// ```
@@ -113,7 +121,9 @@ impl ContextCompression {
     ///         .llm(summary_model)
     ///         .context_limit(32_000)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -149,7 +159,9 @@ impl<E> ContextCompressionBuilder<E> {
     ///         .llm(summary_model)
     ///         .context_limit(32_000)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -176,7 +188,9 @@ impl<E> ContextCompressionBuilder<E> {
     ///         .llm(summary_model)
     ///         .prompt("Preserve the original goal and completed work: {{original_instructions}}")
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -203,7 +217,9 @@ impl<E> ContextCompressionBuilder<E> {
     ///         .llm(summary_model)
     ///         .context_limit(32_000)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -229,7 +245,9 @@ impl<E> ContextCompressionBuilder<E> {
     ///         .llm(summary_model)
     ///         .summarize_every_turns(10)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -257,7 +275,9 @@ impl<E> ContextCompressionBuilder<E> {
     ///         .token_estimator(tokenizer)
     ///         .context_limit(32_000)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -285,7 +305,9 @@ impl<E> ContextCompressionBuilder<E> {
     ///         .llm(summary_model)
     ///         .context_limit(32_000)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
@@ -315,10 +337,36 @@ struct CompressionState {
     turns: usize,
     original: Option<ChatMessage>,
     restore_original: bool,
+    history_before_completion: Option<usize>,
+}
+
+impl CompressionState {
+    fn record_turn(&mut self, history: &[ChatMessage]) -> Option<(usize, Option<ChatMessage>)> {
+        if history.is_empty() || self.history_before_completion.take() == Some(history.len()) {
+            return None;
+        }
+        self.turns = self.turns.saturating_add(1);
+        if self.original.is_none() {
+            self.original = history
+                .iter()
+                .find(|message| {
+                    matches!(
+                        message,
+                        ChatMessage::User(_) | ChatMessage::UserWithParts(_)
+                    )
+                })
+                .cloned();
+        }
+        Some((self.turns, self.original.clone()))
+    }
 }
 
 impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
-    /// Register this hook with `AgentBuilder::after_each`. Cloned hook closures share counters.
+    /// Return the lifecycle hooks that track completions and compress their resulting exchanges.
+    ///
+    /// Add every returned hook with `AgentBuilder::add_hook`. The before-completion hook records
+    /// the history length so an empty response cannot trigger a new completion through compression.
+    /// Cloned hooks share counters and original instructions; use a fresh set for each agent.
     ///
     /// # Examples
     ///
@@ -336,14 +384,37 @@ impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
     ///         .llm(summary_model)
     ///         .context_limit(32_000)
     ///         .build()?;
-    ///     agent.after_each(compression.summarize_hook());
+    ///     for hook in compression.hooks() {
+    ///         agent.add_hook(hook);
+    ///     }
     ///     Ok(())
     /// }
     /// ```
-    #[must_use = "register the hook with after_each"]
-    pub fn summarize_hook(self) -> impl AfterEachFn + Clone {
-        let this = Arc::new(self);
+    /// # Panics
+    ///
+    /// Returned hooks panic if another thread panicked while holding their shared state lock.
+    #[must_use = "add every returned hook to the agent builder"]
+    pub fn hooks(self) -> Vec<Hook> {
         let state = Arc::new(Mutex::new(CompressionState::default()));
+        let before_state = Arc::clone(&state);
+        vec![
+            Hook::BeforeCompletion(Box::new(move |agent, _| {
+                let state = Arc::clone(&before_state);
+                Box::pin(async move {
+                    let length = agent.context().history().await?.len();
+                    state
+                        .lock()
+                        .expect("compression lock poisoned")
+                        .history_before_completion = Some(length);
+                    Ok(())
+                })
+            })),
+            Hook::AfterEach(Box::new(self.summarize_hook(state))),
+        ]
+    }
+
+    fn summarize_hook(self, state: Arc<Mutex<CompressionState>>) -> impl AfterEachFn + Clone {
+        let this = Arc::new(self);
         move |agent| {
             let this = Arc::clone(&this);
             let state = Arc::clone(&state);
@@ -369,24 +440,12 @@ impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
         state: &Arc<Mutex<CompressionState>>,
     ) -> Result<()> {
         let history = agent.context().history().await?;
-        if history.is_empty() {
+        let Some((turns, original)) = state
+            .lock()
+            .expect("compression lock poisoned")
+            .record_turn(&history)
+        else {
             return Ok(());
-        }
-        let (turns, original) = {
-            let mut state = state.lock().expect("compression lock poisoned");
-            state.turns = state.turns.saturating_add(1);
-            if state.original.is_none() {
-                state.original = history
-                    .iter()
-                    .find(|message| {
-                        matches!(
-                            message,
-                            ChatMessage::User(_) | ChatMessage::UserWithParts(_)
-                        )
-                    })
-                    .cloned();
-            }
-            (state.turns, state.original.clone())
         };
         // Appending even a summary here would make next_completion restart a finished answer.
         if matches!(history.last(), Some(ChatMessage::Assistant(_, calls)) if calls.as_ref().is_none_or(Vec::is_empty))

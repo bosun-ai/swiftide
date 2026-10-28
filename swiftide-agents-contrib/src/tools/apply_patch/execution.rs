@@ -148,6 +148,18 @@ async fn apply_update_file(
     move_path: Option<&PathBuf>,
     chunks: &[UpdateFileChunk],
 ) -> Result<UpdateOutcome, ToolError> {
+    if let Some(destination) = move_path {
+        let source_path = escape(source.to_string_lossy());
+        let destination_path = escape(destination.to_string_lossy());
+        let identity = executor.exec_cmd(&Command::shell(format!(
+            "if [ {source_path} -ef {destination_path} ]; then printf same; else printf different; fi"
+        ))).await?;
+        if identity.as_bytes().as_ref() == b"same" {
+            return Err(ToolError::unknown(anyhow!(
+                "move destination must differ from the source"
+            )));
+        }
+    }
     let read_cmd = Command::read_file(source.to_path_buf());
     let original = executor
         .exec_cmd(&read_cmd)

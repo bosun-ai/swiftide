@@ -1,8 +1,8 @@
 //! Context hooks for tool results and long conversations.
 //!
 //! Register [`ToolSummarizer::summarize_hook`] with [`swiftide_agents::AgentBuilder::after_tool`]
-//! and [`ContextCompression::summarize_hook`] with
-//! [`swiftide_agents::AgentBuilder::after_each`]. Both hooks retain usable input when a model
+//! and add every [`ContextCompression::hooks`] entry with
+//! [`swiftide_agents::AgentBuilder::add_hook`]. Both hooks retain usable input when a model
 //! fails.
 //!
 //! # Examples
@@ -27,8 +27,10 @@
 //!         .llm(summary_model)
 //!         .context_limit(32_000)
 //!         .build()?;
-//!     agent.after_tool(logs.summarize_hook())
-//!         .after_each(conversation.summarize_hook());
+//!     agent.after_tool(logs.summarize_hook());
+//!     for hook in conversation.hooks() {
+//!         agent.add_hook(hook);
+//!     }
 //!     Ok(())
 //! }
 //! ```

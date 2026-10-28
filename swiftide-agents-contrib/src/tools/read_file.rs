@@ -9,18 +9,20 @@ use swiftide_core::{
     chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
 };
 
-/// Read a text file through the agent's executor (tool name: `read_file`).
+/// Read a regular text file through the agent's executor (tool name: `read_file`).
 ///
-/// With only `file_name`, return the full contents without adding line numbers or applying an
-/// output limit. Optional `start_line` and `end_line` select a one-based, inclusive range and
-/// include the original line numbers as `number|text`. Omit `start_line` to begin at line one;
-/// omit `end_line` to read through the end. An empty file or a range past its end returns empty
-/// text. Numbered output ends each returned line with a newline, including the final line.
+/// Reads default to 2,000 lines with a 100,000-byte text budget, following Fluyt's paged reader.
+/// Optional `start_line` and `end_line` select a one-based, inclusive range and include original
+/// line numbers as `number|text`. Omit `start_line` to begin at line one; omit `end_line` for the
+/// default page size. Explicit ranges may request up to 100,000 lines but must fit the text budget.
+/// Partial default pages include the next `start_line`; oversized explicit ranges fail rather than
+/// silently returning incomplete text. An oversized single line fails. Empty files and ranges past
+/// the end return empty text. Numbered output ends each returned line with a newline.
 ///
-/// Use [`Self::with_line_numbers`] to number full-file reads too. Both modes accept paths relative
+/// Use [`Self::with_line_numbers`] to number default pages too. Both modes accept paths relative
 /// to the executor's working directory or absolute paths in its filesystem. Ranges and numbered
-/// reads require a POSIX-like shell with `awk`; the executor selects the lines before returning
-/// output. Full-file reads use [`Command::read_file`]. The executor controls access and isolation.
+/// reads require a POSIX-like shell with `tail` and `head`. The executor selects the page and
+/// caps returned file bytes before formatting. The executor controls access and isolation.
 ///
 /// # Examples
 ///
@@ -43,10 +45,10 @@ pub struct ReadFile {
 }
 
 impl ReadFile {
-    /// Number full-file reads and use the tool name `read_file_with_line_numbers`.
+    /// Number default pages and use the tool name `read_file_with_line_numbers`.
     ///
-    /// Range reads include line numbers in either mode. This setting adds numbers when the caller
-    /// omits both range arguments, preserving the existing numbered-file tool contract.
+    /// Range reads include line numbers in either mode. This setting also adds numbers when the
+    /// caller omits both range arguments.
     ///
     /// # Examples
     ///
@@ -71,26 +73,94 @@ struct ReadArgs {
     file_name: String,
     /// First line to read, starting at one. Omit to begin at line one.
     start_line: Option<NonZeroUsize>,
-    /// Last line to read, inclusive. Omit to read through the end of the file.
+    /// Last line to read, inclusive. Omit for a page of up to 2,000 lines.
     end_line: Option<NonZeroUsize>,
 }
+
+const DEFAULT_LINE_LIMIT: usize = 2_000;
+const MAX_LINE_LIMIT: usize = 100_000;
+const MAX_TEXT_BYTES: usize = 100_000;
 
 impl ReadArgs {
     fn start(&self) -> usize {
         self.start_line.map_or(1, NonZeroUsize::get)
     }
 
-    fn command(&self, numbered: bool) -> Command {
-        if !numbered && self.start_line.is_none() && self.end_line.is_none() {
-            return Command::read_file(&self.file_name);
-        }
+    fn line_limit(&self) -> usize {
+        self.end_line
+            .map_or(DEFAULT_LINE_LIMIT, |end| end.get() - self.start() + 1)
+    }
+
+    fn numbered(&self, numbered: bool) -> bool {
+        numbered || self.start_line.is_some() || self.end_line.is_some()
+    }
+
+    fn command(&self) -> Command {
         let start = self.start();
-        let end = self.end_line.map_or(0, NonZeroUsize::get);
+        let lines = self.line_limit() + 1;
+        let bytes = MAX_TEXT_BYTES + 1;
         let path = escape(Cow::Borrowed(self.file_name.as_str()));
-        // Redirection keeps filenames out of awk's option and variable-assignment parsing.
+        // Open before the pipeline so missing files remain executor errors. The extra line/byte
+        // detects partial pages while keeping large files and long lines out of returned output.
         Command::shell(format!(
-            "awk -v start={start} -v end={end} 'NR >= start {{ printf \"%d|%s\\n\", NR, $0 }} end > 0 && NR >= end {{ exit }}' < {path}"
+            "{{ if [ ! -f {path} ]; then printf '%s\\n' 'read_file requires a regular file' >&2; exit 1; fi; tail -n +{start} | head -n {lines} | head -c {bytes}; }} < {path}"
         ))
+    }
+
+    fn render(&self, bytes: &[u8], numbered: bool) -> ToolOutput {
+        let cut = bytes.len() > MAX_TEXT_BYTES;
+        let text = String::from_utf8_lossy(&bytes[..bytes.len().min(MAX_TEXT_BYTES)]);
+        let numbered = self.numbered(numbered);
+        let mut rendered = String::new();
+        let mut emitted = 0;
+        let mut lines = text.split_inclusive('\n');
+        for (index, line) in lines.by_ref().take(self.line_limit()).enumerate() {
+            // A byte cap may cut the final line; never present that fragment as a complete line.
+            if cut && !line.ends_with('\n') {
+                return self.overflow(rendered, emitted);
+            }
+            let line_number = self.start() + index;
+            let formatted = if numbered {
+                Cow::Owned(format!(
+                    "{line_number}|{}\n",
+                    line.strip_suffix('\n').unwrap_or(line)
+                ))
+            } else {
+                Cow::Borrowed(line)
+            };
+            if rendered.len() + formatted.len() > MAX_TEXT_BYTES {
+                return self.overflow(rendered, emitted);
+            }
+            rendered.push_str(&formatted);
+            emitted += 1;
+        }
+        if self.end_line.is_some() && emitted == self.line_limit() {
+            return ToolOutput::text(rendered);
+        }
+        if lines.next().is_some() {
+            return self.partial(rendered, emitted);
+        }
+        if cut {
+            return self.overflow(rendered, emitted);
+        }
+        ToolOutput::text(rendered)
+    }
+
+    fn overflow(&self, rendered: String, emitted: usize) -> ToolOutput {
+        if self.start_line.is_some() || self.end_line.is_some() || emitted == 0 {
+            ToolOutput::fail(
+                "The file or requested range exceeds the 100,000-byte output budget; use a smaller range or search for specific content.",
+            )
+        } else {
+            self.partial(rendered, emitted)
+        }
+    }
+
+    fn partial(&self, mut rendered: String, emitted: usize) -> ToolOutput {
+        use std::fmt::Write as _;
+        let next = self.start().saturating_add(emitted);
+        write!(rendered, "\n[PARTIAL view: showing lines {}-{}. Continue with start_line={next} and a smaller end_line.]", self.start(), next.saturating_sub(1)).expect("string write");
+        ToolOutput::text(rendered)
     }
 }
 
@@ -108,11 +178,13 @@ impl Tool for ReadFile {
         if args.end_line.is_some_and(|end| end.get() < args.start()) {
             return Ok(ToolOutput::fail("end_line must be at or after start_line"));
         }
-        Ok(context
-            .executor()
-            .exec_cmd(&args.command(self.numbered))
-            .await?
-            .into())
+        if args.line_limit() > MAX_LINE_LIMIT {
+            return Ok(ToolOutput::fail(
+                "Request at most 100,000 lines per read; use multiple reads",
+            ));
+        }
+        let output = context.executor().exec_cmd(&args.command()).await?;
+        Ok(args.render(output.as_bytes().as_ref(), self.numbered))
     }
 
     fn name(&self) -> Cow<'_, str> {
@@ -127,9 +199,9 @@ impl Tool for ReadFile {
         ToolSpec::builder()
             .name(self.name())
             .description(if self.numbered {
-                "Read a file with line numbers. Optional start_line and end_line select a one-based, inclusive range. Omit both for the full file."
+                "Read a file with line numbers. Optional start_line and end_line select a one-based, inclusive range. Defaults to 2,000 lines and a 100,000-byte text budget; partial pages include continuation instructions."
             } else {
-                "Read a file. Optional start_line and end_line select a one-based, inclusive range with original line numbers. Omit both for the full file without line numbers."
+                "Read a file. Optional start_line and end_line select a one-based, inclusive range with original line numbers. Defaults to 2,000 lines without line numbers and a 100,000-byte text budget; partial pages include continuation instructions."
             })
             .parameters_schema(schema_for!(ReadArgs))
             .build()

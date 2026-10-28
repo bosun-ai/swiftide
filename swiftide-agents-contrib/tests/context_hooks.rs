@@ -8,7 +8,10 @@ use std::{
         atomic::{AtomicUsize, Ordering},
     },
 };
-use swiftide_agents::Agent;
+use swiftide_agents::{
+    Agent,
+    hooks::{AfterEachFn, Hook},
+};
 use swiftide_agents_contrib::hooks::{ContextCompression, ToolSummarizer};
 use swiftide_core::{
     ChatCompletion, SimplePrompt,
@@ -110,6 +113,15 @@ fn agent() -> Agent {
         .no_system_prompt()
         .build()
         .unwrap()
+}
+
+fn compression_hook<E: EstimateTokens + Send + Sync + 'static>(
+    compression: ContextCompression<E>,
+) -> Box<dyn AfterEachFn> {
+    let Some(Hook::AfterEach(hook)) = compression.hooks().pop() else {
+        unreachable!()
+    };
+    hook
 }
 
 fn call(name: &str) -> ToolCall {
@@ -221,12 +233,12 @@ async fn tool_summary_threshold_uses_the_custom_estimator_and_prompt_context() {
 #[tokio::test]
 async fn stopped_agents_and_empty_history_do_not_request_summaries() {
     let model = Model::new([]);
-    let hook = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(model.clone()))
         .summarize_every_turns(1)
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hook = compression_hook(compression);
     let mut agent = agent();
     hook(&mut agent).await.unwrap();
     agent
@@ -249,14 +261,14 @@ impl EstimateTokens for TokenCount {
 async fn token_threshold_uses_the_configured_estimator() {
     let tokens = Arc::new(AtomicUsize::new(10));
     let model = Model::new([Reply::Text("summary")]);
-    let hook = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(model.clone()))
         .context_limit(10)
         .summarize_every_turns(0)
         .token_estimator(TokenCount(Arc::clone(&tokens)))
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hook = compression_hook(compression);
     let mut agent = agent();
     agent
         .context()
@@ -286,12 +298,12 @@ async fn failed_and_empty_summaries_do_not_reset_the_turn_trigger() {
         Reply::Text("kept"),
         Reply::Text("next"),
     ]);
-    let hook = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(model.clone()))
         .summarize_every_turns(2)
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hook = compression_hook(compression);
     let mut agent = agent();
     agent
         .context()
@@ -329,12 +341,12 @@ async fn original_instructions_recover_text_and_reattach_media_after_repeated_co
         ]),
     ] {
         let model = Model::new([Reply::Text("one"), Reply::Text("two")]);
-        let hook = ContextCompression::builder()
+        let compression = ContextCompression::builder()
             .llm(Arc::new(model))
             .summarize_every_turns(1)
             .build()
-            .unwrap()
-            .summarize_hook();
+            .unwrap();
+        let hook = compression_hook(compression);
         let mut agent = agent();
         agent.context().add_message(original.clone()).await.unwrap();
         hook(&mut agent).await.unwrap();
@@ -374,12 +386,12 @@ async fn output_summary_and_conversation_compression_compose_without_orphan_tool
         .unwrap()
         .summarize_hook();
     let compression_model = Model::new([Reply::Text("conversation outcome")]);
-    let compress = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(compression_model.clone()))
         .summarize_every_turns(1)
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hook = compression_hook(compression);
     let mut agent = agent();
     let call = call("tests");
     let mut output = Ok(ToolOutput::fail("long test output"));
@@ -393,7 +405,7 @@ async fn output_summary_and_conversation_compression_compose_without_orphan_tool
         ])
         .await
         .unwrap();
-    compress(&mut agent).await.unwrap();
+    hook(&mut agent).await.unwrap();
     {
         let requests = compression_model.requests.lock().unwrap();
         assert!(
@@ -416,17 +428,17 @@ async fn output_summary_and_conversation_compression_compose_without_orphan_tool
 #[tokio::test]
 async fn compression_does_not_restart_a_final_answer_and_keeps_the_turn_counter() {
     let summary_model = Model::new([Reply::Text("summary")]);
-    let hook = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(summary_model.clone()))
         .summarize_every_turns(1)
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hooks = compression.hooks();
     let answering_model = Model::new([Reply::Text("finished")]);
     let mut agent = Agent::builder()
         .llm(&answering_model)
         .no_system_prompt()
-        .after_each(hook.clone())
+        .hooks(hooks)
         .build()
         .unwrap();
     agent.query("goal").await.unwrap();
@@ -438,12 +450,12 @@ async fn compression_does_not_restart_a_final_answer_and_keeps_the_turn_counter(
     ));
     // Final answers count toward the next trigger without forcing another completion.
     let summary_model = Model::new([Reply::Text("summary")]);
-    let hook = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(summary_model.clone()))
         .summarize_every_turns(2)
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hook = compression_hook(compression);
     let mut next_agent = Agent::builder()
         .llm(&answering_model)
         .no_system_prompt()
@@ -474,12 +486,15 @@ async fn recovered_media_follows_all_parallel_tool_results() {
         ChatMessageContentPart::image("data:image/png;base64,AA=="),
     ]);
     let summary_model = Model::new([Reply::Text("summary")]);
-    let hook = ContextCompression::builder()
+    let compression = ContextCompression::builder()
         .llm(Arc::new(summary_model))
         .summarize_every_turns(1)
         .build()
-        .unwrap()
-        .summarize_hook();
+        .unwrap();
+    let hooks = compression.hooks();
+    let Hook::AfterEach(hook) = hooks[1].clone() else {
+        unreachable!()
+    };
     let calls = (0..2)
         .map(|id| {
             ToolCall::builder()
@@ -494,7 +509,7 @@ async fn recovered_media_follows_all_parallel_tool_results() {
     let mut agent = Agent::builder()
         .llm(&model)
         .no_system_prompt()
-        .after_each(hook.clone())
+        .hooks(hooks)
         .build()
         .unwrap();
     agent.context().add_message(original.clone()).await.unwrap();
@@ -514,4 +529,111 @@ async fn recovered_media_follows_all_parallel_tool_results() {
         ]
     ));
     assert_eq!(requests[1].last(), Some(&original));
+}
+
+#[tokio::test]
+async fn empty_completions_do_not_restart_user_or_tool_turns() {
+    for (trigger_by_tokens, after_tools) in
+        [(false, false), (false, true), (true, false), (true, true)]
+    {
+        let summary_model = Model::new([]);
+        let mut compression = ContextCompression::builder();
+        if trigger_by_tokens {
+            compression = compression.summarize_every_turns(0).context_limit(1);
+        } else {
+            // Tool exchanges below count as one turn; the empty response reaches the threshold.
+            compression = compression.summarize_every_turns(if after_tools { 2 } else { 1 });
+        }
+        let tokens = Arc::new(AtomicUsize::new(0));
+        let hooks = compression
+            .llm(Arc::new(summary_model.clone()))
+            .token_estimator(TokenCount(Arc::clone(&tokens)))
+            .build()
+            .unwrap()
+            .hooks();
+        let replies = if after_tools {
+            vec![Reply::Tools(vec![call("echo")]), Reply::Empty]
+        } else {
+            vec![Reply::Empty]
+        };
+        let model = Model::new(replies);
+        let mut builder = Agent::builder();
+        builder.llm(&model).no_system_prompt().hooks(hooks);
+        let step = Arc::new(AtomicUsize::new(0));
+        builder.before_completion(move |_, _| {
+            let first = step.fetch_add(1, Ordering::SeqCst) == 0;
+            tokens.store(if first && after_tools { 0 } else { 2 }, Ordering::SeqCst);
+            Box::pin(async { Ok(()) })
+        });
+        builder.add_tool(Echo);
+        let mut agent = builder.build().unwrap();
+        agent.query("goal").await.unwrap();
+        assert_eq!(
+            model.requests.lock().unwrap().len(),
+            if after_tools { 2 } else { 1 }
+        );
+        assert!(summary_model.requests.lock().unwrap().is_empty());
+        let history = agent.context().history().await.unwrap();
+        assert!(
+            !history
+                .iter()
+                .any(|message| matches!(message, ChatMessage::Summary(_)))
+        );
+    }
+}
+
+#[derive(Clone)]
+struct Echo;
+
+#[async_trait]
+impl swiftide_core::chat_completion::Tool for Echo {
+    async fn invoke(
+        &self,
+        _context: &dyn swiftide_core::AgentContext,
+        _call: &ToolCall,
+    ) -> Result<ToolOutput, ToolError> {
+        Ok(ToolOutput::text("tool result"))
+    }
+    fn name(&self) -> std::borrow::Cow<'_, str> {
+        "echo".into()
+    }
+    fn tool_spec(&self) -> swiftide_core::chat_completion::ToolSpec {
+        swiftide_core::chat_completion::ToolSpec::builder()
+            .name("echo")
+            .description("Return a test result")
+            .build()
+            .unwrap()
+    }
+}
+
+#[tokio::test]
+async fn tool_exchanges_still_compress_with_all_lifecycle_hooks_installed() {
+    let summary_model = Model::new([Reply::Text("tool outcome")]);
+    let compression = ContextCompression::builder()
+        .llm(Arc::new(summary_model.clone()))
+        .summarize_every_turns(1)
+        .build()
+        .unwrap();
+    let model = Model::new([Reply::Tools(vec![call("echo")]), Reply::Text("finished")]);
+    let mut builder = Agent::builder();
+    builder.llm(&model).no_system_prompt().add_tool(Echo);
+    let tool_hook_calls = Arc::new(AtomicUsize::new(0));
+    let observed = Arc::clone(&tool_hook_calls);
+    builder.after_tool(move |_, _, _| {
+        observed.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async { Ok(()) })
+    });
+    for hook in compression.hooks() {
+        builder.add_hook(hook);
+    }
+    let mut agent = builder.build().unwrap();
+    agent.query("goal").await.unwrap();
+    assert_eq!(tool_hook_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(summary_model.requests.lock().unwrap().len(), 1);
+    let requests = model.requests.lock().unwrap();
+    assert_eq!(requests.len(), 2);
+    assert!(matches!(
+        requests[1].as_slice(),
+        [ChatMessage::Summary(_), ChatMessage::User(_)]
+    ));
 }

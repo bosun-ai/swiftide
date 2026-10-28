@@ -170,7 +170,7 @@ the components on your agent.
 
 | Feature on `swiftide` | What it provides |
 | --- | --- |
-| `agents-contrib-file-tools` | Read whole files or selected lines with `ReadFile`, replace text with `ExactReplace`, and edit files with `ApplyPatch`. |
+| `agents-contrib-file-tools` | Read file pages or selected lines with `ReadFile`, replace text with `ExactReplace`, and edit files with `ApplyPatch`. |
 | `agents-contrib-planning` | Track steps and progress with `UpdatePlan` and inspect them through `PlanMemory`. |
 | `agents-contrib-context` | Shorten large tool outputs with `ToolSummarizer` and summarize long conversations with `ContextCompression`. |
 | `agents-contrib-lazy-executor` | Start an executor when the agent first needs it with `LazyExecutor`. |
@@ -181,7 +181,8 @@ cargo add swiftide --features agents-contrib-file-tools,agents-contrib-planning
 
 Import components from `swiftide::agents_contrib`, for example
 `swiftide::agents_contrib::tools::ReadFile`. File reads accept optional `start_line` and `end_line`
-arguments (one-based, inclusive); excerpts retain the file's original line numbers.
+arguments (one-based, inclusive); excerpts retain the file's original line numbers. Reads default
+to 2,000 lines and a 100,000-byte text budget, with continuation guidance for partial pages.
 Contrib features are off by default. See the [crate guide](swiftide-agents-contrib/README.md)
 for examples, defaults, and the features to use when depending on the contrib crate directly.
 

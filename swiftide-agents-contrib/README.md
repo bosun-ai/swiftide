@@ -15,7 +15,7 @@ swiftide-agents-contrib = { version = "0.33", features = ["planning", "file-tool
 | --- | --- | --- |
 | `context-management` | `hooks::{ToolSummarizer, ContextCompression}` and builders | Caller-supplied summarization models; truncation alone needs no model |
 | `planning` | `tools::{UpdatePlan, PlanMemory, PlanItem, PlanStatus}` | In-process memory |
-| `file-tools` | `tools::{ReadFile, ExactReplace, ApplyPatch}` | Agent executor; numbered reads use `awk`; patches use `mkdir` and `rm` supporting `--` in a POSIX-like shell |
+| `file-tools` | `tools::{ReadFile, ExactReplace, ApplyPatch}` | Agent executor; reads use `tail` and `head`; patches use `mkdir`, `rm` with `--`, and shell file identity tests (`-ef`) |
 | `lazy-executor` | `executors::LazyExecutor` | Caller-supplied async executor factory |
 
 The lazy-executor example also needs `swiftide-core = "0.33"` in your dependencies.
@@ -55,25 +55,29 @@ assert!(memory.snapshot().is_empty());
 # }
 ```
 
-`ReadFile::default()` registers `read_file`. Call it with `file_name` to read the full file
-without adding line numbers or applying an output limit. To read an excerpt, supply
-`start_line`, `end_line`, or both. Line numbers start at one and the end is inclusive:
+`ReadFile::default()` registers `read_file`. Reads default to 2,000 lines with a 100,000-byte
+text budget, following the limits in Fluyt's paged `Read` tool. A partial default page includes
+continuation instructions. Supply `start_line` to continue; add `end_line` to request a specific
+excerpt. Line numbers start at one and the end is inclusive:
 
 ```json
 {"file_name":"src/lib.rs","start_line":2,"end_line":3}
 ```
 
 Excerpts include their original line numbers as `2|text`. Omit the start to begin at line one;
-omit the end to read through the file's end. Empty files and ranges past the end return empty
-text. Zero line numbers fail argument parsing; an end before the start returns a failure before
-accessing the file. File and executor errors remain visible to the agent.
+omit the end for the default page size. Explicit ranges may request up to 100,000 lines, but
+ranges exceeding the text budget return a failure rather than incomplete text. Oversized single
+lines also fail. Empty files and ranges past the end return empty text. Zero line numbers fail
+argument parsing; an end before the start fails before accessing the file.
 
 Use `ReadFile::default().with_line_numbers()` to register `read_file_with_line_numbers`, which
-numbers full-file reads too. Numbered output ends each line with a newline. Both tools accept
-relative paths within the executor's working directory and absolute paths in its filesystem.
-The executor selects excerpts before returning output, using a POSIX-like shell and `awk`.
-Full-file reads use the executor's file-reading command. Exclude both reading tool names from
-`ToolSummarizer` if your agent needs to retain their full output.
+numbers default pages too. Plain reads preserve original text within the returned page; numbered
+reads end each line with a newline. Both modes accept relative or absolute paths in the executor's
+filesystem. A POSIX-like shell with `tail` and `head` selects the page and caps file bytes before
+returning output. File and executor errors remain visible to the agent.
+
+These generic tools retain `file_name` and `start_line`/`end_line`; Fluyt's provider-specific
+`Read` uses `file_path` and `offset`/`limit`. Provider edit-state tracking is not part of this crate.
 
 `update_plan` accepts `items` (each with a `step` and `pending`, `in_progress`, or `completed`
 status) and an optional `explanation`. Empty items retrieve the current plan. Invalid steps or
@@ -106,7 +110,7 @@ non-UTF-8 updates fail before writing.
 
 The full patch is parsed before execution. Operations then run in order and can partially succeed;
 inspect the Applied / Already present / Not applied report. A failed move can leave the destination
-written and source unchanged; this is reported explicitly. Patches are not transactions. Paths
+written and source unchanged; this is reported explicitly. Patches are not transactions. Moves onto the same file, including symlinks and hard links, are rejected before writing. Paths
 must be relative, nonempty, and free of parent-directory components. The executor controls access,
 symlinks, isolation, and command execution. These tools do not add a sandbox.
 
@@ -136,12 +140,13 @@ are preserved; stop/approval outputs and executor errors are untouched. Failed/e
 retain truncated output. Generated summaries are also subject to the character limit.
 
 Build `ContextCompression::builder().llm(Arc<dyn ChatCompletion>)` and register
-`.summarize_hook()` with `after_each`. The default trigger is five completed turns. Add
+every entry from `.hooks()` with `AgentBuilder::add_hook`. The default trigger is five completed
+turns. Add
 `.context_limit(tokens)` to trigger above an estimated token count; leave room for system prompts,
 tool schemas, media, and the response. `.summarize_every_turns(0)` disables the turn trigger;
-at least one trigger must remain enabled. Stopped agents and final answers without tool calls are
-skipped. Use a fresh hook for each independent agent; cloned closures share counters and original
-instructions.
+at least one trigger must remain enabled. Stopped agents, final answers without tool calls, and
+completions that add no messages are skipped. Use a fresh hook set for each independent agent;
+cloned hooks share counters and original instructions.
 
 Both builders accept `.token_estimator(...)` using Swiftide's existing `EstimateTokens` trait,
 with `CharEstimator` as default. Applications can supply an existing `TikToken` instance. Counts

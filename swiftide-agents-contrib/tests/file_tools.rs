@@ -301,3 +301,28 @@ async fn text_edits_leave_non_utf8_files_unchanged() {
     assert!(output.as_fail().unwrap().contains("UTF-8"));
     assert_eq!(std::fs::read(path).unwrap(), bytes);
 }
+
+#[cfg(unix)]
+#[tokio::test]
+async fn moving_to_a_filesystem_alias_does_not_write_or_remove_the_source() {
+    use std::os::unix::fs::symlink;
+    let workspace = Workspace::new(&[("one.txt", "old\n"), ("nested/one.txt", "nested\n")]);
+    symlink("one.txt", workspace.directory.path().join("link.txt")).unwrap();
+    std::fs::hard_link(
+        workspace.directory.path().join("one.txt"),
+        workspace.directory.path().join("hard.txt"),
+    )
+    .unwrap();
+    symlink("nested", workspace.directory.path().join("alias")).unwrap();
+    for (source, destination, expected) in [
+        ("one.txt", "link.txt", "old\n"),
+        ("link.txt", "one.txt", "old\n"),
+        ("one.txt", "hard.txt", "old\n"),
+        ("nested/one.txt", "alias/one.txt", "nested\n"),
+    ] {
+        let report = workspace.patch(&format!("*** Begin Patch\n*** Update File: {source}\n*** Move to: {destination}\n@@\n-{}\n+new\n*** End Patch", expected.trim())).await;
+        assert!(report.contains("destination must differ"), "{report}");
+        assert_eq!(workspace.read(source), expected);
+        assert_eq!(workspace.read(destination), expected);
+    }
+}

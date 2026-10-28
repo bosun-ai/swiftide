@@ -32,10 +32,13 @@ async fn main() -> anyhow::Result<()> {
         .summarize_every_turns(1)
         .context_limit(32_000)
         .build()?;
-    let mut agent = Agent::builder()
+    let mut builder = Agent::builder();
+    for hook in conversation.hooks() {
+        builder.add_hook(hook);
+    }
+    let mut agent = builder
         .llm(&ExampleModel)
         .after_tool(output.summarize_hook())
-        .after_each(conversation.summarize_hook())
         .build()?;
     agent
         .query_once("Demonstrate conversation compression without network access.")
