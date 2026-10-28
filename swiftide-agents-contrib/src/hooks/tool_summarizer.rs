@@ -200,7 +200,7 @@ impl ToolSummarizer {
             let available_tools = agent.tools();
 
             if let Ok(output) = tool_output {
-                // If output is past the truncation treshhold, we always truncate first
+                // If output is past the truncation threshold, we always truncate first
                 //
                 // It's possible that after truncation, the output is now below the summarization
                 // cutoff, in which case we skip summarization.
