@@ -1,0 +1,109 @@
+--- arrow-ipc-58.4.0/Cargo.toml (upstream)
++++ arrow-ipc-58.4.0/Cargo.toml (patched)
+@@ -87,7 +87,7 @@
+ default-features = false
+ 
+ [dependencies.zstd]
+-version = "0.13.0"
++version = "0.14.3"
+ optional = true
+ default-features = false
+ 
+@@ -106,3 +106,5 @@
+ 
+ [dev-dependencies.tokio]
+ version = "1.43.0"
++
++[workspace]
+--- aws-config-1.12.0/Cargo.toml (upstream)
++++ aws-config-1.12.0/Cargo.toml (patched)
+@@ -171,14 +171,15 @@
+ version = "1"
+ 
+ [dependencies.p256]
+-version = "0.13.2"
++version = "0.14.0"
+ optional = true
+ 
+ [dependencies.rand]
+-version = "0.8.5"
++version = "0.10"
+ features = [
+     "std",
+     "std_rng",
++    "sys_rng",
+ ]
+ optional = true
+ default-features = false
+@@ -268,3 +269,5 @@
+ 
+ [target."cfg(windows)".dev-dependencies.tempfile]
+ version = "3.16.0"
++
++[workspace]
+--- aws-config-1.12.0/src/login/dpop.rs (upstream)
++++ aws-config-1.12.0/src/login/dpop.rs (patched)
+@@ -20,7 +20,7 @@
+ use aws_smithy_types::Number;
+ use p256::ecdsa::signature::RandomizedSigner;
+ use p256::ecdsa::{Signature, SigningKey};
+-use p256::elliptic_curve::sec1::ToEncodedPoint;
++use p256::elliptic_curve::sec1::ToSec1Point;
+ use p256::SecretKey;
+ use rand::SeedableRng;
+ use std::sync::{Arc, LazyLock};
+@@ -69,7 +69,7 @@
+ 
+ fn header(private_key: &SecretKey) -> Result<Header, LoginTokenError> {
+     let public_key = private_key.public_key();
+-    let point = public_key.to_encoded_point(false);
++    let point = public_key.to_sec1_point(false);
+ 
+     let x_bytes = point
+         .x()
+@@ -103,7 +103,8 @@
+ 
+ fn sign(message: &str, private_key: &SecretKey) -> Result<String, LoginTokenError> {
+     let signing_key = SigningKey::from(private_key);
+-    let mut rng = rand::rngs::StdRng::from_entropy();
++    let mut rng = rand::rngs::StdRng::try_from_rng(&mut rand::rngs::SysRng)
++        .map_err(|err| LoginTokenError::other("failed to seed signing RNG", Some(err.into())))?;
+     let signature: Signature = signing_key.sign_with_rng(&mut rng, message.as_bytes());
+     let signature_b64 = base64_simd::URL_SAFE_NO_PAD.encode_to_string(signature.to_bytes());
+     Ok(format!("{message}.{signature_b64}"))
+@@ -312,6 +313,18 @@
+         let dpop = result.unwrap();
+         let parts: Vec<&str> = dpop.split('.').collect();
+         assert_eq!(parts.len(), 3);
++
++        use p256::ecdsa::signature::Verifier;
++        use p256::ecdsa::VerifyingKey;
++
++        let (message, encoded_signature) = dpop.rsplit_once('.').unwrap();
++        let signature_bytes = base64_simd::URL_SAFE_NO_PAD
++            .decode_to_vec(encoded_signature)
++            .unwrap();
++        let signature = Signature::from_slice(&signature_bytes).unwrap();
++        let verifying_key = VerifyingKey::from(private_key.public_key());
++        verifying_key.verify(message.as_bytes(), &signature).unwrap();
++        assert!(verifying_key.verify(b"modified message", &signature).is_err());
+     }
+ 
+     #[test]
+--- lance-encoding-9.0.0/Cargo.toml (upstream)
++++ lance-encoding-9.0.0/Cargo.toml (patched)
+@@ -170,7 +170,7 @@
+ features = ["xxh3"]
+ 
+ [dependencies.zstd]
+-version = "0.13"
++version = "0.14.3"
+ optional = true
+ 
+ [dev-dependencies.arrow-ord]
+@@ -253,3 +253,5 @@
+ level = "warn"
+ priority = 0
+ check-cfg = ["cfg(coverage,coverage_nightly)"]
++
++[workspace]

@@ -158,3 +158,9 @@ module_name_repetitions = "allow"
 missing_fields_in_debug = "allow"
 # Should be fixed asap
 multiple_crate_versions = "allow"
+
+# Temporary upstream dependency migrations; see vendor/README.md.
+[patch.crates-io]
+aws-config = { path = "vendor/aws-config-1.12.0" }
+arrow-ipc = { path = "vendor/arrow-ipc-58.4.0" }
+lance-encoding = { path = "vendor/lance-encoding-9.0.0" }
