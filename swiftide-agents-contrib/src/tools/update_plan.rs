@@ -13,6 +13,18 @@ use swiftide_core::{
 };
 
 /// A step in an agent's current plan.
+///
+/// # Examples
+///
+/// ```no_run
+/// use swiftide_agents_contrib::tools::{PlanItem, PlanStatus};
+///
+/// let step = PlanItem {
+///     step: "Review the proposed changes".into(),
+///     status: PlanStatus::InProgress,
+/// };
+/// assert_eq!(step.status, PlanStatus::InProgress);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PlanItem {
@@ -23,6 +35,18 @@ pub struct PlanItem {
 }
 
 /// Progress of a plan step. A plan may have at most one step in progress.
+///
+/// # Examples
+///
+/// ```no_run
+/// use swiftide_agents_contrib::tools::{PlanItem, PlanStatus};
+///
+/// let mut step = PlanItem {
+///     step: "Run the tests".into(),
+///     status: PlanStatus::Pending,
+/// };
+/// step.status = PlanStatus::Completed;
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum PlanStatus {
@@ -46,6 +70,21 @@ impl fmt::Display for PlanStatus {
 
 /// In-memory plan state. Share an `Arc<PlanMemory>` to observe or coordinate a single plan.
 /// Fresh default instances are independent; this state is not persisted across process restarts.
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::sync::Arc;
+/// use swiftide_agents::Agent;
+/// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
+///
+/// let memory = Arc::new(PlanMemory::default());
+/// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
+/// // Show the agent's current progress in the application.
+/// for item in memory.snapshot() {
+///     println!("{}: {}", item.status, item.step);
+/// }
+/// ```
 #[derive(Debug, Default)]
 pub struct PlanMemory {
     steps: Mutex<Vec<PlanItem>>,
@@ -54,7 +93,23 @@ pub struct PlanMemory {
 impl PlanMemory {
     /// Return a consistent, owned snapshot of the current plan.
     ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
+    ///
+    /// let memory = Arc::new(PlanMemory::default());
+    /// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
+    /// // Show the agent's current progress in the application.
+    /// for item in memory.snapshot() {
+    ///     println!("{}: {}", item.status, item.step);
+    /// }
+    /// ```
+    ///
     /// # Panics
+    ///
     /// Panics if another thread panicked while holding the plan lock.
     pub fn snapshot(&self) -> Vec<PlanItem> {
         self.steps.lock().expect("plan lock poisoned").clone()
@@ -71,9 +126,9 @@ impl PlanMemory {
 /// it. Cloning a tool shares its plan; `Default` creates a fresh plan. Use [`Self::new`] to share
 /// state with an application. Invalid updates return a failure output and retain the old plan.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::sync::Arc;
 /// use swiftide_agents::Agent;
 /// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
@@ -98,6 +153,21 @@ struct UpdatePlanArgs {
 
 impl UpdatePlan {
     /// Construct a tool using explicitly shared plan state.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
+    ///
+    /// let memory = Arc::new(PlanMemory::default());
+    /// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
+    /// // Show the agent's current progress in the application.
+    /// for item in memory.snapshot() {
+    ///     println!("{}: {}", item.status, item.step);
+    /// }
+    /// ```
     pub fn new(memory: Arc<PlanMemory>) -> Self {
         Self { memory }
     }

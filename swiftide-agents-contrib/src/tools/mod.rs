@@ -2,6 +2,40 @@
 //!
 //! Register each tool with your agent builder's `add_tool` method. The `file-tools` feature
 //! provides file reading and editing; `planning` provides the in-memory plan tool and its state.
+//!
+//! # Examples
+//!
+//! Give an agent tools to read and edit project files:
+//!
+//! ```no_run
+//! # #[cfg(feature = "file-tools")]
+//! # {
+//! use swiftide_agents::Agent;
+//! use swiftide_agents_contrib::tools::{ApplyPatch, ExactReplace, ReadFile};
+//!
+//! Agent::builder()
+//!     .add_tool(ReadFile::default())
+//!     .add_tool(ExactReplace)
+//!     .add_tool(ApplyPatch);
+//! # }
+//! ```
+//!
+//! Track the agent's progress in a shared plan:
+//!
+//! ```no_run
+//! # #[cfg(feature = "planning")]
+//! # {
+//! use std::sync::Arc;
+//! use swiftide_agents::Agent;
+//! use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
+//!
+//! let progress = Arc::new(PlanMemory::default());
+//! Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&progress)));
+//! for item in progress.snapshot() {
+//!     println!("{}: {}", item.status, item.step);
+//! }
+//! # }
+//! ```
 
 #[cfg(feature = "file-tools")]
 mod apply_patch;

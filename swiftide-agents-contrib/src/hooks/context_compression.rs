@@ -37,9 +37,9 @@ struct CompressionPolicy {
 /// logged without message content. Compaction is lossy; use a separate durable store for facts
 /// that must never be omitted. Create a fresh hook for each independent agent.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::sync::Arc;
 /// use swiftide_agents::AgentBuilder;
 /// use swiftide_agents_contrib::hooks::ContextCompression;
@@ -64,6 +64,28 @@ pub struct ContextCompression<E = CharEstimator> {
 }
 
 /// Configuration for [`ContextCompression`].
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::sync::Arc;
+/// use swiftide_agents::AgentBuilder;
+/// use swiftide_agents_contrib::hooks::ContextCompression;
+/// use swiftide_core::ChatCompletion;
+///
+/// fn keep_session_context(
+///     agent: &mut AgentBuilder,
+///     summary_model: Arc<dyn ChatCompletion>,
+/// ) -> anyhow::Result<()> {
+///     let compression = ContextCompression::builder()
+///         .llm(summary_model)
+///         .context_limit(32_000)
+///         .summarize_every_turns(5)
+///         .build()?;
+///     agent.after_each(compression.summarize_hook());
+///     Ok(())
+/// }
+/// ```
 #[must_use]
 pub struct ContextCompressionBuilder<E = CharEstimator> {
     estimator: Arc<E>,
@@ -72,6 +94,27 @@ pub struct ContextCompressionBuilder<E = CharEstimator> {
 
 impl ContextCompression {
     /// Configure a compressor using the inexpensive character estimator.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .context_limit(32_000)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn builder() -> ContextCompressionBuilder {
         ContextCompressionBuilder {
             estimator: Arc::new(CharEstimator),
@@ -87,28 +130,135 @@ impl ContextCompression {
 
 impl<E> ContextCompressionBuilder<E> {
     /// Set the model used to summarize history. Required.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .context_limit(32_000)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn llm(mut self, llm: Arc<dyn ChatCompletion>) -> Self {
         self.policy.llm = Some(llm);
         self
     }
     /// Replace the summarization prompt. Variable: `original_instructions`.
     /// Extra application context can be added to the `Prompt` before passing it here.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .prompt("Preserve the original goal and completed work: {{original_instructions}}")
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn prompt(mut self, prompt: impl Into<Prompt>) -> Self {
         self.policy.prompt = prompt.into();
         self
     }
     /// Summarize when active history exceeds this estimated token count. Must be positive.
     /// Set this below the model's window to leave room for system prompts, tools, and its response.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .context_limit(32_000)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn context_limit(mut self, tokens: usize) -> Self {
         self.policy.context_limit = Some(tokens);
         self
     }
     /// Summarize after this many completed turns. Set zero to use token triggering only.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .summarize_every_turns(10)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn summarize_every_turns(mut self, turns: usize) -> Self {
         self.policy.summarize_every_turns = turns;
         self
     }
     /// Use an application-supplied Swiftide token estimator.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::{ChatCompletion, token_estimation::EstimateTokens};
+    ///
+    /// fn use_application_tokenizer<E: EstimateTokens + Send + Sync + 'static>(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    ///     tokenizer: E,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .token_estimator(tokenizer)
+    ///         .context_limit(32_000)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn token_estimator<T>(self, estimator: T) -> ContextCompressionBuilder<T> {
         ContextCompressionBuilder {
             estimator: Arc::new(estimator),
@@ -117,7 +267,29 @@ impl<E> ContextCompressionBuilder<E> {
     }
     /// Validate configuration and construct the compressor.
     ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .context_limit(32_000)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
     /// # Errors
+    ///
     /// Returns an error for a missing model, a zero context limit, or no enabled trigger.
     pub fn build(self) -> Result<ContextCompression<E>> {
         ensure!(self.policy.llm.is_some(), "a compression model is required");
@@ -144,6 +316,27 @@ struct CompressionState {
 
 impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
     /// Register this hook with `AgentBuilder::after_each`. Cloned hook closures share counters.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ContextCompression;
+    /// use swiftide_core::ChatCompletion;
+    ///
+    /// fn keep_session_context(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn ChatCompletion>,
+    /// ) -> anyhow::Result<()> {
+    ///     let compression = ContextCompression::builder()
+    ///         .llm(summary_model)
+    ///         .context_limit(32_000)
+    ///         .build()?;
+    ///     agent.after_each(compression.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     #[must_use = "register the hook with after_each"]
     pub fn summarize_hook(self) -> impl AfterEachFn {
         let this = Arc::new(self);

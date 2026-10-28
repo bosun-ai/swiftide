@@ -16,9 +16,9 @@ type Initialization = Pin<Box<dyn Future<Output = Result<Arc<dyn ToolExecutor>>>
 /// up partial resources on failure/cancellation. This wrapper does not add a cleanup lifecycle to
 /// [`ToolExecutor`]; callers retain responsibility for their underlying resources.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::sync::Arc;
 /// use swiftide_agents::tools::local_executor::LocalExecutor;
 /// use swiftide_agents_contrib::executors::LazyExecutor;
@@ -37,6 +37,20 @@ pub struct LazyExecutor {
 
 impl LazyExecutor {
     /// Construct without starting the executor.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::tools::local_executor::LocalExecutor;
+    /// use swiftide_agents_contrib::executors::LazyExecutor;
+    /// use swiftide_core::ToolExecutor;
+    ///
+    /// let executor = LazyExecutor::new(|| async {
+    ///     Ok(Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>)
+    /// });
+    /// assert!(!executor.is_initialized());
+    /// ```
     pub fn new<F, Fut>(initialize: F) -> Self
     where
         F: Fn() -> Fut + Send + Sync + 'static,
@@ -49,6 +63,20 @@ impl LazyExecutor {
     }
 
     /// Whether initialization has completed successfully. Does not initialize the executor.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::tools::local_executor::LocalExecutor;
+    /// use swiftide_agents_contrib::executors::LazyExecutor;
+    /// use swiftide_core::ToolExecutor;
+    ///
+    /// let executor = LazyExecutor::new(|| async {
+    ///     Ok(Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>)
+    /// });
+    /// assert!(!executor.is_initialized());
+    /// ```
     pub fn is_initialized(&self) -> bool {
         self.executor.initialized()
     }

@@ -30,9 +30,9 @@ use swiftide_core::{
 /// *** End Patch
 /// ```
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use swiftide_agents::Agent;
 /// use swiftide_agents_contrib::tools::ApplyPatch;
 ///

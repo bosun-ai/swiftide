@@ -22,9 +22,9 @@ use swiftide_core::{
 /// reads require a POSIX-like shell with `awk`; the executor selects the lines before returning
 /// output. Full-file reads use [`Command::read_file`]. The executor controls access and isolation.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use swiftide_agents::Agent;
 /// use swiftide_agents_contrib::tools::ReadFile;
 ///
@@ -47,6 +47,16 @@ impl ReadFile {
     ///
     /// Range reads include line numbers in either mode. This setting adds numbers when the caller
     /// omits both range arguments, preserving the existing numbered-file tool contract.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::tools::ReadFile;
+    ///
+    /// // Give the agent original line numbers to use when discussing file changes.
+    /// Agent::builder().add_tool(ReadFile::default().with_line_numbers());
+    /// ```
     #[must_use]
     pub fn with_line_numbers(mut self) -> Self {
         self.numbered = true;

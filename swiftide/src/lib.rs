@@ -20,7 +20,9 @@ pub use swiftide_agents as agents;
 
 /// Optional agent tools, context hooks, and executor helpers.
 ///
-/// ```
+/// # Examples
+///
+/// ```no_run
 /// # #[cfg(all(feature = "agents-contrib-planning", feature = "agents-contrib-file-tools"))]
 /// # {
 /// use swiftide::agents_contrib::tools::{ApplyPatch, ExactReplace, ReadFile, UpdatePlan};

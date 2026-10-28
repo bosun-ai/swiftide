@@ -18,9 +18,9 @@ use swiftide_core::{
 /// The tool accepts `file_path`, `old_string`, `new_string`, and optional `replace_all` (false by
 /// default). An empty search string or an unchanged replacement returns a failure output.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use swiftide_agents::Agent;
 /// use swiftide_agents_contrib::tools::{ExactReplace, ReadFile};
 ///

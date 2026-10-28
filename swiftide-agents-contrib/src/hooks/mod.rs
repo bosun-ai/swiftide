@@ -4,6 +4,34 @@
 //! and [`ContextCompression::summarize_hook`] with
 //! [`swiftide_agents::AgentBuilder::after_each`]. Both hooks retain usable input when a model
 //! fails.
+//!
+//! # Examples
+//!
+//! Keep a long coding session's logs and conversation small enough to use:
+//!
+//! ```no_run
+//! use std::sync::Arc;
+//! use swiftide_agents::AgentBuilder;
+//! use swiftide_agents_contrib::hooks::{ContextCompression, ToolSummarizer};
+//! use swiftide_core::ChatCompletion;
+//!
+//! fn manage_session_context(
+//!     agent: &mut AgentBuilder,
+//!     summary_model: Arc<dyn ChatCompletion>,
+//! ) -> anyhow::Result<()> {
+//!     let logs = ToolSummarizer::builder()
+//!         .max_output_chars(20_000)
+//!         .excluded_tools(["read_file", "read_file_with_line_numbers"])
+//!         .build()?;
+//!     let conversation = ContextCompression::builder()
+//!         .llm(summary_model)
+//!         .context_limit(32_000)
+//!         .build()?;
+//!     agent.after_tool(logs.summarize_hook())
+//!         .after_each(conversation.summarize_hook());
+//!     Ok(())
+//! }
+//! ```
 
 mod context_compression;
 mod tool_summarizer;

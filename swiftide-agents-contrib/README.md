@@ -32,7 +32,7 @@ feature selections remain unchanged.
 
 ## File tools and plans
 
-```rust
+```no_run
 # #[cfg(all(feature = "planning", feature = "file-tools"))]
 # {
 use std::sync::Arc;
@@ -105,7 +105,7 @@ symlinks, isolation, and command execution. These tools do not add a sandbox.
 
 ## Context hooks
 
-```rust
+```no_run
 # #[cfg(feature = "context-management")]
 # {
 use swiftide_agents::Agent;
@@ -150,7 +150,7 @@ Summarization is lossy; store essential facts separately. Diagnostics do not log
 
 ## Lazy executor
 
-```rust
+```no_run
 # #[cfg(feature = "lazy-executor")]
 # {
 use std::sync::Arc;

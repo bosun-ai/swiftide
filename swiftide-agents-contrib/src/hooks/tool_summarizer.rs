@@ -30,9 +30,9 @@ struct OutputPolicy {
 /// operations. Stop/approval outputs and executor errors are never rewritten. A failed or empty
 /// model response retains the truncated output. No raw output is logged.
 ///
-/// # Example
+/// # Examples
 ///
-/// ```
+/// ```no_run
 /// use swiftide_agents::Agent;
 /// use swiftide_agents_contrib::hooks::ToolSummarizer;
 ///
@@ -49,6 +49,20 @@ pub struct ToolSummarizer<E = CharEstimator> {
 }
 
 /// Configuration for [`ToolSummarizer`].
+///
+/// # Examples
+///
+/// ```no_run
+/// use swiftide_agents::Agent;
+/// use swiftide_agents_contrib::hooks::ToolSummarizer;
+///
+/// let output = ToolSummarizer::builder()
+///     .max_output_chars(20_000)
+///     .tail_lines(100)
+///     .build()?;
+/// Agent::builder().after_tool(output.summarize_hook());
+/// # Ok::<(), anyhow::Error>(())
+/// ```
 #[must_use]
 pub struct ToolSummarizerBuilder<E = CharEstimator> {
     estimator: Arc<E>,
@@ -57,6 +71,19 @@ pub struct ToolSummarizerBuilder<E = CharEstimator> {
 
 impl ToolSummarizer {
     /// Begin configuring a hook with the inexpensive character estimator.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .max_output_chars(20_000)
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     pub fn builder() -> ToolSummarizerBuilder {
         ToolSummarizerBuilder {
             estimator: Arc::new(CharEstimator),
@@ -76,36 +103,159 @@ impl ToolSummarizer {
 
 impl<E> ToolSummarizerBuilder<E> {
     /// Set the optional summarization model. Without it, only truncation is performed.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    /// use swiftide_core::SimplePrompt;
+    ///
+    /// fn summarize_test_results(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn SimplePrompt>,
+    /// ) -> anyhow::Result<()> {
+    ///     let output = ToolSummarizer::builder()
+    ///         .llm(summary_model)
+    ///         .tools_to_summarize(["run_tests"])
+    ///         .build()?;
+    ///     agent.after_tool(output.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn llm(mut self, llm: Arc<dyn SimplePrompt>) -> Self {
         self.policy.llm = Some(llm);
         self
     }
     /// Replace the prompt. Variables: `tool_name`, `tool_args`, and `tool_output`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    /// use swiftide_core::SimplePrompt;
+    ///
+    /// fn summarize_build_results(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn SimplePrompt>,
+    /// ) -> anyhow::Result<()> {
+    ///     let output = ToolSummarizer::builder()
+    ///         .llm(summary_model)
+    ///         .prompt("Summarize {{tool_name}} for the release reviewer: {{tool_output}}")
+    ///         .build()?;
+    ///     agent.after_tool(output.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn prompt(mut self, prompt: impl Into<Prompt>) -> Self {
         self.policy.prompt = prompt.into();
         self
     }
     /// Maximum characters retained before summarization and in the final summary. Must be positive.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .max_output_chars(20_000)
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     pub fn max_output_chars(mut self, maximum: usize) -> Self {
         self.policy.max_output_chars = maximum;
         self
     }
     /// Leading lines preferred during truncation (default: 40).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .head_lines(20)
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     pub fn head_lines(mut self, lines: usize) -> Self {
         self.policy.head_lines = lines;
         self
     }
     /// Trailing lines preferred during truncation (default: 160).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .tail_lines(100)
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     pub fn tail_lines(mut self, lines: usize) -> Self {
         self.policy.tail_lines = lines;
         self
     }
     /// Summarize when the truncated output exceeds this estimated token count (default: 5,000).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    /// use swiftide_core::SimplePrompt;
+    ///
+    /// fn summarize_build_results(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn SimplePrompt>,
+    /// ) -> anyhow::Result<()> {
+    ///     let output = ToolSummarizer::builder()
+    ///         .llm(summary_model)
+    ///         .summarize_at_tokens(4_000)
+    ///         .build()?;
+    ///     agent.after_tool(output.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn summarize_at_tokens(mut self, tokens: usize) -> Self {
         self.policy.summarize_at_tokens = tokens;
         self
     }
     /// Always summarize these tools if a model is present, unless excluded.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    /// use swiftide_core::SimplePrompt;
+    ///
+    /// fn summarize_build_results(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn SimplePrompt>,
+    /// ) -> anyhow::Result<()> {
+    ///     let output = ToolSummarizer::builder()
+    ///         .llm(summary_model)
+    ///         .tools_to_summarize(["run_tests", "run_lint"])
+    ///         .build()?;
+    ///     agent.after_tool(output.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn tools_to_summarize(
         mut self,
         tools: impl IntoIterator<Item = impl Into<String>>,
@@ -114,11 +264,47 @@ impl<E> ToolSummarizerBuilder<E> {
         self
     }
     /// Bypass truncation and summarization for these tools. Exclusion takes precedence.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .excluded_tools(["read_file", "read_file_with_line_numbers"])
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     pub fn excluded_tools(mut self, tools: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.policy.excluded = tools.into_iter().map(Into::into).collect();
         self
     }
     /// Use an existing Swiftide estimator, such as an application's `TikToken` instance.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::sync::Arc;
+    /// use swiftide_agents::AgentBuilder;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    /// use swiftide_core::{SimplePrompt, token_estimation::EstimateTokens};
+    ///
+    /// fn summarize_with_application_tokenizer<E: EstimateTokens + Send + Sync + 'static>(
+    ///     agent: &mut AgentBuilder,
+    ///     summary_model: Arc<dyn SimplePrompt>,
+    ///     tokenizer: E,
+    /// ) -> anyhow::Result<()> {
+    ///     let output = ToolSummarizer::builder()
+    ///         .llm(summary_model)
+    ///         .token_estimator(tokenizer)
+    ///         .summarize_at_tokens(4_000)
+    ///         .build()?;
+    ///     agent.after_tool(output.summarize_hook());
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn token_estimator<T>(self, estimator: T) -> ToolSummarizerBuilder<T> {
         ToolSummarizerBuilder {
             estimator: Arc::new(estimator),
@@ -127,7 +313,21 @@ impl<E> ToolSummarizerBuilder<E> {
     }
     /// Validate limits and construct the hook.
     ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .max_output_chars(20_000)
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    ///
     /// # Errors
+    ///
     /// Returns an error if the character or token limit is zero.
     pub fn build(self) -> Result<ToolSummarizer<E>> {
         ensure!(
@@ -147,6 +347,19 @@ impl<E> ToolSummarizerBuilder<E> {
 
 impl<E: EstimateTokens + Send + Sync + 'static> ToolSummarizer<E> {
     /// Register this hook with `AgentBuilder::after_tool`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use swiftide_agents::Agent;
+    /// use swiftide_agents_contrib::hooks::ToolSummarizer;
+    ///
+    /// let output = ToolSummarizer::builder()
+    ///     .max_output_chars(20_000)
+    ///     .build()?;
+    /// Agent::builder().after_tool(output.summarize_hook());
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
     #[must_use = "register the hook with after_tool"]
     pub fn summarize_hook(self) -> impl AfterToolFn {
         let this = Arc::new(self);
