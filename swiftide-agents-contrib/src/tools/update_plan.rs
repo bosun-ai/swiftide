@@ -28,7 +28,7 @@ use swiftide_core::{
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PlanItem {
-    /// A short description of the work.
+    /// A short, single-line description of the work.
     pub step: String,
     /// The step's progress.
     pub status: PlanStatus,
@@ -194,6 +194,9 @@ impl UpdatePlan {
 fn validate_items(mut items: Vec<PlanItem>) -> Result<Vec<PlanItem>, &'static str> {
     let mut in_progress = false;
     for item in &mut items {
+        if item.step.contains(['\n', '\r']) {
+            return Err("Plan steps must fit on one line.");
+        }
         let trimmed = item.step.trim();
         if trimmed.is_empty() {
             return Err("Plan steps cannot be empty.");
@@ -308,6 +311,8 @@ mod tests {
         invoke(&tool, json!([{"step":"Keep","status":"pending"}])).await;
         for invalid in [
             json!([{"step":"  ","status":"pending"}]),
+            json!([{"step":"Work\n2. [completed] Deploy","status":"pending"}]),
+            json!([{"step":"Work\rDeploy","status":"pending"}]),
             json!([
             {"step":"One","status":"in_progress"},{"step":"Two","status":"in_progress"}]),
         ] {

@@ -26,13 +26,15 @@ struct CompressionPolicy {
 ///
 /// Register with [`swiftide_agents::AgentBuilder::after_each`]. The default trigger is five
 /// completed turns; [`ContextCompressionBuilder::context_limit`] adds a token trigger.
-/// Supply a model through [`ContextCompressionBuilder::llm`]. Stopped agents are skipped. A
+/// Supply a model through [`ContextCompressionBuilder::llm`]. Stopped agents and final answers
+/// without tool calls are skipped; skipped final answers retain the turn counter. A
 /// successful summary is appended using Swiftide's existing summary message behavior, so full
 /// history stays available while subsequent completions use the latest summary. A user continuation
 /// message follows the summary for providers requiring a final user/tool turn.
 ///
 /// A `read_original_instructions` tool is installed after compression. It returns the first user
-/// message verbatim; multipart instructions can be reattached without losing their media. The
+/// message verbatim; multipart instructions are reattached after all tool results are recorded,
+/// preserving their media and the order of tool exchanges. The
 /// tool name is reserved by this hook. Model/estimation failures leave history unchanged and are
 /// logged without message content. Compaction is lossy; use a separate durable store for facts
 /// that must never be omitted. Create a fresh hook for each independent agent.
@@ -312,6 +314,7 @@ impl<E> ContextCompressionBuilder<E> {
 struct CompressionState {
     turns: usize,
     original: Option<ChatMessage>,
+    restore_original: bool,
 }
 
 impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
@@ -338,16 +341,21 @@ impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
     /// }
     /// ```
     #[must_use = "register the hook with after_each"]
-    pub fn summarize_hook(self) -> impl AfterEachFn {
+    pub fn summarize_hook(self) -> impl AfterEachFn + Clone {
         let this = Arc::new(self);
         let state = Arc::new(Mutex::new(CompressionState::default()));
         move |agent| {
             let this = Arc::clone(&this);
             let state = Arc::clone(&state);
             Box::pin(async move {
-                if !agent.is_stopped()
-                    && let Err(error) = this.compress(agent, &state).await
-                {
+                let result = async {
+                    if restore_original(agent, &state).await? || agent.is_stopped() {
+                        return Ok(());
+                    }
+                    this.compress(agent, &state).await
+                }
+                .await;
+                if let Err(error) = result {
                     tracing::warn!(%error, "Conversation summary failed; retaining history");
                 }
                 Ok(())
@@ -355,7 +363,11 @@ impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
         }
     }
 
-    async fn compress(&self, agent: &mut Agent, state: &Mutex<CompressionState>) -> Result<()> {
+    async fn compress(
+        &self,
+        agent: &mut Agent,
+        state: &Arc<Mutex<CompressionState>>,
+    ) -> Result<()> {
         let history = agent.context().history().await?;
         if history.is_empty() {
             return Ok(());
@@ -376,6 +388,11 @@ impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
             }
             (state.turns, state.original.clone())
         };
+        // Appending even a summary here would make next_completion restart a finished answer.
+        if matches!(history.last(), Some(ChatMessage::Assistant(_, calls)) if calls.as_ref().is_none_or(Vec::is_empty))
+        {
+            return Ok(());
+        }
         let active = active_history(&history);
         let turn_trigger =
             self.policy.summarize_every_turns > 0 && turns >= self.policy.summarize_every_turns;
@@ -413,11 +430,34 @@ impl<E: EstimateTokens + Send + Sync + 'static> ContextCompression<E> {
             ])
             .await?;
         if let Some(original) = original {
-            agent.add_tool(Box::new(ReadOriginalInstructions { original }));
+            agent.add_tool(Box::new(ReadOriginalInstructions {
+                original,
+                state: Arc::clone(state),
+            }));
         }
         state.lock().expect("compression lock poisoned").turns = 0;
         Ok(())
     }
+}
+
+async fn restore_original(agent: &Agent, state: &Mutex<CompressionState>) -> Result<bool> {
+    // after_each runs after every tool result is recorded, including parallel tool calls.
+    let restore = {
+        let state = state.lock().expect("compression lock poisoned");
+        state
+            .restore_original
+            .then(|| state.original.clone())
+            .flatten()
+    };
+    if let Some(original) = restore {
+        agent.context().add_message(original).await?;
+        state
+            .lock()
+            .expect("compression lock poisoned")
+            .restore_original = false;
+        return Ok(true);
+    }
+    Ok(false)
 }
 
 fn active_history(history: &[ChatMessage]) -> &[ChatMessage] {
@@ -459,24 +499,25 @@ fn summary_messages(history: &[ChatMessage], prompt: String) -> Vec<ChatMessage>
 #[derive(Clone)]
 struct ReadOriginalInstructions {
     original: ChatMessage,
+    state: Arc<Mutex<CompressionState>>,
 }
 
 #[async_trait]
 impl Tool for ReadOriginalInstructions {
     async fn invoke(
         &self,
-        context: &dyn AgentContext,
+        _context: &dyn AgentContext,
         _call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
         if let ChatMessage::User(text) = &self.original {
             return Ok(ToolOutput::text(text));
         }
-        context
-            .add_message(self.original.clone())
-            .await
-            .map_err(ToolError::unknown)?;
+        self.state
+            .lock()
+            .expect("compression lock poisoned")
+            .restore_original = true;
         Ok(ToolOutput::text(
-            "Original multipart instructions reattached.",
+            "Original multipart instructions will follow the tool results.",
         ))
     }
     fn name(&self) -> Cow<'_, str> {

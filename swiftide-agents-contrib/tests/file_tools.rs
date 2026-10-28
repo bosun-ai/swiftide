@@ -15,10 +15,16 @@ struct Workspace {
 
 #[tokio::test]
 async fn moving_a_file_onto_itself_is_rejected_without_deleting_it() {
-    let workspace = Workspace::new(&[("one.txt", "old\n")]);
-    let report = workspace.patch("*** Begin Patch\n*** Update File: one.txt\n*** Move to: one.txt\n@@\n-old\n+new\n*** End Patch").await;
-    assert!(report.contains("destination must differ"), "{report}");
-    assert_eq!(workspace.read("one.txt"), "old\n");
+    for (source, destination) in [
+        ("one.txt", "one.txt"),
+        ("one.txt", "./one.txt"),
+        ("./one.txt", "one.txt"),
+    ] {
+        let workspace = Workspace::new(&[("one.txt", "old\n")]);
+        let report = workspace.patch(&format!("*** Begin Patch\n*** Update File: {source}\n*** Move to: {destination}\n@@\n-old\n+new\n*** End Patch")).await;
+        assert!(report.contains("destination must differ"), "{report}");
+        assert_eq!(workspace.read("one.txt"), "old\n");
+    }
 }
 
 #[derive(Clone)]
@@ -253,4 +259,45 @@ async fn consecutive_navigation_anchors_select_a_nested_block() {
         workspace.read("file.txt"),
         "class A\n  method one\n    value\n  method two\n    chosen\nclass B\n  method two\n    value\n"
     );
+}
+
+#[tokio::test]
+async fn edits_preserve_trailing_blank_lines_and_can_append_one() {
+    for ending in ["\n", "\r\n"] {
+        let workspace = Workspace::new(&[("one.txt", &format!("old{ending}{ending}{ending}"))]);
+        let report = workspace
+            .patch("*** Begin Patch\n*** Update File: one.txt\n@@\n-old\n+new\n*** End Patch")
+            .await;
+        assert!(report.contains("Modified"), "{report}");
+        assert_eq!(
+            workspace.read("one.txt"),
+            format!("new{ending}{ending}{ending}")
+        );
+    }
+    let workspace = Workspace::new(&[("one.txt", "old\n")]);
+    workspace
+        .patch("*** Begin Patch\n*** Update File: one.txt\n@@\n old\n+\n*** End Patch")
+        .await;
+    assert_eq!(workspace.read("one.txt"), "old\n\n");
+}
+
+#[tokio::test]
+async fn text_edits_leave_non_utf8_files_unchanged() {
+    let workspace = Workspace::new(&[]);
+    let bytes = b"old\n\xff\n";
+    let path = workspace.directory.path().join("binary.txt");
+    std::fs::write(&path, bytes).unwrap();
+    let report = workspace
+        .patch("*** Begin Patch\n*** Update File: binary.txt\n@@\n-old\n+new\n*** End Patch")
+        .await;
+    assert!(report.contains("Not applied"), "{report}");
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    let output = swiftide_agents_contrib::tools::ExactReplace.invoke(
+        &workspace.context,
+        &ToolCall::builder().id("edit").name("edit")
+            .args(serde_json::json!({"file_path":"binary.txt", "old_string":"old", "new_string":"new"}).to_string())
+            .build().unwrap(),
+    ).await.unwrap();
+    assert!(output.as_fail().unwrap().contains("UTF-8"));
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
 }

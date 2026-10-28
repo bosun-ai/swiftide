@@ -16,7 +16,8 @@ use swiftide_core::{
 /// coordinate concurrent writers. Filesystem permissions and isolation belong to the executor.
 ///
 /// The tool accepts `file_path`, `old_string`, `new_string`, and optional `replace_all` (false by
-/// default). An empty search string or an unchanged replacement returns a failure output.
+/// default). Files must contain valid UTF-8. An empty search string or an unchanged replacement
+/// returns a failure output.
 ///
 /// # Examples
 ///
@@ -57,11 +58,16 @@ impl Tool for ExactReplace {
             .args()
             .ok_or_else(|| ToolError::missing_arguments("edit"))?;
         let payload: ExactReplaceArgs = serde_json::from_str(args)?;
-        let contents = agent_context
+        let bytes = agent_context
             .executor()
             .exec_cmd(&Command::read_file(&payload.file_path))
             .await?
-            .into_string_lossy();
+            .into_bytes();
+        let Ok(contents) = String::from_utf8(bytes) else {
+            return Ok(ToolOutput::fail(
+                "The file is not valid UTF-8; no changes were written",
+            ));
+        };
 
         let updated = match replace_exact(
             &contents,

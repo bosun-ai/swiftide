@@ -36,7 +36,7 @@ fn derive_new_contents_from_chunks(
     }
 
     let changed = apply_chunks_to_lines(&mut lines, path, chunks)?;
-    if had_final_newline && !lines.last().is_some_and(String::is_empty) {
+    if had_final_newline {
         lines.push(String::new());
     }
 

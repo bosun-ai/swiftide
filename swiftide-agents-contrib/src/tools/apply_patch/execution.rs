@@ -70,7 +70,11 @@ async fn execute_hunk(
         } => {
             if let Some(destination) = &move_path {
                 validate_patch_path(destination)?;
-                if destination == &path {
+                if destination
+                    .components()
+                    .filter(|part| *part != Component::CurDir)
+                    .eq(path.components().filter(|part| *part != Component::CurDir))
+                {
                     return Err(ToolError::unknown(anyhow!(
                         "move destination must differ from the source"
                     )));
@@ -154,7 +158,8 @@ async fn apply_update_file(
                 source = source.display()
             )))
         })?
-        .into_string_lossy();
+        .into_bytes();
+    let original = String::from_utf8(original).map_err(ToolError::unknown)?;
 
     let update = apply_chunks_to_contents(source, &original, chunks)?;
 
