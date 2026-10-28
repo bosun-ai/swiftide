@@ -7,12 +7,12 @@
 //! ```no_run
 //! use std::sync::Arc;
 //! use swiftide_agents::{Agent, DefaultContext, tools::local_executor::LocalExecutor};
-//! use swiftide_agents_contrib::executors::LazyExecutor;
+//! use swiftide_agents_contrib::executors::{LazyExecutor, ToolExecutorExt};
 //! use swiftide_core::ToolExecutor;
 //!
 //! let executor = LazyExecutor::new(|| async {
 //!     // Supply the application's executor setup here.
-//!     Ok(Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutor>)
+//!     Ok(Arc::new(LocalExecutor::default()) as Arc<dyn ToolExecutorExt>)
 //! });
 //! let executor: Arc<dyn ToolExecutor> = Arc::new(executor);
 //! Agent::builder().context(DefaultContext::from_executor(executor));
@@ -20,3 +20,7 @@
 
 mod lazy;
 pub use lazy::LazyExecutor;
+
+mod download;
+mod traits;
+pub use traits::ToolExecutorExt;

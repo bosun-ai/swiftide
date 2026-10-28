@@ -25,15 +25,10 @@
 //! ```no_run
 //! # #[cfg(feature = "planning")]
 //! # {
-//! use std::sync::Arc;
 //! use swiftide_agents::Agent;
-//! use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
+//! use swiftide_agents_contrib::tools::UpdatePlan;
 //!
-//! let progress = Arc::new(PlanMemory::default());
-//! Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&progress)));
-//! for item in progress.snapshot() {
-//!     println!("{}: {}", item.status, item.step);
-//! }
+//! Agent::builder().add_tool(UpdatePlan::default());
 //! # }
 //! ```
 

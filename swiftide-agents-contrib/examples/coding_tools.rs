@@ -1,12 +1,10 @@
-use std::sync::Arc;
 use swiftide_agents::{Agent, DefaultContext};
-use swiftide_agents_contrib::tools::{ApplyPatch, ExactReplace, PlanMemory, ReadFile, UpdatePlan};
+use swiftide_agents_contrib::tools::{ApplyPatch, ExactReplace, ReadFile, UpdatePlan};
 use swiftide_core::chat_completion::{Tool, ToolCall};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let memory = Arc::new(PlanMemory::default());
-    let plan = UpdatePlan::new(Arc::clone(&memory));
+    let plan = UpdatePlan::default();
     let mut builder = Agent::builder();
     builder
         .add_tool(plan.clone())
@@ -18,9 +16,8 @@ async fn main() -> anyhow::Result<()> {
     let call = ToolCall::builder()
         .id("plan")
         .name("update_plan")
-        .args(r#"{"items":[{"step":"Inspect the code","status":"in_progress"}]}"#)
+        .args(r#"{"items":[{"step":"Inspect the code","status":"in_progress"}],"explanation":"Inspect before changing code"}"#)
         .build()?;
     println!("{}", plan.invoke(&DefaultContext::default(), &call).await?);
-    println!("Application sees {} plan step(s)", memory.snapshot().len());
     Ok(())
 }

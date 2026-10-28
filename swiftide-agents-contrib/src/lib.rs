@@ -15,3 +15,6 @@ pub mod executors;
 pub mod hooks;
 #[cfg(any(feature = "planning", feature = "file-tools"))]
 pub mod tools;
+
+#[cfg(feature = "context-management")]
+mod support;

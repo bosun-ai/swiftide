@@ -10125,16 +10125,22 @@ version = "0.33.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "base64 0.22.1",
+ "derive_builder",
  "document-features",
  "futures-util",
+ "regex",
  "schemars 1.2.3",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "shell-escape",
  "swiftide-agents",
  "swiftide-core",
  "temp-dir",
+ "tera",
  "tokio",
+ "tokio-util",
  "tracing",
 ]
 

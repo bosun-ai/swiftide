@@ -8,7 +8,7 @@ use swiftide_core::{
 };
 
 /// Replace this offline model with the application's preferred provider.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ExampleModel;
 
 #[async_trait]
@@ -26,16 +26,20 @@ impl ChatCompletion for ExampleModel {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let output = ToolSummarizer::builder().max_output_chars(40_000).build()?;
+    let output = ToolSummarizer::builder()
+        .llm(Arc::new(ExampleModel) as Arc<dyn swiftide_core::SimplePrompt>)
+        .tools_to_summarize(Vec::<&'static str>::new())
+        .git_start_sha("HEAD")
+        .build()?;
     let conversation = ContextCompression::builder()
-        .llm(Arc::new(ExampleModel))
-        .summarize_every_turns(1)
-        .context_limit(32_000)
+        .llm(Arc::new(ExampleModel) as Arc<dyn ChatCompletion>)
+        .num_completions_for_summary(5usize)
+        .git_start_sha("HEAD")
+        .git_diff_dir(".")
+        .context_limit(32_000usize)
         .build()?;
     let mut builder = Agent::builder();
-    for hook in conversation.hooks() {
-        builder.add_hook(hook);
-    }
+    builder.after_each(conversation.summarize_hook());
     let mut agent = builder
         .llm(&ExampleModel)
         .after_tool(output.summarize_hook())
@@ -48,4 +52,14 @@ async fn main() -> anyhow::Result<()> {
         agent.context().history().await?.len()
     );
     Ok(())
+}
+
+#[async_trait]
+impl swiftide_core::SimplePrompt for ExampleModel {
+    async fn prompt(
+        &self,
+        _prompt: swiftide_core::prompt::Prompt,
+    ) -> Result<String, LanguageModelError> {
+        Ok("Example tool summary".into())
+    }
 }

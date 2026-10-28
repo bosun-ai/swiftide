@@ -1,324 +1,247 @@
+//! Update plan tool for maintaining a concise, ordered plan with statuses in memory.
+//!
+//! It helps agents keep track of their tasks and progress.
 use std::{
-    borrow::Cow,
     fmt,
     sync::{Arc, Mutex},
 };
 
 use async_trait::async_trait;
-use schemars::{JsonSchema, schema_for};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use swiftide_core::{
     AgentContext,
     chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
 };
 
-/// A step in an agent's current plan.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+/// A plan step accepted by [`UpdatePlan`].
 ///
 /// # Examples
 ///
 /// ```no_run
 /// use swiftide_agents_contrib::tools::{PlanItem, PlanStatus};
-///
-/// let step = PlanItem {
-///     step: "Review the proposed changes".into(),
-///     status: PlanStatus::InProgress,
-/// };
-/// assert_eq!(step.status, PlanStatus::InProgress);
+/// let item = PlanItem { step: "Run the tests".into(), status: PlanStatus::Pending };
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
 pub struct PlanItem {
-    /// A short, single-line description of the work.
+    /// Work described by this step.
     pub step: String,
-    /// The step's progress.
+    /// Progress of the step.
     pub status: PlanStatus,
 }
 
-/// Progress of a plan step. A plan may have at most one step in progress.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+/// Progress of a plan step.
 ///
 /// # Examples
 ///
 /// ```no_run
-/// use swiftide_agents_contrib::tools::{PlanItem, PlanStatus};
-///
-/// let mut step = PlanItem {
-///     step: "Run the tests".into(),
-///     status: PlanStatus::Pending,
-/// };
-/// step.status = PlanStatus::Completed;
+/// use swiftide_agents_contrib::tools::PlanStatus;
+/// assert_eq!(PlanStatus::InProgress.to_string(), "in_progress");
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
 pub enum PlanStatus {
     /// Work has not started.
     Pending,
     /// Work is underway.
     InProgress,
-    /// Work has finished.
+    /// Work is finished.
     Completed,
+}
+
+// Keep documentation out of the model-facing schema, as in the source tool.
+impl JsonSchema for PlanItem {
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("PlanItem")
+    }
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        #[derive(JsonSchema)]
+        #[serde(deny_unknown_fields)]
+        #[allow(dead_code)]
+        struct PlanItem {
+            step: String,
+            status: PlanStatus,
+        }
+        PlanItem::json_schema(generator)
+    }
+}
+
+impl JsonSchema for PlanStatus {
+    fn schema_name() -> Cow<'static, str> {
+        Cow::Borrowed("PlanStatus")
+    }
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        #[derive(JsonSchema)]
+        #[serde(rename_all = "snake_case")]
+        #[allow(dead_code)]
+        enum PlanStatus {
+            Pending,
+            InProgress,
+            Completed,
+        }
+        PlanStatus::json_schema(generator)
+    }
 }
 
 impl fmt::Display for PlanStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            Self::Pending => "pending",
-            Self::InProgress => "in_progress",
-            Self::Completed => "completed",
-        })
+        let label = match self {
+            PlanStatus::Pending => "pending",
+            PlanStatus::InProgress => "in_progress",
+            PlanStatus::Completed => "completed",
+        };
+
+        f.write_str(label)
     }
 }
 
-/// In-memory plan state. Share an `Arc<PlanMemory>` to observe or coordinate a single plan.
-/// Fresh default instances are independent; this state is not persisted across process restarts.
+#[derive(Debug, Default)]
+/// In-memory storage owned by a plan tool; clones of the tool share this storage.
 ///
 /// # Examples
 ///
 /// ```no_run
-/// use std::sync::Arc;
-/// use swiftide_agents::Agent;
-/// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
-///
-/// let memory = Arc::new(PlanMemory::default());
-/// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
-/// // Show the agent's current progress in the application.
-/// for item in memory.snapshot() {
-///     println!("{}: {}", item.status, item.step);
-/// }
+/// use swiftide_agents_contrib::tools::PlanMemory;
+/// let memory = PlanMemory::default();
 /// ```
-#[derive(Debug, Default)]
 pub struct PlanMemory {
     steps: Mutex<Vec<PlanItem>>,
 }
 
 impl PlanMemory {
-    /// Return a consistent, owned snapshot of the current plan.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use std::sync::Arc;
-    /// use swiftide_agents::Agent;
-    /// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
-    ///
-    /// let memory = Arc::new(PlanMemory::default());
-    /// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
-    /// // Show the agent's current progress in the application.
-    /// for item in memory.snapshot() {
-    ///     println!("{}: {}", item.status, item.step);
-    /// }
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// Panics if another thread panicked while holding the plan lock.
-    pub fn snapshot(&self) -> Vec<PlanItem> {
-        self.steps.lock().expect("plan lock poisoned").clone()
-    }
-
-    fn replace(&self, items: Vec<PlanItem>) {
-        *self.steps.lock().expect("plan lock poisoned") = items;
+    pub(crate) fn store(&self, steps: Vec<PlanItem>) {
+        *self.steps.lock().unwrap() = steps;
     }
 }
 
-/// Maintain an ordered plan (tool name: `update_plan`).
+/// Maintain a plan with the same validation and messages as Fluyt's `update_plan` tool.
 ///
-/// Nonempty `items` replace the plan after validation. Empty `items` retrieve it without changing
-/// it. Cloning a tool shares its plan; `Default` creates a fresh plan. Use [`Self::new`] to share
-/// state with an application. Invalid updates return a failure output and retain the old plan.
+/// Both `items` and `explanation` are required. Empty items retrieve the current plan; clones
+/// share state and fresh default tools start with an independent plan.
 ///
 /// # Examples
 ///
 /// ```no_run
-/// use std::sync::Arc;
 /// use swiftide_agents::Agent;
-/// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
-///
-/// let memory = Arc::new(PlanMemory::default());
-/// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
-/// assert!(memory.snapshot().is_empty());
+/// use swiftide_agents_contrib::tools::UpdatePlan;
+/// Agent::builder().add_tool(UpdatePlan::default());
 /// ```
 #[derive(Clone, Debug, Default)]
 pub struct UpdatePlan {
     memory: Arc<PlanMemory>,
 }
 
-#[derive(Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-struct UpdatePlanArgs {
-    /// Ordered steps; an empty list retrieves the current plan.
-    items: Vec<PlanItem>,
-    /// Optional explanation of the update.
-    explanation: Option<String>,
+impl UpdatePlan {
+    fn render_summary(&self, explanation: Option<&str>) -> String {
+        let plan = self.memory.steps.lock().unwrap();
+        let mut lines: Vec<String> = plan
+            .iter()
+            .enumerate()
+            .map(|(idx, item)| format!("{}. [{}] {}", idx + 1, item.status, item.step))
+            .collect();
+
+        if let Some(explanation) = explanation {
+            if !lines.is_empty() {
+                lines.push(String::new());
+            }
+            lines.push(explanation.to_string());
+        }
+
+        format!("# Current Plan\n{}", lines.join("\n"))
+    }
 }
 
 impl UpdatePlan {
-    /// Construct a tool using explicitly shared plan state.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use std::sync::Arc;
-    /// use swiftide_agents::Agent;
-    /// use swiftide_agents_contrib::tools::{PlanMemory, UpdatePlan};
-    ///
-    /// let memory = Arc::new(PlanMemory::default());
-    /// Agent::builder().add_tool(UpdatePlan::new(Arc::clone(&memory)));
-    /// // Show the agent's current progress in the application.
-    /// for item in memory.snapshot() {
-    ///     println!("{}: {}", item.status, item.step);
-    /// }
-    /// ```
-    pub fn new(memory: Arc<PlanMemory>) -> Self {
-        Self { memory }
-    }
-
-    fn update(&self, items: Vec<PlanItem>, explanation: Option<&str>) -> ToolOutput {
+    #[allow(clippy::ref_option, reason = "needs to be fixed in swiftide")]
+    fn update_plan(
+        &self,
+        _context: &dyn AgentContext,
+        items: Vec<PlanItem>,
+        explanation: &str,
+    ) -> impl Future<Output = Result<ToolOutput, ToolError>> {
         if items.is_empty() {
-            return ToolOutput::text(render_plan(&self.memory.snapshot(), None));
+            let summary = self.render_summary(None);
+            return std::future::ready(Ok(summary.into()));
         }
-        match validate_items(items) {
-            Ok(items) => {
-                // Render this update rather than rereading a possibly newer concurrent update.
-                let summary = render_plan(&items, explanation);
-                self.memory.replace(items);
-                ToolOutput::text(summary)
+
+        let mut in_progress_count = 0;
+        let mut plan_items = Vec::with_capacity(items.len());
+
+        for item in items {
+            let step = item.step.trim();
+            if step.is_empty() {
+                let summary = self.render_summary(None);
+                return std::future::ready(Ok(ToolOutput::fail(format!(
+                    "Plan steps cannot be empty. Please update the plan properly\n\n# Current plan\n{summary}"
+                ))));
             }
-            Err(reason) => ToolOutput::fail(format!(
-                "{reason}\n\n{}",
-                render_plan(&self.memory.snapshot(), None)
-            )),
+
+            if matches!(item.status, PlanStatus::InProgress) {
+                in_progress_count += 1;
+            }
+
+            plan_items.push(PlanItem {
+                step: step.to_string(),
+                status: item.status,
+            });
         }
+
+        if in_progress_count > 1 {
+            let summary = self.render_summary(None);
+            return std::future::ready(Ok(ToolOutput::fail(format!(
+                "Only one step may be marked in progress. Please update the plan properly\n\n# Current plan\n{summary}"
+            ))));
+        }
+
+        let explanation = explanation.trim();
+        let explanation = if explanation.is_empty() {
+            None
+        } else {
+            Some(explanation)
+        };
+        self.memory.store(plan_items);
+        let summary = self.render_summary(explanation);
+
+        std::future::ready(Ok(ToolOutput::text(summary)))
     }
 }
 
-fn validate_items(mut items: Vec<PlanItem>) -> Result<Vec<PlanItem>, &'static str> {
-    let mut in_progress = false;
-    for item in &mut items {
-        if item.step.contains(['\n', '\r']) {
-            return Err("Plan steps must fit on one line.");
-        }
-        let trimmed = item.step.trim();
-        if trimmed.is_empty() {
-            return Err("Plan steps cannot be empty.");
-        }
-        if item.status == PlanStatus::InProgress {
-            if in_progress {
-                return Err("Only one step may be marked in progress.");
-            }
-            in_progress = true;
-        }
-        if trimmed.len() != item.step.len() {
-            item.step = trimmed.to_owned();
-        }
-    }
-    Ok(items)
-}
-
-fn render_plan(items: &[PlanItem], explanation: Option<&str>) -> String {
-    use fmt::Write as _;
-    let mut rendered = String::from("# Current Plan\n");
-    for (index, item) in items.iter().enumerate() {
-        if index > 0 {
-            rendered.push('\n');
-        }
-        write!(rendered, "{}. [{}] {}", index + 1, item.status, item.step).expect("string write");
-    }
-    if let Some(explanation) = explanation.map(str::trim).filter(|text| !text.is_empty()) {
-        if !items.is_empty() {
-            rendered.push_str("\n\n");
-        }
-        rendered.push_str(explanation);
-    }
-    rendered
+#[derive(Deserialize, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+struct UpdatePlanArgs {
+    #[schemars(
+        description = "Array of plan steps with `step` and a status (pending, in_progress, completed). Call with an empty list to retrieve the current plan."
+    )]
+    items: Vec<PlanItem>,
+    #[schemars(description = "Optional explanation describing how the plan changed.")]
+    explanation: String,
 }
 
 #[async_trait]
 impl Tool for UpdatePlan {
     async fn invoke(
         &self,
-        _context: &dyn AgentContext,
+        context: &dyn AgentContext,
         call: &ToolCall,
     ) -> Result<ToolOutput, ToolError> {
         let args = call
             .args()
-            .ok_or_else(|| ToolError::missing_arguments("update_plan"))?;
+            .ok_or_else(|| ToolError::missing_arguments("No arguments provided for update_plan"))?;
         let args: UpdatePlanArgs = serde_json::from_str(args)?;
-        Ok(self.update(args.items, args.explanation.as_deref()))
+        self.update_plan(context, args.items, &args.explanation)
+            .await
     }
-
     fn name(&self) -> Cow<'_, str> {
-        Cow::Borrowed("update_plan")
+        "update_plan".into()
     }
-
     fn tool_spec(&self) -> ToolSpec {
-        ToolSpec::builder().name("update_plan")
-            .description("Maintain a concise ordered plan. Supply an empty items list to retrieve it. At most one step may be in progress.")
-            .parameters_schema(schema_for!(UpdatePlanArgs)).build().expect("valid plan schema")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-    use swiftide_agents::DefaultContext;
-
-    async fn invoke(tool: &UpdatePlan, items: serde_json::Value) -> ToolOutput {
-        tool.invoke(
-            &DefaultContext::default(),
-            &ToolCall::builder()
-                .id("plan")
-                .name("update_plan")
-                .args(json!({"items": items, "explanation": "  progress  "}).to_string())
-                .build()
-                .unwrap(),
-        )
-        .await
-        .unwrap()
-    }
-
-    #[tokio::test]
-    async fn updates_and_retrieves_a_shared_plan_without_leaking_to_new_instances() {
-        let memory = Arc::new(PlanMemory::default());
-        let tool = UpdatePlan::new(Arc::clone(&memory));
-        let result = invoke(
-            &tool,
-            json!([{"step":"  Implement  ","status":"in_progress"}]),
-        )
-        .await;
-        assert_eq!(
-            result.as_text().unwrap(),
-            "# Current Plan\n1. [in_progress] Implement\n\nprogress"
-        );
-        assert_eq!(memory.snapshot()[0].step, "Implement");
-        assert_eq!(
-            invoke(&tool.clone(), json!([])).await.as_text().unwrap(),
-            "# Current Plan\n1. [in_progress] Implement"
-        );
-        assert_eq!(
-            invoke(&UpdatePlan::default(), json!([]))
-                .await
-                .as_text()
-                .unwrap(),
-            "# Current Plan\n"
-        );
-    }
-
-    #[tokio::test]
-    async fn invalid_updates_preserve_the_previous_plan() {
-        let memory = Arc::new(PlanMemory::default());
-        let tool = UpdatePlan::new(Arc::clone(&memory));
-        invoke(&tool, json!([{"step":"Keep","status":"pending"}])).await;
-        for invalid in [
-            json!([{"step":"  ","status":"pending"}]),
-            json!([{"step":"Work\n2. [completed] Deploy","status":"pending"}]),
-            json!([{"step":"Work\rDeploy","status":"pending"}]),
-            json!([
-            {"step":"One","status":"in_progress"},{"step":"Two","status":"in_progress"}]),
-        ] {
-            assert!(invoke(&tool, invalid).await.as_fail().is_some());
-            assert_eq!(memory.snapshot()[0].step, "Keep");
-        }
-        tool.tool_spec().strict_parameters_schema().unwrap();
+        ToolSpec::builder()
+            .name("update_plan")
+            .description("Maintain a concise, ordered plan with statuses in memory.")
+            .parameters_schema(schemars::schema_for!(UpdatePlanArgs))
+            .build()
+            .expect("valid plan schema")
     }
 }

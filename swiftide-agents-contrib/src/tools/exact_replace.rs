@@ -5,8 +5,7 @@ use schemars::{JsonSchema, schema_for};
 use serde::Deserialize;
 use swiftide_core::{
     AgentContext, Command,
-    chat_completion::Tool,
-    chat_completion::{ToolCall, ToolOutput, ToolSpecBuilder, errors::ToolError},
+    chat_completion::{Tool, ToolCall, ToolOutput, ToolSpecBuilder, errors::ToolError},
 };
 
 /// Replace exact text through the agent's executor (tool name: `edit`).
@@ -16,7 +15,7 @@ use swiftide_core::{
 /// coordinate concurrent writers. Filesystem permissions and isolation belong to the executor.
 ///
 /// The tool accepts `file_path`, `old_string`, `new_string`, and optional `replace_all` (false by
-/// default). Files must contain valid UTF-8. An empty search string or an unchanged replacement
+/// default). An empty search string or an unchanged replacement
 /// returns a failure output.
 ///
 /// # Examples
@@ -34,7 +33,7 @@ pub struct ExactReplace;
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct ExactReplaceArgs {
-    /// Path in the executor's filesystem, relative to its working directory or absolute.
+    /// Path to the file to edit, relative to the repository root.
     file_path: String,
     /// Exact text to replace.
     old_string: String,
@@ -58,16 +57,11 @@ impl Tool for ExactReplace {
             .args()
             .ok_or_else(|| ToolError::missing_arguments("edit"))?;
         let payload: ExactReplaceArgs = serde_json::from_str(args)?;
-        let bytes = agent_context
+        let contents = agent_context
             .executor()
             .exec_cmd(&Command::read_file(&payload.file_path))
             .await?
-            .into_bytes();
-        let Ok(contents) = String::from_utf8(bytes) else {
-            return Ok(ToolOutput::fail(
-                "The file is not valid UTF-8; no changes were written",
-            ));
-        };
+            .into_string_lossy();
 
         let updated = match replace_exact(
             &contents,
@@ -104,7 +98,7 @@ impl Tool for ExactReplace {
     }
 }
 
-fn replace_exact(
+pub(crate) fn replace_exact(
     contents: &str,
     old_string: &str,
     new_string: &str,
