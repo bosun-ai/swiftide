@@ -39,3 +39,24 @@ async fn source_binary_download_initializes_and_verifies_the_complete_file() {
     );
     assert!(!directory.path().join("too-large.bin").exists());
 }
+
+#[tokio::test]
+async fn refused_download_preserves_existing_destination() {
+    let dir = temp_dir::TempDir::new().unwrap();
+    let local = dir.path().join("local.bin");
+    std::fs::write(&local, b"keep me").unwrap();
+    std::fs::write(dir.path().join("large.bin"), b"too large").unwrap();
+    let executor = LocalExecutor::builder()
+        .workdir(dir.path())
+        .build()
+        .unwrap();
+    for remote in ["missing.bin", "large.bin"] {
+        assert!(
+            executor
+                .download(Path::new(remote), &local, 1)
+                .await
+                .is_err()
+        );
+        assert_eq!(std::fs::read(&local).unwrap(), b"keep me");
+    }
+}

@@ -1,12 +1,16 @@
 # Source parity
 
 This crate extracts the following implementations from Fluyt commit
-`aa62169de72ff16ac92d4e5aec54bf3cd8773c00` (remote `master`, verified with `git ls-remote`) (`quak/quak-core/`). Fluyt is unchanged.
+`aa62169de72ff16ac92d4e5aec54bf3cd8773c00` (`quak/quak-core/`) as its original
+extraction baseline. The merged fixes listed below are synchronized from Fluyt `master`
+`0446f4610cb620964b7bb4d0f2058dbca1cb728b`, verified against the GitHub commits API
+and the local `origin/master` ref on 2026-10-29. Fluyt received these fixes through separate
+upstream pull requests before they were carried into this crate.
 
 | Contrib API | Source under `src/` | Preserved behavior |
 | --- | --- | --- |
 | `ReadFile` (`read_file` and `read_file_with_line_numbers`) | `tools/read_file.rs` | Shared window selection, arguments, 2,000-line default, 2,000-character line truncation, 100,000-character window limit, numbering, continuation, and executor errors |
-| `ExactReplace` | `tools/exact_replace.rs` | Arguments, lossy decoding, exact matching, validation, errors, and writes |
+| `ExactReplace` | `tools/exact_replace.rs` | Arguments, strict UTF-8 decoding, exact matching, validation, errors, and writes |
 | `ApplyPatch` | `tools/apply_patch.rs` | Parser, matching, newline handling, path validation, shell commands, operation order, retry detection, and reports |
 | `UpdatePlan` | `tools/update_plan.rs` | Shared state, required arguments, validation, trimming, rendering, and errors |
 | `ToolSummarizer` | `hooks/tool_summarizer.rs` | Defaults, exclusions, truncation, summary selection, Git diffs, prompt, logging, and model failures |
@@ -41,14 +45,24 @@ and context compression v2 are not exposed.
 
 ## Verification and behavior changes
 
-Runtime function bodies were compared against this source revision, ignoring comments,
+Runtime function bodies were compared against the verified master revision, ignoring comments,
 whitespace, import paths, and the listed type names. Templates were checked byte for byte.
 Tests exercise source paging, line truncation, window refusal, and both read contracts, patch operations and failures, exact
 replacement, plan contracts, hook defaults and failures, initialization, and binary downloads.
 Public examples compile as doctests, and each feature is checked independently.
 
-This extraction deliberately retains source behavior, including its existing edge cases.
-Earlier contrib-only changes to UTF-8 validation, patch trailing blank lines, file identity
-checks, multiline plan validation, summary retries, final-answer handling, and multipart
-instruction recovery have been removed. Behavior changes should first be made in Fluyt,
-then carried over here with matching tests.
+This extraction retains upstream runtime behavior. The following fixes were merged in Fluyt
+before being carried over with regression tests:
+
+| Upstream PR | Merge revision | Extracted changes |
+| --- | --- | --- |
+| [#2592](https://github.com/bosun-ai/fluyt/pull/2592) | `95d63f834a99c083367638cb3dcb7a28dd27e56c` | Download cleanup begins only after the destination is opened; rejected remote files preserve an existing destination |
+| [#2593](https://github.com/bosun-ai/fluyt/pull/2593) | `09b19a2cbea733866c293ed137c4430b89ce8972` | Patch moves reject source and destination referring to the same file, including symlinks and hard links |
+| [#2594](https://github.com/bosun-ai/fluyt/pull/2594) | `0446f4610cb620964b7bb4d0f2058dbca1cb728b` | Patch updates preserve trailing blank lines |
+| [#2595](https://github.com/bosun-ai/fluyt/pull/2595) | `56c86cbd281563a6430a3daa812ccb1c5309e1c1` | Exact replacements and patch updates reject invalid UTF-8 without changing bytes |
+| [#2597](https://github.com/bosun-ai/fluyt/pull/2597) | `484bcddbfa8b02068f513daee75b582717b4107d` | Plan steps reject line breaks, explanation schema states the required contract, and compression recovers only the rendered plan block |
+
+No changes from open compression PR #2596 or provider read PR #2598 are included. The generic
+reader retains its existing contracts. Compression retry, final-answer, and multipart instruction
+recovery behavior remains the original implementation. Public patch documentation additionally
+explains symlink handling and executor isolation without changing runtime behavior.

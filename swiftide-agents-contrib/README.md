@@ -80,8 +80,10 @@ Supply an empty `explanation` string when there is nothing to explain.
 Moves use `*** Move to: new/path` after an update header; deletes use `*** Delete File: path`.
 Unchanged lines start with a space, removals with `-`, and additions with `+`.
 Patches execute in order and can partly succeed; inspect the result report. The executor controls
-filesystem access and isolation. These tools retain the source's lossy text decoding and patch
-newline handling; they do not add file identity checks or transaction guarantees.
+filesystem access and isolation. Path checks examine components, and filesystem operations follow
+symlinks. `LocalExecutor` does not isolate filesystem access; use an isolated executor for untrusted
+repositories. Edits reject invalid UTF-8, patches preserve trailing blank lines, and moves reject
+source and destination paths referring to the same file. Operations are not transactions.
 
 ## Context hooks
 

@@ -246,3 +246,14 @@ async fn consecutive_navigation_anchors_select_a_nested_block() {
         "class A\n  method one\n    value\n  method two\n    chosen\nclass B\n  method two\n    value\n"
     );
 }
+
+#[tokio::test]
+async fn updates_preserve_trailing_blank_lines() {
+    for original in ["old\n\n", "old\n\n\n", "old\r\n\r\n", "old\n", "old"] {
+        let workspace = Workspace::new(&[("file.txt", original)]);
+        workspace
+            .patch("*** Begin Patch\n*** Update File: file.txt\n@@\n-old\n+new\n*** End Patch")
+            .await;
+        assert_eq!(workspace.read("file.txt"), original.replace("old", "new"));
+    }
+}

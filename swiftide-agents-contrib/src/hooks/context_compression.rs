@@ -334,6 +334,8 @@ fn extract_plan_from_history(history: &[ChatMessage]) -> Option<Vec<PlanEntry>> 
             }
 
             let content = tool_output.content()?;
+            let (_, content) = content.split_once("# Current Plan\n")?;
+            let content = content.split("\n\n").next()?;
             let plan_items: Vec<PlanEntry> = regex
                 .captures_iter(content)
                 .map(|caps| PlanEntry {
@@ -498,5 +500,25 @@ impl ContextCompressionBuilder {
     /// ```
     pub fn build(&self) -> Result<ContextCompression, ContextCompressionBuilderError> {
         self.build_inner()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn plan_recovery_ignores_explanation_lines() {
+        let call = swiftide_core::chat_completion::ToolCall::builder()
+            .name("update_plan")
+            .id("plan")
+            .build()
+            .unwrap();
+        let history = [ChatMessage::new_tool_output(
+            call,
+            "# Current Plan\n1. [pending] Inspect\n\n2. [completed] Deploy",
+        )];
+        let plan = extract_plan_from_history(&history).unwrap();
+        assert_eq!(plan.len(), 1);
+        assert_eq!(plan[0].step, "Inspect");
     }
 }

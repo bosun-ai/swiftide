@@ -171,10 +171,10 @@ impl UpdatePlan {
 
         for item in items {
             let step = item.step.trim();
-            if step.is_empty() {
+            if step.is_empty() || item.step.contains(['\r', '\n']) {
                 let summary = self.render_summary(None);
                 return std::future::ready(Ok(ToolOutput::fail(format!(
-                    "Plan steps cannot be empty. Please update the plan properly\n\n# Current plan\n{summary}"
+                    "Plan steps cannot be empty or contain line breaks. Please update the plan properly\n\n# Current plan\n{summary}"
                 ))));
             }
 
@@ -215,7 +215,9 @@ struct UpdatePlanArgs {
         description = "Array of plan steps with `step` and a status (pending, in_progress, completed). Call with an empty list to retrieve the current plan."
     )]
     items: Vec<PlanItem>,
-    #[schemars(description = "Optional explanation describing how the plan changed.")]
+    #[schemars(
+        description = "Required explanation describing how the plan changed; use an empty string when none is needed."
+    )]
     explanation: String,
 }
 

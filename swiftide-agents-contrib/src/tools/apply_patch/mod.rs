@@ -15,7 +15,9 @@ use swiftide_core::{
 /// Apply Fluyt's file-oriented patch format with its original parser, matching, and messages.
 ///
 /// Operations run in order and can partially succeed. Inspect the returned report. Paths must be
-/// relative and contain no parent-directory components. The executor controls filesystem access.
+/// relative and contain no parent-directory components. This check only examines path components;
+/// filesystem operations follow symlinks. The executor controls filesystem access, and
+/// `LocalExecutor` does not isolate it. Use an isolated executor for untrusted repositories.
 ///
 /// # Examples
 ///
@@ -309,11 +311,24 @@ async fn apply_update_file(
                 source = source.display()
             )))
         })?
-        .into_string_lossy();
+        .into_bytes();
+    let original = String::from_utf8(original).map_err(anyhow::Error::from)?;
 
     let update = apply_chunks_to_contents(source, &original, chunks)?;
 
     if let Some(dest) = move_path {
+        let same_file = executor
+            .exec_cmd(&Command::shell(format!(
+                "if [ {} -ef {} ]; then printf same; fi",
+                escape(source.to_string_lossy()),
+                escape(dest.to_string_lossy()),
+            )))
+            .await?;
+        if !same_file.is_empty() {
+            return Err(ToolError::unknown(anyhow!(
+                "source and destination refer to the same file; no changes were written"
+            )));
+        }
         if let Some(parent) = dest.parent().filter(|p| !p.as_os_str().is_empty()) {
             let mkdir_cmd =
                 Command::shell(format!("mkdir -p {}", escape(parent.to_string_lossy())));
@@ -389,7 +404,7 @@ fn derive_new_contents_from_chunks(
     }
 
     let changed = apply_chunks_to_lines(&mut lines, path, chunks)?;
-    if had_final_newline && !lines.last().is_some_and(String::is_empty) {
+    if had_final_newline {
         lines.push(String::new());
     }
 
@@ -1269,5 +1284,76 @@ fn append_operation_section<'a>(
                 .collect::<Vec<_>>()
                 .join("\n")
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn moving_to_the_same_file_preserves_source_bytes() {
+        use swiftide_agents::tools::local_executor::LocalExecutor;
+        for destination in ["file.txt", "./file.txt", "symlink.txt", "hardlink.txt"] {
+            let dir = temp_dir::TempDir::new().unwrap();
+            let source = dir.path().join("file.txt");
+            std::fs::write(&source, b"old\n").unwrap();
+            std::os::unix::fs::symlink("file.txt", dir.path().join("symlink.txt")).unwrap();
+            std::fs::hard_link(&source, dir.path().join("hardlink.txt")).unwrap();
+            let executor = LocalExecutor::builder()
+                .workdir(dir.path())
+                .build()
+                .unwrap();
+            let parsed = parse_patch(&format!(
+                "*** Begin Patch
+*** Update File: file.txt
+*** Move to: {destination}
+@@
+-old
++new
+*** End Patch"
+            ))
+            .unwrap();
+            let Hunk::Update { chunks, .. } = &parsed.hunks[0] else {
+                panic!("update expected")
+            };
+            assert!(
+                apply_update_file(
+                    &executor,
+                    Path::new("file.txt"),
+                    Some(&PathBuf::from(destination)),
+                    chunks
+                )
+                .await
+                .is_err(),
+                "{destination}"
+            );
+            assert_eq!(std::fs::read(&source).unwrap(), b"old\n", "{destination}");
+        }
+    }
+
+    #[tokio::test]
+    async fn patch_refuses_invalid_utf8_without_changing_bytes() {
+        use swiftide_agents::tools::local_executor::LocalExecutor;
+        let dir = temp_dir::TempDir::new().unwrap();
+        let source = dir.path().join("file.txt");
+        std::fs::write(&source, b"old\n\xff\n").unwrap();
+        let executor = LocalExecutor::builder()
+            .workdir(dir.path())
+            .build()
+            .unwrap();
+        let parsed = parse_patch(
+            "*** Begin Patch\n*** Update File: file.txt\n@@\n-old\n+new\n*** End Patch",
+        )
+        .unwrap();
+        let Hunk::Update { chunks, .. } = &parsed.hunks[0] else {
+            panic!("update expected")
+        };
+        assert!(
+            apply_update_file(&executor, Path::new("file.txt"), None, chunks)
+                .await
+                .is_err()
+        );
+        assert_eq!(std::fs::read(&source).unwrap(), b"old\n\xff\n");
     }
 }

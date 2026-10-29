@@ -61,7 +61,13 @@ impl Tool for ExactReplace {
             .executor()
             .exec_cmd(&Command::read_file(&payload.file_path))
             .await?
-            .into_string_lossy();
+            .into_bytes();
+        let Ok(contents) = String::from_utf8(contents) else {
+            return Ok(ToolOutput::fail(format!(
+                "{} is not valid UTF-8; no changes were written",
+                payload.file_path
+            )));
+        };
 
         let updated = match replace_exact(
             &contents,
@@ -135,6 +141,36 @@ pub(crate) fn replace_exact(
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn edit_refuses_invalid_utf8_without_changing_bytes() {
+        let dir = temp_dir::TempDir::new().unwrap();
+        let source = dir.path().join("file.txt");
+        std::fs::write(&source, b"old\n\xff\n").unwrap();
+        let executor: Arc<dyn ToolExecutor> = Arc::new(
+            LocalExecutor::builder()
+                .workdir(dir.path())
+                .build()
+                .unwrap(),
+        );
+        let context = DefaultContext::from_executor(executor);
+        let call = ToolCall::builder()
+            .id("edit")
+            .name("edit")
+            .args(
+                json!({"file_path":"file.txt", "old_string":"old", "new_string":"new"}).to_string(),
+            )
+            .build()
+            .unwrap();
+        assert!(
+            ExactReplace
+                .invoke(&context, &call)
+                .await
+                .unwrap()
+                .as_fail()
+                .is_some()
+        );
+        assert_eq!(std::fs::read(&source).unwrap(), b"old\n\xff\n");
+    }
     use super::*;
     use std::sync::Arc;
 
