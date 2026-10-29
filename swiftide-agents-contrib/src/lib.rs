@@ -1,4 +1,4 @@
-//! Optional, reusable tools, hooks, and executor helpers for Swiftide agents.
+//! Contributed tools, context hooks, and executors for Swiftide agents.
 //!
 //! All capabilities are opt-in.
 //! Enabling a feature never registers a tool or changes an agent automatically.

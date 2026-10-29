@@ -51,7 +51,7 @@ pub enum PlanStatus {
     Completed,
 }
 
-// Keep documentation out of the model-facing schema, as in the source tool.
+// Keep documentation out of the model-facing schema.
 impl JsonSchema for PlanItem {
     fn schema_name() -> Cow<'static, str> {
         Cow::Borrowed("PlanItem")
@@ -116,7 +116,7 @@ impl PlanMemory {
     }
 }
 
-/// Maintain a plan with the same validation and messages as Fluyt's `update_plan` tool.
+/// Maintain an in-memory plan of steps and their progress.
 ///
 /// Both `items` and `explanation` are required. Empty items retrieve the current plan; clones
 /// share state and fresh default tools start with an independent plan.

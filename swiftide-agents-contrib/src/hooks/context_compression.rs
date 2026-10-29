@@ -47,7 +47,7 @@ struct PlanEntry {
     doc = "Configuration for `ContextCompression`.\n\n# Examples\n\n```no_run\nuse std::sync::Arc;\nuse swiftide_agents::AgentBuilder;\nuse swiftide_agents_contrib::hooks::ContextCompression;\nuse swiftide_core::ChatCompletion;\nfn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {\n    let hook = ContextCompression::builder().llm(model).git_start_sha(\"HEAD\")\n        .git_diff_dir(\".\").build()?;\n    agent.after_each(hook.summarize_hook());\n    Ok(())\n}\n```"
 )]
 #[builder(setter(into))]
-/// The `ContextCompression` hook from Fluyt, with its original defaults and control flow.
+/// Summarize conversation history when the turn or context threshold is reached.
 ///
 /// # Examples
 ///
@@ -64,7 +64,7 @@ struct PlanEntry {
 /// }
 /// ```
 pub struct ContextCompression {
-    /// Configure `llm` using the same setting as Fluyt.
+    /// Set the model used to summarize conversation history.
     ///
     /// # Examples
     ///
@@ -239,7 +239,7 @@ impl ContextCompression {
     }
 
     #[must_use = "the hook has no effect until it is registered on an agent"]
-    /// Register the original after-each hook.
+    /// Create a hook to register with `AgentBuilder::after_each`.
     ///
     /// # Examples
     ///
@@ -456,7 +456,7 @@ where
 }
 
 impl ContextCompression {
-    /// Configure the hook using Fluyt's defaults.
+    /// Configure conversation compression.
     ///
     /// # Examples
     ///
@@ -478,7 +478,7 @@ impl ContextCompression {
 }
 
 impl ContextCompressionBuilder {
-    /// Build the hook. Required settings match the source builder.
+    /// Build the conversation compression hook.
     ///
     /// # Errors
     ///

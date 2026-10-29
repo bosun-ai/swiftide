@@ -6,7 +6,6 @@ use swiftide_core::{Command, CommandError, ToolExecutor};
 
 /// Executor lifecycle and binary-download operations used by [`super::LazyExecutor`].
 ///
-/// This interface preserves the Fluyt executor contract independently of its infrastructure.
 /// Local executors have no cleanup work; wrappers should delegate lifecycle and download calls.
 ///
 /// # Examples

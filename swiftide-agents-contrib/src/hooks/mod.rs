@@ -1,7 +1,7 @@
-//! Fluyt's tool-output and conversation hooks, with their original defaults and prompt text.
+//! Tool-output summarization and conversation compression hooks.
 //!
 //! Register tool summaries with `after_tool` and conversation compression with `after_each`.
-//! Supply your own model and Git revision. Failures follow the source hook's behavior.
+//! Supply your own model and Git revision.
 //!
 //! # Examples
 //!

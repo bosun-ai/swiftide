@@ -16,7 +16,7 @@ use super::ToolExecutorExt;
 
 type InitFn = Arc<dyn Fn() -> BoxFuture<'static, Result<Arc<dyn ToolExecutorExt>>> + Send + Sync>;
 
-/// Defer executor startup while preserving Fluyt's command, cleanup, and download delegation.
+/// Start an executor on demand and delegate commands, cleanup, and downloads.
 ///
 /// Clones share initialization. Failed or cancelled initialization can retry. Cleanup before
 /// initialization is a no-op; download initializes the executor and delegates to it.

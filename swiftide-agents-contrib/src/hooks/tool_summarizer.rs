@@ -24,7 +24,7 @@ const TRUNCATION_PLACEHOLDER: &str = "<content trimmed>";
     doc = "Configuration for `ToolSummarizer`.\n\n# Examples\n\n```no_run\nuse std::sync::Arc;\nuse swiftide_agents::AgentBuilder;\nuse swiftide_agents_contrib::hooks::ToolSummarizer;\nuse swiftide_core::SimplePrompt;\nfn attach(agent: &mut AgentBuilder, model: Arc<dyn SimplePrompt>) -> anyhow::Result<()> {\n    let hook = ToolSummarizer::builder().llm(model).tools_to_summarize(Vec::new())\n        .git_start_sha(\"HEAD\").build()?;\n    agent.after_tool(hook.summarize_hook());\n    Ok(())\n}\n```"
 )]
 #[builder(setter(strip_option))]
-/// The `ToolSummarizer` hook from Fluyt, with its original defaults and control flow.
+/// Truncate large tool outputs and summarize selected outputs with a model.
 ///
 /// # Examples
 ///
@@ -43,7 +43,7 @@ const TRUNCATION_PLACEHOLDER: &str = "<content trimmed>";
 pub struct ToolSummarizer {
     /// The LLM that will be used to summarize the tool output.
     #[builder(setter(into))]
-    /// Configure `llm` using the same setting as Fluyt.
+    /// Set the model used to summarize tool output.
     ///
     /// # Examples
     ///
@@ -152,7 +152,7 @@ pub struct ToolSummarizer {
 
 impl ToolSummarizer {
     #[must_use]
-    /// Configure the hook using Fluyt's defaults.
+    /// Configure tool-output truncation and summarization.
     ///
     /// # Examples
     ///
@@ -175,7 +175,7 @@ impl ToolSummarizer {
     // Rust has a long outstanding issue where it captures outer lifetimes when returning an impl
     // that also has lifetimes, see https://github.com/rust-lang/rust/issues/42940
     #[must_use = "the hook has no effect until it is registered on an agent"]
-    /// Register the original after-tool hook.
+    /// Create a hook to register with `AgentBuilder::after_tool`.
     ///
     /// # Examples
     ///
@@ -191,7 +191,7 @@ impl ToolSummarizer {
     ///     Ok(())
     /// }
     /// ```
-    #[allow(clippy::needless_borrow, reason = "preserve the source hook body")]
+    #[allow(clippy::needless_borrow)]
     pub fn summarize_hook(self) -> impl AfterToolFn {
         let this = Arc::new(self);
 
@@ -487,7 +487,7 @@ fn prompt(
 }
 
 impl ToolSummarizerBuilder {
-    /// Build the hook. Required settings match the source builder.
+    /// Build the tool-output hook.
     ///
     /// # Errors
     ///

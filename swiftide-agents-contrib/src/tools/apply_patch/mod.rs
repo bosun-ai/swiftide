@@ -12,7 +12,7 @@ use swiftide_core::{
     chat_completion::{Tool, ToolCall, ToolOutput, ToolSpecBuilder, errors::ToolError},
 };
 
-/// Apply Fluyt's file-oriented patch format with its original parser, matching, and messages.
+/// Add, update, move, and delete files with a file-oriented patch format.
 ///
 /// Operations run in order and can partially succeed. Inspect the returned report. Paths must be
 /// relative and contain no parent-directory components. This check only examines path components;

@@ -9,11 +9,11 @@ use swiftide_core::{
     chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError},
 };
 
-/// Read file pages using Fluyt's shared file reader (tool name: `read_file`).
+/// Read file pages through the executor (tool name: `read_file`).
 ///
 /// Accepts `file_name`, optional one-based `offset` (zero starts at one), and optional `limit`.
 /// Defaults to 2,000 lines, cuts long lines at 2,000 characters, and refuses windows over
-/// 100,000 characters using the source accounting. Partial pages explain how to continue.
+/// 100,000 characters. Partial pages explain how to continue.
 /// Relative and absolute paths are passed to the executor unchanged.
 ///
 /// # Examples
