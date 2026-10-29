@@ -23,6 +23,9 @@ jobs:
         with:
           components: clippy
       - uses: r7kamura/rust-problem-matchers@v1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/master' }}
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
       - name: Install system dependencies
@@ -64,6 +67,9 @@ jobs:
         with:
           components: rustfmt
       - uses: r7kamura/rust-problem-matchers@v1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/master' }}
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
       - name: Install system dependencies
