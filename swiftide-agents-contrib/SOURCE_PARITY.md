@@ -2,10 +2,9 @@
 
 This crate extracts the following implementations from Fluyt commit
 `aa62169de72ff16ac92d4e5aec54bf3cd8773c00` (`quak/quak-core/`) as its original
-extraction baseline. The merged fixes listed below are synchronized from Fluyt `master`
-`0446f4610cb620964b7bb4d0f2058dbca1cb728b`, verified against the GitHub commits API
-and the local `origin/master` ref on 2026-10-29. Fluyt received these fixes through separate
-upstream pull requests before they were carried into this crate.
+extraction baseline. The latest comparison uses Fluyt `master`
+`e6751a10b60f9a5cec3c95d56674c4e1d54ee3fe`, verified on 2026-10-29.
+Fluyt merged the fixes listed below before this crate received them.
 
 | Contrib API | Source under `src/` | Preserved behavior |
 | --- | --- | --- |
@@ -34,22 +33,30 @@ and context compression v2 are not exposed.
   of using the facade derive macro, which would create a crate dependency cycle. Their generated
   contracts are retained, including schema descriptions and required fields. Public plan
   documentation is kept out of model-facing schemas.
-- A private template adapter embeds the two templates and renders them with Tera. Neither
-  template depends on application templates, custom filters, or includes.
+- A private template adapter embeds the two templates and renders them with Tera. Fluyt caches
+  its application templates; this adapter parses the conversation template per render and returns
+  owned template text. Both produce the same prompts for these templates, which have no custom
+  filters or includes. Unknown template names return an error instead of the source helper's
+  `None`; the hooks use the two embedded names.
 - `ToolExecutorExt` retains the generic source contract; application executor implementations
   are excluded. The local executor has no cleanup work. A local boxed-future alias replaces
   the source's equivalent futures alias.
 - Feature gates, public documentation, `no_run` examples, and builder documentation are added.
   The public builder `build` methods delegate to the original generated builder logic.
-  `ContextCompression::builder()` is a convenience for its default builder.
+  `ContextCompression::builder()` exposes its default builder. These API and documentation
+  additions do not add runtime policies. App-only `ConversationContext` and the unused private
+  summary-reason display derive are omitted.
 
 ## Verification and behavior changes
 
 Runtime function bodies were compared against the verified master revision, ignoring comments,
 whitespace, import paths, and the listed type names. Templates were checked byte for byte.
-Tests exercise source paging, line truncation, window refusal, and both read contracts, patch operations and failures, exact
-replacement, plan contracts, hook defaults and failures, initialization, and binary downloads.
-Public examples compile as doctests, and each feature is checked independently.
+Tests exercise source paging, line truncation, window refusal, both read contracts, patch
+operations and failures, exact replacement, plan contracts, hook defaults and failures,
+initialization, and binary downloads. The `RemoveFailingExecutor` test helper comes from
+Fluyt's patch tests. Integration fixtures and regression tests exercise production behavior;
+they add no production features. Verification also covers public doctests and each feature
+in isolation.
 
 This extraction retains upstream runtime behavior. The following fixes were merged in Fluyt
 before being carried over with regression tests:
@@ -62,7 +69,7 @@ before being carried over with regression tests:
 | [#2595](https://github.com/bosun-ai/fluyt/pull/2595) | `56c86cbd281563a6430a3daa812ccb1c5309e1c1` | Exact replacements and patch updates reject invalid UTF-8 without changing bytes |
 | [#2597](https://github.com/bosun-ai/fluyt/pull/2597) | `484bcddbfa8b02068f513daee75b582717b4107d` | Plan steps reject line breaks, explanation schema states the required contract, and compression recovers only the rendered plan block |
 
-No changes from open compression PR #2596 or provider read PR #2598 are included. The generic
+No changes from compression PR #2596 or provider read PR #2598 are included. The generic
 reader retains its existing contracts. Compression retry, final-answer, and multipart instruction
 recovery behavior remains the original implementation. Public patch documentation additionally
 explains symlink handling and executor isolation without changing runtime behavior.

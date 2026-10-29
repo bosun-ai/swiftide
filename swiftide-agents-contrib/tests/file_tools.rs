@@ -14,21 +14,24 @@ struct Workspace {
 }
 
 #[derive(Clone)]
-struct RefuseRemoval(Arc<dyn ToolExecutor>);
+struct RemoveFailingExecutor {
+    inner: Arc<dyn ToolExecutor>,
+    command: String,
+}
 
 #[async_trait::async_trait]
-impl ToolExecutor for RefuseRemoval {
+impl ToolExecutor for RemoveFailingExecutor {
     async fn exec_cmd(
         &self,
         command: &swiftide_core::Command,
     ) -> Result<swiftide_core::CommandOutput, swiftide_core::CommandError> {
-        if matches!(command, swiftide_core::Command::Shell { command, .. } if command.starts_with("rm "))
+        if matches!(command, swiftide_core::Command::Shell { command, .. } if command == &self.command)
         {
-            return Err(swiftide_core::CommandError::ExecutorError(
-                std::io::Error::other("permission denied").into(),
+            return Err(swiftide_core::CommandError::NonZeroExit(
+                swiftide_core::CommandOutput::new("permission denied"),
             ));
         }
-        self.0.exec_cmd(command).await
+        self.inner.exec_cmd(command).await
     }
 
     async fn stream_files(
@@ -36,19 +39,22 @@ impl ToolExecutor for RefuseRemoval {
         path: &Path,
         extensions: Option<Vec<String>>,
     ) -> anyhow::Result<swiftide_core::indexing::IndexingStream<String>> {
-        self.0.stream_files(path, extensions).await
+        self.inner.stream_files(path, extensions).await
     }
 }
 
 #[tokio::test]
 async fn failed_move_removal_reports_both_files_actual_state() {
     let workspace = Workspace::new(&[("old.txt", "old\n")]);
-    let executor: Arc<dyn ToolExecutor> = Arc::new(RefuseRemoval(Arc::new(
-        LocalExecutor::builder()
-            .workdir(workspace.directory.path())
-            .build()
-            .unwrap(),
-    )));
+    let executor: Arc<dyn ToolExecutor> = Arc::new(RemoveFailingExecutor {
+        inner: Arc::new(
+            LocalExecutor::builder()
+                .workdir(workspace.directory.path())
+                .build()
+                .unwrap(),
+        ),
+        command: "rm old.txt".to_string(),
+    });
     let context = DefaultContext::from_executor(executor);
     let patch = "*** Begin Patch\n*** Update File: old.txt\n*** Move to: new.txt\n@@\n-old\n+new\n*** End Patch";
     let output = ApplyPatch
@@ -63,6 +69,7 @@ async fn failed_move_removal_reports_both_files_actual_state() {
         )
         .await
         .unwrap();
+    assert!(output.as_text().unwrap().starts_with("Patch not applied"));
     assert!(
         output
             .content()
