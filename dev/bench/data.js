@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792262978359,
+  "lastUpdate": 1793393244805,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -35291,6 +35291,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2137347,
             "range": "± 9233",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "71fa4587cf6206870d0a204eec8e0a365f995fd4",
+          "message": "feat(agents): add optional contrib tools and context hooks (#1207)\n\nAdd `swiftide-agents-contrib` for contributed agent tools, hooks, and\nexecutor helpers. Components are opt-in, with no features enabled by\ndefault, and are also available through `swiftide::agents_contrib`. The\ninitial components were extracted from Bosun.\n\n| Feature | Components |\n| --- | --- |\n| `file-tools` | File reading, exact text replacement, and patches |\n| `planning` | An in-memory plan tool and plan types |\n| `context-management` | Tool-output summarization and conversation\ncompression |\n| `lazy-executor` | Lazy executor startup, cleanup, and binary downloads\n|\n\nThe main README has a short reference. The crate README covers setup and\nconfiguration, and public APIs include `no_run` examples. CI checks each\nfeature independently and verifies facade forwarding.\n\nValidation: 131 tests and doctests pass, including compression lifecycle\nregressions. Contrib Clippy with warnings denied and nightly formatting\nchecks pass.\n\n\nConversation compression uses `register_hooks` to summarize final\nreplies without starting another completion. Documentation and examples\nuse this registration method.\n\nDependency-policy lint remains blocked by four advisories in the AWS\nlogin crypto chain and Arrow 58 compression chain. The compatible\n`libz-sys` fix is included; the remaining dependencies need upstream\ncompatible fixes.",
+          "timestamp": "2026-10-30T21:34:37+01:00",
+          "tree_id": "01cfda35ddb0532951ba2fe76e136b3a4c0c26a1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/71fa4587cf6206870d0a204eec8e0a365f995fd4"
+        },
+        "date": 1793393240948,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 960017,
+            "range": "± 20467",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 257104,
+            "range": "± 2069",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1857,
+            "range": "± 2254",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6708,
+            "range": "± 6294",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26205,
+            "range": "± 24377",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4175772,
+            "range": "± 25210",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2096861,
+            "range": "± 6801",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16736431,
+            "range": "± 41769",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2105037,
+            "range": "± 3740",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66929023,
+            "range": "± 353232",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2123446,
+            "range": "± 4937",
             "unit": "ns/iter"
           }
         ]
