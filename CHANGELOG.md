@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.33.1](https://github.com/bosun-ai/swiftide/compare/v0.33.0...v0.33.1) - 2026-10-30
+
+### New features
+
+- [71fa458](https://github.com/bosun-ai/swiftide/commit/71fa4587cf6206870d0a204eec8e0a365f995fd4) *(agents)*  Add optional contrib tools and context hooks ([#1207](https://github.com/bosun-ai/swiftide/pull/1207))
+
+- [27d50db](https://github.com/bosun-ai/swiftide/commit/27d50db438c85a824bfc450aaef72ae14c65233e) *(integrations)*  Add Perl to SupportedLanguages behind tree-sitter-perl ([#1198](https://github.com/bosun-ai/swiftide/pull/1198))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.33.0...0.33.1
+
+
+
 ## [0.33.0](https://github.com/bosun-ai/swiftide/compare/v0.32.1...v0.33.0) - 2026-10-14
 
 ### New features
