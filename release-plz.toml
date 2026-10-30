@@ -27,6 +27,7 @@ changelog_include = [
   "swiftide-query",
   "swiftide-test-utils",
   "swiftide-agents",
+  "swiftide-agents-contrib",
   "swiftide-macros",
   "swiftide-tasks",
   "swiftide-langfuse",

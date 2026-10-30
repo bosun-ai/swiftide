@@ -16,6 +16,42 @@ env:
   RUSTFLAGS: "-Dwarnings -Clink-arg=-fuse-ld=lld"
 
 jobs:
+  contrib:
+    name: Contrib (${{ matrix.capability }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - capability: none
+            features: ""
+            facade: agents-contrib
+          - capability: context
+            features: context-management
+            facade: agents-contrib-context
+          - capability: planning
+            features: planning
+            facade: agents-contrib-planning
+          - capability: files
+            features: file-tools
+            facade: agents-contrib-file-tools
+          - capability: executor
+            features: lazy-executor
+            facade: agents-contrib-lazy-executor
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install linker
+        run: sudo apt-get update && sudo apt-get install -y lld
+      - name: Check capability without dev dependencies
+        run: cargo check -p swiftide-agents-contrib --lib --no-default-features --features '${{ matrix.features }}'
+      - name: Test isolated capability and documentation
+        run: cargo test -p swiftide-agents-contrib --no-default-features --features '${{ matrix.features }}'
+      - name: Check public API documentation
+        run: cargo doc -p swiftide-agents-contrib --no-default-features --features '${{ matrix.features }}' --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Check facade forwarding
+        run: cargo check -p swiftide --lib --no-default-features --features '${{ matrix.facade }}'
   test:
     name: Test
     runs-on: ubuntu-latest
