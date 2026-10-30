@@ -24,6 +24,7 @@ enum Reply {
     Text(&'static str),
     Empty,
     Fail,
+    Tool(&'static str),
 }
 #[derive(Clone, Debug)]
 struct Model {
@@ -39,7 +40,7 @@ impl Model {
             prompts: Arc::default(),
         }
     }
-    fn respond(&self) -> Result<Option<String>, LanguageModelError> {
+    fn respond(&self) -> Result<ChatCompletionResponse, LanguageModelError> {
         match self
             .replies
             .lock()
@@ -47,8 +48,15 @@ impl Model {
             .pop_front()
             .expect("unexpected model call")
         {
-            Reply::Text(text) => Ok(Some(text.into())),
-            Reply::Empty => Ok(None),
+            Reply::Text(text) => Ok(ChatCompletionResponse {
+                message: Some(text.into()),
+                ..Default::default()
+            }),
+            Reply::Empty => Ok(ChatCompletionResponse::default()),
+            Reply::Tool(name) => Ok(ChatCompletionResponse {
+                tool_calls: Some(vec![call(name)]),
+                ..Default::default()
+            }),
             Reply::Fail => Err(LanguageModelError::permanent(std::io::Error::other(
                 "unavailable",
             ))),
@@ -65,17 +73,14 @@ impl ChatCompletion for Model {
             .lock()
             .unwrap()
             .push(request.messages().to_vec());
-        Ok(ChatCompletionResponse {
-            message: self.respond()?,
-            ..Default::default()
-        })
+        self.respond()
     }
 }
 #[async_trait]
 impl SimplePrompt for Model {
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
         self.prompts.lock().unwrap().push(prompt.render().unwrap());
-        Ok(self.respond()?.unwrap_or_default())
+        Ok(self.respond()?.message.unwrap_or_default())
     }
 }
 #[derive(Clone, Debug)]
@@ -346,4 +351,192 @@ async fn original_instruction_recovery_keeps_the_first_plain_text_message() {
         Some("plain goal")
     );
     assert_eq!(agent.context().history().await.unwrap(), history);
+}
+
+#[tokio::test]
+async fn final_reply_compression_keeps_the_answer_last_without_another_completion() {
+    let primary = Model::new([
+        Reply::Text("final answer"),
+        Reply::Text("unexpected extra answer"),
+    ]);
+    let summaries = Model::new([Reply::Text("summary")]);
+    let compression = conversation_builder(&summaries)
+        .context_limit(1usize)
+        .build()
+        .unwrap();
+    let mut builder = Agent::builder();
+    builder
+        .llm(&primary)
+        .no_system_prompt()
+        .limit(2usize)
+        .context(DefaultContext::from_executor(
+            Arc::new(NoopExecutor) as Arc<dyn ToolExecutor>
+        ));
+    compression.register_hooks(&mut builder);
+    let mut agent = builder.build().unwrap();
+    agent.query("goal").await.unwrap();
+    assert_eq!(primary.requests.lock().unwrap().len(), 1);
+    assert!(summaries.requests.lock().unwrap()[0].iter().any(
+        |message| matches!(message, ChatMessage::Assistant(Some(text), _) if text == "final answer")
+    ));
+    assert!(matches!(agent.context().history().await.unwrap().last(),
+        Some(ChatMessage::Assistant(Some(text), _)) if text == "final answer"));
+}
+
+fn running_agent(primary: &Model, summaries: &Model, context_limit: usize, endless: bool) -> Agent {
+    let mut context =
+        DefaultContext::from_executor(Arc::new(NoopExecutor) as Arc<dyn ToolExecutor>);
+    context.with_stop_on_assistant(!endless);
+    let mut builder = Agent::builder();
+    builder
+        .llm(primary)
+        .no_system_prompt()
+        .limit(3usize)
+        .add_tool(Echo)
+        .context(context);
+    conversation_builder(summaries)
+        .context_limit(context_limit)
+        .build()
+        .unwrap()
+        .register_hooks(&mut builder);
+    builder.build().unwrap()
+}
+
+#[tokio::test]
+async fn compression_preserves_empty_tool_stop_and_error_lifecycles() {
+    let cases = [
+        ("empty reply", vec![Reply::Empty], 1, 1, false),
+        (
+            "tool then final reply",
+            vec![Reply::Tool("echo"), Reply::Text("done")],
+            2,
+            2,
+            false,
+        ),
+        (
+            "tool then empty reply",
+            vec![Reply::Tool("echo"), Reply::Empty],
+            2,
+            2,
+            false,
+        ),
+        ("explicit stop", vec![Reply::Tool("stop")], 1, 0, false),
+        ("model error", vec![Reply::Fail], 1, 0, true),
+    ];
+    for (name, replies, expected_calls, expected_summaries, fails) in cases {
+        let primary = Model::new(replies);
+        let summaries = Model::new([Reply::Text("summary"), Reply::Text("summary")]);
+        let mut agent = running_agent(&primary, &summaries, 1, false);
+        assert_eq!(agent.query("goal").await.is_err(), fails, "{name}");
+        assert!(agent.is_stopped(), "{name}");
+        assert_eq!(
+            primary.requests.lock().unwrap().len(),
+            expected_calls,
+            "{name}"
+        );
+        assert_eq!(
+            summaries.requests.lock().unwrap().len(),
+            expected_summaries,
+            "{name}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn empty_summary_does_not_create_another_request() {
+    for reply in [Reply::Empty, Reply::Text("done")] {
+        let primary = Model::new([reply]);
+        let summaries = Model::new([Reply::Empty]);
+        let mut agent = running_agent(&primary, &summaries, 1, false);
+        agent.query("goal").await.unwrap();
+        assert_eq!(primary.requests.lock().unwrap().len(), 1);
+        assert_eq!(summaries.requests.lock().unwrap().len(), 1);
+        assert!(
+            !agent
+                .context()
+                .history()
+                .await
+                .unwrap()
+                .iter()
+                .any(ChatMessage::is_summary)
+        );
+    }
+}
+
+#[tokio::test]
+async fn persistent_and_single_step_queries_keep_final_answers_last() {
+    for once in [false, true] {
+        let primary = Model::new([Reply::Text("first answer"), Reply::Text("second answer")]);
+        let summaries = Model::new([Reply::Text("summary"), Reply::Text("summary")]);
+        let mut agent = running_agent(&primary, &summaries, 1, false);
+        for query in ["first goal", "second goal"] {
+            if once {
+                agent.query_once(query).await.unwrap();
+            } else {
+                agent.query(query).await.unwrap();
+            }
+        }
+        assert_eq!(primary.requests.lock().unwrap().len(), 2);
+        assert_eq!(summaries.requests.lock().unwrap().len(), 2);
+        assert!(matches!(agent.context().history().await.unwrap().last(),
+            Some(ChatMessage::Assistant(Some(text), _)) if text == "second answer"));
+    }
+}
+
+#[tokio::test]
+async fn endless_text_turns_compress_before_later_requests() {
+    for context_limit in [1, usize::MAX] {
+        let primary = Model::new([
+            Reply::Text("working"),
+            Reply::Text("working"),
+            Reply::Text("working"),
+        ]);
+        let summaries = Model::new([
+            Reply::Text("summary"),
+            Reply::Text("summary"),
+            Reply::Text("summary"),
+        ]);
+        let mut context =
+            DefaultContext::from_executor(Arc::new(NoopExecutor) as Arc<dyn ToolExecutor>);
+        context.with_stop_on_assistant(false);
+        let mut builder = Agent::builder();
+        builder
+            .llm(&primary)
+            .no_system_prompt()
+            .limit(3usize)
+            .context(context);
+        conversation_builder(&summaries)
+            .num_completions_for_summary(1usize)
+            .context_limit(context_limit)
+            .build()
+            .unwrap()
+            .register_hooks(&mut builder);
+        builder.build().unwrap().query("goal").await.unwrap();
+        let requests = primary.requests.lock().unwrap();
+        assert_eq!(requests.len(), 3);
+        assert!(requests.last().unwrap().iter().any(ChatMessage::is_summary));
+    }
+}
+
+#[tokio::test]
+async fn empty_reply_does_not_count_the_previous_tool_output_again() {
+    let primary = Model::new([Reply::Tool("echo"), Reply::Empty]);
+    let summaries = Model::new([]);
+    let mut builder = Agent::builder();
+    builder
+        .llm(&primary)
+        .no_system_prompt()
+        .add_tool(Echo)
+        .limit(3usize)
+        .context(DefaultContext::from_executor(
+            Arc::new(NoopExecutor) as Arc<dyn ToolExecutor>
+        ));
+    conversation_builder(&summaries)
+        .num_completions_for_summary(2usize)
+        .build()
+        .unwrap()
+        .register_hooks(&mut builder);
+    builder.build().unwrap().query("goal").await.unwrap();
+    assert_eq!(primary.requests.lock().unwrap().len(), 2);
+    assert!(summaries.requests.lock().unwrap().is_empty());
 }

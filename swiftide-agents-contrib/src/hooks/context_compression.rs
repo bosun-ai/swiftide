@@ -23,7 +23,7 @@ use anyhow::Result;
 use derive_builder::Builder;
 use regex::Regex;
 use serde::Serialize;
-use swiftide_agents::{Agent, hooks::AfterEachFn};
+use swiftide_agents::{Agent, AgentBuilder, hooks::AfterEachFn};
 use swiftide_core::{
     ChatCompletion, Command,
     chat_completion::{ChatMessage, Tool},
@@ -44,7 +44,7 @@ struct PlanEntry {
 #[derive(Clone, Builder)]
 #[builder(build_fn(name = "build_inner", private))]
 #[builder_struct_attr(
-    doc = "Configuration for `ContextCompression`.\n\n# Examples\n\n```no_run\nuse std::sync::Arc;\nuse swiftide_agents::AgentBuilder;\nuse swiftide_agents_contrib::hooks::ContextCompression;\nuse swiftide_core::ChatCompletion;\nfn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {\n    let hook = ContextCompression::builder().llm(model).git_start_sha(\"HEAD\")\n        .git_diff_dir(\".\").build()?;\n    agent.after_each(hook.summarize_hook());\n    Ok(())\n}\n```"
+    doc = "Configuration for `ContextCompression`.\n\n# Examples\n\n```no_run\nuse std::sync::Arc;\nuse swiftide_agents::AgentBuilder;\nuse swiftide_agents_contrib::hooks::ContextCompression;\nuse swiftide_core::ChatCompletion;\nfn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {\n    let hook = ContextCompression::builder().llm(model).git_start_sha(\"HEAD\")\n        .git_diff_dir(\".\").build()?;\n    hook.register_hooks(agent);\n    Ok(())\n}\n```"
 )]
 #[builder(setter(into))]
 /// Summarize conversation history when the turn or context threshold is reached.
@@ -59,7 +59,7 @@ struct PlanEntry {
 /// fn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {
 ///     let hook = ContextCompression::builder().llm(model).git_start_sha("HEAD")
 ///         .git_diff_dir(".").build()?;
-///     agent.after_each(hook.summarize_hook());
+///     hook.register_hooks(agent);
 ///     Ok(())
 /// }
 /// ```
@@ -76,7 +76,7 @@ pub struct ContextCompression {
     /// fn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {
     ///     let hook = ContextCompression::builder().llm(model).git_start_sha("HEAD")
     ///         .git_diff_dir(".").build()?;
-    ///     agent.after_each(hook.summarize_hook());
+    ///     hook.register_hooks(agent);
     ///     Ok(())
     /// }
     /// ```
@@ -172,15 +172,18 @@ impl ContextCompression {
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::cast_possible_truncation)]
-    async fn should_summarize(self: &Arc<Self>, agent: &Agent) -> Reason {
+    async fn should_summarize(self: &Arc<Self>, agent: &Agent, reply: Option<&str>) -> Reason {
         let current_count = self
             .num_completions_since_summary
             .load(std::sync::atomic::Ordering::SeqCst);
 
         // Get the last message before filtering, as filtering will merge tool outputs with
         // assistant messages to avoid tool call/output mismatches
-        let history = agent.context().history().await.ok().unwrap_or_default();
+        let mut history = agent.context().history().await.ok().unwrap_or_default();
         let maybe_last = history.last().cloned();
+        if let Some(reply) = reply {
+            history.push(ChatMessage::new_assistant(Some(reply), None));
+        }
         let history = self.request_history(history);
 
         let estimate = history
@@ -190,6 +193,7 @@ impl ContextCompression {
             / 4;
 
         if let Some(ChatMessage::ToolOutput(tool_call, _)) = maybe_last
+            && reply.is_none()
             && is_file_read_tool(tool_call.name())
         {
             if estimate < (self.context_limit as f64 * 0.9) as usize {
@@ -238,8 +242,62 @@ impl ContextCompression {
         Reason::Skip
     }
 
+    /// Compress text replies before they are recorded, and tool turns after their outputs.
+    ///
+    /// A final assistant reply stays last in history, so compression cannot restart a finished
+    /// conversation. Hooks keep no pending response or request payload shared between agents.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use swiftide_agents_contrib::hooks::ContextCompression;
+    /// # fn configure(compression: ContextCompression, builder: &mut swiftide_agents::AgentBuilder) {
+    /// compression.register_hooks(builder);
+    /// # }
+    /// ```
+    pub fn register_hooks(self, builder: &mut AgentBuilder) {
+        let text = Arc::new(self.clone());
+        builder.after_completion(move |agent, response| {
+            let text = Arc::clone(&text);
+            let tool_free = response.tool_calls.as_ref().is_none_or(Vec::is_empty);
+            let reply = response.message.clone();
+            Box::pin(async move {
+                if tool_free && agent.is_running() {
+                    let empty = reply.is_none();
+                    if text.summarize_if_needed(agent, false, reply).await? && empty {
+                        // An empty completion must not turn the summary into another request.
+                        agent.context().next_completion().await?;
+                    }
+                }
+                Ok(())
+            })
+        });
+        let tools = Arc::new(self);
+        builder.after_each(move |agent| {
+            let tools = Arc::clone(&tools);
+            Box::pin(async move {
+                if !agent.is_running() {
+                    return Ok(());
+                }
+                let history = agent.context().history().await?;
+                if matches!(history.last(), Some(ChatMessage::ToolOutput(..))) {
+                    let input = agent.context().current_new_messages().await?;
+                    // An empty reply leaves the input's last tool output unchanged. Only count a
+                    // tool turn when it appended a new output (tool calls carry distinct IDs).
+                    if history.last() != input.last() {
+                        tools.summarize_if_needed(agent, true, None).await?;
+                    }
+                }
+                Ok(())
+            })
+        });
+    }
+
     #[must_use = "the hook has no effect until it is registered on an agent"]
-    /// Create a hook to register with `AgentBuilder::after_each`.
+    /// Summarize completed turns and add a continuation message for an active conversation.
+    ///
+    /// Prefer [`Self::register_hooks`] to also compress final text replies without restarting the
+    /// agent. This hook is intended for callers that already manage the agent's stopping behavior.
     ///
     /// # Examples
     ///
@@ -262,26 +320,36 @@ impl ContextCompression {
             let span = tracing::info_span!("summarize_conversation");
             Box::pin(
                 async move {
-                    let reason = this.should_summarize(agent).await;
-
-                    if reason.should_summarize() {
-                        tracing::info!(
-                            ?reason,
-                            "[ContextCompression] Conversation summarizer triggered"
-                        );
-
-                        this.summarize_conversation(agent).await
-                    } else {
-                        this.num_completions_since_summary
-                            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                        tracing::debug!(
-                            "[ContextCompression] Conversation summarizer not triggered"
-                        );
-                        Ok(())
-                    }
+                    this.summarize_if_needed(agent, true, None)
+                        .await
+                        .map(|_| ())
                 }
                 .instrument(span),
             )
+        }
+    }
+
+    async fn summarize_if_needed(
+        self: &Arc<Self>,
+        agent: &mut Agent,
+        continue_after_summary: bool,
+        reply: Option<String>,
+    ) -> Result<bool> {
+        let reason = self.should_summarize(agent, reply.as_deref()).await;
+
+        if reason.should_summarize() {
+            tracing::info!(
+                ?reason,
+                "[ContextCompression] Conversation summarizer triggered"
+            );
+
+            self.summarize_conversation(agent, continue_after_summary, reply)
+                .await
+        } else {
+            self.num_completions_since_summary
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            tracing::debug!("[ContextCompression] Conversation summarizer not triggered");
+            Ok(false)
         }
     }
 
@@ -293,13 +361,22 @@ impl ContextCompression {
         filter_messages_since_summary(history)
     }
 
-    async fn summarize_conversation(self: &Arc<Self>, agent: &mut Agent) -> Result<()> {
+    async fn summarize_conversation(
+        self: &Arc<Self>,
+        agent: &mut Agent,
+        continue_after_summary: bool,
+        reply: Option<String>,
+    ) -> Result<bool> {
         // Reset the counter
         self.num_completions_since_summary
             .store(0, std::sync::atomic::Ordering::SeqCst);
 
         let prompt = render_prompt(&self.git_start_sha, agent, &self.git_diff_dir).await?;
-        let mut messages = self.request_history(agent.context().history().await?);
+        let mut messages = agent.context().history().await?;
+        if let Some(reply) = reply {
+            messages.push(ChatMessage::new_assistant(Some(reply), None));
+        }
+        let mut messages = self.request_history(messages);
         messages.push(ChatMessage::new_user(prompt));
 
         let summary = self.llm.complete(&messages.into()).await?;
@@ -307,19 +384,20 @@ impl ContextCompression {
         if let Some(summary) = summary.message() {
             tracing::debug!(summary = %summary, "Summarized conversation");
             agent.add_message(ChatMessage::new_summary(summary)).await?;
-            // Summaries are sent as assistant messages by the OpenAI-compatible client. Mistral
-            // requires the final message to be from a user or tool, so add a hidden continuation
-            // turn directly to the context after compression.
-            agent
-                .context()
-                .add_message(ChatMessage::new_user(CONTINUE_AFTER_SUMMARY))
-                .await?;
+            // Active tool turns need a user message after assistant summaries for Mistral.
+            // Finished queries wait for the next real user message instead.
+            if continue_after_summary {
+                agent
+                    .context()
+                    .add_message(ChatMessage::new_user(CONTINUE_AFTER_SUMMARY))
+                    .await?;
+            }
             install_original_instructions_recovery(agent).await?;
+            Ok(true)
         } else {
             tracing::error!("No summary generated, this is a bug");
+            Ok(false)
         }
-
-        Ok(())
     }
 }
 
@@ -468,7 +546,7 @@ impl ContextCompression {
     /// fn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {
     ///     let hook = ContextCompression::builder().llm(model).git_start_sha("HEAD")
     ///         .git_diff_dir(".").build()?;
-    ///     agent.after_each(hook.summarize_hook());
+    ///     hook.register_hooks(agent);
     ///     Ok(())
     /// }
     /// ```
@@ -494,7 +572,7 @@ impl ContextCompressionBuilder {
     /// fn attach(agent: &mut AgentBuilder, model: Arc<dyn ChatCompletion>) -> anyhow::Result<()> {
     ///     let hook = ContextCompression::builder().llm(model).git_start_sha("HEAD")
     ///         .git_diff_dir(".").build()?;
-    ///     agent.after_each(hook.summarize_hook());
+    ///     hook.register_hooks(agent);
     ///     Ok(())
     /// }
     /// ```

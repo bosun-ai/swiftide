@@ -112,7 +112,7 @@ fn attach(
         .context_limit(32_000usize)
         .build()?;
     agent.after_tool(output.summarize_hook());
-    agent.after_each(conversation.summarize_hook());
+    conversation.register_hooks(agent);
     Ok(())
 }
 # }

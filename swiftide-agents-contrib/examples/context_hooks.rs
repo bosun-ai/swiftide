@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
         .context_limit(32_000usize)
         .build()?;
     let mut builder = Agent::builder();
-    builder.after_each(conversation.summarize_hook());
+    conversation.register_hooks(&mut builder);
     let mut agent = builder
         .llm(&ExampleModel)
         .after_tool(output.summarize_hook())
