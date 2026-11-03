@@ -12,7 +12,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::openai::OpenAI;
+use crate::openai::{ChatCompletionFormat, OpenAI};
 use swiftide_core::chat_completion::errors::LanguageModelError;
 
 fn completion(content: Value) -> Value {
@@ -166,6 +166,45 @@ async fn malformed_responses_remain_transient_with_a_bounded_caller_policy(body:
     }
     assert_eq!(server.received_requests().await.unwrap().len(), 3);
     assert_no_usage(&mut usage).await;
+}
+
+#[test_case(ChatCompletionFormat::OpenAI, false; "openai ordinary")]
+#[test_case(ChatCompletionFormat::OpenAI, true; "openai streaming")]
+#[test_case(ChatCompletionFormat::Mistral, false; "mistral ordinary")]
+#[test_case(ChatCompletionFormat::Mistral, true; "mistral streaming")]
+#[tokio::test]
+async fn unwrapped_http_rate_limits_remain_transient(
+    format: ChatCompletionFormat,
+    streaming: bool,
+) {
+    for body in [
+        json!({"message": "Rate limit exceeded", "type": "rate_limit_exceeded"}),
+        json!({"error": "Too many requests"}),
+    ] {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(429).set_body_json(body))
+            .expect(3)
+            .mount(&server)
+            .await;
+        let (mut client, mut usage) = client(&server);
+        client.chat_completion_format = format;
+        let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
+        for _ in 0..3 {
+            let error = if streaming {
+                let mut stream = client.complete_stream(&request).await;
+                let error = stream.next().await.unwrap().unwrap_err();
+                assert!(stream.next().await.is_none());
+                error
+            } else {
+                client.complete(&request).await.unwrap_err()
+            };
+            assert!(matches!(error, LanguageModelError::TransientError(_)));
+        }
+        assert_eq!(server.received_requests().await.unwrap().len(), 3);
+        assert_no_usage(&mut usage).await;
+    }
 }
 
 #[test_case(Some(json!("Visible text")); "text")]

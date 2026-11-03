@@ -54,6 +54,12 @@ struct ProviderErrorChoice {
     error: Option<ProviderErrorBody>,
 }
 
+#[derive(Deserialize)]
+struct ChatCompletionEnvelope {
+    #[serde(rename = "choices")]
+    _choices: Vec<serde::de::IgnoredAny>,
+}
+
 #[derive(Debug, Deserialize)]
 struct ProviderErrorBody {
     message: String,
@@ -181,13 +187,16 @@ pub(super) fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageMo
         OpenAIError::JSONDeserialize(error, content) => {
             if let Some(provider_error) = ProviderError::from_response(&content) {
                 map_classification(provider_error.classification(), provider_error)
-            } else if serde_json::from_str::<serde::de::IgnoredAny>(&content).is_ok() {
-                // A complete JSON document with an unsupported schema will not become compatible
-                // by resubmitting the same request. Validate the whole document: a typed parser
-                // can report a data error before reaching a truncated or malformed tail.
+            } else if serde_json::from_str::<ChatCompletionEnvelope>(&content).is_ok() {
+                // Recognizable chat completions with unsupported content will not become
+                // compatible by retrying. Validate the whole document: a typed parser can
+                // report a data error before reaching a truncated or malformed tail.
                 LanguageModelError::permanent(OpenAIError::JSONDeserialize(error, content))
             } else {
-                // Truncated responses and non-JSON upstream failures can still be transient.
+                // async-openai also returns JSONDeserialize for HTTP error bodies that do not
+                // match WrappedError, discarding their status (including 429). Without a
+                // recognizable completion or provider error, retain the transient fallback
+                // even for valid JSON. Truncated and non-JSON responses remain transient too.
                 LanguageModelError::transient(OpenAIError::JSONDeserialize(error, content))
             }
         }
@@ -487,8 +496,12 @@ mod tests {
     }
 
     #[test]
-    fn valid_json_with_an_unsupported_schema_is_permanent() {
-        for content in [r#"{"choices":[]}"#, "[]", "null", r#""not a completion""#] {
+    fn chat_completion_with_an_unsupported_schema_is_permanent() {
+        for content in [
+            r#"{"choices":[]}"#,
+            r#"{"choices":[{"message":{"content":[]}}]}"#,
+            r#"{"choices":[{"delta":{"content":[]}}]}"#,
+        ] {
             let error = serde_json::from_str::<
                 async_openai::types::chat::CreateChatCompletionResponse,
             >(content)
@@ -499,6 +512,24 @@ mod tests {
                 content.to_owned(),
             ));
             assert!(matches!(result, LanguageModelError::PermanentError(_)));
+            assert!(result.to_string().contains(content));
+        }
+    }
+
+    #[test]
+    fn unrecognized_json_without_http_status_remains_transient() {
+        for content in [
+            r#"{"message":"Rate limit exceeded","type":"rate_limit_exceeded"}"#,
+            r#"{"error":"Too many requests"}"#,
+            r#"{"detail":"Temporarily unavailable"}"#,
+            r#"{"choices":null}"#,
+            "{}",
+            "[]",
+            "null",
+            r#""not a completion""#,
+        ] {
+            let result = openai_error_to_language_model_error(json_deserialize_error(content));
+            assert!(matches!(result, LanguageModelError::TransientError(_)));
             assert!(result.to_string().contains(content));
         }
     }
