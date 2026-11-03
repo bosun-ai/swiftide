@@ -9,6 +9,8 @@
 //! [`ChatCompletionFormat::Mistral`] for direct Mistral endpoints: this handles native thinking
 //! blocks, reasoning history replay, tools, and streaming. Keep returned reasoning items before
 //! their assistant message in history (Swiftide agents do this automatically).
+//! Wire-format adapters share request execution, streaming, tool assembly, and accounting.
+//! Simple and structured prompts use the same completion path as chat requests.
 //!
 //! Mistral prompt caching uses a stable `prompt_cache_key` in [`OptionsBuilder::extra_body`].
 //! Cache hits are provider-controlled, not guaranteed; cached input and reasoning token counts
@@ -50,6 +52,9 @@ use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
+mod chat_completion_adapter;
+#[cfg(test)]
+mod chat_completion_adapter_tests;
 mod embed;
 mod mistral;
 #[cfg(test)]

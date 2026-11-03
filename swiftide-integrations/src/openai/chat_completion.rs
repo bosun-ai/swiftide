@@ -1,32 +1,37 @@
+use std::sync::Arc;
+
 use anyhow::{Context as _, Result};
 use async_openai::error::OpenAIError;
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
-    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessageContentPartAudio,
-    ChatCompletionRequestMessageContentPartImage, ChatCompletionRequestMessageContentPartText,
-    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
-    ChatCompletionRequestUserMessageArgs, ChatCompletionRequestUserMessageContent,
-    ChatCompletionRequestUserMessageContentPart, ChatCompletionResponseStream,
+    ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
+    ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartImage,
+    ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
+    ChatCompletionRequestUserMessageContent, ChatCompletionRequestUserMessageContentPart,
     ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools,
-    CompletionUsage, CreateChatCompletionResponse, CreateChatCompletionStreamResponse,
-    FunctionCall, FunctionObject, ImageUrl, InputAudio, InputAudioFormat, ToolChoiceOptions,
+    CompletionUsage, FunctionCall, FunctionObject, ImageUrl, InputAudio, InputAudioFormat,
+    ToolChoiceOptions,
+};
+use async_openai::types::responses::{
+    ResponseFormat, ResponseFormatJsonSchema, ResponseTextParam, TextResponseFormatConfiguration,
 };
 use async_trait::async_trait;
 use base64::Engine as _;
-use futures_util::StreamExt as _;
-use futures_util::stream;
-use itertools::Itertools;
+use futures_util::{StreamExt as _, stream};
+use schemars::Schema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use swiftide_core::ChatCompletionStream;
 use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
-    ChatMessageContentPart, ChatMessageContentSource, ToolCall, ToolSpec,
-    errors::LanguageModelError,
+    ChatMessageContentPart, ChatMessageContentSource, ToolSpec, errors::LanguageModelError,
 };
 #[cfg(feature = "metrics")]
 use swiftide_core::metrics::emit_usage;
 
+use super::chat_completion_adapter::{ChatCompletionAdapter, CompletionData, DeltaData};
 use super::responses_api::{
     build_responses_request_from_chat, response_to_chat_completion, responses_stream_adapter,
 };
@@ -42,15 +47,9 @@ struct ChatCompletionUsage {
 }
 
 #[async_trait]
-impl<
-    C: async_openai::config::Config
-        + std::default::Default
-        + Sync
-        + Send
-        + std::fmt::Debug
-        + Clone
-        + 'static,
-> ChatCompletion for GenericOpenAI<C>
+impl<C> ChatCompletion for GenericOpenAI<C>
+where
+    C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug + Clone + 'static,
 {
     #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
     #[cfg_attr(
@@ -61,180 +60,77 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
-        if self.chat_completion_format == super::ChatCompletionFormat::Mistral {
-            return self.complete_mistral(request).await;
-        }
-        if self.is_responses_api_enabled() {
-            return self.complete_via_responses_api(request).await;
-        }
-
-        let model = self
-            .default_options
-            .prompt_model
-            .as_ref()
-            .context("Model not set")?;
-
-        let messages = request
-            .messages()
-            .iter()
-            .filter_map(|message| message_to_openai(message).transpose())
-            .collect::<Result<Vec<_>>>()?;
-
-        // Build the request to be sent to the OpenAI API.
-        let mut openai_request = self
-            .chat_completion_request_defaults()
-            .model(model)
-            .messages(messages)
-            .to_owned();
-
-        if !request.tools_spec().is_empty() {
-            openai_request
-                .tools(
-                    request
-                        .tools_spec()
-                        .iter()
-                        .map(tools_to_openai)
-                        .collect::<Result<Vec<_>>>()?,
-                )
-                .tool_choice(ChatCompletionToolChoiceOption::Mode(
-                    ToolChoiceOptions::Auto,
-                ));
-            if let Some(par) = self.default_options.parallel_tool_calls {
-                openai_request.parallel_tool_calls(par);
-            }
-        }
-
-        let openai_request = openai_request
-            .build()
-            .map_err(openai_error_to_language_model_error)?;
-
-        tracing::trace!(model, request = ?request, "Sending request to OpenAI");
-
-        let tracking_request = openai_request.clone();
-        let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
-        let response: CreateChatCompletionResponse = self
-            .client
-            .chat()
-            .create_byot(body)
-            .await
-            .map_err(|error| {
-                self.track_failed_chat_completion(model, &error, &tracking_request, None);
-                openai_error_to_language_model_error(error)
-            })?;
-
-        tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
-        // Make sure the debug log is a concise one line
-
-        let mut builder = ChatCompletionResponse::builder()
-            .maybe_message(
-                response
-                    .choices
-                    .first()
-                    .and_then(|choice| choice.message.content.clone()),
-            )
-            .maybe_tool_calls(
-                response
-                    .choices
-                    .first()
-                    .and_then(|choice| choice.message.tool_calls.as_ref())
-                    .map(|tool_calls| {
-                        tool_calls
-                            .iter()
-                            .filter_map(|tool_call| match tool_call {
-                                ChatCompletionMessageToolCalls::Function(call) => Some(
-                                    ToolCall::builder()
-                                        .id(call.id.clone())
-                                        .args(call.function.arguments.clone())
-                                        .name(call.function.name.clone())
-                                        .build()
-                                        .expect("infallible"),
-                                ),
-                                ChatCompletionMessageToolCalls::Custom(_) => None,
-                            })
-                            .collect_vec()
-                    }),
-            )
-            .to_owned();
-
-        if let Some(usage) = &response.usage {
-            builder.usage(Usage::from(usage));
-        }
-
-        let our_response = builder.build().map_err(LanguageModelError::from)?;
-
-        self.track_completion(
-            model,
-            our_response.usage.as_ref(),
-            Some(&tracking_request),
-            Some(&our_response),
-        );
-
-        Ok(our_response)
+        self.complete_with_schema(request, None).await
     }
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
-        if self.chat_completion_format == super::ChatCompletionFormat::Mistral {
-            return match self.complete_stream_mistral(request).await {
-                Ok(stream) => stream,
-                Err(error) => error.into(),
-            };
+        if let Err(error) = self
+            .chat_completion_format
+            .validate_api(self.use_responses_api)
+        {
+            return error.into();
         }
         if self.is_responses_api_enabled() {
             return self.complete_stream_via_responses_api(request).await;
         }
-
-        match self.try_complete_stream(request).await {
+        match self
+            .chat_completion_format
+            .complete_stream(self, request)
+            .await
+        {
             Ok(stream) => stream,
-            Err(err) => err.into(),
+            Err(error) => error.into(),
         }
     }
 }
 
-impl<
-    C: async_openai::config::Config
-        + std::default::Default
-        + Sync
-        + Send
-        + std::fmt::Debug
-        + Clone
-        + 'static,
-> GenericOpenAI<C>
+impl<C> GenericOpenAI<C>
+where
+    C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug + Clone + 'static,
 {
-    #[allow(clippy::too_many_lines)]
-    async fn try_complete_stream(
+    /// Shared entry point for chat, simple prompts, and structured prompts.
+    pub(super) async fn complete_with_schema(
         &self,
         request: &ChatCompletionRequest<'_>,
-    ) -> Result<ChatCompletionStream, LanguageModelError> {
-        let model_name = self
+        schema: Option<Schema>,
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        self.chat_completion_format
+            .validate_api(self.use_responses_api)?;
+        if self.is_responses_api_enabled() {
+            return self.complete_via_responses_api(request, schema).await;
+        }
+        self.chat_completion_format
+            .complete(self, request, schema)
+            .await
+    }
+
+    fn chat_request<A: ChatCompletionAdapter>(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+        streaming: bool,
+        schema: Option<Schema>,
+    ) -> Result<Value, LanguageModelError> {
+        let model = self
             .default_options
             .prompt_model
-            .clone()
+            .as_ref()
             .ok_or_else(|| LanguageModelError::permanent("Model not set"))?;
-
-        #[cfg(not(any(feature = "metrics", feature = "langfuse")))]
-        let _ = &model_name;
-
-        let messages = request
-            .messages()
-            .iter()
-            .filter_map(|message| message_to_openai(message).transpose())
-            .collect::<Result<Vec<_>>>()?;
-
-        // Build the request to be sent to the OpenAI API.
-        let mut openai_request = self
-            .chat_completion_request_defaults()
-            .model(&model_name)
-            .messages(messages)
-            .stream(true)
-            .stream_options(ChatCompletionStreamOptions {
-                include_usage: Some(true),
-                include_obfuscation: None,
-            })
-            .to_owned();
-
+        let mut builder = self.chat_completion_request_defaults();
+        // The adapter encodes history, including any provider-specific reasoning blocks.
+        builder
+            .model(model)
+            .messages(Vec::<ChatCompletionRequestMessage>::new());
+        if streaming {
+            builder
+                .stream(true)
+                .stream_options(ChatCompletionStreamOptions {
+                    include_usage: Some(true),
+                    include_obfuscation: None,
+                });
+        }
         if !request.tools_spec().is_empty() {
-            openai_request
+            builder
                 .tools(
                     request
                         .tools_spec()
@@ -245,141 +141,139 @@ impl<
                 .tool_choice(ChatCompletionToolChoiceOption::Mode(
                     ToolChoiceOptions::Auto,
                 ));
-            if let Some(par) = self.default_options.parallel_tool_calls {
-                openai_request.parallel_tool_calls(par);
-            }
         }
-
-        let openai_request = openai_request
+        let defaults = builder
             .build()
             .map_err(openai_error_to_language_model_error)?;
+        let body = A::request_body(defaults, request.messages())?;
+        let mut body = request_body_with_extra_body(&body, &self.default_options.extra_body)?;
+        if let Some(schema) = schema {
+            // The explicitly requested schema takes precedence over default extra-body options.
+            body["response_format"] = serde_json::to_value(ResponseFormat::JsonSchema {
+                json_schema: ResponseFormatJsonSchema {
+                    description: None,
+                    name: "structured_prompt".into(),
+                    schema: schema.into(),
+                    strict: Some(true),
+                },
+            })
+            .map_err(LanguageModelError::permanent)?;
+        }
+        Ok(body)
+    }
 
-        tracing::trace!(model = %model_name, request = ?request, "Sending request to OpenAI");
+    pub(super) async fn complete_chat<A: ChatCompletionAdapter>(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+        schema: Option<Schema>,
+    ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        let body = self.chat_request::<A>(request, false, schema)?;
+        let model = self
+            .default_options
+            .prompt_model
+            .as_deref()
+            .expect("validated model");
+        tracing::trace!(model, request = ?body, "Sending chat completion request");
+        let completion: A::Completion =
+            self.client
+                .chat()
+                .create_byot(&body)
+                .await
+                .map_err(|error| {
+                    self.track_failed_chat_completion(model, &error, &body, None);
+                    openai_error_to_language_model_error(error)
+                })?;
+        let response = ChatCompletionResponse::from(Into::<CompletionData>::into(completion));
+        tracing::trace!(?response, "Received chat completion");
+        self.track_completion(model, response.usage.as_ref(), Some(&body), Some(&response));
+        Ok(response)
+    }
 
-        let body = request_body_with_extra_body(&openai_request, &self.default_options.extra_body)?;
-        let response_stream: ChatCompletionResponseStream = self
+    pub(super) async fn stream_chat<A: ChatCompletionAdapter>(
+        &self,
+        request: &ChatCompletionRequest<'_>,
+    ) -> Result<ChatCompletionStream, LanguageModelError> {
+        let body = self.chat_request::<A>(request, true, None)?;
+        let model = self
+            .default_options
+            .prompt_model
+            .clone()
+            .expect("validated model");
+        tracing::trace!(model, request = ?body, "Sending streaming chat completion request");
+        let source = self
             .client
             .chat()
-            .create_stream_byot::<_, CreateChatCompletionStreamResponse>(body)
+            .create_stream_byot::<_, A::Chunk>(&body)
             .await
             .map_err(|error| {
-                self.track_failed_chat_completion(&model_name, &error, &openai_request, None);
+                self.track_failed_chat_completion(&model, &error, &body, None);
                 openai_error_to_language_model_error(error)
             })?;
-
-        let stream_full = self.stream_full;
-        let model_name_for_track = model_name.clone();
-        let self_for_stream = self.clone();
-        let tracking_request = openai_request;
-
+        let client = self.clone();
+        let body = Arc::new(body);
         let span = if cfg!(feature = "langfuse") {
             tracing::info_span!("stream", langfuse.type = "GENERATION")
         } else {
             tracing::info_span!("stream")
         };
-
         let stream = stream::unfold(
-            (
-                response_stream,
-                ChatCompletionResponse::default(),
-                tracking_request.clone(),
-                false, // finished
-            ),
-            move |(mut response_stream, mut state, tracking_request, finished)| {
-                let stream_full = stream_full;
-                let self_for_stream = self_for_stream.clone();
-                let model_name_for_track = model_name_for_track.clone();
+            (source, ChatCompletionResponse::default(), false),
+            move |(mut source, mut state, finished)| {
+                let client = client.clone();
+                let body = body.clone();
+                let model = model.clone();
                 async move {
                     if finished {
                         return None;
                     }
-
-                    match response_stream.next().await {
+                    match source.next().await {
                         Some(Ok(chunk)) => {
-                            let delta_message = chunk
-                                .choices
-                                .first()
-                                .and_then(|d| d.delta.content.as_deref());
-                            let delta_tool_calls = chunk
-                                .choices
-                                .first()
-                                .and_then(|d| d.delta.tool_calls.as_deref());
-                            let usage = chunk.usage.as_ref();
-
-                            state.append_message_delta(delta_message);
-                            if let Some(delta_tool_calls) = delta_tool_calls {
-                                for tc in delta_tool_calls {
-                                    state.append_tool_call_delta(
-                                        tc.index as usize,
-                                        tc.id.as_deref(),
-                                        tc.function.as_ref().and_then(|f| f.name.as_deref()),
-                                        tc.function.as_ref().and_then(|f| f.arguments.as_deref()),
-                                    );
-                                }
-                            }
-                            if let Some(usage) = usage {
-                                // Chat completion usage describes the entire request, not a token
-                                // delta. Retain its breakdown and do not add repeated totals.
-                                state.usage = Some(Usage::from(usage));
-                            }
-
-                            let snapshot = if stream_full {
+                            let reasoning = Into::<DeltaData>::into(chunk).apply(&mut state);
+                            let snapshot = if client.stream_full {
                                 state.clone()
                             } else {
                                 ChatCompletionResponse {
                                     id: state.id,
-                                    message: None,
-                                    tool_calls: None,
-                                    usage: None,
-                                    reasoning: None,
                                     delta: state.delta.clone(),
+                                    reasoning,
+                                    ..Default::default()
                                 }
                             };
-
-                            Some((
-                                Ok(snapshot),
-                                (response_stream, state, tracking_request, false),
-                            ))
+                            Some((Ok(snapshot), (source, state, false)))
                         }
-                        Some(Err(err)) => {
-                            self_for_stream.track_failed_chat_completion(
-                                &model_name_for_track,
-                                &err,
-                                &tracking_request,
+                        Some(Err(error)) => {
+                            client.track_failed_chat_completion(
+                                &model,
+                                &error,
+                                body.as_ref(),
                                 state.usage.as_ref(),
                             );
                             Some((
-                                Err(openai_error_to_language_model_error(err)),
-                                (response_stream, state, tracking_request, true),
+                                Err(openai_error_to_language_model_error(error)),
+                                (source, state, true),
                             ))
                         }
                         None => {
-                            // Final emission; track completion with the full state.
-                            self_for_stream.track_completion(
-                                &model_name_for_track,
+                            state.delta = None;
+                            client.track_completion(
+                                &model,
                                 state.usage.as_ref(),
-                                Some(&tracking_request),
+                                Some(body.as_ref()),
                                 Some(&state),
                             );
-                            let final_snapshot = state.clone();
-                            Some((
-                                Ok(final_snapshot),
-                                (response_stream, state, tracking_request, true),
-                            ))
+                            Some((Ok(state.clone()), (source, state, true)))
                         }
                     }
                 }
             },
         );
-
-        Ok(Box::pin(tracing_futures::Instrument::instrument(
-            stream, span,
-        )))
+        Ok(Box::pin(stream.instrument(span)))
     }
 
     async fn complete_via_responses_api(
         &self,
         request: &ChatCompletionRequest<'_>,
+        schema: Option<Schema>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
         let model = self
             .default_options
@@ -387,7 +281,18 @@ impl<
             .as_ref()
             .context("Model not set")?;
 
-        let create_request = build_responses_request_from_chat(self, request)?;
+        let mut create_request = build_responses_request_from_chat(self, request)?;
+        if let Some(schema) = schema {
+            create_request.text = Some(ResponseTextParam {
+                format: TextResponseFormatConfiguration::JsonSchema(ResponseFormatJsonSchema {
+                    description: None,
+                    name: "swiftide_structured_output".into(),
+                    schema: schema.into(),
+                    strict: Some(true),
+                }),
+                verbosity: None,
+            });
+        }
 
         let body = request_body_with_extra_body(&create_request, &self.default_options.extra_body)?;
         let response = self

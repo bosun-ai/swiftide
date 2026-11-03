@@ -8,9 +8,8 @@ use async_openai::types::responses::{
     FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, ImageDetail, IncludeEnum,
     InputContent, InputFileArgs, InputImageContent, InputItem, InputParam, InputTextContent,
     MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
-    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
-    ResponseStreamEvent, ResponseTextParam, Role, Status, TextResponseFormatConfiguration, Tool,
-    ToolChoiceOptions, ToolChoiceParam,
+    ReasoningArgs, ReasoningSummary, Response, ResponseStream, ResponseStreamEvent, Role, Status,
+    Tool, ToolChoiceOptions, ToolChoiceParam,
 };
 use base64::Engine as _;
 use futures_util::Stream;
@@ -786,69 +785,6 @@ fn function_call_identifier(function_call: &FunctionToolCall) -> &str {
     } else {
         function_call.call_id.as_str()
     }
-}
-
-pub(super) fn build_responses_request_from_prompt<C>(
-    client: &GenericOpenAI<C>,
-    prompt_text: String,
-) -> LmResult<CreateResponse>
-where
-    C: async_openai::config::Config + Clone + Default,
-{
-    let model = client
-        .options()
-        .prompt_model
-        .as_ref()
-        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
-
-    let mut args = base_request_args(client, model)?;
-    args.input(InputParam::Items(vec![InputItem::EasyMessage(
-        EasyInputMessageArgs::default()
-            .r#type(MessageType::Message)
-            .role(Role::User)
-            .content(EasyInputContent::Text(prompt_text))
-            .build()
-            .map_err(LanguageModelError::permanent)?,
-    )]));
-
-    args.build().map_err(openai_error_to_language_model_error)
-}
-
-pub(super) fn build_responses_request_from_prompt_with_schema<C>(
-    client: &GenericOpenAI<C>,
-    prompt_text: String,
-    schema: serde_json::Value,
-) -> LmResult<CreateResponse>
-where
-    C: async_openai::config::Config + Clone + Default,
-{
-    let model = client
-        .options()
-        .prompt_model
-        .as_ref()
-        .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
-
-    let mut args = base_request_args(client, model)?;
-    args.input(InputParam::Items(vec![InputItem::EasyMessage(
-        EasyInputMessageArgs::default()
-            .r#type(MessageType::Message)
-            .role(Role::User)
-            .content(EasyInputContent::Text(prompt_text))
-            .build()
-            .map_err(LanguageModelError::permanent)?,
-    )]));
-
-    args.text(ResponseTextParam {
-        format: TextResponseFormatConfiguration::JsonSchema(ResponseFormatJsonSchema {
-            description: None,
-            name: "swiftide_structured_output".into(),
-            schema,
-            strict: Some(true),
-        }),
-        verbosity: None,
-    });
-
-    args.build().map_err(openai_error_to_language_model_error)
 }
 
 #[allow(clippy::items_after_statements)]
