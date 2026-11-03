@@ -207,6 +207,63 @@ async fn unwrapped_http_rate_limits_remain_transient(
     }
 }
 
+#[test_case(ChatCompletionFormat::OpenAI, false; "openai ordinary")]
+#[test_case(ChatCompletionFormat::OpenAI, true; "openai streaming")]
+#[test_case(ChatCompletionFormat::Mistral, false; "mistral ordinary")]
+#[test_case(ChatCompletionFormat::Mistral, true; "mistral streaming")]
+#[tokio::test]
+async fn mistral_http_client_errors_follow_the_documented_categories(
+    format: ChatCompletionFormat,
+    streaming: bool,
+) {
+    for (status, error_type, code, retryable) in [
+        (400, "invalid_request_error", Some("unknown_model"), false),
+        (401, "authentication_error", None, false),
+        (429, "rate_limit_error", None, true),
+        (429, "future_error_category", None, true),
+    ] {
+        let server = MockServer::start().await;
+        let expected_requests = if retryable { 3 } else { 1 };
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(status).set_body_json(json!({
+                "object": "error", "message": "Synthetic Mistral error",
+                "type": error_type, "code": code
+            })))
+            .expect(expected_requests)
+            .mount(&server)
+            .await;
+        let (mut client, mut usage) = client(&server);
+        client.chat_completion_format = format;
+        let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
+        for _ in 0..3 {
+            let error = if streaming {
+                let mut stream = client.complete_stream(&request).await;
+                let error = stream.next().await.unwrap().unwrap_err();
+                assert!(stream.next().await.is_none());
+                error
+            } else {
+                client.complete(&request).await.unwrap_err()
+            };
+            assert!(error.to_string().contains("Synthetic Mistral error"));
+            assert_eq!(
+                matches!(error, LanguageModelError::TransientError(_)),
+                retryable,
+                "{status} {error_type}"
+            );
+            if !retryable {
+                assert!(matches!(error, LanguageModelError::PermanentError(_)));
+                break;
+            }
+        }
+        assert_eq!(
+            server.received_requests().await.unwrap().len(),
+            usize::try_from(expected_requests).unwrap()
+        );
+        assert_no_usage(&mut usage).await;
+    }
+}
+
 #[test_case(Some(json!("Visible text")); "text")]
 #[test_case(Some(json!("")); "empty text")]
 #[test_case(Some(Value::Null); "null content")]
