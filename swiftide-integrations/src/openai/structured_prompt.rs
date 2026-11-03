@@ -62,6 +62,26 @@ impl<
         prompt: Prompt,
         schema: Schema,
     ) -> Result<serde_json::Value, LanguageModelError> {
+        if self.chat_completion_format == super::ChatCompletionFormat::Mistral {
+            let request = swiftide_core::chat_completion::ChatCompletionRequest::from(vec![
+                swiftide_core::chat_completion::ChatMessage::new_user(prompt.render()?),
+            ]);
+            let mut client = self.clone();
+            client.default_options.extra_body.insert(
+                "response_format".into(),
+                serde_json::json!({"type": "json_schema", "json_schema": {
+                    "name": "structured_prompt", "schema": schema, "strict": true
+                }}),
+            );
+            let content = client
+                .complete_mistral(&request)
+                .await?
+                .message
+                .ok_or_else(|| {
+                    LanguageModelError::permanent("Expected content in Mistral response")
+                })?;
+            return serde_json::from_str(&content).map_err(LanguageModelError::permanent);
+        }
         if self.is_responses_api_enabled() {
             return self
                 .structured_prompt_via_responses_api(prompt, schema)

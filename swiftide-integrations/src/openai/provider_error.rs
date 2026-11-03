@@ -181,8 +181,13 @@ pub(super) fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageMo
         OpenAIError::JSONDeserialize(error, content) => {
             if let Some(provider_error) = ProviderError::from_response(&content) {
                 map_classification(provider_error.classification(), provider_error)
+            } else if serde_json::from_str::<serde::de::IgnoredAny>(&content).is_ok() {
+                // A complete JSON document with an unsupported schema will not become compatible
+                // by resubmitting the same request. Validate the whole document: a typed parser
+                // can report a data error before reaching a truncated or malformed tail.
+                LanguageModelError::permanent(OpenAIError::JSONDeserialize(error, content))
             } else {
-                // Retain the existing transient fallback for malformed success responses.
+                // Truncated responses and non-JSON upstream failures can still be transient.
                 LanguageModelError::transient(OpenAIError::JSONDeserialize(error, content))
             }
         }
@@ -479,5 +484,40 @@ mod tests {
 
         assert!(matches!(result, LanguageModelError::TransientError(_)));
         assert!(result.to_string().contains(content));
+    }
+
+    #[test]
+    fn valid_json_with_an_unsupported_schema_is_permanent() {
+        for content in [r#"{"choices":[]}"#, "[]", "null", r#""not a completion""#] {
+            let error = serde_json::from_str::<
+                async_openai::types::chat::CreateChatCompletionResponse,
+            >(content)
+            .unwrap_err();
+            assert!(error.is_data());
+            let result = openai_error_to_language_model_error(OpenAIError::JSONDeserialize(
+                error,
+                content.to_owned(),
+            ));
+            assert!(matches!(result, LanguageModelError::PermanentError(_)));
+            assert!(result.to_string().contains(content));
+        }
+    }
+
+    #[test]
+    fn a_data_error_before_a_malformed_tail_is_still_transient() {
+        for content in [r#"{"id":[],"choices":"#, r#"{"id":[],"choices":!}"#] {
+            let error = serde_json::from_str::<
+                async_openai::types::chat::CreateChatCompletionResponse,
+            >(content)
+            .unwrap_err();
+            assert!(error.is_data());
+            assert!(matches!(
+                openai_error_to_language_model_error(OpenAIError::JSONDeserialize(
+                    error,
+                    content.to_owned(),
+                )),
+                LanguageModelError::TransientError(_)
+            ));
+        }
     }
 }

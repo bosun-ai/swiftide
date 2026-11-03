@@ -1,4 +1,5 @@
 use anyhow::{Context as _, Result};
+use async_openai::error::OpenAIError;
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall, ChatCompletionMessageToolCalls,
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessageContentPartAudio,
@@ -7,15 +8,15 @@ use async_openai::types::chat::{
     ChatCompletionRequestUserMessageArgs, ChatCompletionRequestUserMessageContent,
     ChatCompletionRequestUserMessageContentPart, ChatCompletionResponseStream,
     ChatCompletionStreamOptions, ChatCompletionToolChoiceOption, ChatCompletionTools,
-    CreateChatCompletionResponse, CreateChatCompletionStreamResponse, FunctionCall, FunctionObject,
-    ImageUrl, InputAudio, InputAudioFormat, ToolChoiceOptions,
+    CompletionUsage, CreateChatCompletionResponse, CreateChatCompletionStreamResponse,
+    FunctionCall, FunctionObject, ImageUrl, InputAudio, InputAudioFormat, ToolChoiceOptions,
 };
 use async_trait::async_trait;
 use base64::Engine as _;
 use futures_util::StreamExt as _;
 use futures_util::stream;
 use itertools::Itertools;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use swiftide_core::ChatCompletionStream;
 use swiftide_core::chat_completion::Usage;
 use swiftide_core::chat_completion::{
@@ -32,6 +33,13 @@ use super::responses_api::{
 use super::tool_schema::OpenAiToolSchema;
 use super::{GenericOpenAI, openai_error_to_language_model_error, request_body_with_extra_body};
 use tracing_futures::Instrument;
+
+// Decode usage independently of the choices schema so a rejected, paid response remains visible
+// to the same accounting callback as a successfully parsed completion.
+#[derive(Deserialize)]
+struct ChatCompletionUsage {
+    usage: Option<CompletionUsage>,
+}
 
 #[async_trait]
 impl<
@@ -53,6 +61,9 @@ impl<
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        if self.chat_completion_format == super::ChatCompletionFormat::Mistral {
+            return self.complete_mistral(request).await;
+        }
         if self.is_responses_api_enabled() {
             return self.complete_via_responses_api(request).await;
         }
@@ -106,7 +117,10 @@ impl<
             .chat()
             .create_byot(body)
             .await
-            .map_err(openai_error_to_language_model_error)?;
+            .map_err(|error| {
+                self.track_failed_chat_completion(model, &error, &tracking_request, None);
+                openai_error_to_language_model_error(error)
+            })?;
 
         tracing::trace!(?response, "[ChatCompletion] Full response from OpenAI");
         // Make sure the debug log is a concise one line
@@ -160,6 +174,12 @@ impl<
 
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
+        if self.chat_completion_format == super::ChatCompletionFormat::Mistral {
+            return match self.complete_stream_mistral(request).await {
+                Ok(stream) => stream,
+                Err(error) => error.into(),
+            };
+        }
         if self.is_responses_api_enabled() {
             return self.complete_stream_via_responses_api(request).await;
         }
@@ -242,7 +262,10 @@ impl<
             .chat()
             .create_stream_byot::<_, CreateChatCompletionStreamResponse>(body)
             .await
-            .map_err(openai_error_to_language_model_error)?;
+            .map_err(|error| {
+                self.track_failed_chat_completion(&model_name, &error, &openai_request, None);
+                openai_error_to_language_model_error(error)
+            })?;
 
         let stream_full = self.stream_full;
         let model_name_for_track = model_name.clone();
@@ -295,12 +318,9 @@ impl<
                                 }
                             }
                             if let Some(usage) = usage {
-                                let usage = Usage::from(usage);
-                                state.append_usage_delta(
-                                    usage.prompt_tokens,
-                                    usage.completion_tokens,
-                                    usage.total_tokens,
-                                );
+                                // Chat completion usage describes the entire request, not a token
+                                // delta. Retain its breakdown and do not add repeated totals.
+                                state.usage = Some(Usage::from(usage));
                             }
 
                             let snapshot = if stream_full {
@@ -321,10 +341,18 @@ impl<
                                 (response_stream, state, tracking_request, false),
                             ))
                         }
-                        Some(Err(err)) => Some((
-                            Err(openai_error_to_language_model_error(err)),
-                            (response_stream, state, tracking_request, true),
-                        )),
+                        Some(Err(err)) => {
+                            self_for_stream.track_failed_chat_completion(
+                                &model_name_for_track,
+                                &err,
+                                &tracking_request,
+                                state.usage.as_ref(),
+                            );
+                            Some((
+                                Err(openai_error_to_language_model_error(err)),
+                                (response_stream, state, tracking_request, true),
+                            ))
+                        }
                         None => {
                             // Final emission; track completion with the full state.
                             self_for_stream.track_completion(
@@ -448,6 +476,33 @@ impl<
         Ok(Box::pin(Instrument::instrument(mapped_stream, span)))
     }
 
+    pub(super) fn track_failed_chat_completion(
+        &self,
+        model: &str,
+        error: &OpenAIError,
+        request: &impl Serialize,
+        previous_usage: Option<&Usage>,
+    ) {
+        let reported_usage = match error {
+            OpenAIError::JSONDeserialize(_, content) => {
+                serde_json::from_str::<ChatCompletionUsage>(content)
+                    .ok()
+                    .and_then(|response| response.usage)
+                    .map(|usage| Usage::from(&usage))
+            }
+            _ => None,
+        };
+
+        // Prefer the latest request total. Earlier stream usage is only a fallback, and is not
+        // also reported on the success path: the stream terminates immediately after this error.
+        self.track_completion(
+            model,
+            reported_usage.as_ref().or(previous_usage),
+            Some(request),
+            None::<&()>,
+        );
+    }
+
     #[allow(unused_variables)]
     pub(crate) fn track_completion<R, S>(
         &self,
@@ -554,7 +609,7 @@ pub(crate) fn langfuse_json<T>(_value: &T) -> Option<String> {
     None
 }
 
-fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
+pub(super) fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
     let parameters = OpenAiToolSchema::try_from(spec)
         .context("tool schema must be OpenAI compatible")?
         .into_value();
@@ -571,7 +626,7 @@ fn tools_to_openai(spec: &ToolSpec) -> Result<ChatCompletionTools> {
     ))
 }
 
-fn message_to_openai(
+pub(super) fn message_to_openai(
     message: &ChatMessage,
 ) -> Result<Option<async_openai::types::chat::ChatCompletionRequestMessage>> {
     let openai_message = match message {
@@ -717,6 +772,9 @@ fn source_to_openai_url(source: &ChatMessageContentSource) -> Result<String> {
         }
     }
 }
+
+#[cfg(test)]
+mod rejected_response_tests;
 
 #[cfg(test)]
 mod tests {

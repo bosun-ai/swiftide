@@ -49,6 +49,18 @@ impl<
         tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
     )]
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
+        if self.chat_completion_format == super::ChatCompletionFormat::Mistral {
+            let request = swiftide_core::chat_completion::ChatCompletionRequest::from(vec![
+                swiftide_core::chat_completion::ChatMessage::new_user(prompt.render()?),
+            ]);
+            return self
+                .complete_mistral(&request)
+                .await?
+                .message
+                .ok_or_else(|| {
+                    LanguageModelError::permanent("Expected content in Mistral response")
+                });
+        }
         if self.is_responses_api_enabled() {
             return self.prompt_via_responses_api(prompt).await;
         }

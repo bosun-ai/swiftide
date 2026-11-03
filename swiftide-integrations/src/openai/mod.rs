@@ -2,6 +2,42 @@
 //! embeddings within the Swiftide project. It includes the `OpenAI` struct for managing API clients
 //! and default options for embedding and prompt models. The module is conditionally compiled based
 //! on the "openai" feature flag.
+//!
+//! # OpenAI-compatible endpoints
+//!
+//! Chat Completions default to async-openai's `OpenAI` response schema. Select
+//! [`ChatCompletionFormat::Mistral`] for direct Mistral endpoints: this handles native thinking
+//! blocks, reasoning history replay, tools, and streaming. Keep returned reasoning items before
+//! their assistant message in history (Swiftide agents do this automatically).
+//!
+//! Mistral prompt caching uses a stable `prompt_cache_key` in [`OptionsBuilder::extra_body`].
+//! Cache hits are provider-controlled, not guaranteed; cached input and reasoning token counts
+//! are retained in [`Usage`]. See `examples/mistral.rs` for a multi-turn tool-use example.
+//!
+//! Unsupported complete JSON responses are permanent errors. Malformed/truncated JSON can still
+//! be transient, so applications must bound their retries. Available Chat Completions usage is
+//! reported through [`GenericOpenAIBuilder::on_usage`] even when response parsing fails. Missing
+//! usage is unknown, not evidence of zero provider spend.
+//!
+//! Run the direct Mistral example with:
+//! `cargo run -p swiftide-integrations --features openai --example mistral`.
+//!
+//! ```no_run
+//! use swiftide_integrations::openai::{ChatCompletionFormat, OpenAI, OpenAIConfig, Options, ReasoningEffort};
+//!
+//! # fn main() -> anyhow::Result<()> {
+//! let config = OpenAIConfig::new()
+//!     .with_api_base("https://api.mistral.ai/v1")
+//!     .with_api_key(std::env::var("MISTRAL_API_KEY")?);
+//! let client = OpenAI::builder()
+//!     .client(async_openai::Client::with_config(config))
+//!     .chat_completion_format(ChatCompletionFormat::Mistral)
+//!     .default_prompt_model("mistral-large-4")
+//!     .default_options(Options::builder().reasoning_effort(ReasoningEffort::High))
+//!     .build()?;
+//! # Ok(())
+//! # }
+//! ```
 
 use async_openai::error::OpenAIError;
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
@@ -15,6 +51,9 @@ use swiftide_core::chat_completion::errors::LanguageModelError;
 
 mod chat_completion;
 mod embed;
+mod mistral;
+#[cfg(test)]
+mod mistral_tests;
 mod provider_error;
 mod responses_api;
 mod simple_prompt;
@@ -72,6 +111,17 @@ use swiftide_core::EstimateTokens;
 pub type OpenAI = GenericOpenAI<OpenAIConfig>;
 pub type OpenAIBuilder = GenericOpenAIBuilder<OpenAIConfig>;
 
+/// Wire format used by the Chat Completions endpoint. Does not change the endpoint or API key.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ChatCompletionFormat {
+    #[default]
+    OpenAI,
+    /// Native Mistral thinking/text blocks and reasoning replay, without a gateway.
+    /// In this mode `max_completion_tokens` maps to `max_tokens`, `seed` to `random_seed`, and
+    /// `user` is omitted because Mistral does not accept it. Cannot be combined with Responses API.
+    Mistral,
+}
+
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option))]
 /// Generic client for `OpenAI` APIs.
@@ -97,6 +147,8 @@ pub struct GenericOpenAI<
     /// Convenience option to stream the full response. Defaults to true, because nobody has time
     /// to reconstruct the delta. Disabling this will make the streamed content only return the
     /// delta, for when performance matters. This only has effect when streaming is enabled.
+    /// In Mistral mode, delta-only snapshots carry the current reasoning fragment in `reasoning`;
+    /// the final snapshot always includes the complete text, reasoning, tool calls, and usage.
     #[builder(default = true)]
     pub stream_full: bool,
 
@@ -108,6 +160,10 @@ pub struct GenericOpenAI<
     /// Opt-in flag to use `OpenAI`'s Responses API instead of the legacy Chat Completions API.
     #[builder(default)]
     pub(crate) use_responses_api: bool,
+
+    /// Chat Completions wire format. Defaults to `OpenAI`; opt into native Mistral explicitly.
+    #[builder(default)]
+    pub(crate) chat_completion_format: ChatCompletionFormat,
 
     /// A callback function that is called when usage information is available.
     #[builder(default, setter(custom))]
@@ -133,6 +189,7 @@ impl<C: async_openai::config::Config + Default + std::fmt::Debug> std::fmt::Debu
             .field("default_options", &self.default_options)
             .field("stream_full", &self.stream_full)
             .field("use_responses_api", &self.use_responses_api)
+            .field("chat_completion_format", &self.chat_completion_format)
             .finish_non_exhaustive()
     }
 }
@@ -346,6 +403,12 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     GenericOpenAIBuilder<C>
 {
     /// Adds a callback function that will be called when usage information is available.
+    ///
+    /// For Chat Completions this includes usage recovered from rejected response bodies, and
+    /// usage received before a stream fails. Each completed or failed call is accounted for once;
+    /// missing or invalid usage is not inferred. The callback runs in a spawned task after the
+    /// response arrives, so it cannot enforce a hard spending limit or account for responses lost
+    /// before any usage arrives. Callers must also bound retries and use provider-side limits.
     pub fn on_usage<F>(&mut self, func: F) -> &mut Self
     where
         F: Fn(&Usage) -> anyhow::Result<()> + Send + Sync + 'static,
@@ -361,6 +424,8 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
 
     /// Adds an asynchronous callback function that will be called when usage information is
     /// available.
+    ///
+    /// See [`Self::on_usage`] for failed Chat Completion accounting and budget limitations.
     pub fn on_usage_async<F>(&mut self, func: F) -> &mut Self
     where
         F: for<'a> Fn(

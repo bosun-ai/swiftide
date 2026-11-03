@@ -241,6 +241,11 @@ tiktoken = ["dep:tiktoken-rs"]
 # Langfuse compatibility
 langfuse = []
 
+[[example]]
+name = "mistral"
+path = "examples/mistral.rs"
+required-features = ["openai"]
+
 
 [lints]
 workspace = true
