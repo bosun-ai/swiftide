@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793393244805,
+  "lastUpdate": 1793797796057,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -35399,6 +35399,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2123446,
             "range": "± 4937",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3b1ad22e41d9043a9ca9a0df114f3b9de4c093d6",
+          "message": "fix(deps): resolve security advisories (#1215)\n\nResolves five cargo-deny vulnerability reports by updating\npulldown-cmark, zstd, and zstd-safe, and removing AWS Console login\nsupport from Bedrock. SSO, environment variables, profiles, IAM roles,\nand application-configured clients remain supported. No advisory\nexceptions were added.\n\nAlso updates the yanked async-executor release to 1.14.1.\n\nValidation: cargo-deny, workspace all-features compilation, Clippy with\nwarnings denied, formatting, spelling, 55 focused Markdown/Bedrock\ntests, and all 102 feature configurations passed. Full tests and one\ndoctest could not link because the local C/C++ libraries lack symbols\nrequired by the unchanged prebuilt ONNX Runtime.\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n* Clarified that the default AWS Bedrock client uses the AWS SDK\ncredential provider chain and does not support AWS Console login\nsessions. Users can use another supported provider or provide a\nconfigured client.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+          "timestamp": "2026-11-04T13:59:58+01:00",
+          "tree_id": "435aac53b54108b4c1652168741cdb5a2b80a4bf",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3b1ad22e41d9043a9ca9a0df114f3b9de4c093d6"
+        },
+        "date": 1793797793983,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 648219,
+            "range": "± 11246",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 187044,
+            "range": "± 1334",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1561,
+            "range": "± 2039",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5591,
+            "range": "± 5535",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 21720,
+            "range": "± 24228",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4155702,
+            "range": "± 25030",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2078331,
+            "range": "± 8162",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16633206,
+            "range": "± 71288",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2087124,
+            "range": "± 3862",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66319169,
+            "range": "± 345976",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2101735,
+            "range": "± 3958",
             "unit": "ns/iter"
           }
         ]
