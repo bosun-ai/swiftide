@@ -398,10 +398,15 @@ impl ChatCompletionResponse {
         self.tool_calls.as_deref()
     }
 
-    /// Adds a streaming chunk to the message and also the delta
+    /// Adds a streaming chunk to the message and also the delta.
+    ///
+    /// Passing `None` clears the current text delta without changing the accumulated message or
+    /// tool-call fragments.
     pub fn append_message_delta(&mut self, message_delta: Option<&str>) -> &mut Self {
-        // let message: Option<String> = message;
         let Some(message_delta) = message_delta else {
+            if let Some(delta) = &mut self.delta {
+                delta.message_chunk = None;
+            }
             return self;
         };
 
@@ -534,5 +539,48 @@ impl ChatCompletionResponseBuilder {
     pub fn maybe_tool_calls<T: Into<Option<Vec<ToolCall>>>>(&mut self, tool_calls: T) -> &mut Self {
         self.tool_calls = Some(tool_calls.into());
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_append_message_delta_none_on_empty_response() {
+        let mut response = ChatCompletionResponse::default();
+        let original = response.clone();
+
+        response.append_message_delta(None);
+
+        assert_eq!(response, original);
+    }
+
+    #[test]
+    fn test_append_message_delta_clears_text_and_preserves_tool_fragments() {
+        let mut response = ChatCompletionResponse::default();
+        response.append_message_delta(Some("Hello"));
+        response.append_tool_call_delta(0, Some("call-1"), Some("weather"), Some("{\"city\":"));
+        let tool_fragments = response.delta.as_ref().unwrap().tool_calls_chunk.clone();
+
+        response.append_message_delta(None);
+
+        let delta = response.delta.as_ref().unwrap();
+        assert_eq!(delta.message_chunk, None);
+        assert_eq!(delta.tool_calls_chunk, tool_fragments);
+        assert_eq!(response.message(), Some("Hello"));
+
+        response.append_tool_call_delta(0, None, None, Some("\"Amsterdam\"}"));
+        let tool = &response.tool_calls().unwrap()[0];
+        assert_eq!(tool.id(), "call-1");
+        assert_eq!(tool.name(), "weather");
+        assert_eq!(tool.args(), Some("{\"city\":\"Amsterdam\"}"));
+
+        response.append_message_delta(Some(" again"));
+        assert_eq!(response.message(), Some("Hello again"));
+        assert_eq!(
+            response.delta.as_ref().unwrap().message_chunk.as_deref(),
+            Some(" again")
+        );
     }
 }
