@@ -326,6 +326,7 @@ impl<
                             (response_stream, state, tracking_request, true),
                         )),
                         None => {
+                            state.append_message_delta(None);
                             // Final emission; track completion with the full state.
                             self_for_stream.track_completion(
                                 &model_name_for_track,
@@ -725,6 +726,7 @@ mod tests {
     use super::*;
     use futures_util::StreamExt;
     use serde_json::json;
+    use std::fmt::Write as _;
     use std::sync::Arc;
     use swiftide_core::chat_completion::{ToolCallBuilder, ToolOutput, UsageBuilder};
     use wiremock::matchers::{method, path};
@@ -1685,6 +1687,101 @@ data: [DONE]\n\n";
         assert!(final_snapshot.usage.is_none() || final_snapshot.usage.is_some());
         while let Some(item) = stream.next().await {
             item.expect("stream should not error");
+        }
+    }
+
+    #[test_case::test_case(true, true; "full with stop and usage")]
+    #[test_case::test_case(false, true; "delta only with stop and usage")]
+    #[test_case::test_case(true, false; "full ending after text")]
+    #[test_case::test_case(false, false; "delta only ending after text")]
+    #[test_log::test(tokio::test)]
+    async fn test_complete_stream_emits_text_deltas_once(stream_full: bool, trailing_frames: bool) {
+        let mock_server = MockServer::start().await;
+        let mut chunks = vec![
+            json!({"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}),
+            json!({"choices": [{"index": 0, "delta": {"content": "Hello"}}]}),
+            json!({"choices": [{"index": 0, "delta": {"content": " world"}}]}),
+        ];
+        if trailing_frames {
+            chunks.push(json!({
+                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]
+            }));
+            chunks.push(json!({
+                "choices": [],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3}
+            }));
+        }
+        let mut sse_body = String::new();
+        for mut chunk in chunks {
+            chunk["id"] = json!("chatcmpl-123");
+            chunk["created"] = json!(1);
+            chunk["object"] = json!("chat.completion.chunk");
+            chunk["model"] = json!("test-model");
+            write!(sse_body, "data: {chunk}\n\n").unwrap();
+        }
+        sse_body.push_str("data: [DONE]\n\n");
+
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::new()
+            .with_api_base(mock_server.uri())
+            .with_api_key("test-key");
+        let openai = OpenAI::builder()
+            .client(async_openai::Client::with_config(config))
+            .default_prompt_model("test-model")
+            .stream_full(stream_full)
+            .build()
+            .unwrap();
+        let request = ChatCompletionRequest::from(vec![ChatMessage::new_user("Hello")]);
+        let responses = openai
+            .complete_stream(&request)
+            .await
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        let deltas = responses
+            .iter()
+            .map(|response| {
+                response
+                    .delta
+                    .as_ref()
+                    .and_then(|d| d.message_chunk.as_deref())
+            })
+            .collect::<Vec<_>>();
+        let mut expected = vec![Some(""), Some("Hello"), Some(" world")];
+        if trailing_frames {
+            expected.extend([None, None]);
+        }
+        expected.push(None); // The final accumulated snapshot contains no new text.
+        assert_eq!(deltas, expected);
+        assert_eq!(
+            deltas.into_iter().flatten().collect::<String>(),
+            "Hello world"
+        );
+
+        let final_snapshot = responses.last().unwrap();
+        assert_eq!(final_snapshot.message(), Some("Hello world"));
+        assert_eq!(
+            final_snapshot
+                .usage
+                .as_ref()
+                .map(|usage| usage.total_tokens),
+            trailing_frames.then_some(3)
+        );
+        for response in &responses[..responses.len() - 1] {
+            assert_eq!(response.id, final_snapshot.id);
+            if !stream_full {
+                assert!(response.message.is_none());
+                assert!(response.usage.is_none());
+            }
         }
     }
 
