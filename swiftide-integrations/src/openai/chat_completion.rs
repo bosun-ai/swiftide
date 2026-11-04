@@ -1699,8 +1699,8 @@ data: [DONE]\n\n";
         let mock_server = MockServer::start().await;
         let mut chunks = vec![
             json!({"choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}}]}),
-            json!({"choices": [{"index": 0, "delta": {"content": "Hel"}}]}),
-            json!({"choices": [{"index": 0, "delta": {"content": "lo"}}]}),
+            json!({"choices": [{"index": 0, "delta": {"content": "Hello"}}]}),
+            json!({"choices": [{"index": 0, "delta": {"content": " world"}}]}),
         ];
         if trailing_frames {
             chunks.push(json!({
@@ -1756,16 +1756,19 @@ data: [DONE]\n\n";
                     .and_then(|d| d.message_chunk.as_deref())
             })
             .collect::<Vec<_>>();
-        let mut expected = vec![Some(""), Some("Hel"), Some("lo")];
+        let mut expected = vec![Some(""), Some("Hello"), Some(" world")];
         if trailing_frames {
             expected.extend([None, None]);
         }
         expected.push(None); // The final accumulated snapshot contains no new text.
         assert_eq!(deltas, expected);
-        assert_eq!(deltas.into_iter().flatten().collect::<String>(), "Hello");
+        assert_eq!(
+            deltas.into_iter().flatten().collect::<String>(),
+            "Hello world"
+        );
 
         let final_snapshot = responses.last().unwrap();
-        assert_eq!(final_snapshot.message(), Some("Hello"));
+        assert_eq!(final_snapshot.message(), Some("Hello world"));
         assert_eq!(
             final_snapshot
                 .usage
