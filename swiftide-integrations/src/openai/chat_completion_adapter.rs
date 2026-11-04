@@ -1,7 +1,8 @@
 //! Wire-format adapters for the shared Chat Completions executor.
 //!
 //! Keep provider-specific serialization and decoding here and in the provider module. Adapters
-//! do not send requests, accumulate streams, or report usage.
+//! do not send requests, assemble tool streams, or report usage. They define how wire-specific
+//! reasoning fragments combine inside the shared stream accumulator.
 
 use async_openai::types::chat::{
     ChatCompletionMessageToolCallChunk, ChatCompletionMessageToolCalls, CompletionUsage,
@@ -16,7 +17,7 @@ use swiftide_core::chat_completion::{
     errors::LanguageModelError,
 };
 
-use super::chat_completion::message_to_openai;
+use super::compatible_reasoning;
 use super::mistral::MistralAdapter;
 use super::{ChatCompletionFormat, GenericOpenAI};
 
@@ -30,23 +31,43 @@ pub(super) trait ChatCompletionAdapter {
         request: CreateChatCompletionRequest,
         messages: &[ChatMessage],
     ) -> Result<Value, LanguageModelError>;
+
+    fn accumulate_reasoning(accumulated: &mut Vec<ReasoningItem>, items: &[ReasoningItem]) {
+        // SSE boundaries are not reasoning boundaries, even when a block is marked closed.
+        for item in items {
+            if let Some(previous) = accumulated.last_mut() {
+                let text = previous.content.get_or_insert_with(Vec::new);
+                if text.is_empty() {
+                    text.push(String::new());
+                }
+                for part in item.content.iter().flatten() {
+                    text.last_mut().expect("nonempty").push_str(part);
+                }
+                previous.status = item.status;
+            } else {
+                accumulated.push(item.clone());
+            }
+        }
+    }
 }
 
 struct OpenAIAdapter;
 
 impl ChatCompletionAdapter for OpenAIAdapter {
-    type Completion = CreateChatCompletionResponse;
-    type Chunk = CreateChatCompletionStreamResponse;
+    type Completion = compatible_reasoning::Completion;
+    type Chunk = compatible_reasoning::Chunk;
 
     fn request_body(
-        mut request: CreateChatCompletionRequest,
+        request: CreateChatCompletionRequest,
         messages: &[ChatMessage],
     ) -> Result<Value, LanguageModelError> {
-        request.messages = messages
-            .iter()
-            .filter_map(|message| message_to_openai(message).transpose())
-            .collect::<anyhow::Result<_>>()?;
-        serde_json::to_value(request).map_err(LanguageModelError::permanent)
+        let mut body = serde_json::to_value(request).map_err(LanguageModelError::permanent)?;
+        body["messages"] = compatible_reasoning::messages_to_openai(messages)?.into();
+        Ok(body)
+    }
+
+    fn accumulate_reasoning(accumulated: &mut Vec<ReasoningItem>, items: &[ReasoningItem]) {
+        compatible_reasoning::accumulate_reasoning(accumulated, items);
     }
 }
 
@@ -170,30 +191,17 @@ impl From<CreateChatCompletionStreamResponse> for DeltaData {
 }
 
 impl DeltaData {
-    pub(super) fn apply(self, state: &mut ChatCompletionResponse) -> Option<Vec<ReasoningItem>> {
+    pub(super) fn apply<A: ChatCompletionAdapter>(
+        self,
+        state: &mut ChatCompletionResponse,
+    ) -> Option<Vec<ReasoningItem>> {
         // Tool buffers persist between frames; visible text deltas do not.
         if let Some(delta) = &mut state.delta {
             delta.message_chunk = None;
         }
         state.append_message_delta(self.content.text.as_deref());
         if let Some(items) = &self.content.reasoning {
-            // SSE boundaries are not reasoning boundaries. Even a closed reasoning block may
-            // arrive in multiple fragments, so accumulate its text before history replay.
-            let accumulated = state.reasoning.get_or_insert_with(Vec::new);
-            for item in items {
-                if let Some(previous) = accumulated.last_mut() {
-                    let text = previous.content.get_or_insert_with(Vec::new);
-                    if text.is_empty() {
-                        text.push(String::new());
-                    }
-                    for part in item.content.iter().flatten() {
-                        text.last_mut().expect("nonempty").push_str(part);
-                    }
-                    previous.status = item.status;
-                } else {
-                    accumulated.push(item.clone());
-                }
-            }
+            A::accumulate_reasoning(state.reasoning.get_or_insert_with(Vec::new), items);
         }
         for call in self.tool_calls.into_iter().flatten() {
             state.append_tool_call_delta(

@@ -228,7 +228,7 @@ where
                     }
                     match source.next().await {
                         Some(Ok(chunk)) => {
-                            let reasoning = Into::<DeltaData>::into(chunk).apply(&mut state);
+                            let reasoning = Into::<DeltaData>::into(chunk).apply::<A>(&mut state);
                             let snapshot = if client.stream_full {
                                 state.clone()
                             } else {

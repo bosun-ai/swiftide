@@ -156,6 +156,11 @@ fn messages_to_mistral(messages: &[ChatMessage]) -> Result<Vec<Value>, LanguageM
     let mut thinking = Vec::new();
     for message in messages {
         if let ChatMessage::Reasoning(item) = message {
+            if item.provider_metadata.is_some() {
+                return Err(LanguageModelError::permanent(
+                    "Native Mistral cannot replay reasoning metadata from another wire format",
+                ));
+            }
             if item.encrypted_content.is_some() {
                 return Err(LanguageModelError::permanent(
                     "Mistral cannot replay encrypted reasoning from another provider",
@@ -265,5 +270,18 @@ mod tests {
             json!({"role": "assistant", "content": expected})
         );
         assert_eq!(converted[1], json!({"role": "user", "content": "Continue"}));
+    }
+
+    #[test]
+    fn gateway_metadata_is_not_reinterpreted_as_native_thinking() {
+        let message = ChatMessage::new_reasoning(ReasoningItem {
+            content: Some(vec!["gateway thinking".into()]),
+            provider_metadata: Some(json!({"openai_chat_completions": {"reasoning_details": []}})),
+            ..Default::default()
+        });
+        assert!(matches!(
+            messages_to_mistral(&[message]),
+            Err(LanguageModelError::PermanentError(_))
+        ));
     }
 }

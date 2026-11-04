@@ -5,8 +5,15 @@
 //!
 //! # OpenAI-compatible endpoints
 //!
-//! Chat Completions default to async-openai's `OpenAI` response schema. Select
-//! [`ChatCompletionFormat::Mistral`] for direct Mistral endpoints: this handles native thinking
+//! Chat Completions default to async-openai's `OpenAI` response schema, retaining compatible
+//! gateway extensions `reasoning`, `reasoning_content`, and `reasoning_details` separately from
+//! visible text. Original fields (including signatures and block metadata) are stored in
+//! [`swiftide_core::chat_completion::ReasoningItem::provider_metadata`] for history replay.
+//! These are gateway extensions, not standard `OpenAI` Chat Completions fields. Keep history on
+//! the same compatible endpoint; reasoning metadata is not portable between wire formats.
+//! For Bifrost, keep the default format and use the gateway's model prefix (for example,
+//! `mistral/mistral-large-4`). Select [`ChatCompletionFormat::Mistral`] for direct Mistral
+//! endpoints: this handles native thinking
 //! blocks, reasoning history replay, tools, and streaming. Keep returned reasoning items before
 //! their assistant message in history (Swiftide agents do this automatically).
 //! Wire-format adapters share request execution, streaming, tool assembly, and accounting.
@@ -55,6 +62,9 @@ mod chat_completion;
 mod chat_completion_adapter;
 #[cfg(test)]
 mod chat_completion_adapter_tests;
+mod compatible_reasoning;
+#[cfg(test)]
+mod compatible_reasoning_tests;
 mod embed;
 mod mistral;
 #[cfg(test)]
@@ -152,8 +162,9 @@ pub struct GenericOpenAI<
     /// Convenience option to stream the full response. Defaults to true, because nobody has time
     /// to reconstruct the delta. Disabling this will make the streamed content only return the
     /// delta, for when performance matters. This only has effect when streaming is enabled.
-    /// In Mistral mode, delta-only snapshots carry the current reasoning fragment in `reasoning`;
-    /// the final snapshot always includes the complete text, reasoning, tool calls, and usage.
+    /// For Chat Completions, delta-only snapshots carry the current reasoning fragment in
+    /// `reasoning`; the final snapshot always includes the complete text, reasoning, tool
+    /// calls, and usage.
     #[builder(default = true)]
     pub stream_full: bool,
 

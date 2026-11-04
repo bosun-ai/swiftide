@@ -754,6 +754,7 @@ fn reasoning_item_from_response(
             OutputStatus::Incomplete => swiftide_core::chat_completion::ReasoningStatus::Incomplete,
         }),
         encrypted_content: reasoning.encrypted_content,
+        provider_metadata: None,
     }
 }
 
