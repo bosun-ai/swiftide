@@ -1451,7 +1451,6 @@ fn reasoning_item_from_reasoning_text(
         content: Some(vec![text.to_string()]),
         encrypted_content: signature.map(ToString::to_string),
         status: None,
-        provider_metadata: None,
     }
 }
 
@@ -1500,7 +1499,6 @@ fn ensure_reasoning_item(
         content: None,
         encrypted_content: None,
         status: None,
-        provider_metadata: None,
     });
 
     reasoning
@@ -2554,7 +2552,6 @@ mod tests {
                     content: Some(vec!["I should call a weather tool".to_string()]),
                     encrypted_content: Some("sig_123".to_string()),
                     status: None,
-                    provider_metadata: None,
                 }),
                 ChatMessage::new_user("Use tool"),
             ])

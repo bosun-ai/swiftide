@@ -16,17 +16,14 @@ use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
-use super::{ChatCompletionFormat, OpenAI, OpenAIConfig, Options, ReasoningEffort};
+use super::{Mistral, OpenAIConfig, Options, ReasoningEffort};
 
-fn direct_client(server: &MockServer, reasoning: bool) -> (OpenAI, UnboundedReceiver<Usage>) {
+fn direct_client(server: &MockServer, reasoning: bool) -> (Mistral, UnboundedReceiver<Usage>) {
     let config = OpenAIConfig::new()
         .with_api_base(format!("{}/v1", server.uri()))
         .with_api_key("mistral-test-key");
     let mut options = Options::builder();
-    options
-        .max_completion_tokens(4096)
-        .seed(42)
-        .user("not-supported-by-mistral".to_owned());
+    options.max_tokens(4096).random_seed(42);
     options.extra_body(serde_json::Map::from_iter([(
         "prompt_cache_key".into(),
         json!("session-native-test"),
@@ -35,9 +32,8 @@ fn direct_client(server: &MockServer, reasoning: bool) -> (OpenAI, UnboundedRece
         options.reasoning_effort(ReasoningEffort::High);
     }
     let (sender, receiver) = unbounded_channel();
-    let client = OpenAI::builder()
+    let client = Mistral::builder()
         .client(async_openai::Client::with_config(config))
-        .chat_completion_format(ChatCompletionFormat::Mistral)
         .default_prompt_model(if reasoning {
             "mistral-large-4"
         } else {
@@ -59,7 +55,7 @@ struct EchoArgs {
     text: String,
 }
 
-fn tool_request() -> ChatCompletionRequest<'static> {
+pub(super) fn tool_request() -> ChatCompletionRequest<'static> {
     let spec = ToolSpec::builder()
         .name("echo")
         .description("Echo the supplied text")
@@ -575,10 +571,10 @@ async fn native_simple_and_structured_prompts_keep_reasoning_out_of_answers() {
 }
 
 #[tokio::test]
-async fn native_rejects_incompatible_api_and_encrypted_history_before_sending() {
+async fn native_rejects_encrypted_history_before_sending() {
     use swiftide_core::chat_completion::ReasoningItem;
     let server = MockServer::start().await;
-    let (mut client, _) = direct_client(&server, true);
+    let (client, _) = direct_client(&server, true);
     let request = ChatCompletionRequest::from(vec![ChatMessage::new_reasoning(ReasoningItem {
         encrypted_content: Some("opaque".into()),
         ..Default::default()
@@ -587,8 +583,7 @@ async fn native_rejects_incompatible_api_and_encrypted_history_before_sending() 
         client.complete(&request).await,
         Err(LanguageModelError::PermanentError(_))
     ));
-    client.use_responses_api = true;
-    let mut stream = client.complete_stream(&tool_request()).await;
+    let mut stream = client.complete_stream(&request).await;
     assert!(matches!(
         stream.next().await.unwrap(),
         Err(LanguageModelError::PermanentError(_))

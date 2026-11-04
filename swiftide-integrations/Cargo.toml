@@ -201,6 +201,8 @@ openai = [
 ]
 # Groq 
 groq = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
+# Standalone Mistral client; reuses the existing public OpenAI error mapper and SDK types
+mistral = ["openai"]
 # Goolge Gemini
 gemini = ["dep:async-openai", "dep:secrecy", "dep:reqwest", "openai"]
 # Ollama prompting, embedding, chatcompletion
@@ -244,7 +246,7 @@ langfuse = []
 [[example]]
 name = "mistral"
 path = "examples/mistral.rs"
-required-features = ["openai"]
+required-features = ["mistral"]
 
 
 [lints]

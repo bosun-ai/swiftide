@@ -21,11 +21,6 @@ pub struct ReasoningItem {
     /// Populated when items are returned via API.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<ReasoningStatus>,
-    /// Opaque, namespaced provider fields needed for lossless reasoning history replay.
-    /// Preserve these when storing history. They are not visible assistant text and are only
-    /// replayed by the adapter that understands their wire format.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub provider_metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]

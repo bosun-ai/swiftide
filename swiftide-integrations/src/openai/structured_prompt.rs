@@ -1,21 +1,58 @@
-//! Structured prompts use the shared completion path with a per-request output schema.
+//! This module provides an implementation of the `StructuredPrompt` trait for the `OpenAI` struct.
+//!
+//! Unlike the other traits, `StructuredPrompt` is *not* dyn safe.
+//!
+//! Use `DynStructuredPrompt` if you need dyn dispatch. For custom implementations, if you
+//! implement `DynStructuredPrompt`, you get `StructuredPrompt` for free.
 
+use async_openai::types::{
+    chat::ChatCompletionRequestUserMessageArgs,
+    responses::{ResponseFormat, ResponseFormatJsonSchema},
+};
 use async_trait::async_trait;
 use schemars::Schema;
 use swiftide_core::{
     DynStructuredPrompt,
-    chat_completion::{ChatCompletionRequest, ChatMessage, errors::LanguageModelError},
+    chat_completion::{Usage, errors::LanguageModelError},
     prompt::Prompt,
+    util::debug_long_utf8,
 };
 
-use super::GenericOpenAI;
+use super::responses_api::{
+    build_responses_request_from_prompt_with_schema, response_to_chat_completion,
+};
+use crate::openai::openai_error_to_language_model_error;
 
+use super::GenericOpenAI;
+use anyhow::{Context as _, Result};
+
+/// The `StructuredPrompt` trait defines a method for sending a prompt to an AI model and receiving
+/// a response.
 #[async_trait]
-impl<C> DynStructuredPrompt for GenericOpenAI<C>
-where
-    C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug + Clone + 'static,
+impl<
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
+> DynStructuredPrompt for GenericOpenAI<C>
 {
-    #[cfg_attr(not(feature = "langfuse"), tracing::instrument(skip_all, err))]
+    /// Sends a prompt to the `OpenAI` API and returns the response content.
+    ///
+    /// # Parameters
+    /// - `prompt`: A string slice that holds the prompt to be sent to the `OpenAI` API.
+    ///
+    /// # Returns
+    /// - `Result<String>`: On success, returns the content of the response as a `String`. On
+    ///   failure, returns an error wrapped in a `Result`.
+    ///
+    /// # Errors
+    /// - Returns an error if the model is not set in the default options.
+    /// - Returns an error if the request to the `OpenAI` API fails.
+    /// - Returns an error if the response does not contain the expected content.
+    #[tracing::instrument(skip_all, err)]
     #[cfg_attr(
         feature = "langfuse",
         tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
@@ -25,13 +62,139 @@ where
         prompt: Prompt,
         schema: Schema,
     ) -> Result<serde_json::Value, LanguageModelError> {
-        let request = ChatCompletionRequest::from(vec![ChatMessage::new_user(prompt.render()?)]);
-        let content = self
-            .complete_with_schema(&request, Some(schema))
-            .await?
-            .message
-            .ok_or_else(|| LanguageModelError::permanent("Expected content in response"))?;
-        serde_json::from_str(&content).map_err(LanguageModelError::permanent)
+        if self.is_responses_api_enabled() {
+            return self
+                .structured_prompt_via_responses_api(prompt, schema)
+                .await;
+        }
+
+        // Retrieve the model from the default options, returning an error if not set.
+        let model = self
+            .default_options
+            .prompt_model
+            .as_ref()
+            .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+
+        let schema_value =
+            serde_json::to_value(&schema).context("Failed to get schema as value")?;
+        let response_format = ResponseFormat::JsonSchema {
+            json_schema: ResponseFormatJsonSchema {
+                description: None,
+                name: "structured_prompt".into(),
+                schema: schema_value,
+                strict: Some(true),
+            },
+        };
+
+        // Build the request to be sent to the OpenAI API.
+        let request = self
+            .chat_completion_request_defaults()
+            .model(model)
+            .response_format(response_format)
+            .messages(vec![
+                ChatCompletionRequestUserMessageArgs::default()
+                    .content(prompt.render()?)
+                    .build()
+                    .map_err(LanguageModelError::permanent)?
+                    .into(),
+            ])
+            .build()
+            .map_err(LanguageModelError::permanent)?;
+
+        // Log the request for debugging purposes.
+        tracing::trace!(
+            model = &model,
+            messages = debug_long_utf8(
+                serde_json::to_string_pretty(&request.messages.last())
+                    .map_err(LanguageModelError::permanent)?,
+                100
+            ),
+            "[StructuredPrompt] Request to openai"
+        );
+
+        // Send the request to the OpenAI API and await the response.
+        let response = self
+            .client
+            .chat()
+            .create(request.clone())
+            .await
+            .map_err(openai_error_to_language_model_error)?;
+
+        let message = response
+            .choices
+            .first()
+            .and_then(|choice| choice.message.content.clone())
+            .ok_or_else(|| {
+                LanguageModelError::PermanentError("Expected content in response".into())
+            })?;
+
+        let usage = response.usage.as_ref().map(Usage::from);
+
+        self.track_completion(model, usage.as_ref(), Some(&request), Some(&response));
+
+        let parsed = serde_json::from_str(&message)
+            .with_context(|| format!("Failed to parse response\n {message}"))?;
+
+        // Extract and return the content of the response, returning an error if not found.
+        Ok(parsed)
+    }
+}
+
+impl<
+    C: async_openai::config::Config
+        + std::default::Default
+        + Sync
+        + Send
+        + std::fmt::Debug
+        + Clone
+        + 'static,
+> GenericOpenAI<C>
+{
+    async fn structured_prompt_via_responses_api(
+        &self,
+        prompt: Prompt,
+        schema: Schema,
+    ) -> Result<serde_json::Value, LanguageModelError> {
+        let prompt_text = prompt.render().map_err(LanguageModelError::permanent)?;
+        let model = self
+            .default_options
+            .prompt_model
+            .as_ref()
+            .ok_or_else(|| LanguageModelError::PermanentError("Model not set".into()))?;
+
+        let schema_value = serde_json::to_value(&schema)
+            .context("Failed to get schema as value")
+            .map_err(LanguageModelError::permanent)?;
+
+        let create_request =
+            build_responses_request_from_prompt_with_schema(self, prompt_text, schema_value)?;
+        let tracking_request = create_request.clone();
+
+        let response = self
+            .client
+            .responses()
+            .create(create_request)
+            .await
+            .map_err(openai_error_to_language_model_error)?;
+
+        let mut completion = response_to_chat_completion(response)?;
+
+        self.track_completion(
+            model,
+            completion.usage.as_ref(),
+            Some(&tracking_request),
+            Some(&completion),
+        );
+
+        let message = completion.message.take().ok_or_else(|| {
+            LanguageModelError::PermanentError("Expected content in response".into())
+        })?;
+
+        let parsed = serde_json::from_str(&message)
+            .with_context(|| format!("Failed to parse response\n {message}"))
+            .map_err(LanguageModelError::permanent)?;
+
+        Ok(parsed)
     }
 }
 

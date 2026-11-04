@@ -32,10 +32,6 @@ const OPENROUTER_TRANSIENT_ERROR_TYPES: &[&str] = &[
     "timeout",
 ];
 
-// The two retryable categories in Mistral's documented top-level error format:
-// https://docs.mistral.ai/resources/error-glossary#error-response-format
-const MISTRAL_TRANSIENT_ERROR_TYPES: &[&str] = &["rate_limit_error", "server_error"];
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ErrorClassification {
     ContextLengthExceeded,
@@ -56,19 +52,6 @@ struct ProviderErrorResponse {
 #[derive(Debug, Deserialize)]
 struct ProviderErrorChoice {
     error: Option<ProviderErrorBody>,
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "object")]
-enum MistralErrorResponse {
-    #[serde(rename = "error")]
-    Error(ProviderErrorBody),
-}
-
-#[derive(Deserialize)]
-struct ChatCompletionEnvelope {
-    #[serde(rename = "choices")]
-    _choices: Vec<serde::de::IgnoredAny>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -121,22 +104,7 @@ impl ProviderError {
         let response_error_type = response.error_type;
         let error = response
             .error
-            .or_else(|| response.choices.into_iter().find_map(|choice| choice.error))
-            .or_else(|| {
-                let MistralErrorResponse::Error(error) = serde_json::from_str(content).ok()?;
-                // Only recognize the four categories documented in Mistral's error glossary.
-                // Without an HTTP status, unknown categories must retain the transient fallback.
-                matches!(
-                    error.api_type.as_deref(),
-                    Some(
-                        "invalid_request_error"
-                            | "authentication_error"
-                            | "rate_limit_error"
-                            | "server_error"
-                    )
-                )
-                .then_some(error)
-            })?;
+            .or_else(|| response.choices.into_iter().find_map(|choice| choice.error))?;
         let metadata = error.metadata.unwrap_or_default();
         let error_type = metadata
             .error_type
@@ -213,16 +181,8 @@ pub(super) fn openai_error_to_language_model_error(e: OpenAIError) -> LanguageMo
         OpenAIError::JSONDeserialize(error, content) => {
             if let Some(provider_error) = ProviderError::from_response(&content) {
                 map_classification(provider_error.classification(), provider_error)
-            } else if serde_json::from_str::<ChatCompletionEnvelope>(&content).is_ok() {
-                // Recognizable chat completions with unsupported content will not become
-                // compatible by retrying. Validate the whole document: a typed parser can
-                // report a data error before reaching a truncated or malformed tail.
-                LanguageModelError::permanent(OpenAIError::JSONDeserialize(error, content))
             } else {
-                // async-openai also returns JSONDeserialize for HTTP error bodies that do not
-                // match WrappedError, discarding their status (including 429). Without a
-                // recognizable completion or provider error, retain the transient fallback
-                // even for valid JSON. Truncated and non-JSON responses remain transient too.
+                // Retain the existing transient fallback for malformed success responses.
                 LanguageModelError::transient(OpenAIError::JSONDeserialize(error, content))
             }
         }
@@ -240,7 +200,8 @@ fn status_from_code(code: Option<&str>) -> Option<StatusCode> {
         .and_then(|code| StatusCode::from_u16(code).ok())
 }
 
-// Classification combines provider error taxonomies with HTTP error behavior, in precedence order:
+// Classification combines OpenRouter's canonical in-band error taxonomy with OpenAI's HTTP error
+// behavior, in precedence order:
 //
 // 1. `context_length_exceeded` maps to Swiftide's specialized context-length error.
 // 2. Explicit permanent identifiers override otherwise-retryable statuses. OpenAI's documented
@@ -267,11 +228,6 @@ fn status_from_code(code: Option<&str>) -> Option<StatusCode> {
 //    request validation, content policy, image, and `unmapped`) default to permanent. OpenRouter
 //    transforms the other token/length types into successful Chat Completions with finish_reason
 //    `length`, so only `context_length_exceeded` needs special error handling here.
-// 7. Mistral documents four top-level error categories: `invalid_request_error` and
-//    `authentication_error` are permanent; `rate_limit_error` and `server_error` are transient.
-//    Only these four categories in an `object: "error"` envelope are recognized; unknown unwrapped
-//    errors retain the transient fallback because async-openai discards their HTTP status:
-//    https://docs.mistral.ai/resources/error-glossary#error-response-format
 fn classify_error<'a>(
     status: Option<StatusCode>,
     identifiers: impl IntoIterator<Item = Option<&'a str>>,
@@ -290,7 +246,6 @@ fn classify_error<'a>(
     }
 
     if contains_identifier(&identifiers, OPENROUTER_TRANSIENT_ERROR_TYPES)
-        || contains_identifier(&identifiers, MISTRAL_TRANSIENT_ERROR_TYPES)
         || status.is_some_and(|status| {
             status == StatusCode::REQUEST_TIMEOUT
                 || status == StatusCode::TOO_MANY_REQUESTS
@@ -524,88 +479,5 @@ mod tests {
 
         assert!(matches!(result, LanguageModelError::TransientError(_)));
         assert!(result.to_string().contains(content));
-    }
-
-    #[test]
-    fn chat_completion_with_an_unsupported_schema_is_permanent() {
-        for content in [
-            r#"{"choices":[]}"#,
-            r#"{"choices":[{"message":{"content":[]}}]}"#,
-            r#"{"choices":[{"delta":{"content":[]}}]}"#,
-        ] {
-            let error = serde_json::from_str::<
-                async_openai::types::chat::CreateChatCompletionResponse,
-            >(content)
-            .unwrap_err();
-            assert!(error.is_data());
-            let result = openai_error_to_language_model_error(OpenAIError::JSONDeserialize(
-                error,
-                content.to_owned(),
-            ));
-            assert!(matches!(result, LanguageModelError::PermanentError(_)));
-            assert!(result.to_string().contains(content));
-        }
-    }
-
-    #[test]
-    fn unrecognized_json_without_http_status_remains_transient() {
-        for content in [
-            r#"{"message":"Rate limit exceeded","type":"rate_limit_exceeded"}"#,
-            r#"{"error":"Too many requests"}"#,
-            r#"{"detail":"Temporarily unavailable"}"#,
-            r#"{"object":"error","message":"Unknown category","type":"future_error_category"}"#,
-            r#"{"object":"error","message":"Missing category"}"#,
-            r#"{"object":"other","message":"Not an error envelope","type":"invalid_request_error"}"#,
-            r#"{"message":"Missing object tag","type":"invalid_request_error"}"#,
-            r#"{"choices":null}"#,
-            "{}",
-            "[]",
-            "null",
-            r#""not a completion""#,
-        ] {
-            let result = openai_error_to_language_model_error(json_deserialize_error(content));
-            assert!(matches!(result, LanguageModelError::TransientError(_)));
-            assert!(result.to_string().contains(content));
-        }
-    }
-
-    #[test]
-    fn mistral_error_categories_preserve_details_and_retryability() {
-        for (error_type, expected) in [
-            ("invalid_request_error", ErrorClassification::Permanent),
-            ("authentication_error", ErrorClassification::Permanent),
-            ("rate_limit_error", ErrorClassification::Transient),
-            ("server_error", ErrorClassification::Transient),
-        ] {
-            let body = serde_json::json!({
-                "object": "error", "message": "Mistral error details",
-                "type": error_type, "param": "model", "code": "synthetic_code"
-            })
-            .to_string();
-            let error = ProviderError::from_response(&body).unwrap();
-            assert_eq!(error.classification(), expected);
-            assert_eq!(error.message, "Mistral error details");
-            assert_eq!(error.error_type.as_deref(), Some(error_type));
-            assert_eq!(error.code.as_deref(), Some("synthetic_code"));
-            assert!(error.status.is_none(), "must not invent an HTTP status");
-        }
-    }
-
-    #[test]
-    fn a_data_error_before_a_malformed_tail_is_still_transient() {
-        for content in [r#"{"id":[],"choices":"#, r#"{"id":[],"choices":!}"#] {
-            let error = serde_json::from_str::<
-                async_openai::types::chat::CreateChatCompletionResponse,
-            >(content)
-            .unwrap_err();
-            assert!(error.is_data());
-            assert!(matches!(
-                openai_error_to_language_model_error(OpenAIError::JSONDeserialize(
-                    error,
-                    content.to_owned(),
-                )),
-                LanguageModelError::TransientError(_)
-            ));
-        }
     }
 }

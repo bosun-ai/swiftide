@@ -1,7 +1,7 @@
 //! Direct Mistral Chat Completions, without Bifrost or another gateway.
 //!
 //! Set `MISTRAL_API_KEY`, then run:
-//! `cargo run -p swiftide-integrations --features openai --example mistral`
+//! `cargo run -p swiftide-integrations --features mistral --example mistral`
 //! Add `-- --stream` for streaming. Defaults: `MISTRAL_MODEL=mistral-large-4` and
 //! `MISTRAL_REASONING_EFFORT=high`. Large 4 also supports `low` and `medium`.
 //! Running this example makes two real provider requests and can incur charges.
@@ -22,7 +22,7 @@ use serde_json::{Map, Value, json};
 use swiftide_core::chat_completion::{
     ChatCompletion, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ToolSpec,
 };
-use swiftide_integrations::openai::{ChatCompletionFormat, OpenAI, OpenAIConfig, Options};
+use swiftide_integrations::mistral::{Mistral, OpenAIConfig, Options};
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -31,7 +31,7 @@ struct EchoArgs {
 }
 
 async fn complete(
-    client: &OpenAI,
+    client: &Mistral,
     request: &ChatCompletionRequest<'_>,
 ) -> Result<ChatCompletionResponse> {
     let response = if std::env::args().any(|argument| argument == "--stream") {
@@ -64,8 +64,8 @@ async fn main() -> Result<()> {
         .with_api_key(api_key);
 
     let mut options = Options::builder();
-    // Native mode maps this option to Mistral's max_tokens. Model names have no gateway prefix.
-    options.max_completion_tokens(4096);
+    // Model names have no gateway prefix for direct Mistral requests.
+    options.max_tokens(4096);
     options.extra_body(Map::from_iter([(
         "prompt_cache_key".into(),
         json!(
@@ -75,13 +75,12 @@ async fn main() -> Result<()> {
     )]));
     let effort = std::env::var("MISTRAL_REASONING_EFFORT").unwrap_or_else(|_| "high".into());
     options.reasoning_effort(serde_json::from_value::<
-        swiftide_integrations::openai::ReasoningEffort,
+        swiftide_integrations::mistral::ReasoningEffort,
     >(Value::String(effort))?);
 
     let (usage_tx, mut usage_rx) = tokio::sync::mpsc::unbounded_channel();
-    let client = OpenAI::builder()
+    let client = Mistral::builder()
         .client(async_openai::Client::with_config(config))
-        .chat_completion_format(ChatCompletionFormat::Mistral)
         .default_prompt_model(model)
         .default_options(options)
         .on_usage(move |usage| {

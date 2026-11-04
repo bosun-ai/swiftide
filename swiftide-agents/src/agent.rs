@@ -1284,11 +1284,6 @@ mod tests {
             content: None,
             encrypted_content: None,
             status: None,
-            provider_metadata: Some(serde_json::json!({
-                "openai_chat_completions": {
-                    "reasoning_details": [{"index": 0, "type": "reasoning.encrypted", "data": "opaque"}]
-                }
-            })),
         };
 
         let reasoning_only_response = ChatCompletionResponse::builder()

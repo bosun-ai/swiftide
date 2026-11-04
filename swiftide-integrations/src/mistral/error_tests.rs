@@ -1,7 +1,4 @@
-//! Exercise rejected responses across the real HTTP / async-openai boundary in the default
-//! `OpenAI` format. Native Mistral content arrays require opting into the Mistral format,
-//! covered separately by `mistral_tests`.
-
+//! Rejected-response and accounting tests for the standalone Mistral client.
 use std::{fmt::Write as _, time::Duration};
 
 use futures_util::StreamExt as _;
@@ -12,7 +9,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::openai::{ChatCompletionFormat, OpenAI};
+use super::Mistral;
 use swiftide_core::chat_completion::errors::LanguageModelError;
 
 fn completion(content: Value) -> Value {
@@ -41,14 +38,14 @@ fn completion(content: Value) -> Value {
     body
 }
 
-fn client(server: &MockServer) -> (OpenAI, UnboundedReceiver<Usage>) {
+fn client(server: &MockServer) -> (Mistral, UnboundedReceiver<Usage>) {
     let (sender, receiver) = unbounded_channel();
     let config = async_openai::config::OpenAIConfig::new()
         .with_api_key("test-key")
         .with_api_base(server.uri());
-    let client = OpenAI::builder()
+    let client = Mistral::builder()
         .client(async_openai::Client::with_config(config))
-        .default_prompt_model("mistral/mistral-large-4")
+        .default_prompt_model("mistral-large-4")
         .on_usage(move |usage| {
             sender.send(usage.clone())?;
             Ok(())
@@ -78,7 +75,6 @@ async fn assert_no_usage(receiver: &mut UnboundedReceiver<Usage>) {
 
 #[test_case(json!([{"type": "thinking"}]); "thinking only")]
 #[test_case(json!([{"type": "thinking"}, {"type": "text", "text": "I will inspect the manifest."}]); "mixed")]
-#[test_case(json!([{"type": "text", "text": "Hello"}]); "text array")]
 #[test_case(json!([{"type": "unknown"}]); "unknown block")]
 #[tokio::test]
 async fn unsupported_content_stops_retries_and_reports_consumed_usage(content: Value) {
@@ -116,7 +112,11 @@ async fn unsupported_content_stops_retries_and_reports_consumed_usage(content: V
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
     let error = last_error.unwrap();
     assert!(matches!(error, LanguageModelError::PermanentError(_)));
-    assert!(error.to_string().contains("expected a string"));
+    assert!(
+        error
+            .to_string()
+            .contains("did not match any variant of untagged enum Content")
+    );
     assert_usage_once(&mut usage, &expected).await;
 }
 
@@ -168,15 +168,10 @@ async fn malformed_responses_remain_transient_with_a_bounded_caller_policy(body:
     assert_no_usage(&mut usage).await;
 }
 
-#[test_case(ChatCompletionFormat::OpenAI, false; "openai ordinary")]
-#[test_case(ChatCompletionFormat::OpenAI, true; "openai streaming")]
-#[test_case(ChatCompletionFormat::Mistral, false; "mistral ordinary")]
-#[test_case(ChatCompletionFormat::Mistral, true; "mistral streaming")]
+#[test_case(false; "mistral ordinary")]
+#[test_case(true; "mistral streaming")]
 #[tokio::test]
-async fn unwrapped_http_rate_limits_remain_transient(
-    format: ChatCompletionFormat,
-    streaming: bool,
-) {
+async fn unwrapped_http_rate_limits_remain_transient(streaming: bool) {
     for body in [
         json!({"message": "Rate limit exceeded", "type": "rate_limit_exceeded"}),
         json!({"error": "Too many requests"}),
@@ -188,8 +183,7 @@ async fn unwrapped_http_rate_limits_remain_transient(
             .expect(3)
             .mount(&server)
             .await;
-        let (mut client, mut usage) = client(&server);
-        client.chat_completion_format = format;
+        let (client, mut usage) = client(&server);
         let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
         for _ in 0..3 {
             let error = if streaming {
@@ -207,15 +201,10 @@ async fn unwrapped_http_rate_limits_remain_transient(
     }
 }
 
-#[test_case(ChatCompletionFormat::OpenAI, false; "openai ordinary")]
-#[test_case(ChatCompletionFormat::OpenAI, true; "openai streaming")]
-#[test_case(ChatCompletionFormat::Mistral, false; "mistral ordinary")]
-#[test_case(ChatCompletionFormat::Mistral, true; "mistral streaming")]
+#[test_case(false; "mistral ordinary")]
+#[test_case(true; "mistral streaming")]
 #[tokio::test]
-async fn mistral_http_client_errors_follow_the_documented_categories(
-    format: ChatCompletionFormat,
-    streaming: bool,
-) {
+async fn mistral_http_client_errors_follow_the_documented_categories(streaming: bool) {
     for (status, error_type, code, retryable) in [
         (400, "invalid_request_error", Some("unknown_model"), false),
         (401, "authentication_error", None, false),
@@ -233,8 +222,7 @@ async fn mistral_http_client_errors_follow_the_documented_categories(
             .expect(expected_requests)
             .mount(&server)
             .await;
-        let (mut client, mut usage) = client(&server);
-        client.chat_completion_format = format;
+        let (client, mut usage) = client(&server);
         let request = ChatCompletionRequest::from(vec![ChatMessage::User("Inspect".into())]);
         for _ in 0..3 {
             let error = if streaming {
@@ -321,7 +309,7 @@ async fn in_band_provider_errors_keep_their_classification_and_usage() {
     .await;
 }
 
-#[test_case(r#"{"choices":[{"delta":{"content":[]}}]}"#, true; "unsupported schema")]
+#[test_case(r#"{"choices":[{"delta":{"content":[{"type":"unsupported"}]}}]}"#, true; "unsupported schema")]
 #[test_case(r#"{"choices":[{"delta":{"content":[]"#, false; "truncated schema")]
 #[tokio::test]
 async fn failed_stream_without_usage_does_not_invent_it(body: &str, permanent: bool) {

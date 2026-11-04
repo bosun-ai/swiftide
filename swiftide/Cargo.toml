@@ -54,6 +54,7 @@ all = [
   "redis",
   "tree-sitter",
   "openai",
+  "mistral",
   "fastembed",
   "scraping",
   "aws-bedrock",
@@ -84,6 +85,9 @@ tree-sitter-perl = ["tree-sitter", "swiftide-integrations/tree-sitter-perl"]
 
 ## OpenAI
 openai = ["swiftide-integrations/openai"]
+
+## Native Mistral chat, reasoning, tools and streaming
+mistral = ["swiftide-integrations/mistral"]
 
 ## Groq 
 groq = ["swiftide-integrations/groq"]

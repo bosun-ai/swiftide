@@ -14,12 +14,9 @@ use swiftide_core::chat_completion::{
     ChatMessage, ReasoningItem, ReasoningStatus, errors::LanguageModelError,
 };
 
-use super::chat_completion::message_to_openai;
-use super::chat_completion_adapter::{
-    ChatCompletionAdapter, CompletionData, ContentData, DeltaData,
-};
-
-pub(super) struct MistralAdapter;
+use super::messages::message_to_openai;
+use super::types::{CompletionData, ContentData, DeltaData};
+use super::{ChatFormat, bifrost::GatewayReasoning};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Completion {
@@ -36,6 +33,8 @@ struct Choice {
 struct Message {
     content: Option<Content>,
     tool_calls: Option<Vec<ChatCompletionMessageToolCalls>>,
+    #[serde(flatten)]
+    reasoning: GatewayReasoning,
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,6 +52,8 @@ struct StreamChoice {
 struct Delta {
     content: Option<Content>,
     tool_calls: Option<Vec<ChatCompletionMessageToolCallChunk>>,
+    #[serde(flatten)]
+    reasoning: GatewayReasoning,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,7 +65,7 @@ enum Content {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-enum ContentChunk {
+pub(super) enum ContentChunk {
     Text {
         text: String,
     },
@@ -77,7 +78,7 @@ enum ContentChunk {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-enum ThinkingText {
+pub(super) enum ThinkingText {
     Text { text: String },
 }
 
@@ -131,6 +132,9 @@ impl From<Completion> for CompletionData {
         };
         if let Some(choice) = completion.choices.into_iter().next() {
             result.content = choice.message.content.map(Into::into).unwrap_or_default();
+            if result.content.reasoning.is_none() {
+                result.content.reasoning = choice.message.reasoning.into_items();
+            }
             result.tool_calls = choice.message.tool_calls;
         }
         result
@@ -145,6 +149,9 @@ impl From<Chunk> for DeltaData {
         };
         if let Some(choice) = chunk.choices.into_iter().next() {
             result.content = choice.delta.content.map(Into::into).unwrap_or_default();
+            if result.content.reasoning.is_none() {
+                result.content.reasoning = choice.delta.reasoning.into_items();
+            }
             result.tool_calls = choice.delta.tool_calls;
         }
         result
@@ -156,11 +163,6 @@ fn messages_to_mistral(messages: &[ChatMessage]) -> Result<Vec<Value>, LanguageM
     let mut thinking = Vec::new();
     for message in messages {
         if let ChatMessage::Reasoning(item) = message {
-            if item.provider_metadata.is_some() {
-                return Err(LanguageModelError::permanent(
-                    "Native Mistral cannot replay reasoning metadata from another wire format",
-                ));
-            }
             if item.encrypted_content.is_some() {
                 return Err(LanguageModelError::permanent(
                     "Mistral cannot replay encrypted reasoning from another provider",
@@ -206,26 +208,28 @@ fn messages_to_mistral(messages: &[ChatMessage]) -> Result<Vec<Value>, LanguageM
     Ok(result)
 }
 
-impl ChatCompletionAdapter for MistralAdapter {
-    type Completion = Completion;
-    type Chunk = Chunk;
-
-    fn request_body(
-        request: CreateChatCompletionRequest,
-        messages: &[ChatMessage],
-    ) -> Result<Value, LanguageModelError> {
-        let mut body = serde_json::to_value(request).map_err(LanguageModelError::permanent)?;
-        let object = body.as_object_mut().expect("chat request is an object");
-        object.remove("user");
+pub(super) fn request_body(
+    request: CreateChatCompletionRequest,
+    messages: &[ChatMessage],
+    format: ChatFormat,
+) -> Result<Value, LanguageModelError> {
+    let mut body = serde_json::to_value(request).map_err(LanguageModelError::permanent)?;
+    let object = body.as_object_mut().expect("chat request is an object");
+    object.remove("user");
+    if format == ChatFormat::Native {
         if let Some(max_tokens) = object.remove("max_completion_tokens") {
             object.insert("max_tokens".into(), max_tokens);
         }
         if let Some(seed) = object.remove("seed") {
             object.insert("random_seed".into(), seed);
         }
-        object.insert("messages".into(), json!(messages_to_mistral(messages)?));
-        Ok(body)
     }
+    let mut messages = messages_to_mistral(messages)?;
+    if format == ChatFormat::Bifrost {
+        super::bifrost::encode_history(&mut messages)?;
+    }
+    object.insert("messages".into(), json!(messages));
+    Ok(body)
 }
 
 #[cfg(test)]
@@ -270,18 +274,5 @@ mod tests {
             json!({"role": "assistant", "content": expected})
         );
         assert_eq!(converted[1], json!({"role": "user", "content": "Continue"}));
-    }
-
-    #[test]
-    fn gateway_metadata_is_not_reinterpreted_as_native_thinking() {
-        let message = ChatMessage::new_reasoning(ReasoningItem {
-            content: Some(vec!["gateway thinking".into()]),
-            provider_metadata: Some(json!({"openai_chat_completions": {"reasoning_details": []}})),
-            ..Default::default()
-        });
-        assert!(matches!(
-            messages_to_mistral(&[message]),
-            Err(LanguageModelError::PermanentError(_))
-        ));
     }
 }
