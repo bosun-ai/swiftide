@@ -46,6 +46,9 @@ rmcp = { workspace = true, optional = true, default-features = false, features =
 
 [dev-dependencies]
 swiftide-core = { path = "../swiftide-core", features = ["test-utils"] }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.33", features = ["openai"] }
+async-openai = { workspace = true, features = ["rustls"] }
+wiremock.workspace = true
 test-log.workspace = true
 temp-dir.workspace = true
 insta.workspace = true

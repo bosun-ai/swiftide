@@ -22,6 +22,7 @@ use swiftide_core::{
     AgentContext, ToolBox,
     chat_completion::{
         ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
+        errors::ToolError,
     },
     prompt::Prompt,
 };
@@ -99,7 +100,8 @@ pub struct Agent {
     /// the LLM.
     ///
     /// The limit is hashed based on the tool call name and arguments, so the limit is per tool
-    /// call.
+    /// call, including unavailable tools. Call IDs do not affect the limit. A limit of zero stops
+    /// after the first failure.
     ///
     /// This limit is _not_ reset when the agent is stopped.
     #[builder(default = 3)]
@@ -641,32 +643,39 @@ impl Agent {
 
         let mut handles = vec![];
         for tool_call in tool_calls {
-            let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
+            let tool = self.find_tool_by_name(tool_call.name());
+            if tool.is_some() {
+                tracing::info!("Calling tool `{}`", tool_call.name());
+            } else {
                 tracing::warn!("Tool {} not found", tool_call.name());
-                continue;
-            };
-            tracing::info!("Calling tool `{}`", tool_call.name());
+            }
 
-            // let tool_args = tool_call.args().map(String::from);
             let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
             invoke_hooks!(BeforeTool, self, &tool_call);
 
-            let tool_span = tracing::info_span!(
-                "tool",
-                "otel.name" = format!("tool.{}", tool.name().as_ref()),
-            )
-            .or_current();
+            let tool_span =
+                tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool_call.name()),)
+                    .or_current();
 
             let handle_tool_call = tool_call.clone();
             let handle = tokio::spawn(
-                async move { tool.invoke(&*context, &handle_tool_call).await }
-                    .instrument(tool_span.clone()),
+                async move {
+                    match tool {
+                        Some(tool) => tool.invoke(&*context, &handle_tool_call).await,
+                        None => Err(ToolError::unknown(anyhow::anyhow!(
+                            "Unknown tool '{}'. Use an available tool.",
+                            handle_tool_call.name()
+                        ))),
+                    }
+                }
+                .instrument(tool_span.clone()),
             );
 
             handles.push((handle, tool_call, tool_span));
         }
 
+        let mut terminal_error = None;
         for (handle, tool_call, tool_span) in handles {
             let mut output = handle
                 .await
@@ -695,7 +704,10 @@ impl Agent {
                 if stop {
                     self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
                         .await;
-                    return Err(error.into());
+                    // Already dispatched calls must still have their results recorded in order.
+                    if terminal_error.is_none() {
+                        terminal_error = Some(AgentError::from(error));
+                    }
                 }
                 continue;
             }
@@ -713,7 +725,7 @@ impl Agent {
             }
         }
 
-        Ok(())
+        terminal_error.map_or(Ok(()), Err)
     }
 
     fn find_tool_by_name(&self, tool_name: &str) -> Option<Box<dyn Tool>> {
@@ -767,14 +779,10 @@ impl Agent {
         tool_call.hash(&mut s);
         let hash = s.finish();
 
-        if let Some(retries) = self.tool_retries_counter.get_mut(&hash) {
-            let val = *retries >= self.tool_retry_limit;
-            *retries += 1;
-            val
-        } else {
-            self.tool_retries_counter.insert(hash, 1);
-            false
-        }
+        let retries = self.tool_retries_counter.entry(hash).or_default();
+        let over_limit = *retries >= self.tool_retry_limit;
+        *retries += 1;
+        over_limit
     }
 
     /// Add a message to the agent's context
@@ -956,6 +964,9 @@ fn trace_tool_output(tool_call: &ToolCall, output: &ToolOutput) {
         );
     }
 }
+
+#[cfg(test)]
+mod unknown_tool_tests;
 
 #[cfg(test)]
 mod tests {
