@@ -8,15 +8,17 @@ use async_openai::types::responses::{
     FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, ImageDetail, IncludeEnum,
     InputContent, InputFileArgs, InputImageContent, InputItem, InputParam, InputTextContent,
     MessageType, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus,
-    ReasoningArgs, ReasoningSummary, Response, ResponseFormatJsonSchema, ResponseStream,
-    ResponseStreamEvent, ResponseTextParam, Role, Status, TextResponseFormatConfiguration, Tool,
-    ToolChoiceOptions, ToolChoiceParam,
+    ReasoningArgs, ReasoningItemContent, ReasoningSummary, ReasoningTextContent, Response,
+    ResponseFormatJsonSchema, ResponseStream, ResponseStreamEvent, ResponseTextParam, Role, Status,
+    SummaryPart, SummaryTextContent, TextResponseFormatConfiguration, Tool, ToolChoiceOptions,
+    ToolChoiceParam,
 };
 use base64::Engine as _;
 use futures_util::Stream;
 use swiftide_core::chat_completion::{
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ChatMessageContentPart,
-    ChatMessageContentSource, ReasoningItem, ToolCall, ToolOutput, ToolSpec, Usage,
+    ChatMessageContentSource, ReasoningItem, ReasoningStatus, ToolCall, ToolOutput, ToolSpec,
+    Usage,
 };
 
 use super::tool_schema::OpenAiToolSchema;
@@ -41,8 +43,18 @@ where
     let mut args = base_request_args(client, model)?;
 
     let options = client.options();
-    let include_reasoning = options.reasoning_effort.is_some();
-    let input_items = chat_messages_to_input_items(request.messages(), include_reasoning)?;
+    let input_items = chat_messages_to_input_items(
+        request.messages(),
+        options.replay_plaintext_reasoning.unwrap_or(false),
+    )?;
+    if input_items.iter().any(|item| {
+        matches!(
+            item,
+            InputItem::Item(async_openai::types::responses::Item::Reasoning(_))
+        )
+    }) {
+        args.store(false);
+    }
     args.input(InputParam::Items(input_items));
 
     if !request.tools_spec().is_empty() {
@@ -156,7 +168,7 @@ fn tool_spec_to_responses_tool(spec: &ToolSpec) -> Result<Tool> {
 
 fn chat_messages_to_input_items(
     messages: &[ChatMessage],
-    include_reasoning: bool,
+    replay_plaintext_reasoning: bool,
 ) -> LmResult<Vec<InputItem>> {
     let mut items = Vec::with_capacity(messages.len());
 
@@ -224,27 +236,11 @@ fn chat_messages_to_input_items(
                 ));
             }
             ChatMessage::Reasoning(item) => {
-                if !include_reasoning
-                    || item.encrypted_content.is_none()
-                    || item
-                        .encrypted_content
-                        .as_ref()
-                        .is_some_and(String::is_empty)
-                {
-                    continue;
+                if let Some(reasoning) = reasoning_item_to_input(item, replay_plaintext_reasoning) {
+                    items.push(InputItem::Item(
+                        async_openai::types::responses::Item::Reasoning(reasoning),
+                    ));
                 }
-
-                let reasoning_item = async_openai::types::responses::ReasoningItem {
-                    id: item.id.clone(),
-                    summary: Vec::new(),
-                    content: None,
-                    encrypted_content: item.encrypted_content.clone(),
-                    status: None,
-                };
-
-                items.push(InputItem::Item(
-                    async_openai::types::responses::Item::Reasoning(reasoning_item),
-                ));
             }
             ChatMessage::Summary(content) => {
                 items.push(message_item(Role::Assistant, content.clone())?);
@@ -253,6 +249,53 @@ fn chat_messages_to_input_items(
     }
 
     Ok(items)
+}
+
+fn reasoning_item_to_input(
+    item: &ReasoningItem,
+    replay_plaintext: bool,
+) -> Option<async_openai::types::responses::ReasoningItem> {
+    let has_encrypted = item
+        .encrypted_content
+        .as_ref()
+        .is_some_and(|text| !text.is_empty());
+    let has_plaintext = !item.summary.is_empty()
+        || item
+            .content
+            .as_ref()
+            .is_some_and(|content| !content.is_empty());
+    if !(has_encrypted || replay_plaintext && has_plaintext) {
+        return None;
+    }
+
+    let mut reasoning = async_openai::types::responses::ReasoningItem {
+        id: item.id.clone(),
+        summary: Vec::new(),
+        content: None,
+        encrypted_content: item.encrypted_content.clone(),
+        status: None,
+    };
+    if replay_plaintext {
+        reasoning.summary = item
+            .summary
+            .iter()
+            .map(|text| SummaryPart::SummaryText(SummaryTextContent { text: text.clone() }))
+            .collect();
+        reasoning.content = item.content.as_ref().map(|content| {
+            content
+                .iter()
+                .map(|text| {
+                    ReasoningItemContent::ReasoningText(ReasoningTextContent { text: text.clone() })
+                })
+                .collect()
+        });
+        reasoning.status = item.status.map(|status| match status {
+            ReasoningStatus::InProgress => OutputStatus::InProgress,
+            ReasoningStatus::Completed => OutputStatus::Completed,
+            ReasoningStatus::Incomplete => OutputStatus::Incomplete,
+        });
+    }
+    Some(reasoning)
 }
 
 fn message_item(role: Role, content: String) -> LmResult<InputItem> {
@@ -1271,7 +1314,7 @@ mod tests {
             ..Default::default()
         });
 
-        let items = chat_messages_to_input_items(&[message], true).expect("conversion succeeds");
+        let items = chat_messages_to_input_items(&[message], false).expect("conversion succeeds");
         assert_eq!(items.len(), 1);
 
         let InputItem::Item(async_openai::types::responses::Item::Reasoning(reasoning_item)) =
@@ -1286,6 +1329,66 @@ mod tests {
             reasoning_item.encrypted_content.as_deref(),
             Some("encrypted")
         );
+    }
+
+    #[test]
+    fn test_native_reasoning_replay_is_encrypted_only_without_effort() {
+        let client = OpenAI::builder()
+            .default_prompt_model("gpt-5")
+            .build()
+            .unwrap();
+        let plaintext = ReasoningItem {
+            id: Some("rs_plaintext".into()),
+            content: Some(vec!["Private reasoning".into()]),
+            summary: vec!["Summary".into()],
+            status: Some(ReasoningStatus::Completed),
+            ..Default::default()
+        };
+        let encrypted = ReasoningItem {
+            id: Some("rs_encrypted".into()),
+            encrypted_content: Some("opaque".into()),
+            ..plaintext.clone()
+        };
+        let request = ChatCompletionRequest::from(vec![
+            ChatMessage::Reasoning(plaintext),
+            ChatMessage::Reasoning(encrypted),
+        ]);
+        let create = build_responses_request_from_chat(&client, &request).unwrap();
+        assert_eq!(create.store, Some(false));
+        assert!(create.reasoning.is_none());
+        assert_eq!(
+            serde_json::to_value(create.input).unwrap(),
+            json!([{
+                "type": "reasoning", "id": "rs_encrypted", "summary": [],
+                "encrypted_content": "opaque"
+            }])
+        );
+    }
+
+    #[test]
+    fn test_plaintext_replay_preserves_status_and_summary_only_items() {
+        for status in [
+            ReasoningStatus::InProgress,
+            ReasoningStatus::Completed,
+            ReasoningStatus::Incomplete,
+        ] {
+            let item = ReasoningItem {
+                summary: vec!["Summary".into()],
+                status: Some(status),
+                ..Default::default()
+            };
+            assert!(reasoning_item_to_input(&item, false).is_none());
+            let replayed = reasoning_item_to_input(&item, true).unwrap();
+            assert_eq!(reasoning_item_from_response(replayed), item);
+        }
+        for encrypted_content in [None, Some(String::new())] {
+            let item = ReasoningItem {
+                encrypted_content,
+                ..Default::default()
+            };
+            assert!(reasoning_item_to_input(&item, true).is_none());
+            assert!(reasoning_item_to_input(&item, false).is_none());
+        }
     }
 
     #[test]
