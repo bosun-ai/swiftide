@@ -39,7 +39,12 @@ impl ChatCompletion for Mistral {
     }
     #[tracing::instrument(skip_all)]
     async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
-        match self.stream_chat(request).await {
+        let stream = if self.use_responses_api {
+            self.stream_responses(request).await
+        } else {
+            self.stream_chat(request).await
+        };
+        match stream {
             Ok(stream) => stream,
             Err(error) => error.into(),
         }
@@ -109,6 +114,9 @@ impl Mistral {
         request: &ChatCompletionRequest<'_>,
         schema: Option<Schema>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
+        if self.use_responses_api {
+            return self.complete_responses(request, schema).await;
+        }
         let body = self.chat_request(request, false, schema)?;
         let model = self
             .default_options

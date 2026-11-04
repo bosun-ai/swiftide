@@ -1,4 +1,4 @@
-//! Mistral Chat Completions, independent of Swiftide's `OpenAI` client.
+//! Mistral Chat Completions and Responses, independent of Swiftide's `OpenAI` client.
 //!
 //! Uses async-openai's unchanged HTTP client, request builders, tool and usage types with
 //! Mistral-specific response decoding. Thinking stays separate from visible text and is replayed
@@ -33,8 +33,27 @@
 //!     .build().unwrap();
 //! ```
 //!
+//! Opt into Mistral's stateless [Responses preview](https://docs.mistral.ai/inference/conversations/responses)
+//! with `use_responses_api(true)`. This supports text, images/files, function tools, structured
+//! output and streaming. Plaintext reasoning items, IDs and statuses survive persisted agent
+//! history and are replayed even when the next turn omits a reasoning effort. Storage, background
+//! requests, `previous_response_id`, automatic truncation and `random_seed` are not supported.
+//! The same Responses format can be used through a compatible Bifrost `/v1/responses` endpoint;
+//! `ChatFormat` affects only Chat Completions. Gateway routing/preview support must be configured
+//! separately. This is not an adapter for arbitrary signed/encrypted gateway reasoning metadata.
+//!
+//! ```no_run
+//! use swiftide_integrations::mistral::{Mistral, Options, ReasoningEffort};
+//! let client = Mistral::builder()
+//!     .use_responses_api(true)
+//!     .default_prompt_model("mistral-large-4")
+//!     .default_options(Options::builder().reasoning_effort(ReasoningEffort::High))
+//!     .build().unwrap();
+//! ```
+//!
 //! Run `cargo run -p swiftide-integrations --features mistral --example mistral -- --stream`
-//! for a two-turn tool/reasoning example (makes paid requests).
+//! for a two-turn tool/reasoning example; add `--responses` for the Responses preview (makes
+//! paid requests).
 
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
 use derive_builder::Builder;
@@ -52,6 +71,9 @@ mod error;
 #[cfg(test)]
 mod error_tests;
 mod messages;
+mod responses;
+#[cfg(test)]
+mod responses_tests;
 mod simple_prompt;
 mod structured_prompt;
 #[cfg(test)]
@@ -78,10 +100,15 @@ pub enum ChatFormat {
     Bifrost,
 }
 
-/// Native Mistral client. It implements chat, streaming, simple and structured prompting.
+/// Mistral client. It implements chat, streaming, simple and structured prompting over Chat
+/// Completions (default) or the stateless Responses preview (opt-in).
 #[derive(Clone, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Mistral {
+    /// Use Mistral's stateless `/responses` preview instead of Chat Completions. Plaintext
+    /// reasoning is retained and replayed. `chat_format` applies only to Chat Completions.
+    #[builder(default)]
+    use_responses_api: bool,
     #[builder(default)]
     chat_format: ChatFormat,
     #[builder(default = "default_client()", setter(custom))]
@@ -103,6 +130,7 @@ impl std::fmt::Debug for Mistral {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Mistral")
             .field("model", &self.default_options.prompt_model)
+            .field("use_responses_api", &self.use_responses_api)
             .field("stream_full", &self.stream_full)
             .finish_non_exhaustive()
     }
@@ -125,6 +153,7 @@ pub struct Options {
     pub max_tokens: Option<u32>,
     pub temperature: Option<f32>,
     pub top_p: Option<f32>,
+    /// Chat Completions only; rejected when the Responses API is selected.
     pub random_seed: Option<i64>,
     pub parallel_tool_calls: Option<bool>,
     pub reasoning_effort: Option<ReasoningEffort>,

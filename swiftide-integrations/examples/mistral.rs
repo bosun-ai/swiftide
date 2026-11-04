@@ -1,8 +1,9 @@
-//! Direct Mistral Chat Completions, without Bifrost or another gateway.
+//! Direct Mistral Chat Completions or Responses, without Bifrost or another gateway.
 //!
 //! Set `MISTRAL_API_KEY`, then run:
 //! `cargo run -p swiftide-integrations --features mistral --example mistral`
-//! Add `-- --stream` for streaming. Defaults: `MISTRAL_MODEL=mistral-large-4` and
+//! Add `-- --stream` for streaming or `-- --responses --stream` for the Responses preview.
+//! Defaults: `MISTRAL_MODEL=mistral-large-4` and
 //! `MISTRAL_REASONING_EFFORT=high`. Large 4 also supports `low` and `medium`.
 //! Running this example makes two real provider requests and can incur charges.
 //!
@@ -81,6 +82,7 @@ async fn main() -> Result<()> {
     let (usage_tx, mut usage_rx) = tokio::sync::mpsc::unbounded_channel();
     let client = Mistral::builder()
         .client(async_openai::Client::with_config(config))
+        .use_responses_api(std::env::args().any(|argument| argument == "--responses"))
         .default_prompt_model(model)
         .default_options(options)
         .on_usage(move |usage| {
