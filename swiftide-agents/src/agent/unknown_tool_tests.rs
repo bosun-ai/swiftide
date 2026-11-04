@@ -128,6 +128,99 @@ async fn unknown_tool_retries_ignore_call_ids_and_finish_the_batch() {
 }
 
 #[tokio::test]
+async fn retry_limits_preserve_control_results_in_either_order() {
+    for output in [
+        ToolOutput::Stop(None),
+        ToolOutput::FeedbackRequired(None),
+        ToolOutput::AgentFailed(None),
+    ] {
+        for limit in [0, 1, 3] {
+            for names in [["bash", "control"], ["control", "bash"]] {
+                let tool = MockTool::new("control");
+                tool.expect_invoke_ok(output.clone(), Some("{}"));
+                let stopped = Arc::new(Mutex::new(Vec::new()));
+                let stop_hook = stopped.clone();
+                let mut agent = Agent::builder()
+                    .llm(&MockChatCompletion::new())
+                    .tools([tool])
+                    .tool_retry_limit(limit)
+                    .on_stop(
+                        move |_: &mut Agent, reason: StopReason, _: Option<&AgentError>| {
+                            stop_hook.lock().unwrap().push(reason);
+                            Box::pin(async { Ok(()) })
+                        },
+                    )
+                    .build()
+                    .unwrap();
+                for attempt in 0..limit {
+                    agent
+                        .invoke_tools(&calls(&["bash"], attempt))
+                        .await
+                        .unwrap();
+                }
+                let calls = calls(&names, limit);
+                let control = calls.iter().find(|call| call.name() == "control").unwrap();
+
+                agent.invoke_tools(&calls).await.unwrap();
+
+                let expected_reason = match &output {
+                    ToolOutput::Stop(_) => StopReason::RequestedByTool(control.clone(), None),
+                    ToolOutput::FeedbackRequired(_) => StopReason::FeedbackRequired {
+                        tool_call: control.clone(),
+                        payload: None,
+                    },
+                    ToolOutput::AgentFailed(_) => StopReason::AgentFailed(None),
+                    _ => unreachable!(),
+                };
+                assert_eq!(agent.stop_reason(), Some(&expected_reason));
+                assert_eq!(*stopped.lock().unwrap(), vec![expected_reason]);
+                let history = agent.history().await.unwrap();
+                let expected_calls = calls
+                    .iter()
+                    .filter(|call| call.name() != "control" || !output.is_feedback_required())
+                    .collect::<Vec<_>>();
+                assert_eq!(history.len(), limit + expected_calls.len());
+                for (message, call) in history[limit..].iter().zip(expected_calls) {
+                    let ChatMessage::ToolOutput(recorded, result) = message else {
+                        panic!("expected a tool result");
+                    };
+                    assert_eq!(recorded, call);
+                    if call.name() == "control" {
+                        assert_eq!(result, &output);
+                    } else {
+                        assert!(result.is_fail());
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn retry_limits_still_return_errors_when_resuming_a_stopped_agent() {
+    let mut agent = Agent::builder()
+        .llm(&MockChatCompletion::new())
+        .tool_retry_limit(0)
+        .build()
+        .unwrap();
+    agent.stop(StopReason::Other("previous run".into())).await;
+    let calls = calls(&["bash"], 0);
+    agent
+        .add_message(ChatMessage::Assistant(None, Some(calls.clone())))
+        .await
+        .unwrap();
+
+    assert!(matches!(
+        agent.run().await,
+        Err(AgentError::ToolError(ToolError::Unknown(_)))
+    ));
+    let history = agent.history().await.unwrap();
+    assert!(
+        matches!(history.last(), Some(ChatMessage::ToolOutput(call, ToolOutput::Fail(_))) if call == &calls[0])
+    );
+}
+
+#[tokio::test]
 async fn unknown_tools_preserve_approval_suspension() {
     // There are no expectations: the wrapped tool must never execute without approval.
     let tool = ApprovalRequired::new(MockTool::new("shell_command"));

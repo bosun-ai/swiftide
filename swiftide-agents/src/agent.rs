@@ -676,6 +676,7 @@ impl Agent {
         }
 
         let mut terminal_error = None;
+        let mut control_stop = false;
         for (handle, tool_call, tool_span) in handles {
             let mut output = handle
                 .await
@@ -688,10 +689,7 @@ impl Agent {
                 tool_span.in_scope(|| trace_tool_output(tool_call, &failed));
                 let stop = self.tool_calls_over_limit(tool_call);
                 if stop {
-                    tracing::error!(
-                        ?error,
-                        "Tool call failed, retry limit reached, stopping agent: {error}",
-                    );
+                    tracing::error!(?error, "Tool call failed, retry limit reached: {error}",);
                 } else {
                     tracing::warn!(
                         ?error,
@@ -701,19 +699,17 @@ impl Agent {
                 }
                 self.add_message(ChatMessage::ToolOutput(tool_call.clone(), failed))
                     .await?;
-                if stop {
-                    self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
-                        .await;
+                if stop && terminal_error.is_none() {
                     // Already dispatched calls must still have their results recorded in order.
-                    if terminal_error.is_none() {
-                        terminal_error = Some(AgentError::from(error));
-                    }
+                    terminal_error = Some((tool_call, AgentError::from(error)));
                 }
                 continue;
             }
 
             let output = output?;
             tool_span.in_scope(|| trace_tool_output(tool_call, &output));
+            control_stop |=
+                output.is_stop() || output.is_feedback_required() || output.is_agent_failed();
             self.handle_control_tools(tool_call, &output).await;
 
             // Feedback required leaves the tool call open
@@ -725,7 +721,16 @@ impl Agent {
             }
         }
 
-        terminal_error.map_or(Ok(()), Err)
+        // An intentional control stop or feedback suspension takes priority over retry limits.
+        if let Some((tool_call, error)) = terminal_error
+            && !control_stop
+        {
+            self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
+                .await;
+            return Err(error);
+        }
+
+        Ok(())
     }
 
     fn find_tool_by_name(&self, tool_name: &str) -> Option<Box<dyn Tool>> {
