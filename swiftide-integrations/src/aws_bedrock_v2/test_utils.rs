@@ -107,6 +107,14 @@ where
 {
     use tracing_subscriber::prelude::*;
 
+    // A callsite first used on another thread can cache Interest::never for a lone scoped
+    // subscriber. Keep an unfiltered global subscriber alive alongside each scoped capture.
+    static TRACING: std::sync::Once = std::sync::Once::new();
+    TRACING.call_once(|| {
+        tracing::subscriber::set_global_default(tracing_subscriber::registry())
+            .expect("test tracing subscriber");
+    });
+
     let events = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let subscriber = tracing_subscriber::registry().with(EventCaptureLayer {
         events: events.clone(),
@@ -123,4 +131,25 @@ where
     let recorded_events = events.lock().expect("event capture mutex").clone();
 
     (result, recorded_events)
+}
+
+#[cfg(feature = "langfuse")]
+#[test]
+fn captures_events_first_registered_on_another_thread() {
+    fn emit_failure() {
+        tracing::debug!(langfuse.status_message = "test failure");
+    }
+
+    let ((), events) = run_with_langfuse_event_capture(|| async {
+        std::thread::spawn(emit_failure).join().unwrap();
+        emit_failure();
+    });
+
+    assert_eq!(
+        events
+            .iter()
+            .filter_map(|event| event.get("langfuse.status_message"))
+            .collect::<Vec<_>>(),
+        ["test failure"]
+    );
 }
