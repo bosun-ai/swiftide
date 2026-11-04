@@ -71,10 +71,7 @@ pub(super) struct DeltaData {
 
 impl DeltaData {
     pub(super) fn apply(self, state: &mut ChatCompletionResponse) -> Option<Vec<ReasoningItem>> {
-        // Tool buffers persist between frames; visible text deltas do not.
-        if let Some(delta) = &mut state.delta {
-            delta.message_chunk = None;
-        }
+        // The core helper clears absent text deltas while preserving tool buffers.
         state.append_message_delta(self.content.text.as_deref());
         if let Some(items) = &self.content.reasoning {
             accumulate_reasoning(state.reasoning.get_or_insert_with(Vec::new), items);

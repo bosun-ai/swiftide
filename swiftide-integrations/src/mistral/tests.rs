@@ -411,6 +411,13 @@ async fn direct_reasoning_stream_transitions_and_replays(stream_full: bool) {
     }
     drop(stream);
     assert_eq!(snapshots.len(), 7);
+    assert_eq!(
+        snapshots
+            .iter()
+            .filter_map(|snapshot| snapshot.delta.as_ref()?.message_chunk.as_deref())
+            .collect::<String>(),
+        "bonjour"
+    );
     assert!(snapshots[1].message.is_none());
     assert_eq!(
         snapshots[1].reasoning.as_ref().unwrap()[0]
