@@ -36,6 +36,10 @@ mod tool_schema;
 /// Converse-based integration with AWS Bedrock.
 ///
 /// This integration uses Bedrock's unified Converse APIs (`Converse` + `ConverseStream`).
+///
+/// The default client uses the AWS SDK's credential provider chain, including environment
+/// variables, shared profiles, SSO, and IAM roles. AWS Console login sessions are not enabled;
+/// use another supported credential provider or supply a configured Bedrock client.
 #[derive(Builder, Clone)]
 #[builder(setter(into, strip_option))]
 pub struct AwsBedrock {

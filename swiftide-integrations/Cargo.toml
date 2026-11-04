@@ -87,7 +87,6 @@ spider = { workspace = true, optional = true, default-features = true, features 
 htmd = { workspace = true, optional = true }
 aws-config = { workspace = true, features = [
   "behavior-version-latest",
-  "credentials-login",
   "default-https-client",
   "rt-tokio",
 ], optional = true }
