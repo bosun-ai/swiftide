@@ -1,0 +1,15 @@
+[package]
+name = "ask-your-codebase"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Swiftide showcase: ask-your-codebase"
+
+[dependencies]
+swiftide = { path = "../../swiftide" }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }

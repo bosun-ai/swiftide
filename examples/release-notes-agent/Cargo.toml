@@ -1,0 +1,15 @@
+[package]
+name = "release-notes-agent"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Swiftide showcase: release-notes-agent"
+
+[dependencies]
+swiftide = { path = "../../swiftide" }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }

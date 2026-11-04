@@ -1,0 +1,15 @@
+[package]
+name = "docs-qa"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Swiftide showcase: docs-qa"
+
+[dependencies]
+swiftide = { path = "../../swiftide" }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
