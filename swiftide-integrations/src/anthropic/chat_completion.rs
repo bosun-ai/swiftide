@@ -208,31 +208,47 @@ fn append_delta_from_chunk(chunk: &MessagesStreamEvent, lock: &mut ChatCompletio
                 lock.append_tool_call_delta(*index, None, None, Some(partial_json));
             }
         },
-        #[allow(clippy::cast_possible_truncation)]
         MessagesStreamEvent::MessageDelta { usage, .. } => {
             if let Some(usage) = usage {
-                let input_tokens = usage.input_tokens.unwrap_or_default();
-                let output_tokens = usage.output_tokens.unwrap_or_default();
-                let total_tokens = input_tokens + output_tokens;
-                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+                merge_cumulative_usage(lock, usage);
             }
         }
 
         MessagesStreamEvent::MessageStart { message, usage } => {
             if let Some(usage) = usage {
-                let input_tokens = usage.input_tokens.unwrap_or_default();
-                let output_tokens = usage.output_tokens.unwrap_or_default();
-                let total_tokens = input_tokens + output_tokens;
-                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+                merge_cumulative_usage(lock, usage);
             }
             if let Some(message_usage) = &message.usage {
-                let input_tokens = message_usage.input_tokens.unwrap_or_default();
-                let output_tokens = message_usage.output_tokens.unwrap_or_default();
-                let total_tokens = input_tokens + output_tokens;
-                lock.append_usage_delta(input_tokens, output_tokens, total_tokens);
+                merge_cumulative_usage(lock, message_usage);
             }
         }
         _ => {}
+    }
+}
+
+/// Anthropic reports usage cumulatively: `message_start` carries the input tokens and the first
+/// output tokens, and the `usage` of `message_delta` is the running total, not an increment. Only
+/// add what has not been counted yet so the usage is not inflated.
+fn merge_cumulative_usage(
+    lock: &mut ChatCompletionResponse,
+    usage: &async_anthropic::types::Usage,
+) {
+    let (counted_input, counted_output) = lock
+        .usage
+        .as_ref()
+        .map_or((0, 0), |u| (u.prompt_tokens, u.completion_tokens));
+
+    let input_tokens = usage
+        .input_tokens
+        .unwrap_or_default()
+        .saturating_sub(counted_input);
+    let output_tokens = usage
+        .output_tokens
+        .unwrap_or_default()
+        .saturating_sub(counted_output);
+
+    if input_tokens > 0 || output_tokens > 0 || lock.usage.is_none() {
+        lock.append_usage_delta(input_tokens, output_tokens, input_tokens + output_tokens);
     }
 }
 
@@ -805,5 +821,46 @@ mod tests {
 
         assert_eq!(built.messages.len(), 2);
         assert_eq!(built.messages[1].content.len(), 2);
+    }
+
+    #[test]
+    fn test_streaming_usage_is_not_double_counted() {
+        let mut response = ChatCompletionResponse::default();
+
+        let start = MessagesStreamEvent::MessageStart {
+            message: async_anthropic::types::MessageStart {
+                id: "msg_1".into(),
+                model: "claude".into(),
+                role: "assistant".into(),
+                content: vec![],
+                stop_reason: None,
+                stop_sequence: None,
+                usage: Some(async_anthropic::types::Usage {
+                    input_tokens: Some(25),
+                    output_tokens: Some(1),
+                }),
+            },
+            usage: None,
+        };
+        append_delta_from_chunk(&start, &mut response);
+
+        // `message_delta` usage is cumulative, so it already includes the tokens from the start
+        let delta = |input_tokens, output_tokens| MessagesStreamEvent::MessageDelta {
+            delta: async_anthropic::types::MessageDelta {
+                stop_reason: None,
+                stop_sequence: None,
+            },
+            usage: Some(async_anthropic::types::Usage {
+                input_tokens,
+                output_tokens: Some(output_tokens),
+            }),
+        };
+        append_delta_from_chunk(&delta(Some(25), 15), &mut response);
+        append_delta_from_chunk(&delta(None, 15), &mut response);
+
+        let usage = response.usage.expect("usage");
+        assert_eq!(usage.prompt_tokens, 25);
+        assert_eq!(usage.completion_tokens, 15);
+        assert_eq!(usage.total_tokens, 40);
     }
 }
