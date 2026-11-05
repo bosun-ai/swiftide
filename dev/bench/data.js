@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793899794457,
+  "lastUpdate": 1793906374530,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36047,6 +36047,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2115906,
             "range": "± 4158",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7ac949740250963227fa0a8bf9f40b496b8fff87",
+          "message": "fix(indexing): keep the original error when a step before a batch fails (#1224)\n\n## Why\n\nWhen an LLM-backed transformer fails inside an indexing pipeline,\napplications want to know what kind of failure it was. A transient\nprovider error (rate limit, overload) can be retried; a permanent one\ncannot. Today `Pipeline::run` returns an `anyhow::Error` that prints the\nright message, but `err.downcast_ref::<LanguageModelError>()` returns\n`None` as soon as the pipeline has a batch step (`then_in_batch`, or\nbatched storage) after the failing transformer.\n\n## What\n\nThe pipeline batches nodes with `try_chunks`. When an earlier step\nfails, futures-util wraps the error in `TryChunksError`, which formats\nlike the inner error but has no `source()`. Converting that into\n`anyhow::Error` kept the message and lost the chain.\n\nThe fix unwraps `TryChunksError` at both batching sites and returns the\noriginal error. Messages are unchanged.\n\nBefore:\n```rust\nlet err = pipeline.then(MetadataQAText::new(llm)).then_in_batch(Embed::new(embed)).run().await.unwrap_err();\nerr.downcast_ref::<LanguageModelError>() // None\n```\n\nAfter:\n```rust\nerr.downcast_ref::<LanguageModelError>() // Some(TransientError(..))\n```\n\n## How it was checked\n\nFour new tests in `swiftide-indexing` cover the single-step,\nbatch-transformer, batched-storage and failing-batch-transformer paths.\nWith the old conversion put back, the two batching tests fail; with the\nfix they pass. `cargo test -p swiftide-indexing`, `cargo clippy -p\nswiftide-indexing -p swiftide-core --all-targets -- -D warnings`, `cargo\n+nightly fmt --all -- --check` and `cargo check -p swiftide --features\nopenai` are green.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Preserved original errors from batched processing, making typed errors\navailable for inspection and recovery across transformation and storage\nsteps.\n* Improved error handling consistency between single-item and batched\npipeline operations.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T20:06:54+01:00",
+          "tree_id": "4b8d48b9850a0d1adb87f8625938ab06278b137b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/7ac949740250963227fa0a8bf9f40b496b8fff87"
+        },
+        "date": 1793906371952,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 971498,
+            "range": "± 22994",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 265222,
+            "range": "± 2815",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2509,
+            "range": "± 2965",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 9397,
+            "range": "± 9389",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 37073,
+            "range": "± 38609",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4160425,
+            "range": "± 16775",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2093033,
+            "range": "± 7954",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16632987,
+            "range": "± 91808",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2097872,
+            "range": "± 3790",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66598466,
+            "range": "± 220543",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2114894,
+            "range": "± 6165",
             "unit": "ns/iter"
           }
         ]
