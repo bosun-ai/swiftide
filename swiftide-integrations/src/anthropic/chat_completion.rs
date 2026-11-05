@@ -24,7 +24,7 @@ use swiftide_core::metrics::emit_usage;
 
 #[async_trait]
 impl ChatCompletion for Anthropic {
-    #[tracing::instrument(skip_all, err)]
+    #[tracing::instrument(skip_all, err(level = "warn"))]
     async fn complete(
         &self,
         request: &ChatCompletionRequest<'_>,
