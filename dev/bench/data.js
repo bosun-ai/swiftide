@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793906480685,
+  "lastUpdate": 1793906497793,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36371,6 +36371,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2110925,
             "range": "± 6464",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "669c4e5f3fef37783c4a6a0cf7f12f0ccaba2354",
+          "message": "fix(core): log retried LLM attempts at WARN and give-up once at ERROR (#1229)\n\n## Why\n\nWith `LanguageModelWithBackOff`, every failed attempt that is about to\nbe retried was logged at ERROR by the providers' `#[instrument(err)]`,\nso a request that eventually succeeds still produced a wall of errors.\nThe wrapper itself logged nothing, and the ERROR line only showed the\nouter message (`error sending request for url …`), hiding the actual\ncause such as `Connection refused`. A wrong base URL therefore looked\nlike a flaky network for a full minute of retries.\n\n## What\n\n- Provider spans (OpenAI and the providers built on it, Anthropic,\nBedrock) record errors at WARN: `#[instrument(skip_all, err(level =\n\"warn\"))]`. The Langfuse variants keep their `langfuse.type` field.\n`openai/structured_prompt.rs` had the plain and the Langfuse span\nstacked; it now follows its siblings.\n- `LanguageModelWithBackOff` logs each retried attempt at WARN with the\nattempt number, the delay and the full cause chain, and logs the final\nfailure once at ERROR with the attempt count. The three copies of the\n\"retry only transient errors\" mapping are one function, also used by the\nstreaming path.\n\nBefore, a gateway that was down:\n```\nERROR swiftide_integrations::openai::chat_completion: error=http error: error sending request for url (http://127.0.0.1:8080/v1/chat/completions)\nERROR … (repeated for every attempt)\n```\n\nAfter:\n```\nWARN  swiftide_core::indexing_decorators: Language model request failed, retrying attempt=1 retry_in=1.2s error=Transient error: http error: error sending request for url (…): Connection refused\n…\nERROR swiftide_core::indexing_decorators: Language model request failed, giving up attempts=6 error=…: Connection refused\n```\n\nConnection-refused errors stay classified as transient: a provider\nrestarting is a real case, and the cause is now visible on the first\nattempt. No public API changes.\n\n## How it was checked\n\nNew tests in `swiftide-core` capture tracing events with a small\ntest-only subscriber: two transient failures then success emit two WARNs\n(`attempt=1`, `attempt=2`) and no ERROR; giving up emits exactly one\nERROR with the attempt count; a permanent error emits one ERROR and no\nWARN; and the cause chain includes `Connection refused`. `cargo test -p\nswiftide-core` (five consecutive runs), `cargo test -p\nswiftide-integrations --features openai`, `cargo clippy -p swiftide-core\n-p swiftide-integrations --features\nopenai,anthropic,ollama,groq,gemini,open-router,dashscope,aws-bedrock,fastembed\n--all-targets -- -D warnings`, the same with `langfuse`, `cargo +nightly\nfmt --all -- --check`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T20:11:35+01:00",
+          "tree_id": "427c7935c595a34c8b3c999c957c4fe4b81b043b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/669c4e5f3fef37783c4a6a0cf7f12f0ccaba2354"
+        },
+        "date": 1793906495239,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 675444,
+            "range": "± 28359",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 197851,
+            "range": "± 2598",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1533,
+            "range": "± 1712",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5599,
+            "range": "± 6491",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 21846,
+            "range": "± 21376",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4156682,
+            "range": "± 12490",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2081673,
+            "range": "± 4073",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16577833,
+            "range": "± 114361",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2087527,
+            "range": "± 4652",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66239263,
+            "range": "± 229970",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2100857,
+            "range": "± 3530",
             "unit": "ns/iter"
           }
         ]
