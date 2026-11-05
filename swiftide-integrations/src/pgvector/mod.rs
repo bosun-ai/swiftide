@@ -320,8 +320,7 @@ mod tests {
         let mut query = Query::<states::Pending>::new("test_query");
         query.embedding = Some(vec![1.0; 384]);
 
-        let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
-        search_strategy.with_top_k(2);
+        let search_strategy = SimilaritySingleEmbedding::default().with_top_k(2);
 
         let result = test_context
             .pgv_storage
@@ -452,8 +451,8 @@ mod tests {
                 let mut query = Query::<states::Pending>::new("test_query");
                 query.embedding = Some(vector.clone());
 
-                let mut search_strategy = SimilaritySingleEmbedding::<()>::default();
-                search_strategy.with_top_k(nodes.len() as u64);
+                let search_strategy =
+                    SimilaritySingleEmbedding::default().with_top_k(nodes.len() as u64);
 
                 let result = test_context
                     .pgv_storage

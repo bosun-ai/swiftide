@@ -71,10 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let query_pipeline = query::Pipeline::from_search_strategy(
         // Return a large amount of documents because we have a large context window
         // By default it uses the Combined fields, no need to configure
-        HybridSearch::default()
-            .with_top_n(20)
-            .with_top_k(20)
-            .to_owned(),
+        HybridSearch::default().with_top_n(20).with_top_k(20),
     )
     // Generate subquestions on the initial query to increase our query coverage
     .then_transform_query(query_transformers::GenerateSubquestions::from_client(

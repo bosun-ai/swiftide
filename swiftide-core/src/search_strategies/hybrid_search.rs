@@ -68,7 +68,8 @@ impl<FILTER: SearchFilter> HybridSearch<FILTER> {
     }
 
     /// Sets the maximum amount of total documents retrieved
-    pub fn with_top_k(&mut self, top_k: u64) -> &mut Self {
+    #[must_use]
+    pub fn with_top_k(mut self, top_k: u64) -> Self {
         self.top_k = top_k;
         self
     }
@@ -78,7 +79,8 @@ impl<FILTER: SearchFilter> HybridSearch<FILTER> {
     }
     /// Sets the maximum amount of documents to be retrieved
     /// per individual query
-    pub fn with_top_n(&mut self, top_n: u64) -> &mut Self {
+    #[must_use]
+    pub fn with_top_n(mut self, top_n: u64) -> Self {
         self.top_n = top_n;
         self
     }
@@ -89,10 +91,8 @@ impl<FILTER: SearchFilter> HybridSearch<FILTER> {
     /// Sets the vector field for the dense vector
     ///
     /// Defaults to `EmbeddedField::Combined`
-    pub fn with_dense_vector_field(
-        &mut self,
-        dense_vector_field: impl Into<EmbeddedField>,
-    ) -> &mut Self {
+    #[must_use]
+    pub fn with_dense_vector_field(mut self, dense_vector_field: impl Into<EmbeddedField>) -> Self {
         self.dense_vector_field = dense_vector_field.into();
         self
     }
@@ -104,10 +104,11 @@ impl<FILTER: SearchFilter> HybridSearch<FILTER> {
     /// Sets the vector field for the sparse vector (if applicable)
     ///
     /// Defaults to `EmbeddedField::Combined`
+    #[must_use]
     pub fn with_sparse_vector_field(
-        &mut self,
+        mut self,
         sparse_vector_field: impl Into<EmbeddedField>,
-    ) -> &mut Self {
+    ) -> Self {
         self.sparse_vector_field = sparse_vector_field.into();
         self
     }
@@ -119,5 +120,40 @@ impl<FILTER: SearchFilter> HybridSearch<FILTER> {
 
     pub fn filter(&self) -> Option<&FILTER> {
         self.filter.as_ref()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn setters_chain_from_default() {
+        let strategy = HybridSearch::<()>::default()
+            .with_top_k(5)
+            .with_top_n(7)
+            .with_dense_vector_field(EmbeddedField::Chunk)
+            .with_sparse_vector_field(EmbeddedField::Metadata("title".into()));
+
+        assert_eq!(strategy.top_k(), 5);
+        assert_eq!(strategy.top_n(), 7);
+        assert_eq!(strategy.dense_vector_field(), &EmbeddedField::Chunk);
+        assert_eq!(
+            strategy.sparse_vector_field(),
+            &EmbeddedField::Metadata("title".into())
+        );
+        assert!(strategy.filter().is_none());
+    }
+
+    #[test]
+    fn with_filter_keeps_configured_values() {
+        let strategy = HybridSearch::<()>::default()
+            .with_top_k(5)
+            .with_top_n(7)
+            .with_filter("a = 1".to_string());
+
+        assert_eq!(strategy.top_k(), 5);
+        assert_eq!(strategy.top_n(), 7);
+        assert_eq!(strategy.filter().map(String::as_str), Some("a = 1"));
     }
 }

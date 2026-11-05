@@ -108,8 +108,7 @@ impl DocsQa {
         query::Pipeline::from_search_strategy(
             HybridSearch::default()
                 .with_top_n(CANDIDATES)
-                .with_top_k(CANDIDATES)
-                .to_owned(),
+                .with_top_k(CANDIDATES),
         )
         // ANCHOR_END: hybrid
     }
