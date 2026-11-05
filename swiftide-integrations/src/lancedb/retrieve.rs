@@ -242,11 +242,19 @@ mod test {
             .unwrap();
         assert_eq!(result.documents().len(), 0);
 
-        let search_strategy = SimilaritySingleEmbedding::<()>::default();
+        let search_strategy = SimilaritySingleEmbedding::default();
         let result = lancedb
             .retrieve(&search_strategy, query.clone())
             .await
             .unwrap();
         assert_eq!(result.documents().len(), 3);
+
+        // The unfiltered strategy infers inline, even though `LanceDB` also retrieves with a
+        // `String` filter
+        let result = lancedb
+            .retrieve(&SimilaritySingleEmbedding::default().with_top_k(2), query)
+            .await
+            .unwrap();
+        assert_eq!(result.documents().len(), 2);
     }
 }

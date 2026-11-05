@@ -33,8 +33,7 @@ pub async fn ask(
     }
 
     // ANCHOR: query_pipeline
-    let mut search: SimilaritySingleEmbedding = SimilaritySingleEmbedding::default();
-    search.with_top_k(top_k);
+    let search = SimilaritySingleEmbedding::default().with_top_k(top_k);
 
     let pipeline = query::Pipeline::from_search_strategy(search)
         // Rephrase the question into several, to widen what the search can match

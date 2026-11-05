@@ -181,8 +181,7 @@ builder with `.prompt_template(..)`.
 `examples/ask-your-codebase/src/query.rs`:
 
 ```rust
-let mut search: SimilaritySingleEmbedding = SimilaritySingleEmbedding::default();
-search.with_top_k(top_k);
+let search = SimilaritySingleEmbedding::default().with_top_k(top_k);
 
 let pipeline = query::Pipeline::from_search_strategy(search)
     // Rephrase the question into several, to widen what the search can match
@@ -252,8 +251,7 @@ impl From<Query<states::Answered>> for Answer {
 query::Pipeline::from_search_strategy(
     HybridSearch::default()
         .with_top_n(CANDIDATES)
-        .with_top_k(CANDIDATES)
-        .to_owned(),
+        .with_top_k(CANDIDATES),
 )
 ```
 
