@@ -107,26 +107,23 @@ where
 {
     use tracing_subscriber::prelude::*;
 
-    // A callsite first used on another thread can cache Interest::never for a lone scoped
-    // subscriber. Keep an unfiltered global subscriber alive alongside each scoped capture.
-    static TRACING: std::sync::Once = std::sync::Once::new();
-    TRACING.call_once(|| {
-        tracing::subscriber::set_global_default(tracing_subscriber::registry())
-            .expect("test tracing subscriber");
-    });
-
     let events = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let subscriber = tracing_subscriber::registry().with(EventCaptureLayer {
         events: events.clone(),
     });
-    let dispatch = tracing::Dispatch::new(subscriber);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("test runtime");
 
-    let result =
-        tracing::dispatcher::with_default(&dispatch, || runtime.block_on(future_factory()));
+    // Keep two unfiltered dispatches alive during capture. With a lone scoped subscriber,
+    // tracing can cache Interest::never for a callsite first used on another thread.
+    // Both scopes are local to this test, leaving any process-wide subscriber in place.
+    let background = tracing::Dispatch::new(tracing_subscriber::registry());
+    let result = tracing::dispatcher::with_default(&background, || {
+        let capture = tracing::Dispatch::new(subscriber);
+        tracing::dispatcher::with_default(&capture, || runtime.block_on(future_factory()))
+    });
 
     let recorded_events = events.lock().expect("event capture mutex").clone();
 
