@@ -2,7 +2,9 @@ use std::sync::Mutex;
 
 use super::*;
 use crate::{test_utils::MockTool, tools::control::ApprovalRequired};
-use swiftide_core::{chat_completion::errors::ToolError, test_utils::MockChatCompletion};
+use swiftide_core::{
+    ToolFeedback, chat_completion::errors::ToolError, test_utils::MockChatCompletion,
+};
 
 fn calls(names: &[&str], attempt: usize) -> Vec<ToolCall> {
     names
@@ -17,6 +19,30 @@ fn calls(names: &[&str], attempt: usize) -> Vec<ToolCall> {
                 .unwrap()
         })
         .collect()
+}
+
+#[test]
+fn pending_calls_match_ids_only_after_the_latest_assistant_message() {
+    let calls = calls(&["shell_command", "shell_command"], 0);
+    let mut history = vec![
+        // An earlier result with a reused ID cannot answer a later call.
+        ChatMessage::Assistant(None, Some(vec![calls[1].clone()])),
+        ChatMessage::ToolOutput(calls[1].clone(), ToolOutput::text("earlier batch")),
+        ChatMessage::Assistant(None, Some(calls.clone())),
+        ChatMessage::ToolOutput(calls[0].clone(), ToolOutput::text("completed")),
+    ];
+    assert_eq!(pending_tool_calls(&history), vec![calls[1].clone()]);
+
+    history.push(ChatMessage::ToolOutput(
+        calls[1].clone(),
+        ToolOutput::text("done"),
+    ));
+    assert!(pending_tool_calls(&history).is_empty());
+
+    history.push(ChatMessage::Assistant(None, Some(calls)));
+    assert_eq!(pending_tool_calls(&history).len(), 2);
+    history.push(ChatMessage::Assistant(Some("Done".into()), None));
+    assert!(pending_tool_calls(&history).is_empty());
 }
 
 #[tokio::test]
@@ -231,17 +257,159 @@ async fn unknown_tools_preserve_approval_suspension() {
         .unwrap();
     let calls = calls(&["bash", "shell_command", "unavailable"], 0);
 
+    agent
+        .add_message(ChatMessage::Assistant(None, Some(calls.clone())))
+        .await
+        .unwrap();
     agent.invoke_tools(&calls).await.unwrap();
 
     let (pending, _) = agent.stop_reason().unwrap().as_feedback_required().unwrap();
     assert_eq!(pending, &calls[1]);
     let history = agent.history().await.unwrap();
-    assert_eq!(history.len(), 2);
-    for (message, call) in history.iter().zip([&calls[0], &calls[2]]) {
+    assert_eq!(history.len(), 3);
+    for (message, call) in history[1..].iter().zip([&calls[0], &calls[2]]) {
         let ChatMessage::ToolOutput(recorded, ToolOutput::Fail(_)) = message else {
             panic!("only unavailable tools should have results while approval is pending");
         };
         assert_eq!(recorded, call);
+    }
+
+    assert!(matches!(
+        agent.run_once().await,
+        Err(AgentError::UnfulfilledToolCalls)
+    ));
+}
+
+#[tokio::test]
+async fn completion_loop_resumes_only_unanswered_calls() {
+    let calls = calls(&["shell_command", "shell_command"], 0);
+    let restored = vec![
+        ChatMessage::Assistant(None, Some(calls.clone())),
+        ChatMessage::ToolOutput(calls[0].clone(), ToolOutput::text("already completed")),
+    ];
+    let mut expected = restored.clone();
+    expected.push(ChatMessage::ToolOutput(
+        calls[1].clone(),
+        ToolOutput::text("resumed once"),
+    ));
+    let tool = MockTool::new("shell_command");
+    tool.expect_invoke_ok(ToolOutput::text("resumed once"), Some("{}"));
+    let llm = MockChatCompletion::new();
+    let mut agent = Agent::builder()
+        .llm(&llm)
+        .tools([tool])
+        .on_start(move |agent: &mut Agent| {
+            let restored = restored.clone();
+            Box::pin(async move { agent.context().add_messages(restored).await })
+        })
+        .build()
+        .unwrap();
+    llm.expect_complete(
+        ChatCompletionRequest::builder()
+            .messages(expected)
+            .tool_specs(agent.tools().iter().map(swiftide_core::Tool::tool_spec))
+            .build()
+            .unwrap(),
+        Ok(
+            swiftide_core::chat_completion::ChatCompletionResponse::builder()
+                .message("Done")
+                .build()
+                .unwrap(),
+        ),
+    );
+
+    agent.run_once().await.unwrap();
+    assert_eq!(llm.received_expectations.lock().unwrap().len(), 1);
+}
+
+#[tokio::test]
+async fn mixed_batches_resume_only_unanswered_approval_calls() {
+    for names in [
+        ["approved", "bash", "shell_command"],
+        ["bash", "approved", "shell_command"],
+        ["bash", "shell_command", "approved"],
+    ] {
+        for approved in [false, true] {
+            for new_query in [None, Some("Continue")] {
+                let known = MockTool::new("shell_command");
+                known.expect_invoke_ok(ToolOutput::text("executed once"), Some("{}"));
+                let pending = MockTool::new("approved");
+                if approved {
+                    pending.expect_invoke_ok(ToolOutput::text("approved once"), Some("{}"));
+                }
+                let llm = MockChatCompletion::new();
+                let mut agent = Agent::builder()
+                    .llm(&llm)
+                    .tools([known.boxed(), ApprovalRequired::new(pending).boxed()])
+                    .tool_retry_limit(0)
+                    .build()
+                    .unwrap();
+                let calls = calls(&names, 0);
+                agent
+                    .add_message(ChatMessage::Assistant(None, Some(calls.clone())))
+                    .await
+                    .unwrap();
+                agent.invoke_tools(&calls).await.unwrap();
+                let (pending, _) = agent.stop_reason().unwrap().as_feedback_required().unwrap();
+                let pending = pending.clone();
+                let feedback = if approved {
+                    ToolFeedback::approved()
+                } else {
+                    ToolFeedback::refused()
+                };
+                agent
+                    .context()
+                    .feedback_received(&pending, &feedback)
+                    .await
+                    .unwrap();
+
+                let mut expected = agent.history().await.unwrap();
+                assert_eq!(expected.len(), 3);
+                expected.push(ChatMessage::ToolOutput(
+                    pending,
+                    ToolOutput::text(if approved {
+                        "approved once"
+                    } else {
+                        "This tool call was refused"
+                    }),
+                ));
+                if let Some(query) = new_query {
+                    expected.push(ChatMessage::new_user(query));
+                }
+                llm.expect_complete(
+                    ChatCompletionRequest::builder()
+                        .messages(expected)
+                        .tool_specs(agent.tools().iter().map(swiftide_core::Tool::tool_spec))
+                        .build()
+                        .unwrap(),
+                    Ok(
+                        swiftide_core::chat_completion::ChatCompletionResponse::builder()
+                            .message("Done")
+                            .build()
+                            .unwrap(),
+                    ),
+                );
+
+                if let Some(query) = new_query {
+                    agent.query_once(query).await.unwrap();
+                } else {
+                    agent.run_once().await.unwrap();
+                }
+                assert_eq!(llm.received_expectations.lock().unwrap().len(), 1);
+                let history = agent.history().await.unwrap();
+                for call in &calls {
+                    assert_eq!(
+                        history
+                            .iter()
+                            .filter(|message| matches!(message,
+                                ChatMessage::ToolOutput(recorded, _) if recorded.id() == call.id()
+                            ))
+                            .count(),
+                        1
+                    );
+                }
+            }
+        }
     }
 }
 

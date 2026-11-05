@@ -505,18 +505,10 @@ impl Agent {
                 break;
             }
 
-            // If the last message contains tool calls that have not been completed,
-            // run the tools first
-            if let Some(ChatMessage::Assistant(_, tool_calls)) =
-                maybe_tool_call_without_output(&messages)
-                && tool_calls
-                    .as_ref()
-                    .is_some_and(|tool_calls| !tool_calls.is_empty())
-            {
+            let pending = pending_tool_calls(&messages);
+            if !pending.is_empty() {
                 tracing::debug!("Uncompleted tool calls found; invoking tools");
-                if let Some(tool_calls) = tool_calls.as_ref() {
-                    self.invoke_tools(tool_calls).await?;
-                }
+                self.invoke_tools(&pending).await?;
                 // Move on to the next tick, so that the
                 continue;
             }
@@ -875,7 +867,7 @@ impl Agent {
             .history()
             .await
             .map_err(AgentError::MessageHistoryError)?;
-        Ok(maybe_tool_call_without_output(&history).is_some())
+        Ok(!pending_tool_calls(&history).is_empty())
     }
 
     async fn invoke_pending_tool_calls(&mut self) -> Result<(), AgentError> {
@@ -885,14 +877,9 @@ impl Agent {
             .await
             .map_err(AgentError::MessageHistoryError)?;
 
-        if let Some(ChatMessage::Assistant(_, tool_calls)) =
-            maybe_tool_call_without_output(&history)
-            && tool_calls
-                .as_ref()
-                .is_some_and(|tool_calls| !tool_calls.is_empty())
-            && let Some(tool_calls) = tool_calls.as_ref()
-        {
-            self.invoke_tools(tool_calls).await?;
+        let pending = pending_tool_calls(&history);
+        if !pending.is_empty() {
+            self.invoke_tools(&pending).await?;
         }
 
         Ok(())
@@ -929,24 +916,28 @@ impl Agent {
     }
 }
 
-/// Reverse searches through messages, if it encounters a tool call before encountering an output,
-/// it will return the chat message with the tool calls, otherwise it returns None
-fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessage> {
+/// Returns unanswered calls from the latest assistant message, in their original order.
+/// Only results after that message with matching call IDs count as answers.
+fn pending_tool_calls(messages: &[ChatMessage]) -> Vec<ToolCall> {
+    let mut completed = HashSet::new();
     for message in messages.iter().rev() {
-        if let ChatMessage::ToolOutput(..) = message {
-            return None;
-        }
-
-        if let ChatMessage::Assistant(_, tool_calls) = message
-            && tool_calls
-                .as_ref()
-                .is_some_and(|tool_calls| !tool_calls.is_empty())
-        {
-            return Some(message);
+        match message {
+            ChatMessage::ToolOutput(call, _) => {
+                completed.insert(call.id());
+            }
+            ChatMessage::Assistant(_, tool_calls) => {
+                return tool_calls
+                    .iter()
+                    .flatten()
+                    .filter(|call| !completed.contains(call.id()))
+                    .cloned()
+                    .collect();
+            }
+            _ => (),
         }
     }
 
-    None
+    Vec::new()
 }
 
 /// Records the tool output that ends up in the history, i.e. after `AfterTool` hooks have run.
