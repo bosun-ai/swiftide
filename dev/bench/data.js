@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793906462553,
+  "lastUpdate": 1793906480685,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36263,6 +36263,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2112874,
             "range": "± 3244",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a9e21b774e12673386ad2d7dafe9a0e726b30712",
+          "message": "feat(integrations): set api_base and api_key on the OpenAI builder (#1228)\n\n## Why\n\nPointing `OpenAI` at an OpenAI-compatible endpoint (a local gateway,\nvLLM, LiteLLM, Ollama's OpenAI API) is a common need, and today it\nrequires building an `async_openai` config and client by hand and\npassing it through `.client(..)`. All four showcase examples carried\nthat boilerplate.\n\n## What\n\n`OpenAI::builder()` gets `.api_base(..)` and `.api_key(..)`. They\nconfigure the client the builder creates; anything left unset falls back\nto async-openai's defaults (`OPENAI_API_BASE`, `OPENAI_API_KEY`). A\nclient passed to `.client(..)` replaces that configuration entirely, and\nwhichever is called last wins. Both rules are in the rustdoc.\n\nBefore:\n```rust\nlet config = OpenAIConfig::new().with_api_base(url).with_api_key(key);\nlet openai = OpenAI::builder()\n    .client(async_openai::Client::with_config(config))\n    .default_prompt_model(model)\n    .build()?;\n```\n\nAfter:\n```rust\nlet openai = OpenAI::builder()\n    .api_base(url)\n    .api_key(key)\n    .default_prompt_model(model)\n    .build()?;\n```\n\nInternally the builder's client field is a private `ClientSource` enum\n(default, configured by the setters, or explicit), so an explicit client\nis never half-overwritten. The setters exist on `OpenAIBuilder` only;\nAzure and the other `Config` types keep the generic `.client(..)` path.\nThe showcase crates, README and the agent skill use the new form. Not a\nbreaking change.\n\n## How it was checked\n\nA wiremock test sends a prompt through\n`.api_base(mock.uri()).api_key(\"test\")` and asserts `POST\n/chat/completions` arrives once with `Authorization: Bearer test`. Three\nmore tests cover setter order and the precedence between the setters and\n`.client(..)`. `cargo test -p swiftide-integrations --features openai`,\n`cargo clippy -p swiftide-integrations --features openai --all-targets\n-- -D warnings`, `cargo test --doc -p swiftide-integrations --features\nopenai`, `cargo check` on the four showcase crates, `cargo check -p\nswiftide-integrations --features\nopenai,ollama,open-router,groq,gemini,dashscope`, `cargo +nightly fmt\n--all -- --check`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T20:09:19+01:00",
+          "tree_id": "a467a6de8bde21b98c01fece54ef5a64efec2ada",
+          "url": "https://github.com/bosun-ai/swiftide/commit/a9e21b774e12673386ad2d7dafe9a0e726b30712"
+        },
+        "date": 1793906477682,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 941729,
+            "range": "± 25410",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 262245,
+            "range": "± 1371",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1931,
+            "range": "± 2047",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7080,
+            "range": "± 6845",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26999,
+            "range": "± 25097",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4171872,
+            "range": "± 12870",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2091382,
+            "range": "± 5522",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16702244,
+            "range": "± 78172",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2095849,
+            "range": "± 5833",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66734056,
+            "range": "± 174462",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2110925,
+            "range": "± 6464",
             "unit": "ns/iter"
           }
         ]
