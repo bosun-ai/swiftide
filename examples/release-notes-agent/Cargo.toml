@@ -22,8 +22,6 @@ swiftide = { path = "../../swiftide", default-features = false, features = [
 ] }
 tokio = { workspace = true, features = ["full"] }
 anyhow = { workspace = true }
-# For pointing swiftide's `OpenAI` client at another base URL (`OPENAI_BASE_URL`)
-async-openai = { workspace = true }
 # `#[derive(swiftide::Tool)]` expands to `#[async_trait::async_trait]`
 async-trait = { workspace = true }
 clap = { version = "4.6", features = ["derive", "env"] }

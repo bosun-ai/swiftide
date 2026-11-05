@@ -2,7 +2,7 @@
 use std::{env, fmt};
 
 use anyhow::{Result, anyhow};
-use swiftide::integrations::openai::{OpenAI, OpenAIConfig};
+use swiftide::integrations::openai::OpenAI;
 
 /// The API used when `OPENAI_BASE_URL` is not set.
 const OPENAI_API: &str = "https://api.openai.com/v1";
@@ -64,11 +64,9 @@ impl LlmEndpoint {
 
     /// An `OpenAI` client that streams deltas only, rather than the accumulated message.
     pub fn client(&self) -> Result<OpenAI> {
-        let config = OpenAIConfig::new()
-            .with_api_base(&self.base_url)
-            .with_api_key(&self.api_key);
         Ok(OpenAI::builder()
-            .client(async_openai::Client::with_config(config))
+            .api_base(&self.base_url)
+            .api_key(&self.api_key)
             .default_prompt_model(&self.model)
             .use_responses_api(matches!(self.api, OpenAiApi::Responses))
             .stream_full(false)

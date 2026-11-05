@@ -20,7 +20,6 @@ swiftide = { path = "../../swiftide", features = [
 ] }
 tokio = { workspace = true, features = ["full"] }
 anyhow = { workspace = true }
-async-openai = { workspace = true }
 cargo_metadata = "0.23"
 clap = { version = "4.6", features = ["derive", "env"] }
 dotenvy = "0.15"

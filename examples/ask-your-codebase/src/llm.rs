@@ -9,7 +9,7 @@ use std::{fmt, sync::Arc, time::Duration};
 use anyhow::{Context as _, Result};
 use swiftide::{
     indexing::{BackoffConfiguration, LanguageModelWithBackOff},
-    integrations::openai::{OpenAI, OpenAIConfig},
+    integrations::openai::OpenAI,
     traits::SimplePrompt,
 };
 
@@ -83,12 +83,9 @@ impl LlmEndpoint {
     /// indexing fires many prompts concurrently. After `retry_budget` the error is returned, so
     /// an unreachable or broken endpoint fails instead of hanging.
     pub fn client(&self, retry_budget: Duration) -> Result<Arc<dyn SimplePrompt>> {
-        let config = OpenAIConfig::new()
-            .with_api_base(&self.base_url)
-            .with_api_key(&self.api_key);
-
         let openai = OpenAI::builder()
-            .client(async_openai::Client::with_config(config))
+            .api_base(&self.base_url)
+            .api_key(&self.api_key)
             .default_prompt_model(&self.model)
             .use_responses_api(matches!(self.api, OpenAiApi::Responses))
             .build()?;
