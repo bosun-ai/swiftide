@@ -32,9 +32,11 @@ const INDEX_RETRY_BUDGET: Duration = Duration::from_mins(1);
 /// How long `ask` retries a failing prompt before giving up.
 const ASK_RETRY_BUDGET: Duration = Duration::from_secs(30);
 
-/// Default log filter. Every failed attempt of a retried prompt is logged at ERROR by swiftide's
-/// `OpenAI` integration; those are hidden, and the final error is reported once instead.
-const DEFAULT_LOG_FILTER: &str = "error,swiftide_integrations=off";
+/// Default log filter. Swiftide logs each retried attempt at WARN and the final give-up at ERROR
+/// (target `swiftide_core::indexing_decorators`). Only errors are shown, the give-up log is
+/// switched off, and the final error is reported once by this program instead.
+const DEFAULT_LOG_FILTER: &str =
+    "error,swiftide_integrations=off,swiftide_core::indexing_decorators=off";
 
 #[derive(Debug, Parser)]
 #[command(

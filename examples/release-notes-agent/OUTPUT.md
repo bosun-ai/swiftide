@@ -1,7 +1,7 @@
 # Demo run
 
 A real run of the final build on the Swiftide repository itself: the 7 commits between `v0.33.0`
-and the `docs/showcases` branch, released as `0.34.0`.
+and the showcase changes on `master`, released as `0.34.0`.
 
 - **Endpoint:** an `OpenAI`-compatible gateway at `http://127.0.0.1:8080/v1` (Bifrost in front of
   AWS Bedrock), using chat completions.
