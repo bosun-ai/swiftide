@@ -6,7 +6,7 @@ use std::{
         Arc,
         atomic::{AtomicU64, Ordering},
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use anyhow::Result;
@@ -82,6 +82,8 @@ pub async fn index_codebase(
 ) -> Result<IndexReport> {
     let files_found = Tally::default();
     let files_changed = Tally::default();
+    // Wall clock, so the report includes loading (and on first use downloading) the models
+    let started = Instant::now();
 
     // ANCHOR: pipeline
     let stats = indexing::Pipeline::from_loader(
@@ -117,7 +119,7 @@ pub async fn index_codebase(
         files_found: files_found.total(),
         files_changed: files_changed.total(),
         chunks_indexed: stats.nodes_stored,
-        elapsed: stats.duration().unwrap_or_default(),
+        elapsed: started.elapsed(),
     })
 }
 

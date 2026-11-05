@@ -703,6 +703,14 @@ impl<T: Chunk> Pipeline<T> {
     ///
     /// They can either be run concurrently, alternated between or merged back together.
     ///
+    /// # Statistics
+    ///
+    /// Each branch gets its own [`StatsCollector`], seeded with a copy of the statistics
+    /// collected so far, so branches that are run separately each report only their own nodes.
+    /// A collector handle taken from this pipeline before splitting does not observe either
+    /// branch. Use [`Pipeline::merge`] to run both branches as one pipeline with one set of
+    /// statistics.
+    ///
     /// # Panics
     ///
     /// Panics if the receiving pipelines buffers are full or unavailable.
@@ -746,9 +754,13 @@ impl<T: Chunk> Pipeline<T> {
             .instrument(span.or_current()),
         );
 
-        let left_pipeline = pipeline_with_new_stream!(self, left_rx);
+        // Branches can be run on their own, so they must not share counts or
+        // timings with each other.
+        let mut left_pipeline = pipeline_with_new_stream!(self, left_rx);
+        left_pipeline.stats = Arc::new(StatsCollector::clone(&self.stats));
 
-        let right_pipeline = pipeline_with_new_stream!(self, right_rx);
+        let mut right_pipeline = pipeline_with_new_stream!(self, right_rx);
+        right_pipeline.stats = Arc::new(StatsCollector::clone(&self.stats));
 
         (left_pipeline, right_pipeline)
     }
@@ -758,6 +770,12 @@ impl<T: Chunk> Pipeline<T> {
     /// This is useful for merging two streams that have been split using the `split_by` method.
     ///
     /// The full stream can then be processed using the `run` method.
+    ///
+    /// # Statistics
+    ///
+    /// The merged pipeline keeps the [`StatsCollector`] of `self`, so running it reports the
+    /// nodes of both streams in one set of statistics. Anything recorded on the collector of
+    /// `other` before merging is discarded.
     #[must_use]
     pub fn merge(mut self, other: Self) -> Self {
         let stream = tokio_stream::StreamExt::merge(self.stream, other.stream);
@@ -1396,6 +1414,7 @@ mod tests {
         pipeline.run().await.unwrap();
     }
 
+    /// `run` returns the node counts and timing of the pipeline it ran.
     #[test_log::test(tokio::test)]
     async fn test_pipeline_statistics() {
         let mut loader = MockLoader::new();
@@ -1434,6 +1453,7 @@ mod tests {
         assert!(stats.duration().is_some());
     }
 
+    /// A collector handle taken before `run` ends with the same statistics `run` returns.
     #[test_log::test(tokio::test)]
     async fn test_run_returns_the_stats_a_shared_collector_observes() {
         let storage = MemoryStorage::default();
@@ -1454,6 +1474,59 @@ mod tests {
         assert_eq!(storage.get_all().await.len(), 2);
         assert!(stats.duration().is_some());
         assert_eq!(collector.get_stats(), stats);
+    }
+
+    /// Split branches run one after another each report only their own nodes.
+    #[test_log::test(tokio::test)]
+    async fn test_split_branches_run_separately_keep_their_own_stats() {
+        let (left, right) = Pipeline::from_stream(vec![
+            TextNode::new("left"),
+            TextNode::new("right"),
+            TextNode::new("right"),
+        ])
+        .split_by(|node| node.as_ref().is_ok_and(|node| node.chunk == "left"));
+
+        let left_collector = Arc::clone(left.stats_collector());
+
+        let left_stats = left
+            .then_store_with(MemoryStorage::default())
+            .run()
+            .await
+            .unwrap();
+        let right_stats = right
+            .then_store_with(MemoryStorage::default())
+            .run()
+            .await
+            .unwrap();
+
+        assert_eq!(left_stats.nodes_stored, 1);
+        assert_eq!(right_stats.nodes_stored, 2);
+        assert_eq!(left_collector.get_stats(), left_stats);
+        assert!(left_stats.duration().is_some());
+        assert!(right_stats.duration().is_some());
+    }
+
+    /// Merging split branches back together reports every node in one set of statistics.
+    #[test_log::test(tokio::test)]
+    async fn test_split_then_merge_reports_stats_for_the_whole_pipeline() {
+        let storage = MemoryStorage::default();
+        let (left, right) = Pipeline::from_stream(vec![
+            TextNode::new("left"),
+            TextNode::new("right"),
+            TextNode::new("right"),
+        ])
+        .split_by(|node| node.as_ref().is_ok_and(|node| node.chunk == "left"));
+
+        let stats = left
+            .merge(right)
+            .then_store_with(storage.clone())
+            .run()
+            .await
+            .unwrap();
+
+        assert_eq!(stats.nodes_processed, 3);
+        assert_eq!(stats.nodes_stored, 3);
+        assert_eq!(storage.get_all().await.len(), 3);
     }
 
     #[test_log::test(tokio::test)]

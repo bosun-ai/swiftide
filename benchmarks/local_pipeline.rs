@@ -8,6 +8,7 @@ use swiftide::{
     integrations::fastembed::FastEmbed,
 };
 
+/// Indexes the README with local embeddings into memory, once.
 async fn run_pipeline() -> Result<()> {
     Pipeline::from_loader(FileLoader::new("README.md").with_extensions(&["md"]))
         .then_chunk(ChunkMarkdown::from_chunk_range(20..256))

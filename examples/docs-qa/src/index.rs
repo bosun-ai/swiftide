@@ -39,6 +39,7 @@ numbering, no markdown, no code fences.
 {{ node.chunk }}";
 // ANCHOR_END: metadata_prompts
 
+/// Chunks, enriches and embeds the docs from `loader` into Qdrant; returns the run statistics.
 pub async fn index(
     loader: DocsLoader,
     llm: &RetryingModel,
