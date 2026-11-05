@@ -26,13 +26,16 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let ollama_client = integrations::ollama::Ollama::default()
         .with_default_prompt_model("llama3.1")
         .to_owned();
 
     let fastembed = integrations::fastembed::FastEmbed::try_default()?;
     let memory_store = MemoryStorage::default();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new("README.md"))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
         .then(MetadataQAText::new(ollama_client.clone()))
@@ -40,7 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .then_store_with(memory_store.clone())
         .run()
         .await?;
+    // ANCHOR_END: pipeline
 
+    // ANCHOR: output
     println!("Example results:");
     println!(
         "{}",
@@ -52,5 +57,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>()
             .join("\n")
     );
+    // ANCHOR_END: output
     Ok(())
 }

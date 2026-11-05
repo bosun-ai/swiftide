@@ -12,6 +12,7 @@ use swiftide::agents::tools::control::AgentCanFail;
 use swiftide::agents::{Agent, StopReason};
 use swiftide::traits::Tool;
 
+// ANCHOR: schema
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 enum FailureCategory {
@@ -43,11 +44,13 @@ struct FailureReport {
 fn failure_schema() -> Schema {
     schema_for!(FailureReport)
 }
+// ANCHOR_END: schema
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: tools
     let schema = failure_schema();
     let failure_tool = AgentCanFail::with_parameters_schema(schema.clone());
 
@@ -55,12 +58,16 @@ async fn main() -> Result<()> {
         "task_failed tool schema:\n{}",
         to_string_pretty(&failure_tool.tool_spec())?,
     );
+    // ANCHOR_END: tools
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-4o-mini")
         .default_embed_model("text-embedding-3-small")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: agent
     let mut builder = Agent::builder();
     builder
         .llm(&openai)
@@ -82,12 +89,15 @@ async fn main() -> Result<()> {
         });
 
     let mut agent = builder.build()?;
+    // ANCHOR_END: agent
 
+    // ANCHOR: run
     agent
         .query_once(
             "You must restore last night's database backup, but the only backup file is corrupted and no redundant copy exists. Report the failure.",
         )
         .await?;
+    // ANCHOR_END: run
 
     Ok(())
 }

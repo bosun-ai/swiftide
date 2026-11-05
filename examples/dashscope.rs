@@ -18,6 +18,7 @@ use temp_dir::TempDir;
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let client = DashscopeBuilder::default()
         .default_embed_model("text-embedding-v2")
         .default_prompt_model("qwen-long")
@@ -31,7 +32,9 @@ async fn main() -> anyhow::Result<()> {
         .table_name("swiftide_test")
         .build()
         .unwrap();
+    // ANCHOR_END: setup
 
+    // ANCHOR: indexing
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
         .with_default_llm_client(client.clone())
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
@@ -40,7 +43,9 @@ async fn main() -> anyhow::Result<()> {
         .then_store_with(lancedb.clone())
         .run()
         .await?;
+    // ANCHOR_END: indexing
 
+    // ANCHOR: query
     let pipeline = query::Pipeline::default()
         .then_transform_query(query_transformers::GenerateSubquestions::from_client(
             client.clone(),
@@ -53,8 +58,11 @@ async fn main() -> anyhow::Result<()> {
     let result = pipeline
         .query("What is swiftide? Please provide an elaborate explanation")
         .await?;
+    // ANCHOR_END: query
 
+    // ANCHOR: output
     println!("====");
     println!("{:?}", result.answer());
+    // ANCHOR_END: output
     Ok(())
 }

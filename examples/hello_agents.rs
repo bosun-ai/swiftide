@@ -26,6 +26,7 @@ use swiftide::{
     traits::{AgentContext, Command},
 };
 
+// ANCHOR: tools
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 struct CodeSearchRequest {
     /// Search query to pass to ripgrep
@@ -70,7 +71,7 @@ const READ_FILE: &str = "Read a file";
 async fn read_file(context: &dyn AgentContext, path: &str) -> Result<ToolOutput, ToolError> {
     let command_output = context
         .executor()
-        .exec_cmd(&Command::shell(format!("cat {path}")))
+        .exec_cmd(&Command::read_file(path))
         .await?;
 
     Ok(command_output.into())
@@ -96,6 +97,7 @@ async fn guess_a_number(
         Ok("Try again!".into())
     }
 }
+// ANCHOR_END: tools
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -103,11 +105,14 @@ async fn main() -> Result<()> {
 
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::gemini::Gemini::builder()
         .default_embed_model("gemini-embedding-exp-03-07")
         .default_prompt_model("gemini-2.0-flash")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: channel
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
 
     tokio::spawn(async move {
@@ -115,7 +120,9 @@ async fn main() -> Result<()> {
             println!("{msg}");
         }
     });
+    // ANCHOR_END: channel
 
+    // ANCHOR: agent
     agents::Agent::builder()
         .llm(&openai)
         .tools(vec![search_code(), read_file(), guess_a_number()])
@@ -140,6 +147,7 @@ async fn main() -> Result<()> {
         .build()?
         .query("In what file can I find an example of a swiftide agent? When you are done guess a number and stop")
         .await?;
+    // ANCHOR_END: agent
 
     Ok(())
 }

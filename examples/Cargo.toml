@@ -118,7 +118,7 @@ name = "fluvio"
 path = "fluvio.rs"
 
 [[example]]
-name = "kakfa"
+name = "kafka"
 path = "kafka.rs"
 
 [[example]]

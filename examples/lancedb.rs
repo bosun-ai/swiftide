@@ -16,6 +16,7 @@ use temp_dir::TempDir;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let openai_client = integrations::openai::OpenAI::builder()
         .default_embed_model("text-embedding-3-small")
         .default_prompt_model("gpt-4o-mini")
@@ -33,7 +34,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .table_name("swiftide_test")
         .build()
         .unwrap();
+    // ANCHOR_END: setup
 
+    // ANCHOR: indexing
     indexing::Pipeline::from_loader(FileLoader::new("README.md"))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
         .then(MetadataQAText::new(openai_client.clone()))
@@ -41,7 +44,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .then_store_with(lancedb.clone())
         .run()
         .await?;
+    // ANCHOR_END: indexing
 
+    // ANCHOR: query
     // By default the search strategy is SimilaritySingleEmbedding
     // which takes the latest query, embeds it, and does a similarity search
     //
@@ -62,11 +67,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             openai_client.clone(),
         ))
         .then_answer(answers::Simple::from_client(openai_client.clone()));
+    // ANCHOR_END: query
 
+    // ANCHOR: run
     let result = pipeline
         .query("What is swiftide? Please provide an elaborate explanation")
         .await?;
 
     println!("{:?}", result.answer());
+    // ANCHOR_END: run
     Ok(())
 }

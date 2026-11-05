@@ -19,6 +19,7 @@ use swiftide::{
     traits::{AgentContext, Command},
 };
 
+// ANCHOR: tools
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 struct FormatTimestampRequest {
     /// Prefix to prepend to the timestamp.
@@ -50,15 +51,19 @@ async fn format_timestamp(
         request.prefix, request.timestamp
     )))
 }
+// ANCHOR_END: tools
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let bedrock = AwsBedrock::builder()
         .default_prompt_model("global.anthropic.claude-sonnet-4-6")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: agent
     let mut agent = agents::Agent::builder()
         .llm(&bedrock)
         .tools(vec![current_utc_time(), format_timestamp()])
@@ -71,13 +76,16 @@ async fn main() -> Result<()> {
         })
         .limit(6)
         .build()?;
+    // ANCHOR_END: agent
 
+    // ANCHOR: run
     agent
         .query(
             "Call current_utc_time once. Then call format_timestamp with prefix \"UTC now: \" and \
              that timestamp. After that, report the formatted result and stop.",
         )
         .await?;
+    // ANCHOR_END: run
 
     Ok(())
 }

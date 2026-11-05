@@ -23,6 +23,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     static LOADER_TOPIC: &str = "loader";
     static STORAGE_TOPIC: &str = "storage";
 
@@ -44,11 +45,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .batch_size(2usize)
         .build()
         .unwrap();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(loader)
         .then_in_batch(Embed::new(FastEmbed::try_default().unwrap()).with_batch_size(10))
         .then_store_with(storage)
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }

@@ -21,6 +21,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let openai_client = integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-4o")
         .build()?;
@@ -33,14 +34,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .vector_size(384)
         .collection_name("swiftide-reranking")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: indexing
     indexing::Pipeline::from_loader(FileLoader::new("README.md"))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..2048))
         .then_in_batch(Embed::new(fastembed.clone()))
         .then_store_with(qdrant.clone())
         .run()
         .await?;
+    // ANCHOR_END: indexing
 
+    // ANCHOR: query
     // By default the search strategy is SimilaritySingleEmbedding
     // which takes the latest query, embeds it, and does a similarity search
     let pipeline = query::Pipeline::default()
@@ -51,11 +56,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .then_retrieve(qdrant.clone())
         .then_transform_response(reranker)
         .then_answer(answers::Simple::from_client(openai_client.clone()));
+    // ANCHOR_END: query
 
+    // ANCHOR: run
     let result = pipeline
         .query("What is swiftide? Please provide an elaborate explanation")
         .await?;
 
     println!("{:?}", result.answer());
+    // ANCHOR_END: run
     Ok(())
 }

@@ -21,11 +21,14 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let qdrant_url = std::env::var("QDRANT_URL")
         .as_deref()
         .unwrap_or("http://localhost:6334")
         .to_owned();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .then_in_batch(Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(
@@ -37,5 +40,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }
