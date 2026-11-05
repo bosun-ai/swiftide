@@ -272,11 +272,15 @@ pub async fn flush(&self) -> Result<()> {
 
 Swiftide's HTTP clients use rustls and need no setup: each client uses the process-wide rustls
 `CryptoProvider` when the application installed one, and otherwise its own built-in provider
-(aws-lc-rs for OpenAI-compatible clients, ring for Anthropic). Swiftide never installs a
-process-wide provider itself.
+(aws-lc-rs for OpenAI-compatible clients, ring for Anthropic). Anthropic uses rustls even when
+another crate (such as `fastembed`) enables native TLS on reqwest 0.12.
 
-Other crates call `rustls::ClientConfig::builder()` and rely on the process-wide provider, such as
-Redis over `rediss://`. Those fail when the build enables both rustls providers, for example
+Redis over `rediss://` needs a process-wide provider. If none is installed when it first
+connects, Swiftide installs aws-lc-rs; install your own before the first Redis call to use a
+different one.
+
+Other crates in your application that call `rustls::ClientConfig::builder()` rely on the
+process-wide provider and panic when the build enables both rustls providers, for example
 `openai` with `qdrant`, `fastembed` or `lancedb`. In that case install one at the start of `main`
 (requires a direct `rustls` dependency with the `aws_lc_rs` feature):
 

@@ -10,7 +10,7 @@ mod tool_schema;
 #[derive(Builder, Clone)]
 pub struct Anthropic {
     #[builder(
-        default = Arc::new(async_anthropic::Client::default()),
+        default = Arc::new(default_client()),
         setter(custom)
     )]
     client: Arc<async_anthropic::Client>,
@@ -60,6 +60,40 @@ impl Default for Options {
             prompt_model: "claude-3-5-sonnet-20241022".to_string(),
         }
     }
+}
+
+/// The default `async_anthropic` client, using rustls when the `rustls` feature is enabled.
+///
+/// `async_anthropic::Client::default()` uses `reqwest::Client::new()`, which picks native TLS when
+/// another crate enables it on reqwest 0.12 (for example `fastembed`). Selecting rustls explicitly
+/// keeps the TLS policy the same for every integration.
+#[cfg(feature = "rustls")]
+fn default_client() -> async_anthropic::Client {
+    // Mirrors `async_anthropic::Client::default()` (async-anthropic 0.6), except for the HTTP
+    // client.
+    let backoff = backoff::ExponentialBackoffBuilder::default()
+        .with_initial_interval(std::time::Duration::from_secs(15))
+        .with_multiplier(2.0)
+        .with_randomization_factor(0.05)
+        .with_max_elapsed_time(Some(std::time::Duration::from_mins(2)))
+        .build();
+    let http_client = reqwest_0_12::Client::builder()
+        .use_rustls_tls()
+        .build()
+        .expect("failed to build the Anthropic HTTP client");
+
+    async_anthropic::Client::builder()
+        .http_client(http_client)
+        .base_url("https://api.anthropic.com")
+        .version("2023-06-01")
+        .backoff(backoff)
+        .build()
+        .expect("every Anthropic client field has a value")
+}
+
+#[cfg(not(feature = "rustls"))]
+fn default_client() -> async_anthropic::Client {
+    async_anthropic::Client::default()
 }
 
 impl Anthropic {

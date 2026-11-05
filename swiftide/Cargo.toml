@@ -65,9 +65,10 @@ all = [
 #! ### TLS
 #! Integrations that make HTTP calls use rustls and work without setup: each HTTP client uses the
 #! process-wide rustls `CryptoProvider` if the application installed one, and otherwise its own
-#! built-in provider (aws-lc-rs, or ring for `anthropic`). Swiftide never installs a process-wide
-#! provider. Crates that rely on it, such as Redis over `rediss://`, need the application to
-#! install one when both providers are compiled in (e.g. `openai` with `qdrant` or `lancedb`).
+#! built-in provider (aws-lc-rs, or ring for `anthropic`). `anthropic` uses rustls even when another
+#! crate enables native TLS. The one exception is `redis` over `rediss://`: redis-rs needs a
+#! process-wide provider, so before connecting Swiftide installs aws-lc-rs if the application has
+#! not installed one. Install your own before the first Redis call to use a different provider.
 
 #! ### Integrations
 
