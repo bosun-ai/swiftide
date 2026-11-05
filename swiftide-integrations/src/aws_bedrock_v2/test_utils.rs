@@ -111,16 +111,42 @@ where
     let subscriber = tracing_subscriber::registry().with(EventCaptureLayer {
         events: events.clone(),
     });
-    let dispatch = tracing::Dispatch::new(subscriber);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("test runtime");
 
-    let result =
-        tracing::dispatcher::with_default(&dispatch, || runtime.block_on(future_factory()));
+    // Keep two unfiltered dispatches alive during capture. With a lone scoped subscriber,
+    // tracing can cache Interest::never for a callsite first used on another thread.
+    // Both scopes are local to this test, leaving any process-wide subscriber in place.
+    let background = tracing::Dispatch::new(tracing_subscriber::registry());
+    let result = tracing::dispatcher::with_default(&background, || {
+        let capture = tracing::Dispatch::new(subscriber);
+        tracing::dispatcher::with_default(&capture, || runtime.block_on(future_factory()))
+    });
 
     let recorded_events = events.lock().expect("event capture mutex").clone();
 
     (result, recorded_events)
+}
+
+#[cfg(feature = "langfuse")]
+#[test]
+fn captures_events_first_registered_on_another_thread() {
+    fn emit_failure() {
+        tracing::debug!(langfuse.status_message = "test failure");
+    }
+
+    let ((), events) = run_with_langfuse_event_capture(|| async {
+        std::thread::spawn(emit_failure).join().unwrap();
+        emit_failure();
+    });
+
+    assert_eq!(
+        events
+            .iter()
+            .filter_map(|event| event.get("langfuse.status_message"))
+            .collect::<Vec<_>>(),
+        ["test failure"]
+    );
 }

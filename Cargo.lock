@@ -9941,6 +9941,7 @@ name = "swiftide-agents"
 version = "0.33.0"
 dependencies = [
  "anyhow",
+ "async-openai",
  "async-trait",
  "convert_case",
  "derive_builder",
@@ -9958,6 +9959,7 @@ dependencies = [
  "strum_macros 0.28.0",
  "swiftide-core",
  "swiftide-indexing",
+ "swiftide-integrations",
  "swiftide-tasks",
  "temp-dir",
  "test-log",
@@ -9967,6 +9969,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "wiremock",
 ]
 
 [[package]]
