@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793906497793,
+  "lastUpdate": 1793915723520,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36479,6 +36479,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2100857,
             "range": "± 3530",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "76b0960c67884ffbe4befb3a808b0b077a05cf54",
+          "message": "feat(indexing)!: run returns pipeline stats (#1225)\n\n## Why\n\n`Pipeline::stats()` documents \"during or after execution\", but\n`run(self)` consumes the pipeline, so the natural\n`pipeline.run().await?; pipeline.stats()` does not compile. Applications\nthat want to report how many nodes were stored and how long it took have\nto count on their own, as the `ask-your-codebase` example did.\n\n## What\n\n- `Pipeline::run` returns `Result<PipelineStats>`: the snapshot it\nalready takes at the end of the run.\n- The collector is shared (`Arc<StatsCollector>`), so a handle taken\nbefore `run` observes the pipeline while it runs. Before,\n`stats_collector().clone()` was a deep copy that never changed.\n- Rustdoc for `stats`, `stats_collector` and `run` describe what\nactually works, with doctests that run.\n- `ask-your-codebase` and `docs-qa` use the returned stats instead of\ntheir own counters and timers.\n\nBefore:\n```rust\nlet started = Instant::now();\nlet stored = Tally::default();\npipeline.then(stored.count()).run().await?;\nprintln!(\"{} nodes in {:?}\", stored.total(), started.elapsed());\n```\n\nAfter:\n```rust\nlet stats = pipeline.run().await?;\nprintln!(\"{} nodes in {:?}\", stats.nodes_stored, stats.duration());\n```\n\n## Breaking\n\n`Pipeline::run` returns `Result<PipelineStats>` instead of `Result<()>`,\nand `stats_collector` returns `&Arc<StatsCollector>`.\n`pipeline.run().await?;` keeps compiling. A function that returns\n`pipeline.run().await` as its `Result<()>` tail expression needs\n`pipeline.run().await?; Ok(())`.\n\n## How it was checked\n\n`cargo test -p swiftide-indexing` (including two new doctests and a test\nthat a shared collector reports the same stats `run` returns), `cargo\nclippy -p swiftide-indexing --all-targets -- -D warnings`, `cargo check\n-p swiftide --features openai,qdrant --all-targets`, `cargo check -p\nswiftide-examples --examples`, `cargo check -p benchmarks --benches`,\n`cargo check -p ask-your-codebase -p docs-qa`, `cargo +nightly fmt --all\n-- --check`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n* Pipeline runs now return statistics, including processed and stored\nnode counts, token usage, and elapsed time. Statistics can also be\nobserved while a pipeline runs.\n* Indexing examples now report pipeline statistics, including indexed\nchunks and run duration.\n* **Bug Fixes**\n* Duration reporting now safely returns zero if the completion time\nprecedes the start time.\n* Restarting a completed statistics collector correctly resets its\nrunning state.\n* **Documentation**\n* Updated the indexing guide to explain how to access pipeline\nstatistics.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T22:43:40+01:00",
+          "tree_id": "80ec6729fb1587b6d993a969bd7a2f83cad8abc8",
+          "url": "https://github.com/bosun-ai/swiftide/commit/76b0960c67884ffbe4befb3a808b0b077a05cf54"
+        },
+        "date": 1793915720584,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 694667,
+            "range": "± 14912",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 179669,
+            "range": "± 3057",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2023,
+            "range": "± 1636",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7412,
+            "range": "± 4761",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 29036,
+            "range": "± 19810",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4161431,
+            "range": "± 25268",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2089479,
+            "range": "± 8401",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16667313,
+            "range": "± 59122",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2098030,
+            "range": "± 3843",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66599534,
+            "range": "± 163878",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2125508,
+            "range": "± 3810",
             "unit": "ns/iter"
           }
         ]
