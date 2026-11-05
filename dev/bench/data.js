@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793915723520,
+  "lastUpdate": 1793915829383,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36587,6 +36587,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2125508,
             "range": "± 3810",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cea196aa07c31a3b8fa64916cbbd40c36833f62b",
+          "message": "fix(integrations): HTTP clients work without installing a rustls crypto provider (#1227)\n\n## Why\n\nA new Swiftide application panics on its first HTTPS call with \"No\nrustls crypto provider is configured\" unless it installs a provider\nitself. The `rustls` feature enabled reqwest's `rustls-no-provider`,\nwhich leaves provider selection to the application, and nothing in\nREADME or the examples said so. The showcase examples each carried an\n`install_default()` block to work around it. Swiftide's own tests never\nhit the panic because async-openai's `rustls` dev-dependency feature\nsupplied a provider.\n\n## What\n\nThe `rustls` feature now enables reqwest's provider-bearing features\n(`rustls` for reqwest 0.13, `rustls-tls-native-roots` for the 0.12\nclient used by Anthropic). That is the same approach reqwest, tonic,\nureq and the AWS SDK take: use the process-wide provider if the\napplication installed one, otherwise fall back to the client's own.\nSwiftide never installs a process-wide provider, so an application that\ninstalls its own still wins and nothing races.\n\n- `swiftide-integrations/Cargo.toml`: the `rustls` feature and its\ncomment.\n- `swiftide/Cargo.toml`: a TLS section in the feature docs (feeds\ndocs.rs).\n- The three showcase crates drop the `install_default` boilerplate and\ntheir `rustls` dependency.\n- README, the agent skill and `context7.json` no longer tell users to\ninstall a provider.\n\nBefore:\n```rust\nrustls::crypto::aws_lc_rs::default_provider().install_default().expect(\"…\");\nlet openai = OpenAI::builder().default_prompt_model(\"gpt-4o-mini\").build()?;\n```\n\nAfter:\n```rust\nlet openai = OpenAI::builder().default_prompt_model(\"gpt-4o-mini\").build()?;\n```\n\nTrade-off: builds using the OpenAI-compatible clients now compile\naws-lc-rs. Crates that let rustls pick the provider by itself (in this\ntree only Redis over `rediss://`) still need the application to install\none when both ring and aws-lc-rs end up compiled in; that is documented\nin the feature comment.\n\n## How it was checked\n\nThe panic was reproduced with the old feature set using a throwaway\nbinary that builds an `OpenAI` client and sends one prompt to\napi.openai.com. With this change the same binary gets a 401 for the fake\nkey and no panic, both with the release-notes-agent feature set (openai,\nagents, mcp) and with the ask-your-codebase set (openai, fastembed,\nlancedb, tree-sitter, redb) where both providers are compiled in. Also:\n`cargo check -p swiftide --features openai,swiftide-agents`, `cargo\ncheck` on the four showcase crates, `cargo check -p\nswiftide-integrations --no-default-features --features anthropic`,\n`cargo clippy -p swiftide-integrations --features openai --all-targets\n-- -D warnings`, `cargo test -p swiftide-integrations --features openai\n--lib openai`, `cargo run -p release-notes-agent -- --help`, `cargo\n+nightly fmt --all -- --check`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n* Redis connections over `rediss://` now automatically configure a TLS\nprovider when none has been installed by the application.\n* Anthropic integrations use rustls when enabled, regardless of whether\nanother integration uses native TLS.\n* **Documentation**\n* Clarified that HTTP clients use a built-in TLS provider by default, or\nan application-installed provider set before client creation.\n* Added guidance on provider selection for applications using Redis over\nTLS or other integrations that require a process-wide provider.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\n---------\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T22:45:15+01:00",
+          "tree_id": "bc514b0bb1dc6e1165d338810f6cefd984121ca1",
+          "url": "https://github.com/bosun-ai/swiftide/commit/cea196aa07c31a3b8fa64916cbbd40c36833f62b"
+        },
+        "date": 1793915826474,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 703146,
+            "range": "± 71957",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 176110,
+            "range": "± 1906",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2073,
+            "range": "± 1949",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7611,
+            "range": "± 5502",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 29757,
+            "range": "± 20343",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4170769,
+            "range": "± 13797",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2090237,
+            "range": "± 8020",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16667299,
+            "range": "± 74533",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2103049,
+            "range": "± 5525",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66689869,
+            "range": "± 230890",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2129912,
+            "range": "± 3140",
             "unit": "ns/iter"
           }
         ]
