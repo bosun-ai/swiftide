@@ -22,6 +22,7 @@ use swiftide_core::{
     AgentContext, ToolBox,
     chat_completion::{
         ChatCompletion, ChatCompletionRequest, ChatMessage, Tool, ToolCall, ToolOutput,
+        errors::ToolError,
     },
     prompt::Prompt,
 };
@@ -99,7 +100,8 @@ pub struct Agent {
     /// the LLM.
     ///
     /// The limit is hashed based on the tool call name and arguments, so the limit is per tool
-    /// call.
+    /// call, including unavailable tools. Call IDs do not affect the limit. A limit of zero stops
+    /// after the first failure.
     ///
     /// This limit is _not_ reset when the agent is stopped.
     #[builder(default = 3)]
@@ -503,18 +505,10 @@ impl Agent {
                 break;
             }
 
-            // If the last message contains tool calls that have not been completed,
-            // run the tools first
-            if let Some(ChatMessage::Assistant(_, tool_calls)) =
-                maybe_tool_call_without_output(&messages)
-                && tool_calls
-                    .as_ref()
-                    .is_some_and(|tool_calls| !tool_calls.is_empty())
-            {
+            let pending = pending_tool_calls(&messages);
+            if !pending.is_empty() {
                 tracing::debug!("Uncompleted tool calls found; invoking tools");
-                if let Some(tool_calls) = tool_calls.as_ref() {
-                    self.invoke_tools(tool_calls).await?;
-                }
+                self.invoke_tools(&pending).await?;
                 // Move on to the next tick, so that the
                 continue;
             }
@@ -641,32 +635,40 @@ impl Agent {
 
         let mut handles = vec![];
         for tool_call in tool_calls {
-            let Some(tool) = self.find_tool_by_name(tool_call.name()) else {
+            let tool = self.find_tool_by_name(tool_call.name());
+            if tool.is_some() {
+                tracing::info!("Calling tool `{}`", tool_call.name());
+            } else {
                 tracing::warn!("Tool {} not found", tool_call.name());
-                continue;
-            };
-            tracing::info!("Calling tool `{}`", tool_call.name());
+            }
 
-            // let tool_args = tool_call.args().map(String::from);
             let context: Arc<dyn AgentContext> = Arc::clone(&self.context);
 
             invoke_hooks!(BeforeTool, self, &tool_call);
 
-            let tool_span = tracing::info_span!(
-                "tool",
-                "otel.name" = format!("tool.{}", tool.name().as_ref()),
-            )
-            .or_current();
+            let tool_span =
+                tracing::info_span!("tool", "otel.name" = format!("tool.{}", tool_call.name()),)
+                    .or_current();
 
             let handle_tool_call = tool_call.clone();
             let handle = tokio::spawn(
-                async move { tool.invoke(&*context, &handle_tool_call).await }
-                    .instrument(tool_span.clone()),
+                async move {
+                    match tool {
+                        Some(tool) => tool.invoke(&*context, &handle_tool_call).await,
+                        None => Err(ToolError::unknown(anyhow::anyhow!(
+                            "Unknown tool '{}'. Use an available tool.",
+                            handle_tool_call.name()
+                        ))),
+                    }
+                }
+                .instrument(tool_span.clone()),
             );
 
             handles.push((handle, tool_call, tool_span));
         }
 
+        let mut terminal_error = None;
+        let mut control_stop = false;
         for (handle, tool_call, tool_span) in handles {
             let mut output = handle
                 .await
@@ -679,10 +681,7 @@ impl Agent {
                 tool_span.in_scope(|| trace_tool_output(tool_call, &failed));
                 let stop = self.tool_calls_over_limit(tool_call);
                 if stop {
-                    tracing::error!(
-                        ?error,
-                        "Tool call failed, retry limit reached, stopping agent: {error}",
-                    );
+                    tracing::error!(?error, "Tool call failed, retry limit reached: {error}",);
                 } else {
                     tracing::warn!(
                         ?error,
@@ -692,16 +691,17 @@ impl Agent {
                 }
                 self.add_message(ChatMessage::ToolOutput(tool_call.clone(), failed))
                     .await?;
-                if stop {
-                    self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
-                        .await;
-                    return Err(error.into());
+                if stop && terminal_error.is_none() {
+                    // Already dispatched calls must still have their results recorded in order.
+                    terminal_error = Some((tool_call, AgentError::from(error)));
                 }
                 continue;
             }
 
             let output = output?;
             tool_span.in_scope(|| trace_tool_output(tool_call, &output));
+            control_stop |=
+                output.is_stop() || output.is_feedback_required() || output.is_agent_failed();
             self.handle_control_tools(tool_call, &output).await;
 
             // Feedback required leaves the tool call open
@@ -711,6 +711,15 @@ impl Agent {
                 self.add_message(ChatMessage::ToolOutput(tool_call.to_owned(), output))
                     .await?;
             }
+        }
+
+        // An intentional control stop or feedback suspension takes priority over retry limits.
+        if let Some((tool_call, error)) = terminal_error
+            && !control_stop
+        {
+            self.stop(StopReason::ToolCallsOverLimit(tool_call.to_owned()))
+                .await;
+            return Err(error);
         }
 
         Ok(())
@@ -767,14 +776,10 @@ impl Agent {
         tool_call.hash(&mut s);
         let hash = s.finish();
 
-        if let Some(retries) = self.tool_retries_counter.get_mut(&hash) {
-            let val = *retries >= self.tool_retry_limit;
-            *retries += 1;
-            val
-        } else {
-            self.tool_retries_counter.insert(hash, 1);
-            false
-        }
+        let retries = self.tool_retries_counter.entry(hash).or_default();
+        let over_limit = *retries >= self.tool_retry_limit;
+        *retries += 1;
+        over_limit
     }
 
     /// Add a message to the agent's context
@@ -862,7 +867,7 @@ impl Agent {
             .history()
             .await
             .map_err(AgentError::MessageHistoryError)?;
-        Ok(maybe_tool_call_without_output(&history).is_some())
+        Ok(!pending_tool_calls(&history).is_empty())
     }
 
     async fn invoke_pending_tool_calls(&mut self) -> Result<(), AgentError> {
@@ -872,14 +877,9 @@ impl Agent {
             .await
             .map_err(AgentError::MessageHistoryError)?;
 
-        if let Some(ChatMessage::Assistant(_, tool_calls)) =
-            maybe_tool_call_without_output(&history)
-            && tool_calls
-                .as_ref()
-                .is_some_and(|tool_calls| !tool_calls.is_empty())
-            && let Some(tool_calls) = tool_calls.as_ref()
-        {
-            self.invoke_tools(tool_calls).await?;
+        let pending = pending_tool_calls(&history);
+        if !pending.is_empty() {
+            self.invoke_tools(&pending).await?;
         }
 
         Ok(())
@@ -916,24 +916,28 @@ impl Agent {
     }
 }
 
-/// Reverse searches through messages, if it encounters a tool call before encountering an output,
-/// it will return the chat message with the tool calls, otherwise it returns None
-fn maybe_tool_call_without_output(messages: &[ChatMessage]) -> Option<&ChatMessage> {
+/// Returns unanswered calls from the latest assistant message, in their original order.
+/// Only results after that message with matching call IDs count as answers.
+fn pending_tool_calls(messages: &[ChatMessage]) -> Vec<ToolCall> {
+    let mut completed = HashSet::new();
     for message in messages.iter().rev() {
-        if let ChatMessage::ToolOutput(..) = message {
-            return None;
-        }
-
-        if let ChatMessage::Assistant(_, tool_calls) = message
-            && tool_calls
-                .as_ref()
-                .is_some_and(|tool_calls| !tool_calls.is_empty())
-        {
-            return Some(message);
+        match message {
+            ChatMessage::ToolOutput(call, _) => {
+                completed.insert(call.id());
+            }
+            ChatMessage::Assistant(_, tool_calls) => {
+                return tool_calls
+                    .iter()
+                    .flatten()
+                    .filter(|call| !completed.contains(call.id()))
+                    .cloned()
+                    .collect();
+            }
+            _ => (),
         }
     }
 
-    None
+    Vec::new()
 }
 
 /// Records the tool output that ends up in the history, i.e. after `AfterTool` hooks have run.
@@ -956,6 +960,9 @@ fn trace_tool_output(tool_call: &ToolCall, output: &ToolOutput) {
         );
     }
 }
+
+#[cfg(test)]
+mod unknown_tool_tests;
 
 #[cfg(test)]
 mod tests {
