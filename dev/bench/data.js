@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793906374530,
+  "lastUpdate": 1793906462553,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36155,6 +36155,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2114894,
             "range": "± 6165",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9b64baf9e6426003c156864fe92073eb72a5f02f",
+          "message": "feat(core)!: chainable search strategy setters and inferable SimilaritySingleEmbedding::default() (#1226)\n\n## Why\n\nTwo small things made the search strategies awkward to use:\n\n- `SimilaritySingleEmbedding::default()` needed a turbofish with\nLanceDB, PgVector and Qdrant, because `Default` was implemented for\nevery filter type and those stores implement `Retrieve` for both the\nunit filter and a typed filter. Only DuckDB inferred.\n- `with_top_k` (and the `HybridSearch` setters) took `&mut self`, so\nthey could not be chained from `default()` without a `let mut` and a\nsecond statement, or a trailing `.to_owned()`.\n\n## What\n\n- `Default` is implemented for `SimilaritySingleEmbedding<()>` only, so\n`default()` infers. Typed filters go through `from_filter` or\n`with_filter`, as before.\n- `SearchStrategy` no longer requires `Default`. Nothing in the\nworkspace called `S::default()` through the bound.\n- `with_top_k` on `SimilaritySingleEmbedding`, and `with_top_k`,\n`with_top_n`, `with_dense_vector_field`, `with_sparse_vector_field` on\n`HybridSearch` take `self` and return `Self`, marked `#[must_use]`.\n- Callers in the integrations, examples and the skill references use the\nchained form.\n\nBefore:\n```rust\nlet mut strategy = SimilaritySingleEmbedding::<()>::default();\nstrategy.with_top_k(10);\n```\n\nAfter:\n```rust\nlet strategy = SimilaritySingleEmbedding::default().with_top_k(10);\n```\n\n`HybridSearch::default()` still needs a type annotation on stores with\nboth impls, since docs-qa and Qdrant rely on its generic `Default`.\n\n## Breaking\n\nSearch strategy setters take `self` instead of `&mut self`: replace `let\nmut s = Strategy::default(); s.with_top_k(n);` with `let s =\nStrategy::default().with_top_k(n);` and drop `.to_owned()` after a\nsetter chain. `SimilaritySingleEmbedding::<F>::default()` exists only\nfor the unfiltered strategy; use `from_filter` or `with_filter` for a\ntyped filter. `SearchStrategy` no longer implies `Default`.\n\n## How it was checked\n\nNew tests in `swiftide-core` cover chaining, defaults, `with_filter`\nkeeping `top_k`, and a mock store with both `()` and `String` impls\nproving `default()` infers while typed filters still pick the filtered\nimpl. The LanceDB retrieve test now calls\n`SimilaritySingleEmbedding::default().with_top_k(2)` inline. `cargo test\n-p swiftide-core`, `cargo clippy -p swiftide-core -p swiftide-query\n--all-targets -- -D warnings`, `cargo check -p swiftide-integrations\n--features qdrant,pgvector,lancedb,duckdb,redis --all-targets`, `cargo\ncheck -p ask-your-codebase -p docs-qa`, `cargo test --doc -p\nswiftide-core -p swiftide-query`, `cargo +nightly fmt --all -- --check`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n* Search strategies can now be configured through value-returning\nbuilder methods, making chained setup available for similarity and\nhybrid searches.\n* Unfiltered similarity searches can use the default strategy without\nexplicitly specifying a filter type. Filtered searches remain\nconfigurable.\n  * Search strategies no longer need to implement `Default` to be used.\n* **Documentation**\n  * Updated search examples to reflect the current builder behavior.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T20:08:45+01:00",
+          "tree_id": "0921e810bc12c8d003c00b60fa4b62338b4adfba",
+          "url": "https://github.com/bosun-ai/swiftide/commit/9b64baf9e6426003c156864fe92073eb72a5f02f"
+        },
+        "date": 1793906459667,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 955956,
+            "range": "± 22583",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 263179,
+            "range": "± 1497",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1857,
+            "range": "± 2018",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6673,
+            "range": "± 8078",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26024,
+            "range": "± 25622",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4146318,
+            "range": "± 21562",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2083484,
+            "range": "± 6412",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16618701,
+            "range": "± 52604",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2099185,
+            "range": "± 6304",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66372228,
+            "range": "± 225377",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2112874,
+            "range": "± 3244",
             "unit": "ns/iter"
           }
         ]
