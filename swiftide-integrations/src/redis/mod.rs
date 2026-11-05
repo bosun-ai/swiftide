@@ -110,6 +110,11 @@ impl<T: Chunk> Redis<T> {
 
     /// Lazily connects to the Redis server and returns the connection manager.
     ///
+    /// Over `rediss://`, redis-rs builds its TLS config with rustls' process-wide crypto provider.
+    /// If the application has not installed one by then, this installs aws-lc-rs as the
+    /// process-wide provider. Applications that want a different provider must install it before
+    /// the first Redis call.
+    ///
     /// # Returns
     ///
     /// An `Option` containing the `ConnectionManager` if the connection is successful, or `None` if
@@ -120,6 +125,7 @@ impl<T: Chunk> Redis<T> {
     /// Logs an error and returns `None` if the connection manager cannot be obtained.
     async fn lazy_connect(&self) -> Option<redis::aio::ConnectionManager> {
         if self.connection_manager.read().await.is_none() {
+            self.ensure_tls_crypto_provider();
             let result = self.client.get_connection_manager().await;
             if let Err(e) = result {
                 tracing::error!("Failed to get connection manager: {}", e);
@@ -130,6 +136,20 @@ impl<T: Chunk> Redis<T> {
         }
 
         self.connection_manager.read().await.clone()
+    }
+
+    /// redis-rs lets rustls pick the process-wide crypto provider, which panics when both ring and
+    /// aws-lc-rs are compiled in. Only touches process-wide state for TLS connections and only if
+    /// no provider is installed yet.
+    fn ensure_tls_crypto_provider(&self) {
+        let uses_tls = matches!(
+            self.client.get_connection_info().addr(),
+            redis::ConnectionAddr::TcpTls { .. }
+        );
+        if uses_tls && rustls::crypto::CryptoProvider::get_default().is_none() {
+            // Losing a race against another installer is fine: a provider is installed either way.
+            let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+        }
     }
 
     /// Generates a Redis key for a given node using the key prefix and the node's hash.
@@ -225,5 +245,20 @@ impl<T: Chunk> std::fmt::Debug for Redis<T> {
         f.debug_struct("Redis")
             .field("client", &self.client)
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// With both ring and aws-lc-rs compiled in (e.g. `openai` with `qdrant`), rustls cannot pick
+    /// a provider on its own. Connecting over `rediss://` must fail with a connection error, not
+    /// panic in `rustls::ClientConfig::builder()`.
+    #[test_log::test(tokio::test)]
+    async fn connecting_over_tls_works_without_an_installed_crypto_provider() {
+        let redis = Redis::try_from_url("rediss://localhost:1", "swiftide-test").unwrap();
+
+        assert!(redis.lazy_connect().await.is_none());
     }
 }

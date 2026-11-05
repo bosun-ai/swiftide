@@ -27,8 +27,6 @@ async-trait = { workspace = true }
 clap = { version = "4.6", features = ["derive", "env"] }
 dotenvy = "0.15"
 rmcp = { workspace = true, features = ["client", "transport-child-process"] }
-# Swiftide enables rustls without a crypto provider; the application picks one
-rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
 schemars = { workspace = true, features = ["derive", "std"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

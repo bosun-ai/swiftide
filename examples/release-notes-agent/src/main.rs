@@ -66,10 +66,6 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Swiftide's HTTP clients use rustls and leave choosing a crypto provider to the application.
-    rustls::crypto::aws_lc_rs::default_provider()
-        .install_default()
-        .map_err(|_| anyhow::anyhow!("a rustls crypto provider was already installed"))?;
     match Cli::parse().env_file {
         Some(path) => {
             // dotenvy's error already repeats its io cause; report it once.

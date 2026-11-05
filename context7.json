@@ -6,7 +6,6 @@
   "excludeFolders": ["target", "benchmarks", "temporary-regression-tests"],
   "rules": [
     "Target swiftide 0.33 and enable only the feature flags you need; default features include just `macros`, so agents need `swiftide-agents` and each integration (openai, qdrant, fastembed, lancedb, mcp, ...) needs its own flag.",
-    "Install a rustls crypto provider at the start of main, e.g. `rustls::crypto::aws_lc_rs::default_provider().install_default()`; Swiftide enables rustls without choosing one.",
     "Write tools as async functions with `#[swiftide::tool]` taking `&dyn AgentContext` and returning `Result<ToolOutput, ToolError>`; use `#[derive(Tool)]` when the tool needs state, and `ToolOutput::fail` for errors the model should recover from.",
     "Agent hooks return `Box::pin(async { Ok(()) })`; clone captured values before the `async move` block.",
     "For structured agent output, call `without_default_stop_tool()` before `.tools(..)`, register `StopWithArgs::with_parameters_schema(schema_for!(T))`, and read `StopReason::RequestedByTool(_, Some(payload))`.",

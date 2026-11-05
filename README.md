@@ -83,6 +83,11 @@ cargo add anyhow
 cargo add tokio --features macros,rt-multi-thread
 ```
 
+HTTPS works out of the box: Swiftide's HTTP clients use rustls with a built-in crypto provider.
+If your application installs its own process-wide rustls `CryptoProvider` before creating
+clients, Swiftide uses that one instead. Redis over `rediss://` needs a process-wide provider; if
+none is installed when it connects, Swiftide installs aws-lc-rs.
+
 If using OpenAI, set the API key expected by the OpenAI-compatible integration:
 
 ```sh
