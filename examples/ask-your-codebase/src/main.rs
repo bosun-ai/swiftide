@@ -96,10 +96,6 @@ async fn main() -> Result<()> {
         .with_ansi(std::io::stderr().is_terminal())
         .init();
 
-    rustls::crypto::aws_lc_rs::default_provider()
-        .install_default()
-        .map_err(|_| anyhow::anyhow!("A rustls crypto provider was already installed"))?;
-
     let cli = Cli::parse();
     let api = if cli.responses_api {
         OpenAiApi::Responses

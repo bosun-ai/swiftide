@@ -270,12 +270,16 @@ pub async fn flush(&self) -> Result<()> {
 
 ## TLS
 
-Every binary that makes HTTP calls through Swiftide installs a rustls crypto provider first
-(`rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }`).
-`examples/workspace-architect/src/main.rs`:
+Swiftide's HTTP clients use rustls and need no setup: each client uses the process-wide rustls
+`CryptoProvider` when the application installed one, and otherwise its own built-in provider
+(aws-lc-rs for OpenAI-compatible clients, ring for Anthropic). Swiftide never installs a
+process-wide provider itself.
+
+Other crates call `rustls::ClientConfig::builder()` and rely on the process-wide provider, such as
+Redis over `rediss://`. Those fail when the build enables both rustls providers, for example
+`openai` with `qdrant`, `fastembed` or `lancedb`. In that case install one at the start of `main`
+(requires a direct `rustls` dependency with the `aws_lc_rs` feature):
 
 ```rust
-rustls::crypto::aws_lc_rs::default_provider()
-    .install_default()
-    .map_err(|_| anyhow::anyhow!("a rustls crypto provider was already installed"))?;
+let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
 ```

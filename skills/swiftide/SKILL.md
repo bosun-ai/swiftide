@@ -1,6 +1,6 @@
 ---
 name: swiftide
-description: Write Rust code with Swiftide 0.33, a library for LLM agents, typed task graphs and streaming RAG (indexing and query) pipelines. Covers installing with the right feature flags, building agents with #[swiftide::tool] tools, hooks, structured stop payloads, human approval and MCP toolboxes, wiring Task graphs with fan-out, join and pause/resume, and indexing and querying with Qdrant, LanceDB, FastEmbed and OpenAI-compatible endpoints. Use when a Rust project depends on the swiftide crate (or swiftide-agents, swiftide-tasks, swiftide-indexing, swiftide-query), when the user asks to build an agent, tool-calling loop, task graph or RAG pipeline in Rust, or when fixing Swiftide compile errors such as missing feature flags or a missing rustls crypto provider.
+description: Write Rust code with Swiftide 0.33, a library for LLM agents, typed task graphs and streaming RAG (indexing and query) pipelines. Covers installing with the right feature flags, building agents with #[swiftide::tool] tools, hooks, structured stop payloads, human approval and MCP toolboxes, wiring Task graphs with fan-out, join and pause/resume, and indexing and querying with Qdrant, LanceDB, FastEmbed and OpenAI-compatible endpoints. Use when a Rust project depends on the swiftide crate (or swiftide-agents, swiftide-tasks, swiftide-indexing, swiftide-query), when the user asks to build an agent, tool-calling loop, task graph or RAG pipeline in Rust, or when fixing Swiftide compile errors such as missing feature flags.
 license: MIT
 ---
 
@@ -27,8 +27,6 @@ Default features enable only `macros`. Everything else is opt-in.
 swiftide = { version = "0.33", features = ["swiftide-agents", "openai"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
-# Swiftide enables rustls without a crypto provider; the application picks one
-rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
 ```
 
 Common feature flags (all on the `swiftide` crate):
@@ -49,14 +47,9 @@ If you pass `default-features = false`, add `macros` back to use `#[swiftide::to
 
 1. **Feature flags are opt-in.** A missing `swiftide::agents`, `swiftide::integrations::openai` or
    `swiftide::integrations::qdrant` path means a missing feature, not a wrong import.
-2. **Install a rustls crypto provider at the start of `main`.** Swiftide's HTTP clients use rustls
-   without choosing a provider, so HTTP calls fail at runtime until the app installs one. From
-   `examples/release-notes-agent/src/main.rs`:
-   ```rust
-   rustls::crypto::aws_lc_rs::default_provider()
-       .install_default()
-       .map_err(|_| anyhow::anyhow!("a rustls crypto provider was already installed"))?;
-   ```
+2. **No TLS setup is needed.** Swiftide's HTTP clients use rustls with a built-in crypto
+   provider. Do not add `rustls` or call `install_default()` unless the app wants a specific
+   provider; one installed before the first client is created takes precedence.
 3. **Hooks return `Box::pin(async { ... })`.** Every agent hook is a closure that returns a pinned
    future of `Result<()>`; clone what you need before the `async move` block.
 4. **MSRV is Rust 1.97, edition 2024.**
@@ -262,6 +255,5 @@ pause) and `examples/docs-qa` (hybrid search with evaluation). API docs: https:/
 
 - `cargo check` with the exact features you added; a missing feature shows up as an unresolved
   import.
-- The binary installs a rustls crypto provider before the first request.
 - Tools return `Result<ToolOutput, ToolError>`; use `ToolOutput::fail(..)` for errors the model
   should see and recover from.

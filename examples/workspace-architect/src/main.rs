@@ -71,9 +71,6 @@ struct Args {
 async fn main() -> Result<()> {
     // Only `./.env`: searching parent directories could pick up an unrelated key from `$HOME`.
     dotenvy::from_path(".env").ok();
-    rustls::crypto::aws_lc_rs::default_provider()
-        .install_default()
-        .map_err(|_| anyhow::anyhow!("a rustls crypto provider was already installed"))?;
     // Swiftide's own tracing is opt-in and goes to stderr: the progress lines and the draft are
     // the normal output. A dedicated variable, because `RUST_LOG` is often set globally (for
     // example in a cargo config `[env]` table) and would bury the draft under debug logs.

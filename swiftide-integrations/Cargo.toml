@@ -163,9 +163,15 @@ async-openai = { workspace = true, features = ["rustls"] }
 default = ["rustls"]
 
 metrics = ["dep:metrics", "swiftide-core/metrics"]
-# Ensures rustls is used without selecting a crypto provider. Applications can install their
-# workspace provider at runtime, e.g. aws_lc_rs::default_provider().install_default().
-rustls = ["reqwest?/rustls-no-provider", "fastembed?/hf-hub-native-tls"]
+# TLS via rustls. HTTP clients work without any setup: they use the process-wide rustls
+# `CryptoProvider` when the application installed one, and otherwise fall back to the
+# HTTP client's own provider (aws-lc-rs for reqwest 0.13, ring for reqwest 0.12). No
+# process-wide provider is installed by Swiftide.
+rustls = [
+  "reqwest?/rustls",
+  "reqwest_0_12?/rustls-tls-native-roots",
+  "fastembed?/hf-hub-native-tls",
+]
 # Qdrant for storage
 qdrant = ["dep:qdrant-client", "swiftide-core/qdrant", "chrono/now"]
 # PgVector for storage
