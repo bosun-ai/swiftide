@@ -11,6 +11,7 @@ use swiftide::agents::tools::control::StopWithArgs;
 use swiftide::agents::{Agent, StopReason};
 use swiftide::traits::Tool;
 
+// ANCHOR: schema
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 enum TaskStatus {
@@ -31,11 +32,13 @@ struct StopPayload {
 fn stop_schema() -> Schema {
     schema_for!(StopPayload)
 }
+// ANCHOR_END: schema
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: tools
     let schema = stop_schema();
     let stop_tool = StopWithArgs::with_parameters_schema(schema.clone());
 
@@ -43,12 +46,16 @@ async fn main() -> Result<()> {
         "stop tool schema:\n{}",
         to_string_pretty(&stop_tool.tool_spec())?,
     );
+    // ANCHOR_END: tools
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-4o-mini")
         .default_embed_model("text-embedding-3-small")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: agent
     let mut builder = Agent::builder();
     builder
         .llm(&openai)
@@ -73,7 +80,9 @@ async fn main() -> Result<()> {
                 Ok(())
             })
         });
+    // ANCHOR_END: agent
 
+    // ANCHOR: run
     let mut agent = builder.build()?;
 
     agent
@@ -81,6 +90,7 @@ async fn main() -> Result<()> {
             "You completed onboarding five merchants today. Prepare a final handoff report and stop.",
         )
         .await?;
+    // ANCHOR_END: run
 
     Ok(())
 }

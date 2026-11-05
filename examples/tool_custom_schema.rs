@@ -7,6 +7,7 @@ use serde_json::Value;
 use swiftide::chat_completion::{Tool, ToolCall, ToolOutput, ToolSpec, errors::ToolError};
 use swiftide::traits::AgentContext;
 
+// ANCHOR: schema
 #[derive(Clone)]
 struct WorkflowTool;
 
@@ -31,7 +32,9 @@ enum WorkflowAction {
     Stop,
     Status,
 }
+// ANCHOR_END: schema
 
+// ANCHOR: tools
 #[swiftide::reexports::async_trait::async_trait]
 impl Tool for WorkflowTool {
     async fn invoke(
@@ -61,8 +64,10 @@ impl Tool for WorkflowTool {
 fn workflow_schema() -> Schema {
     schema_for!(WorkflowInstruction)
 }
+// ANCHOR_END: tools
 
 fn main() -> Result<()> {
+    // ANCHOR: run
     let tool = WorkflowTool;
     let spec = tool.tool_spec();
 
@@ -70,6 +75,7 @@ fn main() -> Result<()> {
         "{}",
         serde_json::to_string_pretty(&spec).expect("tool spec should serialize"),
     );
+    // ANCHOR_END: run
 
     Ok(())
 }

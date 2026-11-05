@@ -11,15 +11,20 @@ use swiftide::traits::ChatCompletion;
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_prompt_model("gpt-4o-mini")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: image
     let image_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../images/logo.png");
     let image_bytes = std::fs::read(&image_path).with_context(|| format!("Read {image_path:?}"))?;
     let encoded = general_purpose::STANDARD.encode(&image_bytes);
     let data_url = format!("data:image/png;base64,{encoded}");
+    // ANCHOR_END: image
 
+    // ANCHOR: request
     let message = ChatMessage::new_user_with_parts(vec![
         ChatMessageContentPart::text("Describe this image in one sentence."),
         ChatMessageContentPart::image(data_url),
@@ -28,12 +33,15 @@ async fn main() -> Result<()> {
     let request = ChatCompletionRequest::builder()
         .messages(vec![message])
         .build()?;
+    // ANCHOR_END: request
 
+    // ANCHOR: run
     let response = openai.complete(&request).await?;
     println!(
         "Image description: {}",
         response.message().unwrap_or("<no response>")
     );
+    // ANCHOR_END: run
 
     Ok(())
 }

@@ -27,6 +27,8 @@ ignore = [
   { id = "RUSTSEC-2024-0436", reason = "Paste is transitive and has no safe upgrade" },
   { id = "RUSTSEC-2024-0449", reason = "Unsafe-libyaml is transitive through Fluvio and LanceDB's Lindera tokenizer; no patched version is available" },
   { id = "RUSTSEC-2025-0012", reason = "Backoff is transitive through async-anthropic and has no safe upgrade" },
+  { id = "RUSTSEC-2026-0440", reason = "astral-tokio-tar is transitive through testcontainers (dev and test-utils only) and has no safe upgrade yet" },
+  { id = "RUSTSEC-2026-0441", reason = "pin-utils is transitive through aws-smithy-http and has no safe upgrade yet" },
 ]
 
 [bans]

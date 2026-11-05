@@ -7,17 +7,20 @@ use swiftide::agents;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_embed_model("text-embeddings-3-small")
         .default_prompt_model("gpt-4o-mini")
         // Only streams the delta, leave this out to stream the full response
         .stream_full(false)
         .build()?;
+    // ANCHOR_END: setup
 
     // let anthropic = swiftide::integrations::anthropic::Anthropic::builder()
     //     .default_prompt_model("claude-3-7-sonnet-latest")
     //     .build()?;
 
+    // ANCHOR: agent
     agents::Agent::builder()
         .llm(&openai)
         .on_stream(|_agent, response| {
@@ -53,6 +56,7 @@ async fn main() -> Result<()> {
         .build()?
         .query("Why is the rust programming language so good?")
         .await?;
+    // ANCHOR_END: agent
 
     Ok(())
 }

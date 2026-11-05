@@ -1,5 +1,14 @@
 [workspace]
-members = ["swiftide", "swiftide-*", "examples", "benchmarks"]
+members = [
+  "swiftide",
+  "swiftide-*",
+  "examples",
+  "examples/ask-your-codebase",
+  "examples/release-notes-agent",
+  "examples/workspace-architect",
+  "examples/docs-qa",
+  "benchmarks",
+]
 default-members = ["swiftide", "swiftide-*"]
 resolver = "2"
 

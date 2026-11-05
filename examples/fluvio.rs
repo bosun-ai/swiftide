@@ -32,6 +32,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: setup
     static TOPIC_NAME: &str = "hello-rust";
     static PARTITION_NUM: u32 = 0;
 
@@ -46,7 +47,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .build()
         .unwrap();
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(loader)
         .then_in_batch(Embed::new(FastEmbed::try_default().unwrap()).with_batch_size(10))
         .then_store_with(
@@ -58,5 +61,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }

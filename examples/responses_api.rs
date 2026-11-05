@@ -23,6 +23,7 @@ struct EchoArgs {
     message: String,
 }
 
+// ANCHOR: tools
 /// Minimal echo tool used to demonstrate tool calling with the Responses API.
 /// The macro implements the `Tool` trait, derives the JSON schema, and generates
 /// a helper constructor (`echo_tool()`) that returns a boxed tool ready for use.
@@ -36,6 +37,7 @@ async fn echo_tool(
 ) -> Result<ToolOutput, ToolError> {
     Ok(ToolOutput::text(format!("Echo: {}", payload.message)))
 }
+// ANCHOR_END: tools
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -43,12 +45,15 @@ async fn main() -> Result<()> {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
+    // ANCHOR: setup
     let openai = OpenAI::builder()
         .default_prompt_model("gpt-4.1-mini")
         .default_options(Options::builder().temperature(0.2))
         .use_responses_api(true)
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: prompt
     let greeting = openai
         .prompt("Say hello in one short sentence".into())
         .await?;
@@ -58,7 +63,9 @@ async fn main() -> Result<()> {
         .structured_prompt("Summarise today's weather in Amsterdam as JSON".into())
         .await?;
     println!("Structured result: {structured:?}");
+    // ANCHOR_END: prompt
 
+    // ANCHOR: chat
     let chat_request = ChatCompletionRequest::builder()
         .messages(vec![
             ChatMessage::new_system("You are a concise assistant."),
@@ -71,7 +78,9 @@ async fn main() -> Result<()> {
         "Complete result: {}",
         completion.message().unwrap_or("<no message>")
     );
+    // ANCHOR_END: chat
 
+    // ANCHOR: streaming
     let mut stream = openai.complete_stream(&chat_request).await;
     print!("Streaming result: ");
     let mut streamed_message = String::new();
@@ -96,7 +105,9 @@ async fn main() -> Result<()> {
     } else {
         println!("Full streamed result: {streamed_message}");
     }
+    // ANCHOR_END: streaming
 
+    // ANCHOR: tool_call
     let tool_request = ChatCompletionRequest::builder()
         .messages(vec![
             ChatMessage::new_system(
@@ -154,6 +165,7 @@ async fn main() -> Result<()> {
             tool_completion.message().unwrap_or("<no message>")
         );
     }
+    // ANCHOR_END: tool_call
 
     Ok(())
 }

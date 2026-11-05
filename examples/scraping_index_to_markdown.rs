@@ -22,6 +22,7 @@ use swiftide::{
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(ScrapingLoader::from_spider(
         Website::new("https://www.bosun.ai/")
             .with_limit(1)
@@ -33,5 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .then_store_with(MemoryStorage::default())
     .run()
     .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 }
