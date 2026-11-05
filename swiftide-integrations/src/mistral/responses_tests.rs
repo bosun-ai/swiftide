@@ -1,5 +1,7 @@
 //! Synthetic contract fixtures based on <https://docs.mistral.ai/openapi.yaml> (Responses preview).
-//! No live provider calls. The replay test was first run against the unchanged `OpenAI` client.
+//! No live provider calls. Compare against the unchanged upstream `OpenAI` Responses adapter.
+
+mod compatibility;
 
 use std::fmt::Write as _;
 
@@ -144,14 +146,18 @@ fn function_call() -> Value {
         "name": "echo", "arguments": "{\"text\":\"bonjour\"}", "status": "completed"})
 }
 
+#[test_case(false; "mistral")]
+#[test_case(true; "upstream_openai_with_plaintext_replay")]
 #[tokio::test]
-async fn responses_plaintext_reasoning_survives_persisted_tool_round_trip() {
+async fn responses_plaintext_reasoning_survives_persisted_tool_round_trip(use_openai: bool) {
     let server = MockServer::start().await;
+    let mut call = function_call();
+    // Use an ID both adapters preserve; compatibility tests cover native call_ IDs separately.
+    call["call_id"] = json!("fc_fixture");
     Mock::given(method("POST"))
         .and(path("/v1/responses"))
         .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_json(completion(json!([reasoning(), function_call()]))),
+            ResponseTemplate::new(200).set_body_json(completion(json!([reasoning(), call]))),
         )
         .expect(2)
         .mount(&server)
@@ -159,7 +165,7 @@ async fn responses_plaintext_reasoning_survives_persisted_tool_round_trip() {
     let config = OpenAIConfig::new()
         .with_api_base(format!("{}/v1", server.uri()))
         .with_api_key("fixture-key");
-    let client = super::Mistral::builder()
+    let mistral = super::Mistral::builder()
         .client(async_openai::Client::with_config(config))
         .use_responses_api(true)
         .default_options(
@@ -169,6 +175,11 @@ async fn responses_plaintext_reasoning_survives_persisted_tool_round_trip() {
         )
         .build()
         .unwrap();
+    let client: Box<dyn ChatCompletion> = if use_openai {
+        Box::new(compatibility::openai_client(&server))
+    } else {
+        Box::new(mistral)
+    };
     let mut request = tool_request();
     let response = client.complete(&request).await.unwrap();
     assert!(response.message.is_none());
@@ -205,7 +216,7 @@ async fn responses_plaintext_reasoning_survives_persisted_tool_round_trip() {
         input.iter().find(|item| item["type"] == "reasoning"),
         Some(&reasoning())
     );
-    assert_eq!(input.last().unwrap()["call_id"], "call_fixture");
+    assert_eq!(input.last().unwrap()["call_id"], "fc_fixture");
 }
 
 #[test_case(true, false; "native_full")]

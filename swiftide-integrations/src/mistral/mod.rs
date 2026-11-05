@@ -42,6 +42,13 @@
 //! `ChatFormat` affects only Chat Completions. Gateway routing/preview support must be configured
 //! separately. This is not an adapter for arbitrary signed/encrypted gateway reasoning metadata.
 //!
+//! Swiftide's `OpenAI` Responses adapter also supports plaintext history replay with
+//! `replay_plaintext_reasoning(true)` and `reasoning_features(false)`. That fixes history loss
+//! for compatible endpoints, but does not make it a drop-in Mistral client: Mistral's preview
+//! permits fractional timestamps, needs provider tool-call IDs preserved, and streams plaintext
+//! reasoning incrementally. This client handles those differences without changing the `OpenAI`
+//! adapter. Its stateless validation and failure-usage accounting also remain provider-local.
+//!
 //! ```no_run
 //! use swiftide_integrations::mistral::{Mistral, Options, ReasoningEffort};
 //! let client = Mistral::builder()

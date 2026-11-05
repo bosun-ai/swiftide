@@ -1,4 +1,6 @@
 //! Stateless Mistral Responses. Reuses SDK item/usage types without changing the `OpenAI` adapter.
+//! Upstream plaintext replay is available, but its integer timestamps, tool-ID normalization and
+//! final-only reasoning emission do not cover this preview's contract. See compatibility tests.
 
 use async_openai::{error::OpenAIError, types::responses as r};
 use schemars::Schema;
