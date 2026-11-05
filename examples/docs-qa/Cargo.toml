@@ -21,7 +21,6 @@ swiftide = { path = "../../swiftide", default-features = false, features = [
 ] }
 tokio = { workspace = true, features = ["full"] }
 anyhow = { workspace = true }
-async-openai = { version = "0.41", default-features = false }
 async-trait = "0.1"
 clap = { version = "4.6", features = ["derive", "env"] }
 dotenvy = "0.15"

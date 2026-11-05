@@ -4,10 +4,7 @@
 use anyhow::{Context as _, Result};
 use swiftide::{
     indexing::{BackoffConfiguration, LanguageModelWithBackOff},
-    integrations::{
-        fastembed::FastEmbed,
-        openai::{OpenAI, OpenAIConfig},
-    },
+    integrations::{fastembed::FastEmbed, openai::OpenAI},
 };
 
 /// Local `FastEmbed` models: dense (BGE small) and sparse (SPLADE) embeddings.
@@ -37,9 +34,10 @@ const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 pub type RetryingModel = LanguageModelWithBackOff<OpenAI>;
 
 /// An OpenAI-compatible API: `OpenAI` itself, or any gateway or local server that speaks it.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LlmEndpoint {
-    config: OpenAIConfig,
+    base_url: String,
+    api_key: String,
     use_responses_api: bool,
 }
 
@@ -52,9 +50,8 @@ impl LlmEndpoint {
             non_empty_env("OPENAI_BASE_URL").unwrap_or_else(|| DEFAULT_BASE_URL.to_string());
 
         Ok(Self {
-            config: OpenAIConfig::new()
-                .with_api_base(base_url)
-                .with_api_key(api_key),
+            base_url,
+            api_key,
             use_responses_api,
         })
     }
@@ -62,7 +59,8 @@ impl LlmEndpoint {
     /// A client for `model` on this endpoint.
     pub fn model(&self, model: &str) -> Result<OpenAI> {
         Ok(OpenAI::builder()
-            .client(async_openai::Client::with_config(self.config.clone()))
+            .api_base(&self.base_url)
+            .api_key(&self.api_key)
             .default_prompt_model(model)
             .use_responses_api(self.use_responses_api)
             .build()?)
@@ -80,6 +78,16 @@ impl LlmEndpoint {
     }
 }
 // ANCHOR_END: llm
+
+/// Shows where requests go, never the key.
+impl std::fmt::Debug for LlmEndpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LlmEndpoint")
+            .field("base_url", &self.base_url)
+            .field("use_responses_api", &self.use_responses_api)
+            .finish_non_exhaustive()
+    }
+}
 
 fn non_empty_env(key: &str) -> Option<String> {
     std::env::var(key)

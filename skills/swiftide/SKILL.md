@@ -61,7 +61,8 @@ If you pass `default-features = false`, add `macros` back to use `#[swiftide::to
    future of `Result<()>`; clone what you need before the `async move` block.
 4. **MSRV is Rust 1.97, edition 2024.**
 5. **OpenAI-compatible endpoints** (gateways, local servers, vLLM, LiteLLM) go through the
-   `openai` integration with an `OpenAIConfig`; see `references/integrations.md`.
+   `openai` integration: `OpenAI::builder().api_base(url).api_key(key)`; see
+   `references/integrations.md`.
 6. **Call `without_default_stop_tool()` before `.tools(...)`** when you supply your own
    `StopWithArgs`. `.tools(..)` merges in the default tools when it is called, and calling it
    again replaces the earlier list.

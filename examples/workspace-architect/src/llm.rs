@@ -6,7 +6,7 @@
 use std::fmt;
 
 use anyhow::{Context as _, Result};
-use swiftide::integrations::openai::{OpenAI, OpenAIConfig, Options};
+use swiftide::integrations::openai::{OpenAI, Options};
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 
@@ -59,12 +59,9 @@ impl Endpoint {
 
     /// A client for `model` on this endpoint.
     pub fn client(&self, model: &ModelArgs) -> Result<OpenAI> {
-        let config = OpenAIConfig::new()
-            .with_api_base(&self.base_url)
-            .with_api_key(&self.api_key);
-
         Ok(OpenAI::builder()
-            .client(async_openai::Client::with_config(config))
+            .api_base(&self.base_url)
+            .api_key(&self.api_key)
             .default_prompt_model(&model.model)
             .default_options(Options::builder().max_completion_tokens(MAX_OUTPUT_TOKENS))
             .use_responses_api(model.responses_api)

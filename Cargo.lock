@@ -501,7 +501,6 @@ name = "ask-your-codebase"
 version = "0.33.0"
 dependencies = [
  "anyhow",
- "async-openai",
  "async-trait",
  "clap",
  "fastembed",
@@ -3423,7 +3422,6 @@ name = "docs-qa"
 version = "0.33.0"
 dependencies = [
  "anyhow",
- "async-openai",
  "async-trait",
  "clap",
  "dotenvy",
@@ -8295,7 +8293,6 @@ name = "release-notes-agent"
 version = "0.33.0"
 dependencies = [
  "anyhow",
- "async-openai",
  "async-trait",
  "clap",
  "dotenvy",
@@ -12283,7 +12280,6 @@ name = "workspace-architect"
 version = "0.33.0"
 dependencies = [
  "anyhow",
- "async-openai",
  "cargo_metadata",
  "clap",
  "dotenvy",

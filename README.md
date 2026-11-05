@@ -89,6 +89,17 @@ If using OpenAI, set the API key expected by the OpenAI-compatible integration:
 export OPENAI_API_KEY=...
 ```
 
+To use another OpenAI-compatible endpoint, such as a gateway, vLLM or LiteLLM, set its URL and key
+on the builder:
+
+```rust
+let openai = OpenAI::builder()
+    .api_base("http://127.0.0.1:8080/v1")
+    .api_key("...")
+    .default_prompt_model("my-model")
+    .build()?;
+```
+
 ## Agent Harness
 
 Use the agent harness to call a model, run tools, and control when an agent stops. Add tools as

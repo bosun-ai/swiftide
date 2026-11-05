@@ -42,28 +42,30 @@ Reads `OPENAI_API_KEY` by default. `OpenAI` implements `SimplePrompt`, `ChatComp
 
 Builder options seen in the examples: `.stream_full(false)` (stream deltas only),
 `.use_responses_api(true)` (Responses API instead of Chat Completions), `.default_options(..)`,
-`.client(async_openai::Client::with_config(config))`.
+`.api_base(url)` and `.api_key(key)` (another endpoint or key), `.client(..)` (a fully custom
+`async_openai::Client`).
 
 ### Any OpenAI-compatible endpoint
 
-Gateways, local servers and other providers that speak the OpenAI protocol use the same client
-with an `OpenAIConfig`. Add `async-openai` at the version Swiftide uses (0.41) to build the inner
-client. `examples/workspace-architect/src/llm.rs`:
+Gateways, local servers and other providers that speak the OpenAI protocol use the same client,
+pointed elsewhere with `.api_base(..)` (including the version prefix, e.g.
+`http://127.0.0.1:8080/v1`) and `.api_key(..)`. Unset, they fall back to `OPENAI_API_BASE` and
+`OPENAI_API_KEY`. `examples/workspace-architect/src/llm.rs`:
 
 ```rust
 pub fn client(&self, model: &ModelArgs) -> Result<OpenAI> {
-    let config = OpenAIConfig::new()
-        .with_api_base(&self.base_url)
-        .with_api_key(&self.api_key);
-
     Ok(OpenAI::builder()
-        .client(async_openai::Client::with_config(config))
+        .api_base(&self.base_url)
+        .api_key(&self.api_key)
         .default_prompt_model(&model.model)
         .default_options(Options::builder().max_completion_tokens(MAX_OUTPUT_TOKENS))
         .use_responses_api(model.responses_api)
         .build()?)
 }
 ```
+
+`.client(async_openai::Client::with_config(..))` still works when you need a custom http client or
+config; it replaces `api_base`/`api_key`, and whichever is called last wins.
 
 Set `max_completion_tokens` explicitly: some gateways cap an unset limit at 4096 tokens, and a
 truncated answer looks complete.

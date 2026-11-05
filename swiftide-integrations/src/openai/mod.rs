@@ -54,7 +54,14 @@ use swiftide_core::EstimateTokens;
 /// let openai = OpenAI::builder()
 ///     .default_embed_model("text-embedding-3-small")
 ///     .default_prompt_model("gpt-4")
-///     .client(async_openai::Client::with_config(async_openai::config::OpenAIConfig::default().with_api_key("my-api-key")))
+///     .api_key("my-api-key")
+///     .build().unwrap();
+///
+/// // Point it at an OpenAI-compatible endpoint, such as a local gateway, vLLM or LiteLLM.
+/// let openai = OpenAI::builder()
+///     .api_base("http://127.0.0.1:8080/v1")
+///     .api_key("my-api-key")
+///     .default_prompt_model("qwen3-coder")
 ///     .build().unwrap();
 ///
 /// // Create an OpenAI client with custom options
@@ -81,7 +88,7 @@ pub struct GenericOpenAI<
     /// The `OpenAI` client, wrapped in an `Arc` for thread-safe reference counting.
     /// Defaults to a new instance of `async_openai::Client`.
     #[builder(
-        default = "Arc::new(async_openai::Client::<C>::default())",
+        field(ty = "ClientSource<C>", build = "self.client.build()"),
         setter(custom)
     )]
     client: Arc<async_openai::Client<C>>,
@@ -122,6 +129,41 @@ pub struct GenericOpenAI<
                 + Sync,
         >,
     >,
+}
+
+/// Where the builder gets its `async_openai` client from.
+///
+/// Keeps an explicitly provided client apart from one assembled with the builder's connection
+/// setters, so neither silently overwrites the other: whichever is set last wins.
+#[derive(Default)]
+enum ClientSource<C: async_openai::config::Config> {
+    /// `async_openai`'s default client. For [`OpenAIConfig`] that reads `OPENAI_API_KEY` and
+    /// `OPENAI_API_BASE` from the environment.
+    #[default]
+    Default,
+    /// Built by the builder from the connection setters (`api_base`, `api_key`).
+    Configured(Arc<async_openai::Client<C>>),
+    /// Supplied as a whole with `client(..)`.
+    Explicit(Arc<async_openai::Client<C>>),
+}
+
+impl<C: async_openai::config::Config + Default> ClientSource<C> {
+    fn build(&self) -> Arc<async_openai::Client<C>> {
+        match self {
+            Self::Default => Arc::new(async_openai::Client::<C>::default()),
+            Self::Configured(client) | Self::Explicit(client) => Arc::clone(client),
+        }
+    }
+}
+
+impl<C: async_openai::config::Config> Clone for ClientSource<C> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Default => Self::Default,
+            Self::Configured(client) => Self::Configured(Arc::clone(client)),
+            Self::Explicit(client) => Self::Explicit(Arc::clone(client)),
+        }
+    }
 }
 
 impl<C: async_openai::config::Config + Default + std::fmt::Debug> std::fmt::Debug
@@ -356,6 +398,54 @@ impl OpenAI {
     }
 }
 
+impl OpenAIBuilder {
+    /// Sends requests to `api_base` instead of `https://api.openai.com/v1`.
+    ///
+    /// Use this to point `OpenAI` at any OpenAI-compatible endpoint, such as a local gateway,
+    /// vLLM or `LiteLLM`. The url includes the version prefix, e.g. `http://127.0.0.1:8080/v1`.
+    ///
+    /// `api_base` and [`api_key`](Self::api_key) configure the client the builder creates for
+    /// you; anything not set falls back to `async_openai`'s defaults (`OPENAI_API_BASE`,
+    /// `OPENAI_API_KEY`). A client passed to [`client`](GenericOpenAIBuilder::client) replaces
+    /// that configuration entirely. Whichever is called last wins: calling `api_base` after
+    /// `client` discards the explicit client and starts from the defaults again.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use swiftide_integrations::openai::OpenAI;
+    /// let openai = OpenAI::builder()
+    ///     .api_base("http://127.0.0.1:8080/v1")
+    ///     .api_key("my-api-key")
+    ///     .default_prompt_model("qwen3-coder")
+    ///     .build()
+    ///     .unwrap();
+    /// ```
+    pub fn api_base(&mut self, api_base: impl Into<String>) -> &mut Self {
+        self.configure_client(|config| config.with_api_base(api_base))
+    }
+
+    /// Authenticates requests with `api_key` instead of `OPENAI_API_KEY`.
+    ///
+    /// See [`api_base`](Self::api_base) for how this combines with
+    /// [`client`](GenericOpenAIBuilder::client).
+    pub fn api_key(&mut self, api_key: impl Into<String>) -> &mut Self {
+        self.configure_client(|config| config.with_api_key(api_key))
+    }
+
+    /// Applies `update` to the config of the client the builder creates, starting from the
+    /// defaults unless an earlier connection setter already configured it.
+    fn configure_client(&mut self, update: impl FnOnce(OpenAIConfig) -> OpenAIConfig) -> &mut Self {
+        let config = match &self.client {
+            ClientSource::Configured(client) => client.config().clone(),
+            ClientSource::Default | ClientSource::Explicit(_) => OpenAIConfig::default(),
+        };
+        self.client =
+            ClientSource::Configured(Arc::new(async_openai::Client::with_config(update(config))));
+        self
+    }
+}
+
 impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     GenericOpenAIBuilder<C>
 {
@@ -395,13 +485,20 @@ impl<C: async_openai::config::Config + Default + Sync + Send + std::fmt::Debug>
     }
     /// Sets the `OpenAI` client for the `OpenAI` instance.
     ///
+    /// Use this when you need full control over the client, such as a custom http client,
+    /// backoff or config type. To only change the endpoint or key of `OpenAI`, prefer
+    /// [`OpenAIBuilder::api_base`] and [`OpenAIBuilder::api_key`].
+    ///
+    /// The client replaces anything configured with `api_base` or `api_key` before it. Whichever
+    /// is called last wins.
+    ///
     /// # Parameters
     /// - `client`: The `OpenAI` client to set.
     ///
     /// # Returns
     /// A mutable reference to the `OpenAIBuilder`.
     pub fn client(&mut self, client: async_openai::Client<C>) -> &mut Self {
-        self.client = Some(Arc::new(client));
+        self.client = ClientSource::Explicit(Arc::new(client));
         self
     }
 
@@ -632,6 +729,106 @@ mod test {
         assert_eq!(
             openai.default_options.embed_model,
             Some("gpt-3".to_string())
+        );
+    }
+
+    fn api_base_of(openai: &OpenAI) -> &str {
+        use async_openai::config::Config as _;
+        openai.client().config().api_base()
+    }
+
+    fn authorization_of(openai: &OpenAI) -> Option<String> {
+        use async_openai::config::Config as _;
+        openai
+            .client()
+            .config()
+            .headers()
+            .get(reqwest::header::AUTHORIZATION)
+            .map(|value| value.to_str().unwrap().to_string())
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_api_base_and_api_key_send_requests_to_compatible_endpoint() {
+        use swiftide_core::SimplePrompt as _;
+        use wiremock::matchers::{header, method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .and(header("authorization", "Bearer test"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": "chatcmpl-1",
+                "object": "chat.completion",
+                "created": 0,
+                "model": "local-model",
+                "choices": [{
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "Hello from the gateway"},
+                    "finish_reason": "stop"
+                }]
+            })))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let openai = OpenAI::builder()
+            .api_base(mock_server.uri())
+            .api_key("test")
+            .default_prompt_model("local-model")
+            .build()
+            .unwrap();
+
+        let answer = openai.prompt("Hi".into()).await.unwrap();
+
+        assert_eq!(answer, "Hello from the gateway");
+    }
+
+    #[test]
+    fn test_api_base_and_api_key_combine_in_any_order() {
+        let openai = OpenAI::builder()
+            .api_key("test")
+            .api_base("http://gateway.local/v1")
+            .build()
+            .unwrap();
+
+        assert_eq!(api_base_of(&openai), "http://gateway.local/v1");
+        assert_eq!(authorization_of(&openai).as_deref(), Some("Bearer test"));
+    }
+
+    #[test]
+    fn test_explicit_client_replaces_earlier_api_base() {
+        let explicit = async_openai::Client::with_config(
+            OpenAIConfig::new().with_api_base("http://explicit.local/v1"),
+        );
+
+        let openai = OpenAI::builder()
+            .api_base("http://gateway.local/v1")
+            .client(explicit)
+            .build()
+            .unwrap();
+
+        assert_eq!(api_base_of(&openai), "http://explicit.local/v1");
+    }
+
+    #[test]
+    fn test_api_base_replaces_earlier_explicit_client() {
+        let explicit = async_openai::Client::with_config(
+            OpenAIConfig::new()
+                .with_api_base("http://explicit.local/v1")
+                .with_api_key("explicit-key"),
+        );
+
+        let openai = OpenAI::builder()
+            .client(explicit)
+            .api_base("http://gateway.local/v1")
+            .build()
+            .unwrap();
+
+        assert_eq!(api_base_of(&openai), "http://gateway.local/v1");
+        assert_ne!(
+            authorization_of(&openai).as_deref(),
+            Some("Bearer explicit-key")
         );
     }
 
