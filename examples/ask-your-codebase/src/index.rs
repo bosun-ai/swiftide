@@ -82,11 +82,11 @@ pub async fn index_codebase(
 ) -> Result<IndexReport> {
     let files_found = Tally::default();
     let files_changed = Tally::default();
-    let chunks_indexed = Tally::default();
+    // Wall clock, so the report includes loading (and on first use downloading) the models
     let started = Instant::now();
 
     // ANCHOR: pipeline
-    indexing::Pipeline::from_loader(
+    let stats = indexing::Pipeline::from_loader(
         FileLoader::new(codebase.root()).with_extensions(&languages.extensions()),
     )
     .filter(test_code::not_test_files(codebase.clone()))
@@ -111,7 +111,6 @@ pub async fn index_codebase(
     // Embed chunk + metadata locally, in batches
     .then_in_batch(Embed::new(embedding::local_model()?).with_batch_size(embedding::BATCH_SIZE))
     .then_store_with(codebase.vector_store()?)
-    .then(chunks_indexed.count())
     .run()
     .await?;
     // ANCHOR_END: pipeline
@@ -119,7 +118,7 @@ pub async fn index_codebase(
     Ok(IndexReport {
         files_found: files_found.total(),
         files_changed: files_changed.total(),
-        chunks_indexed: chunks_indexed.total(),
+        chunks_indexed: stats.nodes_stored,
         elapsed: started.elapsed(),
     })
 }

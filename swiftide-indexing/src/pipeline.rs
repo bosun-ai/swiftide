@@ -4,7 +4,7 @@ use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
     Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
     indexing::{Chunk, IndexingDefaults},
-    statistics::StatsCollector,
+    statistics::{PipelineStats, StatsCollector},
 };
 use tokio::{
     sync::{Mutex, mpsc},
@@ -100,7 +100,9 @@ pub struct Pipeline<T: Chunk> {
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
     batch_size: usize,
-    stats: StatsCollector,
+    // Shared so a handle taken before `run` keeps observing the pipeline
+    // while it runs.
+    stats: Arc<StatsCollector>,
     node_caches: Vec<DynNodeCacheSet>,
     // Source ids (the id a node entered the pipeline with, kept in `parent_id`)
     // that had a failure anywhere in their fan-out. Populated by the pipeline
@@ -243,7 +245,7 @@ impl<T: Chunk> Default for Pipeline<T> {
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
             batch_size: DEFAULT_BATCH_SIZE,
-            stats: StatsCollector::new(),
+            stats: Arc::new(StatsCollector::new()),
             node_caches: Vec::new(),
             failed_ids: Arc::new(FailedIds::default()),
             passed_cache_ids: Arc::new(PassedCacheIds::default()),
@@ -713,6 +715,14 @@ impl<T: Chunk> Pipeline<T> {
     ///
     /// They can either be run concurrently, alternated between or merged back together.
     ///
+    /// # Statistics
+    ///
+    /// Each branch gets its own [`StatsCollector`], seeded with a copy of the statistics
+    /// collected so far, so branches that are run separately each report only their own nodes.
+    /// A collector handle taken from this pipeline before splitting does not observe either
+    /// branch. Use [`Pipeline::merge`] to run both branches as one pipeline with one set of
+    /// statistics.
+    ///
     /// # Panics
     ///
     /// Panics if the receiving pipelines buffers are full or unavailable.
@@ -756,9 +766,13 @@ impl<T: Chunk> Pipeline<T> {
             .instrument(span.or_current()),
         );
 
-        let left_pipeline = pipeline_with_new_stream!(self, left_rx);
+        // Branches can be run on their own, so they must not share counts or
+        // timings with each other.
+        let mut left_pipeline = pipeline_with_new_stream!(self, left_rx);
+        left_pipeline.stats = Arc::new(StatsCollector::clone(&self.stats));
 
-        let right_pipeline = pipeline_with_new_stream!(self, right_rx);
+        let mut right_pipeline = pipeline_with_new_stream!(self, right_rx);
+        right_pipeline.stats = Arc::new(StatsCollector::clone(&self.stats));
 
         (left_pipeline, right_pipeline)
     }
@@ -768,6 +782,12 @@ impl<T: Chunk> Pipeline<T> {
     /// This is useful for merging two streams that have been split using the `split_by` method.
     ///
     /// The full stream can then be processed using the `run` method.
+    ///
+    /// # Statistics
+    ///
+    /// The merged pipeline keeps the [`StatsCollector`] of `self`, so running it reports the
+    /// nodes of both streams in one set of statistics. Anything recorded on the collector of
+    /// `other` before merging is discarded.
     #[must_use]
     pub fn merge(mut self, other: Self) -> Self {
         let stream = tokio_stream::StreamExt::merge(self.stream, other.stream);
@@ -875,32 +895,45 @@ impl<T: Chunk> Pipeline<T> {
         self.log_errors().log_nodes()
     }
 
-    /// Returns a snapshot of the current pipeline statistics
+    /// Returns a snapshot of the pipeline statistics collected so far.
     ///
-    /// This method provides real-time access to pipeline statistics during and after
-    /// execution. The returned statistics include node counts, token usage, and timing
-    /// information.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let pipeline = Pipeline::from_loader(loader).then(transformer);
-    ///
-    /// // During or after execution
-    /// let stats = pipeline.stats();
-    /// println!("Processed {} nodes", stats.nodes_processed);
-    /// ```
+    /// Before [`Pipeline::run`] this reports the initial (empty) statistics. `run` consumes the
+    /// pipeline and returns the final statistics; to watch a pipeline while it runs, keep a
+    /// handle from [`Pipeline::stats_collector`] instead.
     #[must_use]
-    pub fn stats(&self) -> swiftide_core::statistics::PipelineStats {
+    pub fn stats(&self) -> PipelineStats {
         self.stats.get_stats()
     }
 
-    /// Returns a reference to the statistics collector
+    /// Returns the shared statistics collector of this pipeline.
     ///
-    /// This provides direct access to the `StatsCollector` for recording additional
-    /// metrics or for use by transformers that need to report their own statistics.
+    /// Clone the `Arc` before calling [`Pipeline::run`] to observe the pipeline while it runs,
+    /// or to record additional metrics such as token usage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use swiftide_core::indexing::TextNode;
+    /// # use swiftide_indexing::{Pipeline, persist::MemoryStorage};
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// let pipeline = Pipeline::from_stream(vec![TextNode::new("hello"), TextNode::new("world")])
+    ///     .then_store_with(MemoryStorage::default());
+    ///
+    /// let collector = Arc::clone(pipeline.stats_collector());
+    /// let running = tokio::spawn(pipeline.run());
+    ///
+    /// // Meanwhile, from anywhere else
+    /// println!("Stored {} nodes so far", collector.get_stats().nodes_stored);
+    ///
+    /// let stats = running.await??;
+    /// assert_eq!(collector.get_stats(), stats);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
-    pub fn stats_collector(&self) -> &StatsCollector {
+    pub fn stats_collector(&self) -> &Arc<StatsCollector> {
         &self.stats
     }
 
@@ -937,7 +970,25 @@ impl<T: Chunk> Pipeline<T> {
     ///
     /// # Returns
     ///
-    /// A `Result` indicating the success or failure of the pipeline execution.
+    /// The final [`PipelineStats`] of this run: node counts, token usage and timing.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use swiftide_core::indexing::TextNode;
+    /// # use swiftide_indexing::{Pipeline, persist::MemoryStorage};
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// let stats = Pipeline::from_stream(vec![TextNode::new("hello"), TextNode::new("world")])
+    ///     .then_store_with(MemoryStorage::default())
+    ///     .run()
+    ///     .await?;
+    ///
+    /// assert_eq!(stats.nodes_stored, 2);
+    /// println!("Stored {} nodes in {:?}", stats.nodes_stored, stats.duration());
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// # Errors
     ///
@@ -947,7 +998,7 @@ impl<T: Chunk> Pipeline<T> {
     /// `LanguageModelError` from an LLM-backed transformer can be recovered with
     /// [`anyhow::Error::downcast_ref`] or found in [`anyhow::Error::chain`].
     #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run(mut self) -> Result<PipelineStats> {
         self.stats.start();
 
         tracing::info!(
@@ -1045,7 +1096,7 @@ impl<T: Chunk> Pipeline<T> {
 
         tracing::Span::current().record("total_nodes", total_nodes);
 
-        Ok(())
+        Ok(stats)
     }
 }
 
@@ -1379,6 +1430,7 @@ mod tests {
         pipeline.run().await.unwrap();
     }
 
+    /// `run` returns the node counts and timing of the pipeline it ran.
     #[test_log::test(tokio::test)]
     async fn test_pipeline_statistics() {
         let mut loader = MockLoader::new();
@@ -1410,10 +1462,87 @@ mod tests {
         assert_eq!(initial_stats.nodes_processed, 0);
         assert_eq!(initial_stats.nodes_stored, 0);
 
-        pipeline.run().await.unwrap();
+        let stats = pipeline.run().await.unwrap();
 
-        // After running, stats should be updated (access via the moved pipeline would not work,
-        // but we verify the internal behavior through the run method's logging)
+        assert_eq!(stats.nodes_processed, 3);
+        assert_eq!(stats.nodes_stored, 3);
+        assert!(stats.duration().is_some());
+    }
+
+    /// A collector handle taken before `run` ends with the same statistics `run` returns.
+    #[test_log::test(tokio::test)]
+    async fn test_run_returns_the_stats_a_shared_collector_observes() {
+        let storage = MemoryStorage::default();
+        let pipeline = Pipeline::from_stream(vec![
+            TextNode::new("first"),
+            TextNode::new("second"),
+            TextNode::new("third"),
+        ])
+        .filter(|node| node.as_ref().map_or(true, |node| node.chunk != "second"))
+        .then_store_with(storage.clone());
+
+        let collector = Arc::clone(pipeline.stats_collector());
+
+        let stats = pipeline.run().await.unwrap();
+
+        assert_eq!(stats.nodes_processed, 2);
+        assert_eq!(stats.nodes_stored, 2);
+        assert_eq!(storage.get_all().await.len(), 2);
+        assert!(stats.duration().is_some());
+        assert_eq!(collector.get_stats(), stats);
+    }
+
+    /// Split branches run one after another each report only their own nodes.
+    #[test_log::test(tokio::test)]
+    async fn test_split_branches_run_separately_keep_their_own_stats() {
+        let (left, right) = Pipeline::from_stream(vec![
+            TextNode::new("left"),
+            TextNode::new("right"),
+            TextNode::new("right"),
+        ])
+        .split_by(|node| node.as_ref().is_ok_and(|node| node.chunk == "left"));
+
+        let left_collector = Arc::clone(left.stats_collector());
+
+        let left_stats = left
+            .then_store_with(MemoryStorage::default())
+            .run()
+            .await
+            .unwrap();
+        let right_stats = right
+            .then_store_with(MemoryStorage::default())
+            .run()
+            .await
+            .unwrap();
+
+        assert_eq!(left_stats.nodes_stored, 1);
+        assert_eq!(right_stats.nodes_stored, 2);
+        assert_eq!(left_collector.get_stats(), left_stats);
+        assert!(left_stats.duration().is_some());
+        assert!(right_stats.duration().is_some());
+    }
+
+    /// Merging split branches back together reports every node in one set of statistics.
+    #[test_log::test(tokio::test)]
+    async fn test_split_then_merge_reports_stats_for_the_whole_pipeline() {
+        let storage = MemoryStorage::default();
+        let (left, right) = Pipeline::from_stream(vec![
+            TextNode::new("left"),
+            TextNode::new("right"),
+            TextNode::new("right"),
+        ])
+        .split_by(|node| node.as_ref().is_ok_and(|node| node.chunk == "left"));
+
+        let stats = left
+            .merge(right)
+            .then_store_with(storage.clone())
+            .run()
+            .await
+            .unwrap();
+
+        assert_eq!(stats.nodes_processed, 3);
+        assert_eq!(stats.nodes_stored, 3);
+        assert_eq!(storage.get_all().await.len(), 3);
     }
 
     #[test_log::test(tokio::test)]

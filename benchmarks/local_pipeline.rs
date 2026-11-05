@@ -8,13 +8,15 @@ use swiftide::{
     integrations::fastembed::FastEmbed,
 };
 
+/// Indexes the README with local embeddings into memory, once.
 async fn run_pipeline() -> Result<()> {
     Pipeline::from_loader(FileLoader::new("README.md").with_extensions(&["md"]))
         .then_chunk(ChunkMarkdown::from_chunk_range(20..256))
         .then_in_batch(Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(MemoryStorage::default())
         .run()
-        .await
+        .await?;
+    Ok(())
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

@@ -13,13 +13,15 @@ use testcontainers::{
     runners::SyncRunner,
 };
 
+/// Chunks this repository's Rust files into memory once, skipping files `node_cache` has seen.
 async fn run_pipeline(node_cache: Box<dyn NodeCache<Input = String>>) -> Result<()> {
     Pipeline::from_loader(FileLoader::new(".").with_extensions(&["rs"]))
         .filter_cached(node_cache)
         .then_chunk(ChunkCode::try_for_language_and_chunk_size("rust", 10..256)?)
         .then_store_with(MemoryStorage::default())
         .run()
-        .await
+        .await?;
+    Ok(())
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

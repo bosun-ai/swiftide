@@ -14,7 +14,9 @@ named above each one.
   `.then_in_batch(batch_transformer)`, `.then_chunk(chunker)`, `.then_store_with(storage)`, plus
   `.split_by(..)`, `.merge(..)`, `.log_all()`, `.with_concurrency(n)`,
   `.with_default_llm_client(..)`, `.with_embed_mode(..)`.
-- Nothing runs until `.run().await`.
+- Nothing runs until `.run().await`. It consumes the pipeline and returns the final
+  `PipelineStats` (`nodes_processed`, `nodes_stored`, token usage, `duration()`). To watch a
+  running pipeline, take `Arc::clone(pipeline.stats_collector())` before calling `run`.
 - A closure `Fn(TextNode) -> Result<TextNode>` is a transformer.
 
 ## Full indexing pipeline: local code RAG
@@ -23,7 +25,7 @@ Tree-sitter chunking, LLM-generated questions as metadata, local embeddings, an 
 cache and an embedded LanceDB store. `examples/ask-your-codebase/src/index.rs`:
 
 ```rust
-indexing::Pipeline::from_loader(
+let stats = indexing::Pipeline::from_loader(
     FileLoader::new(codebase.root()).with_extensions(&languages.extensions()),
 )
 .filter(test_code::not_test_files(codebase.clone()))
@@ -48,7 +50,6 @@ indexing::Pipeline::from_loader(
 // Embed chunk + metadata locally, in batches
 .then_in_batch(Embed::new(embedding::local_model()?).with_batch_size(embedding::BATCH_SIZE))
 .then_store_with(codebase.vector_store()?)
-.then(chunks_indexed.count())
 .run()
 .await?;
 ```
