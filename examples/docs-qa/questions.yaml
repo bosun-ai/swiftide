@@ -1,0 +1,53 @@
+# Questions about the Swiftide repository docs (README.md, CONTRIBUTING.md, AGENTS.md and the
+# crate READMEs), with the reference answers the judge compares against.
+- question: Which crate features and environment variable do I need to start building agents with OpenAI?
+  ground_truth: >-
+    Add swiftide with the `swiftide-agents` and `openai` features
+    (`cargo add swiftide --features swiftide-agents,openai`), plus anyhow and tokio with the
+    `macros` and `rt-multi-thread` features, and set the `OPENAI_API_KEY` environment variable.
+
+- question: What does the agents-contrib-context feature provide?
+  ground_truth: >-
+    It provides context hooks: `ToolSummarizer` shortens large tool outputs and
+    `ContextCompression` summarizes long conversations.
+
+- question: What are the default limits of the read_file tool?
+  ground_truth: >-
+    `read_file` returns 2,000 lines by default, truncates long lines at 2,000 characters, and
+    refuses a selected window above 100,000 characters. A partial page explains how to continue
+    with the next offset.
+
+- question: Which storage and retrieval backends does Swiftide integrate with?
+  ground_truth: Qdrant, Redis, LanceDB, PgVector, DuckDB and Redb.
+
+- question: What should I run before opening a pull request?
+  ground_truth: >-
+    Run the focused checks for the crates you changed, `cargo +nightly fmt --all -- --check`,
+    and `cargo clippy --workspace --all-targets --all-features -- -D warnings` when touching
+    shared behavior, and add or update examples, tests or rustdoc when behavior changes.
+
+- question: What is a task in Swiftide?
+  ground_truth: >-
+    A task is a typed graph of `TaskNode` steps and Swiftide's orchestration layer. Each node has
+    an input type, an output type and an error type, and transitions decide where the output
+    goes next. Tasks support fan-out with explicit joins, sequential or parallel branches, and
+    pause, resume and reset.
+
+- question: When does ContextCompression summarize the conversation by default?
+  ground_truth: >-
+    Its default turn threshold is five, checked before incrementing, so the sixth eligible hook
+    call triggers a summary. Recent file reads postpone compression below 90% of the context
+    limit. The default context limit is 400,000,000 with a 0.7 cutoff.
+
+- question: Which commit message convention does the project follow?
+  ground_truth: >-
+    Conventional commits such as `feat(agents): ...` or `fix(indexing): ...` with a lowercase
+    imperative summary. Pull request titles are also checked against the conventional commits
+    format, and titles ending in `!` get the breaking change label.
+
+- question: How do I add a custom tool to an agent with the tool macro?
+  ground_truth: >-
+    Annotate an async function with `#[swiftide::tool(...)]`, giving a `description` and a
+    `param(name, description)` per argument. The function takes `&dyn AgentContext` plus its
+    parameters and returns `Result<ToolOutput, ToolError>`. Register it on the agent builder
+    with `.tools([explain_concept()])`, calling the function name to get the tool.

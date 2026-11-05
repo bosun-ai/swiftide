@@ -7,9 +7,37 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "Swiftide showcase: release-notes-agent"
+description = "Swiftide showcase: an agent that drafts release notes from git history, with human approval"
+readme = "README.md"
+keywords = ["agents", "swiftide", "release-notes", "mcp", "langfuse"]
+categories = ["command-line-utilities"]
 
 [dependencies]
-swiftide = { path = "../../swiftide" }
+swiftide = { path = "../../swiftide", default-features = false, features = [
+  "macros",
+  "swiftide-agents",
+  "openai",
+  "mcp",
+  "langfuse",
+] }
 tokio = { workspace = true, features = ["full"] }
 anyhow = { workspace = true }
+# For pointing swiftide's `OpenAI` client at another base URL (`OPENAI_BASE_URL`)
+async-openai = { workspace = true }
+# `#[derive(swiftide::Tool)]` expands to `#[async_trait::async_trait]`
+async-trait = { workspace = true }
+clap = { version = "4.6", features = ["derive", "env"] }
+dotenvy = "0.15"
+rmcp = { workspace = true, features = ["client", "transport-child-process"] }
+# Swiftide enables rustls without a crypto provider; the application picks one
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
+schemars = { workspace = true, features = ["derive", "std"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "env-filter"] }
+
+[dev-dependencies]
+tempfile = "3.20"
+
+[lints]
+workspace = true
