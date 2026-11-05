@@ -26,6 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // tracing_subscriber::fmt::init();
     init_print_logger();
 
+    // ANCHOR: setup
     let metric_metadata = HashMap::from([("example".to_string(), "metadata".to_string())]);
     let openai_client = integrations::openai::OpenAI::builder()
         .default_embed_model("text-embedding-3-small")
@@ -33,7 +34,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Metadata will be added to every metric
         .metric_metadata(metric_metadata)
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: pipeline
     indexing::Pipeline::from_loader(FileLoader::new(".").with_extensions(&["md"]))
         .then_chunk(ChunkMarkdown::from_chunk_range(10..512))
         .then_in_batch(Embed::new(openai_client.clone()).with_batch_size(10))
@@ -46,6 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .run()
         .await?;
+    // ANCHOR_END: pipeline
     Ok(())
 
     // (counter) registered key swiftide.usage.prompt_tokens with unit None and description "token
@@ -83,6 +87,7 @@ use std::{collections::HashMap, sync::Arc};
 use metrics::{Counter, CounterFn, Gauge, GaugeFn, Histogram, HistogramFn, Key, Recorder, Unit};
 use metrics::{KeyName, Metadata, SharedString};
 
+// ANCHOR: recorder
 #[derive(Clone, Debug)]
 struct PrintHandle(Key);
 
@@ -163,3 +168,4 @@ impl Recorder for PrintRecorder {
 fn init_print_logger() {
     metrics::set_global_recorder(PrintRecorder).unwrap()
 }
+// ANCHOR_END: recorder

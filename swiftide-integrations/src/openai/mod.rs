@@ -169,16 +169,25 @@ pub struct Options {
     #[builder(default, setter(into))]
     pub reasoning_effort: Option<ReasoningEffort>,
 
-    /// Enable reasoning summary/encrypted content handling for the Responses API.
+    /// Request reasoning summaries and encrypted content from the Responses API.
     ///
     /// This is enabled by default, but only takes effect when `reasoning_effort` is set.
-    /// Disable it with `reasoning_features(false)` if you do not want summaries or encrypted
-    /// reasoning stored and replayed.
+    /// Disable it with `reasoning_features(false)` to omit those requests. Existing reasoning
+    /// history is still replayed, independently of this setting and `reasoning_effort`.
     ///
     /// Note: reasoning summaries/encrypted content require an `OpenAI` organization that is
     /// verified for reasoning access; unverified orgs may receive no summaries.
     #[builder(default, setter(into))]
     pub reasoning_features: Option<bool>,
+
+    /// Replay plaintext reasoning, summaries, and status in Responses API conversation history.
+    ///
+    /// Enable only for compatible providers that accept plaintext reasoning input. Defaults to
+    /// false for `OpenAI` and true when using `OpenRouter::builder()`. Encrypted reasoning is
+    /// replayed independently of this option and the current turn's reasoning effort.
+    /// This option has no effect on Chat Completions.
+    #[builder(default)]
+    pub replay_plaintext_reasoning: Option<bool>,
 
     /// This feature is in Beta. If specified, our system will make a best effort to sample
     /// deterministically, such that repeated requests with the same seed and parameters should
@@ -240,6 +249,9 @@ impl Options {
         if let Some(reasoning_features) = other.reasoning_features {
             self.reasoning_features = Some(reasoning_features);
         }
+        if let Some(replay_plaintext_reasoning) = other.replay_plaintext_reasoning {
+            self.replay_plaintext_reasoning = Some(replay_plaintext_reasoning);
+        }
         if let Some(seed) = other.seed {
             self.seed = Some(seed);
         }
@@ -269,6 +281,7 @@ impl From<OptionsBuilder> for Options {
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
             reasoning_features: value.reasoning_features.flatten(),
+            replay_plaintext_reasoning: value.replay_plaintext_reasoning.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),
@@ -290,6 +303,7 @@ impl From<&mut OptionsBuilder> for Options {
             temperature: value.temperature.flatten(),
             reasoning_effort: value.reasoning_effort.flatten(),
             reasoning_features: value.reasoning_features.flatten(),
+            replay_plaintext_reasoning: value.replay_plaintext_reasoning.flatten(),
             presence_penalty: value.presence_penalty.flatten(),
             seed: value.seed.flatten(),
             metadata: value.metadata.flatten(),

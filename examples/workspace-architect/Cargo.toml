@@ -1,0 +1,36 @@
+[package]
+name = "workspace-architect"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Swiftide showcase: a task graph that fans out one agent per workspace crate and drafts ARCHITECTURE.md"
+
+[dependencies]
+swiftide = { path = "../../swiftide", features = [
+  "swiftide-agents",
+  "swiftide-tasks",
+  "openai",
+] }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+async-openai = { workspace = true }
+cargo_metadata = "0.23"
+clap = { version = "4.6", features = ["derive", "env"] }
+dotenvy = "0.15"
+schemars = { workspace = true, features = ["derive", "std"] }
+# Swiftide enables rustls without a crypto provider; the application installs one.
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[lints]
+workspace = true

@@ -13,6 +13,7 @@ use swiftide::{
     traits::SimplePrompt,
 };
 
+// ANCHOR: query
 async fn ask_query(
     llm_client: impl SimplePrompt + Clone + 'static,
     embed: FastEmbed,
@@ -47,6 +48,7 @@ async fn ask_query(
 
     Ok(results)
 }
+// ANCHOR_END: query
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -61,6 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Test Dataset path: {:?}", test_dataset_path);
 
+    // ANCHOR: setup
     let (_pgv_db_container, pgv_db_url) = swiftide_test_utils::start_postgres().await;
 
     tracing::info!("pgv_db_url :: {:#?}", pgv_db_url);
@@ -82,6 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .table_name("swiftide_pgvector_test".to_string())
         .build()
         .unwrap();
+    // ANCHOR_END: setup
 
     // Drop the existing test table before running the test
     tracing::info!("Dropping existing test table & index if it exists");
@@ -95,6 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Failed to get database connection pool".into());
     }
 
+    // ANCHOR: indexing
     tracing::info!("Starting indexing pipeline");
 
     indexing::Pipeline::from_loader(FileLoader::new(test_dataset_path).with_extensions(&["md"]))
@@ -104,9 +109,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .then_store_with(pgv_storage.clone())
         .run()
         .await?;
+    // ANCHOR_END: indexing
 
     tracing::info!("PgVector Indexing completed successfully");
 
+    // ANCHOR: run
     let questions: Vec<String> = vec![
             "What is SwiftIDE? Provide a clear, comprehensive summary in under 50 words.".into(),
             "How can I use SwiftIDE to connect with the Ethereum blockchain? Please provide a concise, comprehensive summary in less than 50 words.".into(),
@@ -126,6 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("{}", result);
         tracing::info!("===X===");
     });
+    // ANCHOR_END: run
 
     tracing::info!("PgVector Indexing & retrieval test completed successfully");
 

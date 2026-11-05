@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use derive_builder::Builder;
+use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -432,6 +433,8 @@ impl ChatCompletionResponse {
 
     /// Adds a streaming chunk to the tool calls, if it can be build, the tool call will be build,
     /// otherwise it will remain in the delta and retried on the next call
+    ///
+    /// Reconstructed calls follow their stream index order.
     pub fn append_tool_call_delta(
         &mut self,
         index: usize,
@@ -510,10 +513,12 @@ impl ChatCompletionResponse {
         if let Some(values) = self
             .delta
             .as_ref()
-            .and_then(|d| d.tool_calls_chunk.as_ref().map(|t| t.values()))
+            .and_then(|d| d.tool_calls_chunk.as_ref())
         {
             let maybe_tool_calls = values
-                .filter_map(|maybe_tool_call| {
+                .iter()
+                .sorted_by_key(|(index, _)| **index)
+                .filter_map(|(_, maybe_tool_call)| {
                     ToolCallBuilder::default()
                         .maybe_id(maybe_tool_call.id.clone())
                         .maybe_name(maybe_tool_call.name.clone())
@@ -545,6 +550,30 @@ impl ChatCompletionResponseBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_streamed_tool_calls_follow_their_indices() {
+        let mut response = ChatCompletionResponse::default();
+        for index in (0..16).rev() {
+            response.append_tool_call_delta(
+                index,
+                Some(&format!("call_{index}")),
+                Some("test_tool"),
+                Some("{}"),
+            );
+        }
+
+        let ids = response
+            .tool_calls()
+            .unwrap()
+            .iter()
+            .map(ToolCall::id)
+            .collect::<Vec<_>>();
+        let expected = (0..16)
+            .map(|index| format!("call_{index}"))
+            .collect::<Vec<_>>();
+        assert_eq!(ids, expected);
+    }
 
     #[test]
     fn test_append_message_delta_none_on_empty_response() {

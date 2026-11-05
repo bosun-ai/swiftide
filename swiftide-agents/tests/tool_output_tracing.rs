@@ -106,4 +106,21 @@ async fn traces_tool_output_as_it_ends_up_in_history() {
         traced.take(),
         ["Tool call failed: arguments for tool failed to parse: missing"]
     );
+
+    let mock_llm = MockChatCompletion::new();
+    mock_llm.expect_complete(
+        chat_request! { user!("Hello"); tools = [] },
+        Ok(chat_response! { "Calling"; tool_calls = ["unavailable"] }),
+    );
+    Agent::builder()
+        .llm(&mock_llm)
+        .build()
+        .unwrap()
+        .query_once("Hello")
+        .await
+        .unwrap();
+    assert_eq!(
+        traced.take(),
+        ["Tool call failed: Unknown tool 'unavailable'. Use an available tool."]
+    );
 }

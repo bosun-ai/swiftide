@@ -13,11 +13,14 @@ use swiftide::agents::{self, tools::mcp::McpToolbox};
 async fn main() -> Result<()> {
     println!("Hello, agents!");
 
+    // ANCHOR: setup
     let openai = swiftide::integrations::openai::OpenAI::builder()
         .default_embed_model("text-embeddings-3-small")
         .default_prompt_model("gpt-4o-mini")
         .build()?;
+    // ANCHOR_END: setup
 
+    // ANCHOR: channel
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
 
     tokio::spawn(async move {
@@ -25,7 +28,9 @@ async fn main() -> Result<()> {
             println!("{msg}");
         }
     });
+    // ANCHOR_END: channel
 
+    // ANCHOR: tools
     // First set up our client info to identify ourselves to the server
     let client_info = ClientInfo::new(
         ClientCapabilities::default(),
@@ -49,7 +54,9 @@ async fn main() -> Result<()> {
     let everything_toolbox = McpToolbox::from_running_service(running_service)
         .with_whitelist(["add"])
         .to_owned();
+    // ANCHOR_END: tools
 
+    // ANCHOR: agent
     agents::Agent::builder()
         .llm(&openai)
         // Add the toolbox to the agent
@@ -66,6 +73,7 @@ async fn main() -> Result<()> {
         .build()?
         .query("Use the add tool to add 1 and 2")
         .await?;
+    // ANCHOR_END: agent
 
     Ok(())
 }
