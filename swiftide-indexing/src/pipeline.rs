@@ -1,5 +1,5 @@
 use anyhow::Result;
-use futures_util::{StreamExt, TryFutureExt, TryStreamExt};
+use futures_util::{StreamExt, TryFutureExt, TryStreamExt, stream::TryChunksError};
 use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
     Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
@@ -21,6 +21,18 @@ use std::{
 
 use swiftide_core::indexing::{EmbedMode, IndexingStream, Node};
 use uuid::Uuid;
+
+/// Returns the error an upstream step failed with when batching nodes.
+///
+/// `TryChunksError` formats as its inner error but does not expose it as a `source`, so
+/// converting it into an `anyhow::Error` would hide the original error (e.g. a
+/// `LanguageModelError`) from `downcast_ref`, `chain` and `root_cause`. The nodes buffered so
+/// far are dropped, as the stream fails on this error anyway.
+fn upstream_error<T>(
+    TryChunksError(_buffered, error): TryChunksError<T, anyhow::Error>,
+) -> anyhow::Error {
+    error
+}
 
 macro_rules! trace_span {
     ($op:literal, $step:expr) => {
@@ -455,6 +467,7 @@ impl<T: Chunk> Pipeline<T> {
         let stream = self
             .stream
             .try_chunks(transformer.batch_size().unwrap_or(self.batch_size))
+            .map_err(upstream_error)
             .map_ok(move |nodes| {
                 let transformer = Arc::clone(&transformer);
                 let failed_ids = failed_ids.clone();
@@ -482,7 +495,6 @@ impl<T: Chunk> Pipeline<T> {
                 )
                 .map_err(anyhow::Error::from)
             })
-            .err_into::<anyhow::Error>()
             .try_buffer_unordered(concurrency) // First get the streams from each future
             .try_flatten_unordered(None) // Then flatten the streams into a single stream
             .boxed();
@@ -632,6 +644,7 @@ impl<T: Chunk> Pipeline<T> {
         let stream = if storage.batch_size().is_some() {
             self.stream
                 .try_chunks(storage.batch_size().unwrap())
+                .map_err(upstream_error)
                 .map_ok(move |nodes| {
                     let storage = Arc::clone(&storage);
                     let failed_ids = failed_ids.clone();
@@ -656,7 +669,6 @@ impl<T: Chunk> Pipeline<T> {
                     )
                     .map_err(anyhow::Error::from)
                 })
-                .err_into::<anyhow::Error>()
                 .try_buffer_unordered(self.concurrency)
                 .try_flatten_unordered(None)
                 .boxed()
@@ -930,6 +942,10 @@ impl<T: Chunk> Pipeline<T> {
     /// # Errors
     ///
     /// Returns an error if no storage backend is configured or if any stage of the pipeline fails.
+    ///
+    /// The error a step failed with is kept as is, so typed errors such as a
+    /// `LanguageModelError` from an LLM-backed transformer can be recovered with
+    /// [`anyhow::Error::downcast_ref`] or found in [`anyhow::Error::chain`].
     #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
     pub async fn run(mut self) -> Result<()> {
         self.stats.start();
@@ -1742,5 +1758,112 @@ mod tests {
 
         // The left node and the one successful right child were stored
         assert_eq!(storage.get_all().await.len(), 2);
+    }
+
+    mod language_model_errors {
+        use super::*;
+        use swiftide_core::chat_completion::errors::LanguageModelError;
+
+        /// Stands in for an LLM call that fails, like `SimplePrompt::prompt` does when the
+        /// provider is overloaded.
+        fn prompt_overloaded_provider() -> Result<String, LanguageModelError> {
+            Err(LanguageModelError::transient("provider overloaded"))
+        }
+
+        /// Fails the way the LLM-backed transformers do: by propagating the prompt error with `?`.
+        fn llm_transformer(mut node: TextNode) -> Result<TextNode> {
+            node.chunk = prompt_overloaded_provider()?;
+            Ok(node)
+        }
+
+        fn llm_batch_transformer(_nodes: Vec<TextNode>) -> IndexingStream<String> {
+            IndexingStream::iter(vec![
+                prompt_overloaded_provider()
+                    .map(TextNode::new)
+                    .map_err(anyhow::Error::from),
+            ])
+        }
+
+        fn passthrough_batch(nodes: Vec<TextNode>) -> IndexingStream<String> {
+            IndexingStream::from_nodes(nodes)
+        }
+
+        fn nodes() -> Vec<Result<TextNode>> {
+            vec![Ok(TextNode::new("one")), Ok(TextNode::new("two"))]
+        }
+
+        fn assert_language_model_error(error: &anyhow::Error) {
+            let language_model_error = error
+                .downcast_ref::<LanguageModelError>()
+                .unwrap_or_else(|| panic!("expected a LanguageModelError, got {error:?}"));
+            assert!(matches!(
+                language_model_error,
+                LanguageModelError::TransientError(_)
+            ));
+            assert!(
+                error
+                    .chain()
+                    .any(|cause| cause.downcast_ref::<LanguageModelError>().is_some())
+            );
+            assert_eq!(
+                error.to_string(),
+                "Transient error: provider overloaded",
+                "the message must stay unchanged"
+            );
+        }
+
+        #[tokio::test]
+        async fn from_transformer() {
+            let error = Pipeline::from_stream(nodes())
+                .then(llm_transformer)
+                .then_store_with(MemoryStorage::default())
+                .run()
+                .await
+                .unwrap_err();
+
+            assert_language_model_error(&error);
+        }
+
+        #[tokio::test]
+        async fn from_transformer_before_batch_transformer() {
+            let error = Pipeline::from_stream(nodes())
+                .then(llm_transformer)
+                .then_in_batch(passthrough_batch)
+                .then_store_with(MemoryStorage::default())
+                .run()
+                .await
+                .unwrap_err();
+
+            assert_language_model_error(&error);
+        }
+
+        #[tokio::test]
+        async fn from_transformer_before_batched_storage() {
+            let mut storage = MockPersist::new();
+            storage.expect_setup().returning(|| Ok(()));
+            storage.expect_batch_size().returning(|| Some(2));
+            storage.expect_name().returning(|| "batched_storage");
+
+            let error = Pipeline::from_stream(nodes())
+                .then(llm_transformer)
+                .then_store_with(storage)
+                .run()
+                .await
+                .unwrap_err();
+
+            assert_language_model_error(&error);
+        }
+
+        #[tokio::test]
+        async fn from_batch_transformer() {
+            let error = Pipeline::from_stream(nodes())
+                .then_in_batch(llm_batch_transformer)
+                .then_store_with(MemoryStorage::default())
+                .run()
+                .await
+                .unwrap_err();
+
+            assert_language_model_error(&error);
+        }
     }
 }
