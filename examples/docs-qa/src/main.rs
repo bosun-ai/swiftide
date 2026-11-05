@@ -13,10 +13,7 @@ mod retrieval;
 mod store;
 mod telemetry;
 
-use std::{
-    path::{Path, PathBuf},
-    time::Instant,
-};
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context as _, Result};
 use clap::{Parser, Subcommand};
@@ -135,8 +132,7 @@ async fn run(cli: Cli) -> Result<()> {
             }
 
             let metadata_model = metadata_model.as_deref().unwrap_or(&cli.model);
-            let started = Instant::now();
-            index::index(
+            let stats = index::index(
                 DocsLoader::new(sources),
                 &llm.retrying_model(metadata_model)?,
                 &Embedders::load()?,
@@ -148,7 +144,7 @@ async fn run(cli: Cli) -> Result<()> {
             println!(
                 "Indexed {chunks} chunks into `{}` in {:.1?}",
                 cli.collection,
-                started.elapsed()
+                stats.duration().unwrap_or_default()
             );
         }
         Command::Ask { question } => {

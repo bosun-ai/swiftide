@@ -14,7 +14,8 @@ async fn run_pipeline() -> Result<()> {
         .then_in_batch(Embed::new(FastEmbed::builder().batch_size(10).build()?))
         .then_store_with(MemoryStorage::default())
         .run()
-        .await
+        .await?;
+    Ok(())
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

@@ -4,6 +4,7 @@ use anyhow::Result;
 use swiftide::{
     indexing::{
         self,
+        statistics::PipelineStats,
         transformers::{ChunkMarkdown, Embed, MetadataKeywords, MetadataTitle, SparseEmbed},
     },
     integrations::qdrant::Qdrant,
@@ -43,7 +44,7 @@ pub async fn index(
     llm: &RetryingModel,
     embedders: &Embedders,
     qdrant: &Qdrant,
-) -> Result<()> {
+) -> Result<PipelineStats> {
     // ANCHOR: pipeline
     indexing::Pipeline::from_loader(loader)
         .then_chunk(ChunkMarkdown::from_chunk_range(

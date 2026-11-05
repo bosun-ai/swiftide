@@ -19,7 +19,8 @@ async fn run_pipeline(node_cache: Box<dyn NodeCache<Input = String>>) -> Result<
         .then_chunk(ChunkCode::try_for_language_and_chunk_size("rust", 10..256)?)
         .then_store_with(MemoryStorage::default())
         .run()
-        .await
+        .await?;
+    Ok(())
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

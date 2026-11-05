@@ -4,7 +4,7 @@ use swiftide_core::{
     BatchableTransformer, ChunkerTransformer, Loader, NodeCache, Persist, SimplePrompt,
     Transformer, WithBatchIndexingDefaults, WithIndexingDefaults,
     indexing::{Chunk, IndexingDefaults},
-    statistics::StatsCollector,
+    statistics::{PipelineStats, StatsCollector},
 };
 use tokio::{
     sync::{Mutex, mpsc},
@@ -88,7 +88,9 @@ pub struct Pipeline<T: Chunk> {
     concurrency: usize,
     indexing_defaults: IndexingDefaults,
     batch_size: usize,
-    stats: StatsCollector,
+    // Shared so a handle taken before `run` keeps observing the pipeline
+    // while it runs.
+    stats: Arc<StatsCollector>,
     node_caches: Vec<DynNodeCacheSet>,
     // Source ids (the id a node entered the pipeline with, kept in `parent_id`)
     // that had a failure anywhere in their fan-out. Populated by the pipeline
@@ -231,7 +233,7 @@ impl<T: Chunk> Default for Pipeline<T> {
             concurrency: num_cpus::get(),
             indexing_defaults: IndexingDefaults::default(),
             batch_size: DEFAULT_BATCH_SIZE,
-            stats: StatsCollector::new(),
+            stats: Arc::new(StatsCollector::new()),
             node_caches: Vec::new(),
             failed_ids: Arc::new(FailedIds::default()),
             passed_cache_ids: Arc::new(PassedCacheIds::default()),
@@ -863,32 +865,45 @@ impl<T: Chunk> Pipeline<T> {
         self.log_errors().log_nodes()
     }
 
-    /// Returns a snapshot of the current pipeline statistics
+    /// Returns a snapshot of the pipeline statistics collected so far.
     ///
-    /// This method provides real-time access to pipeline statistics during and after
-    /// execution. The returned statistics include node counts, token usage, and timing
-    /// information.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let pipeline = Pipeline::from_loader(loader).then(transformer);
-    ///
-    /// // During or after execution
-    /// let stats = pipeline.stats();
-    /// println!("Processed {} nodes", stats.nodes_processed);
-    /// ```
+    /// Before [`Pipeline::run`] this reports the initial (empty) statistics. `run` consumes the
+    /// pipeline and returns the final statistics; to watch a pipeline while it runs, keep a
+    /// handle from [`Pipeline::stats_collector`] instead.
     #[must_use]
-    pub fn stats(&self) -> swiftide_core::statistics::PipelineStats {
+    pub fn stats(&self) -> PipelineStats {
         self.stats.get_stats()
     }
 
-    /// Returns a reference to the statistics collector
+    /// Returns the shared statistics collector of this pipeline.
     ///
-    /// This provides direct access to the `StatsCollector` for recording additional
-    /// metrics or for use by transformers that need to report their own statistics.
+    /// Clone the `Arc` before calling [`Pipeline::run`] to observe the pipeline while it runs,
+    /// or to record additional metrics such as token usage.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use swiftide_core::indexing::TextNode;
+    /// # use swiftide_indexing::{Pipeline, persist::MemoryStorage};
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// let pipeline = Pipeline::from_stream(vec![TextNode::new("hello"), TextNode::new("world")])
+    ///     .then_store_with(MemoryStorage::default());
+    ///
+    /// let collector = Arc::clone(pipeline.stats_collector());
+    /// let running = tokio::spawn(pipeline.run());
+    ///
+    /// // Meanwhile, from anywhere else
+    /// println!("Stored {} nodes so far", collector.get_stats().nodes_stored);
+    ///
+    /// let stats = running.await??;
+    /// assert_eq!(collector.get_stats(), stats);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
-    pub fn stats_collector(&self) -> &StatsCollector {
+    pub fn stats_collector(&self) -> &Arc<StatsCollector> {
         &self.stats
     }
 
@@ -925,13 +940,31 @@ impl<T: Chunk> Pipeline<T> {
     ///
     /// # Returns
     ///
-    /// A `Result` indicating the success or failure of the pipeline execution.
+    /// The final [`PipelineStats`] of this run: node counts, token usage and timing.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use swiftide_core::indexing::TextNode;
+    /// # use swiftide_indexing::{Pipeline, persist::MemoryStorage};
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// let stats = Pipeline::from_stream(vec![TextNode::new("hello"), TextNode::new("world")])
+    ///     .then_store_with(MemoryStorage::default())
+    ///     .run()
+    ///     .await?;
+    ///
+    /// assert_eq!(stats.nodes_stored, 2);
+    /// println!("Stored {} nodes in {:?}", stats.nodes_stored, stats.duration());
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// # Errors
     ///
     /// Returns an error if no storage backend is configured or if any stage of the pipeline fails.
     #[tracing::instrument(skip_all, fields(total_nodes), name = "indexing_pipeline.run")]
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run(mut self) -> Result<PipelineStats> {
         self.stats.start();
 
         tracing::info!(
@@ -1029,7 +1062,7 @@ impl<T: Chunk> Pipeline<T> {
 
         tracing::Span::current().record("total_nodes", total_nodes);
 
-        Ok(())
+        Ok(stats)
     }
 }
 
@@ -1394,10 +1427,33 @@ mod tests {
         assert_eq!(initial_stats.nodes_processed, 0);
         assert_eq!(initial_stats.nodes_stored, 0);
 
-        pipeline.run().await.unwrap();
+        let stats = pipeline.run().await.unwrap();
 
-        // After running, stats should be updated (access via the moved pipeline would not work,
-        // but we verify the internal behavior through the run method's logging)
+        assert_eq!(stats.nodes_processed, 3);
+        assert_eq!(stats.nodes_stored, 3);
+        assert!(stats.duration().is_some());
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_run_returns_the_stats_a_shared_collector_observes() {
+        let storage = MemoryStorage::default();
+        let pipeline = Pipeline::from_stream(vec![
+            TextNode::new("first"),
+            TextNode::new("second"),
+            TextNode::new("third"),
+        ])
+        .filter(|node| node.as_ref().map_or(true, |node| node.chunk != "second"))
+        .then_store_with(storage.clone());
+
+        let collector = Arc::clone(pipeline.stats_collector());
+
+        let stats = pipeline.run().await.unwrap();
+
+        assert_eq!(stats.nodes_processed, 2);
+        assert_eq!(stats.nodes_stored, 2);
+        assert_eq!(storage.get_all().await.len(), 2);
+        assert!(stats.duration().is_some());
+        assert_eq!(collector.get_stats(), stats);
     }
 
     #[test_log::test(tokio::test)]
