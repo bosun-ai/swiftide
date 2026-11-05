@@ -42,6 +42,7 @@ impl SimilaritySingleEmbedding<()> {
 }
 
 impl<FILTER: SearchFilter> SimilaritySingleEmbedding<FILTER> {
+    /// Creates a strategy with the default `top_k` and the given `filter`
     pub fn from_filter(filter: FILTER) -> Self {
         Self {
             top_k: DEFAULT_TOP_K,
@@ -95,6 +96,7 @@ mod tests {
 
     #[async_trait]
     impl Retrieve<SimilaritySingleEmbedding> for StringFilterStore {
+        /// Retrieves with the unfiltered strategy and reports the `top_k` it ran with
         async fn retrieve(
             &self,
             search_strategy: &SimilaritySingleEmbedding,
@@ -108,6 +110,7 @@ mod tests {
 
     #[async_trait]
     impl Retrieve<SimilaritySingleEmbedding<String>> for StringFilterStore {
+        /// Retrieves with the `String` filter strategy and reports the filter it ran with
         async fn retrieve(
             &self,
             search_strategy: &SimilaritySingleEmbedding<String>,
@@ -118,6 +121,8 @@ mod tests {
         }
     }
 
+    /// `default()` infers the unfiltered strategy for a store that also retrieves with a typed
+    /// filter
     #[tokio::test]
     async fn default_infers_the_unfiltered_strategy_for_stores_with_typed_filters() {
         let result = StringFilterStore
@@ -131,6 +136,7 @@ mod tests {
         assert_eq!(result.documents()[0].content(), "unfiltered top_k=3");
     }
 
+    /// `from_filter` still selects the filtered retrieval of a store with both strategies
     #[tokio::test]
     async fn typed_filter_still_selects_the_filtered_retrieval() {
         let result = StringFilterStore
@@ -144,6 +150,7 @@ mod tests {
         assert_eq!(result.documents()[0].content(), "filtered by a = 1");
     }
 
+    /// The default strategy has no filter and the default `top_k`
     #[test]
     fn default_has_no_filter_and_default_top_k() {
         let strategy = SimilaritySingleEmbedding::default();
@@ -152,6 +159,7 @@ mod tests {
         assert!(strategy.filter().is_none());
     }
 
+    /// `with_top_k` chains straight from `default()`
     #[test]
     fn with_top_k_chains_from_default() {
         let strategy = SimilaritySingleEmbedding::default().with_top_k(3);
@@ -159,6 +167,7 @@ mod tests {
         assert_eq!(strategy.top_k(), 3);
     }
 
+    /// `with_filter` keeps a previously set `top_k`
     #[test]
     fn with_filter_keeps_top_k() {
         let strategy = SimilaritySingleEmbedding::default()
@@ -169,6 +178,7 @@ mod tests {
         assert_eq!(strategy.filter().as_deref(), Some("category = 'docs'"));
     }
 
+    /// `from_filter` starts from the default `top_k` and sets the filter
     #[test]
     fn from_filter_uses_default_top_k() {
         let strategy = SimilaritySingleEmbedding::from_filter("a = 1".to_string()).with_top_k(4);

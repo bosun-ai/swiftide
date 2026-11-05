@@ -127,6 +127,7 @@ impl<FILTER: SearchFilter> HybridSearch<FILTER> {
 mod tests {
     use super::*;
 
+    /// The setters chain from `default()` and each one takes effect
     #[test]
     fn setters_chain_from_default() {
         let strategy = HybridSearch::<()>::default()
@@ -145,6 +146,7 @@ mod tests {
         assert!(strategy.filter().is_none());
     }
 
+    /// `with_filter` keeps the previously configured `top_k` and `top_n`
     #[test]
     fn with_filter_keeps_configured_values() {
         let strategy = HybridSearch::<()>::default()

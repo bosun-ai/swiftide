@@ -209,6 +209,7 @@ mod tests {
         (guard, qdrant_client)
     }
 
+    /// Retrieval returns the stored documents, optionally narrowed by a filter
     #[test_log::test(tokio::test)]
     async fn test_retrieve_multiple_docs_and_filter() {
         let (_guard, qdrant_client) = setup().await;

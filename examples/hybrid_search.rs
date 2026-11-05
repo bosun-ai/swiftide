@@ -15,6 +15,8 @@ use swiftide::{
     query::{self, answers, query_transformers, search_strategies::HybridSearch},
 };
 
+/// Indexes Rust sources with dense and sparse embeddings, then answers a question with hybrid
+/// search
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();

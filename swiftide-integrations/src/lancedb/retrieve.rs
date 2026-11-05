@@ -200,6 +200,8 @@ mod test {
         (tempdir, lancedb)
     }
 
+    /// Retrieval returns the stored documents unfiltered, filtered, and with an inferred default
+    /// strategy
     #[tokio::test]
     async fn test_retrieve_multiple_docs_and_filter() {
         let (_guard, lancedb) = setup().await;

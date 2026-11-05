@@ -198,6 +198,7 @@ mod tests {
         querying::{Query, search_strategies::SimilaritySingleEmbedding, states},
     };
 
+    /// Retrieval returns the stored documents, optionally narrowed by a filter
     #[test_log::test(tokio::test)]
     async fn test_retrieve_multiple_docs_and_filter() {
         let test_context = TestContext::setup_with_cfg(
@@ -261,6 +262,7 @@ mod tests {
         assert_eq!(result.documents().len(), 0);
     }
 
+    /// Retrieved documents carry their stored metadata
     #[test_log::test(tokio::test)]
     async fn test_retrieve_docs_with_metadata() {
         let test_context = TestContext::setup_with_cfg(

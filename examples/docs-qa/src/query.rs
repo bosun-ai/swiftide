@@ -103,6 +103,8 @@ impl DocsQa {
         self.answer_with(Self::hybrid_search().evaluate_with(ragas))
     }
 
+    /// The hybrid search pipeline used for retrieval, with `CANDIDATES` documents per query and in
+    /// total
     fn hybrid_search() -> query::Pipeline<'static, HybridSearch<Filter>> {
         // ANCHOR: hybrid
         query::Pipeline::from_search_strategy(

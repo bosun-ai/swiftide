@@ -278,6 +278,7 @@ mod tests {
         assert!(contents.contains(&"content3"));
     }
 
+    /// Vector search returns the closest stored nodes for each embedded field
     #[test_log::test(tokio::test)]
     async fn test_vector_similarity_search_accuracy() {
         let test_context = TestContext::setup_with_cfg(
@@ -339,6 +340,7 @@ mod tests {
         assert!(contents.contains(&"similar_content"));
     }
 
+    /// Persisting nodes stores them with the configured vector fields and retrieves them again
     #[test_case(
         // SingleWithMetadata - No Metadata
         vec![
