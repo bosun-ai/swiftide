@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 
 use crate::chat_completion::{ChatCompletionRequest, ChatCompletionResponse};
 use crate::stream_backoff::{StreamBackoff, TokioSleeper};
@@ -60,31 +60,92 @@ impl<P: Clone> LanguageModelWithBackOff<P> {
             .with_randomization_factor(self.config.randomization_factor)
             .build()
     }
+
+    /// Runs `operation` until it succeeds, fails permanently, or the backoff schedule is
+    /// exhausted.
+    ///
+    /// Every failed attempt that will be retried is logged at WARN with its full cause, so a
+    /// misconfiguration (e.g. a wrong base URL) is visible on the first attempt. The final failure
+    /// is logged once at ERROR.
+    async fn retry<T, Fut>(
+        &self,
+        mut operation: impl FnMut() -> Fut,
+    ) -> Result<T, LanguageModelError>
+    where
+        Fut: Future<Output = Result<T, LanguageModelError>>,
+    {
+        let mut failed_attempts: usize = 0;
+
+        let result = backoff::future::retry_notify(
+            self.strategy(),
+            || {
+                let attempt = operation();
+                async move { attempt.await.map_err(into_backoff_error) }
+            },
+            |error: LanguageModelError, retry_in: Duration| {
+                failed_attempts += 1;
+                tracing::warn!(
+                    attempt = failed_attempts,
+                    ?retry_in,
+                    error = %ErrorWithCauses(&error),
+                    "Language model request failed, retrying"
+                );
+            },
+        )
+        .await;
+
+        result.inspect_err(|error| {
+            tracing::error!(
+                attempts = failed_attempts + 1,
+                error = %ErrorWithCauses(error),
+                "Language model request failed, giving up"
+            );
+        })
+    }
+}
+
+/// Only transient errors are worth retrying; everything else fails immediately.
+fn into_backoff_error(error: LanguageModelError) -> backoff::Error<LanguageModelError> {
+    match error {
+        LanguageModelError::TransientError(_) => backoff::Error::transient(error),
+        LanguageModelError::ContextLengthExceeded(_) | LanguageModelError::PermanentError(_) => {
+            backoff::Error::Permanent(error)
+        }
+    }
+}
+
+/// Displays a [`LanguageModelError`] followed by its chain of causes.
+///
+/// Transport errors often hide the actionable part in their source (e.g. `error sending request`
+/// caused by `Connection refused`).
+struct ErrorWithCauses<'a>(&'a LanguageModelError);
+
+impl fmt::Display for ErrorWithCauses<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (LanguageModelError::ContextLengthExceeded(inner)
+        | LanguageModelError::PermanentError(inner)
+        | LanguageModelError::TransientError(inner)) = self.0;
+
+        let mut message = self.0.to_string();
+        let mut cause = inner.source();
+        while let Some(error) = cause {
+            let description = error.to_string();
+            // Some errors already include their source in their own message.
+            if !message.contains(&description) {
+                message.push_str(": ");
+                message.push_str(&description);
+            }
+            cause = error.source();
+        }
+
+        f.write_str(&message)
+    }
 }
 
 #[async_trait]
 impl<P: SimplePrompt + Clone> SimplePrompt for LanguageModelWithBackOff<P> {
     async fn prompt(&self, prompt: Prompt) -> Result<String, LanguageModelError> {
-        let strategy = self.strategy();
-
-        let op = || {
-            let prompt = prompt.clone();
-            async {
-                self.inner.prompt(prompt).await.map_err(|e| match e {
-                    LanguageModelError::ContextLengthExceeded(e) => {
-                        backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
-                    }
-                    LanguageModelError::PermanentError(e) => {
-                        backoff::Error::Permanent(LanguageModelError::PermanentError(e))
-                    }
-                    LanguageModelError::TransientError(e) => {
-                        backoff::Error::transient(LanguageModelError::TransientError(e))
-                    }
-                })
-            }
-        };
-
-        backoff::future::retry(strategy, op).await
+        self.retry(|| self.inner.prompt(prompt.clone())).await
     }
 
     fn name(&self) -> &'static str {
@@ -109,42 +170,14 @@ impl<LLM: ChatCompletion + Clone> ChatCompletion for LanguageModelWithBackOff<LL
         &self,
         request: &ChatCompletionRequest<'_>,
     ) -> Result<ChatCompletionResponse, LanguageModelError> {
-        let strategy = self.strategy();
-
-        let op = || async move {
-            self.inner.complete(request).await.map_err(|e| match e {
-                LanguageModelError::ContextLengthExceeded(e) => {
-                    backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
-                }
-                LanguageModelError::PermanentError(e) => {
-                    backoff::Error::Permanent(LanguageModelError::PermanentError(e))
-                }
-                LanguageModelError::TransientError(e) => {
-                    backoff::Error::transient(LanguageModelError::TransientError(e))
-                }
-            })
-        };
-
-        backoff::future::retry(strategy, op).await
+        self.retry(|| self.inner.complete(request)).await
     }
 
     async fn complete_stream(&self, request: &ChatCompletionRequest<'_>) -> ChatCompletionStream {
         let strategy = self.strategy();
 
         let stream = self.inner.complete_stream(request).await;
-        let stream = stream
-            .map_err(|e| match e {
-                LanguageModelError::ContextLengthExceeded(e) => {
-                    backoff::Error::Permanent(LanguageModelError::ContextLengthExceeded(e))
-                }
-                LanguageModelError::PermanentError(e) => {
-                    backoff::Error::Permanent(LanguageModelError::PermanentError(e))
-                }
-                LanguageModelError::TransientError(e) => {
-                    backoff::Error::transient(LanguageModelError::TransientError(e))
-                }
-            })
-            .boxed();
+        let stream = stream.map_err(into_backoff_error).boxed();
         StreamBackoff::new(stream, strategy, TokioSleeper)
             .map_err(|e| match e {
                 backoff::Error::Permanent(e) => e,
@@ -422,5 +455,198 @@ mod tests {
             Err(LanguageModelError::ContextLengthExceeded(_)) => {} // Expected
             _ => panic!("Expected ContextLengthExceeded, got {result:?}"),
         }
+    }
+
+    /// Level and fields of every event emitted by this crate on the current thread.
+    #[derive(Clone, Default)]
+    struct CapturedEvents(Arc<std::sync::Mutex<Vec<(tracing::Level, String)>>>);
+
+    thread_local! {
+        static CURRENT_CAPTURE: std::cell::RefCell<Option<CapturedEvents>> =
+            const { std::cell::RefCell::new(None) };
+    }
+
+    impl CapturedEvents {
+        /// Starts capturing events emitted on the current thread.
+        ///
+        /// A global subscriber routing to a thread local capture is used instead of scoped
+        /// subscribers, because tracing caches callsite interest across threads, which makes
+        /// scoped subscribers miss events when tests run in parallel.
+        fn start() -> Self {
+            static INSTALL: std::sync::Once = std::sync::Once::new();
+            INSTALL.call_once(|| {
+                tracing::subscriber::set_global_default(ThreadLocalCapture)
+                    .expect("no other global subscriber in swiftide-core tests");
+            });
+
+            let events = Self::default();
+            CURRENT_CAPTURE.with(|capture| *capture.borrow_mut() = Some(events.clone()));
+            events
+        }
+
+        fn at(&self, level: tracing::Level) -> Vec<String> {
+            self.0
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|(event_level, _)| *event_level == level)
+                .map(|(_, fields)| fields.clone())
+                .collect()
+        }
+    }
+
+    struct FieldsAsText(String);
+
+    impl tracing::field::Visit for FieldsAsText {
+        fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn Debug) {
+            use std::fmt::Write as _;
+            let _ = write!(self.0, "{}={value:?} ", field.name());
+        }
+    }
+
+    struct ThreadLocalCapture;
+
+    impl tracing::Subscriber for ThreadLocalCapture {
+        fn enabled(&self, _metadata: &tracing::Metadata<'_>) -> bool {
+            true
+        }
+
+        fn new_span(&self, _span: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+            tracing::span::Id::from_u64(1)
+        }
+
+        fn record(&self, _span: &tracing::span::Id, _values: &tracing::span::Record<'_>) {}
+
+        fn record_follows_from(&self, _span: &tracing::span::Id, _follows: &tracing::span::Id) {}
+
+        fn event(&self, event: &tracing::Event<'_>) {
+            if !event.metadata().target().starts_with("swiftide_core") {
+                return;
+            }
+            CURRENT_CAPTURE.with(|capture| {
+                if let Some(events) = capture.borrow().as_ref() {
+                    let mut fields = FieldsAsText(String::new());
+                    event.record(&mut fields);
+                    events
+                        .0
+                        .lock()
+                        .unwrap()
+                        .push((*event.metadata().level(), fields.0));
+                }
+            });
+        }
+
+        fn enter(&self, _span: &tracing::span::Id) {}
+
+        fn exit(&self, _span: &tracing::span::Id) {}
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn test_retried_attempts_warn_and_eventual_success_logs_no_error() {
+        let events = CapturedEvents::start();
+
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_chat = MockChatCompletion {
+            call_count: call_count.clone(),
+            should_fail_count: 2,
+            error_type: MockErrorType::Transient,
+        };
+        let model_with_backoff =
+            LanguageModelWithBackOff::new(mock_chat, BackoffConfiguration::default());
+
+        let request: ChatCompletionRequest<'static> = Vec::new().into();
+        let result = model_with_backoff.complete(&request).await;
+
+        assert!(result.is_ok());
+        assert_eq!(call_count.load(Ordering::SeqCst), 3);
+        assert!(events.at(tracing::Level::ERROR).is_empty());
+
+        let warnings = events.at(tracing::Level::WARN);
+        assert_eq!(warnings.len(), 2, "{warnings:?}");
+        assert!(warnings[0].contains("attempt=1"), "{warnings:?}");
+        assert!(warnings[1].contains("attempt=2"), "{warnings:?}");
+        assert!(warnings[0].contains("Transient error"), "{warnings:?}");
+    }
+
+    #[tokio::test]
+    async fn test_giving_up_logs_exactly_one_error() {
+        let events = CapturedEvents::start();
+
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let mock_prompt = MockSimplePrompt {
+            call_count: call_count.clone(),
+            should_fail_count: usize::MAX,
+            error_type: MockErrorType::Transient,
+        };
+        // One retry after a second; a second retry would exceed the elapsed time budget.
+        let config = BackoffConfiguration {
+            initial_interval_sec: 1,
+            multiplier: 1.0,
+            randomization_factor: 0.0,
+            max_elapsed_time_sec: 2,
+        };
+        let model_with_backoff = LanguageModelWithBackOff::new(mock_prompt, config);
+
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
+
+        assert!(matches!(result, Err(LanguageModelError::TransientError(_))));
+        let attempts = call_count.load(Ordering::SeqCst);
+        assert!(attempts >= 2, "expected at least one retry, got {attempts}");
+
+        let errors = events.at(tracing::Level::ERROR);
+        assert_eq!(errors.len(), 1, "{errors:?}");
+        assert!(
+            errors[0].contains(&format!("attempts={attempts}")),
+            "{errors:?}"
+        );
+        assert_eq!(events.at(tracing::Level::WARN).len(), attempts - 1);
+    }
+
+    #[tokio::test]
+    async fn test_permanent_error_logs_one_error_and_no_retry_warning() {
+        let events = CapturedEvents::start();
+
+        let mock_prompt = MockSimplePrompt {
+            call_count: Arc::new(AtomicUsize::new(0)),
+            should_fail_count: 1,
+            error_type: MockErrorType::Permanent,
+        };
+        let model_with_backoff =
+            LanguageModelWithBackOff::new(mock_prompt, BackoffConfiguration::default());
+
+        let result = model_with_backoff.prompt(Prompt::from("Test prompt")).await;
+
+        assert!(matches!(result, Err(LanguageModelError::PermanentError(_))));
+        assert_eq!(events.at(tracing::Level::ERROR).len(), 1);
+        assert!(events.at(tracing::Level::WARN).is_empty());
+    }
+
+    #[test]
+    fn test_error_with_causes_includes_the_underlying_cause() {
+        #[derive(Debug)]
+        struct RequestFailed(std::io::Error);
+
+        impl fmt::Display for RequestFailed {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("error sending request for url (http://localhost:1/v1/chat)")
+            }
+        }
+
+        impl std::error::Error for RequestFailed {
+            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                Some(&self.0)
+            }
+        }
+
+        let error = LanguageModelError::transient(RequestFailed(std::io::Error::new(
+            std::io::ErrorKind::ConnectionRefused,
+            "Connection refused",
+        )));
+
+        assert_eq!(
+            ErrorWithCauses(&error).to_string(),
+            "Transient error: error sending request for url (http://localhost:1/v1/chat): \
+             Connection refused"
+        );
     }
 }

@@ -52,10 +52,13 @@ impl<
     /// - Returns an error if the model is not set in the default options.
     /// - Returns an error if the request to the `OpenAI` API fails.
     /// - Returns an error if the response does not contain the expected content.
-    #[tracing::instrument(skip_all, err)]
+    #[cfg_attr(
+        not(feature = "langfuse"),
+        tracing::instrument(skip_all, err(level = "warn"))
+    )]
     #[cfg_attr(
         feature = "langfuse",
-        tracing::instrument(skip_all, err, fields(langfuse.type = "GENERATION"))
+        tracing::instrument(skip_all, err(level = "warn"), fields(langfuse.type = "GENERATION"))
     )]
     async fn structured_prompt_dyn(
         &self,
