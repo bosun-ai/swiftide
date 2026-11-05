@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793897715324,
+  "lastUpdate": 1793899794457,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -35939,6 +35939,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2101192,
             "range": "± 2745",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "82875882+pcbeingused333@users.noreply.github.com",
+            "name": "alexcastgonz",
+            "username": "pcbeingused333"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "348d5516ef9d570a04b93b3ded8c89019b8ec035",
+          "message": "fix(anthropic): stop double counting usage in streaming responses (#1220)\n\nStreaming Anthropic chat completions report inflated token usage: the\nprompt tokens (and the first output token) are counted twice.\n\n**Cause.** The Anthropic API reports streamed usage cumulatively:\n`message_start` carries the input tokens and the first output tokens,\nand the `usage` of `message_delta` is the running total for the message.\n`append_delta_from_chunk` passed each of them to `append_usage_delta`,\nwhich adds, so the final `Usage` (and the `on_usage` callback and\nemitted metrics) counted the start tokens twice and, when\n`message_delta` repeats `input_tokens`, the prompt tokens twice.\n\n**Fix.** A small helper, `merge_cumulative_usage`, adds only the part of\na reported usage that has not been counted yet. `message_start` and\n`message_delta` both go through it, so a repeated or cumulative report\nno longer inflates the totals.\n\n**Test.** `test_streaming_usage_is_not_double_counted` feeds a\n`message_start` (25 input, 1 output tokens) and two cumulative\n`message_delta` events, and expects 25 / 15 / 40. Before the change it\nreports 50 prompt tokens; after, it passes. `cargo clippy -p\nswiftide-integrations --features anthropic --lib -- -D warnings` is\nclean.\n\nThis change was prepared with help from an AI coding assistant (Claude\nCode).\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n* Corrected token usage totals in streamed Anthropic responses when\nusage is reported cumulatively.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T18:17:27+01:00",
+          "tree_id": "08d61b008206a14ae1d17fb57d20966c49c82776",
+          "url": "https://github.com/bosun-ai/swiftide/commit/348d5516ef9d570a04b93b3ded8c89019b8ec035"
+        },
+        "date": 1793899791454,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 980102,
+            "range": "± 24242",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 266055,
+            "range": "± 4287",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1864,
+            "range": "± 2232",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6701,
+            "range": "± 6673",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26172,
+            "range": "± 26477",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4158223,
+            "range": "± 13555",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2089269,
+            "range": "± 10195",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16618799,
+            "range": "± 51617",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2094265,
+            "range": "± 8888",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66504632,
+            "range": "± 198228",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2115906,
+            "range": "± 4158",
             "unit": "ns/iter"
           }
         ]
