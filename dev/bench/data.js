@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793868103629,
+  "lastUpdate": 1793897715324,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -35831,6 +35831,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2101427,
             "range": "± 3037",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b988268dd54cd687747eda50380259114cac8a84",
+          "message": "docs: showcase example crates, example anchors, agent skill and crate docs (#1223)\n\n## Why\n\nThe documentation site (swiftide.rs) is being rebuilt so that every line\nof Rust on it is excerpted from code that compiles. This PR adds the\nupstream pieces that rebuild needs, and that are useful on their own.\n\n## What\n\n- **Four showcase example crates** under `examples/`, each a real\nprogram with a README, `ANCHOR` regions for the docs, and an `OUTPUT.md`\ncaptured from a real run:\n- `ask-your-codebase`: index a repository into LanceDB with FastEmbed\nand a Redb cache, then answer questions with cited files.\n- `release-notes-agent`: an agent with git tools that drafts release\nnotes, streams the draft, and writes only after approval\n(`ApprovalRequired`, `StopWithArgs`, optional MCP and Langfuse).\n- `workspace-architect`: a task graph that fans out one agent per crate\nin parallel, joins the summaries, renders `ARCHITECTURE.md`, and pauses\nfor approval. The `ARCHITECTURE.md` at the repo root is its real output.\n- `docs-qa`: index markdown into Qdrant with dense + sparse vectors,\nhybrid search, reranking, and a Ragas evaluation.\nAll four share one CLI contract: `OPENAI_BASE_URL` (optional),\n`OPENAI_API_KEY`, `--model`/`OPENAI_MODEL`.\n- **Anchor regions** (`// ANCHOR: name` … `// ANCHOR_END: name`) in all\n35 single-file examples, so docs can excerpt coherent regions. No\nbehaviour changes, except `hello_agents.rs` now uses\n`Command::read_file` instead of interpolating a path into a shell\ncommand, and the `kakfa` example name is spelled `kafka`.\n- **`skills/swiftide/`**: an Agent Skill (agentskills.io format) with\nreference cheat-sheets, installable with `npx skills add\nbosun-ai/swiftide`, plus a `context7.json` so Context7 indexes examples,\nskills and sources with usage rules.\n- **Crate-level docs** for `swiftide-core`, `swiftide-indexing`,\n`swiftide-query` and `swiftide-integrations`.\n\n## How it was checked\n\n`cargo check --workspace --all-features`, `cargo clippy --all-targets --\n-D warnings` on the four crates, `cargo +nightly fmt --all -- --check`,\n`typos` (captured output files are excluded), `cargo test` for the\nshowcase crates and `cargo test --doc` for the documented crates. Each\nshowcase was run for real through an OpenAI-compatible gateway with\nClaude models on Bedrock; the model is stated in each `OUTPUT.md`.\n\n## Papercuts found while writing the showcases (not fixed here)\n\n- Apps must install a rustls crypto provider themselves; the first HTTP\ncall panics otherwise. Not documented in README or examples.\n- `LanguageModelError` cannot be downcast from the `anyhow` error\nreturned by `indexing::Pipeline::run`.\n- Retried attempts under `LanguageModelWithBackOff` log at ERROR via\n`#[instrument(err)]`; connection-refused errors are treated as\ntransient.\n- `SimilaritySingleEmbedding::default()` with LanceDB needs a type\nannotation; `with_top_k` takes `&mut self` so it cannot be chained.\n- `Pipeline::stats()` is unusable after `run(self)`.\n- No simple base-URL setter on the OpenAI builder;\n`async_openai::Client::with_config` is needed.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n---------\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-05T17:45:12+01:00",
+          "tree_id": "aa7c6b30d2cc2755f4c3390cfb9cb9870926956e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/b988268dd54cd687747eda50380259114cac8a84"
+        },
+        "date": 1793897713224,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 653003,
+            "range": "± 14635",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 192770,
+            "range": "± 731",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1533,
+            "range": "± 1624",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5512,
+            "range": "± 4696",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 21583,
+            "range": "± 19440",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4148115,
+            "range": "± 13011",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2082765,
+            "range": "± 5655",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16608211,
+            "range": "± 83109",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2087462,
+            "range": "± 6680",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66168805,
+            "range": "± 278747",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2101192,
+            "range": "± 2745",
             "unit": "ns/iter"
           }
         ]
