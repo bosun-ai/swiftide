@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793965607403,
+  "lastUpdate": 1793969670879,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37019,6 +37019,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2098237,
             "range": "± 13551",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "155570396+SwabbieBosun@users.noreply.github.com",
+            "name": "Swabbie (Bosun)",
+            "username": "SwabbieBosun"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "272a1d19e641d2179ccfce671d93b6f20d4e2a50",
+          "message": "chore: release v0.34.0 (#1199)\n\n## 🤖 New release\n\n* `swiftide-core`: 0.33.0 -> 0.34.0 (⚠ API breaking changes)\n* `swiftide-macros`: 0.33.0 -> 0.34.0\n* `swiftide-indexing`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n* `swiftide-tasks`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n* `swiftide-agents`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n* `swiftide-agents-contrib`: 0.33.0 -> 0.34.0\n* `swiftide-integrations`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n* `swiftide-langfuse`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n* `swiftide-query`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n* `swiftide`: 0.33.0 -> 0.34.0 (✓ API compatible changes)\n\n### ⚠ `swiftide-core` breaking changes\n\n```text\n--- failure method_receiver_mut_ref_became_owned: method receiver changed from mutable reference to owned value ---\n\nDescription:\nA method's receiver changed from a mutable reference to an owned value. Ownership is transferred as part of the call, which is a breaking change.\n        ref: https://doc.rust-lang.org/reference/items/associated-items.html#methods\n       impl: https://github.com/obi1kenobi/cargo-semver-checks/tree/v0.51.0/src/lints/method_receiver_mut_ref_became_owned.ron\n\nFailed in:\n  swiftide_core::querying::search_strategies::SimilaritySingleEmbedding::with_top_k now takes Self, not &mut Self, in /tmp/.tmpMfBnJe/swiftide/swiftide-core/src/search_strategies/similarity_single_embedding.rs:54\n  swiftide_core::querying::search_strategies::HybridSearch::with_top_k now takes Self, not &mut Self, in /tmp/.tmpMfBnJe/swiftide/swiftide-core/src/search_strategies/hybrid_search.rs:72\n  swiftide_core::querying::search_strategies::HybridSearch::with_top_n now takes Self, not &mut Self, in /tmp/.tmpMfBnJe/swiftide/swiftide-core/src/search_strategies/hybrid_search.rs:83\n  swiftide_core::querying::search_strategies::HybridSearch::with_dense_vector_field now takes Self, not &mut Self, in /tmp/.tmpMfBnJe/swiftide/swiftide-core/src/search_strategies/hybrid_search.rs:95\n  swiftide_core::querying::search_strategies::HybridSearch::with_sparse_vector_field now takes Self, not &mut Self, in /tmp/.tmpMfBnJe/swiftide/swiftide-core/src/search_strategies/hybrid_search.rs:108\n```\n\n<details><summary><i><b>Changelog</b></i></summary><p>\n\n\n\n\n\n\n\n\n\n\n## `swiftide`\n\n<blockquote>\n\n##\n[0.34.0](https://github.com/bosun-ai/swiftide/compare/v0.33.0...v0.34.0)\n- 2026-11-06\n\n### New features\n\n-\n[71fa458](https://github.com/bosun-ai/swiftide/commit/71fa4587cf6206870d0a204eec8e0a365f995fd4)\n*(agents)* Add optional contrib tools and context hooks\n([#1207](https://github.com/bosun-ai/swiftide/pull/1207))\n\n-\n[9b64baf](https://github.com/bosun-ai/swiftide/commit/9b64baf9e6426003c156864fe92073eb72a5f02f)\n*(core)* [**breaking**] Chainable search strategy setters and inferable\nSimilaritySingleEmbedding::default()\n([#1226](https://github.com/bosun-ai/swiftide/pull/1226))\n\n**BREAKING CHANGE**: chainable search strategy setters and inferable\nSimilaritySingleEmbedding::default()\n([#1226](https://github.com/bosun-ai/swiftide/pull/1226))\n\n-\n[76b0960](https://github.com/bosun-ai/swiftide/commit/76b0960c67884ffbe4befb3a808b0b077a05cf54)\n*(indexing)* [**breaking**] Run returns pipeline stats\n([#1225](https://github.com/bosun-ai/swiftide/pull/1225))\n\n**BREAKING CHANGE**: run returns pipeline stats\n([#1225](https://github.com/bosun-ai/swiftide/pull/1225))\n\n-\n[a9e21b7](https://github.com/bosun-ai/swiftide/commit/a9e21b774e12673386ad2d7dafe9a0e726b30712)\n*(integrations)* Set api_base and api_key on the OpenAI builder\n([#1228](https://github.com/bosun-ai/swiftide/pull/1228))\n\n-\n[27d50db](https://github.com/bosun-ai/swiftide/commit/27d50db438c85a824bfc450aaef72ae14c65233e)\n*(integrations)* Add Perl to SupportedLanguages behind tree-sitter-perl\n([#1198](https://github.com/bosun-ai/swiftide/pull/1198))\n\n### Bug fixes\n\n-\n[c94ce79](https://github.com/bosun-ai/swiftide/commit/c94ce79d7cc027480f927ac98c637b284e6431b4)\n*(agents)* Recover from unknown tool calls\n([#1218](https://github.com/bosun-ai/swiftide/pull/1218))\n\n-\n[348d551](https://github.com/bosun-ai/swiftide/commit/348d5516ef9d570a04b93b3ded8c89019b8ec035)\n*(anthropic)* Stop double counting usage in streaming responses\n([#1220](https://github.com/bosun-ai/swiftide/pull/1220))\n\n-\n[669c4e5](https://github.com/bosun-ai/swiftide/commit/669c4e5f3fef37783c4a6a0cf7f12f0ccaba2354)\n*(core)* Log retried LLM attempts at WARN and give-up once at ERROR\n([#1229](https://github.com/bosun-ai/swiftide/pull/1229))\n\n-\n[3b1ad22](https://github.com/bosun-ai/swiftide/commit/3b1ad22e41d9043a9ca9a0df114f3b9de4c093d6)\n*(deps)* Resolve security advisories\n([#1215](https://github.com/bosun-ai/swiftide/pull/1215))\n\n-\n[7ac9497](https://github.com/bosun-ai/swiftide/commit/7ac949740250963227fa0a8bf9f40b496b8fff87)\n*(indexing)* Keep the original error when a step before a batch fails\n([#1224](https://github.com/bosun-ai/swiftide/pull/1224))\n\n-\n[cea196a](https://github.com/bosun-ai/swiftide/commit/cea196aa07c31a3b8fa64916cbbd40c36833f62b)\n*(integrations)* HTTP clients work without installing a rustls crypto\nprovider ([#1227](https://github.com/bosun-ai/swiftide/pull/1227))\n\n-\n[90bcadc](https://github.com/bosun-ai/swiftide/commit/90bcadc7384516901cd79cb4256b9cefdcc768d0)\n*(openai)* Avoid repeating streamed text deltas\n([#1216](https://github.com/bosun-ai/swiftide/pull/1216))\n\n-\n[9bfa9a5](https://github.com/bosun-ai/swiftide/commit/9bfa9a58ee05e6c293d8ccf824fe7ac93948e812)\n*(openai)* Preserve plaintext reasoning in Responses history\n([#1221](https://github.com/bosun-ai/swiftide/pull/1221))\n\n### Docs\n\n-\n[b988268](https://github.com/bosun-ai/swiftide/commit/b988268dd54cd687747eda50380259114cac8a84)\nShowcase example crates, example anchors, agent skill and crate docs\n([#1223](https://github.com/bosun-ai/swiftide/pull/1223))\n\n-\n[f184670](https://github.com/bosun-ai/swiftide/commit/f184670bc5268ab98ba98c22ab6540fd4d7acfae)\nCorrect the OpenAI base URL env var, retry log level and showcase branch\n([#1230](https://github.com/bosun-ai/swiftide/pull/1230))\n\n\n**Full Changelog**:\nhttps://github.com/bosun-ai/swiftide/compare/0.33.0...0.34.0\n</blockquote>\n\n\n</p></details>\n\n---\nThis PR was generated with\n[release-plz](https://github.com/release-plz/release-plz/).",
+          "timestamp": "2026-11-06T13:42:47+01:00",
+          "tree_id": "eada8987e6cc89d86a572d86acf78d3adde3e37b",
+          "url": "https://github.com/bosun-ai/swiftide/commit/272a1d19e641d2179ccfce671d93b6f20d4e2a50"
+        },
+        "date": 1793969667565,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 693135,
+            "range": "± 14677",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 175313,
+            "range": "± 2442",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 2047,
+            "range": "± 1368",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 7468,
+            "range": "± 4160",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 29514,
+            "range": "± 17318",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4157379,
+            "range": "± 22671",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2089205,
+            "range": "± 20508",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16773796,
+            "range": "± 119659",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2100994,
+            "range": "± 17043",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 67531656,
+            "range": "± 348913",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2135732,
+            "range": "± 19020",
             "unit": "ns/iter"
           }
         ]
