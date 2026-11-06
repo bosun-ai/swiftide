@@ -138,7 +138,7 @@ pub struct GenericOpenAI<
 #[derive(Default)]
 enum ClientSource<C: async_openai::config::Config> {
     /// `async_openai`'s default client. For [`OpenAIConfig`] that reads `OPENAI_API_KEY` and
-    /// `OPENAI_API_BASE` from the environment.
+    /// `OPENAI_BASE_URL` from the environment.
     #[default]
     Default,
     /// Built by the builder from the connection setters (`api_base`, `api_key`).
@@ -405,7 +405,7 @@ impl OpenAIBuilder {
     /// vLLM or `LiteLLM`. The url includes the version prefix, e.g. `http://127.0.0.1:8080/v1`.
     ///
     /// `api_base` and [`api_key`](Self::api_key) configure the client the builder creates for
-    /// you; anything not set falls back to `async_openai`'s defaults (`OPENAI_API_BASE`,
+    /// you; anything not set falls back to `async_openai`'s defaults (`OPENAI_BASE_URL`,
     /// `OPENAI_API_KEY`). A client passed to [`client`](GenericOpenAIBuilder::client) replaces
     /// that configuration entirely. Whichever is called last wins: calling `api_base` after
     /// `client` discards the explicit client and starts from the defaults again.

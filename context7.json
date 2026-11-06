@@ -11,7 +11,7 @@
     "For structured agent output, call `without_default_stop_tool()` before `.tools(..)`, register `StopWithArgs::with_parameters_schema(schema_for!(T))`, and read `StopReason::RequestedByTool(_, Some(payload))`.",
     "Gate side effects with `ApprovalRequired::new(tool)`; on `StopReason::FeedbackRequired` call `context().feedback_received(&tool_call, &ToolFeedback::approved())` and then `agent.run()`.",
     "Use `Task`, `TaskNode` and `Transition` (`next`, `fan_out(..).and(..).join_with(..)`, `pause`) for multi-step workflows instead of chaining agents by hand; resume paused tasks with `task.resume()`.",
-    "Point the `openai` integration at any OpenAI-compatible endpoint with `OpenAIConfig::new().with_api_base(..).with_api_key(..)` and `OpenAI::builder().client(async_openai::Client::with_config(config))`.",
+    "Point the `openai` integration at any OpenAI-compatible endpoint with `OpenAI::builder().api_base(\"...\").api_key(\"...\")`; `.client(..)` remains available for full control over the `async_openai` client.",
     "Use the same embedding model for indexing and querying, and match the vector store's `vector_size` to its dimensions.",
     "Wrap LLM clients used during indexing in `LanguageModelWithBackOff` to survive rate limits from concurrent transformers."
   ]

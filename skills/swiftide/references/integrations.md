@@ -49,7 +49,7 @@ Builder options seen in the examples: `.stream_full(false)` (stream deltas only)
 
 Gateways, local servers and other providers that speak the OpenAI protocol use the same client,
 pointed elsewhere with `.api_base(..)` (including the version prefix, e.g.
-`http://127.0.0.1:8080/v1`) and `.api_key(..)`. Unset, they fall back to `OPENAI_API_BASE` and
+`http://127.0.0.1:8080/v1`) and `.api_key(..)`. Unset, they fall back to `OPENAI_BASE_URL` and
 `OPENAI_API_KEY`. `examples/workspace-architect/src/llm.rs`:
 
 ```rust
