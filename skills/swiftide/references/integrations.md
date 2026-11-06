@@ -1,4 +1,4 @@
-# Integrations cheat sheet (Swiftide 0.33)
+# Integrations cheat sheet
 
 Every integration sits behind a feature flag on the `swiftide` crate and lives under
 `swiftide::integrations::<name>`. Every snippet is copied from compiled code; the source file is

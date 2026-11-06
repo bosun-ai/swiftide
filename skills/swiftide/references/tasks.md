@@ -1,4 +1,4 @@
-# Tasks cheat sheet (Swiftide 0.33)
+# Tasks cheat sheet
 
 Feature flag: `swiftide-tasks` (enabled by `swiftide-agents`). Module: `swiftide::tasks`.
 Every snippet is copied from compiled code; the source file is named above each one.
