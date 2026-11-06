@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793975979909,
+  "lastUpdate": 1793977050054,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37235,6 +37235,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2111182,
             "range": "± 4921",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e377c4a2e76fe2559629ae0efdae3c6e0fb4d829",
+          "message": "chore: release v0.34.0 (#1233)\n\n## Why\n\nThe 0.34.0 release stopped halfway, and #1232 fixed the cause.\nRelease-plz can't resume it by itself: every crate is already at 0.34.0,\nso it finds nothing to commit and opens no release PR. Without a release\nPR, it skips publishing ([latest\nrun](https://github.com/bosun-ai/swiftide/actions/runs/42234072983)).\n\nThis hand-made release PR resumes it. Release-plz recognises a release\nPR by its `release-plz-` branch prefix.\n\n## What changed\n\nAdded the #1232 fix to the 0.34.0 changelog. No code or version changes.\n\n## What merging does\n\n**Merging this publishes to crates.io.** Release-plz should:\n\n- publish `swiftide-integrations`, `swiftide-langfuse`,\n`swiftide-query`, `swiftide-agents`, `swiftide-agents-contrib` and\n`swiftide` at 0.34.0\n- skip `swiftide-core`, `swiftide-macros`, `swiftide-tasks` and\n`swiftide-indexing`, which are already published\n- create the `v0.34.0` tag and GitHub release\n\nUse squash merge, so the release runs from the new master commit. Merge\nsoon, as a `release-pr` run from another master push could update or\nclose this PR.\n\n## How I checked it\n\n- `cargo publish --workspace --dry-run` with verify builds passed for\nall 10 crates in #1232. This PR changes only `CHANGELOG.md`.\n- Read release-plz 0.4.3's `should_release`: it only checks the merged\nPR's branch prefix.\n\nThis recovery path hasn't been run end to end, so check the release run\nafter merging.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-06T15:45:19+01:00",
+          "tree_id": "090dc2285d84bca363099e1a0d9f53b0211642c5",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e377c4a2e76fe2559629ae0efdae3c6e0fb4d829"
+        },
+        "date": 1793977046825,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 971412,
+            "range": "± 24606",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 262777,
+            "range": "± 5828",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1865,
+            "range": "± 2426",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6709,
+            "range": "± 7430",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 26044,
+            "range": "± 27115",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4176885,
+            "range": "± 9097",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2088914,
+            "range": "± 2411",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16691388,
+            "range": "± 68117",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2096956,
+            "range": "± 5188",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66800441,
+            "range": "± 171607",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2115032,
+            "range": "± 4585",
             "unit": "ns/iter"
           }
         ]
