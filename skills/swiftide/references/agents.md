@@ -1,4 +1,4 @@
-# Agents cheat sheet (Swiftide 0.33)
+# Agents cheat sheet
 
 Feature flags: `swiftide-agents` (plus `mcp` for MCP toolboxes, `macros` if default features are
 off). Every snippet below is copied from compiled code in the Swiftide repository; the source file

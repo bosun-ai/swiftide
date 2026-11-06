@@ -1,4 +1,4 @@
-# Pipelines cheat sheet (Swiftide 0.33)
+# Pipelines cheat sheet
 
 Indexing: `swiftide::indexing`. Querying: `swiftide::query`. Both ship with the `swiftide` crate;
 the loaders, embedders and stores behind them need their own feature flags

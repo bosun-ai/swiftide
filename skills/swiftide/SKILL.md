@@ -1,6 +1,6 @@
 ---
 name: swiftide
-description: Write Rust code with Swiftide 0.33, a library for LLM agents, typed task graphs and streaming RAG (indexing and query) pipelines. Covers installing with the right feature flags, building agents with #[swiftide::tool] tools, hooks, structured stop payloads, human approval and MCP toolboxes, wiring Task graphs with fan-out, join and pause/resume, and indexing and querying with Qdrant, LanceDB, FastEmbed and OpenAI-compatible endpoints. Use when a Rust project depends on the swiftide crate (or swiftide-agents, swiftide-tasks, swiftide-indexing, swiftide-query), when the user asks to build an agent, tool-calling loop, task graph or RAG pipeline in Rust, or when fixing Swiftide compile errors such as missing feature flags.
+description: Write Rust code with Swiftide, a library for LLM agents, typed task graphs and streaming RAG (indexing and query) pipelines. Covers installing with the right feature flags, building agents with #[swiftide::tool] tools, hooks, structured stop payloads, human approval and MCP toolboxes, wiring Task graphs with fan-out, join and pause/resume, and indexing and querying with Qdrant, LanceDB, FastEmbed and OpenAI-compatible endpoints. Use when a Rust project depends on the swiftide crate (or swiftide-agents, swiftide-tasks, swiftide-indexing, swiftide-query), when the user asks to build an agent, tool-calling loop, task graph or RAG pipeline in Rust, or when fixing Swiftide compile errors such as missing feature flags.
 license: MIT
 ---
 
@@ -15,18 +15,18 @@ one set of core traits (`SimplePrompt`, `ChatCompletion`, `EmbeddingModel`, `Too
 | Tasks | A typed graph of steps (prompts, agents, functions) with fan-out, join and pause | `swiftide::tasks::Task::new()` |
 | Pipelines | Streaming indexing (load, chunk, enrich, embed, store) and querying (transform, retrieve, answer) | `swiftide::indexing::Pipeline`, `swiftide::query::Pipeline` |
 
-This skill targets **0.33**. Pre-1.0 minor releases break APIs; when the version in `Cargo.lock`
-differs, check the CHANGELOG before trusting snippets from older blog posts or answers.
+This skill ships with the swiftide release it belongs to. Pre-1.0 minor releases break APIs, so
+check the swiftide version in the project's `Cargo.lock` and the CHANGELOG before trusting snippets
+from older blog posts or answers.
 
 ## Install
 
 Default features enable only `macros`. Everything else is opt-in.
 
-```toml
-[dependencies]
-swiftide = { version = "0.33", features = ["swiftide-agents", "openai"] }
-tokio = { version = "1", features = ["full"] }
-anyhow = "1"
+```sh
+cargo add swiftide --features swiftide-agents,openai
+cargo add tokio --features full
+cargo add anyhow
 ```
 
 Common feature flags (all on the `swiftide` crate):
