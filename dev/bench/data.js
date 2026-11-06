@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793969670879,
+  "lastUpdate": 1793975979909,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37127,6 +37127,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2135732,
             "range": "± 19020",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8cf4ec0be278fefb4b78ae4ca9c8b15d3bb4e186",
+          "message": "fix(agents): remove versions from internal dev dependencies (#1232)\n\n## Why\n\nThe [0.34.0\nrelease](https://github.com/bosun-ai/swiftide/actions/runs/42219772040)\nfailed halfway. `swiftide-agents` is published before\n`swiftide-integrations`, but it has a versioned dev dependency on it, so\ncargo looks for a version that isn't on crates.io yet:\n\n```\nfailed to select a version for the requirement `swiftide-integrations = \"^0.34\"`\nrequired by package `swiftide-agents v0.34.0`\n```\n\n## What changed\n\nRemoved `version` from the two internal dev dependencies that had one:\n\n- `swiftide-integrations` in `swiftide-agents`\n- `swiftide-agents` in `swiftide-agents-contrib`\n\nCargo drops path-only dev dependencies when packaging, so they no longer\naffect publishing. Local tests still use the path.\n\n## How I checked it\n\nCrates.io currently has `core`, `macros`, `tasks` and `indexing` at\n0.34.0, which is the state a retry starts from.\n\n| Check | Before | After |\n|---|---|---|\n| `cargo package -p swiftide-agents --no-verify` | same error as CI |\npasses |\n| `cargo publish --workspace --dry-run` (with verify build) | not run |\npasses for all 10 crates |\n| `cargo check -p swiftide-agents -p swiftide-agents-contrib --tests\n--all-features` | not run | passes |\n\nThe dry-run uses cargo's publish order, not release-plz's. Without these\ndev dependencies, each crate's remaining dependencies are published\nahead of it in the order release-plz used.\n\n## After merging\n\nMerging this does not finish the 0.34.0 release. With `release_always =\nfalse`, release-plz skips any commit that isn't from a release PR, and\nre-running the failed job would use the old manifests. The six remaining\ncrates (`integrations`, `langfuse`, `query`, `agents`, `agents-contrib`,\n`swiftide`) need a new release PR merged, or a manual publish.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Chores**\n* Updated internal project configuration. No changes to end-user\nfunctionality.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "timestamp": "2026-11-06T15:27:21+01:00",
+          "tree_id": "b2c5b3e7364cc902a7de8391626298bd8ab9cf3e",
+          "url": "https://github.com/bosun-ai/swiftide/commit/8cf4ec0be278fefb4b78ae4ca9c8b15d3bb4e186"
+        },
+        "date": 1793975976643,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 950354,
+            "range": "± 26430",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 263482,
+            "range": "± 3933",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1870,
+            "range": "± 2214",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6742,
+            "range": "± 6285",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 25890,
+            "range": "± 26414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4164516,
+            "range": "± 15130",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2087262,
+            "range": "± 7596",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16623385,
+            "range": "± 68333",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2097083,
+            "range": "± 5732",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66498666,
+            "range": "± 226876",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2111182,
+            "range": "± 4921",
             "unit": "ns/iter"
           }
         ]
