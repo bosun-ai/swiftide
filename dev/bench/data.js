@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793958741969,
+  "lastUpdate": 1793965607403,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -36911,6 +36911,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2125378,
             "range": "± 5523",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3d3dc0183c2495cb9bc6f6beea710034ae51f9bc",
+          "message": "chore(deps): bump zip from 9.0.4 to 9.4.0 (#1209)\n\nBumps [zip](https://github.com/zip-rs/zip2) from 9.0.4 to 9.4.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/zip-rs/zip2/releases\">zip's\nreleases</a>.</em></p>\n<blockquote>\n<h2>v9.4.0</h2>\n<h3><!-- raw HTML omitted -->🚀 Features</h3>\n<ul>\n<li>Implement ZipIterable::files_with_reader (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1267\">#1267</a>)</li>\n</ul>\n<h2>v9.3.0</h2>\n<h3><!-- raw HTML omitted -->🚀 Features</h3>\n<ul>\n<li><em>(write)</em> implement TryFrom<!-- raw HTML omitted --> for\nPreparedZipFile (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1258\">#1258</a>)</li>\n</ul>\n<h2>v9.2.3</h2>\n<h3><!-- raw HTML omitted -->🐛 Bug Fixes</h3>\n<ul>\n<li><em>(ci)</em> resolve typos false-positive, fix upath smuggling\ntest, and add Turkish tests (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1256\">#1256</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->🚜 Refactor</h3>\n<ul>\n<li>Replace std:: with core:: where possible (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1253\">#1253</a>)</li>\n</ul>\n<h2>v9.2.2</h2>\n<h3><!-- raw HTML omitted -->🚜 Refactor</h3>\n<ul>\n<li>Eliminate the use of SwitchWriterFunction (a Box&lt;dyn\nFnOnce&lt;_&gt;&gt;) (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1235\">#1235</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->⚙️ Miscellaneous Tasks</h3>\n<ul>\n<li>Fix build error (can't convert getrandom::Error to io::Error without\ngetrandom/std) (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1240\">#1240</a>)</li>\n</ul>\n<h2>v9.2.1</h2>\n<h3><!-- raw HTML omitted -->🚜 Refactor</h3>\n<ul>\n<li>Eliminate the use of SwitchWriterFunction (a Box&lt;dyn\nFnOnce&lt;_&gt;&gt;) (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1235\">#1235</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->⚙️ Miscellaneous Tasks</h3>\n<ul>\n<li>Fix build error (can't convert getrandom::Error to io::Error without\ngetrandom/std) (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1240\">#1240</a>)</li>\n</ul>\n<h2>v9.2.0</h2>\n<h3><!-- raw HTML omitted -->🚀 Features</h3>\n<ul>\n<li><em>(write)</em> add parallel compression and batch appending for\nZipWriter with Rayon (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1225\">#1225</a>)</li>\n<li>add index_for_name_raw (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1210\">#1210</a>)</li>\n<li><em>(extract)</em> multi-threaded parallel extraction engine and\nsafe extent pre-allocation (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1207\">#1207</a>)</li>\n<li><em>(read)</em> add index-free iterable ZIP reader (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1218\">#1218</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->🐛 Bug Fixes</h3>\n<ul>\n<li>by_name().get_metadata() and by_index().get_metadata() now succeed\neven when compression method is unsupported (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1228\">#1228</a>)</li>\n<li><em>(read)</em> keep ZipIterable::len at the central directory entry\ncount (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1221\">#1221</a>)</li>\n<li><em>(fuzz)</em> count reopens in copy bases when tracking comment\nshrink (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1222\">#1222</a>)</li>\n</ul>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a\nhref=\"https://github.com/zip-rs/zip2/blob/master/CHANGELOG.md\">zip's\nchangelog</a>.</em></p>\n<blockquote>\n<h2><a\nhref=\"https://github.com/zip-rs/zip2/compare/v9.3.0...v9.4.0\">9.4.0</a>\n- 2026-11-05</h2>\n<h3><!-- raw HTML omitted -->🚀 Features</h3>\n<ul>\n<li>Implement ZipIterable::files_with_reader (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1267\">#1267</a>)</li>\n</ul>\n<h2><a\nhref=\"https://github.com/zip-rs/zip2/compare/v9.2.3...v9.3.0\">9.3.0</a>\n- 2026-11-03</h2>\n<h3><!-- raw HTML omitted -->🚀 Features</h3>\n<ul>\n<li><em>(write)</em> implement TryFrom<!-- raw HTML omitted --> for\nPreparedZipFile (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1258\">#1258</a>)</li>\n</ul>\n<h2><a\nhref=\"https://github.com/zip-rs/zip2/compare/v9.2.2...v9.2.3\">9.2.3</a>\n- 2026-11-03</h2>\n<h3><!-- raw HTML omitted -->🐛 Bug Fixes</h3>\n<ul>\n<li><em>(ci)</em> resolve typos false-positive, fix upath smuggling\ntest, and add Turkish tests (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1256\">#1256</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->🚜 Refactor</h3>\n<ul>\n<li>Replace std:: with core:: where possible (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1253\">#1253</a>)</li>\n</ul>\n<h2><a\nhref=\"https://github.com/zip-rs/zip2/compare/v9.2.0...v9.2.2\">9.2.2</a>\n- 2026-11-01</h2>\n<h3><!-- raw HTML omitted -->🚜 Refactor</h3>\n<ul>\n<li>Eliminate the use of SwitchWriterFunction (a Box&lt;dyn\nFnOnce&lt;_&gt;&gt;) (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1235\">#1235</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->⚙️ Miscellaneous Tasks</h3>\n<ul>\n<li>Fix build error (can't convert getrandom::Error to io::Error without\ngetrandom/std) (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1240\">#1240</a>)</li>\n</ul>\n<h2><a\nhref=\"https://github.com/zip-rs/zip2/compare/v9.1.3...v9.2.0\">9.2.0</a>\n- 2026-10-31</h2>\n<h3><!-- raw HTML omitted -->🚀 Features</h3>\n<ul>\n<li><em>(write)</em> add parallel compression and batch appending for\nZipWriter with Rayon (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1225\">#1225</a>)</li>\n<li>add index_for_name_raw (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1210\">#1210</a>)</li>\n<li><em>(extract)</em> multi-threaded parallel extraction engine and\nsafe extent pre-allocation (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1207\">#1207</a>)</li>\n<li><em>(read)</em> add index-free iterable ZIP reader (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1218\">#1218</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->🐛 Bug Fixes</h3>\n<ul>\n<li>by_name().get_metadata() and by_index().get_metadata() now succeed\neven when compression method is unsupported (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1228\">#1228</a>)</li>\n<li><em>(read)</em> keep ZipIterable::len at the central directory entry\ncount (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1221\">#1221</a>)</li>\n<li><em>(fuzz)</em> count reopens in copy bases when tracking comment\nshrink (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1222\">#1222</a>)</li>\n</ul>\n<h3><!-- raw HTML omitted -->⚡ Performance</h3>\n<ul>\n<li><em>(read)</em> eliminate redundant pre-scan I/O and atomic\ncontention in par_extract (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/pull/1227\">#1227</a>)</li>\n</ul>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/f347dd473daa2e53922cc8eae396f390b51930e0\"><code>f347dd4</code></a>\nchore: release v9.4.0 (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1269\">#1269</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/e9b7dcd9bf73fbc2dee7ca10b646dbcf05d4426e\"><code>e9b7dcd</code></a>\nfeat: Implement ZipIterable::files_with_reader (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1267\">#1267</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/47765a990910e3961b8ad9fa16c213257383ab83\"><code>47765a9</code></a>\ndocs(security): Clarify that some &quot;vulnerabilities&quot; are\nnecessary for legitim...</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/53cfe460ccde4ba4103983645bedffb0d480a8ba\"><code>53cfe46</code></a>\nci(deps): bump useblacksmith/checkout from 1.8.1 to 1.8.2 (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1260\">#1260</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/b66f6b1482e358b72aa8031996e977f684673770\"><code>b66f6b1</code></a>\nci(deps): bump step-security/harden-runner from 2.22.2 to 2.22.3 (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1262\">#1262</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/3dccdf1aecccbddbf9ec87fbea69dc122d61a69f\"><code>3dccdf1</code></a>\nci(deps): bump release-plz/action from 0.5.146 to 0.5.147 (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1261\">#1261</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/dcd8d15710aa2858ca19187201c6569f55c80cc8\"><code>dcd8d15</code></a>\nchore: release v9.3.0 (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1259\">#1259</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/1191ea5c72634aca96acdf7e5b82e03059d027b9\"><code>1191ea5</code></a>\nfeat(write): implement TryFrom&lt;ZipFileBuilder&gt; for PreparedZipFile\n(<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1258\">#1258</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/d1f1ed9d970a343acaead2e0ddf806e6c851cd54\"><code>d1f1ed9</code></a>\nchore: release v9.2.3 (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1257\">#1257</a>)</li>\n<li><a\nhref=\"https://github.com/zip-rs/zip2/commit/2063fdfb28f8f758d42f7d28763f5b8a81cddcec\"><code>2063fdf</code></a>\nrefactor: Replace std:: with core:: where possible (<a\nhref=\"https://redirect.github.com/zip-rs/zip2/issues/1253\">#1253</a>)</li>\n<li>Additional commits viewable in <a\nhref=\"https://github.com/zip-rs/zip2/compare/v9.0.4...v9.4.0\">compare\nview</a></li>\n</ul>\n</details>\n<br />\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-11-06T12:37:41+01:00",
+          "tree_id": "3815feff1b102ddd236a4e8fa8fb484917f02793",
+          "url": "https://github.com/bosun-ai/swiftide/commit/3d3dc0183c2495cb9bc6f6beea710034ae51f9bc"
+        },
+        "date": 1793965605206,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 505438,
+            "range": "± 37880",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 159623,
+            "range": "± 3162",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1538,
+            "range": "± 1491",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 5660,
+            "range": "± 6333",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 22667,
+            "range": "± 19910",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4155444,
+            "range": "± 15473",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2076305,
+            "range": "± 6986",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16557055,
+            "range": "± 82339",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2081075,
+            "range": "± 9464",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66233269,
+            "range": "± 278046",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2098237,
+            "range": "± 13551",
             "unit": "ns/iter"
           }
         ]
