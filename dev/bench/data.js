@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1793977050054,
+  "lastUpdate": 1793977726255,
   "repoUrl": "https://github.com/bosun-ai/swiftide",
   "entries": {
     "Rust Benchmark": [
@@ -37343,6 +37343,114 @@ window.BENCHMARK_DATA = {
             "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
             "value": 2115032,
             "range": "± 4585",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "timonv@gmail.com",
+            "name": "Timon Vonk",
+            "username": "timonv"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e41a89fc18d8998c87f23bfcc4135f3a43518b9e",
+          "message": "docs(skill): stop naming the swiftide version in the skill and context7 rules (#1234)\n\n## Why\n\nThe Claude skill and the context7 rules named swiftide 0.33, so every\nrelease left them stale. 0.34.0 shipped with a skill that still says\n0.33.\n\n## What changed\n\n- `SKILL.md`: the description and the version note no longer name a\nrelease. The note now says the skill ships with the release it belongs\nto, and to check `Cargo.lock` and the CHANGELOG before trusting older\nsnippets.\n- The install step uses `cargo add swiftide --features\nswiftide-agents,openai` (plus `tokio` and `anyhow`) instead of a pinned\n`Cargo.toml` entry, so it resolves the newest release.\n- The four cheat sheet titles and the first context7 rule drop \"0.33\".\n\n## How it was checked\n\n- `grep -rn '0\\.3[0-9]' skills/ context7.json` only matches `v0.33.0` as\nan example git tag in a doc comment copied verbatim from\n`examples/release-notes-agent/src/tools.rs`, not a version claim.\n- `python3 -c 'import json;json.load(open(\"context7.json\"))'` passes.\n- No CI job validates the skill or context7.json specifically; the lint\njob's `typos` check covers them, and `typos skills context7.json` passes\nlocally.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai\n-->\n\n<!-- coderabbit-ai-generated:v1 -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n* Updated Swiftide guidance to avoid tying it to a specific version and\ndirect readers to check the project’s installed version and changelog.\n  * Revised installation instructions to use `cargo add`.\n  * Removed version-specific labels from the reference guide headings.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->\n\nCo-authored-by: Claude Fable 5.1 <noreply@anthropic.com>",
+          "timestamp": "2026-11-06T15:56:35+01:00",
+          "tree_id": "0a26fafa69755b03fb614b3328ac46ec05cfff40",
+          "url": "https://github.com/bosun-ai/swiftide/commit/e41a89fc18d8998c87f23bfcc4135f3a43518b9e"
+        },
+        "date": 1793977723631,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "load_1",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "load_10",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "run_local_pipeline",
+            "value": 0,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redis",
+            "value": 963369,
+            "range": "± 22896",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "node_cache/redb",
+            "value": 265250,
+            "range": "± 3953",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/8",
+            "value": 1852,
+            "range": "± 2030",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/32",
+            "value": 6708,
+            "range": "± 7005",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/linear-run/depth/128",
+            "value": 25844,
+            "range": "± 25906",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/2",
+            "value": 4167567,
+            "range": "± 14585",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/2",
+            "value": 2088972,
+            "range": "± 6784",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/8",
+            "value": 16623184,
+            "range": "± 72987",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/8",
+            "value": 2101178,
+            "range": "± 8894",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/sequential/32",
+            "value": 66550316,
+            "range": "± 344092",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "tasks/fanout-sequential-vs-parallel/parallel/32",
+            "value": 2114521,
+            "range": "± 4462",
             "unit": "ns/iter"
           }
         ]
