@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
 
 - [c94ce79](https://github.com/bosun-ai/swiftide/commit/c94ce79d7cc027480f927ac98c637b284e6431b4) *(agents)*  Recover from unknown tool calls ([#1218](https://github.com/bosun-ai/swiftide/pull/1218))
 
+- [8cf4ec0](https://github.com/bosun-ai/swiftide/commit/8cf4ec0be278fefb4b78ae4ca9c8b15d3bb4e186) *(agents)*  Remove versions from internal dev dependencies ([#1232](https://github.com/bosun-ai/swiftide/pull/1232))
+
 - [348d551](https://github.com/bosun-ai/swiftide/commit/348d5516ef9d570a04b93b3ded8c89019b8ec035) *(anthropic)*  Stop double counting usage in streaming responses ([#1220](https://github.com/bosun-ai/swiftide/pull/1220))
 
 - [669c4e5](https://github.com/bosun-ai/swiftide/commit/669c4e5f3fef37783c4a6a0cf7f12f0ccaba2354) *(core)*  Log retried LLM attempts at WARN and give-up once at ERROR ([#1229](https://github.com/bosun-ai/swiftide/pull/1229))
