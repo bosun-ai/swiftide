@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.34.0](https://github.com/bosun-ai/swiftide/compare/v0.33.0...v0.34.0) - 2026-11-06
+
+### New features
+
+- [71fa458](https://github.com/bosun-ai/swiftide/commit/71fa4587cf6206870d0a204eec8e0a365f995fd4) *(agents)*  Add optional contrib tools and context hooks ([#1207](https://github.com/bosun-ai/swiftide/pull/1207))
+
+- [9b64baf](https://github.com/bosun-ai/swiftide/commit/9b64baf9e6426003c156864fe92073eb72a5f02f) *(core)*  [**breaking**] Chainable search strategy setters and inferable SimilaritySingleEmbedding::default() ([#1226](https://github.com/bosun-ai/swiftide/pull/1226))
+
+**BREAKING CHANGE**: chainable search strategy setters and inferable SimilaritySingleEmbedding::default() ([#1226](https://github.com/bosun-ai/swiftide/pull/1226))
+
+- [76b0960](https://github.com/bosun-ai/swiftide/commit/76b0960c67884ffbe4befb3a808b0b077a05cf54) *(indexing)*  [**breaking**] Run returns pipeline stats ([#1225](https://github.com/bosun-ai/swiftide/pull/1225))
+
+**BREAKING CHANGE**: run returns pipeline stats ([#1225](https://github.com/bosun-ai/swiftide/pull/1225))
+
+- [a9e21b7](https://github.com/bosun-ai/swiftide/commit/a9e21b774e12673386ad2d7dafe9a0e726b30712) *(integrations)*  Set api_base and api_key on the OpenAI builder ([#1228](https://github.com/bosun-ai/swiftide/pull/1228))
+
+- [27d50db](https://github.com/bosun-ai/swiftide/commit/27d50db438c85a824bfc450aaef72ae14c65233e) *(integrations)*  Add Perl to SupportedLanguages behind tree-sitter-perl ([#1198](https://github.com/bosun-ai/swiftide/pull/1198))
+
+### Bug fixes
+
+- [c94ce79](https://github.com/bosun-ai/swiftide/commit/c94ce79d7cc027480f927ac98c637b284e6431b4) *(agents)*  Recover from unknown tool calls ([#1218](https://github.com/bosun-ai/swiftide/pull/1218))
+
+- [348d551](https://github.com/bosun-ai/swiftide/commit/348d5516ef9d570a04b93b3ded8c89019b8ec035) *(anthropic)*  Stop double counting usage in streaming responses ([#1220](https://github.com/bosun-ai/swiftide/pull/1220))
+
+- [669c4e5](https://github.com/bosun-ai/swiftide/commit/669c4e5f3fef37783c4a6a0cf7f12f0ccaba2354) *(core)*  Log retried LLM attempts at WARN and give-up once at ERROR ([#1229](https://github.com/bosun-ai/swiftide/pull/1229))
+
+- [3b1ad22](https://github.com/bosun-ai/swiftide/commit/3b1ad22e41d9043a9ca9a0df114f3b9de4c093d6) *(deps)*  Resolve security advisories ([#1215](https://github.com/bosun-ai/swiftide/pull/1215))
+
+- [7ac9497](https://github.com/bosun-ai/swiftide/commit/7ac949740250963227fa0a8bf9f40b496b8fff87) *(indexing)*  Keep the original error when a step before a batch fails ([#1224](https://github.com/bosun-ai/swiftide/pull/1224))
+
+- [cea196a](https://github.com/bosun-ai/swiftide/commit/cea196aa07c31a3b8fa64916cbbd40c36833f62b) *(integrations)*  HTTP clients work without installing a rustls crypto provider ([#1227](https://github.com/bosun-ai/swiftide/pull/1227))
+
+- [90bcadc](https://github.com/bosun-ai/swiftide/commit/90bcadc7384516901cd79cb4256b9cefdcc768d0) *(openai)*  Avoid repeating streamed text deltas ([#1216](https://github.com/bosun-ai/swiftide/pull/1216))
+
+- [9bfa9a5](https://github.com/bosun-ai/swiftide/commit/9bfa9a58ee05e6c293d8ccf824fe7ac93948e812) *(openai)*  Preserve plaintext reasoning in Responses history ([#1221](https://github.com/bosun-ai/swiftide/pull/1221))
+
+### Docs
+
+- [b988268](https://github.com/bosun-ai/swiftide/commit/b988268dd54cd687747eda50380259114cac8a84)  Showcase example crates, example anchors, agent skill and crate docs ([#1223](https://github.com/bosun-ai/swiftide/pull/1223))
+
+- [f184670](https://github.com/bosun-ai/swiftide/commit/f184670bc5268ab98ba98c22ab6540fd4d7acfae)  Correct the OpenAI base URL env var, retry log level and showcase branch ([#1230](https://github.com/bosun-ai/swiftide/pull/1230))
+
+
+**Full Changelog**: https://github.com/bosun-ai/swiftide/compare/0.33.0...0.34.0
+
+
+
 ## [0.33.0](https://github.com/bosun-ai/swiftide/compare/v0.32.1...v0.33.0) - 2026-10-14
 
 ### New features

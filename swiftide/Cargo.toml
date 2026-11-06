@@ -25,15 +25,15 @@ include = [
 document-features = { workspace = true }
 
 # Local dependencies
-swiftide-core = { path = "../swiftide-core", version = "0.33" }
-swiftide-integrations = { path = "../swiftide-integrations", version = "0.33" }
-swiftide-indexing = { path = "../swiftide-indexing", version = "0.33" }
-swiftide-query = { path = "../swiftide-query", version = "0.33" }
-swiftide-tasks = { path = "../swiftide-tasks", version = "0.33", optional = true }
-swiftide-agents = { path = "../swiftide-agents", version = "0.33", optional = true }
-swiftide-agents-contrib = { path = "../swiftide-agents-contrib", version = "0.33", default-features = false, optional = true }
-swiftide-macros = { path = "../swiftide-macros", version = "0.33", optional = true }
-swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.33", optional = true }
+swiftide-core = { path = "../swiftide-core", version = "0.34" }
+swiftide-integrations = { path = "../swiftide-integrations", version = "0.34" }
+swiftide-indexing = { path = "../swiftide-indexing", version = "0.34" }
+swiftide-query = { path = "../swiftide-query", version = "0.34" }
+swiftide-tasks = { path = "../swiftide-tasks", version = "0.34", optional = true }
+swiftide-agents = { path = "../swiftide-agents", version = "0.34", optional = true }
+swiftide-agents-contrib = { path = "../swiftide-agents-contrib", version = "0.34", default-features = false, optional = true }
+swiftide-macros = { path = "../swiftide-macros", version = "0.34", optional = true }
+swiftide-langfuse = { path = "../swiftide-langfuse", version = "0.34", optional = true }
 
 # Re-exports for macros and ease of use
 anyhow.workspace = true
